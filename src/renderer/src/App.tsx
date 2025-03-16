@@ -12,9 +12,27 @@ import { ROUTES } from '@/utils/routes';
 const AnimatedRoutes = () => {
   const location = useLocation();
   const { settings } = useSettings();
+  // 添加状态来触发重新渲染
+  const [languageVersion, setLanguageVersion] = useState(0);
 
+  // 添加语言变更事件监听器
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      // 更新状态以触发重新渲染
+      setLanguageVersion(prev => prev + 1);
+    };
+    
+    // 监听语言变更事件
+    window.addEventListener('language-changed', handleLanguageChange);
+    
+    return () => {
+      // 清理事件监听器
+      window.removeEventListener('language-changed', handleLanguageChange);
+    };
+  }, []);
+  
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100vh' }} key={`language-${languageVersion}`}>
       <AnimatePresence initial={true}>
         <motion.div
           key={location.pathname}

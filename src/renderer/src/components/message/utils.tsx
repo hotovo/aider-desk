@@ -4,6 +4,7 @@ import { CodeBlock } from './CodeBlock';
 import { CodeInline } from './CodeInline';
 
 import { showInfoNotification } from '@/utils/notifications';
+import { t } from '@/utils/i18n';
 
 const ALL_FENCES = [
   ['````', '````'],
@@ -155,5 +156,5 @@ export const parseMessageContent = (baseDir: string, content: string, allFiles: 
 
 export const copyToClipboard = (text: string) => {
   navigator.clipboard.writeText(text);
-  showInfoNotification('Copied to clipboard');
+  showInfoNotification(t('Copied to clipboard'));
 };

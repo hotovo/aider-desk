@@ -1,5 +1,6 @@
 import { ContextFile } from '@common/types';
 import React, { useEffect, useMemo, useState } from 'react';
+import { t } from '@/utils/i18n';
 import { StaticTreeDataProvider, Tree, UncontrolledTreeEnvironment } from 'react-complex-tree';
 import { HiPlus, HiX } from 'react-icons/hi';
 import { TbPencilOff } from 'react-icons/tb';
@@ -101,7 +102,7 @@ export const ContextFiles = ({ baseDir, showFileDialog }: Props) => {
     <div className="flex-grow w-full p-2 space-y-2 overflow-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900 scrollbar-rounded">
       <div className="flex flex-col">
         <div className="flex items-center mb-2">
-          <h3 className="text-md font-semibold uppercase pl-1 flex-grow">Context Files</h3>
+          <h3 className="text-md font-semibold uppercase pl-1 flex-grow">{t('Context Files')}</h3>
           <button
             onClick={showFileDialog}
             className="p-1 hover:bg-neutral-700 rounded-md"

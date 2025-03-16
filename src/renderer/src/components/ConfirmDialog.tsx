@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 
 import { BaseDialog } from './BaseDialog';
 import { Button } from './common/Button';
+import { t } from '@/utils/i18n';
 
 type Props = {
   title: string;
@@ -20,8 +21,8 @@ export const ConfirmDialog = ({
   title,
   onConfirm,
   onCancel,
-  confirmButtonText = 'Confirm',
-  cancelButtonText = 'Cancel',
+  confirmButtonText = t('Confirm'),
+  cancelButtonText = t('Cancel'),
   children,
   disabled = false,
   confirmButtonClass = 'bg-amber-600 hover:bg-amber-500',

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { t } from '@/utils/i18n';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
@@ -28,15 +29,15 @@ export const Select = ({ label, className = '', options = [], value, onChange }:
   };
 
   return (
-    <div ref={containerRef} className="relative">
-      {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{label}</label>}
+    <div ref={containerRef} className="relative" style={{ minWidth: '200px' }}>
+      {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{t(label)}</label>}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`flex w-full p-2 bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 text-sm placeholder-neutral-500 ${className}`}
       >
         <span className="col-start-1 row-start-1 flex items-center flex-1">
-          <span className="block truncate">{selectedOption?.label || 'Select an option'}</span>
+          <span className="block truncate">{selectedOption?.label || t('Select an option')}</span>
         </span>
         <svg
           className="col-start-1 row-start-1 size-5 self-center justify-self-end text-neutral-500"
@@ -54,7 +55,7 @@ export const Select = ({ label, className = '', options = [], value, onChange }:
 
       {isOpen && (
         <ul
-          className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-neutral-800 py-1 text-base ring-1 shadow-lg ring-black/5 focus:outline-hidden text-sm"
+          className="absolute z-10 mt-1 w-full overflow-auto rounded-md bg-neutral-800 py-1 text-base ring-1 shadow-lg ring-black/5 focus:outline-hidden text-sm max-h-[calc(100vh-100px)] min-h-[100px]"
           role="listbox"
         >
           {options.map((opt) => (

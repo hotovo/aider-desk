@@ -4,6 +4,7 @@ import { FaFolder } from 'react-icons/fa';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { Accordion } from '@/components/common/Accordion';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { t } from '@/utils/i18n';
 
 type Props = {
   onClose: () => void;
@@ -69,10 +70,10 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
 
   return (
     <ConfirmDialog
-      title="OPEN PROJECT"
+      title={t('OPEN PROJECT')}
       onCancel={onClose}
       onConfirm={handleAddProject}
-      confirmButtonText="Open"
+      confirmButtonText={t('Open')}
       disabled={!projectPath || !isValidPath}
       width={600}
     >
@@ -83,14 +84,14 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
           setShowSuggestions(!isFromSuggestion);
           setProjectPath(value);
         }}
-        placeholder="Type the path to your project or use icon to browse"
+        placeholder={t('Type the path to your project or use icon to browse')}
         autoFocus
         className="w-full p-3 pr-12 rounded-lg bg-neutral-900/50 border border-neutral-700/50 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500/50 focus:ring-1 focus:ring-neutral-500/50 transition-colors"
         rightElement={
           <button
             onClick={handleSelectProject}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-700/50 transition-colors"
-            title="Browse folders"
+            title={t('Browse folders')}
           >
             <FaFolder className="w-4 h-4" />
           </button>
@@ -99,7 +100,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
       />
 
       {recentProjects.length > 0 && (
-        <Accordion className="mt-2" title={<div className="flex items-center gap-2 text-sm">Recent projects</div>}>
+        <Accordion className="mt-2" title={<div className="flex items-center gap-2 text-sm">{t('Recent projects')}</div>}>
           <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
             {recentProjects.map((path) => (
               <button
