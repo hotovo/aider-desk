@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { McpSettings } from '@/components/settings/McpSettings';
+import { GeneralSettings } from '@/components/settings/GeneralSettings';
 
 type Props = {
   settings: SettingsData;
@@ -34,11 +35,13 @@ export const Settings = ({ settings, updateSettings, initialTab = 0 }: Props) =>
 
   return (
     <TabGroup className="flex flex-col flex-1 min-h-0" defaultIndex={initialTab}>
-      <TabList className="flex space-x-2  backdrop-blur-sm border border-neutral-800 rounded-t-lg">
+      <TabList className="flex space-x-2 backdrop-blur-sm border border-neutral-800 rounded-t-lg">
+        {renderTab('General')}
         {renderTab('Aider')}
         {renderTab('MCP Config')}
       </TabList>
       <TabPanels className="flex flex-col flex-1 overflow-hidden">
+        {renderTabPanel(<GeneralSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<AiderSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<McpSettings settings={settings} setSettings={updateSettings} />)}
       </TabPanels>

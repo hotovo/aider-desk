@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StaticTreeDataProvider, Tree, UncontrolledTreeEnvironment } from 'react-complex-tree';
 import { HiPlus, HiX } from 'react-icons/hi';
 import { TbPencilOff } from 'react-icons/tb';
+import { useTranslation } from 'react-i18next';
 
 import { StyledTooltip } from '../common/StyledTooltip';
 
@@ -64,6 +65,8 @@ export const ContextFiles = ({ baseDir, showFileDialog }: Props) => {
   const [files, setFiles] = useState<ContextFile[]>([]);
   const [newlyAddedFiles, setNewlyAddedFiles] = useState<string[]>([]);
 
+  const { t } = useTranslation();
+
   const sortedFiles = useMemo(() => {
     return [...files].sort((a, b) => a.path.localeCompare(b.path));
   }, [files]);
@@ -101,12 +104,12 @@ export const ContextFiles = ({ baseDir, showFileDialog }: Props) => {
     <div className="flex-grow w-full p-2 space-y-2 overflow-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900 scrollbar-rounded">
       <div className="flex flex-col">
         <div className="flex items-center mb-2">
-          <h3 className="text-md font-semibold uppercase pl-1 flex-grow">Context Files</h3>
+          <h3 className="text-md font-semibold uppercase pl-1 flex-grow">{t('contextFiles.title')}</h3>
           <button
             onClick={showFileDialog}
             className="p-1 hover:bg-neutral-700 rounded-md"
             data-tooltip-id="add-file-tooltip"
-            data-tooltip-content="Add context file"
+            data-tooltip-content={t('contextFiles.add')}
           >
             <HiPlus className="w-5 h-5" />
           </button>
@@ -146,7 +149,7 @@ export const ContextFiles = ({ baseDir, showFileDialog }: Props) => {
                           <TbPencilOff
                             className="w-4 h-4 text-neutral-400"
                             data-tooltip-id={`readonly-file-tooltip-${(item as TreeItem).file?.path}`}
-                            data-tooltip-content="Read-only file"
+                            data-tooltip-content={t('contextFiles.readOnly')}
                           />
                           <StyledTooltip id={`readonly-file-tooltip-${(item as TreeItem).file?.path}`} />
                         </>

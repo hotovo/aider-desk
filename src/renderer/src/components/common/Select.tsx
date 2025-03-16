@@ -1,14 +1,14 @@
-import { useRef, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 export type Option = {
-  label: string;
+  label: ReactNode;
   value: string;
 };
 
 type Props = {
-  label?: string;
+  label?: ReactNode;
   options?: Option[];
   value?: string;
   onChange?: (value: string) => void;
