@@ -5,6 +5,7 @@ import { RiCheckboxBlankLine, RiCheckboxFill } from 'react-icons/ri';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
+import { t } from '@/utils/i18n';
 
 type Props = {
   baseDir: string;
@@ -98,10 +99,10 @@ export const AddFileDialog = ({ onClose, onAddFile, baseDir, initialReadOnly = f
 
   return (
     <ConfirmDialog
-      title="ADD CONTEXT FILE"
+      title={t('ADD CONTEXT FILE')}
       onCancel={onClose}
       onConfirm={handleAddFile}
-      confirmButtonText="Add"
+      confirmButtonText={t('Add')}
       disabled={!filePath || !isValidPath}
       width={600}
       closeOnEscape
@@ -113,14 +114,14 @@ export const AddFileDialog = ({ onClose, onAddFile, baseDir, initialReadOnly = f
           setShowSuggestions(!isFromSuggestion);
           setFilePath(value);
         }}
-        placeholder="Choose file to add"
+        placeholder={t('Choose file to add')}
         autoFocus
         className="w-full p-3 pr-12 rounded-lg bg-neutral-900/50 border border-neutral-700/50 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500/50 focus:ring-1 focus:ring-neutral-500/50 transition-colors"
         rightElement={
           <button
             onClick={handleBrowse}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-700/50 transition-colors"
-            title="Browse files"
+            title={t('Browse files')}
           >
             <FaFolder className="w-4 h-4" />
           </button>
@@ -132,7 +133,7 @@ export const AddFileDialog = ({ onClose, onAddFile, baseDir, initialReadOnly = f
           {isReadOnly ? <RiCheckboxFill className="w-5 h-5 text-neutral-400" /> : <RiCheckboxBlankLine className="w-5 h-5 text-neutral-600" />}
         </button>
         <label onClick={toggleReadOnly} className="text-xs text-neutral-300 cursor-pointer select-none">
-          Read-Only
+          {t('Read-Only')}
         </label>
       </div>
     </ConfirmDialog>

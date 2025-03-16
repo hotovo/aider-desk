@@ -1,9 +1,11 @@
 import { SettingsData } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { ReactNode } from 'react';
+import { t } from '@/utils/i18n';
 
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { McpSettings } from '@/components/settings/McpSettings';
+import { LanguageSettings } from '@/components/settings/LanguageSettings';
 
 type Props = {
   settings: SettingsData;
@@ -37,10 +39,12 @@ export const Settings = ({ settings, updateSettings, initialTab = 0 }: Props) =>
       <TabList className="flex space-x-2  backdrop-blur-sm border border-neutral-800 rounded-t-lg">
         {renderTab('Aider')}
         {renderTab('MCP Config')}
+        {renderTab(t('Language'))}
       </TabList>
       <TabPanels className="flex flex-col flex-1 overflow-hidden">
         {renderTabPanel(<AiderSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<McpSettings settings={settings} setSettings={updateSettings} />)}
+        {renderTabPanel(<LanguageSettings settings={settings} setSettings={updateSettings} />)}
       </TabPanels>
     </TabGroup>
   );

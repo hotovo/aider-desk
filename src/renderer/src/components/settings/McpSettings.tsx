@@ -1,6 +1,7 @@
 import { McpConfig, McpServerConfig, SettingsData } from '@common/types';
 import { useState } from 'react';
 import { FaPlus } from 'react-icons/fa';
+import { t } from '@/utils/i18n';
 
 import { McpServerForm } from './McpServerForm';
 import { McpServerItem } from './McpServerItem';
@@ -143,7 +144,7 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
                 <Slider
                   label={
                     <div className="flex items-center">
-                      <span>Max Iterations</span>
+                      <span>{t('Max Iterations')}</span>
                       <InfoIcon className="ml-1" tooltip="Maximum number of iterations for MCP tool calls. Helps control computational resources." />
                     </div>
                   }
@@ -157,7 +158,7 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
                 <Input
                   label={
                     <div className="flex items-center">
-                      <span>Min Time Between Tool Calls (ms)</span>
+                      <span>{t('Min Time Between Tool Calls (ms)')}</span>
                       <InfoIcon
                         className="ml-1"
                         tooltip="Sets the minimum time between tool calls to prevent rate limiting (e.g., for Brave or other API-constrained services)."
@@ -185,9 +186,9 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
           </div>
           {/* Removed the Max Iterations section as it's now in the first column */}
           <div className="mt-4">
-            <h3 className="text-sm font-semibold mb-2 mt-4">MCP Servers</h3>
+            <h3 className="text-sm font-semibold mb-2 mt-4">{t('MCP Servers')}</h3>
             {Object.keys(mcpConfig.mcpServers).length === 0 ? (
-              <div className="text-xs text-gray-500 mb-2">No MCP servers configured.</div>
+              <div className="text-xs text-gray-500 mb-2">{t('No MCP servers configured.')}</div>
             ) : (
               Object.entries(mcpConfig.mcpServers).map(([serverName, config]) => (
                 <McpServerItem
