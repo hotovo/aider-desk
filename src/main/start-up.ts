@@ -6,6 +6,7 @@ import { promisify } from 'util';
 import { delay } from '@common/utils';
 import { is } from '@electron-toolkit/utils';
 
+import logger from './logger';
 import {
   AIDER_DESK_DIR,
   SETUP_COMPLETE_FILENAME,
@@ -62,7 +63,7 @@ const checkPythonVersion = async (): Promise<void> => {
 };
 
 const createVirtualEnv = async (): Promise<void> => {
-  const command = process.platform === 'win32' ? 'python' : 'python3';
+  const command = getOSPythonExecutable();
   await execAsync(`${command} -m venv "${PYTHON_VENV_DIR}"`, {
     windowsHide: true,
   });
@@ -87,23 +88,49 @@ const setupAiderConnector = async () => {
 
 const installAiderConnectorRequirements = async (): Promise<void> => {
   const pythonBinPath = getPythonVenvBinPath();
-  const packages = ['aider-chat --upgrade', 'python-socketio', 'websocket-client', 'nest-asyncio'];
+  const packages = ['pip', 'aider-chat', 'python-socketio', 'websocket-client', 'nest-asyncio'];
+
+  logger.info('Starting Aider connector requirements installation', { packages });
+
+  // 检查Python命令路径是否存在
+  const pythonCommand = fs.existsSync(PYTHON_COMMAND) ? PYTHON_COMMAND : 
+    (process.platform === 'win32' ? 'python' : 'python3');
+  
+  logger.info(`Using Python command: ${pythonCommand}`);
 
   for (const pkg of packages) {
-    await execAsync(`"${PYTHON_COMMAND}" -m pip install ${pkg}`, {
-      windowsHide: true,
-      env: {
-        ...process.env,
-        VIRTUAL_ENV: PYTHON_VENV_DIR,
-        PATH: `${pythonBinPath}${path.delimiter}${process.env.PATH}`,
-      },
-    });
+    try {
+      logger.info(`Installing package: ${pkg}`);
+      const { stdout, stderr } = await execAsync(`"${pythonCommand}" -m pip install --upgrade --no-cache-dir ${pkg}`, {
+        windowsHide: true,
+        env: {
+          ...process.env,
+          VIRTUAL_ENV: PYTHON_VENV_DIR,
+          PATH: `${pythonBinPath}${path.delimiter}${process.env.PATH}`,
+        },
+      });
+
+      if (stdout.trim()) {
+        logger.debug(`Package ${pkg} installation output`, { stdout: stdout.trim() });
+      }
+      if (stderr.trim()) {
+        logger.warn(`Package ${pkg} installation warnings`, { stderr: stderr.trim() });
+      }
+    } catch (error) {
+      logger.error(`Failed to install package: ${pkg}`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error(`Failed to install Aider connector requirements. Package: ${pkg}. Error: ${error}`);
+    }
   }
+
+  logger.info('Completed Aider connector requirements installation');
 };
 
 const setupMcpServer = async () => {
   if (is.dev) {
-    console.log('Skipping MCP server setup in dev mode');
+    logger.info('Skipping MCP server setup in dev mode');
     return;
   }
 
@@ -155,7 +182,10 @@ export type UpdateProgressData = {
 export type UpdateProgressFunction = (data: UpdateProgressData) => void;
 
 export const performStartUp = async (updateProgress: UpdateProgressFunction): Promise<boolean> => {
+  logger.info('Starting AiderDesk setup process');
+
   if (fs.existsSync(SETUP_COMPLETE_FILENAME)) {
+    logger.info('Setup previously completed, performing update check');
     await performUpdateCheck(updateProgress);
     return true;
   }
@@ -168,6 +198,7 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
   await delay(2000);
 
   if (!fs.existsSync(AIDER_DESK_DIR)) {
+    logger.info(`Creating AiderDesk directory: ${AIDER_DESK_DIR}`);
     fs.mkdirSync(AIDER_DESK_DIR, { recursive: true });
   }
 
@@ -177,6 +208,7 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
       message: 'Verifying Python installation...',
     });
 
+    logger.info('Checking Python version compatibility');
     await checkPythonVersion();
 
     updateProgress({
@@ -184,6 +216,7 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
       message: 'Setting up Python virtual environment...',
     });
 
+    logger.info(`Creating Python virtual environment in: ${PYTHON_VENV_DIR}`);
     await createVirtualEnv();
 
     updateProgress({
@@ -191,6 +224,7 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
       message: 'Installing Aider connector (this may take a while)...',
     });
 
+    logger.info('Setting up Aider connector');
     await setupAiderConnector();
 
     updateProgress({
@@ -198,6 +232,7 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
       message: 'Installing MCP server...',
     });
 
+    logger.info('Setting up MCP server');
     await setupMcpServer();
 
     updateProgress({
@@ -206,15 +241,21 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
     });
 
     // Create setup complete file
+    logger.info(`Creating setup complete file: ${SETUP_COMPLETE_FILENAME}`);
     fs.writeFileSync(SETUP_COMPLETE_FILENAME, new Date().toISOString());
 
+    logger.info('AiderDesk setup completed successfully');
     return true;
   } catch (error) {
+    logger.error('AiderDesk setup failed', { error });
+
     // Clean up if setup fails
     if (fs.existsSync(PYTHON_VENV_DIR)) {
+      logger.info(`Removing virtual environment directory: ${PYTHON_VENV_DIR}`);
       fs.rmSync(PYTHON_VENV_DIR, { recursive: true, force: true });
     }
     if (fs.existsSync(SETUP_COMPLETE_FILENAME)) {
+      logger.info(`Removing setup complete file: ${SETUP_COMPLETE_FILENAME}`);
       fs.unlinkSync(SETUP_COMPLETE_FILENAME);
     }
     throw error;

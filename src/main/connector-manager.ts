@@ -73,7 +73,7 @@ export class ConnectorManager {
 
   private processMessage = (socket: Socket, message: Message) => {
     try {
-      logger.info('Received message from client', { action: message.action });
+      logger.debug('Received message from client', { action: message.action });
       logger.debug('Message:', {
         message: JSON.stringify(message).slice(0, 1000),
       });
@@ -121,6 +121,8 @@ export class ConnectorManager {
         if (!connector) {
           return;
         }
+
+        logger.debug('Updating autocompletion', { ...message });
         this.mainWindow.webContents.send('update-autocompletion', {
           baseDir: connector.baseDir,
           words: message.words,
@@ -206,7 +208,7 @@ export class ConnectorManager {
     }
 
     const project = this.projectManager.getProject(connector.baseDir);
-    project.sendLogMessage(message.level, message.message);
+    project.addLogMessage(message.level, message.message);
   };
 
   private removeConnector = (socket: Socket) => {

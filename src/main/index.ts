@@ -5,7 +5,7 @@ import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, shell } from 'electron';
 import ProgressBar from 'electron-progressbar';
-import { McpClient } from 'src/main/mcp-client';
+import { McpAgent } from 'src/main/mcp-agent';
 
 import icon from '../../resources/icon.png?asset';
 
@@ -66,11 +66,11 @@ const initWindow = (store: Store) => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
-  const mcpClient = new McpClient(store);
-  void mcpClient.init();
+  const mcpAgent = new McpAgent(store);
+  void mcpAgent.init();
 
   // Initialize project manager
-  const projectManager = new ProjectManager(mainWindow, store, mcpClient);
+  const projectManager = new ProjectManager(mainWindow, store, mcpAgent);
 
   // Create HTTP server
   const httpServer = createServer();
@@ -81,7 +81,7 @@ const initWindow = (store: Store) => {
   // Initialize connector manager with the server
   const connectorManager = new ConnectorManager(mainWindow, projectManager, httpServer);
 
-  setupIpcHandlers(mainWindow, projectManager, store, mcpClient);
+  setupIpcHandlers(mainWindow, projectManager, store, mcpAgent);
 
   app.on('before-quit', async () => {
     await restApiController.close();

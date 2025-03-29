@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { BaseDialog } from './BaseDialog';
 import { Button } from './common/Button';
@@ -9,25 +10,28 @@ type Props = {
   onCancel: () => void;
   confirmButtonText?: string;
   cancelButtonText?: string;
-  children: ReactNode;
   disabled?: boolean;
   confirmButtonClass?: string;
   width?: number;
   closeOnEscape?: boolean;
+  children: ReactNode;
 };
 
 export const ConfirmDialog = ({
   title,
   onConfirm,
   onCancel,
-  confirmButtonText = 'Confirm',
-  cancelButtonText = 'Cancel',
-  children,
-  disabled = false,
-  confirmButtonClass = 'bg-amber-600 hover:bg-amber-500',
+  confirmButtonText,
+  cancelButtonText,
+  disabled,
+  confirmButtonClass,
   width,
-  closeOnEscape = false,
+  closeOnEscape,
+  children
 }: Props) => {
+  const { t } = useTranslation();
+  const finalConfirmText = confirmButtonText || t('common.confirm');
+  const finalCancelText = cancelButtonText || t('common.cancel');
   return (
     <BaseDialog
       title={title}
@@ -36,10 +40,10 @@ export const ConfirmDialog = ({
       footer={
         <>
           <Button onClick={onCancel} variant="text">
-            {cancelButtonText}
+            {finalCancelText}
           </Button>
           <Button onClick={onConfirm} autoFocus={true} disabled={disabled} variant="contained" className={confirmButtonClass}>
-            {confirmButtonText}
+            {finalConfirmText}
           </Button>
         </>
       }

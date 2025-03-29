@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { CgLock, CgLockUnlock } from 'react-icons/cg';
 import { MdKeyboardArrowUp } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
@@ -12,12 +13,13 @@ type Props = {
 };
 
 const EDIT_FORMATS = [
-  { value: 'code', label: 'Code' },
-  { value: 'ask', label: 'Ask' },
-  { value: 'architect', label: 'Architect' },
+  { value: 'code', label: 'components.formatSelector.code' },
+  { value: 'ask', label: 'components.formatSelector.ask' },
+  { value: 'architect', label: 'components.formatSelector.architect' },
 ];
 
 export const FormatSelector = ({ editFormat, editFormatLocked, onFormatChange, onLockChange }: Props) => {
+  const { t } = useTranslation();
   const [formatSelectorVisible, setFormatSelectorVisible] = useState(false);
   const formatSelectorRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +46,7 @@ export const FormatSelector = ({ editFormat, editFormatLocked, onFormatChange, o
                   e.stopPropagation();
                   onLockChange(false);
                 }}
+                title={t('formatSelector.lock')}
               />
             ) : (
               <CgLockUnlock
@@ -52,6 +55,7 @@ export const FormatSelector = ({ editFormat, editFormatLocked, onFormatChange, o
                   e.stopPropagation();
                   onLockChange(true);
                 }}
+                title={t('formatSelector.unlock')}
               />
             )}
           </span>
@@ -69,7 +73,7 @@ export const FormatSelector = ({ editFormat, editFormatLocked, onFormatChange, o
               className={`w-full px-3 py-1 text-left hover:bg-neutral-700 transition-colors duration-200 text-xs
               ${value === editFormat ? 'text-white font-bold' : 'text-neutral-300'}`}
             >
-              {label}
+              {t(label, { ns: 'translation' })}
             </button>
           ))}
         </div>

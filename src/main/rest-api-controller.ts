@@ -239,7 +239,7 @@ export class RestApiController {
         try {
           this.isPromptRunning = true;
 
-          const responses = await project.runPrompt(prompt, editFormat);
+          const responses = await project.sendPrompt(prompt, editFormat);
 
           res.status(200).json(responses);
         } finally {

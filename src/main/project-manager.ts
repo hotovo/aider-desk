@@ -1,6 +1,6 @@
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow } from 'electron';
-import { McpClient } from 'src/main/mcp-client';
+import { McpAgent } from 'src/main/mcp-agent';
 
 import logger from './logger';
 import { Project } from './project';
@@ -12,11 +12,11 @@ export class ProjectManager {
   constructor(
     private readonly mainWindow: BrowserWindow,
     private readonly store: Store,
-    private readonly mcpClient: McpClient,
+    private readonly mcpAgent: McpAgent,
   ) {
     this.mainWindow = mainWindow;
     this.store = store;
-    this.mcpClient = mcpClient;
+    this.mcpAgent = mcpAgent;
   }
 
   private findProject(baseDir: string): Project | undefined {
@@ -29,7 +29,7 @@ export class ProjectManager {
 
     if (!project) {
       logger.info('Creating new project', { baseDir });
-      project = new Project(this.mainWindow, baseDir, this.store, this.mcpClient!);
+      project = new Project(this.mainWindow, baseDir, this.store, this.mcpAgent!);
       this.projects.push(project);
     }
 

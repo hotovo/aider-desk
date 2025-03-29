@@ -1,5 +1,6 @@
 import { FocusTrap } from 'focus-trap-react';
 import { ReactNode, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   title: string;
@@ -12,6 +13,7 @@ type Props = {
 
 export const BaseDialog = ({ title, onClose, children, footer, width = 384, closeOnEscape = false }: Props) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!closeOnEscape) {
@@ -43,7 +45,7 @@ export const BaseDialog = ({ title, onClose, children, footer, width = 384, clos
           <div className="px-6 py-4 border-t border-neutral-700/50 flex justify-end space-x-3 flex-shrink-0">
             {footer || (
               <button onClick={onClose} className="bg-neutral-600 text-neutral-100 px-4 py-2 rounded hover:bg-neutral-500">
-                Cancel
+                {t('common.cancel')}
               </button>
             )}
           </div>

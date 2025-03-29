@@ -1,3 +1,5 @@
+import { LlmProvider } from '@common/llm-providers';
+
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
 export interface ResponseChunkData {
@@ -25,10 +27,12 @@ export interface CommandOutputData {
   output: string;
 }
 
+export type LogLevel = 'info' | 'warning' | 'error' | 'loading';
+
 export interface LogData {
   baseDir: string;
-  level: 'info' | 'warning' | 'error' | 'loading';
-  message: string;
+  level: LogLevel;
+  message?: string;
 }
 
 export interface ToolData {
@@ -93,13 +97,15 @@ export interface ModelsData {
   weakModel?: string | null;
   architectModel?: string | null;
   maxChatHistoryTokens?: number;
+  reasoningEffort?: number;
+  thinkingTokens?: number;
   info?: Record<string, unknown>;
   error?: string;
 }
 
 export interface SettingsData {
   onboardingFinished?: boolean;
-  language: string;
+  language?: string;
   aider: {
     options: string;
     environmentVariables: string;
@@ -107,22 +113,27 @@ export interface SettingsData {
   models: {
     preferred: string[];
   };
-  mcpConfig: McpConfig;
+  mcpAgent: McpAgent;
 }
 
-export interface McpConfig {
-  provider: 'openai' | 'anthropic' | 'gemini';
-  anthropicApiKey: string;
-  openAiApiKey: string;
-  geminiApiKey: string;
+export interface McpAgent {
+  providers: LlmProvider[];
   maxIterations: number;
+  maxTokens: number;
   minTimeBetweenToolCalls: number; // in milliseconds
   mcpServers: {
     [key: string]: McpServerConfig;
   };
+  agentEnabled: boolean;
   disabledServers: string[];
   systemPrompt: string;
+  includeContextFiles: boolean;
+  useAiderTools: boolean;
 }
+
+export const getActiveProvider = (providers: LlmProvider[]): LlmProvider | null => {
+  return providers.find((provider) => provider.active) || null;
+};
 
 export interface UsageReportData {
   sentTokens: number;
@@ -173,9 +184,4 @@ export interface McpServerConfig {
   command: string;
   args: string[];
   env?: Readonly<Record<string, string>>;
-}
-
-export interface Test {
-  propertyA: string;
-  propertyB: number;
 }

@@ -1,7 +1,7 @@
 import { FileEdit, ProjectSettings, SettingsData, ProjectData, McpServerConfig } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { McpClient } from 'src/main/mcp-client';
+import { McpAgent } from 'src/main/mcp-agent';
 
 import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
 import { EditFormat } from './messages';
@@ -9,18 +9,24 @@ import { ProjectManager } from './project-manager';
 import { DEFAULT_PROJECT_SETTINGS, Store } from './store';
 import { scrapeWeb } from './web-scrapper';
 
-export const setupIpcHandlers = (mainWindow: BrowserWindow, projectManager: ProjectManager, store: Store, mcpClient: McpClient) => {
+export const setupIpcHandlers = (mainWindow: BrowserWindow, projectManager: ProjectManager, store: Store, mcpAgent: McpAgent) => {
   ipcMain.handle('load-settings', () => {
     return store.getSettings();
   });
 
   ipcMain.handle('save-settings', (_, settings: SettingsData) => {
+    const currentSettings = store.getSettings();
     store.saveSettings(settings);
-    void mcpClient.init();
+
+    const mcpServersChanged = JSON.stringify(currentSettings.mcpAgent?.mcpServers) !== JSON.stringify(settings.mcpAgent?.mcpServers);
+    if (mcpServersChanged) {
+      void mcpAgent.init();
+    }
+
     return store.getSettings();
   });
 
-  ipcMain.on('send-prompt', (_, baseDir: string, prompt: string, editFormat?: EditFormat) => {
+  ipcMain.on('run-prompt', (_, baseDir: string, prompt: string, editFormat?: EditFormat) => {
     void projectManager.getProject(baseDir).runPrompt(prompt, editFormat);
   });
 
@@ -182,12 +188,16 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow, projectManager: Proj
     projectManager.getProject(baseDir).applyEdits(edits);
   });
 
+  ipcMain.on('clear-context', (_, baseDir: string) => {
+    projectManager.getProject(baseDir).clearContext();
+  });
+
   ipcMain.handle('scrape-web', async (_, baseDir: string, url: string) => {
     const content = await scrapeWeb(url);
-    projectManager.getProject(baseDir).addMessage(content);
+    projectManager.getProject(baseDir).sendAddContextMessage('user', content);
   });
 
   ipcMain.handle('load-mcp-server-tools', async (_, serverName: string, config: McpServerConfig) => {
-    return await mcpClient.getMcpServerTools(serverName, config);
+    return await mcpAgent.getMcpServerTools(serverName, config);
   });
 };

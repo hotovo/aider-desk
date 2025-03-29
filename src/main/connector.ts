@@ -37,7 +37,10 @@ export class Connector {
       logger.warn('Socket.IO client is not connected');
       return;
     }
-    logger.info('Sending message to client:', { baseDir: this.baseDir, messageType: message.action });
+    logger.info('Sending message to client:', {
+      baseDir: this.baseDir,
+      messageType: message.action,
+    });
     this.socket.emit('message', message);
   };
 
@@ -96,7 +99,7 @@ export class Connector {
     this.sendMessage(message);
   }
 
-  public sendAddMessageMessage(content: string, role: 'user' | 'assistant' = 'user', acknowledge = true) {
+  public sendAddMessageMessage(role: 'user' | 'assistant' = 'user', content: string, acknowledge = true) {
     const message: AddMessageMessage = {
       action: 'add-message',
       content,

@@ -1,6 +1,7 @@
 import { SettingsData } from '@common/types';
 import { useState, useEffect, useMemo } from 'react';
 import { isEqual } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import { Settings } from '@/pages/Settings';
 import { useSettings } from '@/context/SettingsContext';
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export const SettingsDialog = ({ onClose, initialTab = 0 }: Props) => {
+  const { t } = useTranslation();
   const { settings: originalSettings, saveSettings } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
 
@@ -22,7 +24,13 @@ export const SettingsDialog = ({ onClose, initialTab = 0 }: Props) => {
   }, [originalSettings]);
 
   const hasChanges = useMemo(() => {
-    return localSettings && originalSettings && !isEqual(localSettings, originalSettings);
+    if (!localSettings || !originalSettings) return false;
+    return (
+      localSettings.language !== originalSettings.language ||
+      !isEqual(localSettings.aider, originalSettings.aider) ||
+      !isEqual(localSettings.models, originalSettings.models) ||
+      !isEqual(localSettings.mcpAgent, originalSettings.mcpAgent)
+    );
   }, [localSettings, originalSettings]);
 
   const handleSave = async () => {
@@ -33,8 +41,18 @@ export const SettingsDialog = ({ onClose, initialTab = 0 }: Props) => {
   };
 
   return (
-    <ConfirmDialog title="SETTINGS" onCancel={onClose} onConfirm={handleSave} confirmButtonText="Save" width={800} closeOnEscape disabled={!hasChanges}>
-      {localSettings && <Settings settings={localSettings} updateSettings={setLocalSettings} initialTab={initialTab} />}
+    <ConfirmDialog 
+      title={t('settings.title').toUpperCase()} 
+      onCancel={onClose} 
+      onConfirm={handleSave} 
+      confirmButtonText={t('common.save')} 
+      width={800} 
+      closeOnEscape 
+      disabled={!hasChanges}
+    >
+      <div className="h-[600px] w-full">
+        {localSettings && <Settings settings={localSettings} updateSettings={setLocalSettings} initialTab={initialTab} />}
+      </div>
     </ConfirmDialog>
   );
 };

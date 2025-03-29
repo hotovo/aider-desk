@@ -143,10 +143,12 @@ MCP connects AI models to external tools like web browsers, documentation system
 
 ### Key Features:
 
-- **Tool Integration**: Connect to browsers, documentation systems, and language-specific tools
-- **Provider Options**: Choose between OpenAI and Anthropic models
-- **Flexible Configuration**: Enable/disable servers, customize settings, and control usage
-- **Seamless Workflow**: MCP tools gather information, then Aider implements the code changes
+- **Tool Integration**: Connect to browsers, documentation systems, and language-specific tools.
+- **Provider Options**: Choose between OpenAI, Anthropic, Gemini and Bedrock models.
+- **Flexible Configuration**: Enable/disable servers, customize settings, and control usage.
+- **Seamless Workflow**: MCP tools gather information, then Aider implements the code changes.
+- **Aider Tools**: Use Aider tools to perform add/drop context files actions and run prompts.
+- **Context Files**: Add content of context files into the chat of MCP agent.
 
 AiderDesk should work with any MCP-compatible server, including Brave API MCP server for searching the web and custom language-specific tools.
 

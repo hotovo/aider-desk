@@ -1,4 +1,5 @@
 import { ModelsData } from '@common/types';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useImperativeHandle, useRef } from 'react';
 
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
@@ -76,16 +77,18 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(({ baseDir, 
     [baseDir, onModelChange, updatePreferredModels],
   );
 
+  const { t } = useTranslation();
+
   return (
     <div className="relative group">
       {!modelsData ? (
-        <div className="text-xs">Loading model...</div>
+        <div className="text-xs">{t('models.loadingModel')}</div>
       ) : (
         <div className="flex items-center space-x-3">
           {architectMode && (
             <>
               <div className="flex items-center space-x-1">
-                <span className="text-xs">Architect model:</span>
+                <span className="text-xs">{t('models.architectModel')}</span>
                 <ModelSelector
                   ref={architectModelSelectorRef}
                   models={allModels}
@@ -97,20 +100,38 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(({ baseDir, 
             </>
           )}
           <div className="flex items-center space-x-1">
-            <span className="text-xs">{architectMode ? 'Editor model:' : 'Main model:'}</span>
+            <span className="text-xs">{architectMode ? t('models.editorModel') : t('models.mainModel')}</span>
             <ModelSelector ref={mainModelSelectorRef} models={allModels} selectedModel={modelsData.mainModel} onChange={updateMainModel} />
           </div>
           <div className="h-3 w-px bg-neutral-600/50"></div>
           <div className="flex items-center space-x-1">
-            <span className="text-xs">Weak model:</span>
+            <span className="text-xs">{t('models.weakModel')}</span>
             <ModelSelector models={allModels} selectedModel={modelsData.weakModel || modelsData.mainModel} onChange={updateWeakModel} />
           </div>
           {modelsData.maxChatHistoryTokens && (
             <>
               <div className="h-3 w-px bg-neutral-600/50"></div>
               <div className="flex items-center space-x-1">
-                <span className="text-xs">Max tokens:</span>
+                <span className="text-xs">{t('models.maxTokens')}</span>
                 <span className="text-neutral-400 text-xs">{modelsData.maxChatHistoryTokens}</span>
+              </div>
+            </>
+          )}
+          {modelsData.reasoningEffort && (
+            <>
+              <div className="h-3 w-px bg-neutral-600/50"></div>
+              <div className="flex items-center space-x-1">
+                <span className="text-xs">{t('models.reasoning')}</span>
+                <span className="text-neutral-400 text-xs">{modelsData.reasoningEffort}</span>
+              </div>
+            </>
+          )}
+          {modelsData.thinkingTokens && (
+            <>
+              <div className="h-3 w-px bg-neutral-600/50"></div>
+              <div className="flex items-center space-x-1">
+                <span className="text-xs">{t('models.thinkingTokens')}</span>
+                <span className="text-neutral-400 text-xs">{modelsData.thinkingTokens}</span>
               </div>
             </>
           )}

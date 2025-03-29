@@ -46,7 +46,7 @@ const api: ApplicationAPI = {
   startProject: (baseDir: string) => ipcRenderer.send('start-project', baseDir),
   stopProject: (baseDir: string) => ipcRenderer.send('stop-project', baseDir),
   restartProject: (baseDir: string) => ipcRenderer.send('restart-project', baseDir),
-  sendPrompt: (baseDir: string, prompt: string, editFormat?: string) => ipcRenderer.send('send-prompt', baseDir, prompt, editFormat),
+  runPrompt: (baseDir: string, prompt: string, editFormat?: string) => ipcRenderer.send('run-prompt', baseDir, prompt, editFormat),
   answerQuestion: (baseDir: string, answer: string) => ipcRenderer.send('answer-question', baseDir, answer),
   loadInputHistory: (baseDir: string) => ipcRenderer.invoke('load-input-history', baseDir),
   dialog: {
@@ -75,6 +75,7 @@ const api: ApplicationAPI = {
   removeRecentProject: (baseDir: string) => ipcRenderer.invoke('remove-recent-project', baseDir),
   interruptResponse: (baseDir: string) => ipcRenderer.send('interrupt-response', baseDir),
   applyEdits: (baseDir: string, edits: FileEdit[]) => ipcRenderer.send('apply-edits', baseDir, edits),
+  clearContext: (baseDir: string) => ipcRenderer.send('clear-context', baseDir),
 
   addResponseChunkListener: (baseDir, callback) => {
     const listenerId = uuidv4();

@@ -21,7 +21,7 @@ export interface ApplicationAPI {
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string) => void;
-  sendPrompt: (baseDir: string, prompt: string, editFormat?: string) => void;
+  runPrompt: (baseDir: string, prompt: string, editFormat?: string) => void;
   answerQuestion: (baseDir: string, answer: string) => void;
   loadInputHistory: (baseDir: string) => Promise<string[]>;
   dialog: {
@@ -50,6 +50,7 @@ export interface ApplicationAPI {
   removeRecentProject: (baseDir: string) => Promise<void>;
   interruptResponse: (baseDir: string) => void;
   applyEdits: (baseDir: string, edits: FileEdit[]) => void;
+  clearContext: (baseDir: string) => void;
 
   addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => string;
   removeResponseChunkListener: (listenerId: string) => void;

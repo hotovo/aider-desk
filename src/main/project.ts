@@ -2,6 +2,7 @@ import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { createHash } from 'crypto';
 import { unlinkSync } from 'fs';
 import fs from 'fs/promises';
+import { existsSync } from 'fs';
 import path from 'path';
 
 import ignore from 'ignore';
@@ -9,6 +10,8 @@ import {
   ContextFile,
   FileEdit,
   InputHistoryData,
+  LogData,
+  LogLevel,
   ModelsData,
   QuestionData,
   ResponseChunkData,
@@ -22,16 +25,16 @@ import { BrowserWindow } from 'electron';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
 import { parse } from '@dotenvx/dotenvx';
+import { McpAgent } from 'src/main/mcp-agent';
 
 import { Connector } from './connector';
-import { McpClient } from './mcp-client';
 import { AIDER_DESK_CONNECTOR_DIR, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
 import logger from './logger';
 import { EditFormat, MessageAction, ResponseMessage } from './messages';
 import { DEFAULT_MAIN_MODEL, Store } from './store';
 
 export class Project {
-  private process?: ChildProcessWithoutNullStreams | null = null;
+  private process: ChildProcessWithoutNullStreams | null = null;
   private connectors: Connector[] = [];
   private currentCommand: string | null = null;
   private currentQuestion: QuestionData | null = null;
@@ -49,7 +52,7 @@ export class Project {
     private readonly mainWindow: BrowserWindow,
     public readonly baseDir: string,
     private readonly store: Store,
-    private readonly mcpClient: McpClient,
+    private readonly mcpAgent: McpAgent,
   ) {}
 
   public start() {
@@ -182,8 +185,14 @@ export class Project {
       CONNECTOR_SERVER_URL: `http://localhost:${SERVER_PORT}`,
     };
 
+    // 检查Python命令路径是否存在
+    const pythonCommand = existsSync(PYTHON_COMMAND) ? PYTHON_COMMAND : 
+      (process.platform === 'win32' ? 'python' : 'python3');
+    
+    logger.info(`Using Python command: ${pythonCommand}`);
+    
     // Spawn without shell to have direct process control
-    this.process = spawn(PYTHON_COMMAND, args, {
+    this.process = spawn(pythonCommand, args, {
       cwd: this.baseDir,
       detached: false,
       env,
@@ -195,7 +204,7 @@ export class Project {
       logger.debug('Aider output:', { output });
 
       if (this.currentCommand) {
-        this.sendCommandOutput(this.currentCommand, output);
+        this.addCommandOutput(this.currentCommand, output);
       }
     });
 
@@ -207,7 +216,7 @@ export class Project {
       }
       if (output.startsWith('usage:')) {
         logger.debug(output);
-        this.sendLogMessage('error', output.includes('error:') ? output.substring(output.indexOf('error:')) : output);
+        this.addLogMessage('error', output.includes('error:') ? output.substring(output.indexOf('error:')) : output);
         return;
       }
 
@@ -226,15 +235,8 @@ export class Project {
   }
 
   public async stop() {
+    logger.info('Stopping project...', { baseDir: this.baseDir });
     await this.killAider();
-    this.currentCommand = null;
-    this.currentQuestion = null;
-    this.currentResponseMessageId = null;
-    this.currentPromptId = null;
-    this.currentPromptResponses = [];
-
-    this.runPromptResolves.forEach((resolve) => resolve([]));
-    this.runPromptResolves = [];
   }
 
   private async killAider(): Promise<void> {
@@ -252,9 +254,17 @@ export class Project {
             }
           });
         });
+
         this.currentCommand = null;
         this.currentQuestion = null;
         this.currentResponseMessageId = null;
+        this.currentPromptId = null;
+        this.currentPromptResponses = [];
+
+        this.runPromptResolves.forEach((resolve) => resolve([]));
+        this.runPromptResolves = [];
+
+        this.mcpAgent.clearMessages(this);
       } catch (error: unknown) {
         logger.error('Error killing Aider process:', { error });
         throw error;
@@ -269,10 +279,15 @@ export class Project {
   }
 
   public async runPrompt(prompt: string, editFormat?: EditFormat): Promise<ResponseCompletedData[]> {
+    if (this.currentQuestion) {
+      this.answerQuestion('n');
+    }
+
     // If a prompt is already running, wait for it to finish
     if (this.currentPromptId) {
-      return new Promise((resolve) => {
-        this.runPromptResolves.push(resolve);
+      logger.info('Waiting for prompt to finish...');
+      await new Promise<void>((resolve) => {
+        this.runPromptResolves.push(() => resolve());
       });
     }
 
@@ -282,23 +297,29 @@ export class Project {
       editFormat,
     });
 
-    this.sendUserMessage(prompt, editFormat);
-    this.sendLogMessage('loading', 'Thinking...');
+    this.addUserMessage(prompt, editFormat);
+    this.addLogMessage('loading');
 
     await this.addToInputHistory(prompt);
 
-    if (this.currentQuestion) {
-      this.answerQuestion('n');
-    }
-
-    const mcpPrompt = await this.mcpClient.runPrompt(this, prompt);
+    const mcpPrompt = await this.mcpAgent.runPrompt(this, prompt, editFormat);
     if (!mcpPrompt) {
-      this.currentPromptId = null;
       return [];
     }
 
-    prompt = mcpPrompt;
+    const responses = await this.sendPrompt(mcpPrompt, editFormat);
 
+    // Send all responses as assistant messages to MCP client
+    for (const response of responses) {
+      if (response.content) {
+        this.mcpAgent.addMessage(this, 'assistant', response.content);
+      }
+    }
+
+    return responses;
+  }
+
+  public sendPrompt(prompt: string, editFormat?: EditFormat): Promise<ResponseCompletedData[]> {
     this.currentPromptResponses = [];
     this.currentResponseMessageId = null;
     this.currentPromptId = uuidv4();
@@ -473,6 +494,10 @@ export class Project {
   }
 
   public runCommand(command: string) {
+    if (this.currentQuestion) {
+      this.answerQuestion('n');
+    }
+
     logger.info('Running command:', { command });
     this.findMessageConnectors('run-command').forEach((connector) => connector.sendRunCommandMessage(command));
   }
@@ -609,7 +634,10 @@ export class Project {
         const regex = new RegExp(searchRegex, 'i');
         files = files.filter((file) => regex.test(file));
       } catch (error) {
-        logger.error('Invalid regex for getAddableFiles', { searchRegex, error });
+        logger.error('Invalid regex for getAddableFiles', {
+          searchRegex,
+          error,
+        });
       }
     }
 
@@ -622,14 +650,14 @@ export class Project {
 
   public openCommandOutput(command: string) {
     this.currentCommand = command;
-    this.sendCommandOutput(command, '');
+    this.addCommandOutput(command, '');
   }
 
   public closeCommandOutput() {
     this.currentCommand = null;
   }
 
-  private sendCommandOutput(command: string, output: string) {
+  private addCommandOutput(command: string, output: string) {
     this.mainWindow.webContents.send('command-output', {
       baseDir: this.baseDir,
       command: command,
@@ -637,22 +665,29 @@ export class Project {
     });
   }
 
-  public sendLogMessage(level: string, message: string) {
-    this.mainWindow.webContents.send('log', {
+  public addLogMessage(level: LogLevel, message?: string) {
+    const data: LogData = {
       baseDir: this.baseDir,
       level,
       message,
-    });
+    };
+
+    this.mainWindow.webContents.send('log', data);
   }
 
-  public addMessage(content: string, role: 'user' | 'assistant' = 'user', acknowledge = true) {
-    this.findMessageConnectors('add-message').forEach((connector) => connector.sendAddMessageMessage(content, role, acknowledge));
+  public sendAddContextMessage(role: 'user' | 'assistant' = 'user', content: string, acknowledge = true) {
+    this.findMessageConnectors('add-message').forEach((connector) => connector.sendAddMessageMessage(role, content, acknowledge));
+  }
+
+  public clearContext() {
+    this.mcpAgent.clearMessages(this);
+    this.runCommand('clear');
   }
 
   public interruptResponse() {
     logger.info('Interrupting response:', { baseDir: this.baseDir });
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
-    this.mcpClient.interrupt();
+    this.mcpAgent.interrupt();
   }
 
   public applyEdits(edits: FileEdit[]) {
@@ -660,8 +695,8 @@ export class Project {
     this.findMessageConnectors('apply-edits').forEach((connector) => connector.sendApplyEditsMessage(edits));
   }
 
-  public sendToolMessage(serverName: string, toolName: string, args?: Record<string, unknown>, response?: string, usageReport?: UsageReportData) {
-    logger.info('Sending tool message:', {
+  public addToolMessage(serverName: string, toolName: string, args?: Record<string, unknown>, response?: string, usageReport?: UsageReportData) {
+    logger.debug('Sending tool message:', {
       baseDir: this.baseDir,
       serverName,
       name: toolName,
@@ -680,8 +715,8 @@ export class Project {
     this.mainWindow.webContents.send('tool', data);
   }
 
-  public sendUserMessage(content: string, editFormat?: string) {
-    logger.info('Sending user message:', {
+  public addUserMessage(content: string, editFormat?: string) {
+    logger.info('Adding user message:', {
       baseDir: this.baseDir,
       content,
       editFormat,

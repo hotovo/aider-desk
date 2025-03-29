@@ -238,13 +238,9 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
           id: uuidv4(),
           type: 'log',
           level,
-          content: message,
+          content: message || '',
         };
         setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), logMessage]);
-
-        if (level === 'error') {
-          setProcessing(false);
-        }
       }
     };
 
@@ -326,6 +322,15 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
     promptFieldRef.current?.focus();
   };
 
+  const onSubmitted = () => {
+    if (question) {
+      if (question.answerFunction) {
+        question.answerFunction('n');
+      }
+      setQuestion(null);
+    }
+  };
+
   const showFileDialog = (readOnly: boolean) => {
     setAddFileDialogOptions({
       readOnly,
@@ -337,7 +342,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
     setMessages(lastModelsMessage ? [lastModelsMessage] : []);
     setProcessing(false);
     processingMessageRef.current = null;
-    window.api.runCommand(project.baseDir, 'clear');
+    window.api.clearContext(project.baseDir);
   };
 
   const runCommand = (command: string) => {
@@ -434,6 +439,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
     setMessages([]);
     setLastMessageCost(0);
     setTotalCost(0);
+    setMcpToolsCost(0);
     setProcessing(false);
     setTokensInfo(null);
     setQuestion(null);
@@ -484,6 +490,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             runTests={runTests}
             openModelSelector={() => projectTopBarRef.current?.openMainModelSelector()}
             disabled={!modelsData}
+            onSubmitted={onSubmitted}
           />
         </div>
       </div>

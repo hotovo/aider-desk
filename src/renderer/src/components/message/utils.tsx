@@ -2,8 +2,7 @@ import React from 'react';
 
 import { CodeBlock } from './CodeBlock';
 import { CodeInline } from './CodeInline';
-
-import { showInfoNotification } from '@/utils/notifications';
+import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
 
 const ALL_FENCES = [
   ['````', '````'],
@@ -16,6 +15,12 @@ const ALL_FENCES = [
 ] as const;
 
 export const parseMessageContent = (baseDir: string, content: string, allFiles: string[]) => {
+  // First check if the content matches the thinking/answer format
+  const thinkingAnswerContent = parseThinkingAnswerFormat(content, baseDir, allFiles);
+  if (thinkingAnswerContent) {
+    return thinkingAnswerContent;
+  }
+
   const parts: React.ReactNode[] = [];
   const lines = content.split('\n');
   let currentText = '';
@@ -153,7 +158,22 @@ export const parseMessageContent = (baseDir: string, content: string, allFiles: 
   return parts;
 };
 
-export const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text);
-  showInfoNotification('Copied to clipboard');
+export const parseThinkingAnswerFormat = (content: string, baseDir: string = '', allFiles: string[] = []): React.ReactNode | null => {
+  // Check for the thinking section first
+  const thinkingRegex = /[-]{3,}\s*\n\s*►\s*\*\*THINKING\*\*\s*\n\s*([\s\S]*?)(?:\s*[-]{3,}\s*\n\s*►\s*\*\*ANSWER\*\*|$)/i;
+  const thinkingMatch = content.match(thinkingRegex);
+
+  if (thinkingMatch) {
+    const thinking = thinkingMatch[1].trim();
+
+    // Check if the answer section exists
+    const answerRegex = /[-]{3,}\s*\n\s*►\s*\*\*ANSWER\*\*\s*\n\s*([\s\S]*)/i;
+    const answerMatch = content.match(answerRegex);
+
+    const answer = answerMatch && answerMatch[1].trim();
+
+    return <ThinkingAnswerBlock thinking={thinking} answer={answer} baseDir={baseDir} allFiles={allFiles} />;
+  }
+
+  return null;
 };

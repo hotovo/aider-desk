@@ -49,3 +49,4 @@ const handleClick = (e: MouseEvent<HTMLDivElement>) => {
 ```
 
 - when using icons use 'react-icons' library
+- always use arrow functions, when possible

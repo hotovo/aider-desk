@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FaFolder } from 'react-icons/fa';
 
 import { AutocompletionInput } from '@/components/AutocompletionInput';
@@ -67,12 +68,14 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
     }
   };
 
+  const { t } = useTranslation();
+
   return (
     <ConfirmDialog
-      title="OPEN PROJECT"
+      title={t('dialogs.openProjectTitle')}
       onCancel={onClose}
       onConfirm={handleAddProject}
-      confirmButtonText="Open"
+      confirmButtonText={t('dialogs.openButton')}
       disabled={!projectPath || !isValidPath}
       width={600}
     >
@@ -83,14 +86,14 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
           setShowSuggestions(!isFromSuggestion);
           setProjectPath(value);
         }}
-        placeholder="Type the path to your project or use icon to browse"
+        placeholder={t('dialogs.projectPathPlaceholder')}
         autoFocus
         className="w-full p-3 pr-12 rounded-lg bg-neutral-900/50 border border-neutral-700/50 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500/50 focus:ring-1 focus:ring-neutral-500/50 transition-colors"
         rightElement={
           <button
             onClick={handleSelectProject}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-700/50 transition-colors"
-            title="Browse folders"
+            title={t('dialogs.browseFoldersTooltip')}
           >
             <FaFolder className="w-4 h-4" />
           </button>

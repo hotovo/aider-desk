@@ -1,4 +1,5 @@
 import { SettingsData } from '@common/types';
+import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/common/Input';
 import { TextArea } from '@/components/common/TextArea';
@@ -23,11 +24,13 @@ type Props = {
 };
 
 export const AiderSettings = ({ settings, setSettings }: Props) => {
+  const { t } = useTranslation();
+  
   return (
     <>
       <div className="space-y-1">
         <Input
-          label="Options"
+          label={t('settings.aider.options')}
           type="text"
           value={settings.aider.options}
           spellCheck={false}
@@ -43,7 +46,7 @@ export const AiderSettings = ({ settings, setSettings }: Props) => {
           placeholder={OPTIONS_PLACEHOLDER}
         />
         <p className="text-xs text-neutral-200">
-          Check the documentation for available options at{' '}
+          {t('settings.aider.optionsDocumentation')}{' '}
           <a href="https://aider.chat/docs/config/options.html" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
             https://aider.chat/docs/config/options.html
           </a>
@@ -52,7 +55,7 @@ export const AiderSettings = ({ settings, setSettings }: Props) => {
 
       <div className="space-y-1 mt-4">
         <TextArea
-          label="Environment Variables"
+          label={t('settings.aider.environmentVariables')}
           value={settings.aider.environmentVariables}
           onChange={(e) =>
             setSettings({
@@ -68,7 +71,7 @@ export const AiderSettings = ({ settings, setSettings }: Props) => {
           placeholder={ENV_VARIABLES_PLACEHOLDER}
         />
         <p className="text-xs text-neutral-400">
-          Check the documentation for environment variables at{' '}
+          {t('settings.aider.envVarsDocumentation')}{' '}
           <a href="https://aider.chat/docs/config/dotenv.html" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
             https://aider.chat/docs/config/dotenv.html
           </a>

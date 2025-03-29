@@ -1,36 +1,21 @@
-import { QuestionData } from '@common/types';
+import { QuestionData, SettingsData } from '@common/types';
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import { useDebounce } from 'react-use';
 import { matchSorter } from 'match-sorter';
 import { BiSend } from 'react-icons/bi';
 import { MdStop } from 'react-icons/md';
 import TextareaAutosize from 'react-textarea-autosize';
 import getCaretCoordinates from 'textarea-caret';
 
+import { useSettings } from '@/context/SettingsContext';
 import { showErrorNotification } from '@/utils/notifications';
 import { FormatSelector } from '@/components/FormatSelector';
 import { McpSelector } from '@/components/McpSelector';
 
-const PLACEHOLDERS = [
-  'How can I help you today?',
-  'What task can I assist you with?',
-  'What would you like me to code?',
-  'Let me help you solve a problem',
-  'Can I help you with an improvement?',
-  'Wanna refactor some code?',
-  'Can I help you optimize some algorithm?',
-  'Let me help you design a new feature',
-  'Can I help you debug an issue?',
-  'Let me help you create a test suite',
-  'Let me help you implement a design pattern',
-  'Can I explain some code to you?',
-  'Let me help you modernize some legacy code',
-  'Can I help you write documentation?',
-  'Let me help you improve performance',
-  'Give me some task!',
-];
 
-const COMMANDS = ['/code', '/ask', '/architect', '/add', '/model', '/read-only'];
-const CONFIRM_COMMANDS = ['/clear', '/web', '/undo', '/test', '/map-refresh', '/map'];
+const COMMANDS = ['/code', '/ask', '/architect', '/add', '/model', '/read-only', '/mcp'];
+const CONFIRM_COMMANDS = ['/clear', '/web', '/undo', '/test', '/map-refresh', '/map', '/run', '/reasoning-effort', '/think-tokens'];
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
 
@@ -88,13 +73,47 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const [text, setText] = useState('');
     const [suggestionsVisible, setSuggestionsVisible] = useState(false);
     const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+    const [currentWord, setCurrentWord] = useState('');
     const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
+    const { t } = useTranslation();
+    const PLACEHOLDERS = [
+      t('promptField.placeholders.0'),
+      t('promptField.placeholders.1'),
+      t('promptField.placeholders.2'),
+      t('promptField.placeholders.3'),
+      t('promptField.placeholders.4'),
+      t('promptField.placeholders.5'),
+      t('promptField.placeholders.6'),
+      t('promptField.placeholders.7'),
+      t('promptField.placeholders.8'),
+      t('promptField.placeholders.9'),
+      t('promptField.placeholders.10'),
+      t('promptField.placeholders.11'),
+      t('promptField.placeholders.12'),
+      t('promptField.placeholders.13'),
+      t('promptField.placeholders.14'),
+      t('promptField.placeholders.15')
+    ];
     const [placeholder] = useState(PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
     const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1);
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const [editFormatLocked, setEditFormatLocked] = useState(false);
+    const { settings, saveSettings } = useSettings();
     const inputRef = useRef<HTMLTextAreaElement>(null);
+
+    useDebounce(
+      () => {
+        // only show suggestions if the current word is at least 3 characters long
+        if (currentWord.length >= 3 && !suggestionsVisible) {
+          const matched = matchSorter(words, currentWord);
+          setFilteredSuggestions(matched);
+          setSuggestionsVisible(matched.length > 0);
+        }
+      },
+      100,
+      [currentWord, words],
+    );
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -110,8 +129,16 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           case '/architect': {
             const prompt = text.replace(command, '').trim();
             setText(prompt);
-            setEditFormat(command.slice(1));
-            setEditFormatLocked(false);
+            const newFormat = command.slice(1);
+
+            // If the same command is used twice, toggle the lock
+            if (editFormat === newFormat) {
+              setEditFormatLocked((prev) => !prev);
+            } else {
+              setEditFormatLocked(false);
+            }
+
+            setEditFormat(newFormat);
             break;
           }
           case '/add':
@@ -125,6 +152,19 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           case '/model':
             setText('');
             openModelSelector?.();
+            break;
+          case '/mcp':
+            if (settings) {
+              const updatedSettings: SettingsData = {
+                ...settings,
+                mcpAgent: {
+                  ...settings.mcpAgent,
+                  agentEnabled: !settings.mcpAgent.agentEnabled,
+                },
+              };
+              void saveSettings(updatedSettings);
+            }
+            setText('');
             break;
           case '/web': {
             const url = text.replace('/web', '').trim();
@@ -142,12 +182,12 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           }
           default: {
             setText('');
-            runCommand(command.slice(1));
+            runCommand(`${command.slice(1)} ${args || ''}`);
             break;
           }
         }
       },
-      [text, runTests],
+      [editFormat, text, runTests],
     );
 
     useEffect(() => {
@@ -208,7 +248,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           setSelectedAnswer(newText);
           return;
         } else {
-          setSelectedAnswer('n');
+          setSelectedAnswer(null);
         }
       }
       if (newText.startsWith('/')) {
@@ -216,11 +256,16 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         setFilteredSuggestions(matched);
         setSuggestionsVisible(matched.length > 0);
       } else if (word.length > 0) {
-        const matched = matchSorter(words, word);
-        setFilteredSuggestions(matched);
-        setSuggestionsVisible(matched.length > 0);
+        setCurrentWord(word);
+
+        if (suggestionsVisible) {
+          const matched = matchSorter(words, word);
+          setFilteredSuggestions(matched);
+          setSuggestionsVisible(matched.length > 0);
+        }
       } else {
         setSuggestionsVisible(false);
+        setCurrentWord('');
       }
     };
 
@@ -246,6 +291,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
 
     const prepareForNextPrompt = () => {
       setText('');
+      setCurrentWord('');
       setSuggestionsVisible(false);
       setHighlightedSuggestionIndex(-1);
       setHistoryIndex(-1);
@@ -254,7 +300,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const handleSubmit = () => {
       if (text) {
         if (text.startsWith('/') && ![...COMMANDS, ...CONFIRM_COMMANDS].some((cmd) => text.startsWith(cmd))) {
-          showErrorNotification('Invalid command');
+          showErrorNotification(t('promptField.invalidCommand'));
           return;
         }
 
@@ -262,7 +308,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         if (confirmCommandMatch) {
           invokeCommand(confirmCommandMatch, text.split(' ').slice(1).join(' '));
         } else {
-          window.api.sendPrompt(baseDir, text, editFormat);
+          window.api.runPrompt(baseDir, text, editFormat);
           if (!editFormatLocked) {
             setEditFormat(defaultEditFormat);
           }
@@ -291,18 +337,19 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       }
 
       if (question) {
-        if (e.key === 'Tab') {
+        if (e.key === 'Tab' && selectedAnswer) {
           e.preventDefault();
-          const currentIndex = ANSWERS.indexOf(selectedAnswer?.toLowerCase() || 'y');
+          const currentIndex = ANSWERS.indexOf(selectedAnswer.toLowerCase());
           if (currentIndex !== -1) {
             const nextIndex = (currentIndex + (e.shiftKey ? -1 : 1) + ANSWERS.length) % ANSWERS.length;
             setSelectedAnswer(ANSWERS[nextIndex]);
             return;
           }
         }
-        if (e.key === 'Enter' && !e.shiftKey && ANSWERS.includes(selectedAnswer?.toLowerCase() || 'y')) {
+        if (e.key === 'Enter' && !e.shiftKey && selectedAnswer && ANSWERS.includes(selectedAnswer.toLowerCase())) {
           e.preventDefault();
-          answerQuestion?.(selectedAnswer!);
+          answerQuestion?.(selectedAnswer);
+          prepareForNextPrompt();
           return;
         }
       }
@@ -349,7 +396,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           case 'Enter':
             if (!e.shiftKey) {
               e.preventDefault();
-              if (!processing) {
+              if (!processing || question) {
                 handleSubmit();
               }
             }
@@ -393,30 +440,30 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
               <button
                 onClick={() => answerQuestion?.('y')}
                 className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'y' ? 'bg-neutral-700' : 'bg-neutral-800'}`}
-                title="Yes (Y)"
+                title={`${t('common.yes')} (Y)`}
               >
-                (Y)es
+                {t('promptField.answers.yes')}
               </button>
               <button
                 onClick={() => answerQuestion?.('n')}
                 className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'n' ? 'bg-neutral-700' : 'bg-neutral-800'}`}
-                title="No (N)"
+                title={`${t('common.no')} (N)`}
               >
-                (N)o
+                {t('promptField.answers.no')}
               </button>
               <button
                 onClick={() => answerQuestion?.('a')}
                 className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'a' ? 'bg-neutral-700' : 'bg-neutral-800'}`}
-                title="Always (A)"
+                title={`${t('promptField.answers.always')} (A)`}
               >
-                (A)lways
+                {t('promptField.answers.always')}
               </button>
               <button
                 onClick={() => answerQuestion?.('d')}
                 className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'd' ? 'bg-neutral-700' : 'bg-neutral-800'}`}
-                title="Don't ask again (D)"
+                title={`${t('promptField.answers.dontAsk')} (D)`}
               >
-                (D)on&apos;t ask again
+                {t('promptField.answers.dontAsk')}
               </button>
             </div>
           </div>
@@ -429,7 +476,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
               onChange={handleChange}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={question ? '...or suggest something else' : placeholder}
+              placeholder={question ? t('promptField.questionPlaceholder') : placeholder}
               disabled={disabled}
               minRows={1}
               maxRows={20}
@@ -440,7 +487,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
                 <button
                   onClick={interruptResponse}
                   className="hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-colors duration-200"
-                  title="Stop response"
+                  title={t('promptField.stopResponse')}
                 >
                   <MdStop className="w-4 h-4" />
                 </button>
@@ -452,7 +499,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
                 disabled={!text.trim()}
                 className={`absolute right-2 top-1/2 -translate-y-[16px] text-neutral-400 hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-all duration-200
                 ${!text.trim() ? 'opacity-0' : 'opacity-100'}`}
-                title="Send message (Enter)"
+                title={t('promptField.sendMessage')}
               >
                 <BiSend className="w-4 h-4" />
               </button>

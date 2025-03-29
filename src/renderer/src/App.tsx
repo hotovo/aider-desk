@@ -2,25 +2,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
-import { useTranslation } from 'react-i18next';
 
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
 import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
-import '@/i18n';
 
 const AnimatedRoutes = () => {
-  const { i18n } = useTranslation();
   const location = useLocation();
   const { settings } = useSettings();
-
-  useEffect(() => {
-    if (settings?.language) {
-      void i18n.changeLanguage(settings.language);
-    }
-  }, [i18n, settings]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>

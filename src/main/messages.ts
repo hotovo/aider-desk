@@ -1,4 +1,4 @@
-import { ContextFileSourceType, ContextFile, TokensCost, FileEdit, UsageReportData } from '@common/types';
+import { ContextFileSourceType, ContextFile, TokensCost, FileEdit, UsageReportData, LogLevel } from '@common/types';
 
 export type MessageAction =
   | 'init'
@@ -25,7 +25,7 @@ export interface Message {
 
 export interface LogMessage {
   message: string;
-  level: 'info' | 'warning' | 'error' | 'loading';
+  level: LogLevel;
 }
 
 export interface InitMessage {

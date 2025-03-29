@@ -9,7 +9,7 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
 
 export const Checkbox = ({ label, checked, onChange, className = '', ...props }: Props) => {
   return (
-    <div className={`flex items-center ${className}`}>
+    <div className={`flex items-center cursor-pointer ${className}`} onClick={onChange}>
       <div
         className="relative flex items-center justify-center"
         onClick={(e) => {

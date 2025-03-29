@@ -2,6 +2,7 @@ import { McpServerConfig } from '@common/types';
 import { useState, useMemo } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 
 import { TextArea } from '@/components/common/TextArea';
 import { Button } from '@/components/common/Button';
@@ -17,16 +18,7 @@ export const McpServerConfigSchema = z.object({
   ),
 });
 
-const PLACEHOLDER = `Paste your server as:
 
-{
-  "mcpServers": {
-    "puppeteer": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
-    }
-  }
-}`;
 
 type Props = {
   onSave: (name: string, config: McpServerConfig) => void;
@@ -36,6 +28,18 @@ type Props = {
 };
 
 export const McpServerForm = ({ onSave, onCancel, initialName, initialConfig }: Props) => {
+  const { t } = useTranslation();
+  
+  const PLACEHOLDER = `${t('mcpServer.pasteServerAs')}
+
+{
+  "mcpServers": {
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    }
+  }
+}`;
   const [configJSON, setConfigJSON] = useState(() => {
     if (initialName && initialConfig) {
       return JSON.stringify(
@@ -76,11 +80,11 @@ export const McpServerForm = ({ onSave, onCancel, initialName, initialConfig }: 
         <button onClick={onCancel} className="mr-2 hover:bg-neutral-700 rounded-md p-2 text-md">
           <FaArrowLeft />
         </button>
-        <h3 className="text-md font-medium uppercase">{initialName ? `Edit MCP Server: ${initialName}` : 'Add MCP Server'}</h3>
+        <h3 className="text-md font-medium uppercase">{initialName ? `${t('common.edit')} MCP Server: ${initialName}` : t('mcpServer.addServer')}</h3>
       </div>
       <div className="mb-2">
         <TextArea
-          label="Server Config JSON"
+          label={t('mcpServer.serverConfigJson')}
           placeholder={PLACEHOLDER}
           value={configJSON}
           onChange={(e) => setConfigJSON(e.target.value)}
@@ -89,7 +93,7 @@ export const McpServerForm = ({ onSave, onCancel, initialName, initialConfig }: 
       </div>
       <div className="flex justify-end">
         <Button onClick={handleAddServer} variant="contained" disabled={!isValidJson || !configJSON}>
-          Save
+          {t('common.save')}
         </Button>
       </div>
     </div>
