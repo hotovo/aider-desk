@@ -239,7 +239,7 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
           <div className="mt-4">
             <div className="text-sm text-neutral-100 font-medium mb-2 mt-4">{t('settings.mcp.mcpServers')}</div>
             {Object.keys(mcpAgent.mcpServers).length === 0 ? (
-              <div className="text-xs text-gray-500 mb-2">{t('mcp.noServersConfigured')}</div>
+              <div className="text-xs text-gray-500 mb-2">{t('settings.mcp.noServersConfigured')}</div>
             ) : (
               Object.entries(mcpAgent.mcpServers).map(([serverName, config]) => (
                 <McpServerItem
