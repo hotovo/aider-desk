@@ -2,6 +2,7 @@ import { McpServerConfig, McpTool } from '@common/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaPencilAlt, FaTrash } from 'react-icons/fa';
+import { SERVER_TOOL_SEPARATOR } from '@common/utils';
 
 import { McpToolItem } from './McpToolItem';
 
@@ -83,8 +84,8 @@ export const McpServerItem = ({ serverName, config, onRemove, onEdit, toggleTool
                 <McpToolItem
                   key={tool.name}
                   tool={tool}
-                  toggleDisabled={() => toggleToolDisabled(`${serverName}-${tool.name}`)}
-                  isDisabled={disabledTools.includes(`${serverName}-${tool.name}`)}
+                  toggleDisabled={() => toggleToolDisabled(`${serverName}${SERVER_TOOL_SEPARATOR}${tool.name}`)}
+                  isDisabled={disabledTools.includes(`${serverName}${SERVER_TOOL_SEPARATOR}${tool.name}`)}
                 />
               ))}
             </div>

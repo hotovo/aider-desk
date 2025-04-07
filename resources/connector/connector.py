@@ -15,6 +15,7 @@ import nest_asyncio
 nest_asyncio.apply()
 
 confirmation_result = None
+whole_content = ""
 
 def wait_for_async(connector, coroutine):
   try:
@@ -46,12 +47,18 @@ async def run_editor_coder_stream(architect_coder, connector):
   editor_coder.cur_messages = []
   editor_coder.done_messages = []
 
+  global whole_content
+  if not whole_content:
+    whole_content = architect_coder.partial_response_content
+
   await connector.sio.emit('message', {
     "action": "response",
-    "finished": False,
-    "content": "\n\n"
+    "finished": True,
+    "content": whole_content
   })
 
+  whole_content = ""
+  # run the editor coder
   for chunk in editor_coder.run_stream(architect_coder.partial_response_content):
     # add small sleeps here to allow other coroutines to run
     await connector.sio.emit('message', {
@@ -59,7 +66,13 @@ async def run_editor_coder_stream(architect_coder, connector):
       "finished": False,
       "content": chunk
     })
+    whole_content += chunk
     await asyncio.sleep(0.01)
+
+  # set values back to the architect coder
+  architect_coder.move_back_cur_messages("I made those changes to the files.")
+  architect_coder.total_cost = editor_coder.total_cost
+  architect_coder.aider_commit_hashes = editor_coder.aider_commit_hashes
 
 class ConnectorInputOutput(InputOutput):
   def __init__(self, connector=None, **kwargs):
@@ -463,6 +476,7 @@ class Connector:
     else:
       self.running_coder = self.coder
 
+    global whole_content
     whole_content = ""
 
     async def run_stream_async():

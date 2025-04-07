@@ -15,32 +15,32 @@ type Props = {
 export const DeepseekParameters = ({ settings, setSettings }: Props) => {
   const { t } = useTranslation();
 
-  const activeProvider = settings.mcpAgent.providers.find((provider) => provider.active && isDeepseekProvider(provider));
+  const activeProvider = settings.agentConfig.providers.find((provider) => provider.active && isDeepseekProvider(provider));
   const apiKey = activeProvider && isDeepseekProvider(activeProvider) ? activeProvider.apiKey : '';
   const model = activeProvider && isDeepseekProvider(activeProvider) ? activeProvider.model : '';
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const updatedProviders = settings.mcpAgent.providers.map((provider) =>
+    const updatedProviders = settings.agentConfig.providers.map((provider) =>
       provider.active && isDeepseekProvider(provider) ? { ...provider, apiKey: e.target.value } : provider,
     );
 
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       providers: updatedProviders,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleModelChange = (selectedModel: string) => {
-    const updatedProviders = settings.mcpAgent.providers.map((provider) =>
+    const updatedProviders = settings.agentConfig.providers.map((provider) =>
       provider.active && isDeepseekProvider(provider) ? { ...provider, model: selectedModel } : provider,
     );
 
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       providers: updatedProviders,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   return (

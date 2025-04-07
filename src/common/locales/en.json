@@ -113,7 +113,7 @@
     "tabs": {
       "general": "General",
       "aider": "Aider",
-      "mcpAgent": "MCP Agent"
+      "agent": "Agent"
     },
     "startup": {
       "title": "Start Up",
@@ -242,7 +242,7 @@
     "chat": "Chat",
     "clearMessages": "Clear message history",
     "lastMessage": "Last message",
-    "mcpAgent": "MCP agent",
+    "agent": "Agent",
     "aider": "Aider",
     "session": "Session",
     "restartSession": "Restart session"
@@ -276,7 +276,8 @@
     "toolLabel": "Tool: {{server}}/{{tool}}",
     "arguments": "Arguments:",
     "executing": "Tool is executing...",
-    "result": "Result:"
+    "result": "Result:",
+    "error": "Error while executing tool:"
   },
   "codeBlock": {
     "revertChanges": "Revert changes"

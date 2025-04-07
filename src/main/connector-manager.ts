@@ -226,7 +226,7 @@ export class ConnectorManager {
   private findConnectorBySocket = (socket: Socket): Connector | undefined => {
     const connector = this.connectors.find((c) => c.socket === socket);
     if (!connector) {
-      logger.error('Connector not found');
+      logger.warn('Connector not found');
     }
     return connector;
   };

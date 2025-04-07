@@ -10,13 +10,13 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   lastMessageCost?: number;
   aiderTotalCost: number;
-  mcpAgentTotalCost: number;
+  agentTotalCost: number;
   clearMessages?: () => void;
   refreshRepoMap?: () => void;
   restartProject?: () => void;
 };
 
-export const SessionInfo = ({ tokensInfo, lastMessageCost, aiderTotalCost, mcpAgentTotalCost, clearMessages, refreshRepoMap, restartProject }: Props) => {
+export const SessionInfo = ({ tokensInfo, lastMessageCost, aiderTotalCost, agentTotalCost, clearMessages, refreshRepoMap, restartProject }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [refreshingAnimation, setRefreshingAnimation] = useState(false);
@@ -88,14 +88,14 @@ export const SessionInfo = ({ tokensInfo, lastMessageCost, aiderTotalCost, mcpAg
           )}
         </div>
         {lastMessageCost !== undefined && renderLabelValue('sessionInfo.lastMessage', `$${(lastMessageCost ?? 0).toFixed(5)}`, t)}
-        {mcpAgentTotalCost ? (
+        {agentTotalCost ? (
           <>
-            {renderLabelValue('sessionInfo.mcpAgent', `$${mcpAgentTotalCost.toFixed(5)}`, t)}
+            {renderLabelValue('sessionInfo.agent', `$${agentTotalCost.toFixed(5)}`, t)}
             {renderLabelValue('sessionInfo.aider', `$${aiderTotalCost.toFixed(5)}`, t)}
           </>
         ) : null}
         <div className="flex items-center h-[20px]">
-          <div className="flex-1">{renderLabelValue('sessionInfo.session', `$${(aiderTotalCost + mcpAgentTotalCost).toFixed(5)}`, t)}</div>
+          <div className="flex-1">{renderLabelValue('sessionInfo.session', `$${(aiderTotalCost + agentTotalCost).toFixed(5)}`, t)}</div>
           <div className="ml-0 max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 group-hover:px-1 group-hover:ml-1 transition-all duration-300 overflow-hidden">
             {restartProject && (
               <button

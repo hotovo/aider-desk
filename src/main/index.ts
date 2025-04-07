@@ -5,10 +5,10 @@ import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, shell } from 'electron';
 import ProgressBar from 'electron-progressbar';
-import { McpAgent } from 'src/main/mcp-agent';
 
 import icon from '../../resources/icon.png?asset';
 
+import { Agent } from './agent';
 import { RestApiController } from './rest-api-controller';
 import { checkForUpdates, setupAutoUpdater } from './auto-updater';
 import { ConnectorManager } from './connector-manager';
@@ -66,11 +66,11 @@ const initWindow = (store: Store) => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
-  const mcpAgent = new McpAgent(store);
-  void mcpAgent.init();
+  const agent = new Agent(store);
+  void agent.initMcpServers();
 
   // Initialize project manager
-  const projectManager = new ProjectManager(mainWindow, store, mcpAgent);
+  const projectManager = new ProjectManager(mainWindow, store, agent);
 
   // Create HTTP server
   const httpServer = createServer();
@@ -81,7 +81,7 @@ const initWindow = (store: Store) => {
   // Initialize connector manager with the server
   const connectorManager = new ConnectorManager(mainWindow, projectManager, httpServer);
 
-  setupIpcHandlers(mainWindow, projectManager, store, mcpAgent);
+  setupIpcHandlers(mainWindow, projectManager, store, agent);
 
   app.on('before-quit', async () => {
     await restApiController.close();

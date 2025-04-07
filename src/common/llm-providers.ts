@@ -60,6 +60,7 @@ export const getActiveProvider = (providers: LlmProvider[]): LlmProvider | null 
   return providers.find((provider) => provider.active) || null;
 };
 
+// prices in dollars per million tokens
 export const PROVIDER_MODELS = {
   openai: {
     models: {
@@ -79,13 +80,21 @@ export const PROVIDER_MODELS = {
         inputCost: 3.0,
         outputCost: 15.0,
       },
+      'claude-3-5-haiku-20241022': {
+        inputCost: 0.8,
+        outputCost: 4.0,
+      },
     },
   },
   gemini: {
     models: {
       'gemini-2.5-pro-exp-03-25': {
-        inputCost: 0, // unknown at the moment
-        outputCost: 0, // unknown at the moment
+        inputCost: 0,
+        outputCost: 0,
+      },
+      'gemini-2.5-pro-preview-03-25': {
+        inputCost: 1.25,
+        outputCost: 10,
       },
       'gemini-2.0-flash': {
         inputCost: 0.1,
@@ -98,10 +107,6 @@ export const PROVIDER_MODELS = {
       'deepseek-chat': {
         inputCost: 0.27,
         outputCost: 1.1,
-      },
-      'deepseek-reasoner': {
-        inputCost: 0.55,
-        outputCost: 2.19,
       },
     },
   },

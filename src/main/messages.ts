@@ -50,6 +50,7 @@ export interface PromptMessage extends Message {
 }
 
 export interface ResponseMessage extends Message {
+  id?: string | null;
   action: 'response';
   content: string;
   reflectedMessage?: string;

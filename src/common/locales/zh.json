@@ -109,7 +109,7 @@
     "tabs": {
       "general": "通用",
       "aider": "Aider",
-      "mcpAgent": "MCP 服务器"
+      "agent": "服务器"
     },
     "startup": {
       "title": "启动",
@@ -238,7 +238,7 @@
     "chat": "聊天",
     "clearMessages": "清除消息历史",
     "lastMessage": "最后消息",
-    "mcpAgent": "MCP代理",
+    "agent": "代理",
     "aider": "Aider",
     "session": "会话",
     "restartSession": "重启会话"
@@ -270,7 +270,8 @@
     "toolLabel": "工具: {{server}}/{{tool}}",
     "arguments": "参数:",
     "executing": "工具执行中...",
-    "result": "结果:"
+    "result": "结果:",
+    "error": "执行工具时出错:"
   },
   "codeBlock": {
     "revertChanges": "撤销更改"

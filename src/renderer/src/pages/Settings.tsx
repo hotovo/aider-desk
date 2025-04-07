@@ -42,7 +42,7 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, initialTa
       <TabList className="flex space-x-1 bg-neutral-800  backdrop-blur-sm border border-neutral-800 rounded-t-lg">
         {renderTab(t('settings.tabs.general'))}
         {renderTab(t('settings.tabs.aider'))}
-        {renderTab(t('settings.tabs.mcpAgent'))}
+        {renderTab(t('settings.tabs.agent'))}
       </TabList>
       <TabPanels className="flex flex-col flex-1 overflow-hidden">
         {renderTabPanel(<GeneralSettings settings={settings} setSettings={updateSettings} onLanguageChange={onLanguageChange} />)}

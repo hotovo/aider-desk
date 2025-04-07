@@ -15,32 +15,32 @@ type Props = {
 export const OpenAiParameters = ({ settings, setSettings }: Props) => {
   const { t } = useTranslation();
 
-  const activeProvider = settings.mcpAgent.providers.find((provider) => provider.active && isOpenAiProvider(provider));
+  const activeProvider = settings.agentConfig.providers.find((provider) => provider.active && isOpenAiProvider(provider));
   const apiKey = activeProvider && isOpenAiProvider(activeProvider) ? activeProvider.apiKey : '';
   const model = activeProvider && isOpenAiProvider(activeProvider) ? activeProvider.model : '';
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const updatedProviders = settings.mcpAgent.providers.map((provider) =>
+    const updatedProviders = settings.agentConfig.providers.map((provider) =>
       provider.active && isOpenAiProvider(provider) ? { ...provider, apiKey: e.target.value } : provider,
     );
 
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       providers: updatedProviders,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleModelChange = (selectedModel: string) => {
-    const updatedProviders = settings.mcpAgent.providers.map((provider) =>
+    const updatedProviders = settings.agentConfig.providers.map((provider) =>
       provider.active && isOpenAiProvider(provider) ? { ...provider, model: selectedModel } : provider,
     );
 
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       providers: updatedProviders,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   return (

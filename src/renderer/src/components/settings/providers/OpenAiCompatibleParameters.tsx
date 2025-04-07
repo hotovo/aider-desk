@@ -12,7 +12,7 @@ type Props = {
 
 export const OpenAiCompatibleParameters = ({ settings, setSettings }: Props) => {
   const { t } = useTranslation();
-  const activeProvider = settings.mcpAgent.providers.find((provider) => provider.active && isOpenAiCompatibleProvider(provider)) as
+  const activeProvider = settings.agentConfig.providers.find((provider) => provider.active && isOpenAiCompatibleProvider(provider)) as
     | OpenAiCompatibleProvider
     | undefined;
 
@@ -21,39 +21,39 @@ export const OpenAiCompatibleParameters = ({ settings, setSettings }: Props) => 
   const model = activeProvider?.model || '';
 
   const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const updatedProviders = settings.mcpAgent.providers.map((provider) =>
+    const updatedProviders = settings.agentConfig.providers.map((provider) =>
       provider.active && isOpenAiCompatibleProvider(provider) ? { ...provider, baseUrl: e.target.value } : provider,
     );
 
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       providers: updatedProviders,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const updatedProviders = settings.mcpAgent.providers.map((provider) =>
+    const updatedProviders = settings.agentConfig.providers.map((provider) =>
       provider.active && isOpenAiCompatibleProvider(provider) ? { ...provider, apiKey: e.target.value } : provider,
     );
 
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       providers: updatedProviders,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleModelChange = (selectedModel: string) => {
-    const updatedProviders = settings.mcpAgent.providers.map((provider) =>
+    const updatedProviders = settings.agentConfig.providers.map((provider) =>
       provider.active && isOpenAiCompatibleProvider(provider) ? { ...provider, model: selectedModel } : provider,
     );
 
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       providers: updatedProviders,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   return (

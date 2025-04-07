@@ -177,3 +177,84 @@ export const parseThinkingAnswerFormat = (content: string, baseDir: string = '',
 
   return null;
 };
+
+// --- Tool Message Parsing ---
+interface ParsedToolContentItem {
+  type: string;
+  text?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any; // Allow other properties
+}
+
+interface ParsedToolMessage {
+  content: ParsedToolContentItem[];
+  isError: boolean;
+}
+
+export interface ToolContentResult {
+  extractedText: string | null;
+  parsedInnerJson: object | null;
+  isError: boolean | null;
+  rawContent: string; // Always include the original raw content
+}
+
+/**
+ * Parses the content string from a ToolMessage.
+ * Expected format: A JSON string containing an object with 'content' (an array) and 'isError' (boolean).
+ * The 'content' array items should have a 'text' property.
+ * The concatenated 'text' properties might themselves be a JSON string.
+ */
+export const parseToolContent = (rawContent: string): ToolContentResult => {
+  const result: ToolContentResult = {
+    extractedText: null,
+    parsedInnerJson: null,
+    isError: null,
+    rawContent: rawContent,
+  };
+
+  if (!rawContent) {
+    return result; // Return default if rawContent is empty
+  }
+
+  try {
+    const parsedOuter: unknown = JSON.parse(rawContent);
+
+    if (typeof parsedOuter === 'string') {
+      result.extractedText = parsedOuter;
+      return result;
+    }
+
+    // Type check for the expected outer structure
+    if (typeof parsedOuter === 'object' && parsedOuter !== null && 'content' in parsedOuter && Array.isArray(parsedOuter.content)) {
+      const toolMessage = parsedOuter as ParsedToolMessage;
+      result.isError = toolMessage.isError || false;
+
+      // Extract text from the 'content' array
+      const textParts = toolMessage.content
+        .map((item) => (item.type === 'text' && item.text ? item.text : null))
+        .filter((text): text is string => text !== null);
+
+      if (textParts.length > 0) {
+        result.extractedText = textParts.join('');
+
+        // Try parsing the extracted text as JSON
+        try {
+          const innerJson = JSON.parse(result.extractedText);
+          if (typeof innerJson === 'object' && innerJson !== null) {
+            result.parsedInnerJson = innerJson;
+          }
+        } catch (innerError) {
+          // Ignore error if inner content is not valid JSON
+          console.debug('Inner content is not valid JSON:', innerError);
+        }
+      }
+    } else {
+      console.warn('Parsed tool content does not match expected structure:', parsedOuter);
+    }
+  } catch (outerError) {
+    // Ignore error if the raw content is not valid JSON
+    console.debug('Raw tool content is not valid JSON:', outerError);
+  }
+
+  return result;
+};

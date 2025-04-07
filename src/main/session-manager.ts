@@ -2,22 +2,21 @@ import path from 'path';
 import { promises as fs } from 'fs';
 
 import { ContextFile, ContextMessage, MessageRole, SessionData } from '@common/types';
-import {
-  AIMessage,
-  HumanMessage,
-  isAIMessage,
-  isHumanMessage,
-  isToolMessage,
-  mapChatMessagesToStoredMessages,
-  mapStoredMessagesToChatMessages,
-} from '@langchain/core/messages';
-import { fileExists } from '@common/utils';
+import { extractServerNameToolName, extractTextContent, fileExists, isTextContent } from '@common/utils';
 import ignore from 'ignore';
 
 import logger from './logger';
 import { Project } from './project';
 
-import type { StoredMessage } from '@langchain/core/messages';
+// Helper function to check if messages are in the old Langchain StoredMessage format
+const isOldFormat = (messages: unknown[] | undefined): boolean => {
+  if (!messages || messages.length === 0) {
+    return false;
+  }
+  // Check if the first message has the characteristic properties of the old format
+  const firstMessage = messages[0] as Record<string, unknown>;
+  return typeof firstMessage === 'object' && firstMessage !== null && 'type' in firstMessage && 'data' in firstMessage;
+};
 
 export class SessionManager {
   private contextMessages: ContextMessage[];
@@ -39,13 +38,21 @@ export class SessionManager {
     let message: ContextMessage;
 
     if (typeof roleOrMessage === 'string') {
-      message = roleOrMessage === MessageRole.User ? new HumanMessage(content!) : new AIMessage(content!);
+      if (!content) {
+        // No content provided, do not add the message
+        return;
+      }
+
+      message = {
+        role: roleOrMessage,
+        content: content || '',
+      };
     } else {
       message = roleOrMessage;
     }
 
     this.contextMessages.push(message);
-    logger.debug(`Session: Added ${message.getType()} message. Total messages: ${this.contextMessages.length}`);
+    logger.debug(`Session: Added ${message.role} message. Total messages: ${this.contextMessages.length}`);
   }
 
   private async isFileIgnored(contextFile: ContextFile): Promise<boolean> {
@@ -127,16 +134,23 @@ export class SessionManager {
     this.contextMessages = [];
   }
 
-  public filterUserAndAssistantMessages(contextMessages: ContextMessage[] = this.contextMessages): { role: MessageRole; content: string }[] {
+  filterUserAndAssistantMessages(contextMessages: ContextMessage[] = this.contextMessages): { role: MessageRole; content: string }[] {
     return contextMessages
-      .filter((message) => isAIMessage(message) || isHumanMessage(message))
-      .map((message) => ({
-        role: isAIMessage(message) ? MessageRole.Assistant : MessageRole.User,
-        content: message.text,
-      }));
+      .filter((message) => message.role === MessageRole.User || message.role === MessageRole.Assistant)
+      .map((message) => {
+        const content = extractTextContent(message.content);
+        if (!content) {
+          return null;
+        }
+        return {
+          role: message.role as MessageRole,
+          content,
+        };
+      })
+      .filter(Boolean) as { role: MessageRole; content: string }[];
   }
 
-  public async save(name?: string, loadMessages?: boolean, loadFiles?: boolean): Promise<SessionData> {
+  async save(name?: string, loadMessages?: boolean, loadFiles?: boolean): Promise<SessionData> {
     try {
       name = name || this.activeSessionName || 'default';
       const sessionsDir = path.join(this.project.baseDir, '.aider-desk', 'sessions');
@@ -167,7 +181,7 @@ export class SessionManager {
       loadFiles = loadFiles ?? false;
 
       const sessionData = {
-        contextMessages: mapChatMessagesToStoredMessages(this.contextMessages),
+        contextMessages: this.contextMessages,
         contextFiles: this.contextFiles,
         loadMessages,
         loadFiles,
@@ -208,43 +222,56 @@ export class SessionManager {
       this.activeSessionName = name;
       await this.saveLastActive(name);
 
-      if (sessionData.loadMessages && sessionData.contextMessages) {
+      if (sessionData.loadMessages && sessionData.contextMessages && !isOldFormat(sessionData.contextMessages)) {
         // Clear all current messages
         this.project.clearContext();
 
-        this.contextMessages = mapStoredMessagesToChatMessages(sessionData.contextMessages);
+        // Load messages (only supports new CoreMessage format)
+        this.contextMessages = sessionData.contextMessages || [];
 
         // Add messages to the UI
         for (let i = 0; i < this.contextMessages.length; i++) {
           const message = this.contextMessages[i];
-
-          if (isAIMessage(message)) {
-            this.project.processResponseMessage({
-              action: 'response',
-              content: message.text,
-              finished: true,
-            });
-
-            // Handle tool calls if present
-            if (message.tool_calls?.length) {
-              for (const toolCall of message.tool_calls) {
-                const [serverName, toolName] = toolCall.name.split('-');
-
-                // Look for corresponding tool response in next message
-                if (i + 1 < this.contextMessages.length) {
-                  const nextMessage = this.contextMessages[i + 1];
-                  if (isToolMessage(nextMessage) && nextMessage.tool_call_id === toolCall.id) {
-                    this.project.addToolMessage(toolCall.id!, serverName, toolName, toolCall.args, nextMessage.text);
-                    i++; // Skip the tool response message
+          if (message.role === 'assistant') {
+            if (Array.isArray(message.content)) {
+              for (const part of message.content) {
+                if (part.type === 'text' && part.text) {
+                  this.project.processResponseMessage({
+                    action: 'response',
+                    content: part.text,
+                    finished: true,
+                  });
+                } else if (part.type === 'tool-call') {
+                  const toolCall = part;
+                  // Ensure toolCall.toolCallId exists before proceeding
+                  if (!toolCall.toolCallId) {
+                    continue;
                   }
+
+                  const [serverName, toolName] = extractServerNameToolName(toolCall.toolName);
+                  this.project.addToolMessage(toolCall.toolCallId, serverName, toolName, toolCall.args as Record<string, unknown>);
                 }
               }
+            } else if (isTextContent(message.content)) {
+              const content = extractTextContent(message.content);
+              this.project.processResponseMessage({
+                action: 'response',
+                content: content,
+                finished: true,
+              });
+              this.project.sendAddMessage(MessageRole.Assistant, content, false);
             }
-
-            this.project.sendAddMessage(MessageRole.Assistant, message.text, false);
-          } else if (isHumanMessage(message)) {
-            this.project.addUserMessage(message.text);
-            this.project.sendAddMessage(MessageRole.User, message.text, false);
+          } else if (message.role === 'user') {
+            const content = extractTextContent(message.content);
+            this.project.addUserMessage(content);
+            this.project.sendAddMessage(MessageRole.User, content, false);
+          } else if (message.role === 'tool') {
+            for (const part of message.content) {
+              if (part.type === 'tool-result') {
+                const [serverName, toolName] = part.toolName.split('-');
+                this.project.addToolMessage(part.toolCallId, serverName, toolName, undefined, JSON.stringify(part.result));
+              }
+            }
           }
         }
       }
@@ -332,7 +359,7 @@ export class SessionManager {
 
   public async findSession(name: string): Promise<
     | (SessionData & {
-        contextMessages?: StoredMessage[];
+        contextMessages?: ContextMessage[];
         contextFiles?: ContextFile[];
       })
     | null

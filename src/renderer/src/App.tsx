@@ -32,13 +32,13 @@ const AnimatedRoutes = () => {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Routes location={location}>
-            <Route path={ROUTES.Onboarding} element={<Onboarding />} />
-            <Route path={ROUTES.Home} element={<Home />} />
-            {settings && (
+          {settings && (
+            <Routes location={location}>
+              <Route path={ROUTES.Onboarding} element={<Onboarding />} />
+              <Route path={ROUTES.Home} element={<Home />} />
               <Route path="/" element={settings.onboardingFinished ? <Navigate to={ROUTES.Home} replace /> : <Navigate to={ROUTES.Onboarding} replace />} />
-            )}
-          </Routes>
+            </Routes>
+          )}
         </motion.div>
       </AnimatePresence>
     </div>

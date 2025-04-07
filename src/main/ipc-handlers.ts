@@ -1,14 +1,14 @@
 import { Mode, FileEdit, McpServerConfig, MessageRole, ProjectData, ProjectSettings, SettingsData } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { McpAgent } from 'src/main/mcp-agent';
 
+import { Agent } from './agent';
 import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
 import { ProjectManager } from './project-manager';
 import { DEFAULT_PROJECT_SETTINGS, Store } from './store';
 import { scrapeWeb } from './web-scrapper';
 
-export const setupIpcHandlers = (mainWindow: BrowserWindow, projectManager: ProjectManager, store: Store, mcpAgent: McpAgent) => {
+export const setupIpcHandlers = (mainWindow: BrowserWindow, projectManager: ProjectManager, store: Store, agent: Agent) => {
   ipcMain.handle('load-settings', () => {
     return store.getSettings();
   });
@@ -17,9 +17,9 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow, projectManager: Proj
     const currentSettings = store.getSettings();
     store.saveSettings(settings);
 
-    const mcpServersChanged = JSON.stringify(currentSettings.mcpAgent?.mcpServers) !== JSON.stringify(settings.mcpAgent?.mcpServers);
+    const mcpServersChanged = JSON.stringify(currentSettings.agentConfig?.mcpServers) !== JSON.stringify(settings.agentConfig?.mcpServers);
     if (mcpServersChanged) {
-      void mcpAgent.init();
+      void agent.initMcpServers();
     }
 
     return store.getSettings();
@@ -106,7 +106,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow, projectManager: Proj
 
     store.setOpenProjects(updatedProjects);
 
-    void mcpAgent.init(projectManager.getProject(baseDir));
+    void agent.initMcpServers(projectManager.getProject(baseDir));
 
     return updatedProjects;
   });
@@ -227,9 +227,9 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow, projectManager: Proj
 
   ipcMain.handle('load-mcp-server-tools', async (_, serverName: string, config?: McpServerConfig) => {
     if (config) {
-      return await mcpAgent.reloadMcpServer(serverName, config);
+      return await agent.reloadMcpServer(serverName, config);
     } else {
-      return await mcpAgent.getMcpServerTools(serverName);
+      return await agent.getMcpServerTools(serverName);
     }
   });
 };

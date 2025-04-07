@@ -10,7 +10,7 @@ Transform your AI coding experience with AiderDesk - all the power of the Aider 
 - [✨ Key Features](#-key-features)
 - [📥 Installation](#-installation)
 - [📸 Screenshots](#-screenshots)
-- [🛠️ Model Context Protocol (MCP) Support](#%EF%B8%8F-model-context-protocol-mcp-support)
+- [🤖 Agent Mode & MCP Support](#-agent-mode--mcp-support)
 - [🌐 REST API](#-rest-api)
 - [👨‍💻 Development Setup](#-development-setup)
 - [🤝 Contributing](#-contributing)
@@ -18,9 +18,9 @@ Transform your AI coding experience with AiderDesk - all the power of the Aider 
 
 ## 🎬 Quick Demo
 
-<div align="left">
+<div align="center">
   <a href="https://www.youtube.com/watch?v=9JkUwn9rk2g">
-    <img src="https://img.youtube.com/vi/9JkUwn9rk2g/0.jpg" alt="Demo Video" width=400>
+    <img src="https://img.youtube.com/vi/9JkUwn9rk2g/0.jpg" alt="Demo Video" width=600>
   </a>
 </div>
 
@@ -31,11 +31,12 @@ Transform your AI coding experience with AiderDesk - all the power of the Aider 
 *   **🔌 IDE Integration** - Automatically manage context files in:
     * IntelliJ IDEA ([Plugin](https://plugins.jetbrains.com/plugin/26313-aiderdesk-connector) | [GitHub](https://github.com/hotovo/aider-desk-connector-intellij-plugin))
     * VSCode ([Extension](https://marketplace.visualstudio.com/items?itemName=hotovo-sk.aider-desk-connector) | [GitHub](https://github.com/hotovo/aider-desk-connector-vscode-extension))
+*   **🤖 Agent Mode** - Leverage an autonomous AI agent powered by the Vercel AI SDK. The agent can use tools (including Aider itself and external MCP servers) to gather context, plan, and execute complex coding tasks.
+*   **🧩 MCP Support** - Connect to Model Context Protocol servers to extend the Agent's capabilities with external tools (web search, documentation access, etc.).
 *   **🌐 REST API** - Expose functionality via REST API for external tools
-*   **🧩 MCP Support** - Connect to Model Context Protocol servers for enhanced AI capabilities
 *   **🔑 Settings Management** - Easily configure API keys and environment variables
-*   **💰 Cost Tracking** - Monitor token usage and expenses with detailed insights
-*   **📨 Structured Messages** - View code, prompts, and outputs in a clear, organized manner
+*   **💰 Cost Tracking** - Monitor token usage and expenses for both Aider and the Agent.
+*   **📨 Structured Messages** - View code, prompts, agent thoughts, and tool outputs in a clear, organized manner
 *   **📄 Visual File Management** - Add, remove, and manage context files with ease
 *   **🔄 Model Switching** - Seamlessly switch between different AI models while preserving context
 *   **🔍 Code Diff Viewer** - Review changes with side-by-side comparison
@@ -138,26 +139,40 @@ $env:AIDER_DESK_NO_AUTO_UPDATE = "true"
 
 </div>
 
-## 🛠️ Model Context Protocol (MCP) Support
+## 🤖 Agent Mode & MCP Support
 
-AiderDesk integrates with the [Model Context Protocol](https://github.com/model-context-protocol/mcp) (MCP), enhancing your coding workflow with external tools and context:
+<div align="center">
+  <a href="https://youtu.be/Lsd7QReXfy4">
+    <img src="https://img.youtube.com/vi/Lsd7QReXfy4/0.jpg" alt="Demo Video" width=600>
+  </a>
+</div>
 
-### What is MCP?
+AiderDesk features a powerful **Agent mode** built on the Vercel AI SDK. This mode provides a flexible framework for an AI agent to handle complex tasks. The agent's capabilities are defined by the tools *you* provide, primarily through Model Context Protocol (MCP) servers, alongside its built-in ability to interact with Aider.
+
+### Agent Capabilities:
+- **Customizable Toolset**: The agent is not opinionated; its functionality depends entirely on the tools configured by the user. Connect it to MCP servers offering web search, documentation access, custom scripts, or any other capability you need.
+- **Autonomous Task Execution**: Based on the available tools, the agent can understand requests, plan multi-step execution flows, and utilize the tools to achieve the goal.
+- **Aider Integration**: Seamlessly uses Aider as a core tool for code generation, modification, and analysis tasks.
+- **Multi-Provider Support**: Configure the agent to use different LLM providers like OpenAI, Anthropic, Gemini, Bedrock, Deepseek, or any OpenAI-compatible endpoint.
+- **Transparent Reasoning**: Observe the agent's thought process, tool selection, and execution steps directly in the chat interface.
+
+### 🛠️ Model Context Protocol (MCP) Integration
+
+The Agent mode's capabilities can be significantly extended by connecting to [Model Context Protocol](https://github.com/model-context-protocol/mcp) (MCP) servers.
+
+#### What is MCP?
 
 MCP connects AI models to external tools like web browsers, documentation systems, and specialized programming utilities. AiderDesk can use these tools to gather information, then pass the results to Aider for implementing actual code changes.
 
-### Key Features:
+#### How MCP Enhances the Agent:
 
-- **Tool Integration**: Connect to browsers, documentation systems, and language-specific tools.
-- **Provider Options**: Choose between OpenAI, Anthropic, Gemini, Deepseek, Amazon Bedrock and custom OpenAI compatible providers.
-- **Flexible Configuration**: Enable/disable servers, customize settings, and control usage.
-- **Seamless Workflow**: MCP tools gather information, then Aider implements the code changes.
-- **Aider Tools**: Use Aider tools to perform add/drop context files actions and run prompts.
-- **Context Files**: Add content of context files into the chat of MCP agent.
+- **External Tool Access**: Allows the agent to use tools beyond Aider, such as web browsers, documentation searchers, or custom utilities hosted on MCP servers.
+- **Broader Context**: Enables the agent to gather information from external sources before instructing Aider to make code changes.
+- **Flexible Configuration**: Enable/disable specific MCP servers or individual tools within the Agent settings.
 
-AiderDesk should work with any MCP-compatible server, including Brave API MCP server for searching the web and custom language-specific tools.
+AiderDesk should work with any MCP-compatible server. The agent can be configured to use tools from these servers alongside its built-in capabilities (like interacting with Aider).
 
-### Built-in AiderDesk MCP Server
+#### Built-in AiderDesk MCP Server
 
 AiderDesk comes with a built-in MCP server that provides tools for interacting with the AiderDesk API. This allows you to use MCP to manage context files, run prompts, and more.
 

@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { parse } from '@dotenvx/dotenvx';
 
 import { SessionManager } from './session-manager';
-import { McpAgent } from './mcp-agent';
+import { Agent } from './agent';
 import { Connector } from './connector';
 import { AIDER_DESK_CONNECTOR_DIR, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
 import logger from './logger';
@@ -58,7 +58,7 @@ export class Project {
     private readonly mainWindow: BrowserWindow,
     public readonly baseDir: string,
     private readonly store: Store,
-    private readonly mcpAgent: McpAgent,
+    private readonly agent: Agent,
   ) {}
 
   public async start() {
@@ -376,12 +376,14 @@ export class Project {
     this.addLogMessage('loading');
 
     if (mode === 'agent') {
-      const agentMessages = await this.mcpAgent.runAgent(this, prompt);
+      const agentMessages = await this.agent.runAgent(this, prompt);
       if (agentMessages.length > 0) {
+        console.log('agentMessages', agentMessages);
         agentMessages.forEach((message) => this.sessionManager.addContextMessage(message));
 
+        // send messages to connectors (aider)
         this.sessionManager.filterUserAndAssistantMessages(agentMessages).forEach((message) => {
-          this.sendAddMessage(message.role, message.content);
+          this.sendAddMessage(message.role, message.content, false);
         });
       }
       return [];
@@ -451,7 +453,7 @@ export class Project {
     if (!message.finished) {
       logger.debug(`Sending response chunk to ${this.baseDir}`);
       const data: ResponseChunkData = {
-        messageId: this.currentResponseMessageId,
+        messageId: message.id || this.currentResponseMessageId,
         baseDir: this.baseDir,
         chunk: message.content,
         reflectedMessage: message.reflectedMessage,
@@ -472,7 +474,7 @@ export class Project {
         this.updateTotalCosts(usageReport);
       }
       const data: ResponseCompletedData = {
-        messageId: this.currentResponseMessageId,
+        messageId: message.id || this.currentResponseMessageId,
         content: message.content,
         reflectedMessage: message.reflectedMessage,
         baseDir: this.baseDir,
@@ -489,6 +491,8 @@ export class Project {
       // Collect the completed response
       this.currentPromptResponses.push(data);
     }
+
+    return this.currentResponseMessageId;
   }
 
   private getQuestionKey(question: QuestionData) {
@@ -756,7 +760,7 @@ export class Project {
   public interruptResponse() {
     logger.info('Interrupting response:', { baseDir: this.baseDir });
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
-    this.mcpAgent.interrupt();
+    this.agent.interrupt();
   }
 
   public applyEdits(edits: FileEdit[]) {
@@ -783,6 +787,7 @@ export class Project {
       usageReport,
     };
 
+    // Update total costs when adding the tool message
     if (usageReport) {
       this.updateTotalCosts(usageReport);
     }

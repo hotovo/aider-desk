@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+- fixed editor response in architect mode
+
+## [0.8.0]
+
+- refactored Agent to use Vercel AI SDK, added new Agent mode, updated agent flow, and enhanced LLM provider support/tool handling
 - correctly showing MCP config tab on Configure servers action
 - option to disable specific MCP server tools
 - removed tool response limiting

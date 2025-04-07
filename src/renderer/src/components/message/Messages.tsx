@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { MessageBlock } from './MessageBlock';
 
-import { Message } from '@/types/message';
+import { isLoadingMessage, Message } from '@/types/message';
 
 type Props = {
   baseDir: string;
@@ -21,6 +21,8 @@ export const Messages = ({ baseDir, messages, allFiles = [] }: Props) => {
   };
 
   useEffect(() => {
+    console.log('Loading messages: ', messages.filter(isLoadingMessage).length);
+
     const hasLoadingMessage = messages.some((msg) => msg.type === 'loading');
     if (hasLoadingMessage) {
       setScrollingPaused(false);
@@ -29,7 +31,8 @@ export const Messages = ({ baseDir, messages, allFiles = [] }: Props) => {
     if (hasLoadingMessage || !scrollingPaused) {
       messagesEndRef.current?.scrollIntoView();
     }
-  }, [messages, scrollingPaused]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   return (
     <div

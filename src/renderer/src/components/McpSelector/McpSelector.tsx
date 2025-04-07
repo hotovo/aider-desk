@@ -29,7 +29,7 @@ export const McpSelector = () => {
         return;
       }
 
-      const { mcpServers, disabledServers, disabledTools } = settings.mcpAgent;
+      const { mcpServers, disabledServers, disabledTools } = settings.agentConfig;
       const serverNames = Object.keys(mcpServers);
       const enabledServerNames = serverNames.filter((name) => !disabledServers.includes(name));
 
@@ -68,15 +68,15 @@ export const McpSelector = () => {
 
     void calculateEnabledTools();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings?.mcpAgent.mcpServers, settings?.mcpAgent.disabledServers, settings?.mcpAgent.disabledTools]);
+  }, [settings?.agentConfig.mcpServers, settings?.agentConfig.disabledServers, settings?.agentConfig.disabledTools]);
 
   if (!settings) {
     return <div className="text-xs text-neutral-400">{t('common.loading')}</div>;
   }
 
   const getTriState = (): 'checked' | 'unchecked' | 'indeterminate' => {
-    const { disabledServers } = settings.mcpAgent;
-    const serverCount = Object.keys(settings.mcpAgent.mcpServers).length;
+    const { disabledServers } = settings.agentConfig;
+    const serverCount = Object.keys(settings.agentConfig.mcpServers).length;
 
     if (disabledServers.length === 0) {
       return 'checked';
@@ -88,9 +88,9 @@ export const McpSelector = () => {
   };
 
   const handleToggleAllServers = () => {
-    const { mcpAgent } = settings;
-    const { disabledServers } = mcpAgent;
-    const serverNames = Object.keys(mcpAgent.mcpServers);
+    const { agentConfig } = settings;
+    const { disabledServers } = agentConfig;
+    const serverNames = Object.keys(agentConfig.mcpServers);
 
     let updatedDisabledServers: string[];
     if (disabledServers.length === 0) {
@@ -103,8 +103,8 @@ export const McpSelector = () => {
 
     const updatedSettings: SettingsData = {
       ...settings,
-      mcpAgent: {
-        ...mcpAgent,
+      agentConfig: {
+        ...agentConfig,
         disabledServers: updatedDisabledServers,
       },
     };
@@ -117,8 +117,8 @@ export const McpSelector = () => {
   };
 
   const toggleServer = (serverName: string) => {
-    const { mcpAgent } = settings;
-    const { disabledServers } = mcpAgent;
+    const { agentConfig } = settings;
+    const { disabledServers } = agentConfig;
 
     let updatedDisabledServers: string[];
 
@@ -130,8 +130,8 @@ export const McpSelector = () => {
 
     const updatedSettings: SettingsData = {
       ...settings,
-      mcpAgent: {
-        ...mcpAgent,
+      agentConfig: {
+        ...agentConfig,
         disabledServers: updatedDisabledServers,
       },
     };
@@ -144,14 +144,14 @@ export const McpSelector = () => {
     setShowSettings(true);
   };
 
-  const serverNames = Object.keys(settings.mcpAgent.mcpServers);
+  const serverNames = Object.keys(settings.agentConfig.mcpServers);
 
   const handleToggleIncludeContextFiles = () => {
     const updatedSettings: SettingsData = {
       ...settings,
-      mcpAgent: {
-        ...settings.mcpAgent,
-        includeContextFiles: !settings.mcpAgent.includeContextFiles,
+      agentConfig: {
+        ...settings.agentConfig,
+        includeContextFiles: !settings.agentConfig.includeContextFiles,
       },
     };
     void saveSettings(updatedSettings);
@@ -160,9 +160,9 @@ export const McpSelector = () => {
   const handleToggleUseAiderTools = () => {
     const updatedSettings: SettingsData = {
       ...settings,
-      mcpAgent: {
-        ...settings.mcpAgent,
-        useAiderTools: !settings.mcpAgent.useAiderTools,
+      agentConfig: {
+        ...settings.agentConfig,
+        useAiderTools: !settings.agentConfig.useAiderTools,
       },
     };
     void saveSettings(updatedSettings);
@@ -172,12 +172,12 @@ export const McpSelector = () => {
     <>
       <div className="py-1 border-b border-neutral-700 ">
         <div className="px-3 py-1 text-xs text-neutral-300 hover:text-neutral-100 flex items-center gap-2">
-          <Checkbox checked={settings.mcpAgent.useAiderTools} onChange={handleToggleUseAiderTools} label={t('mcp.useAiderTools')} className="flex-1 mr-1" />
+          <Checkbox checked={settings.agentConfig.useAiderTools} onChange={handleToggleUseAiderTools} label={t('mcp.useAiderTools')} className="flex-1 mr-1" />
           <InfoIcon tooltip={t('mcp.aiderToolsTooltip')} />
         </div>
         <div className="px-3 py-1 text-xs text-neutral-300 hover:text-neutral-100 flex items-center gap-2">
           <Checkbox
-            checked={settings.mcpAgent.includeContextFiles}
+            checked={settings.agentConfig.includeContextFiles}
             onChange={handleToggleIncludeContextFiles}
             label={t('mcp.includeContextFiles')}
             className="flex-1 mr-1"
@@ -200,8 +200,8 @@ export const McpSelector = () => {
       >
         <RiToolsFill className="w-4 h-4" />
         <span className="text-xxs font-mono">{enabledToolsCount ?? '...'}</span>
-        {settings.mcpAgent.useAiderTools && <MdOutlineHdrAuto className="w-4 h-4 text-green-400 opacity-50" title={t('mcp.useAiderTools')} />}
-        {settings.mcpAgent.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-yellow-400 opacity-50" title={t('mcp.includeContextFiles')} />}
+        {settings.agentConfig.useAiderTools && <MdOutlineHdrAuto className="w-4 h-4 text-green-400 opacity-50" title={t('mcp.useAiderTools')} />}
+        {settings.agentConfig.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-yellow-400 opacity-50" title={t('mcp.includeContextFiles')} />}
       </button>
 
       {selectorVisible && (
@@ -218,8 +218,8 @@ export const McpSelector = () => {
                 <McpServerSelectorItem
                   key={serverName}
                   serverName={serverName}
-                  disabled={settings.mcpAgent.disabledServers.includes(serverName)}
-                  disabledTools={settings.mcpAgent.disabledTools}
+                  disabled={settings.agentConfig.disabledServers.includes(serverName)}
+                  disabledTools={settings.agentConfig.disabledTools}
                   onToggle={toggleServer}
                 />
               ))}

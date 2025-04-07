@@ -1,7 +1,7 @@
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow } from 'electron';
-import { McpAgent } from 'src/main/mcp-agent';
 
+import { Agent } from './agent';
 import logger from './logger';
 import { Project } from './project';
 import { Store } from './store';
@@ -12,11 +12,11 @@ export class ProjectManager {
   constructor(
     private readonly mainWindow: BrowserWindow,
     private readonly store: Store,
-    private readonly mcpAgent: McpAgent,
+    private readonly agent: Agent,
   ) {
     this.mainWindow = mainWindow;
     this.store = store;
-    this.mcpAgent = mcpAgent;
+    this.agent = agent;
   }
 
   private findProject(baseDir: string): Project | undefined {
@@ -26,7 +26,7 @@ export class ProjectManager {
 
   private createProject(baseDir: string) {
     logger.info('Creating new project', { baseDir });
-    const project = new Project(this.mainWindow, baseDir, this.store, this.mcpAgent);
+    const project = new Project(this.mainWindow, baseDir, this.store, this.agent);
     this.projects.push(project);
 
     // Check if the project is marked as active in the store and initialize MCP agent if needed
@@ -34,7 +34,7 @@ export class ProjectManager {
     const projectData = openProjects.find((p) => normalizeBaseDir(p.baseDir) === normalizeBaseDir(baseDir));
     if (projectData?.active) {
       logger.info('Initializing MCP agent for active project in background', { baseDir });
-      void this.mcpAgent.init(project);
+      void this.agent.initMcpServers(project);
     }
 
     return project;

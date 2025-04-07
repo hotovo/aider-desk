@@ -27,7 +27,7 @@ type Props = {
   words?: string[];
   inputHistory?: string[];
   openModelSelector?: () => void;
-  defaultEditFormat?: Mode;
+  defaultMode?: Mode;
   mode: Mode;
   onModeChanged: (mode: Mode) => void;
   onSubmitted?: (prompt: string) => void;
@@ -50,7 +50,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       isActive = false,
       words = [],
       inputHistory = [],
-      defaultEditFormat = 'code',
+      defaultMode = 'code',
       mode,
       onModeChanged,
       showFileDialog,
@@ -77,7 +77,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1);
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-    const [modeLocked, setModeLocked] = useState(false);
+    const [modeLocked, setModeLocked] = useState(defaultMode === 'code' || defaultMode === 'agent');
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
     useDebounce(
@@ -280,7 +280,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         } else {
           window.api.runPrompt(baseDir, text, mode);
           if (!modeLocked) {
-            onModeChanged(defaultEditFormat);
+            onModeChanged(defaultMode);
           }
           onSubmitted?.(text);
         }
@@ -460,7 +460,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
               disabled={disabled}
               minRows={1}
               maxRows={20}
-              className="w-full px-2 py-2 pr- border-2 border-neutral-700 rounded-md focus:outline-none focus:border-neutral-400 text-sm bg-neutral-850 text-white placeholder-neutral-600 resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-600"
+              className="w-full px-2 py-2 pr- border-2 border-neutral-700 rounded-md focus:outline-none focus:border-neutral-500 text-sm bg-neutral-850 text-white placeholder-neutral-600 resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-600"
             />
             {processing ? (
               <div className="absolute right-3 top-1/2 -translate-y-[16px] flex items-center space-x-2 text-neutral-400">

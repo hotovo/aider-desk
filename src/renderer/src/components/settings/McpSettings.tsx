@@ -1,4 +1,4 @@
-import { McpAgent, McpServerConfig, SettingsData } from '@common/types';
+import { AgentConfig, McpServerConfig, SettingsData } from '@common/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaPlus } from 'react-icons/fa';
@@ -40,24 +40,24 @@ type EditingServer = {
 export const McpSettings = ({ settings, setSettings }: Props) => {
   const { t } = useTranslation();
   const handleToggleTool = (toolId: string) => {
-    const disabledTools = settings.mcpAgent.disabledTools;
+    const disabledTools = settings.agentConfig.disabledTools;
     const updatedDisabledTools = disabledTools.includes(toolId) ? disabledTools.filter((id) => id !== toolId) : [...disabledTools, toolId];
 
     setSettings({
       ...settings,
-      mcpAgent: {
-        ...settings.mcpAgent,
+      agentConfig: {
+        ...settings.agentConfig,
         disabledTools: updatedDisabledTools,
       },
     });
   };
-  const { mcpAgent } = settings;
+  const { agentConfig } = settings;
   const [isAddingServer, setIsAddingServer] = useState(false);
   const [editingServer, setEditingServer] = useState<EditingServer | null>(null);
-  const activeProvider = getActiveProvider(mcpAgent.providers);
+  const activeProvider = getActiveProvider(agentConfig.providers);
 
   const handleProviderChanged = (newProviderName: string) => {
-    let updatedProviders = settings.mcpAgent.providers;
+    let updatedProviders = settings.agentConfig.providers;
 
     // Check if provider already exists
     const existingProvider = updatedProviders.find((provider) => provider.name === newProviderName);
@@ -94,66 +94,66 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
     }));
 
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       providers: updatedProviders,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleMaxIterationsChanged = (newMaxIterations: number) => {
-    const updatedMcpConfig: McpAgent = {
-      ...settings.mcpAgent,
+    const updatedMcpConfig: AgentConfig = {
+      ...settings.agentConfig,
       maxIterations: newMaxIterations,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleDelayBetweenIterationsChanged = (newDelay: number) => {
-    const updatedMcpConfig: McpAgent = {
-      ...settings.mcpAgent,
+    const updatedMcpConfig: AgentConfig = {
+      ...settings.agentConfig,
       minTimeBetweenToolCalls: newDelay,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleMaxTokenChanged = (newMaxTokens: number) => {
-    const updatedMcpConfig: McpAgent = {
-      ...settings.mcpAgent,
+    const updatedMcpConfig: AgentConfig = {
+      ...settings.agentConfig,
       maxTokens: newMaxTokens,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleSystemPromptChanged = (newSystemPrompt: string) => {
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       systemPrompt: newSystemPrompt,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   const handleServerConfigSave = (newServerName: string, newServerConfig: McpServerConfig) => {
     const updatedMcpServers = {
-      ...settings.mcpAgent.mcpServers,
+      ...settings.agentConfig.mcpServers,
       [newServerName]: newServerConfig,
     };
-    const updatedMcpConfig: McpAgent = {
-      ...settings.mcpAgent,
+    const updatedMcpConfig: AgentConfig = {
+      ...settings.agentConfig,
       mcpServers: updatedMcpServers,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
     setIsAddingServer(false);
     setEditingServer(null);
   };
 
   const handleServerConfigRemove = (serverName: string) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { [serverName]: removedServer, ...remainingServers } = settings.mcpAgent.mcpServers;
+    const { [serverName]: removedServer, ...remainingServers } = settings.agentConfig.mcpServers;
     const updatedMcpConfig = {
-      ...settings.mcpAgent,
+      ...settings.agentConfig,
       mcpServers: remainingServers,
     };
-    setSettings({ ...settings, mcpAgent: updatedMcpConfig });
+    setSettings({ ...settings, agentConfig: updatedMcpConfig });
   };
 
   return (
@@ -192,8 +192,8 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
                     </div>
                   }
                   min={1}
-                  max={100}
-                  value={mcpAgent.maxIterations}
+                  max={200}
+                  value={agentConfig.maxIterations}
                   onChange={handleMaxIterationsChanged}
                 />
               </div>
@@ -209,7 +209,7 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
                   min={0}
                   max={10000}
                   step={100}
-                  value={mcpAgent.minTimeBetweenToolCalls.toString()}
+                  value={agentConfig.minTimeBetweenToolCalls.toString()}
                   onChange={(e) => handleDelayBetweenIterationsChanged(Number(e.target.value))}
                 />
               </div>
@@ -223,7 +223,7 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
                   }
                   type="number"
                   min={1}
-                  value={mcpAgent.maxTokens.toString()}
+                  value={agentConfig.maxTokens.toString()}
                   onChange={(e) => handleMaxTokenChanged(Number(e.target.value))}
                 />
               </div>
@@ -233,15 +233,15 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
           <div className="mt-4">
             <Accordion title={t('settings.mcp.systemPrompt')} className="text-sm">
               <div className="text-xxs text-amber-500 mb-2">{t('settings.mcp.systemPromptWarning')}</div>
-              <TextArea value={mcpAgent.systemPrompt} onChange={(e) => handleSystemPromptChanged(e.target.value)} rows={20} className="w-full resize-none" />
+              <TextArea value={agentConfig.systemPrompt} onChange={(e) => handleSystemPromptChanged(e.target.value)} rows={20} className="w-full resize-none" />
             </Accordion>
           </div>
           <div className="mt-4">
             <div className="text-sm text-neutral-100 font-medium mb-2 mt-4">{t('settings.mcp.mcpServers')}</div>
-            {Object.keys(mcpAgent.mcpServers).length === 0 ? (
+            {Object.keys(agentConfig.mcpServers).length === 0 ? (
               <div className="text-xs text-gray-500 mb-2">{t('settings.mcp.noServersConfigured')}</div>
             ) : (
-              Object.entries(mcpAgent.mcpServers).map(([serverName, config]) => (
+              Object.entries(agentConfig.mcpServers).map(([serverName, config]) => (
                 <McpServerItem
                   key={serverName}
                   serverName={serverName}
@@ -249,7 +249,7 @@ export const McpSettings = ({ settings, setSettings }: Props) => {
                   onRemove={() => handleServerConfigRemove(serverName)}
                   onEdit={() => setEditingServer({ name: serverName, config })}
                   toggleToolDisabled={handleToggleTool}
-                  disabledTools={mcpAgent.disabledTools}
+                  disabledTools={agentConfig.disabledTools}
                 />
               ))
             )}

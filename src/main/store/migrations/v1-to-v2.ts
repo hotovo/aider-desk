@@ -5,7 +5,7 @@ export const migrateSettingsV1toV2 = (settings: any): any => ({
   ...settings,
   mcpAgent: {
     ...settings.mcpConfig,
-    systemPrompt: DEFAULT_SETTINGS.mcpAgent.systemPrompt,
+    systemPrompt: DEFAULT_SETTINGS.agentConfig.systemPrompt,
     maxTokens: 1000,
   },
   mcpConfig: undefined,

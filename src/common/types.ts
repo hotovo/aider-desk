@@ -1,6 +1,6 @@
 import { LlmProvider } from '@common/llm-providers';
-import { BaseMessage } from '@langchain/core/messages';
 
+import type { CoreMessage } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
 export type Mode = 'code' | 'ask' | 'architect' | 'context' | 'agent';
@@ -84,7 +84,7 @@ export enum MessageRole {
   Assistant = 'assistant',
 }
 
-export type ContextMessage = BaseMessage;
+export type ContextMessage = CoreMessage;
 
 export interface ContextFile {
   path: string;
@@ -141,10 +141,10 @@ export interface SettingsData {
   models: {
     preferred: string[];
   };
-  mcpAgent: McpAgent;
+  agentConfig: AgentConfig;
 }
 
-export interface McpAgent {
+export interface AgentConfig {
   providers: LlmProvider[];
   maxIterations: number;
   maxTokens: number;

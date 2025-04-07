@@ -1,17 +1,17 @@
 import {
   AutocompletionData,
   CommandOutputData,
+  InputHistoryData,
   LogData,
+  Mode,
   ModelsData,
   ProjectData,
+  QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
   TokensInfoData,
-  QuestionData,
   ToolData,
-  InputHistoryData,
   UserMessageData,
-  Mode,
 } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { IpcRendererEvent } from 'electron';
@@ -24,13 +24,12 @@ import {
   CommandOutputMessage,
   isCommandOutputMessage,
   isLoadingMessage,
-  isToolMessage,
   LoadingMessage,
   LogMessage,
   Message,
-  UserMessage,
   ResponseMessage,
   ToolMessage,
+  UserMessage,
 } from '@/types/message';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ContextFiles } from '@/components/ContextFiles';
@@ -61,7 +60,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
   const [loading, setLoading] = useState(true);
   const [aiderTotalCost, setAiderTotalCost] = useState(0);
   const [lastMessageCost, setLastMessageCost] = useState<undefined | number>(undefined);
-  const [mcpAgentTotalCost, setMcpAgentTotalCost] = useState(0);
+  const [agentTotalCost, setAgentTotalCost] = useState(0);
   const [tokensInfo, setTokensInfo] = useState<TokensInfoData | null>(null);
   const [question, setQuestion] = useState<QuestionData | null>(null);
   const [mode, setMode] = useState<Mode>('code');
@@ -70,6 +69,11 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
   const promptFieldRef = useRef<PromptFieldRef>(null);
   const projectTopBarRef = useRef<ProjectTopBarRef>(null);
   const frozenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem('aider-desk-mode');
+    setMode(savedMode === 'code' || savedMode === 'agent' ? savedMode : 'code');
+  }, []);
 
   useEffect(() => {
     window.api.startProject(project.baseDir);
@@ -161,7 +165,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
           setAiderTotalCost(usageReport.aiderTotalCost);
         }
         if (usageReport.mcpAgentTotalCost !== undefined) {
-          setMcpAgentTotalCost(usageReport.mcpAgentTotalCost);
+          setAgentTotalCost(usageReport.mcpAgentTotalCost);
         }
       }
 
@@ -203,35 +207,30 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
         return toolMessage;
       };
 
-      if (response) {
-        // update the tool message with matching id
-        setMessages((prevMessages) => {
-          const index = prevMessages.findIndex((message) => isToolMessage(message) && message.id === id);
-          const newMessages = [...prevMessages];
+      setMessages((prevMessages) => {
+        const loadingMessages = prevMessages.filter(isLoadingMessage);
+        const nonLoadingMessages = prevMessages.filter((message) => !isLoadingMessage(message) && message.id !== id);
+        const toolMessageIndex = prevMessages.findIndex((message) => message.id === id);
+        const toolMessage = prevMessages[toolMessageIndex];
 
-          if (index !== -1) {
-            newMessages[index] = {
-              ...(newMessages[index] as ToolMessage),
-              content: response,
-            };
-          } else if (args) {
-            newMessages.push(createNewToolMessage());
-          }
-          return newMessages;
-        });
-      } else if (args) {
-        setMessages((prevMessages) => {
-          const loadingMessages = prevMessages.filter(isLoadingMessage);
-          const nonLoadingMessages = prevMessages.filter((message) => !isLoadingMessage(message));
+        if (toolMessage) {
+          const updatedMessages = [...prevMessages];
+          updatedMessages[toolMessageIndex] = {
+            ...createNewToolMessage(),
+            ...toolMessage,
+            content: response || '',
+          };
+          return updatedMessages;
+        } else {
           return [...nonLoadingMessages, createNewToolMessage(), ...loadingMessages];
-        });
-      }
+        }
+      });
 
       if (usageReport?.aiderTotalCost !== undefined) {
         setAiderTotalCost(usageReport.aiderTotalCost);
       }
       if (usageReport?.mcpAgentTotalCost !== undefined) {
-        setMcpAgentTotalCost(usageReport.mcpAgentTotalCost);
+        setAgentTotalCost(usageReport.mcpAgentTotalCost);
       }
     };
 
@@ -240,9 +239,24 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
         const loadingMessage: LoadingMessage = {
           id: uuidv4(),
           type: 'loading',
-          content: message || 'Thinking...',
+          content: message || t('messages.thinking'),
         };
-        setMessages((prevMessages) => [...prevMessages, loadingMessage]);
+        setMessages((prevMessages) => {
+          const existingLoadingIndex = prevMessages.findIndex(isLoadingMessage);
+          if (existingLoadingIndex !== -1) {
+            // Update existing loading message
+            const updatedMessages = [...prevMessages];
+            updatedMessages[existingLoadingIndex] = {
+              ...updatedMessages[existingLoadingIndex],
+              content: loadingMessage.content,
+            };
+
+            return updatedMessages;
+          } else {
+            // Add new loading message
+            return [...prevMessages, loadingMessage];
+          }
+        });
         setProcessing(true);
       } else {
         const logMessage: LogMessage = {
@@ -331,7 +345,8 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
       window.api.removeUserMessageListener(userMessageListenerId);
       window.api.removeClearMessagesListener(clearMessagesListenerId);
     };
-  }, [project.baseDir, processing]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.baseDir]);
 
   const handleAddFile = (filePath: string, readOnly = false) => {
     window.api.addFile(project.baseDir, filePath, readOnly);
@@ -453,13 +468,20 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
     setModelsData(null);
   };
 
+  const handleModeChange = (mode: Mode) => {
+    setMode(mode);
+    if (mode === 'code' || mode === 'agent') {
+      localStorage.setItem('aider-desk-mode', mode);
+    }
+  };
+
   const restartProject = () => {
     setShowFrozenDialog(false);
     setLoading(true);
     setMessages([]);
     setLastMessageCost(0);
     setAiderTotalCost(0);
-    setMcpAgentTotalCost(0);
+    setAgentTotalCost(0);
     setProcessing(false);
     setTokensInfo(null);
     setQuestion(null);
@@ -497,7 +519,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             inputHistory={inputHistory}
             processing={processing}
             mode={mode}
-            onModeChanged={setMode}
+            onModeChanged={handleModeChange}
             isActive={isActive}
             words={autocompletionData?.words}
             clearMessages={clearMessages}
@@ -538,7 +560,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             tokensInfo={tokensInfo}
             aiderTotalCost={aiderTotalCost}
             lastMessageCost={lastMessageCost}
-            mcpAgentTotalCost={mcpAgentTotalCost}
+            agentTotalCost={agentTotalCost}
             clearMessages={clearMessages}
             refreshRepoMap={() => runCommand('map-refresh')}
             restartProject={restartProject}
