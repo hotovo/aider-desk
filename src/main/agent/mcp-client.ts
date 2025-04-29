@@ -88,12 +88,12 @@ export const initMcpClient = async (serverName: string, originalServerConfig: Mc
       if (!args.includes('--init')) {
         // Insert '--init' immediately after the 'run' subcommand
         args.splice(runSubcommandIndex + 1, 0, '--init');
-        logger.debug("Added '--init' flag after 'run' for docker command.");
+        logger.debug(`Added '--init' flag after 'run' for server ${serverName} docker command.`);
       }
     } else {
       // Log a warning if we couldn't confidently find the 'run' command
       // This might happen with unusual docker commands defined in the config
-      logger.warn("Could not find 'run' subcommand at the expected position in docker args. '--init' flag not added automatically.");
+      logger.warn(`Could not find 'run' subcommand at the expected position in docker args for server ${serverName} from config.`);
     }
   }
 
