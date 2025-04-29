@@ -12,7 +12,7 @@ import { showErrorNotification } from '@/utils/notifications';
 import { ModeSelector } from '@/components/ModeSelector';
 
 const COMMANDS = ['/code', '/context', '/agent', '/ask', '/architect', '/add', '/model', '/read-only'];
-const CONFIRM_COMMANDS = ['/clear', '/web', '/undo', '/test', '/map-refresh', '/map', '/run', '/reasoning-effort', '/think-tokens'];
+const CONFIRM_COMMANDS = ['/clear', '/web', '/undo', '/test', '/map-refresh', '/map', '/run', '/reasoning-effort', '/think-tokens', '/copy-context'];
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
 
