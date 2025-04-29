@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- correct placement of --init flag for Docker MCP server execution
+
 ## [0.11.1]
 
 - using Aider's --env and --env-file options for Agent LLM providers
