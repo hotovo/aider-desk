@@ -66,10 +66,34 @@ export const initMcpClient = async (serverName: string, originalServerConfig: Mc
     args = ['/c', 'npx', ...args];
   }
 
-  // If command is 'docker', ensure '--init' is present so the container properly handles SIGINT and SIGTERM
+  // If command is 'docker', ensure '--init' is present after 'run'
+  // so the container properly handles SIGINT and SIGTERM
   if (command === 'docker') {
-    if (!args.includes('--init')) {
-      args = ['--init', ...args];
+    let runSubcommandIndex = -1;
+
+    // Find the index of 'run'. This handles both 'docker run' and 'docker container run'.
+    const runIndex = args.indexOf('run');
+
+    if (runIndex !== -1) {
+      // Verify it's likely the actual 'run' subcommand
+      // e.g., 'run' is the first arg, or it follows 'container'
+      if (runIndex === 0 || (runIndex === 1 && args[0] === 'container')) {
+        runSubcommandIndex = runIndex;
+      }
+    }
+
+    if (runSubcommandIndex !== -1) {
+      // Check if '--init' already exists anywhere in the arguments
+      // (Docker might tolerate duplicates, but it's cleaner not to add it if present)
+      if (!args.includes('--init')) {
+        // Insert '--init' immediately after the 'run' subcommand
+        args.splice(runSubcommandIndex + 1, 0, '--init');
+        logger.debug("Added '--init' flag after 'run' for docker command.");
+      }
+    } else {
+      // Log a warning if we couldn't confidently find the 'run' command
+      // This might happen with unusual docker commands defined in the config
+      logger.warn("Could not find 'run' subcommand at the expected position in docker args. '--init' flag not added automatically.");
     }
   }
 
