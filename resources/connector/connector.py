@@ -657,6 +657,9 @@ class Connector:
     if command.startswith("/test ") or command.startswith("/run "):
       self.coder.io.running_shell_command = True
       self.coder.io.tool_output("Running " + command.split(" ", 1)[1])
+    elif command.startswith("/tokens"):
+      self.coder.io.running_shell_command = True
+      self.coder.io.tool_output("Running /tokens")
 
     self.coder.commands.run(command)
     self.coder.io.running_shell_command = False
