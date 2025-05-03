@@ -623,6 +623,12 @@ export class Project {
     }
 
     logger.info('Running command:', { command });
+
+    if (command.trim() === 'reset') {
+      this.sessionManager.clearMessages();
+      this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
+    }
+
     if (addToHistory) {
       void this.addToInputHistory(`/${command}`);
     }
