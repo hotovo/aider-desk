@@ -1,21 +1,16 @@
 import { useEffect, useRef } from 'react';
+
 import { useClickOutside } from '@/hooks/useClickOutside';
 
-interface Props {
+type Props = {
   items: string[];
   highlightedIndex: number;
   setHighlightedIndex: (index: number) => void;
   onSelect: (item: string) => void;
   onClose: () => void;
-}
+};
 
-export const InputHistoryMenu = ({
-  items,
-  highlightedIndex,
-  setHighlightedIndex,
-  onSelect,
-  onClose,
-}: Props) => {
+export const InputHistoryMenu = ({ items, highlightedIndex, setHighlightedIndex, onSelect, onClose }: Props) => {
   const menuRef = useRef<HTMLDivElement>(null);
   useClickOutside(menuRef, onClose);
 
@@ -44,4 +39,3 @@ export const InputHistoryMenu = ({
     </div>
   );
 };
-
