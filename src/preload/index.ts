@@ -77,6 +77,7 @@ const api: ApplicationAPI = {
 
   loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),
+  getOllamaModels: (baseUrl) => ipcRenderer.invoke('get-ollama-models', baseUrl),
 
   saveSession: (baseDir, name) => ipcRenderer.invoke('save-session', baseDir, name),
   deleteSession: (baseDir, name) => ipcRenderer.invoke('delete-session', baseDir, name),

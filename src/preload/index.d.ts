@@ -57,6 +57,7 @@ export interface ApplicationAPI {
 
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force = false) => Promise<void>;
+  getOllamaModels: (baseUrl: string) => Promise<string[]>;
 
   saveSession: (baseDir: string, name: string) => Promise<boolean>;
   deleteSession: (baseDir: string, name: string) => Promise<boolean>;
