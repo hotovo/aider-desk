@@ -99,7 +99,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const [placeholderIndex] = useState(Math.floor(Math.random() * 16));
     const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
     const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1);
-    const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -254,7 +253,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newText = e.target.value;
       setText(newText);
-      setHistoryIndex(-1);
 
       const word = getCurrentWord(newText, e.target.selectionStart);
       setHighlightedSuggestionIndex(-1);
@@ -318,7 +316,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       setCurrentWord('');
       setSuggestionsVisible(false);
       setHighlightedSuggestionIndex(-1);
-      setHistoryIndex(-1);
     };
 
     const handleSubmit = () => {
