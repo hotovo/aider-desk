@@ -257,7 +257,10 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('get-ollama-models', async (_, baseUrl: string) => {
     try {
-      const normalized = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl.replace(/\/$/, '')}/api`;
+      let normalized = baseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
+      if (!normalized.endsWith('/api')) {
+        normalized = `${normalized}/api`;
+      }
       const response = await axios.get(`${normalized}/tags`);
       return response.data?.models?.map((m: { name: string }) => m.name) || [];
     } catch (error) {
