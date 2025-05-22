@@ -11,6 +11,18 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
 import '@/i18n';
 
+const ThemeManager = () => {
+  const { settings } = useSettings();
+
+  useEffect(() => {
+    const className = settings?.darkMode === false ? 'light-mode' : 'dark-mode';
+    document.body.classList.remove('light-mode', 'dark-mode');
+    document.body.classList.add(className);
+  }, [settings?.darkMode]);
+
+  return null;
+};
+
 const AnimatedRoutes = () => {
   const { i18n } = useTranslation();
   const location = useLocation();
@@ -56,6 +68,7 @@ const App = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
       <Router>
         <SettingsProvider>
+          <ThemeManager />
           <AnimatedRoutes />
           <ToastContainer />
         </SettingsProvider>

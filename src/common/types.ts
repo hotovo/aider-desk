@@ -168,6 +168,7 @@ export interface SettingsData {
   startupMode?: StartupMode;
   zoomLevel?: number;
   notificationsEnabled?: boolean;
+  darkMode?: boolean;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

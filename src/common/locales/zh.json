@@ -172,6 +172,11 @@
     },
     "notificationsEnabled": "通知已启用",
     "zoom": "缩放级别",
+    "theme": "主题",
+    "themeOptions": {
+      "dark": "深色",
+      "light": "浅色"
+    },
     "aiderRestartConfirm": {
       "title": "需要重启",
       "message": "对 Aider 选项或环境变量的更改需要重新启动 Aider 会话才能生效。您想现在重新启动吗？",
