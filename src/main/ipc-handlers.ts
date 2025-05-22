@@ -2,7 +2,6 @@ import { EditFormat, FileEdit, McpServerConfig, MessageRole, Mode, OS, ProjectDa
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { McpManager } from 'src/main/agent/mcp-manager';
-import axios from 'axios';
 
 import { Agent } from './agent';
 import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
@@ -253,20 +252,6 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('load-mcp-server-tools', async (_, serverName: string, config?: McpServerConfig) => {
     return await mcpManager.getMcpServerTools(serverName, config);
-  });
-
-  ipcMain.handle('get-ollama-models', async (_, baseUrl: string) => {
-    try {
-      let normalized = baseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
-      if (!normalized.endsWith('/api')) {
-        normalized = `${normalized}/api`;
-      }
-      const response = await axios.get(`${normalized}/tags`);
-      return response.data?.models?.map((m: { name: string }) => m.name) || [];
-    } catch (error) {
-      logger.error('Failed to fetch Ollama models', { error });
-      return [];
-    }
   });
 
   ipcMain.handle('reload-mcp-servers', async (_, mcpServers: Record<string, McpServerConfig>, force = false) => {

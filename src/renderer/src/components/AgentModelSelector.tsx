@@ -1,12 +1,13 @@
 import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdEdit, MdKeyboardArrowUp } from 'react-icons/md';
-import { LlmProvider, PROVIDER_MODELS, getActiveProvider } from '@common/llm-providers';
+import { LlmProvider, PROVIDER_MODELS, getActiveProvider, isOllamaProvider } from '@common/llm-providers';
 
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { IconButton } from '@/components/common/IconButton';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
+import { useOllamaModels } from '@/hooks/useOllamaModels';
 import { useSettings } from '@/context/SettingsContext';
 
 type Props = Record<string, never>;
@@ -30,13 +31,20 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
 
   const activeProvider = useMemo(() => (settings?.agentConfig ? getActiveProvider(settings.agentConfig.providers) : null), [settings?.agentConfig]);
 
+  const ollamaBaseUrl = useMemo(() => {
+    const provider = settings?.agentConfig?.providers.find((p) => isOllamaProvider(p));
+    return provider && isOllamaProvider(provider) ? provider.baseUrl : '';
+  }, [settings?.agentConfig?.providers]);
+
+  const ollamaModels = useOllamaModels(ollamaBaseUrl);
+
   const agentModels = useMemo(() => {
     if (!settings?.agentConfig?.providers) {
       return [];
     }
     const models: string[] = [];
     settings.agentConfig.providers.forEach((provider) => {
-      const providerModels = Object.keys(PROVIDER_MODELS[provider.name]?.models || {});
+      const providerModels = isOllamaProvider(provider) ? ollamaModels : Object.keys(PROVIDER_MODELS[provider.name]?.models || {});
       providerModels.forEach((modelName) => {
         models.push(`${provider.name}/${modelName}`);
       });
@@ -49,7 +57,7 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
       }
     }
     return models.sort(); // Sort alphabetically for consistency
-  }, [settings?.agentConfig?.providers, activeProvider]);
+  }, [settings?.agentConfig?.providers, activeProvider, ollamaModels]);
 
   const selectedModelDisplay = activeProvider ? `${activeProvider.name}/${activeProvider.model}` : t('common.notSet');
 

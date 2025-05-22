@@ -1,10 +1,11 @@
 import { SettingsData } from '@common/types';
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { isOllamaProvider } from '@common/llm-providers';
 
 import { Input } from '@/components/common/Input';
 import { Select } from '@/components/common/Select';
+import { useOllamaModels } from '@/hooks/useOllamaModels';
 
 type Props = {
   settings: SettingsData;
@@ -17,24 +18,7 @@ export const OllamaParameters = ({ settings, setSettings }: Props) => {
   const baseUrl = provider?.baseUrl || '';
   const model = provider?.model || '';
 
-  const [models, setModels] = useState<string[]>([]);
-
-  useEffect(() => {
-    const loadModels = async () => {
-      if (!baseUrl) {
-        setModels([]);
-        return;
-      }
-      try {
-        const fetched = await window.api.getOllamaModels(baseUrl);
-        setModels(fetched);
-      } catch {
-        setModels([]);
-      }
-    };
-
-    void loadModels();
-  }, [baseUrl]);
+  const models = useOllamaModels(baseUrl);
 
   const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
     const updatedProviders = settings.agentConfig.providers.map((provider) =>
