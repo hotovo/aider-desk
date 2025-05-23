@@ -304,7 +304,7 @@ const api: ApplicationAPI = {
   removeInputHistoryUpdatedListener: (listenerId) => {
     const callback = inputHistoryUpdatedListeners[listenerId];
     if (callback) {
-      ipcRenderer.removeListener('tool', callback);
+      ipcRenderer.removeListener('input-history-updated', callback);
       delete inputHistoryUpdatedListeners[listenerId];
     }
   },
