@@ -175,6 +175,11 @@
     },
     "notificationsEnabled": "Notifications enabled",
     "zoom": "Zoom level",
+    "theme": "Theme",
+    "themeOptions": {
+      "dark": "Dark",
+      "light": "Light"
+    },
     "aiderRestartConfirm": {
       "title": "Restart Required",
       "message": "Changes to Aider options or environment variables require a restart of the Aider session to take effect. Would you like to restart now?",

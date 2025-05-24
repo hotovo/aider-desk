@@ -206,7 +206,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
   };
 
   return (
-    <div className="flex-grow w-full h-full flex flex-col pb-2 overflow-hidden">
+    <div className="context-files-root flex-grow w-full h-full flex flex-col pb-2 overflow-hidden">
       <StyledTooltip id="context-files-tooltip" />
       <div className="flex items-center mb-2 flex-shrink-0 p-2">
         <h3 className="text-md font-semibold uppercase pl-1 flex-grow">{t('contextFiles.title')}</h3>
@@ -275,7 +275,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
 
             return (
               <div className={`px-1 ${isNewlyAdded ? 'flash-highlight' : ''} flex items-center gap-1 h-6 whitespace-nowrap`}>
-                <span className={`${dimmed ? 'text-neutral-500' : ''}`}>{title}</span>
+                <span className={dimmed ? 'context-dimmed' : undefined}>{title}</span>
               </div>
             );
           }}

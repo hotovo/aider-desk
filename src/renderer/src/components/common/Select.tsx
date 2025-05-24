@@ -4,6 +4,7 @@ import { HiChevronUpDown, HiCheck } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
+import './Select.css';
 
 export type Option = {
   label: ReactNode;
@@ -76,7 +77,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
         createPortal(
           <ul
             ref={dropdownRef}
-            className="absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-neutral-800 py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-200"
+            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-neutral-800 py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-200"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,

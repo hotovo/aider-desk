@@ -2,14 +2,13 @@ import { toast } from 'react-toastify';
 
 import type { ToastOptions } from 'react-toastify';
 
-const NOTIFICATION_OPTIONS: ToastOptions = {
+const baseOptions: ToastOptions = {
   position: 'bottom-right',
   autoClose: 3000,
   hideProgressBar: true,
   closeOnClick: true,
   pauseOnHover: true,
   draggable: true,
-  theme: 'dark',
   progressStyle: {
     backgroundColor: '#333652', // neutral-700 from tailwind.config.js
     color: '#333652',
@@ -25,41 +24,50 @@ const NOTIFICATION_OPTIONS: ToastOptions = {
   icon: false,
 };
 
+const getOptions = (): ToastOptions => ({
+  ...baseOptions,
+  theme: document.body.classList.contains('light-mode') ? 'light' : 'dark',
+});
+
 export const showSuccessNotification = (message: string) => {
+  const options = getOptions();
   toast.success(message, {
-    ...NOTIFICATION_OPTIONS,
+    ...options,
     style: {
-      ...NOTIFICATION_OPTIONS.style,
+      ...options.style,
       color: '#e9ecef',
     },
   });
 };
 
 export const showErrorNotification = (message: string) => {
+  const options = getOptions();
   toast.error(message, {
-    ...NOTIFICATION_OPTIONS,
+    ...options,
     style: {
-      ...NOTIFICATION_OPTIONS.style,
+      ...options.style,
       color: '#dd7171',
     },
   });
 };
 
 export const showInfoNotification = (message: string) => {
+  const options = getOptions();
   toast.info(message, {
-    ...NOTIFICATION_OPTIONS,
+    ...options,
     style: {
-      ...NOTIFICATION_OPTIONS.style,
+      ...options.style,
       color: '#dee2e6',
     },
   });
 };
 
 export const showWarningNotification = (message: string) => {
+  const options = getOptions();
   toast.warn(message, {
-    ...NOTIFICATION_OPTIONS,
+    ...options,
     style: {
-      ...NOTIFICATION_OPTIONS.style,
+      ...options.style,
       backgroundColor: '#212529',
       color: '#fed7aa',
     },

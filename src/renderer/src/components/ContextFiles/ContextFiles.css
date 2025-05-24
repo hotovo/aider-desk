@@ -28,4 +28,12 @@
 .flash-highlight {
   animation: flash 1s ease-in-out;
 }
+
+.context-dimmed {
+  @apply text-neutral-500;
+}
+
+body.light-mode .context-dimmed {
+  opacity: 0.6;
+}
 @tailwind utilities;

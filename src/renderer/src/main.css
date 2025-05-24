@@ -37,8 +37,57 @@
 
 body {
   margin: 0;
+}
+
+body.dark-mode {
   background-color: #121212;
   color: #e0e0e0;
+}
+
+body.light-mode {
+  background-color: #ffffff;
+  color: #222222;
+}
+
+body.light-mode #root {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+body.light-mode #root img {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Improve text contrast in light mode */
+body.light-mode {
+  color: #dddddd;
+}
+
+body.light-mode .text-neutral-100,
+body.light-mode .text-neutral-200,
+body.light-mode .text-neutral-300,
+body.light-mode .text-neutral-400 {
+  color: #dddddd !important;
+}
+
+body.light-mode .text-neutral-500,
+body.light-mode .text-neutral-600,
+body.light-mode .text-neutral-700,
+body.light-mode .text-neutral-800,
+body.light-mode .text-neutral-900,
+body.light-mode .text-neutral-950 {
+  color: #eeeeee !important;
+}
+
+body.light-mode .text-white {
+  color: #ffffff !important;
+}
+
+body.light-mode .text-gray-100 {
+  color: #dddddd !important;
+}
+
+body.light-mode .text-gray-500 {
+  color: #eeeeee !important;
 }
 
 * {
