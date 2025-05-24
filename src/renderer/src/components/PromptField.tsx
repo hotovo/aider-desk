@@ -36,6 +36,8 @@ const ANSWERS = ['y', 'n', 'a', 'd'];
 
 const MAX_SUGGESTIONS = 10;
 
+const HISTORY_MENU_CHUNK_SIZE = 20;
+
 export interface PromptFieldRef {
   focus: () => void;
   setText: (text: string) => void;
@@ -101,9 +103,20 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1);
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
+    const [historyLimit, setHistoryLimit] = useState(HISTORY_MENU_CHUNK_SIZE);
+    const [keepHistoryHighlightTop, setKeepHistoryHighlightTop] = useState(false);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
-    const historyItems = inputHistory.slice(0, 20).reverse();
+    const historyItems = inputHistory.slice(0, historyLimit).reverse();
+
+    const loadMoreHistory = useCallback(() => {
+      if (historyLimit < inputHistory.length) {
+        const additional = Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length - historyLimit);
+        setHistoryLimit((prev) => prev + additional);
+        setHighlightedHistoryItemIndex((prev) => prev + additional);
+        setKeepHistoryHighlightTop(true);
+      }
+    }, [historyLimit, inputHistory.length]);
 
     useDebounce(
       () => {
@@ -223,6 +236,16 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         setSuggestionsVisible(false);
       }
     }, [text, invokeCommand]);
+
+    useEffect(() => {
+      setHistoryLimit(Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length));
+    }, [inputHistory]);
+
+    useEffect(() => {
+      if (keepHistoryHighlightTop) {
+        setKeepHistoryHighlightTop(false);
+      }
+    }, [historyLimit, keepHistoryHighlightTop]);
 
     useLayoutEffect(() => {
       if (!suggestionsVisible) {
@@ -376,7 +399,11 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         switch (e.key) {
           case 'ArrowUp':
             e.preventDefault();
-            setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
+            if (highlightedHistoryItemIndex === 0) {
+              loadMoreHistory();
+            } else {
+              setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
+            }
             break;
           case 'ArrowDown':
             e.preventDefault();
@@ -448,6 +475,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           case 'ArrowUp':
             if (text === '' && historyItems.length > 0) {
               e.preventDefault();
+              setHistoryLimit(HISTORY_MENU_CHUNK_SIZE);
               setHistoryMenuVisible(true);
               setHighlightedHistoryItemIndex(historyItems.length - 1);
             }
@@ -590,6 +618,8 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
             items={historyItems}
             highlightedIndex={highlightedHistoryItemIndex}
             setHighlightedIndex={setHighlightedHistoryItemIndex}
+            keepHighlightAtTop={keepHistoryHighlightTop}
+            onScrollTop={loadMoreHistory}
             onSelect={(item) => {
               setText(item);
               setHistoryMenuVisible(false);
