@@ -20,27 +20,78 @@ import {
 
 const execAsync = promisify(exec);
 
-const getOSPythonExecutable = (): string => {
+const SUPPORTED_PYTHON_VERSIONS = ['3.12', '3.11', '3.10', '3.9'];
+
+/**
+ * Smartly finds the best Python executable on the system, preferring the newest supported version.
+ * Respects the AIDER_DESK_PYTHON environment variable if set.
+ * Returns the name of the executable/command to use.
+ */
+export const getOSPythonExecutable = async (): Promise<string> => {
   const envPython = process.env.AIDER_DESK_PYTHON;
   if (envPython) {
     return envPython;
   }
-  return process.platform === 'win32' ? 'python' : 'python3';
+
+  for (const version of SUPPORTED_PYTHON_VERSIONS) {
+    const candidates = [
+      `python${version}`,
+      `python${version[0]}`, // python3
+    ];
+    if (process.platform === 'win32') {
+      candidates.push(`py -${version}`);
+    }
+    candidates.push('python3', 'python'); // Fallbacks
+
+    for (const candidate of candidates) {
+      try {
+        // For "py -3.12", use shell:true, otherwise append --version
+        let command: string;
+        let useShell = false;
+        if (process.platform === 'win32' && candidate.startsWith('py ')) {
+          command = `${candidate} --version`;
+          useShell = true;
+        } else {
+          command = `${candidate} --version`;
+        }
+        const { stdout, stderr } = await execAsync(command, {
+          windowsHide: true,
+          shell: useShell,
+        });
+        const output = (stdout || '') + (stderr || '');
+        const match = output.match(/Python (\d+)\.(\d+)/);
+        if (match) {
+          const [major, minor] = [parseInt(match[1]), parseInt(match[2])];
+          if (major === 3 && SUPPORTED_PYTHON_VERSIONS.includes(`3.${minor}`)) {
+            return candidate;
+          }
+        }
+      } catch {
+        // Try next candidate
+      }
+    }
+  }
+
+  throw new Error(
+    'No supported Python 3.9-3.12 executable found. Please install Python or set the AIDER_DESK_PYTHON environment variable.'
+  );
 };
 
 const checkPythonVersion = async (): Promise<void> => {
-  const pythonExecutable = getOSPythonExecutable();
+  const pythonExecutable = await getOSPythonExecutable();
   try {
     const command = `${pythonExecutable} --version`;
-    const { stdout } = await execAsync(command, {
+    const { stdout, stderr } = await execAsync(command, {
       windowsHide: true,
+      shell: process.platform === 'win32' && pythonExecutable.startsWith('py '),
     });
 
     // Extract version number from output like "Python 3.10.12"
-    const versionMatch = stdout.match(/Python (\d+)\.(\d+)\.\d+/);
+    const output = (stdout || '') + (stderr || '');
+    const versionMatch = output.match(/Python (\d+)\.(\d+)\.\d+/);
     if (!versionMatch) {
       throw new Error(
-        `Could not determine Python version (output: '${stdout}'). You can specify a specific Python executable by setting the AIDER_DESK_PYTHON environment variable.`,
+        `Could not determine Python version (output: '${output}'). You can specify a specific Python executable by setting the AIDER_DESK_PYTHON environment variable.`,
       );
     }
 
@@ -64,9 +115,10 @@ const checkPythonVersion = async (): Promise<void> => {
 };
 
 const createVirtualEnv = async (): Promise<void> => {
-  const command = getOSPythonExecutable();
+  const command = await getOSPythonExecutable();
   await execAsync(`${command} -m venv "${PYTHON_VENV_DIR}"`, {
     windowsHide: true,
+    shell: process.platform === 'win32' && command.startsWith('py '),
   });
 };
 
