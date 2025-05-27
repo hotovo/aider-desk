@@ -299,7 +299,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                     <span className="w-3 h-3 inline-block" />
                   )}
                   <span
-                    className={`select-none text-xxs overflow-hidden ${item.isFolder ? 'text-neutral-500' : 'text-neutral-100 font-semibold'}`}
+                    className={`select-none text-xxs overflow-hidden ${item.isFolder ? 'context-dimmed' : 'text-neutral-100 font-semibold'}`}
                     {...(item.isFolder ? { onClick: context.arrowProps.onClick } : {})}
                   >
                     {title}
