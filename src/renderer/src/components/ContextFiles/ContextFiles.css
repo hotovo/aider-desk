@@ -33,7 +33,7 @@
   @apply text-neutral-500;
 }
 
-body.light-mode .context-dimmed {
-  opacity: 0.6;
+body.theme-light .context-dimmed {
+  opacity: 0.9;
 }
 @tailwind utilities;

@@ -26,7 +26,7 @@ const baseOptions: ToastOptions = {
 
 const getOptions = (): ToastOptions => ({
   ...baseOptions,
-  theme: document.body.classList.contains('light-mode') ? 'light' : 'dark',
+  theme: document.body.classList.contains('theme-light') ? 'light' : 'dark',
 });
 
 export const showSuccessNotification = (message: string) => {

@@ -15,10 +15,10 @@ const ThemeManager = () => {
   const { settings } = useSettings();
 
   useEffect(() => {
-    const className = settings?.darkMode === false ? 'light-mode' : 'dark-mode';
-    document.body.classList.remove('light-mode', 'dark-mode');
+    const className = settings?.theme === 'light' ? 'theme-light' : 'theme-dark';
+    document.body.classList.remove('theme-light', 'theme-dark');
     document.body.classList.add(className);
-  }, [settings?.darkMode]);
+  }, [settings?.theme]);
 
   return null;
 };

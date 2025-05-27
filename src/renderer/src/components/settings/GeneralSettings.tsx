@@ -62,7 +62,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const handleThemeChange = (value: string) => {
     setSettings({
       ...settings,
-      darkMode: value === 'dark',
+      theme: value === 'light' ? 'light' : 'dark',
     });
   };
 
@@ -72,13 +72,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
         <div className="grid grid-cols-2 gap-4 p-4">
           <LanguageSelector language={settings.language} onChange={onLanguageChange} />
           <Select label={t('settings.zoom')} options={ZOOM_OPTIONS} value={String(settings.zoomLevel ?? 1)} onChange={handleZoomChange} />
-          <Select
-            label={t('settings.theme')}
-            options={themeOptions}
-            value={settings.darkMode ? 'dark' : 'light'}
-            onChange={handleThemeChange}
-            className="col-span-2"
-          />
+          <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-2" />
         </div>
       </Section>
 

@@ -39,54 +39,54 @@ body {
   margin: 0;
 }
 
-body.dark-mode {
+body.theme-dark {
   background-color: #121212;
   color: #e0e0e0;
 }
 
-body.light-mode {
+body.theme-light {
   background-color: #ffffff;
   color: #222222;
 }
 
-body.light-mode #root {
+body.theme-light #root {
   filter: invert(1) hue-rotate(180deg);
 }
 
-body.light-mode #root img {
+body.theme-light #root img {
   filter: invert(1) hue-rotate(180deg);
 }
 
 /* Improve text contrast in light mode */
-body.light-mode {
+body.theme-light {
   color: #dddddd;
 }
 
-body.light-mode .text-neutral-100,
-body.light-mode .text-neutral-200,
-body.light-mode .text-neutral-300,
-body.light-mode .text-neutral-400 {
+body.theme-light .text-neutral-100,
+body.theme-light .text-neutral-200,
+body.theme-light .text-neutral-300,
+body.theme-light .text-neutral-400 {
   color: #dddddd !important;
 }
 
-body.light-mode .text-neutral-500,
-body.light-mode .text-neutral-600,
-body.light-mode .text-neutral-700,
-body.light-mode .text-neutral-800,
-body.light-mode .text-neutral-900,
-body.light-mode .text-neutral-950 {
+body.theme-light .text-neutral-500,
+body.theme-light .text-neutral-600,
+body.theme-light .text-neutral-700,
+body.theme-light .text-neutral-800,
+body.theme-light .text-neutral-900,
+body.theme-light .text-neutral-950 {
   color: #eeeeee !important;
 }
 
-body.light-mode .text-white {
+body.theme-light .text-white {
   color: #ffffff !important;
 }
 
-body.light-mode .text-gray-100 {
+body.theme-light .text-gray-100 {
   color: #dddddd !important;
 }
 
-body.light-mode .text-gray-500 {
+body.theme-light .text-gray-500 {
   color: #eeeeee !important;
 }
 
