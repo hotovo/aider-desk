@@ -45,18 +45,8 @@ export const getOSPythonExecutable = async (): Promise<string> => {
 
     for (const candidate of candidates) {
       try {
-        // For "py -3.12", use shell:true, otherwise append --version
-        let command: string;
-        let useShell = false;
-        if (process.platform === 'win32' && candidate.startsWith('py ')) {
-          command = `${candidate} --version`;
-          useShell = true;
-        } else {
-          command = `${candidate} --version`;
-        }
-        const { stdout, stderr } = await execAsync(command, {
+        const { stdout, stderr } = await execAsync(`${candidate} --version`, {
           windowsHide: true,
-          shell: useShell,
         });
         const output = (stdout || '') + (stderr || '');
         const match = output.match(/Python (\d+)\.(\d+)/);
@@ -68,13 +58,12 @@ export const getOSPythonExecutable = async (): Promise<string> => {
         }
       } catch {
         // Try next candidate
+        logger.debug(`Failed to execute ${candidate}. It may not be installed or not in PATH.`);
       }
     }
   }
 
-  throw new Error(
-    'No supported Python 3.9-3.12 executable found. Please install Python or set the AIDER_DESK_PYTHON environment variable.'
-  );
+  throw new Error('No supported Python 3.9-3.12 executable found. Please install Python or set the AIDER_DESK_PYTHON environment variable.');
 };
 
 const checkPythonVersion = async (): Promise<void> => {
@@ -83,7 +72,6 @@ const checkPythonVersion = async (): Promise<void> => {
     const command = `${pythonExecutable} --version`;
     const { stdout, stderr } = await execAsync(command, {
       windowsHide: true,
-      shell: process.platform === 'win32' && pythonExecutable.startsWith('py '),
     });
 
     // Extract version number from output like "Python 3.10.12"
@@ -118,7 +106,6 @@ const createVirtualEnv = async (): Promise<void> => {
   const command = await getOSPythonExecutable();
   await execAsync(`${command} -m venv "${PYTHON_VENV_DIR}"`, {
     windowsHide: true,
-    shell: process.platform === 'win32' && command.startsWith('py '),
   });
 };
 
