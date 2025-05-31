@@ -39,6 +39,11 @@ export const DEFAULT_SETTINGS: SettingsData = {
   agentProfiles: [DEFAULT_AGENT_PROFILE],
   mcpServers: {},
   llmProviders: {} as Record<LlmProviderName, LlmProvider>,
+  posthog: {
+    enabled: true, // Default to enabled
+    apiKey: '', // Users need to fill this in
+    host: 'https://app.posthog.com', // Default PostHog cloud host
+  },
 };
 
 export const determineMainModel = (settings: SettingsData): string => {
@@ -99,7 +104,20 @@ interface StoreSchema {
   releaseNotes?: string | null;
 }
 
-const CURRENT_SETTINGS_VERSION = 6;
+const CURRENT_SETTINGS_VERSION = 7;
+
+// Migration function to add PostHog settings
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const migrateSettingsV6toV7 = (settings: any): any => {
+  if (!settings.posthog) {
+    settings.posthog = {
+      enabled: true,
+      apiKey: '',
+      host: 'https://app.posthog.com',
+    };
+  }
+  return settings;
+};
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -189,6 +207,11 @@ export class Store {
       if (settingsVersion === 5) {
         settings = migrateSettingsV5toV6(settings);
         settingsVersion = 6;
+      }
+
+      if (settingsVersion === 6) {
+        settings = migrateSettingsV6toV7(settings);
+        settingsVersion = 7;
       }
 
       this.store.set('settings', settings as SettingsData);

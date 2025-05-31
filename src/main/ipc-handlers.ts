@@ -5,6 +5,7 @@ import { McpManager } from 'src/main/agent/mcp-manager';
 
 import { Agent } from './agent';
 import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
+import { posthog } from './index'; // Import posthog instance
 import { ProjectManager } from './project-manager';
 import { Store, getDefaultProjectSettings } from './store';
 import { scrapeWeb } from './web-scrapper';
@@ -36,6 +37,23 @@ export const setupIpcHandlers = (
 
   ipcMain.on('run-prompt', (_, baseDir: string, prompt: string, mode?: Mode) => {
     void projectManager.getProject(baseDir).runPrompt(prompt, mode);
+
+    // Capture PostHog event
+    if (posthog) { // Check if posthog is initialized
+      const settings = store.getSettings(); // Get settings to access distinctId
+      if (settings.distinctId) {
+        posthog.capture({
+          distinctId: settings.distinctId,
+          event: 'run_prompt',
+          properties: {
+            mode: mode || 'unknown', // Default to 'unknown' if mode is undefined
+          },
+        });
+      } else {
+        // This case should ideally not happen if distinctId is generated on startup
+        logger.warn('PostHog distinctId is missing in settings, cannot send run_prompt event.');
+      }
+    }
   });
 
   ipcMain.on('answer-question', (_, baseDir: string, answer: string) => {

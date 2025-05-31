@@ -207,6 +207,14 @@ export interface SettingsData {
   agentProfiles: AgentProfile[];
   mcpServers: Record<string, McpServerConfig>;
   llmProviders: Record<LlmProviderName, LlmProvider>;
+  posthog?: PosthogConfig;
+  distinctId?: string; // Added for PostHog distinct ID
+}
+
+export interface PosthogConfig {
+  enabled: boolean;
+  apiKey?: string;
+  host?: string;
 }
 
 export interface UsageReportData {

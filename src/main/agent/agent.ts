@@ -27,6 +27,7 @@ import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { parseAiderEnv } from '../utils';
 import logger from '../logger';
+import { posthog } from '../index'; // Import posthog instance
 import { Store } from '../store';
 import { Project } from '../project';
 
@@ -416,6 +417,25 @@ export class Agent {
 
     if (!profile) {
       throw new Error('No active MCP provider found');
+    }
+
+    // Capture PostHog event for agent run
+    if (posthog) { // Check if posthog is initialized
+      const settings = this.store.getSettings(); // Get settings to access distinctId
+      if (settings.distinctId) {
+        posthog.capture({
+          distinctId: settings.distinctId,
+          event: 'run_agent',
+          properties: {
+            usePowerTools: profile.usePowerTools,
+            useAiderTools: profile.useAiderTools,
+            numEnabledMcpServers: profile.enabledServers.length,
+          },
+        });
+      } else {
+        // This case should ideally not happen
+        logger.warn('PostHog distinctId is missing in settings, cannot send run_agent event.');
+      }
     }
 
     // Create new abort controller for this run

@@ -5,6 +5,8 @@ import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, shell } from 'electron';
 import ProgressBar from 'electron-progressbar';
+import { PostHog } from 'posthog-node';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 import { McpManager } from 'src/main/agent/mcp-manager';
 
 import icon from '../../resources/icon.png?asset';
@@ -15,7 +17,7 @@ import { ConnectorManager } from './connector-manager';
 import { setupIpcHandlers } from './ipc-handlers';
 import { ProjectManager } from './project-manager';
 import { performStartUp, UpdateProgressData } from './start-up';
-import { Store } from './store';
+import { Store, SettingsData } from './store'; // Modified import
 import { VersionsManager } from './versions-manager';
 import logger from './logger';
 
@@ -125,6 +127,7 @@ const initWindow = async (store: Store) => {
 
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.hotovo.aider-desk');
+export let posthog: PostHog | null = null; // Keep this export
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
@@ -196,6 +199,38 @@ app.whenReady().then(async () => {
   }
 
   const store = await initStore();
+
+  // PostHog Initialization based on settings
+  let settings = store.getSettings();
+  let distinctId = settings.distinctId;
+
+  if (!distinctId) {
+    distinctId = uuidv4();
+    settings = { ...settings, distinctId };
+    store.saveSettings(settings);
+  }
+
+  if (settings.posthog?.enabled && settings.posthog?.apiKey) {
+    posthog = new PostHog(settings.posthog.apiKey, {
+      host: settings.posthog.host || 'https://app.posthog.com',
+    });
+
+    posthog.capture({
+      distinctId,
+      event: 'application_startup',
+    });
+
+    // Assign to a local variable before using in the event handler
+    const phInstance = posthog;
+    app.on('will-quit', async () => {
+      if (phInstance) {
+        await phInstance.shutdownAsync();
+      }
+    });
+  } else {
+    logger.info('PostHog telemetry is disabled or API key is not provided.');
+  }
+
   await initWindow(store);
 
   progressBar.close();
