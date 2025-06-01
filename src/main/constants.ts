@@ -14,7 +14,7 @@ export const RESOURCES_DIR = is.dev ? path.join(__dirname, '..', '..', 'resource
 export const LOGS_DIR = path.join(AIDER_DESK_DIR, 'logs');
 export const SETUP_COMPLETE_FILENAME = path.join(AIDER_DESK_DIR, 'setup-complete');
 export const PYTHON_VENV_DIR = path.join(AIDER_DESK_DIR, 'python-venv');
-export const PYTHON_COMMAND = process.platform === 'win32' ? path.join(PYTHON_VENV_DIR, 'Scripts', 'pythonw.exe') : path.join(PYTHON_VENV_DIR, 'bin', 'python');
+export const PYTHON_COMMAND = process.platform === 'win32' ? path.join(PYTHON_VENV_DIR, 'Scripts', 'python.exe') : path.join(PYTHON_VENV_DIR, 'bin', 'python');
 export const AIDER_DESK_CONNECTOR_DIR = path.join(AIDER_DESK_DIR, 'aider-connector');
 export const AIDER_DESK_MCP_SERVER_DIR = path.join(AIDER_DESK_DIR, 'mcp-server');
 export const SERVER_PORT = process.env.AIDER_DESK_PORT ? parseInt(process.env.AIDER_DESK_PORT) : 24337;
