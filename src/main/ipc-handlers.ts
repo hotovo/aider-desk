@@ -47,7 +47,7 @@ export const setupIpcHandlers = (
     projectManager.getProject(baseDir).answerQuestion(answer);
   });
 
-  ipcMain.on('drop-file', (_, baseDir: string, filePath: string) => {
+  ipcMain.on('drop-file', (_,  baseDir: string, filePath: string) => {
     void projectManager.getProject(baseDir).dropFile(filePath);
   });
 
@@ -321,5 +321,22 @@ export const setupIpcHandlers = (
       logger.error('Error loading models info:', error);
       return {}; // Return empty object or handle error as appropriate
     }
+  });
+
+  // Window control handlers
+  ipcMain.handle('minimize-window', () => {
+    mainWindow.minimize();
+  });
+
+  ipcMain.handle('maximize-window', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+
+  ipcMain.handle('close-window', () => {
+    mainWindow.close();
   });
 };

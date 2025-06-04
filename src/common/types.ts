@@ -196,6 +196,8 @@ export interface SettingsData {
   zoomLevel?: number;
   notificationsEnabled?: boolean;
   theme?: 'dark' | 'light';
+  fontFamily?: string;
+  monospaceFontFamily?: string;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

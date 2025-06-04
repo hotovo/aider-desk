@@ -24,14 +24,69 @@
   border-bottom: 6px solid transparent;
 }
 
+.window-drag {
+  -webkit-app-region: drag;
+}
+
+.window-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+
+.window-control-button {
+  width: 46px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.window-control-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.window-control-button.close:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.window-control-button svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Custom title bar styling */
+.custom-title-bar {
+  background: linear-gradient(to bottom, #0a0a0a, #171717);
+  border-bottom: 1px solid #525252;
+  user-select: none;
+}
+
+/* Ensure draggable area doesn't interfere with interactive elements */
+.window-drag * {
+  pointer-events: none;
+}
+
+.window-no-drag * {
+  pointer-events: auto;
+}
 
 @layer base {
   html {
-    font-family: "Sono", monospace;
+    font-family: var(--font-family-sans, "Tektur"), sans-serif;
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
-    font-variation-settings:"MONO" 1;
   }
 }
 
@@ -91,19 +146,15 @@ body.theme-light .text-gray-500 {
 }
 
 * {
-  font-family: "Sono", monospace;
+  font-family: var(--font-family-sans, "Tektur"), sans-serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
-  font-variation-settings: "MONO" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  font-family: var(--font-family-mono, 'MonaspaceKrypton-SemiBold'), source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
   monospace;
 }
-@tailwind base;
-@tailwind components;
-@tailwind utilities;

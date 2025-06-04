@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
+import net from 'net';
 
 import { SettingsData } from '@common/types';
 import { parse } from '@dotenvx/dotenvx';
@@ -128,4 +129,48 @@ export const isFileIgnored = async (projectBaseDir: string, filePath: string): P
     logger.debug(`Failed to check if file is ignored: ${filePath}`, { error });
     return false;
   }
+};
+
+/**
+ * Checks if a port is available
+ * @param port The port to check
+ * @returns Promise that resolves to true if the port is available, false otherwise
+ */
+export const isPortAvailable = (port: number): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    
+    server.once('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(false);
+      } else {
+        // For any other error, we'll consider the port unavailable
+        resolve(false);
+      }
+    });
+    
+    server.once('listening', () => {
+      // Close the server and resolve with true (port is available)
+      server.close(() => {
+        resolve(true);
+      });
+    });
+    
+    server.listen(port);
+  });
+};
+
+/**
+ * Finds an available port starting from the given port
+ * @param startPort The port to start checking from
+ * @param maxAttempts Maximum number of ports to check
+ * @returns Promise that resolves to the first available port, or null if none found
+ */
+export const findAvailablePort = async (startPort: number, maxAttempts = 100): Promise<number | null> => {
+  for (let port = startPort; port < startPort + maxAttempts; port++) {
+    if (await isPortAvailable(port)) {
+      return port;
+    }
+  }
+  return null;
 };

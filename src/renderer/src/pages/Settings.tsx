@@ -14,12 +14,13 @@ type Props = {
   updateSettings: (settings: SettingsData) => void;
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
+  onFontChange?: (fontFamily: string, monospaceFontFamily: string) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;
 };
 
-export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomChange, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
+export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomChange, onFontChange, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t } = useTranslation();
 
   const renderTab = (label: string) => (
@@ -51,7 +52,7 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomCha
         {renderTab(t('settings.tabs.about'))}
       </TabList>
       <TabPanels className="flex flex-col flex-1 overflow-hidden">
-        {renderTabPanel(<GeneralSettings settings={settings} setSettings={updateSettings} onLanguageChange={onLanguageChange} onZoomChange={onZoomChange} />)}
+        {renderTabPanel(<GeneralSettings settings={settings} setSettings={updateSettings} onLanguageChange={onLanguageChange} onZoomChange={onZoomChange} onFontChange={onFontChange} />)}
         {renderTabPanel(<AiderSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(
           <AgentSettings settings={settings} setSettings={updateSettings} initialProfileId={initialAgentProfileId} initialProvider={initialAgentProvider} />,

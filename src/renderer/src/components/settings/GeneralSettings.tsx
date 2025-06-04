@@ -19,20 +19,56 @@ const ZOOM_OPTIONS: Option[] = [
   { label: '150%', value: '1.5' },
 ];
 
+const FONT_FAMILIES = [
+  'Sono',
+  'Tektur',
+  'system-ui',
+  'Inter',
+  'Arial',
+  'Helvetica',
+  'Times New Roman',
+  'Georgia',
+  'Verdana',
+];
+
+const MONOSPACE_FONT_FAMILIES = [
+  'Sono',
+  'MonaspaceKrypton-SemiBold',
+  'ui-monospace',
+  'JetBrains Mono',
+  'Fira Code',
+  'Source Code Pro',
+  'Monaco',
+  'Menlo',
+  'Consolas',
+  'Courier New',
+];
+
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
+  onFontChange?: (fontFamily: string, monospaceFontFamily: string) => void;
 };
 
-export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange }: Props) => {
+export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onFontChange }: Props) => {
   const { t } = useTranslation();
 
   const themeOptions: Option[] = [
     { label: t('settings.themeOptions.dark'), value: 'dark' },
     { label: t('settings.themeOptions.light'), value: 'light' },
   ];
+
+  const fontOptions: Option[] = FONT_FAMILIES.map(font => ({
+    label: t(`settings.fontOptions.${font}`),
+    value: font,
+  }));
+
+  const monospaceFontOptions: Option[] = MONOSPACE_FONT_FAMILIES.map(font => ({
+    label: t(`settings.monospaceFontOptions.${font}`),
+    value: font,
+  }));
 
   const handleStartupModeChange = (mode: StartupMode) => {
     setSettings({
@@ -73,6 +109,36 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     });
   };
 
+  const handleFontFamilyChange = (value: string) => {
+    const newSettings = {
+      ...settings,
+      fontFamily: value,
+    };
+    setSettings(newSettings);
+    
+    // Apply font changes immediately
+    const root = document.documentElement;
+    root.style.setProperty('--font-family-sans', value);
+    console.log('Font family changed:', value);
+    
+    onFontChange?.(value, settings.monospaceFontFamily ?? 'Sono');
+  };
+
+  const handleMonospaceFontFamilyChange = (value: string) => {
+    const newSettings = {
+      ...settings,
+      monospaceFontFamily: value,
+    };
+    setSettings(newSettings);
+    
+    // Apply font changes immediately
+    const root = document.documentElement;
+    root.style.setProperty('--font-family-mono', value);
+    console.log('Monospace font family changed:', value);
+    
+    onFontChange?.(settings.fontFamily ?? 'Sono', value);
+  };
+
   return (
     <div className="space-y-8 min-h-[300px]">
       <Section title={t('settings.gui')}>
@@ -80,6 +146,18 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
           <LanguageSelector language={settings.language} onChange={onLanguageChange} />
           <Select label={t('settings.zoom')} options={ZOOM_OPTIONS} value={String(settings.zoomLevel ?? 1)} onChange={handleZoomChange} />
           <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-2" />
+          <Select 
+            label={t('settings.fontFamily')} 
+            options={fontOptions} 
+            value={settings.fontFamily ?? 'Sono'} 
+            onChange={handleFontFamilyChange} 
+          />
+          <Select 
+            label={t('settings.monospaceFontFamily')} 
+            options={monospaceFontOptions} 
+            value={settings.monospaceFontFamily ?? 'Sono'} 
+            onChange={handleMonospaceFontFamilyChange} 
+          />
         </div>
       </Section>
 

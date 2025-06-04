@@ -218,9 +218,34 @@
     "notificationsEnabled": "通知已启用",
     "zoom": "缩放级别",
     "theme": "主题",
+    "fontFamily": "字体",
+    "monospaceFontFamily": "等宽字体",
     "themeOptions": {
       "dark": "深色",
       "light": "浅色"
+    },
+    "fontOptions": {
+      "Sono": "Sono",
+      "Tektur": "Tektur",
+      "system-ui": "系统默认",
+      "Inter": "Inter",
+      "Arial": "Arial",
+      "Helvetica": "Helvetica",
+      "Times New Roman": "Times New Roman",
+      "Georgia": "Georgia",
+      "Verdana": "Verdana"
+    },
+    "monospaceFontOptions": {
+      "Sono": "Sono",
+      "MonaspaceKrypton-SemiBold": "Monaspace Krypton",
+      "ui-monospace": "系统等宽字体",
+      "JetBrains Mono": "JetBrains Mono",
+      "Fira Code": "Fira Code",
+      "Source Code Pro": "Source Code Pro",
+      "Monaco": "Monaco",
+      "Menlo": "Menlo",
+      "Consolas": "Consolas",
+      "Courier New": "Courier New"
     },
     "aiderRestartConfirm": {
       "title": "需要重启",
@@ -442,7 +467,7 @@
       "fileWrite": {
         "overwrite": "重写文件: {{filePath}}",
         "append": "追加到文件: {{filePath}}",
-        "createOnly": "创建文件: {{filePath}"
+        "createOnly": "创建文件: {{filePath}}"
       },
       "fileEdit": {
         "title": "编辑文件: {{filePath}}",

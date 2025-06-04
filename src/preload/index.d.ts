@@ -129,9 +129,16 @@ export interface ApplicationAPI {
   removeVersionsInfoUpdatedListener: (listenerId: string) => void;
 }
 
+export interface ExtendedElectronAPI extends ElectronAPI {
+  minimizeWindow: () => void;
+  maximizeWindow: () => void;
+  closeWindow: () => void;
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI;
+    electronAPI: ExtendedElectronAPI;
     api: ApplicationAPI;
   }
 }

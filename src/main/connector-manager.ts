@@ -6,6 +6,7 @@ import { Server, Socket } from 'socket.io';
 import { Connector } from 'src/main/connector';
 import { ProjectManager } from 'src/main/project-manager';
 import { SERVER_PORT } from 'src/main/constants';
+import { findAvailablePort } from 'src/main/utils';
 
 import logger from './logger';
 import {
@@ -34,10 +35,10 @@ export class ConnectorManager {
     private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
   ) {
-    this.init(httpServer);
+    // Init is now called explicitly from index.ts
   }
 
-  public init(httpServer: HttpServer): void {
+  public async init(httpServer: HttpServer): Promise<void> {
     // Create Socket.IO server
     this.io = new Server(httpServer, {
       cors: {
@@ -63,9 +64,18 @@ export class ConnectorManager {
       });
     });
 
-    httpServer.listen(SERVER_PORT);
+    // Find an available port starting from SERVER_PORT
+    const port = await findAvailablePort(SERVER_PORT);
+    if (!port) {
+      logger.error(`Could not find an available port after trying ${SERVER_PORT} through ${SERVER_PORT + 99}`);
+      throw new Error('No available ports found');
+    }
 
-    logger.info('Socket.IO server initialized');
+    // Listen on the available port
+    httpServer.listen(port);
+    
+    // Log the port that was actually used
+    logger.info(`Socket.IO server initialized on port ${port}${port !== SERVER_PORT ? ` (default port ${SERVER_PORT} was in use)` : ''}`);
   }
 
   public async close() {

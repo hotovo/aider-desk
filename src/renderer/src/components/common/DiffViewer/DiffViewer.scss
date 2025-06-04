@@ -12,7 +12,7 @@
 
   .diff-code {
     padding: 0;
-    font-family: 'Sono', monospace;
+    font-family: var(--font-family-mono, 'Sono'), monospace;
   }
 
   .diff-code-insert {

@@ -6,7 +6,6 @@ import {
   FileEdit,
   InputHistoryData,
   LogData,
-  McpServerConfig,
   ModelsData,
   QuestionData,
   ResponseChunkData,
@@ -22,7 +21,7 @@ import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
-import { ApplicationAPI } from './index.d';
+import { ApplicationAPI, ExtendedElectronAPI } from './index.d';
 
 const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean => {
   return normalizeBaseDir(baseDir1) === normalizeBaseDir(baseDir2);
@@ -42,6 +41,13 @@ const inputHistoryUpdatedListeners: Record<string, (event: Electron.IpcRendererE
 const userMessageListeners: Record<string, (event: Electron.IpcRendererEvent, data: UserMessageData) => void> = {};
 const clearProjectListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string, clearMessages: boolean, clearSession: boolean) => void> = {};
 const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
+
+const extendedElectronAPI: ExtendedElectronAPI = {
+  ...electronAPI,
+  minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
+  maximizeWindow: () => ipcRenderer.invoke('maximize-window'),
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+};
 
 const api: ApplicationAPI = {
   loadSettings: () => ipcRenderer.invoke('load-settings'),
@@ -76,7 +82,7 @@ const api: ApplicationAPI = {
   runCommand: (baseDir, command) => ipcRenderer.send('run-command', baseDir, command),
   scrapeWeb: (baseDir, url) => ipcRenderer.invoke('scrape-web', baseDir, url),
 
-  loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
+  loadMcpServerTools: (serverName, config?) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),
 
   saveSession: (baseDir, name) => ipcRenderer.invoke('save-session', baseDir, name),
@@ -369,6 +375,7 @@ const api: ApplicationAPI = {
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI);
+    contextBridge.exposeInMainWorld('electronAPI', extendedElectronAPI);
     contextBridge.exposeInMainWorld('api', api);
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -376,5 +383,6 @@ if (process.contextIsolated) {
   }
 } else {
   window.electron = electronAPI;
+  window.electronAPI = extendedElectronAPI;
   window.api = api;
 }

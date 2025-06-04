@@ -21,6 +21,19 @@ const ThemeManager = () => {
     document.body.classList.add(className);
   }, [settings?.theme]);
 
+  useEffect(() => {
+    if (settings) {
+      const root = document.documentElement;
+      const fontFamily = settings.fontFamily || 'Sono';
+      const monospaceFontFamily = settings.monospaceFontFamily || 'Sono';
+      
+      root.style.setProperty('--font-family-sans', fontFamily);
+      root.style.setProperty('--font-family-mono', monospaceFontFamily);
+      
+      console.log('Font settings applied:', { fontFamily, monospaceFontFamily });
+    }
+  }, [settings?.fontFamily, settings?.monospaceFontFamily]);
+
   return null;
 };
 

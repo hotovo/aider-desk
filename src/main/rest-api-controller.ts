@@ -265,7 +265,11 @@ export class RestApiController {
     // so we just need to attach our Express app to it
     this.server.on('request', this.app);
 
-    logger.info(`REST API routes registered on port ${SERVER_PORT}`);
+    // Get the actual port the server is listening on
+    const address = this.server.address();
+    const port = typeof address === 'object' && address ? address.port : SERVER_PORT;
+    
+    logger.info(`REST API routes registered on port ${port}`);
   }
 
   async close() {

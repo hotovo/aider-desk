@@ -224,9 +224,34 @@
     "notificationsEnabled": "Notifications enabled",
     "zoom": "Zoom level",
     "theme": "Theme",
+    "fontFamily": "Font Family",
+    "monospaceFontFamily": "Monospace Font Family",
     "themeOptions": {
       "dark": "Dark",
       "light": "Light"
+    },
+    "fontOptions": {
+      "Sono": "Sono",
+      "Tektur": "Tektur",
+      "system-ui": "System Default",
+      "Inter": "Inter",
+      "Arial": "Arial",
+      "Helvetica": "Helvetica",
+      "Times New Roman": "Times New Roman",
+      "Georgia": "Georgia",
+      "Verdana": "Verdana"
+    },
+    "monospaceFontOptions": {
+      "Sono": "Sono",
+      "MonaspaceKrypton-SemiBold": "Monaspace Krypton",
+      "ui-monospace": "System Monospace",
+      "JetBrains Mono": "JetBrains Mono",
+      "Fira Code": "Fira Code",
+      "Source Code Pro": "Source Code Pro",
+      "Monaco": "Monaco",
+      "Menlo": "Menlo",
+      "Consolas": "Consolas",
+      "Courier New": "Courier New"
     },
     "aiderRestartConfirm": {
       "title": "Restart Required",
