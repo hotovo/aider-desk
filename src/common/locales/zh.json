@@ -566,5 +566,17 @@
     "title": "遥测信息",
     "message": "为了帮助我们改进 AiderDesk，我们会收集匿名遥测数据。这包括功能使用情况和性能指标等信息。绝不会收集个人数据或代码。",
     "enabledLabel": "启用匿名遥测"
+  },
+  "promptBehavior": {
+    "title": "提示行为",
+    "showSuggestions": "显示建议",
+    "automaticallyWhileTyping": "输入时自动显示",
+    "onlyWhenTabPressed": "仅在按 TAB 键时显示",
+    "suggestionsDelay": "建议延迟",
+    "requireCommandConfirmation": "需要命令确认",
+    "addCommand": "/add",
+    "readOnlyCommand": "/read-only",
+    "modelCommand": "/model",
+    "modeSwitchingCommands": "模式切换命令 (/code, /context, /agent, /ask, /architect)"
   }
 }

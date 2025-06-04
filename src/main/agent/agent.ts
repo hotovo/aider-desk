@@ -560,6 +560,7 @@ export class Agent {
         maxSteps: profile.maxIterations,
         maxTokens: profile.maxTokens,
         temperature: 0, // Keep deterministic for agent behavior
+        experimental_continueSteps: true,
         onError: ({ error }) => {
           logger.error('Error during prompt:', { error });
           if (typeof error === 'string') {

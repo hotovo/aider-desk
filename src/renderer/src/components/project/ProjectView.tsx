@@ -607,7 +607,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
   };
 
-  if (!projectSettings) {
+  if (!projectSettings || !settings) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
         <CgSpinner className="animate-spin w-10 h-10" />
@@ -684,15 +684,17 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             clearMessages={clearMessages}
             scrapeWeb={scrapeWeb}
             showFileDialog={showFileDialog}
+            addFiles={handleAddFiles}
             question={question}
             answerQuestion={answerQuestion}
             interruptResponse={handleInterruptResponse}
             runCommand={runCommand}
             runTests={runTests}
             redoLastUserPrompt={handleRedoLastUserPrompt}
-            openModelSelector={() => projectTopBarRef.current?.openMainModelSelector()}
-            openAgentModelSelector={() => projectTopBarRef.current?.openAgentModelSelector()}
+            openModelSelector={projectTopBarRef.current?.openMainModelSelector}
+            openAgentModelSelector={projectTopBarRef.current?.openAgentModelSelector}
             disabled={!aiderModelsData}
+            promptBehavior={settings.promptBehavior}
           />
         </div>
       </div>

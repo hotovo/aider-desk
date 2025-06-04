@@ -160,7 +160,7 @@
       "agent": "Agent",
       "about": "About"
     },
-    "gui": "GUI",
+    "gui": "Appearance",
     "startup": {
       "title": "Start Up",
       "emptySession": "Start with empty session",
@@ -273,6 +273,18 @@
     },
     "telemetry": {
       "title": "Telemetry"
+    },
+    "promptBehavior": {
+      "title": "Prompt Behavior",
+      "showSuggestions": "Show suggestions",
+      "automaticallyWhileTyping": "Automatically while typing",
+      "onlyWhenTabPressed": "Only when TAB key is pressed",
+      "suggestionsDelay": "Suggestions delay",
+      "requireCommandConfirmation": "Require confirmation for commands",
+      "addCommand": "/add",
+      "readOnlyCommand": "/read-only",
+      "modelCommand": "/model",
+      "modeSwitchingCommands": "Mode commands (/code, /agent, ...)"
     }
   },
   "messages": {

@@ -20,8 +20,8 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 
 export type ProjectTopBarRef = {
-  openMainModelSelector: () => void;
-  openAgentModelSelector: () => void;
+  openMainModelSelector: (model?: string) => void;
+  openAgentModelSelector: (model?: string) => void;
 };
 
 type Props = {
@@ -48,15 +48,15 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     const sessionPopupRef = useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => ({
-      openMainModelSelector: () => {
+      openMainModelSelector: (model) => {
         if (mode === 'architect') {
-          architectModelSelectorRef.current?.open();
+          architectModelSelectorRef.current?.open(model);
         } else {
-          mainModelSelectorRef.current?.open();
+          mainModelSelectorRef.current?.open(model);
         }
       },
-      openAgentModelSelector: () => {
-        agentModelSelectorRef.current?.open();
+      openAgentModelSelector: (model) => {
+        agentModelSelectorRef.current?.open(model);
       },
     }));
 

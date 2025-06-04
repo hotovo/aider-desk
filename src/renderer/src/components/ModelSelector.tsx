@@ -7,7 +7,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 
 export type ModelSelectorRef = {
-  open: () => void;
+  open: (model?: string) => void;
 };
 
 type Props = {
@@ -45,7 +45,11 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
   }, [visible]);
 
   useImperativeHandle(ref, () => ({
-    open: show,
+    open: (model) => {
+      console.log('Opening model selector with model:', model);
+      setModelSearchTerm(model || '');
+      show();
+    },
   }));
 
   const toggleVisible = useCallback(() => {

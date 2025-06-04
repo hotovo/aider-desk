@@ -1,4 +1,4 @@
-import { Mode, QuestionData } from '@common/types';
+import { Mode, QuestionData, PromptBehavior, SuggestionMode } from '@common/types';
 import React, { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from 'react-use';
@@ -14,8 +14,15 @@ import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/InputHistoryMenu';
 import { CommandSuggestion } from '@/components/CommandSuggestion';
 
-const COMMANDS = ['/code', '/context', '/agent', '/ask', '/architect', '/add', '/model', '/read-only'];
-const CONFIRM_COMMANDS = [
+const COMMANDS = [
+  '/code',
+  '/context',
+  '/agent',
+  '/ask',
+  '/architect',
+  '/add',
+  '/model',
+  '/read-only',
   '/clear',
   '/web',
   '/undo',
@@ -51,12 +58,13 @@ type Props = {
   isActive: boolean;
   words?: string[];
   inputHistory?: string[];
-  openModelSelector?: () => void;
-  openAgentModelSelector?: () => void;
+  openModelSelector?: (model?: string) => void;
+  openAgentModelSelector?: (model?: string) => void;
   mode: Mode;
   onModeChanged: (mode: Mode) => void;
   runPrompt: (prompt: string) => void;
   showFileDialog: (readOnly: boolean) => void;
+  addFiles?: (filePaths: string[], readOnly?: boolean) => void;
   clearMessages: () => void;
   scrapeWeb: (url: string) => void;
   question?: QuestionData | null;
@@ -67,6 +75,7 @@ type Props = {
   redoLastUserPrompt: () => void;
   editLastUserMessage: () => void;
   disabled?: boolean;
+  promptBehavior: PromptBehavior;
 };
 
 export const PromptField = React.forwardRef<PromptFieldRef, Props>(
@@ -81,6 +90,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       onModeChanged,
       showFileDialog,
       runPrompt,
+      addFiles,
       clearMessages,
       scrapeWeb,
       question,
@@ -93,6 +103,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       openModelSelector,
       openAgentModelSelector,
       disabled = false,
+      promptBehavior,
     }: Props,
     ref,
   ) => {
@@ -110,7 +121,9 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const [historyLimit, setHistoryLimit] = useState(HISTORY_MENU_CHUNK_SIZE);
     const [keepHistoryHighlightTop, setKeepHistoryHighlightTop] = useState(false);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+    const [pendingCommand, setPendingCommand] = useState<{ command: string; args?: string } | null>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+
     const historyItems = inputHistory.slice(0, historyLimit).reverse();
 
     const loadMoreHistory = useCallback(() => {
@@ -124,15 +137,15 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
 
     useDebounce(
       () => {
-        // only show suggestions if the current word is at least 3 characters long
-        if (currentWord.length >= 3 && !suggestionsVisible) {
+        // only show suggestions if the current word is at least 3 characters long and suggestion mode is automatic
+        if (promptBehavior.suggestionMode === SuggestionMode.Automatically && currentWord.length >= 3 && !suggestionsVisible) {
           const matched = matchSorter(words, currentWord);
           setFilteredSuggestions(matched.slice(0, MAX_SUGGESTIONS));
           setSuggestionsVisible(matched.length > 0);
         }
       },
-      100,
-      [currentWord, words],
+      promptBehavior.suggestionDelay,
+      [currentWord, words, promptBehavior.suggestionMode, promptBehavior.suggestionDelay],
     );
 
     useDebounce(
@@ -162,41 +175,48 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       },
     }));
 
-    const invokeCommand = useCallback(
+    const executeCommand = useCallback(
       (command: string, args?: string): void => {
         switch (command) {
           case '/code':
           case '/context':
           case '/ask':
           case '/architect': {
-            const prompt = text.replace(command, '').trim();
-            setText(prompt);
             const newMode = command.slice(1) as Mode;
             onModeChanged(newMode);
+            setText(args || '');
             break;
           }
           case '/agent': {
-            const prompt = text.replace(command, '').trim();
-            setText(prompt);
             const newMode = command.slice(1) as Mode;
             if (mode === 'agent') {
-              openAgentModelSelector?.();
+              openAgentModelSelector?.(args);
+              prepareForNextPrompt();
             } else {
               onModeChanged(newMode);
+              setText(args || '');
             }
             break;
           }
           case '/add':
             prepareForNextPrompt();
-            showFileDialog(false);
+            if (args && addFiles) {
+              addFiles(args.split(' '), false);
+            } else {
+              showFileDialog(false);
+            }
             break;
           case '/read-only':
             prepareForNextPrompt();
-            showFileDialog(true);
+            if (args && addFiles) {
+              addFiles(args.split(' '), true);
+            } else {
+              showFileDialog(true);
+            }
             break;
           case '/model':
             prepareForNextPrompt();
-            openModelSelector?.();
+            openModelSelector?.(args);
             break;
           case '/web': {
             const url = text.replace('/web', '').trim();
@@ -227,9 +247,81 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           }
         }
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [mode, text, runTests],
+      [
+        showFileDialog,
+        addFiles,
+        openModelSelector,
+        clearMessages,
+        redoLastUserPrompt,
+        editLastUserMessage,
+        onModeChanged,
+        text,
+        mode,
+        openAgentModelSelector,
+        scrapeWeb,
+        runTests,
+        runCommand,
+      ],
     );
+
+    const invokeCommand = useCallback(
+      (command: string, args?: string): void => {
+        const requiresConfirmation = (command: string): boolean => {
+          switch (command) {
+            case '/add':
+              return promptBehavior.requireCommandConfirmation.add;
+            case '/read-only':
+              return promptBehavior.requireCommandConfirmation.readOnly;
+            case '/model':
+              return promptBehavior.requireCommandConfirmation.model;
+            case '/code':
+            case '/context':
+            case '/ask':
+            case '/architect':
+            case '/agent':
+              return promptBehavior.requireCommandConfirmation.modeSwitching;
+            default:
+              return true;
+          }
+        };
+
+        if (requiresConfirmation(command)) {
+          setPendingCommand({ command, args });
+        } else {
+          executeCommand(command, args);
+        }
+      },
+      [executeCommand, promptBehavior],
+    );
+
+    const handleConfirmCommand = () => {
+      if (pendingCommand) {
+        executeCommand(pendingCommand.command, pendingCommand.args);
+        setPendingCommand(null);
+      }
+    };
+
+    useEffect(() => {
+      const loadAddableFiles = async () => {
+        if (pendingCommand?.command === '/add' || pendingCommand?.command === '/read-only') {
+          try {
+            const files = await window.api.getAddableFiles(baseDir);
+            setFilteredSuggestions(
+              files
+                .filter((file) => file.includes(currentWord))
+                .sort()
+                .slice(0, MAX_SUGGESTIONS),
+            );
+            setSuggestionsVisible(currentWord.length > 0 && files.length > 0);
+          } catch (error) {
+            // eslint-disable-next-line no-console
+            console.error('Error fetching addable files:', error);
+          }
+        }
+      };
+
+      void loadAddableFiles();
+    }, [pendingCommand, baseDir, currentWord]);
 
     useEffect(() => {
       if (question) {
@@ -246,8 +338,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     useEffect(() => {
       const commandMatch = COMMANDS.find((cmd) => text.startsWith(cmd));
       if (commandMatch) {
-        invokeCommand(commandMatch);
-        setSuggestionsVisible(false);
+        invokeCommand(commandMatch, text.split(' ').slice(1).join(' '));
       }
     }, [text, invokeCommand]);
 
@@ -290,6 +381,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newText = e.target.value;
       setText(newText);
+      setPendingCommand(null);
 
       const word = getCurrentWord(newText, e.target.selectionStart);
 
@@ -309,8 +401,18 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           setSelectedAnswer(null);
         }
       }
+
       if (newText.startsWith('/')) {
-        const matched = [...new Set([...COMMANDS, ...CONFIRM_COMMANDS])].filter((cmd) => cmd.toLowerCase().startsWith(newText.toLowerCase())).sort();
+        const commandMatch = COMMANDS.find((cmd) => newText.toLowerCase().startsWith(cmd.toLowerCase()));
+        if (commandMatch) {
+          if ((commandMatch === '/add' && newText !== '/add') || (commandMatch === '/read-only' && newText !== '/read-only')) {
+            setCurrentWord(word);
+          } else {
+            setSuggestionsVisible(false);
+          }
+          return;
+        }
+        const matched = COMMANDS.filter((cmd) => cmd.toLowerCase().startsWith(newText.toLowerCase())).sort();
         setFilteredSuggestions(matched);
         setSuggestionsVisible(matched.length > 0);
       } else if (word.length > 0) {
@@ -328,6 +430,15 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       }
     };
 
+    const showSuggestionsOnTab = () => {
+      if (promptBehavior.suggestionMode === SuggestionMode.OnTab && currentWord.length) {
+        const matched = matchSorter(words, currentWord);
+        setFilteredSuggestions(matched.slice(0, MAX_SUGGESTIONS));
+        setSuggestionsVisible(matched.length > 0);
+        setHighlightedSuggestionIndex(-1);
+      }
+    };
+
     const acceptSuggestion = (suggestion: string) => {
       if (inputRef.current) {
         const cursorPos = inputRef.current.selectionStart;
@@ -341,6 +452,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
 
         setText(newText);
         setSuggestionsVisible(false);
+        setCurrentWord('');
 
         inputRef.current.focus();
         const newCursorPos = commandMatch ? suggestion.length + 1 : lastSpaceIndex + 1 + suggestion.length;
@@ -353,22 +465,23 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       setCurrentWord('');
       setSuggestionsVisible(false);
       setHighlightedSuggestionIndex(-1);
+      setPendingCommand(null);
     };
 
     const handleSubmit = () => {
       if (text) {
-        if (text.startsWith('/') && ![...COMMANDS, ...CONFIRM_COMMANDS].some((cmd) => text.startsWith(cmd))) {
+        if (text.startsWith('/') && !COMMANDS.some((cmd) => text.startsWith(cmd))) {
           showErrorNotification(t('promptField.invalidCommand'));
           return;
         }
 
-        const confirmCommandMatch = CONFIRM_COMMANDS.find((cmd) => text.startsWith(cmd));
-        if (confirmCommandMatch) {
-          invokeCommand(confirmCommandMatch, text.split(' ').slice(1).join(' '));
+        if (pendingCommand) {
+          prepareForNextPrompt();
+          handleConfirmCommand();
         } else {
           runPrompt(text);
+          prepareForNextPrompt();
         }
-        prepareForNextPrompt();
       }
     };
 
@@ -486,6 +599,12 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
               }
             }
             break;
+          case 'Tab':
+            if (promptBehavior.suggestionMode === SuggestionMode.OnTab) {
+              e.preventDefault();
+              showSuggestionsOnTab();
+            }
+            break;
           case 'ArrowUp':
             if (text === '' && historyItems.length > 0) {
               e.preventDefault();
@@ -496,10 +615,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
             break;
         }
       }
-    };
-
-    const handleModeChange = (mode: Mode) => {
-      onModeChanged(mode);
     };
 
     return (
@@ -597,7 +712,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
             )}
           </div>
           <div className="relative w-full flex items-center gap-1.5">
-            <ModeSelector mode={mode} onModeChange={handleModeChange} />
+            <ModeSelector mode={mode} onModeChange={onModeChanged} />
             {mode === 'agent' && <AgentSelector />}
           </div>
         </div>

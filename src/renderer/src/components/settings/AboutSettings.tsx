@@ -31,6 +31,13 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
     }
   };
 
+  const handleTelemetryEnabledChange = (checked: boolean) => {
+    setSettings({
+      ...settings,
+      telemetryEnabled: checked,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <Section title="AiderDesk">
@@ -88,13 +95,16 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
           )}
         </div>
       </Section>
+      <Section title={t('settings.telemetry.title')}>
+        <div className="px-4 py-3 space-y-3 mt-2">
+          <Checkbox label={t('telemetry.enabledLabel')} checked={settings.telemetryEnabled ?? false} onChange={handleTelemetryEnabledChange} />
+        </div>
+      </Section>
       <div className="flex flex-col items-center space-y-2">
         <Button onClick={checkForUpdates} disabled={!versions} variant="text" size="sm">
           {t('settings.about.checkForUpdates')}
         </Button>
       </div>
-
-      {/* Add more information here if needed, e.g., links to website, repository, license */}
     </div>
   );
 };

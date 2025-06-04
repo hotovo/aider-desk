@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, WindowState } from '@common/types';
+import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, LlmProvider, LlmProviderName } from '@common/agent';
 import { parseAiderEnv } from 'src/main/utils';
@@ -40,6 +40,16 @@ export const DEFAULT_SETTINGS: SettingsData = {
   mcpServers: {},
   llmProviders: {} as Record<LlmProviderName, LlmProvider>,
   telemetryEnabled: true,
+  promptBehavior: {
+    suggestionMode: SuggestionMode.Automatically,
+    suggestionDelay: 100,
+    requireCommandConfirmation: {
+      add: false,
+      readOnly: false,
+      model: false,
+      modeSwitching: false,
+    },
+  },
 };
 
 export const determineMainModel = (settings: SettingsData): string => {
@@ -166,6 +176,14 @@ export class Store {
       models: {
         ...DEFAULT_SETTINGS.models,
         ...settings?.models,
+      },
+      promptBehavior: {
+        ...DEFAULT_SETTINGS.promptBehavior,
+        ...settings?.promptBehavior,
+        requireCommandConfirmation: {
+          ...DEFAULT_SETTINGS.promptBehavior.requireCommandConfirmation,
+          ...settings?.promptBehavior?.requireCommandConfirmation,
+        },
       },
       agentProfiles: getAgentProfiles(),
       mcpServers: settings.mcpServers || DEFAULT_SETTINGS.mcpServers,

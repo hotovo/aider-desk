@@ -171,6 +171,22 @@ export enum StartupMode {
   Last = 'last',
 }
 
+export enum SuggestionMode {
+  Automatically = 'automatically',
+  OnTab = 'onTab',
+}
+
+export interface PromptBehavior {
+  suggestionMode: SuggestionMode;
+  suggestionDelay: number;
+  requireCommandConfirmation: {
+    add: boolean;
+    readOnly: boolean;
+    model: boolean;
+    modeSwitching: boolean;
+  };
+}
+
 export interface AgentProfile {
   id: string;
   name: string;
@@ -213,6 +229,7 @@ export interface SettingsData {
   llmProviders: Record<LlmProviderName, LlmProvider>;
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
+  promptBehavior: PromptBehavior;
 }
 
 export interface UsageReportData {

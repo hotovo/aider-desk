@@ -236,10 +236,12 @@ export const getProviderOptions = (llmProvider: LlmProvider): Record<string, Rec
   if (isGeminiProvider(llmProvider)) {
     return {
       google: {
-        thinkingConfig: {
-          includeThoughts: llmProvider.includeThoughts,
-          thinkingBudget: llmProvider.thinkingBudget ?? 0,
-        },
+        ...((llmProvider.includeThoughts || llmProvider.thinkingBudget) && {
+          thinkingConfig: {
+            includeThoughts: llmProvider.includeThoughts,
+            thinkingBudget: llmProvider.thinkingBudget ?? 0,
+          },
+        }),
       } satisfies GoogleGenerativeAIProviderOptions,
     };
   }

@@ -1,10 +1,11 @@
 import { useTranslation } from 'react-i18next';
-import { SettingsData, StartupMode } from '@common/types';
+import { SettingsData, StartupMode, SuggestionMode } from '@common/types';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
 import { Select, Option } from '../common/Select';
 import { Section } from '../common/Section';
+import { Slider } from '../common/Slider';
 
 import { LanguageSelector } from './LanguageSelector';
 
@@ -102,10 +103,40 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     });
   };
 
-  const handleTelemetryEnabledChange = (checked: boolean) => {
+  const handleSuggestionModeChange = (mode: SuggestionMode) => {
     setSettings({
       ...settings,
-      telemetryEnabled: checked,
+      promptBehavior: {
+        ...settings.promptBehavior,
+        suggestionMode: mode,
+      },
+    });
+  };
+
+  const handleSuggestionModeClick = (value: string) => {
+    handleSuggestionModeChange(value as SuggestionMode);
+  };
+
+  const handleSuggestionDelayChange = (delay: number) => {
+    setSettings({
+      ...settings,
+      promptBehavior: {
+        ...settings.promptBehavior,
+        suggestionDelay: delay,
+      },
+    });
+  };
+
+  const handleCommandConfirmationChange = (command: keyof typeof settings.promptBehavior.requireCommandConfirmation, checked: boolean) => {
+    setSettings({
+      ...settings,
+      promptBehavior: {
+        ...settings.promptBehavior,
+        requireCommandConfirmation: {
+          ...settings.promptBehavior.requireCommandConfirmation,
+          [command]: checked,
+        },
+      },
     });
   };
 
@@ -183,15 +214,77 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
         </div>
       </Section>
 
-      <Section title={t('settings.notifications.title')}>
-        <div className="px-4 py-3 space-y-3 mt-2">
-          <Checkbox label={t('settings.notificationsEnabled')} checked={settings.notificationsEnabled ?? false} onChange={handleNotificationsEnabledChange} />
+      <Section title={t('settings.promptBehavior.title')}>
+        <div className="px-4 py-5 grid grid-cols-2 gap-10">
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.showSuggestions')}</h4>
+            <div className="space-y-2 ml-2">
+              <RadioButton
+                id="suggestion-automatically"
+                name="suggestion-mode"
+                value={SuggestionMode.Automatically}
+                checked={settings.promptBehavior.suggestionMode === SuggestionMode.Automatically}
+                onChange={handleSuggestionModeClick}
+                label={t('settings.promptBehavior.automaticallyWhileTyping')}
+              />
+
+              {settings.promptBehavior.suggestionMode === SuggestionMode.Automatically && (
+                <div className="ml-6 mt-3 mr-10">
+                  <Slider
+                    label={<span className="text-xs">{t('settings.promptBehavior.suggestionsDelay')}</span>}
+                    min={0}
+                    max={2000}
+                    step={100}
+                    value={settings.promptBehavior.suggestionDelay}
+                    onChange={handleSuggestionDelayChange}
+                    showValue={true}
+                    className="max-w-[260px]"
+                  />
+                </div>
+              )}
+
+              <RadioButton
+                id="suggestion-tab"
+                name="suggestion-mode"
+                value={SuggestionMode.OnTab}
+                checked={settings.promptBehavior.suggestionMode === SuggestionMode.OnTab}
+                onChange={handleSuggestionModeClick}
+                label={t('settings.promptBehavior.onlyWhenTabPressed')}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.requireCommandConfirmation')}</h4>
+            <div className="space-y-2 ml-2">
+              <Checkbox
+                label={t('settings.promptBehavior.addCommand')}
+                checked={settings.promptBehavior.requireCommandConfirmation.add}
+                onChange={(checked) => handleCommandConfirmationChange('add', checked)}
+              />
+              <Checkbox
+                label={t('settings.promptBehavior.readOnlyCommand')}
+                checked={settings.promptBehavior.requireCommandConfirmation.readOnly}
+                onChange={(checked) => handleCommandConfirmationChange('readOnly', checked)}
+              />
+              <Checkbox
+                label={t('settings.promptBehavior.modelCommand')}
+                checked={settings.promptBehavior.requireCommandConfirmation.model}
+                onChange={(checked) => handleCommandConfirmationChange('model', checked)}
+              />
+              <Checkbox
+                label={t('settings.promptBehavior.modeSwitchingCommands')}
+                checked={settings.promptBehavior.requireCommandConfirmation.modeSwitching}
+                onChange={(checked) => handleCommandConfirmationChange('modeSwitching', checked)}
+              />
+            </div>
+          </div>
         </div>
       </Section>
 
-      <Section title={t('settings.telemetry.title')}>
+      <Section title={t('settings.notifications.title')}>
         <div className="px-4 py-3 space-y-3 mt-2">
-          <Checkbox label={t('telemetry.enabledLabel')} checked={settings.telemetryEnabled ?? false} onChange={handleTelemetryEnabledChange} />
+          <Checkbox label={t('settings.notificationsEnabled')} checked={settings.notificationsEnabled ?? false} onChange={handleNotificationsEnabledChange} />
         </div>
       </Section>
     </div>

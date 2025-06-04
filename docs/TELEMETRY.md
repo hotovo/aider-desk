@@ -6,7 +6,7 @@ AiderDesk collects anonymous telemetry data to help us understand how the applic
 
 All telemetry data collected is **anonymous**. We do not collect any personally identifiable information (PII). Your code, project details (beyond aggregated counts), or specific prompts are never transmitted. We respect your privacy and are committed to ensuring that your data remains secure and confidential. The `distinctId` used for telemetry is a randomly generated user ID stored locally and is not linked to any personal information.
 
-You can always disable telemetry in **Settings -> General -> Telemetry** section.
+You can always disable telemetry in **Settings -> About -> Telemetry** section.
 
 ## Collected Events and Properties
 
