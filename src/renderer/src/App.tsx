@@ -11,6 +11,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
 import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { ContextMenu, useAiderDeskContextMenu } from '@/components/common/ContextMenu';
 
 const ThemeManager = () => {
   const { settings } = useSettings();
@@ -28,12 +29,39 @@ const AnimatedRoutes = () => {
   const { i18n } = useTranslation();
   const location = useLocation();
   const { settings } = useSettings();
+  const { show } = useAiderDeskContextMenu();
 
   useEffect(() => {
     if (settings?.language) {
       void i18n.changeLanguage(settings.language);
     }
   }, [i18n, settings]);
+
+  // Add context menu event listener
+  useEffect(() => {
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+      const target = event.target as HTMLElement;
+      const targetIsEditable = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      const selectedText = window.getSelection()?.toString() || '';
+      const hasSelectedText = selectedText.length > 0;
+
+      // Only show the menu if there's at least one action available
+      if (hasSelectedText || targetIsEditable) {
+        show({
+          event,
+          props: {
+            targetIsEditable,
+            hasSelectedText,
+          }
+        });
+      }
+    };
+    document.addEventListener('contextmenu', handleContextMenu);
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [show]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
@@ -75,6 +103,7 @@ const App = () => {
           <ThemeManager />
           <AnimatedRoutes />
           <ToastContainer />
+          <ContextMenu />
         </SettingsProvider>
       </Router>
     </motion.div>

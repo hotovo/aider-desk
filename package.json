@@ -84,6 +84,7 @@
     "prismjs": "^1.29.0",
     "react-compiler-runtime": "^19.1.0-rc.2",
     "react-complex-tree": "^2.4.5",
+    "react-contexify": "^6.0.0",
     "react-country-flag": "^3.1.0",
     "react-diff-view": "^3.3.1",
     "react-hotkeys-hook": "^4.6.1",
