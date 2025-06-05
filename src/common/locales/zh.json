@@ -153,6 +153,7 @@
     "title": "设置",
     "tabs": {
       "general": "通用",
+      "appearance": "外观",
       "aider": "Aider",
       "agent": "服务器",
       "about": "关于"
@@ -223,6 +224,12 @@
     "themeOptions": {
       "dark": "深色",
       "light": "浅色"
+    },
+    "themeSettings": {
+      "title": "主题设置",
+      "selectTheme": "选择主题",
+      "customizeThemes": "自定义主题",
+      "themeEditor": "主题编辑器"
     },
     "fontOptions": {
       "Sono": "Sono",
@@ -355,6 +362,57 @@
     "maxOutputTokens": "最大输出令牌数",
     "inputCostPerMillion": "每百万输入令牌成本",
     "outputCostPerMillion": "每百万输出令牌成本"
+  },
+  "themeEditor": {
+    "general": "常规设置",
+    "name": "主题名称",
+    "type": "主题类型",
+    "dark": "深色",
+    "light": "浅色",
+    "colors": "颜色",
+    "createNew": "创建新主题",
+    "duplicate": "复制",
+    "delete": "删除",
+    "newThemeName": "新主题",
+    "colorCategories": {
+      "background": "背景颜色",
+      "foreground": "文本颜色",
+      "border": "边框颜色",
+      "accent": "强调颜色",
+      "button": "按钮颜色"
+    },
+    "colors": {
+      "background": {
+        "primary": "主要背景",
+        "secondary": "次要背景",
+        "tertiary": "第三级背景",
+        "input": "输入框背景"
+      },
+      "foreground": {
+        "primary": "主要文本",
+        "secondary": "次要文本",
+        "tertiary": "第三级文本",
+        "error": "错误文本"
+      },
+      "border": {
+        "primary": "主要边框",
+        "secondary": "次要边框"
+      },
+      "accent": {
+        "primary": "主要强调",
+        "secondary": "次要强调",
+        "tertiary": "第三级强调"
+      },
+      "button": {
+        "primary": "主要按钮",
+        "secondary": "次要按钮",
+        "danger": "危险按钮"
+      }
+    },
+    "deleteConfirm": {
+      "title": "删除主题",
+      "message": "确定要删除主题 "{{name}}"? 此操作无法撤销。"
+    }
   },
   "mcp": {
     "noDescription": "无描述",
