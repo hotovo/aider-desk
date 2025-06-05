@@ -21,9 +21,9 @@ import {
 import { BiTrash } from 'react-icons/bi';
 import clsx from 'clsx';
 import {
-  AIDER_TOOL_ADD_CONTEXT_FILE,
+  AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DESCRIPTIONS,
-  AIDER_TOOL_DROP_CONTEXT_FILE,
+  AIDER_TOOL_DROP_CONTEXT_FILES,
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
@@ -72,13 +72,13 @@ const tools: Record<string, GenericTool[]> = {
     },
     {
       groupName: AIDER_TOOL_GROUP_NAME,
-      name: AIDER_TOOL_ADD_CONTEXT_FILE,
-      description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_ADD_CONTEXT_FILE],
+      name: AIDER_TOOL_ADD_CONTEXT_FILES,
+      description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_ADD_CONTEXT_FILES],
     },
     {
       groupName: AIDER_TOOL_GROUP_NAME,
-      name: AIDER_TOOL_DROP_CONTEXT_FILE,
-      description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_DROP_CONTEXT_FILE],
+      name: AIDER_TOOL_DROP_CONTEXT_FILES,
+      description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_DROP_CONTEXT_FILES],
     },
     {
       groupName: AIDER_TOOL_GROUP_NAME,

@@ -2,8 +2,8 @@ export const TOOL_GROUP_NAME_SEPARATOR = '---';
 
 export const AIDER_TOOL_GROUP_NAME = 'aider';
 export const AIDER_TOOL_GET_CONTEXT_FILES = 'get_context_files';
-export const AIDER_TOOL_ADD_CONTEXT_FILE = 'add_context_file';
-export const AIDER_TOOL_DROP_CONTEXT_FILE = 'drop_context_file';
+export const AIDER_TOOL_ADD_CONTEXT_FILES = 'add_context_files';
+export const AIDER_TOOL_DROP_CONTEXT_FILES = 'drop_context_files';
 export const AIDER_TOOL_RUN_PROMPT = 'run_prompt';
 
 export const HELPERS_TOOL_GROUP_NAME = 'helpers';
@@ -21,11 +21,11 @@ export const POWER_TOOL_BASH = 'bash';
 
 export const AIDER_TOOL_DESCRIPTIONS = {
   [AIDER_TOOL_GET_CONTEXT_FILES]: 'Get all files currently in the context for Aider to read or edit',
-  [AIDER_TOOL_ADD_CONTEXT_FILE]: `Adds a file to the Aider context for reading or editing.
+  [AIDER_TOOL_ADD_CONTEXT_FILES]: `Adds file(s) to the Aider context for reading or editing.
 Prerequisite: Before using, check the current context with 'get_context_files'. Do NOT add files already present in the context.
-Use a relative path for files intended for editing within the project. Use an absolute path for read-only files (e.g., outside the project).`,
-  [AIDER_TOOL_DROP_CONTEXT_FILE]: `Removes a file from the Aider context.
-Note: Unless explicitly requested by the user to remove a specific file, this tool should primarily be used to remove files that were previously added using 'add_context_file' (e.g., after a related 'run_prompt' task is completed).`,
+Use relative file path(s) for files intended for editing within the project. Use absolute file path(s) for read-only files (e.g., outside the project).`,
+  [AIDER_TOOL_DROP_CONTEXT_FILES]: `Removes file(s) from the Aider context.
+Note: Unless explicitly requested by the user to remove specific file(s), this tool should primarily be used to remove files that were previously added using 'add_context_files' (e.g., after a related 'run_prompt' task is completed).`,
   [AIDER_TOOL_RUN_PROMPT]: `Delegates a natural language coding task to the Aider assistant for execution within the current project context.
 Use this tool for:
 - Writing new code.
@@ -36,7 +36,7 @@ Use this tool for:
 - This tools must be preferred (if not specified by user otherwise) over other tools creating or modifying files, as it is more efficient and effective.
 
 Prerequisites
-- All relevant existing project files for the task MUST be added to the Aider context using 'add_context_file' BEFORE calling this tool.
+- All relevant existing project files for the task MUST be added to the Aider context using 'add_context_files' BEFORE calling this tool.
 
 Input:
 - A clear, complete, and standalone natural language prompt describing the coding task.

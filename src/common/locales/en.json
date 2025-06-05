@@ -460,8 +460,8 @@
     "denied": "Denied by user.",
     "deniedByReason": "Denied by user:\n{{reason}}",
     "aider": {
-      "addContextFile": "Adding file to Aider's context: {{path}}",
-      "dropContextFile": "Dropping file from Aider's context: {{path}}",
+      "addContextFiles": "Adding file(s) to Aider's context:\n{{paths}}",
+      "dropContextFiles": "Dropping file(s) from Aider's context:\n{{paths}}",
       "runPrompt": "Running prompt in Aider: "
     },
     "power": {

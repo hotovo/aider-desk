@@ -516,8 +516,8 @@
     "denied": "拒绝访问",
     "deniedByReason": "用户拒绝: {{reason}}",
     "aider": {
-      "addContextFile": "添加文件到 Aider 上下文: {{path}}",
-      "dropContextFile": "从 Aider 上下文移除文件: {{path}}",
+      "addContextFiles": "添加文件到 Aider 上下文: {{paths}}",
+      "dropContextFiles": "从 Aider 上下文移除文件: {{paths}}",
       "runPrompt": "运行 Aider 提示: "
     },
     "power": {
@@ -635,6 +635,6 @@
     "addCommand": "/add",
     "readOnlyCommand": "/read-only",
     "modelCommand": "/model",
-    "modeSwitchingCommands": "模式切换命令 (/code, /context, /agent, /ask, /architect)"
+    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)"
   }
 }

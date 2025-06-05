@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
 import clsx from 'clsx';
 import {
-  AIDER_TOOL_ADD_CONTEXT_FILE,
-  AIDER_TOOL_DROP_CONTEXT_FILE,
+  AIDER_TOOL_ADD_CONTEXT_FILES,
+  AIDER_TOOL_DROP_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
   POWER_TOOL_BASH,
@@ -74,10 +74,22 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
     switch (message.serverName) {
       case AIDER_TOOL_GROUP_NAME:
         switch (message.toolName) {
-          case AIDER_TOOL_ADD_CONTEXT_FILE:
-            return t('toolMessage.aider.addContextFile', { path: message.args.path as string });
-          case AIDER_TOOL_DROP_CONTEXT_FILE:
-            return t('toolMessage.aider.dropContextFile', { path: message.args.path as string });
+          case AIDER_TOOL_ADD_CONTEXT_FILES: {
+            // Handles message.args.paths (array) or fallback to message.args.path (string)
+            const addPaths =
+              message.args.paths && Array.isArray(message.args.paths)
+                ? (message.args.paths as string[]).map((path) => `• ${path}`).join('\n')
+                : (message.args.path as string) || '...';
+            return t('toolMessage.aider.addContextFiles', { paths: addPaths });
+          }
+          case AIDER_TOOL_DROP_CONTEXT_FILES: {
+            // Handles message.args.paths (array) or fallback to message.args.path (string)
+            const dropPaths =
+              message.args.paths && Array.isArray(message.args.paths)
+                ? (message.args.paths as string[]).map((path) => `• ${path}`).join('\n')
+                : (message.args.path as string) || '...';
+            return t('toolMessage.aider.dropContextFiles', { paths: dropPaths });
+          }
           case AIDER_TOOL_RUN_PROMPT:
             return t('toolMessage.aider.runPrompt');
           default:
@@ -193,7 +205,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           <div className={`text-neutral-500 ${isExecuting ? 'animate-pulse' : ''}`}>
             <RiToolsFill className="w-4 h-4" />
           </div>
-          <div className={`text-xs text-neutral-100 ${isExecuting ? 'animate-pulse' : ''}`}>{getToolName(message)}</div>
+          <div className={`text-xs text-neutral-100 whitespace-pre ${isExecuting ? 'animate-pulse' : ''}`}>{getToolName(message)}</div>
           {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-neutral-400" />}
           {!isExecuting && parsedResult?.isError === true && <VscError className="text-red-500" />}
         </div>

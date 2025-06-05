@@ -7,6 +7,7 @@ import { migrateSettingsV5toV6 } from 'src/main/store/migrations/v5-to-v6';
 
 import logger from '../logger';
 
+import { migrateV6ToV7 } from './migrations/v6-to-v7';
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
 import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
@@ -14,7 +15,7 @@ import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v
 import { migrateSettingsV4toV5 } from './migrations/v4-to-v5';
 
 const SONNET_MODEL = 'claude-sonnet-4-20250514';
-const GEMINI_MODEL = 'gemini/gemini-2.5-pro-preview-05-06';
+const GEMINI_MODEL = 'gemini/gemini-2.5-pro-preview-06-05';
 const OPEN_AI_DEFAULT_MODEL = 'gpt-4.1';
 const DEEPSEEK_MODEL = 'deepseek/deepseek-chat';
 
@@ -81,7 +82,7 @@ export const determineMainModel = (settings: SettingsData): string => {
   } else if (env.DEEPSEEK_API_KEY) {
     return DEEPSEEK_MODEL;
   } else if (env.OPENROUTER_API_KEY) {
-    return 'openrouter/google/gemini-2.5-pro-preview-05-06';
+    return 'openrouter/google/gemini-2.5-pro-preview-06-05';
   }
 
   // Default model if no other condition is met
@@ -111,7 +112,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 6;
+const CURRENT_SETTINGS_VERSION = 7;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -226,6 +227,11 @@ export class Store {
       if (settingsVersion === 5) {
         settings = migrateSettingsV5toV6(settings);
         settingsVersion = 6;
+      }
+
+      if (settingsVersion === 6) {
+        settings = migrateV6ToV7(settings);
+        settingsVersion = 7;
       }
 
       this.store.set('settings', settings as SettingsData);

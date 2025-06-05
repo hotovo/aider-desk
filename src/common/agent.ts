@@ -1,7 +1,7 @@
 import { AgentProfile, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
 import {
-  AIDER_TOOL_ADD_CONTEXT_FILE,
-  AIDER_TOOL_DROP_CONTEXT_FILE,
+  AIDER_TOOL_ADD_CONTEXT_FILES,
+  AIDER_TOOL_DROP_CONTEXT_FILES,
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
@@ -115,7 +115,7 @@ export type LlmProvider =
 export const DEFAULT_AGENT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string[]>> = {
   openai: ['gpt-4o-mini', 'o4-mini', 'gpt-4.1', 'gpt-4.1-mini'],
   anthropic: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
-  gemini: ['gemini-2.5-pro-preview-05-06', 'gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash', 'gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-exp'],
+  gemini: ['gemini-2.5-pro-preview-06-05', 'gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash', 'gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-exp'],
   deepseek: ['deepseek-chat'],
   bedrock: ['us.anthropic.claude-3-7-sonnet-20250219-v1:0', 'anthropic.claude-3-7-sonnet-20250219-v1:0'],
 };
@@ -133,8 +133,8 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   toolApprovals: {
     // aider tools
     [`${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_GET_CONTEXT_FILES}`]: ToolApprovalState.Always,
-    [`${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_ADD_CONTEXT_FILE}`]: ToolApprovalState.Always,
-    [`${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_DROP_CONTEXT_FILE}`]: ToolApprovalState.Always,
+    [`${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_ADD_CONTEXT_FILES}`]: ToolApprovalState.Always,
+    [`${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_DROP_CONTEXT_FILES}`]: ToolApprovalState.Always,
     [`${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_RUN_PROMPT}`]: ToolApprovalState.Ask,
     // power tools
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Ask,
