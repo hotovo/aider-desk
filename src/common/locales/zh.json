@@ -411,7 +411,7 @@
     },
     "deleteConfirm": {
       "title": "删除主题",
-      "message": "确定要删除主题 "{{name}}"? 此操作无法撤销。"
+      "message": "确定要删除主题 \"{{name}}\"? 此操作无法撤销。"
     }
   },
   "mcp": {
