@@ -606,6 +606,9 @@ export class Agent {
         },
         onFinish: ({ finishReason }) => {
           logger.info(`Prompt finished. Reason: ${finishReason}`);
+          if (finishReason === 'tool-calls') {
+            project.addLogMessage('info', 'Run ended: Maximum number of steps reached.');
+          }
         },
         experimental_repairToolCall: repairToolCall,
       });
