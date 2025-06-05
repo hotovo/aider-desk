@@ -6,8 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
 import clsx from 'clsx';
 import {
-  AIDER_TOOL_ADD_CONTEXT_FILE,
-  AIDER_TOOL_DROP_CONTEXT_FILE,
+  AIDER_TOOL_ADD_CONTEXT_FILES,
+  AIDER_TOOL_DROP_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
   POWER_TOOL_BASH,
@@ -74,10 +74,18 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
     switch (message.serverName) {
       case AIDER_TOOL_GROUP_NAME:
         switch (message.toolName) {
-          case AIDER_TOOL_ADD_CONTEXT_FILE:
-            return t('toolMessage.aider.addContextFile', { path: message.args.path as string });
-          case AIDER_TOOL_DROP_CONTEXT_FILE:
-            return t('toolMessage.aider.dropContextFile', { path: message.args.path as string });
+          case AIDER_TOOL_ADD_CONTEXT_FILES:
+            // Handles message.args.paths (array) or fallback to message.args.path (string)
+            const addPaths = message.args.paths && Array.isArray(message.args.paths)
+              ? (message.args.paths as string[]).join(', ')
+              : (message.args.path as string || '...');
+            return t('toolMessage.aider.addContextFiles', { paths: addPaths });
+          case AIDER_TOOL_DROP_CONTEXT_FILES:
+            // Handles message.args.paths (array) or fallback to message.args.path (string)
+            const dropPaths = message.args.paths && Array.isArray(message.args.paths)
+              ? (message.args.paths as string[]).join(', ')
+              : (message.args.path as string || '...');
+            return t('toolMessage.aider.dropContextFiles', { paths: dropPaths });
           case AIDER_TOOL_RUN_PROMPT:
             return t('toolMessage.aider.runPrompt');
           default:

@@ -63,7 +63,10 @@ export class SessionManager {
     return isFileIgnored(this.project.baseDir, contextFile.path);
   }
 
-  async addContextFile(contextFile: ContextFile) {
+  // Note: Parameter contextFile should ideally be contextFiles: ContextFile[]
+  // if the function is to truly handle multiple files.
+  // Current subtask is renaming, so signature is kept similar.
+  async addContextFiles(contextFile: ContextFile) {
     const alreadyAdded = this.contextFiles.find((file) => file.path === contextFile.path);
     if (alreadyAdded) {
       return false;
@@ -87,7 +90,8 @@ export class SessionManager {
     return true;
   }
 
-  dropContextFile(filePath: string) {
+  // Note: Parameter filePath should ideally be filePaths: string[]
+  dropContextFiles(filePath: string) {
     const absolutePath = path.resolve(this.project.baseDir, filePath);
 
     const file = this.contextFiles.find((f) => {

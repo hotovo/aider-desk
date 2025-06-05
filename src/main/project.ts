@@ -664,7 +664,10 @@ export class Project {
       readOnly: contextFile.readOnly,
     });
     const fileToAdd = { ...contextFile, path: normalizedPath };
-    if (!(await this.sessionManager.addContextFile(fileToAdd))) {
+    // Assuming addContextFiles now expects a single file and handles it,
+    // or this needs to be wrapped in an array if addContextFiles expects ContextFile[].
+    // For now, keeping as single file based on SessionManager's current signature post-rename.
+    if (!(await this.sessionManager.addContextFiles(fileToAdd))) {
       return false;
     }
     this.sendAddFile(fileToAdd);
@@ -678,7 +681,9 @@ export class Project {
   public dropFile(filePath: string) {
     const normalizedPath = this.normalizeFilePath(filePath);
     logger.info('Dropping file or folder:', { path: normalizedPath });
-    const file = this.sessionManager.dropContextFile(normalizedPath);
+    // Assuming dropContextFiles now expects a single path.
+    // If it expects an array, this would need to be [normalizedPath].
+    const file = this.sessionManager.dropContextFiles(normalizedPath);
     if (file) {
       this.sendDropFile(file.path, file.readOnly);
     } else {

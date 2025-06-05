@@ -7,8 +7,8 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
   AIDER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
   AIDER_TOOL_GET_CONTEXT_FILES as TOOL_GET_CONTEXT_FILES,
-  AIDER_TOOL_ADD_CONTEXT_FILE as TOOL_ADD_CONTEXT_FILE,
-  AIDER_TOOL_DROP_CONTEXT_FILE as TOOL_DROP_CONTEXT_FILE,
+  AIDER_TOOL_ADD_CONTEXT_FILES,
+  AIDER_TOOL_DROP_CONTEXT_FILES, // Renamed from AIDER_TOOL_DROP_CONTEXT_FILE
   AIDER_TOOL_RUN_PROMPT as TOOL_RUN_PROMPT,
   AIDER_TOOL_DESCRIPTIONS,
 } from '@common/tools';
@@ -47,103 +47,118 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
     },
   });
 
-  const addContextFileTool = tool({
-    description: AIDER_TOOL_DESCRIPTIONS[TOOL_ADD_CONTEXT_FILE],
+  const addContextFilesTool = tool({
+    description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_ADD_CONTEXT_FILES],
     parameters: z.object({
-      path: z.string().describe('File path to add to context. Relative to project directory when not read-only. Absolute path should be used when read-only.'),
-      readOnly: z.boolean().optional().describe('Whether the file is read-only'),
+      paths: z.array(z.string()).describe('One or more file paths to add to context. Relative to project directory (e.g. "src/file.ts") or absolute (e.g. "/tmp/log.txt" for read-only).'),
+      readOnly: z.boolean().optional().describe('Whether the file(s) are read-only. Applies to all paths if true.'),
     }),
-    execute: async ({ path: relativePath, readOnly = false }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_ADD_CONTEXT_FILE, {
-        path: relativePath,
+    execute: async ({ paths, readOnly = false }, { toolCallId }) => {
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, AIDER_TOOL_ADD_CONTEXT_FILES, {
+        paths,
         readOnly,
       });
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_ADD_CONTEXT_FILE}`;
-      const questionText = `Approve adding file '${path}' to context?`;
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_ADD_CONTEXT_FILES}`;
+      // Truncate paths if too long for the approval prompt
+      const displayPaths = paths.join(', ');
+      const maxDisplayLength = 100;
+      const truncatedDisplayPaths = displayPaths.length > maxDisplayLength ? `${displayPaths.substring(0, maxDisplayLength - 3)}...` : displayPaths;
+      const questionText = `Approve adding ${paths.length} file(s) to context: ${truncatedDisplayPaths}?`;
 
       const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
 
       if (!isApproved) {
-        return `Adding file '${path}' to context denied by user. Reason: ${userInput}`;
+        return `Adding ${paths.length} file(s) to context denied by user. Reason: ${userInput}`;
       }
 
-      const absolutePath = path.resolve(project.baseDir, relativePath);
-      let fileExists = false;
-      try {
-        await fs.access(absolutePath);
-        fileExists = true;
-      } catch {
-        // File does not exist
-        fileExists = false;
-      }
+      const results: string[] = [];
+      for (const relativePath of paths) {
+        const absolutePath = path.resolve(project.baseDir, relativePath);
+        let fileExists = false;
+        try {
+          await fs.access(absolutePath);
+          fileExists = true;
+        } catch {
+          fileExists = false;
+        }
 
-      if (!fileExists) {
-        // Ask user if they want to create the file
-        const questionKey = 'tool_aider_add_context_file_create_file';
-        const questionText = `File '${relativePath}' does not exist. Create it?`;
+        if (!fileExists) {
+          const createFileQuestionKey = `tool_aider_add_context_file_create_file_${relativePath.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          const createFileQuestionText = `File '${relativePath}' does not exist. Create it?`;
+          const [createApproved] = await approvalManager.handleApproval(createFileQuestionKey, createFileQuestionText);
 
-        const [isApproved] = await approvalManager.handleApproval(questionKey, questionText);
-
-        if (isApproved) {
-          try {
-            // Create directories if they don't exist
-            const dir = path.dirname(absolutePath);
-            await fs.mkdir(dir, { recursive: true });
-            // Create an empty file
-            await fs.writeFile(absolutePath, '');
-            project.addLogMessage('info', `Created new file: ${relativePath}`);
-            fileExists = true; // File now exists
-
+          if (createApproved) {
             try {
-              // Add the new file to git staging
-              await project.git.add(absolutePath);
-            } catch (gitError) {
-              const gitErrorMessage = gitError instanceof Error ? gitError.message : String(gitError);
-              project.addLogMessage('warning', `Failed to add new file ${relativePath} to git staging area: ${gitErrorMessage}`);
-              // Continue even if git add fails, as the file was created successfully
+              const dir = path.dirname(absolutePath);
+              await fs.mkdir(dir, { recursive: true });
+              await fs.writeFile(absolutePath, '');
+              project.addLogMessage('info', `Created new file: ${relativePath}`);
+              fileExists = true;
+
+              try {
+                await project.git.add(absolutePath);
+              } catch (gitError) {
+                const gitErrorMessage = gitError instanceof Error ? gitError.message : String(gitError);
+                project.addLogMessage('warning', `Failed to add new file ${relativePath} to git staging area: ${gitErrorMessage}`);
+              }
+              results.push(`Created and added file: ${relativePath}`);
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              project.addLogMessage('error', `Failed to create file '${relativePath}': ${errorMessage}`);
+              results.push(`Error: Failed to create file '${relativePath}'. It was not added to the context.`);
             }
-          } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            project.addLogMessage('error', `Failed to create file '${relativePath}': ${errorMessage}`);
-            return `Error: Failed to create file '${relativePath}'. It was not added to the context.`;
+          } else {
+            results.push(`File '${relativePath}' does not exist and was not created. It was not added to the context.`);
           }
-        } else {
-          return `File '${relativePath}' not created by user. It was not added to the context.`;
+        }
+
+        if (fileExists) { // This condition is now met if the file initially existed or was just created
+          const added = await project.addFile({
+            path: relativePath,
+            readOnly,
+          });
+          if (added) {
+            // Only add to results if it wasn't handled by the creation logic above
+            if (!results.some(r => r.includes(`Created and added file: ${relativePath}`))) {
+              results.push(`Added file: ${relativePath}`);
+            }
+          } else {
+            results.push(`Not added - file '${relativePath}' was already in the context.`);
+          }
         }
       }
-
-      if (fileExists) {
-        const added = await project.addFile({
-          path: relativePath,
-          readOnly,
-        });
-        return added ? `Added file: ${relativePath}` : `Not added - file '${relativePath}' was already in the context.`;
-      } else {
-        return `File '${relativePath}' does not exist and was not created. It was not added to the context.`;
-      }
+      return results.join('. ') + (results.length > 0 ? '.' : '');
     },
   });
 
-  const dropContextFileTool = tool({
-    description: AIDER_TOOL_DESCRIPTIONS[TOOL_DROP_CONTEXT_FILE],
+  const dropContextFilesTool = tool({
+    description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_DROP_CONTEXT_FILES],
     parameters: z.object({
-      path: z.string().describe('File path to remove from context.'),
+      paths: z.array(z.string()).describe('One or more file paths to remove from context.'),
     }),
-    execute: async ({ path }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_DROP_CONTEXT_FILE, { path });
+    execute: async ({ paths }, { toolCallId }) => {
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, AIDER_TOOL_DROP_CONTEXT_FILES, { paths });
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_DROP_CONTEXT_FILE}`;
-      const questionText = `Approve dropping file '${path}' from context?`;
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_DROP_CONTEXT_FILES}`;
+      // Truncate paths if too long for the approval prompt
+      const displayPaths = paths.join(', ');
+      const maxDisplayLength = 100;
+      const truncatedDisplayPaths = displayPaths.length > maxDisplayLength ? `${displayPaths.substring(0, maxDisplayLength - 3)}...` : displayPaths;
+      const questionText = `Approve dropping ${paths.length} file(s) from context: ${truncatedDisplayPaths}?`;
 
       const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
 
       if (!isApproved) {
-        return `Dropping file '${path}' from context denied by user. Reason: ${userInput}`;
+        return `Dropping ${paths.length} file(s) from context denied by user. Reason: ${userInput}`;
       }
 
-      project.dropFile(path);
-      return `Dropped file: ${path}`;
+      const results: string[] = [];
+      for (const filePath of paths) {
+        project.dropFile(filePath);
+        results.push(`Dropped file: ${filePath}`);
+      }
+      return results.join('. ') + (results.length > 0 ? '.' : '');
     },
   });
 
@@ -188,8 +203,8 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
 
   const allTools = {
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GET_CONTEXT_FILES}`]: getContextFilesTool,
-    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_ADD_CONTEXT_FILE}`]: addContextFileTool,
-    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_DROP_CONTEXT_FILE}`]: dropContextFileTool,
+    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_ADD_CONTEXT_FILES}`]: addContextFilesTool,
+    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_DROP_CONTEXT_FILES}`]: dropContextFilesTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_RUN_PROMPT}`]: runPromptTool,
   };
 

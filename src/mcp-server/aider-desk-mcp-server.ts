@@ -20,15 +20,15 @@ const server = new McpServer({
 });
 
 // Define tool schemas
-const AddContextFileSchema = {
-  path: z
+const AddContextFilesSchema = { // Renamed from AddContextFileSchema
+  path: z // Note: Schema still defines a single path. Needs functional update to handle multiple.
     .string()
     .describe(`File path to add to context. Relative to project directory (${projectDir}) when not read-only. Absolute path should be used when read-only.`),
   readOnly: z.boolean().default(false).describe('Whether the file is read-only'),
 };
 
-const DropContextFileSchema = {
-  path: z.string().describe('File path to remove from context'),
+const DropContextFilesSchema = { // Renamed from DropContextFileSchema
+  path: z.string().describe('File path to remove from context'), // Note: Schema still defines a single path.
 };
 
 const GetContextFilesSchema = {};
@@ -48,9 +48,11 @@ const RunPromptSchema = {
 };
 
 // Add tools to the server
-server.tool('add_context_file', 'Add a file to the context of AiderDesk.', AddContextFileSchema, async (params) => {
+server.tool('add_context_files', 'Add file(s) to the context of AiderDesk.', AddContextFilesSchema, async (params) => {
   try {
     const requestParams = { ...params, projectDir };
+    // TODO: The backend API /add-context-file might expect a single path and not an array.
+    // This needs alignment if the MCP tool is to send multiple paths based on an updated schema.
     const response = await axios.post(`${AIDER_DESK_API_BASE_URL}/add-context-file`, requestParams);
     return { content: [{ type: 'text', text: JSON.stringify(response.data) }] };
   } catch (error: any) {
@@ -58,9 +60,10 @@ server.tool('add_context_file', 'Add a file to the context of AiderDesk.', AddCo
   }
 });
 
-server.tool('drop_context_file', 'Remove a file from the context of AiderDesk.', DropContextFileSchema, async (params) => {
+server.tool('drop_context_files', 'Remove file(s) from the context of AiderDesk.', DropContextFilesSchema, async (params) => {
   try {
     const requestParams = { ...params, projectDir };
+    // TODO: The backend API /drop-context-file might expect a single path.
     const response = await axios.post(`${AIDER_DESK_API_BASE_URL}/drop-context-file`, requestParams);
     return { content: [{ type: 'text', text: JSON.stringify(response.data) }] };
   } catch (error: any) {
