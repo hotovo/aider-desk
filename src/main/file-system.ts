@@ -50,6 +50,17 @@ export const isProjectPath = async (path: string): Promise<boolean> => {
   }
 };
 
+export const isPathWithinBase = async (baseDir: string, filePath: string): Promise<boolean> => {
+  try {
+    const normalizedBaseDir = path.resolve(baseDir) + path.sep;
+    const normalizedFilePath = path.resolve(filePath);
+    return normalizedFilePath.startsWith(normalizedBaseDir);
+  } catch (error) {
+    logger.error('Error checking if path is within base directory:', { error });
+    return false;
+  }
+};
+
 export const isValidPath = async (baseDir: string, filePath: string): Promise<boolean> => {
   try {
     const fullPath = path.isAbsolute(filePath) ? filePath : path.join(baseDir, filePath);

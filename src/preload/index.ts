@@ -71,6 +71,7 @@ const api: ApplicationAPI = {
   getAddableFiles: (baseDir) => ipcRenderer.invoke('get-addable-files', baseDir),
   addFile: (baseDir, filePath, readOnly = false) => ipcRenderer.send('add-file', baseDir, filePath, readOnly),
   isValidPath: (baseDir, path) => ipcRenderer.invoke('is-valid-path', baseDir, path),
+  isPathWithinBase: (baseDir, filePath) => ipcRenderer.invoke('is-path-within-base', baseDir, filePath),
   isProjectPath: (path) => ipcRenderer.invoke('is-project-path', path),
   dropFile: (baseDir, path) => ipcRenderer.send('drop-file', baseDir, path),
   runCommand: (baseDir, command) => ipcRenderer.send('run-command', baseDir, command),

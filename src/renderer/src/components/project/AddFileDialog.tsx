@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FileFinder } from '@/components/project/FileFinder';
@@ -17,12 +17,97 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
   const { t } = useTranslation();
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [isReadOnly, setIsReadOnly] = useState(initialReadOnly);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+
+  const handleDragEnter = useCallback((event: DragEvent) => {
+    event.preventDefault();
+    // Add visual feedback if desired
+    if (dropZoneRef.current) {
+      dropZoneRef.current.style.border = '2px dashed #aaa';
+    }
+  }, []);
+
+  const handleDragOver = useCallback((event: DragEvent) => {
+    event.preventDefault();
+  }, []);
+
+  const handleDragLeave = useCallback((event: DragEvent) => {
+    // Remove visual feedback if desired
+    if (dropZoneRef.current) {
+      dropZoneRef.current.style.border = 'none';
+    }
+  }, []);
+
+  const handleDrop = useCallback(
+    async (event: DragEvent) => {
+      event.preventDefault();
+      // Remove visual feedback if desired
+      if (dropZoneRef.current) {
+        dropZoneRef.current.style.border = 'none';
+      }
+
+      if (event.dataTransfer?.files) {
+        const files = Array.from(event.dataTransfer.files);
+        const droppedFilePaths = files.map((file) => file.path);
+        console.log('Dropped files:', droppedFilePaths);
+
+        const validPathsToAdd: string[] = [];
+        let
+          switchToReadOnly = false;
+
+        for (const p of droppedFilePaths) {
+          const trimmedPath = p.trim();
+          if (trimmedPath === '') {
+            continue;
+          }
+          const isValid = await window.api.isValidPath(baseDir, trimmedPath); // Checks existence and type
+          if (isValid && !selectedPaths.includes(trimmedPath) && !validPathsToAdd.includes(trimmedPath)) {
+            validPathsToAdd.push(trimmedPath);
+            if (!initialReadOnly && !isReadOnly && !switchToReadOnly) {
+              const isWithinBase = await window.api.isPathWithinBase(baseDir, trimmedPath);
+              if (!isWithinBase) {
+                switchToReadOnly = true;
+              }
+            }
+          }
+        }
+
+        if (validPathsToAdd.length > 0) {
+          setSelectedPaths((prev) => [...prev, ...validPathsToAdd]);
+          if (switchToReadOnly) {
+            setIsReadOnly(true);
+          }
+        }
+      }
+    },
+    [baseDir, selectedPaths, initialReadOnly, isReadOnly, setIsReadOnly],
+  );
+
+  useEffect(() => {
+    const currentDropZone = dropZoneRef.current;
+    if (currentDropZone) {
+      currentDropZone.addEventListener('dragenter', handleDragEnter);
+      currentDropZone.addEventListener('dragover', handleDragOver);
+      currentDropZone.addEventListener('dragleave', handleDragLeave);
+      currentDropZone.addEventListener('drop', handleDrop);
+
+      return () => {
+        currentDropZone.removeEventListener('dragenter', handleDragEnter);
+        currentDropZone.removeEventListener('dragover', handleDragOver);
+        currentDropZone.removeEventListener('dragleave', handleDragLeave);
+        currentDropZone.removeEventListener('drop', handleDrop);
+      };
+    }
+    return () => {};
+  }, [handleDragEnter, handleDragOver, handleDragLeave, handleDrop]);
 
   const handleOnPaste = async (pastedText: string) => {
     if (pastedText) {
-      const paths = pastedText.split(/\s+/);
+      const pastedPaths = pastedText.split(/\s+/);
       const validPathsToAdd: string[] = [];
-      for (const p of paths) {
+      let switchToReadOnly = false;
+
+      for (const p of pastedPaths) {
         const trimmedPath = p.trim();
         if (trimmedPath === '') {
           continue;
@@ -30,10 +115,19 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
         const isValid = await window.api.isValidPath(baseDir, trimmedPath);
         if (isValid && !selectedPaths.includes(trimmedPath) && !validPathsToAdd.includes(trimmedPath)) {
           validPathsToAdd.push(trimmedPath);
+          if (!initialReadOnly && !isReadOnly && !switchToReadOnly) {
+            const isWithinBase = await window.api.isPathWithinBase(baseDir, trimmedPath);
+            if (!isWithinBase) {
+              switchToReadOnly = true;
+            }
+          }
         }
       }
       if (validPathsToAdd.length > 0) {
         setSelectedPaths((prev) => [...prev, ...validPathsToAdd]);
+        if (switchToReadOnly) {
+          setIsReadOnly(true);
+        }
       }
     }
   };
@@ -59,8 +153,9 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
       width={600}
       closeOnEscape
     >
-      <FileFinder
-        baseDir={baseDir}
+      <div ref={dropZoneRef} className="p-4 border border-transparent rounded-md" data-testid="add-file-dialog-dropzone">
+        <FileFinder
+          baseDir={baseDir}
         isReadOnly={isReadOnly}
         selectedPaths={selectedPaths}
         onPathAdded={(path) => {
@@ -78,8 +173,9 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
           ))}
         </div>
       )}
-      <div className="mt-3 ml-2">
-        <Checkbox label={t('addFileDialog.readOnly')} checked={isReadOnly} onChange={setIsReadOnly} />
+        <div className="mt-3 ml-2">
+          <Checkbox label={t('addFileDialog.readOnly')} checked={isReadOnly} onChange={setIsReadOnly} />
+        </div>
       </div>
     </ConfirmDialog>
   );

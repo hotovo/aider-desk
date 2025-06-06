@@ -4,7 +4,7 @@ import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { McpManager } from 'src/main/agent/mcp-manager';
 
 import { Agent } from './agent';
-import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
+import { getFilePathSuggestions, isProjectPath, isValidPath, isPathWithinBase } from './file-system';
 import { ModelInfoManager } from './model-info-manager';
 import { ProjectManager } from './project-manager';
 import { getDefaultProjectSettings, Store } from './store';
@@ -169,6 +169,10 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('is-valid-path', async (_, baseDir: string, path: string) => {
     return isValidPath(baseDir, path);
+  });
+
+  ipcMain.handle('is-path-within-base', async (_event, baseDir: string, filePath: string) => {
+    return await isPathWithinBase(baseDir, filePath);
   });
 
   ipcMain.handle('get-file-path-suggestions', async (_, currentPath: string, directoriesOnly = true) => {
