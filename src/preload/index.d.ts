@@ -22,6 +22,7 @@ import type {
   EditFormat,
   OS,
   ModelInfo,
+  Theme,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -83,6 +84,10 @@ export interface ApplicationAPI {
   clearReleaseNotes: () => Promise<void>;
   getOS: () => Promise<OS>;
   loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
+  
+  // Theme-related methods
+  loadThemes: () => Promise<{ themes: Theme[] }>;
+  saveThemes: (themes: Theme[]) => Promise<boolean>;
 
   addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => string;
   removeResponseChunkListener: (listenerId: string) => void;

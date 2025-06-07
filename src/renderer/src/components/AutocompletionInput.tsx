@@ -115,14 +115,33 @@ export const AutocompletionInput = ({
 
     return createPortal(
       <div
-        className="w-full mt-1 p-0.5 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 scrollbar-thumb-rounded-full"
-        style={style}
+        className="w-full mt-1 p-0.5 rounded-lg shadow-lg max-h-48 overflow-y-auto scrollbar-thin scrollbar-track-[var(--scrollbar-track)] scrollbar-thumb-[var(--scrollbar-thumb)] scrollbar-thumb-rounded-full"
+        style={{
+          ...style,
+          backgroundColor: 'var(--theme-background-secondary)',
+          borderColor: 'var(--theme-border-primary)',
+          border: '1px solid'
+        }}
       >
         {suggestions.map((suggestion, index) => (
           <div
             id={`suggestion-${index}`}
             key={suggestion}
-            className={clsx('px-3 py-1 text-sm cursor-pointer hover:bg-neutral-700', index === selectedIndex && 'bg-neutral-850 hover:bg-neutral-850')}
+            className={clsx('px-3 py-1 text-sm cursor-pointer transition-colors')}
+            style={{
+              color: 'var(--theme-foreground-primary)',
+              backgroundColor: index === selectedIndex ? 'var(--theme-accent-primary)' : 'transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (index !== selectedIndex) {
+                e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (index !== selectedIndex) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
             onMouseDown={() => {
               onChange(suggestion, true);
               setShowSuggestions(false);
@@ -141,9 +160,15 @@ export const AutocompletionInput = ({
       <input
         ref={inputRef}
         className={clsx(
-          'w-full p-3 rounded-lg bg-neutral-900/50 border border-neutral-700/50 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500/50 focus:ring-1 focus:ring-neutral-500/50 transition-colors',
+          'w-full p-3 rounded-lg text-sm focus:outline-none focus:ring-1 transition-colors',
           inputClassName,
         )}
+        style={{
+          backgroundColor: 'var(--theme-background-input)',
+          color: 'var(--theme-foreground-primary)',
+          borderColor: 'var(--theme-border-primary)',
+          border: '1px solid'
+        }}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value, false)}

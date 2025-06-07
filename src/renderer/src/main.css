@@ -1,3 +1,5 @@
+@import './styles/theme-variables.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -46,13 +48,13 @@
   justify-content: center;
   background: transparent;
   border: none;
-  color: #e5e7eb;
+  color: var(--theme-foreground-secondary);
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .window-control-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--theme-background-input);
 }
 
 .window-control-button.close:hover {
@@ -67,8 +69,8 @@
 
 /* Custom title bar styling */
 .custom-title-bar {
-  background: linear-gradient(to bottom, #0a0a0a, #171717);
-  border-bottom: 1px solid #525252;
+  background: var(--theme-background-secondary);
+  border-bottom: 1px solid var(--theme-border-primary);
   user-select: none;
 }
 
@@ -83,7 +85,7 @@
 
 @layer base {
   html {
-    font-family: var(--font-family-sans, "Tektur"), sans-serif;
+    font-family: var(--font-family-sans, "Sono"), sans-serif;
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
@@ -94,59 +96,63 @@ body {
   margin: 0;
 }
 
+#root {
+  background-color: var(--theme-background-primary);
+  color: var(--theme-foreground-primary);
+  min-height: 100vh;
+  /* Remove transition for instant theme switching */
+}
+
+body {
+  background-color: var(--theme-background-primary);
+  color: var(--theme-foreground-primary);
+  /* Remove transition for instant theme switching */
+}
+
+/* Theme-specific overrides to ensure proper application */
 body.theme-dark {
-  background-color: #121212;
-  color: #e0e0e0;
+  --legacy-background-color: #121212;
+  --legacy-text-color: #e0e0e0;
 }
 
 body.theme-light {
-  background-color: #ffffff;
-  color: #222222;
+  --legacy-background-color: #ffffff;
+  --legacy-text-color: #222222;
 }
 
-body.theme-light #root {
-  filter: invert(1) hue-rotate(180deg);
-}
-
-body.theme-light #root img {
-  filter: invert(1) hue-rotate(180deg);
-}
-
-/* Improve text contrast in light mode */
+/* Force theme application */
 body.theme-light {
-  color: #dddddd;
+  background-color: var(--theme-background-primary) !important;
+  color: var(--theme-foreground-primary) !important;
 }
 
-body.theme-light .text-neutral-100,
-body.theme-light .text-neutral-200,
-body.theme-light .text-neutral-300,
-body.theme-light .text-neutral-400 {
-  color: #dddddd !important;
+body.theme-dark {
+  background-color: var(--theme-background-primary) !important;
+  color: var(--theme-foreground-primary) !important;
 }
 
-body.theme-light .text-neutral-500,
-body.theme-light .text-neutral-600,
-body.theme-light .text-neutral-700,
-body.theme-light .text-neutral-800,
-body.theme-light .text-neutral-900,
-body.theme-light .text-neutral-950 {
-  color: #eeeeee !important;
+/* Legacy light mode support removed - using CSS variables instead */
+
+/* Project tab styling */
+.project-tab {
+  border-color: var(--theme-border-primary);
+  background-color: var(--theme-background-secondary);
+  color: var(--theme-foreground-secondary);
 }
 
-body.theme-light .text-white {
-  color: #ffffff !important;
+.project-tab:hover:not([aria-selected="true"]) {
+  background-color: var(--theme-background-tertiary);
+  color: var(--theme-foreground-primary);
 }
 
-body.theme-light .text-gray-100 {
-  color: #dddddd !important;
-}
-
-body.theme-light .text-gray-500 {
-  color: #eeeeee !important;
+.project-tab[aria-selected="true"] {
+  background-color: var(--theme-accent-primary);
+  color: #ffffff;
+  font-weight: 500;
 }
 
 * {
-  font-family: var(--font-family-sans, "Tektur"), sans-serif;
+  font-family: var(--font-family-sans, "Sono"), sans-serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
@@ -155,6 +161,6 @@ body.theme-light .text-gray-500 {
 }
 
 code {
-  font-family: var(--font-family-mono, 'MonaspaceKrypton-SemiBold'), source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  font-family: var(--font-family-mono, 'Sono'), source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
   monospace;
 }

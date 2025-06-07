@@ -1,0 +1,640 @@
+{
+  "languages": {
+    "en": "English",
+    "zh": "中文"
+  },
+  "common": {
+    "settings": "设置",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "remove": "移除",
+    "close": "关闭",
+    "confirm": "确认",
+    "back": "返回",
+    "next": "下一步",
+    "finish": "完成",
+    "loading": "加载中...",
+    "startingUp": "正在启动...",
+    "error": "错误",
+    "success": "成功",
+    "warning": "警告",
+    "info": "信息",
+    "yes": "是",
+    "no": "否",
+    "open": "打开",
+    "openProject": "打开项目",
+    "lock": "锁定",
+    "default": "默认",
+    "suffix.billion": "十亿",
+    "suffix.million": "百万",
+    "suffix.thousand": "千",
+    "ok": "确定"
+  },
+  "search": {
+    "placeholder": "查找...",
+    "previousResult": "上一个结果 (SHIFT + F3)",
+    "nextResult": "下一个结果 (F3)"
+  },
+  "onboarding": {
+    "title": "欢迎使用 Aider Desk",
+    "description": "Aider Desk 是您的 AI 辅助编程桌面伴侣。本应用将 Aider 的 AI 编程助手功能带到用户友好的界面中，帮助您：",
+    "finish": "完成设置",
+    "features": {
+      "1": "管理多个编程项目",
+      "2": "跟踪您的 AI 使用情况和成本",
+      "3": "以结构化方式与 AI 模型交互",
+      "4": "可视化和管理您的代码文件",
+      "5": "使用代理流程进行自动化编码任务并连接到 MCP 服务器"
+    },
+    "getStarted": "让我们从配置您的 Aider 设置开始。",
+    "aider": {
+      "title": "配置 Aider",
+      "description": "要开始使用，请配置您的 Aider 设置。您需要：",
+      "options": {
+        "1": "添加您想要使用的 LLM 提供商的 API 密钥",
+        "2": "为 Aider 设置任何其他选项",
+        "3": ".env 和 .aider.conf.yaml 文件也会像使用 Aider 一样被读取"
+      },
+      "configureLater": "您也可以稍后在设置中进行配置。"
+    }
+  },
+  "noProjectsOpen": {
+    "welcome": "欢迎使用",
+    "description": "要开始使用，请打开一个项目目录。这将允许您熟悉和喜爱的 Aider 与您的代码一起工作。"
+  },
+  "home": {
+    "title": "首页",
+    "noProjectsOpen": "没有打开的项目",
+    "openProject": "打开项目",
+    "addFile": "添加文件",
+    "projectView": "项目视图",
+    "recentProjects": "最近的项目"
+  },
+  "tips": {
+    "multipleProjects": "提示：您可以打开多个项目并使用顶部的标签页(或 CTRL+Tab)在它们之间切换。"
+  },
+  "mcpServer": {
+    "addServer": "添加 MCP 服务器",
+    "editServer": "编辑 MCP 服务器: {{name}}",
+    "serverConfigJson": "服务器配置 JSON",
+    "pasteServerAs": "粘贴您的服务器配置为:\n\n{{example}}\n\n或\n\n{{exampleNoParent}}\n\n或\n\n{{exampleBare}}",
+    "invalidConfig": "无效配置",
+    "emptyConfig": "配置不能为空",
+    "configHint": "您可以一次添加多个服务器，方法是粘贴包含多个服务器配置的 JSON 对象。您还可以在 env 和 args 中使用 ${projectDir} 来引用当前项目目录。",
+    "viewExamples": "查看示例"
+  },
+  "model": {
+    "label": "模型",
+    "selectLabel": "模型",
+    "placeholder": "输入模型名称"
+  },
+  "openai": {
+    "apiKey": "API 密钥",
+    "baseUrl": "基础 URL",
+    "modelName": "模型",
+    "baseUrlPlaceholder": "例如 http://localhost:8080/v1"
+  },
+  "ollama": {
+    "baseUrl": "基础 URL",
+    "baseUrlPlaceholder": "例如 http://localhost:11434/api"
+  },
+  "anthropic": {
+    "apiKey": "API 密钥"
+  },
+  "gemini": {
+    "apiKey": "API 密钥",
+    "thinkingBudget": "思考预算 (令牌)",
+    "includeThoughts": "包含思考过程",
+    "includeThoughtsTooltip": "启用后，代理的内部思考过程将包含在对话历史中，这有助于调试或理解其决策。",
+    "useSearchGrounding": "使用搜索基础",
+    "useSearchGroundingTooltip": "启用后，代理将使用搜索结果作为其响应的基础，从而提高准确性和相关性。"
+  },
+  "deepseek": {
+    "apiKey": "API 密钥"
+  },
+  "bedrock": {
+    "apiKey": "API 密钥",
+    "region": "区域",
+    "regionPlaceholder": "例如 us-east-1",
+    "accessKeyId": "访问密钥 ID",
+    "accessKeyIdTooltip": "AWS 访问密钥 ID。如果设置了 AWS_PROFILE 环境变量，可以留空。",
+    "secretAccessKey": "秘密访问密钥",
+    "secretAccessKeyTooltip": "AWS 秘密访问密钥。如果设置了 AWS_PROFILE 环境变量，可以留空。",
+    "sessionToken": "会话令牌",
+    "sessionTokenTooltip": "临时凭证的可选会话令牌。"
+  },
+  "openRouter": {
+    "apiKey": "API 密钥",
+    "modelPlaceholder": "例如 anthropic/claude-3.7-sonnet"
+  },
+  "requesty": {
+    "apiKey": "API 密钥",
+    "modelPlaceholder": "例如 claude-4-sonnet"
+  },
+  "providers": {
+    "anthropic": "Anthropic",
+    "bedrock": "Bedrock",
+    "deepseek": "Deepseek",
+    "gemini": "Gemini",
+    "ollama": "Ollama",
+    "openai": "OpenAI",
+    "openai-compatible": "OpenAI Compatible",
+    "openrouter": "OpenRouter",
+    "requesty": "Requesty"
+  },
+  "select": {
+    "placeholder": "选择选项",
+    "loadingSessions": "正在加载会话..."
+  },
+  "settings": {
+    "title": "设置",
+    "tabs": {
+      "general": "通用",
+      "appearance": "外观",
+      "aider": "Aider",
+      "agent": "服务器",
+      "about": "关于"
+    },
+    "gui": "GUI",
+    "startup": {
+      "title": "启动",
+      "emptySession": "以空会话启动",
+      "lastSession": "加载上次会话",
+      "specificSession": "加载特定会话"
+    },
+    "language": "语言",
+    "notifications": {
+      "title": "通知"
+    },
+    "agent": {
+      "mcpServers": "MCP 服务器",
+      "provider": "提供商",
+      "providerSettings": "提供商设置",
+      "context": "上下文",
+      "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。",
+      "runSettings": "运行参数",
+      "maxIterations": "最大迭代次数",
+      "minTimeBetweenToolCalls": "工具调用最小间隔时间(毫秒)",
+      "maxTokens": "最大令牌数",
+      "rules": "自定义指令",
+      "rulesInfo": "您可以使用自定义指令为特定的 MCP 服务器添加特定指令，或控制代理的流程。",
+      "noServersConfigured": "未配置 MCP 服务器。",
+      "computationalResources": "代理每次运行的最大迭代次数。有助于控制计算资源。",
+      "rateLimiting": "设置工具调用之间的最小时间以防止速率限制(例如对于 Brave 或其他 API 受限的服务)。",
+      "tokensPerResponse": "代理每次响应可以使用的最大令牌数。",
+      "addMcpServer": "添加",
+      "editConfig": "编辑配置",
+      "editMcpServersConfig": "编辑 MCP 服务器配置",
+      "reloadServers": "重新加载",
+      "powerToolsTooltip": "允许代理使用强大的工具进行直接文件操作（读、写、编辑）、搜索（glob、grep、语义搜索）和执行 shell 命令（bash）。",
+      "aiderToolsTooltip": "代理可以使用Aider执行添加/删除上下文文件操作和运行提示。",
+      "useAiderTools": "使用Aider工具",
+      "usePowerTools": "使用 Power 工具",
+      "includeContextFiles": "包含上下文文件",
+      "includeFilesTooltip": "将上下文文件内容添加到代理的聊天中。这将增加令牌使用量。",
+      "includeRepoMap": "包含仓库地图",
+      "includeRepoMapTooltip": "在代理的上下文中包含仓库地图。这有助于代理理解项目结构，但可能会增加token使用量。",
+      "autoApprove": "自动批准",
+      "selectOrCreateProfile": "选择或创建新的代理配置",
+      "newProfileName": "新配置",
+      "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",
+      "createNewProfile": "创建新配置",
+      "genericTools": "工具",
+      "noGenericToolsConfigured": "未配置工具。"
+    },
+    "aider": {
+      "options": "选项",
+      "optionsPlaceholder": "例如 --no-auto-commits --cache-prompts",
+      "environmentVariables": "环境变量",
+      "envVarsPlaceholder": "#################\n# LLM 参数:\n#\n# 包含 xxx_API_KEY 参数和您的 LLM 所需的其他参数。\n# 详情请见 https://aider.chat/docs/llms.html\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
+      "optionsDocumentation": "查看文档了解可用选项：https://aider.chat/docs/faq.html#how-can-i-pass-command-line-options-to-aider",
+      "envVarsDocumentation": "查看文档了解环境变量：https://aider.chat/docs/llms.html"
+    },
+    "common": {
+      "showSecrets": "显示密钥"
+    },
+    "notificationsEnabled": "通知已启用",
+    "zoom": "缩放级别",
+    "theme": "主题",
+    "fontFamily": "字体",
+    "monospaceFontFamily": "等宽字体",
+    "themeOptions": {
+      "dark": "深色",
+      "light": "浅色"
+    },
+    "themeSettings": {
+      "title": "主题设置",
+      "selectTheme": "选择主题",
+      "customizeThemes": "自定义主题",
+      "themeEditor": "主题编辑器"
+    },
+    "fontOptions": {
+      "Sono": "Sono",
+      "Tektur": "Tektur",
+      "system-ui": "系统默认",
+      "Inter": "Inter",
+      "Arial": "Arial",
+      "Helvetica": "Helvetica",
+      "Times New Roman": "Times New Roman",
+      "Georgia": "Georgia",
+      "Verdana": "Verdana"
+    },
+    "monospaceFontOptions": {
+      "Sono": "Sono",
+      "MonaspaceKrypton-SemiBold": "Monaspace Krypton",
+      "ui-monospace": "系统等宽字体",
+      "JetBrains Mono": "JetBrains Mono",
+      "Fira Code": "Fira Code",
+      "Source Code Pro": "Source Code Pro",
+      "Monaco": "Monaco",
+      "Menlo": "Menlo",
+      "Consolas": "Consolas",
+      "Courier New": "Courier New"
+    },
+    "aiderRestartConfirm": {
+      "title": "需要重启",
+      "message": "对 Aider 选项或环境变量的更改需要重新启动 Aider 会话才能生效。您想现在重新启动吗？",
+      "restartNow": "立即重启",
+      "later": "稍后处理"
+    },
+    "about": {
+      "version": "版本",
+      "notAvailable": "不可用",
+      "checkForUpdates": "检查更新",
+      "newAiderVersionAvailable": "新的 Aider 版本可用 ({{version}}) - 重启 AiderDesk 以安装。",
+      "updateAvailable": "有可用更新",
+      "downloadUpdate": "下载",
+      "downloadingUpdate": "正在下载更新",
+      "newAiderDeskVersionReady": "新版本已准备好。重启 AiderDesk 以应用更新。",
+      "downloadAutomatically": "自动下载更新",
+      "releaseNotes": "发行说明"
+    }
+  },
+  "messages": {
+    "thinking": "思考中...",
+    "loading": "加载中...",
+    "copy": "复制",
+    "copied": "已复制!",
+    "interrupted": "被用户中断。",
+    "delete": "删除",
+    "redo": "重做",
+    "edit": "编辑",
+    "editingLastMessage": "正在编辑最后一条消息",
+    "cancelEdit": "取消编辑"
+  },
+  "errors": {
+    "frozenTitle": "AIDER冻结了?",
+    "frozenMessage": "Aider进程似乎已冻结。您想重启会话吗?"
+  },
+  "dialogs": {
+    "confirm": "确认",
+    "confirmDelete": "确定要删除吗?",
+    "addFile": "添加文件",
+    "openProject": "打开项目",
+    "recentProjects": "最近的项目",
+    "openProjectTitle": "打开项目",
+    "projectPathPlaceholder": "输入项目路径或使用图标浏览",
+    "openButton": "打开",
+    "browseFoldersTooltip": "浏览文件夹",
+    "projectAlreadyOpenWarning": "此项目已打开。"
+  },
+  "mode": {
+    "code": "代码",
+    "ask": "提问",
+    "architect": "架构",
+    "context": "上下文",
+    "agent": "代理"
+  },
+  "addFileDialog": {
+    "title": "添加上下文文件",
+    "browse": "浏览文件",
+    "readOnly": "只读"
+  },
+  "fileFinder": {
+    "addPathTooltip": "添加路径",
+    "browseFile": "浏览文件",
+    "browseDirectory": "浏览目录",
+    "placeholder": {
+      "filesOnly": "输入要添加的文件",
+      "directoriesOnly": "输入要添加的目录",
+      "filesAndDirectories": "输入要添加的文件或目录"
+    },
+    "placeholderFinish": {
+      "filesOnly": "输入文件或按 Enter 键完成",
+      "directoriesOnly": "输入目录或按 Enter 键完成",
+      "filesAndDirectories": "输入文件或目录，或按 Enter 键完成"
+    }
+  },
+  "fileChip": {
+    "removeFileTooltip": "移除文件"
+  },
+  "contextFiles": {
+    "title": "上下文文件",
+    "add": "添加上下文文件",
+    "addFileTooltip": "添加文件 (按 Ctrl/Cmd 键添加为只读)",
+    "addFileTooltip.ctrl": "添加文件 (按 Ctrl 键添加为只读)",
+    "addFileTooltip.cmd": "添加文件 (按 Cmd 键添加为只读)",
+    "readOnly": "只读文件",
+    "showAllFiles": "显示所有文件",
+    "hideAllFiles": "隐藏所有文件",
+    "expandAll": "全部展开",
+    "collapseAll": "全部折叠",
+    "dropAll": "删除所有上下文文件"
+  },
+  "modelSelector": {
+    "mainModel": "主模型",
+    "editorModel": "编辑器模型",
+    "weakModel": "弱模型:",
+    "architectModel": "架构模型",
+    "agentModel": "代理模型",
+    "reasoning": "推理",
+    "thinkingTokens": "思考令牌",
+    "loadingModel": "加载模型中...",
+    "searchPlaceholder": "搜索模型或输入自定义名称...",
+    "removePreferred": "从首选模型中移除"
+  },
+  "modelInfo": {
+    "noInfo": "无模型信息可用。",
+    "maxInputTokens": "最大输入令牌数",
+    "maxOutputTokens": "最大输出令牌数",
+    "inputCostPerMillion": "每百万输入令牌成本",
+    "outputCostPerMillion": "每百万输出令牌成本"
+  },
+  "themeEditor": {
+    "general": "常规设置",
+    "name": "主题名称",
+    "type": "主题类型",
+    "dark": "深色",
+    "light": "浅色",
+    "colors": "颜色",
+    "createNew": "创建新主题",
+    "duplicate": "复制",
+    "delete": "删除",
+    "newThemeName": "新主题",
+    "colorCategories": {
+      "background": "背景颜色",
+      "foreground": "文本颜色",
+      "border": "边框颜色",
+      "accent": "强调颜色",
+      "button": "按钮颜色"
+    },
+    "colors": {
+      "background": {
+        "primary": "主要背景",
+        "secondary": "次要背景",
+        "tertiary": "第三级背景",
+        "input": "输入框背景"
+      },
+      "foreground": {
+        "primary": "主要文本",
+        "secondary": "次要文本",
+        "tertiary": "第三级文本",
+        "error": "错误文本"
+      },
+      "border": {
+        "primary": "主要边框",
+        "secondary": "次要边框"
+      },
+      "accent": {
+        "primary": "主要强调",
+        "secondary": "次要强调",
+        "tertiary": "第三级强调"
+      },
+      "button": {
+        "primary": "主要按钮",
+        "secondary": "次要按钮",
+        "danger": "危险按钮"
+      }
+    },
+    "deleteConfirm": {
+      "title": "删除主题",
+      "message": "确定要删除主题 \"{{name}}\"? 此操作无法撤销。"
+    }
+  },
+  "mcp": {
+    "noDescription": "无描述",
+    "serverToolStatus": "已启用{{enabledCount}}个工具，共{{count}}个",
+    "loading": "加载中...",
+    "toolsCount_one": "{{count}}个工具",
+    "toolsCount_other": "{{count}}个工具",
+    "loadToolsError": "加载MCP服务器工具失败",
+    "noToolsFound": "未找到工具。请检查您的配置。",
+    "server_one": "服务器",
+    "server_other": "服务器",
+    "aider": "aider",
+    "aiderOnly": "仅aider",
+    "withFiles": "包含文件",
+    "useAiderTools": "使用Aider工具",
+    "usePowerTools": "使用 Power 工具",
+    "powerToolsTooltip": "允许代理使用强大的工具进行直接文件操作（读、写、编辑）、搜索（glob、grep、语义搜索）和执行 shell 命令（bash）。",
+    "aiderToolsTooltip": "代理可以使用Aider执行添加/删除上下文文件操作和运行提示。",
+    "includeContextFiles": "包含上下文文件",
+    "includeFilesTooltip": "将上下文文件内容添加到代理的聊天中。这将增加令牌使用量。",
+    "includeRepoMap": "包含仓库地图",
+    "includeRepoMapTooltip": "在代理的上下文中包含仓库地图。这有助于代理理解项目结构，但可能会增加token使用量。",
+    "servers": "MCP服务器",
+    "configureServers": "配置服务器",
+    "approval": {
+      "never": "从不",
+      "always": "总是",
+      "ask": "询问"
+    },
+    "tools": "工具"
+  },
+  "tool": {
+    "noDescription": "无描述",
+    "approval": {
+      "never": "从不",
+      "always": "总是",
+      "ask": "询问"
+    }
+  },
+  "autocompletion": {
+    "placeholder": "输入以搜索..."
+  },
+  "session": {
+    "edit": "编辑会话",
+    "save": "保存会话",
+    "name": "会话名称",
+    "namePlaceholder": "输入会话名称",
+    "loadSettings": "加载设置",
+    "loadMessages": "从该会话加载消息",
+    "loadFiles": "从该会话加载上下文文件"
+  },
+  "costInfo": {
+    "files": "文件",
+    "repoMap": "仓库地图",
+    "refreshRepoMap": "刷新仓库地图",
+    "messages": "消息",
+    "clearMessages": "清除消息历史",
+    "agent": "代理",
+    "aider": "Aider",
+    "total": "全部的",
+    "restartSession": "重启会话",
+    "tokenUsage": "{{usedTokens}} / {{maxTokens}}"
+  },
+  "sessions": {
+    "title": "会话",
+    "empty": "无保存的会话",
+    "loadMessages_one": "加载{{count}}条消息",
+    "loadMessages_other": "加载{{count}}条消息",
+    "loadFiles_one": "加载{{count}}个文件",
+    "loadFiles_other": "加载{{count}}个文件",
+    "saveAsNew": "另存为新",
+    "exportAsMarkdown": "导出为Markdown",
+    "exportAsImage": "导出为图片",
+    "deleteTitle": "删除会话",
+    "deleteConfirm": "确定要删除会话\"{{name}}\"?",
+    "deleteWarning": "此操作无法撤销。",
+    "save": "保存会话",
+    "add": "添加新会话",
+    "newSessionPlaceholder": "输入会话名称"
+  },
+  "commandOutput": {
+    "command": "命令"
+  },
+  "reflectedMessage": {
+    "title": "反射消息"
+  },
+  "responseMessage": {
+    "inputTokens": "输入令牌",
+    "outputTokens": "输出令牌"
+  },
+  "thinkingAnswer": {
+    "thinking": "思考中",
+    "answer": "回答"
+  },
+  "toolMessage": {
+    "toolLabel": "工具: {{server}}/{{tool}}",
+    "arguments": "参数:",
+    "executing": "工具执行中...",
+    "result": "结果:",
+    "error": "执行工具时出错:",
+    "denied": "拒绝访问",
+    "deniedByReason": "用户拒绝: {{reason}}",
+    "aider": {
+      "addContextFile": "添加文件到 Aider 上下文: {{path}}",
+      "dropContextFile": "从 Aider 上下文移除文件: {{path}}",
+      "runPrompt": "运行 Aider 提示: "
+    },
+    "power": {
+      "fileRead": "读取文件: {{filePath}}",
+      "fileWrite": {
+        "overwrite": "重写文件: {{filePath}}",
+        "append": "追加到文件: {{filePath}}",
+        "createOnly": "创建文件: {{filePath}}"
+      },
+      "fileEdit": {
+        "title": "编辑文件: {{filePath}}",
+        "searchTerm": "搜索词",
+        "regex": "正则表达式",
+        "replacementText": "替换文本",
+        "replaceAll": "替换所有"
+      },
+      "glob": "查找匹配模式的文件: {{pattern}}",
+      "grep": "在匹配 {{filePattern}} 的文件中搜索 {{searchTerm}}",
+      "bash": "执行 bash 命令: {{command}}",
+      "semanticSearch": "执行语义搜索: {{query}} {{path}}"
+    },
+    "errors": {
+      "noSuchTool": "尝试使用未知工具: {{toolName}}",
+      "invalidToolArguments": "工具参数无效: {{toolName}}"
+    }
+  },
+  "codeBlock": {
+    "revertChanges": "撤销更改"
+  },
+  "diffViewer": {
+    "noChanges": "没有进行任何更改。内容相同。"
+  },
+  "promptField": {
+    "placeholders": {
+      "0": "今天我能帮您什么?",
+      "1": "有什么任务需要我协助?",
+      "2": "您想让我编写什么代码?",
+      "3": "让我帮您解决问题",
+      "4": "需要我帮您改进什么吗?",
+      "5": "想重构一些代码吗?",
+      "6": "需要我帮您优化算法吗?",
+      "7": "让我帮您设计新功能",
+      "8": "需要我帮您调试问题吗?",
+      "9": "让我帮您创建测试套件",
+      "10": "让我帮您实现设计模式",
+      "11": "需要我解释一些代码吗?",
+      "12": "让我帮您现代化遗留代码",
+      "13": "需要我帮您编写文档吗?",
+      "14": "让我帮您提高性能",
+      "15": "给我一些任务吧!"
+    },
+    "questionPlaceholder": "...或建议其他内容",
+    "answers": {
+      "yes": "(Y)是",
+      "no": "(N)否",
+      "always": "(A)总是",
+      "dontAsk": "(D)不再询问"
+    },
+    "invalidCommand": "无效命令",
+    "stopResponse": "停止响应",
+    "sendMessage": "发送消息(Enter)"
+  },
+  "agentProfiles": {
+    "title": "代理配置",
+    "profileSettings": "代理配置: {{profileName}}",
+    "newProfileName": "新配置",
+    "manageProfiles": "管理配置",
+    "profiles": "配置列表",
+    "createNew": "创建新配置",
+    "profileName": "名称",
+    "tools": "工具"
+  },
+  "projectBar": {
+    "toggleMarkdown": "Markdown 渲染",
+    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。"
+  },
+  "commands": {
+    "add": "将文件添加到上下文。",
+    "agent": "切换到代理模式。如果已在代理模式下，则打开代理模型选择器。命令后的任何文本都将用作提示。",
+    "architect": "切换到架构师模式。架构师模式用于规划和执行代码库的更改。",
+    "ask": "切换到提问模式。在不编辑任何文件的情况下询问有关代码库的问题。",
+    "clear": "清除聊天历史记录",
+    "code": "切换到代码模式。请求更改您的代码。",
+    "commit": "提交仓库中未暂存的更改",
+    "context": "切换到上下文模式。请求更改，Aider 将添加相关文件到上下文。",
+    "copy-context": "将当前聊天上下文复制为 Markdown 格式，适合粘贴到 Web UI 中。",
+    "drop": "从上下文中删除文件以释放上下文空间。",
+    "edit-last": "编辑最后一条用户消息",
+    "map": "打印当前仓库地图",
+    "map-refresh": "强制刷新仓库地图",
+    "model": "打开模型选择器",
+    "read-only": "将文件添加到聊天中，这些文件仅供参考，或将添加的文件设为只读。",
+    "redo": "重做上一个用户提示。",
+    "reasoning-effort": "设置推理工作量级别（值：数字或低/中/高，取决于模型）",
+    "reset": "删除所有文件并清除聊天历史记录",
+    "run": "运行 shell 命令并可选地将输出添加到聊天中",
+    "test": "运行预定义的测试命令，并在非零退出代码时将输出添加到聊天中",
+    "think-tokens": "设置思考令牌预算（支持 8096、8k、10.5k、0.5M 等格式）",
+    "tokens": "报告当前聊天上下文使用的令牌数量",
+    "undo": "撤消 Aider 完成的最后一次 git 提交",
+    "web": "抓取网页并存储在上下文中"
+  },
+  "telemetry": {
+    "title": "遥测信息",
+    "message": "为了帮助我们改进 AiderDesk，我们会收集匿名遥测数据。这包括功能使用情况和性能指标等信息。绝不会收集个人数据或代码。",
+    "enabledLabel": "启用匿名遥测"
+  },
+  "promptBehavior": {
+    "title": "提示行为",
+    "showSuggestions": "显示建议",
+    "automaticallyWhileTyping": "输入时自动显示",
+    "onlyWhenTabPressed": "仅在按 TAB 键时显示",
+    "suggestionsDelay": "建议延迟",
+    "requireCommandConfirmation": "需要命令确认",
+    "addCommand": "/add",
+    "readOnlyCommand": "/read-only",
+    "modelCommand": "/model",
+    "modeSwitchingCommands": "模式切换命令 (/code, /context, /agent, /ask, /architect)"
+  }
+}

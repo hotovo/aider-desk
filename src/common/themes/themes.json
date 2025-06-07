@@ -1,0 +1,136 @@
+{
+  "themes": [
+    {
+      "id": "dark-default",
+      "name": "Dark (Default)",
+      "type": "dark",
+    "colors": {
+      "background": {
+        "primary": "#0d1117",
+        "secondary": "#161b22",
+        "tertiary": "#21262d",
+        "input": "#30363d"
+      },
+      "foreground": {
+        "primary": "#f0f6fc",
+        "secondary": "#c9d1d9",
+        "tertiary": "#8b949e",
+        "error": "#f85149"
+      },
+      "border": {
+        "primary": "#30363d",
+        "secondary": "#484f58"
+      },
+      "accent": {
+        "primary": "#58a6ff",
+        "secondary": "#388bfd",
+        "tertiary": "#1f6feb"
+      },
+      "button": {
+        "primary": "#238636",
+        "secondary": "#484f58",
+        "danger": "#da3633"
+      }
+    }
+    },
+    {
+      "id": "light-default",
+      "name": "Light (Default)",
+      "type": "light",
+      "colors": {
+        "background": {
+          "primary": "#ffffff",
+          "secondary": "#f8f9fa",
+          "tertiary": "#f1f3f5",
+          "input": "#e9ecef"
+        },
+        "foreground": {
+          "primary": "#343a40",
+          "secondary": "#495057",
+          "tertiary": "#6c757d",
+          "error": "#dc3545"
+        },
+        "border": {
+          "primary": "#ced4da",
+          "secondary": "#adb5bd"
+        },
+        "accent": {
+          "primary": "#4a6bff",
+          "secondary": "#3d5ce0",
+          "tertiary": "#2e4cc0"
+        },
+        "button": {
+          "primary": "#4a6bff",
+          "secondary": "#adb5bd",
+          "danger": "#dc3545"
+        }
+      }
+    },
+    {
+      "id": "dark-midnight",
+      "name": "Dark (Midnight)",
+      "type": "dark",
+      "colors": {
+        "background": {
+          "primary": "#141417",
+          "secondary": "#191a22",
+          "tertiary": "#222431",
+          "input": "#2a2c 3f"
+        },
+        "foreground": {
+          "primary": "#f1f3f5",
+          "secondary": "#adb5bd",
+          "tertiary": "#6c757d",
+          "error": "#e16b6b"
+        },
+        "border": {
+          "primary": "#3d4166",
+          "secondary": "#585c75"
+        },
+        "accent": {
+          "primary": "#4a6bff",
+          "secondary": "#3d5ce0",
+          "tertiary": "#2e4cc0"
+        },
+        "button": {
+          "primary": "#4a6bff",
+          "secondary": "#585c75",
+          "danger": "#e16b6b"
+        }
+      }
+    },
+    {
+      "id": "light-blue",
+      "name": "Light Blue",
+      "type": "light",
+      "colors": {
+        "background": {
+          "primary": "#ffffff",
+          "secondary": "#f6f8fa",
+          "tertiary": "#eaeef2",
+          "input": "#dde5ed"
+        },
+        "foreground": {
+          "primary": "#24292f",
+          "secondary": "#57606a",
+          "tertiary": "#6e7781",
+          "error": "#cf222e"
+        },
+        "border": {
+          "primary": "#d0d7de",
+          "secondary": "#afb8c1"
+        },
+        "accent": {
+          "primary": "#0969da",
+          "secondary": "#0550ae",
+          "tertiary": "#033d8b"
+        },
+        "button": {
+          "primary": "#2da44e",
+          "secondary": "#afb8c1",
+          "danger": "#cf222e"
+        }
+      }
+    }
+  ]
+}

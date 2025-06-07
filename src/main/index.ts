@@ -20,6 +20,7 @@ import { VersionsManager } from './versions-manager';
 import logger from './logger';
 import { TelemetryManager } from './telemetry-manager';
 import { ModelInfoManager } from './model-info-manager';
+import { ThemesManager } from './themes-manager';
 
 const initStore = async (): Promise<Store> => {
   const store = new Store();
@@ -102,22 +103,39 @@ const initWindow = async (store: Store) => {
 
   // Initialize Versions Manager (this also sets up listeners)
   const versionsManager = new VersionsManager(mainWindow, store);
+  
+  // Initialize Themes Manager
+  const themesManager = new ThemesManager();
 
-  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager);
+  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager, themesManager);
 
   const beforeQuit = async () => {
-    await mcpManager.close();
-    await restApiController.close();
-    await connectorManager.close();
-    await projectManager.close();
-    versionsManager.destroy();
-    await telemetryManager.destroy();
+    try {
+      await mcpManager.close();
+      await restApiController.close();
+      await connectorManager.close();
+      await projectManager.close();
+      versionsManager.destroy();
+      await telemetryManager.destroy();
+      
+      // Close Winston logger transports to prevent EPIPE errors
+      logger.close();
+    } catch (error) {
+      // Silently ignore errors during shutdown to prevent EPIPE issues
+      console.error('Error during shutdown:', error);
+    }
   };
 
   app.on('before-quit', beforeQuit);
 
   // Handle CTRL+C (SIGINT)
   process.on('SIGINT', async () => {
+    await beforeQuit();
+    process.exit(0);
+  });
+  
+  // Handle SIGTERM
+  process.on('SIGTERM', async () => {
     await beforeQuit();
     process.exit(0);
   });

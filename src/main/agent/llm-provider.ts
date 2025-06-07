@@ -162,7 +162,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     });
     return requestyProvider(model, {
       includeReasoning: provider.reasoningEffort !== ReasoningEffort.None,
-      reasoningEffort: provider.reasoningEffort === ReasoningEffort.None ? undefined : provider.reasoningEffort,
+      ...(provider.reasoningEffort !== ReasoningEffort.None && { reasoningEffort: provider.reasoningEffort }),
     });
   } else {
     throw new Error(`Unsupported LLM provider: ${JSON.stringify(provider)}`);

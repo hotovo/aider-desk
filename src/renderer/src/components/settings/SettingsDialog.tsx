@@ -6,6 +6,7 @@ import { LlmProviderName } from '@common/agent';
 
 import { Settings } from '@/pages/Settings';
 import { useSettings } from '@/context/SettingsContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 type Props = {
@@ -17,6 +18,7 @@ type Props = {
 
 export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t, i18n } = useTranslation();
+  const { setCurrentThemeById } = useTheme();
 
   const { settings: originalSettings, saveSettings } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
@@ -63,6 +65,18 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
         sans: originalSettings.fontFamily || 'Sono', 
         mono: originalSettings.monospaceFontFamily || 'Sono' 
       });
+    }
+    // Restore original theme settings if they were changed
+    if (originalSettings && localSettings && 
+        (localSettings.themeId !== originalSettings.themeId || 
+         localSettings.theme !== originalSettings.theme)) {
+      // Restore the original theme via ThemeContext
+      if (originalSettings.themeId) {
+        setCurrentThemeById(originalSettings.themeId);
+      } else if (originalSettings.theme) {
+        const fallbackThemeId = originalSettings.theme === 'light' ? 'light-default' : 'dark-default';
+        setCurrentThemeById(fallbackThemeId);
+      }
     }
     // Updated to use settings.mcpServers directly
     if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {

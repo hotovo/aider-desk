@@ -205,9 +205,9 @@ export const Home = () => {
   const shouldShowWindowControls = currentOS && currentOS !== OS.MacOS;
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-b from-neutral-950 to-neutral-900">
+    <div className="flex flex-col h-screen" style={{ backgroundColor: 'var(--theme-background-primary)' }}>
       {/* Custom title bar with window controls */}
-      <div className="window-drag custom-title-bar flex justify-between items-center h-8 bg-gradient-to-b from-neutral-950 to-neutral-900 border-b border-neutral-600">
+      <div className="window-drag custom-title-bar flex justify-between items-center h-8 border-b" style={{ backgroundColor: 'var(--theme-background-secondary)', borderColor: 'var(--theme-border-primary)' }}>
         {/* Left side - draggable area with macOS padding */}
         <div className={`flex-1 h-full ${isMacOS ? 'pl-20' : ''}`} />
         
@@ -229,9 +229,9 @@ export const Home = () => {
 
       {/* Main content area */}
       <div className="flex flex-col flex-1 p-[4px]">
-        <div className="flex flex-col h-full border-2 border-neutral-600">
+        <div className="flex flex-col h-full border-2" style={{ borderColor: 'var(--theme-border-primary)' }}>
           {/* Project tabs and settings bar */}
-          <div className="flex border-b-2 border-neutral-600 justify-between bg-gradient-to-b from-neutral-950 to-neutral-900">
+          <div className="flex border-b-2 justify-between" style={{ borderColor: 'var(--theme-border-primary)', backgroundColor: 'var(--theme-background-secondary)' }}>
             <div className="window-no-drag flex-1">
               <ProjectTabs
                 openProjects={openProjects}
@@ -245,21 +245,21 @@ export const Home = () => {
             <div className="window-no-drag flex items-center">
               {showUpdateIcon && (
                 <IconButton
-                  icon={<MdUpload className="h-5 w-5 text-neutral-100 animate-pulse animate-slow" />}
+                  icon={<MdUpload className="h-5 w-5 animate-pulse animate-slow" />}
                   tooltip={getUpdateTooltip()}
                   onClick={() => {
                     setShowSettingsTab(3);
                   }}
-                  className="px-4 py-2 hover:text-neutral-200 hover:bg-neutral-700/30 transition-colors duration-200"
+                  className="px-4 py-2 hover:bg-[var(--theme-background-tertiary)]"
                 />
               )}
               <IconButton
-                icon={<MdSettings className="h-5 w-5 text-neutral-200" />}
+                icon={<MdSettings className="h-5 w-5" />}
                 tooltip={t('settings.title')}
                 onClick={() => {
                   setShowSettingsTab(0);
                 }}
-                className="px-4 py-2 hover:text-neutral-200 hover:bg-neutral-700/30 transition-colors duration-200"
+                className="px-4 py-2 hover:bg-[var(--theme-background-tertiary)]"
               />
             </div>
           </div>

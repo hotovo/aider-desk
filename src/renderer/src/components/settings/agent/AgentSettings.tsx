@@ -324,8 +324,8 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
   ) : (
     <div className="flex max-h-[100%] overflow-hidden -m-6">
       {/* Left sidebar with profiles and providers */}
-      <div className="w-[250px] border-r border-neutral-700/50 p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700">
-        <h4 className="text-sm uppercase font-medium">{t('agentProfiles.profiles')}</h4>
+      <div className="w-[250px] border-r p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-[var(--scrollbar-track)] scrollbar-thumb-[var(--scrollbar-thumb)]" style={{ borderColor: 'var(--theme-border-primary)' }}>
+        <h4 className="text-sm uppercase font-medium" style={{ color: 'var(--theme-foreground-primary)' }}>{t('agentProfiles.profiles')}</h4>
         <div className="py-2">
           {agentProfiles.map((profile) => (
             <AgentProfileItem
@@ -341,14 +341,21 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
           ))}
           <button
             onClick={handleCreateNewProfile}
-            className="w-full text-left px-2 py-1 mt-2 rounded-sm text-sm transition-colors text-neutral-100 hover:bg-neutral-800 flex items-center"
+            className="w-full text-left px-2 py-1 mt-2 rounded-sm text-sm transition-colors flex items-center"
+            style={{ color: 'var(--theme-foreground-primary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             <FaPlus className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.createNewProfile')}
           </button>
         </div>
 
         <div className="mt-6 pt-4">
-          <h4 className="text-sm uppercase font-medium">{t('settings.agent.providerSettings')}</h4>
+          <h4 className="text-sm uppercase font-medium" style={{ color: 'var(--theme-foreground-primary)' }}>{t('settings.agent.providerSettings')}</h4>
           <div className="py-2">
             {AVAILABLE_PROVIDERS.map((providerName) => (
               <button
@@ -357,10 +364,21 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
                   setSelectedProviderName(providerName);
                   setSelectedProfileId(null);
                 }}
-                className={clsx(
-                  'w-full text-left px-2 py-1 rounded-sm text-sm transition-colors',
-                  selectedProviderName === providerName ? 'bg-neutral-800 text-white' : 'text-neutral-300 hover:bg-neutral-800',
-                )}
+                className="w-full text-left px-2 py-1 rounded-sm text-sm transition-colors"
+                style={{
+                  backgroundColor: selectedProviderName === providerName ? 'var(--theme-accent-primary)' : 'transparent',
+                  color: selectedProviderName === providerName ? '#ffffff' : 'var(--theme-foreground-secondary)'
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedProviderName !== providerName) {
+                    e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedProviderName !== providerName) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
               >
                 {t(`providers.${providerName}`)}
               </button>
@@ -370,7 +388,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
       </div>
 
       {/* Center content area for provider settings or profile settings */}
-      <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 scrollbar-thumb-rounded-full">
+      <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-[var(--scrollbar-track)] scrollbar-thumb-[var(--scrollbar-thumb)] scrollbar-thumb-rounded-full">
         {selectedProvider ? (
           <div>
             {isOpenAiProvider(selectedProvider) && <OpenAiParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}

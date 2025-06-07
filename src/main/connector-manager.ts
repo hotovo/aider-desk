@@ -33,7 +33,7 @@ export class ConnectorManager {
   constructor(
     private readonly mainWindow: BrowserWindow,
     private readonly projectManager: ProjectManager,
-    httpServer: HttpServer,
+    _httpServer: HttpServer,
   ) {
     // Init is now called explicitly from index.ts
   }

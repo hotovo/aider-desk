@@ -7,20 +7,31 @@ import { useTranslation } from 'react-i18next';
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
 import { SettingsProvider, useSettings } from '@/context/SettingsContext';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
 import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 
-const ThemeManager = () => {
+const ThemeAndFontManager = () => {
   const { settings } = useSettings();
+  const { setCurrentThemeById } = useTheme();
 
+  // Apply theme based on settings
   useEffect(() => {
-    const className = settings?.theme === 'light' ? 'theme-light' : 'theme-dark';
-    document.body.classList.remove('theme-light', 'theme-dark');
-    document.body.classList.add(className);
-  }, [settings?.theme]);
+    if (settings !== null) {
+      if (settings?.themeId) {
+        setCurrentThemeById(settings.themeId);
+      } else if (settings?.theme) {
+        const defaultThemeId = settings.theme === 'light' ? 'light-default' : 'dark-default';
+        setCurrentThemeById(defaultThemeId);
+      } else {
+        setCurrentThemeById('dark-default');
+      }
+    }
+  }, [settings, setCurrentThemeById]);
 
+  // Apply font settings
   useEffect(() => {
     if (settings) {
       const root = document.documentElement;
@@ -30,7 +41,6 @@ const ThemeManager = () => {
       root.style.setProperty('--font-family-sans', fontFamily);
       root.style.setProperty('--font-family-mono', monospaceFontFamily);
       
-      console.log('Font settings applied:', { fontFamily, monospaceFontFamily });
     }
   }, [settings?.fontFamily, settings?.monospaceFontFamily]);
 
@@ -85,9 +95,11 @@ const App = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
       <Router>
         <SettingsProvider>
-          <ThemeManager />
-          <AnimatedRoutes />
-          <ToastContainer />
+          <ThemeProvider>
+            <ThemeAndFontManager />
+            <AnimatedRoutes />
+            <ToastContainer />
+          </ThemeProvider>
         </SettingsProvider>
       </Router>
     </motion.div>

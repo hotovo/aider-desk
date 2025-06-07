@@ -1,3 +1,1 @@
-body.theme-light .select-dropdown {
-  filter: invert(1) hue-rotate(180deg);
-}
+/* Select dropdown styling handled by theme variables in component */

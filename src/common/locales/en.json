@@ -156,6 +156,7 @@
     "title": "Settings",
     "tabs": {
       "general": "General",
+      "appearance": "Appearance",
       "aider": "Aider",
       "agent": "Agent",
       "about": "About"
@@ -229,6 +230,13 @@
     "themeOptions": {
       "dark": "Dark",
       "light": "Light"
+    },
+    "themeSettings": {
+      "title": "Theme Settings",
+      "selectTheme": "Select Theme",
+      "customizeThemes": "Customize Themes",
+      "themeEditor": "Theme Editor",
+      "resetToDefaults": "Reset to Defaults"
     },
     "fontOptions": {
       "Sono": "Sono",
@@ -378,6 +386,57 @@
     "maxOutputTokens": "Max Output Tokens",
     "inputCostPerMillion": "Input Cost / 1M Tokens",
     "outputCostPerMillion": "Output Cost / 1M Tokens"
+  },
+  "themeEditor": {
+    "general": "General Settings",
+    "name": "Theme Name",
+    "type": "Theme Type",
+    "dark": "Dark",
+    "light": "Light",
+    "colors": "Colors",
+    "createNew": "Create New",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "newThemeName": "New Theme",
+    "colorCategories": {
+      "background": "Background Colors",
+      "foreground": "Text Colors",
+      "border": "Border Colors",
+      "accent": "Accent Colors",
+      "button": "Button Colors"
+    },
+    "colors": {
+      "background": {
+        "primary": "Primary Background",
+        "secondary": "Secondary Background",
+        "tertiary": "Tertiary Background",
+        "input": "Input Background"
+      },
+      "foreground": {
+        "primary": "Primary Text",
+        "secondary": "Secondary Text",
+        "tertiary": "Tertiary Text",
+        "error": "Error Text"
+      },
+      "border": {
+        "primary": "Primary Border",
+        "secondary": "Secondary Border"
+      },
+      "accent": {
+        "primary": "Primary Accent",
+        "secondary": "Secondary Accent",
+        "tertiary": "Tertiary Accent"
+      },
+      "button": {
+        "primary": "Primary Button",
+        "secondary": "Secondary Button",
+        "danger": "Danger Button"
+      }
+    },
+    "deleteConfirm": {
+      "title": "Delete Theme",
+      "message": "Are you sure you want to delete the theme \"{{name}}\"? This action cannot be undone."
+    }
   },
   "mcp": {
     "serverToolStatus": "{{enabledCount}} of {{count}} tools enabled",

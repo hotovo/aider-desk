@@ -31,26 +31,52 @@ export const BaseDialog = ({ title, onClose, children, footer, width = 384, clos
   }, [closeOnEscape, onClose]);
 
   return (
-    <div className="fixed inset-0 top-0 bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 top-0 bottom-0 left-0 right-0 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto" style={{ backgroundColor: 'var(--modal-backdrop)' }}>
       <FocusTrap
         focusTrapOptions={{
           allowOutsideClick: true,
         }}
       >
         <div
-          style={{ width: `${width}px` }}
-          className="bg-neutral-800/95 shadow-2xl rounded-xl border border-neutral-700/50 max-h-[90vh] flex flex-col"
+          style={{ 
+            width: `${width}px`,
+            backgroundColor: 'var(--theme-background-primary, #ffffff)',
+            borderColor: 'var(--theme-border-primary, #cccccc)',
+            color: 'var(--theme-foreground-primary, #000000)'
+          }}
+          className="shadow-2xl rounded-xl border max-h-[90vh] flex flex-col"
           ref={dialogRef}
         >
-          <div className="px-6 py-4 border-b border-neutral-700/50 flex-shrink-0">
-            <h2 className="text-lg font-medium text-neutral-100 uppercase">{title}</h2>
+          <div 
+            className="px-6 py-4 border-b flex-shrink-0"
+            style={{ borderColor: 'var(--theme-border-primary)' }}
+          >
+            <h2 
+              className="text-lg font-medium uppercase"
+              style={{ color: 'var(--theme-foreground-primary)' }}
+            >
+              {title}
+            </h2>
           </div>
-          <div className="p-6 flex flex-col flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 scrollbar-thumb-rounded-full">
+          <div 
+            className="p-6 flex flex-col flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-[var(--theme-background-tertiary)] scrollbar-thumb-[var(--theme-border-secondary)] scrollbar-thumb-rounded-full"
+            style={{ backgroundColor: 'var(--theme-background-primary)' }}
+          >
             {children}
           </div>
-          <div className="px-6 py-4 border-t border-neutral-700/50 flex justify-end space-x-3 flex-shrink-0">
+          <div 
+            className="px-6 py-4 border-t flex justify-end space-x-3 flex-shrink-0"
+            style={{ borderColor: 'var(--theme-border-primary)' }}
+          >
             {footer || (
-              <button onClick={onClose} className="bg-neutral-600 text-neutral-100 px-4 py-2 rounded hover:bg-neutral-500">
+              <button 
+                onClick={onClose} 
+                className="px-4 py-2 rounded transition-colors"
+                style={{
+                  backgroundColor: 'var(--theme-button-secondary)',
+                  color: 'var(--theme-foreground-primary)'
+                }}
+              >
                 {t('common.cancel')}
               </button>
             )}

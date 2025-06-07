@@ -30,36 +30,62 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
   return (
     <div className="flex flex-col w-full gap-3 pt-5">
       {/* Thinking section */}
-      <div className="border border-neutral-700 rounded-md overflow-hidden">
-        <div className="flex items-center justify-between gap-2 p-2 bg-neutral-800 cursor-pointer hover:bg-neutral-750" onClick={handleToggleThinking}>
+      <div className="border rounded-md overflow-hidden" style={{ borderColor: 'var(--theme-border-primary)' }}>
+        <div 
+          className="flex items-center justify-between gap-2 p-2 cursor-pointer transition-colors duration-200" 
+          style={{ backgroundColor: 'var(--theme-background-tertiary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--theme-background-secondary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+          }}
+          onClick={handleToggleThinking}
+        >
           <div className="flex items-center gap-2">
-            <div className="text-neutral-200">{isThinkingExpanded ? <FaChevronDown size={14} /> : <FaChevronRight size={14} />}</div>
-            <div className={`text-neutral-200 ${!answer ? 'animate-pulse' : ''}`}>
+            <div style={{ color: 'var(--theme-foreground-primary)' }}>{isThinkingExpanded ? <FaChevronDown size={14} /> : <FaChevronRight size={14} />}</div>
+            <div className={!answer ? 'animate-pulse' : ''} style={{ color: 'var(--theme-foreground-primary)' }}>
               <FaBrain size={16} />
             </div>
-            <div className={`font-medium text-neutral-100 ${!answer ? 'animate-pulse' : ''}`}>{t('thinkingAnswer.thinking')}</div>
+            <div className={`font-medium ${!answer ? 'animate-pulse' : ''}`} style={{ color: 'var(--theme-foreground-primary)' }}>{t('thinkingAnswer.thinking')}</div>
           </div>
-          {thinking && <CopyMessageButton content={thinking} className="text-neutral-600 hover:text-neutral-300" />}
+          {thinking && <CopyMessageButton content={thinking} className="text-[var(--theme-foreground-tertiary)] hover:text-[var(--theme-accent-primary)]" />}
         </div>
 
         {isThinkingExpanded && (
-          <div className={clsx('p-3 text-xs text-neutral-300 bg-neutral-850', !renderMarkdown && 'whitespace-pre-wrap break-words')}>{parsedThinking}</div>
+          <div 
+            className={clsx('p-3 text-xs', !renderMarkdown && 'whitespace-pre-wrap break-words')}
+            style={{ 
+              color: 'var(--theme-foreground-secondary)', 
+              backgroundColor: 'var(--theme-background-primary)' 
+            }}
+          >
+            {parsedThinking}
+          </div>
         )}
       </div>
 
       {/* Answer section - only show if we have an answer or we're streaming */}
       {answer && parsedAnswer && (
-        <div className="border border-neutral-700 rounded-md overflow-hidden">
-          <div className="flex items-center justify-between gap-2 p-2 bg-neutral-800">
+        <div className="border rounded-md overflow-hidden" style={{ borderColor: 'var(--theme-border-primary)' }}>
+          <div className="flex items-center justify-between gap-2 p-2" style={{ backgroundColor: 'var(--theme-background-tertiary)' }}>
             <div className="flex items-center gap-2">
-              <div className="text-neutral-200">
+              <div style={{ color: 'var(--theme-foreground-primary)' }}>
                 <MdOutlineLightbulb size={18} />
               </div>
-              <div className="font-medium text-neutral-100">{t('thinkingAnswer.answer')}</div>
+              <div className="font-medium" style={{ color: 'var(--theme-foreground-primary)' }}>{t('thinkingAnswer.answer')}</div>
             </div>
-            <CopyMessageButton content={answer} className="text-neutral-600 hover:text-neutral-300" />
+            <CopyMessageButton content={answer} className="text-[var(--theme-foreground-tertiary)] hover:text-[var(--theme-accent-primary)]" />
           </div>
-          <div className={clsx('p-3 text-xs text-neutral-100 bg-neutral-850', !renderMarkdown && 'whitespace-pre-wrap break-words')}>{parsedAnswer}</div>
+          <div 
+            className={clsx('p-3 text-xs', !renderMarkdown && 'whitespace-pre-wrap break-words')}
+            style={{ 
+              color: 'var(--theme-foreground-primary)', 
+              backgroundColor: 'var(--theme-background-primary)' 
+            }}
+          >
+            {parsedAnswer}
+          </div>
         </div>
       )}
     </div>

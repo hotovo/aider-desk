@@ -58,11 +58,29 @@ export const EditFormatSelector = forwardRef<EditFormatSelectorRef, Props>(({ cu
     <div
       key={format}
       ref={index === highlightedIndex ? highlightedItemRef : undefined}
-      className={`flex items-center w-full hover:bg-neutral-700 transition-colors duration-200 ${index === highlightedIndex ? 'bg-neutral-700' : 'text-neutral-300'}`}
+      className="flex items-center w-full transition-colors duration-200"
+      style={{
+        backgroundColor: index === highlightedIndex ? 'var(--theme-background-tertiary)' : 'transparent',
+        color: index === highlightedIndex ? 'var(--theme-foreground-primary)' : 'var(--theme-foreground-secondary)'
+      }}
+      onMouseEnter={(e) => {
+        if (index !== highlightedIndex) {
+          e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (index !== highlightedIndex) {
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }
+      }}
     >
       <button
         onClick={() => handleFormatSelected(format)}
-        className={`flex-grow px-3 py-1 text-left text-xs ${format === currentFormat ? 'text-white font-bold' : ''}`}
+        className="flex-grow px-3 py-1 text-left text-xs"
+        style={{
+          color: format === currentFormat ? 'var(--theme-foreground-primary)' : 'inherit',
+          fontWeight: format === currentFormat ? 'bold' : 'normal'
+        }}
       >
         {format}
       </button>
@@ -71,13 +89,23 @@ export const EditFormatSelector = forwardRef<EditFormatSelectorRef, Props>(({ cu
 
   return (
     <div className="relative" ref={selectorRef}>
-      <button onClick={toggleVisible} className="flex items-center hover:text-neutral-300 focus:outline-none transition-colors duration-200 text-xs">
+      <button 
+        onClick={toggleVisible} 
+        className="flex items-center focus:outline-none transition-colors duration-200 text-xs"
+        style={{ color: 'var(--theme-foreground-secondary)' }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--theme-foreground-primary)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--theme-foreground-secondary)';
+        }}
+      >
         <span>{currentFormat || t('common.loading')}</span>
         <MdKeyboardArrowUp className="w-3 h-3 ml-1 transform rotate-180" />
       </button>
       {visible && (
-        <div className="absolute top-full left-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 flex flex-col w-60">
-          <div className="overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 max-h-48">
+        <div className="absolute top-full left-0 mt-1 rounded-md shadow-lg z-10 flex flex-col w-60" style={{ backgroundColor: 'var(--theme-background-secondary)', borderColor: 'var(--theme-border-primary)', border: '1px solid' }}>
+          <div className="overflow-y-auto scrollbar-thin scrollbar-track-[var(--scrollbar-track)] scrollbar-thumb-[var(--scrollbar-thumb)] hover:scrollbar-thumb-[var(--scrollbar-thumb-hover)] max-h-48">
             {filteredFormats.map(renderFormatItem)}
           </div>
         </div>

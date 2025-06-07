@@ -11,6 +11,7 @@ type Props = {
   chevronPosition?: 'left' | 'right';
   isOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
+  style?: React.CSSProperties;
 };
 
 export const Accordion = ({
@@ -22,6 +23,7 @@ export const Accordion = ({
   chevronPosition = 'left',
   isOpen: controlledIsOpen,
   onOpenChange,
+  style,
 }: Props) => {
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(defaultOpen);
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : uncontrolledIsOpen;
@@ -39,7 +41,7 @@ export const Accordion = ({
   );
 
   return (
-    <div className={className}>
+    <div className={className} style={style}>
       <button
         onClick={handleOpenChange}
         className={clsx('w-full flex items-center gap-2 p-2 rounded hover:bg-neutral-700/50 transition-colors', buttonClassName)}
