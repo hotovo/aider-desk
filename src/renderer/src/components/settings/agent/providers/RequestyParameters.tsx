@@ -25,6 +25,7 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
     { value: 'low', label: t('reasoningEffort.low') },
     { value: 'medium', label: t('reasoningEffort.medium') },
     { value: 'high', label: t('reasoningEffort.high') },
+    { value: 'max', label: t('reasoningEffort.max') },
   ];
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {

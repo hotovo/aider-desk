@@ -37,6 +37,7 @@ export interface ApplicationAPI {
   dialog: {
     showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
   };
+  getPathForFile: (file: File) => string;
   getOpenProjects: () => Promise<ProjectData[]>;
   addOpenProject: (baseDir: string) => Promise<ProjectData[]>;
   setActiveProject: (baseDir: string) => Promise<ProjectData[]>;

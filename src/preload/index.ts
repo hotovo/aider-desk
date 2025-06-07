@@ -18,7 +18,7 @@ import {
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { electronAPI } from '@electron-toolkit/preload';
-import { contextBridge, ipcRenderer } from 'electron';
+import { webUtils, contextBridge, ipcRenderer } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ApplicationAPI, ExtendedElectronAPI } from './index.d';
@@ -62,6 +62,7 @@ const api: ApplicationAPI = {
   dialog: {
     showOpenDialog: (options: Electron.OpenDialogSyncOptions) => ipcRenderer.invoke('show-open-dialog', options),
   },
+  getPathForFile: (file) => webUtils.getPathForFile(file),
   getOpenProjects: () => ipcRenderer.invoke('get-open-projects'),
   addOpenProject: (baseDir) => ipcRenderer.invoke('add-open-project', baseDir),
   setActiveProject: (baseDir) => ipcRenderer.invoke('set-active-project', baseDir),

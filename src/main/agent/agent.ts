@@ -7,6 +7,7 @@ import { AgentProfile, ContextFile, ContextMessage, McpTool, SettingsData, ToolA
 import {
   APICallError,
   type CoreMessage,
+  type CoreUserMessage,
   generateText,
   InvalidToolArgumentsError,
   NoSuchToolError,
@@ -415,20 +416,19 @@ export class Agent {
     const cacheControl = getCacheControl(profile);
     const providerOptions = getProviderOptions(llmProvider);
 
-    // Track new messages created during this run
-    const agentMessages: CoreMessage[] = [
+    const messages = await this.prepareMessages(project, profile);
+    const resultMessages: CoreMessage[] = [
       {
         role: 'user',
         content: prompt,
         providerOptions: {
           ...cacheControl,
         },
-      },
+      } satisfies CoreUserMessage,
     ];
-    const messages = await this.prepareMessages(project, profile);
 
     // add user message
-    messages.push(...agentMessages);
+    messages.push(...resultMessages);
 
     try {
       // reinitialize MCP clients for the current project and wait for them to be ready
@@ -549,73 +549,94 @@ export class Agent {
       };
 
       let currentResponseId: null | string = null;
+      let iterationCount = 0;
 
-      const result = streamText({
-        providerOptions,
-        model,
-        system: systemPrompt,
-        messages,
-        tools: toolSet,
-        abortSignal: this.abortController.signal,
-        maxSteps: profile.maxIterations,
-        maxTokens: profile.maxTokens,
-        temperature: 0, // Keep deterministic for agent behavior
-        experimental_continueSteps: true,
-        onError: ({ error }) => {
-          logger.error('Error during prompt:', { error });
-          if (typeof error === 'string') {
-            project.addLogMessage('error', error);
-            // @ts-expect-error checking keys in error
-          } else if (APICallError.isInstance(error) || ('message' in error && 'responseBody' in error)) {
-            project.addLogMessage('error', `${error.message}: ${error.responseBody}`);
-          } else if (error instanceof Error) {
-            project.addLogMessage('error', error.message);
-          } else {
-            project.addLogMessage('error', JSON.stringify(error));
-          }
-        },
-        onChunk: ({ chunk }) => {
-          if (chunk.type === 'text-delta') {
-            currentResponseId = project.processResponseMessage({
-              action: 'response',
-              content: chunk.textDelta,
-              finished: false,
-            });
-          }
-        },
-        onStepFinish: (stepResult) => {
-          const { response, finishReason } = stepResult;
+      while (true) {
+        logger.info(`Starting iteration ${iterationCount}`);
+        iterationCount++;
+        if (iterationCount > profile.maxIterations) {
+          logger.warn(`Max iterations (${profile.maxIterations}) reached. Stopping agent.`);
+          project.addLogMessage(
+            'warning',
+            `The Agent has reached the maximum number of allowed iterations (${profile.maxIterations}). To allow more iterations, go to Settings -> Agent -> Parameters and increase Max Iterations.`,
+          );
+          break;
+        }
 
-          if (finishReason === 'error') {
-            logger.error('Error during prompt:', { stepResult });
-            return;
-          }
+        const result = streamText({
+          providerOptions,
+          model,
+          system: systemPrompt,
+          messages,
+          tools: toolSet,
+          abortSignal: this.abortController.signal,
+          maxTokens: profile.maxTokens,
+          temperature: 0, // Keep deterministic for agent behavior
+          experimental_continueSteps: true,
+          onError: ({ error }) => {
+            logger.error('Error during prompt:', { error });
+            if (typeof error === 'string') {
+              project.addLogMessage('error', error);
+              // @ts-expect-error checking keys in error
+            } else if (APICallError.isInstance(error) || ('message' in error && 'responseBody' in error)) {
+              project.addLogMessage('error', `${error.message}: ${error.responseBody}`);
+            } else if (error instanceof Error) {
+              project.addLogMessage('error', error.message);
+            } else {
+              project.addLogMessage('error', JSON.stringify(error));
+            }
+          },
+          onChunk: ({ chunk }) => {
+            if (chunk.type === 'text-delta') {
+              currentResponseId = project.processResponseMessage({
+                action: 'response',
+                content: chunk.textDelta,
+                finished: false,
+              });
+            }
+          },
+          onStepFinish: (stepResult) => {
+            const { finishReason } = stepResult;
 
-          // Replace agentMessages with the latest full history from the response keeping the user message
-          agentMessages.length = 1;
-          agentMessages.push(...response.messages);
+            if (finishReason === 'error') {
+              logger.error('Error during prompt:', { stepResult });
+              return;
+            }
 
-          if (this.abortController?.signal.aborted) {
-            logger.info('Prompt aborted by user');
-            return;
-          }
+            if (this.abortController?.signal.aborted) {
+              logger.info('Prompt aborted by user');
+              return;
+            }
 
-          this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile);
+            this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile);
 
-          currentResponseId = null;
-        },
-        onFinish: ({ finishReason }) => {
+            currentResponseId = null;
+          },
+          experimental_repairToolCall: repairToolCall,
+        });
+
+        await result.consumeStream({
+          onError: (error) => {
+            logger.error('Error during prompt:', { error });
+            project.addLogMessage('error', `Error during prompt: ${error instanceof Error ? error.message : String(error)}`);
+          },
+        });
+
+        const { messages: responseMessages } = await result.response;
+        const finishReason = await result.finishReason;
+
+        messages.push(...responseMessages);
+        resultMessages.push(...responseMessages);
+
+        if (finishReason !== 'tool-calls') {
           logger.info(`Prompt finished. Reason: ${finishReason}`);
-        },
-        experimental_repairToolCall: repairToolCall,
-      });
-
-      // Consume the stream to ensure it runs to completion
-      await result.consumeStream();
+          break;
+        }
+      }
     } catch (error) {
       if (this.abortController?.signal.aborted) {
         logger.info('Prompt aborted by user');
-        return agentMessages;
+        return resultMessages;
       }
 
       logger.error('Error running prompt:', error);
@@ -636,7 +657,7 @@ export class Agent {
       });
     }
 
-    return agentMessages;
+    return resultMessages;
   }
 
   private async getLlmEnv(project: Project) {

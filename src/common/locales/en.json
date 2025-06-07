@@ -544,7 +544,8 @@
     "none": "None",
     "low": "Low",
     "medium": "Medium",
-    "high": "High"
+    "high": "High",
+    "max": "Max"
   },
   "commands": {
     "add": "Add files to the context",

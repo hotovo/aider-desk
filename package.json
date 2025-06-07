@@ -47,7 +47,7 @@
     "@headlessui/react": "^2.2.0",
     "@n8n/json-schema-to-zod": "^1.1.0",
     "@openrouter/ai-sdk-provider": "^0.4.5",
-    "@requesty/ai-sdk": "^0.0.4",
+    "@requesty/ai-sdk": "^0.0.7",
     "@smithy/eventstream-codec": "^2.0.0",
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",

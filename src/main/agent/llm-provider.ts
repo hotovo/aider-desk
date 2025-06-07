@@ -162,7 +162,6 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     });
     return requestyProvider(model, {
       includeReasoning: provider.reasoningEffort !== ReasoningEffort.None,
-      // @ts-expect-error Reasoning effort is not yet in the type definitions (https://github.com/requestyai/ai-sdk-requesty/pull/2)
       reasoningEffort: provider.reasoningEffort === ReasoningEffort.None ? undefined : provider.reasoningEffort,
     });
   } else {
