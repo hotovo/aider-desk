@@ -12,6 +12,7 @@ import { scrapeWeb } from './web-scrapper';
 import logger from './logger';
 import { VersionsManager } from './versions-manager';
 import { TelemetryManager } from './telemetry-manager';
+import { ThemesManager } from './themes-manager';
 
 export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
@@ -22,6 +23,7 @@ export const setupIpcHandlers = (
   versionsManager: VersionsManager,
   modelInfoManager: ModelInfoManager,
   telemetryManager: TelemetryManager,
+  themesManager: ThemesManager,
 ) => {
   ipcMain.handle('load-settings', () => {
     return store.getSettings();
@@ -47,7 +49,7 @@ export const setupIpcHandlers = (
     projectManager.getProject(baseDir).answerQuestion(answer);
   });
 
-  ipcMain.on('drop-file', (_, baseDir: string, filePath: string) => {
+  ipcMain.on('drop-file', (_,  baseDir: string, filePath: string) => {
     void projectManager.getProject(baseDir).dropFile(filePath);
   });
 
@@ -321,5 +323,32 @@ export const setupIpcHandlers = (
       logger.error('Error loading models info:', error);
       return {}; // Return empty object or handle error as appropriate
     }
+  });
+
+  // Window control handlers
+  ipcMain.handle('minimize-window', () => {
+    mainWindow.minimize();
+  });
+
+  ipcMain.handle('maximize-window', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+
+  ipcMain.handle('close-window', () => {
+    mainWindow.close();
+  });
+
+  // Theme-related handlers
+  ipcMain.handle('load-themes', async () => {
+    return await themesManager.loadThemes();
+  });
+
+  ipcMain.handle('save-themes', async (_, themes) => {
+    await themesManager.saveThemes(themes);
+    return true;
   });
 };

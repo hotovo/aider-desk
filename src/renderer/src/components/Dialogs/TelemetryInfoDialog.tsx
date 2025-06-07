@@ -36,8 +36,8 @@ export const TelemetryInfoDialog = () => {
       }
     >
       <div className="space-y-4">
-        <p className="text-xs text-neutral-300">{t('telemetry.message')}</p>
-        <p className="text-xs text-neutral-300">
+        <p className="text-xs" style={{ color: 'var(--theme-foreground-secondary)' }}>{t('telemetry.message')}</p>
+        <p className="text-xs" style={{ color: 'var(--theme-foreground-secondary)' }}>
           <Trans
             i18nKey="telemetry.fullInfo"
             components={{
@@ -46,7 +46,8 @@ export const TelemetryInfoDialog = () => {
                   href="https://github.com/hotovo/aider-desk/blob/main/docs/TELEMETRY.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline"
+                  className="hover:underline"
+                  style={{ color: 'var(--theme-accent-primary)' }}
                 />
               ),
             }}

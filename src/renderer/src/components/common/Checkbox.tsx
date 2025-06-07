@@ -37,17 +37,19 @@ export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm'
           {...props}
         />
         <div
-          className={clsx(
-            'rounded border flex items-center justify-center transition-colors duration-200 w-4 h-4',
-            checked ? 'bg-neutral-600 border-neutral-500' : 'bg-neutral-800 border-neutral-600',
-          )}
+          className="rounded border flex items-center justify-center transition-colors duration-200 w-4 h-4"
+          style={{
+            backgroundColor: checked ? 'var(--theme-accent-primary)' : 'var(--theme-background-input)',
+            borderColor: checked ? 'var(--theme-accent-primary)' : 'var(--theme-border-primary)'
+          }}
         >
           {checked && (
             <svg
-              className={clsx('text-white', {
+              className={clsx({
                 'w-3 h-3': size === 'sm',
                 'w-4 h-4': size === 'md',
               })}
+              style={{ color: '#ffffff' }}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -58,7 +60,7 @@ export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm'
           )}
         </div>
       </div>
-      {label && <span className="ml-2">{label}</span>}
+      {label && <span className="ml-2" style={{ color: 'var(--theme-foreground-primary)' }}>{label}</span>}
     </div>
   );
 };

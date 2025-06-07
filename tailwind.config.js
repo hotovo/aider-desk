@@ -6,7 +6,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', ...defaultTheme.fontFamily.sans],
+        sans: ['var(--font-family-sans)', 'Sono', ...defaultTheme.fontFamily.sans],
+        mono: ['var(--font-family-mono)', 'Sono', ...defaultTheme.fontFamily.mono],
       },
       colors: {
         text: {
@@ -21,6 +22,7 @@ module.exports = {
           500: '#585c75',
           600: '#3d4166',
           700: '#333652',
+          750: '#2e3247',
           800: '#2a2c3f',
           850: '#222431',
           900: '#191a22',

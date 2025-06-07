@@ -1,0 +1,101 @@
+/* Theme CSS Variables */
+
+/* These variables will be overridden by the ThemeContext */
+:root {
+  /* Background colors - Default to dark theme */
+  --theme-background-primary: #141417;
+  --theme-background-secondary: #191a22;
+  --theme-background-tertiary: #222431;
+  --theme-background-input: #2a2c3f;
+  
+  /* Text colors */
+  --theme-foreground-primary: #f1f3f5;
+  --theme-foreground-secondary: #adb5bd;
+  --theme-foreground-tertiary: #6c757d;
+  --theme-foreground-error: #e16b6b;
+  
+  /* Border colors */
+  --theme-border-primary: #3d4166;
+  --theme-border-secondary: #585c75;
+  
+  /* Accent colors */
+  --theme-accent-primary: #4a6bff;
+  --theme-accent-secondary: #3d5ce0;
+  --theme-accent-tertiary: #2e4cc0;
+  
+  /* Button colors */
+  --theme-button-primary: #4a6bff;
+  --theme-button-secondary: #585c75;
+  --theme-button-danger: #e16b6b;
+}
+
+/* Component-specific theme variables */
+:root {
+  /* Inputs */
+  --input-background: var(--theme-background-input);
+  --input-text: var(--theme-foreground-primary);
+  --input-border: var(--theme-border-primary);
+  --input-placeholder: var(--theme-foreground-tertiary);
+  
+  /* Buttons */
+  --button-primary-background: var(--theme-button-primary);
+  --button-primary-text: var(--theme-foreground-primary);
+  --button-secondary-background: var(--theme-button-secondary);
+  --button-secondary-text: var(--theme-foreground-primary);
+  --button-danger-background: var(--theme-button-danger);
+  --button-danger-text: var(--theme-foreground-primary);
+  
+  /* Cards and panels */
+  --card-background: var(--theme-background-secondary);
+  --card-border: var(--theme-border-primary);
+  
+  /* Scrollbars */
+  --scrollbar-track: #2a2c3f;
+  --scrollbar-thumb: #3d4166;
+  --scrollbar-thumb-hover: var(--theme-border-primary);
+  
+  /* Diff viewer */
+  --diff-insert-background: #022c22;
+  --diff-insert-edit-background: #011f19;
+  --diff-delete-background: #3f1d25;
+  --diff-delete-edit-background: #2c141a;
+  
+  /* Modal and overlay */
+  --modal-backdrop: rgba(0, 0, 0, 0.5);
+}
+
+/* Light theme overrides */
+body.theme-light {
+  /* Light theme background override for dropdowns/popups */
+  --theme-background-secondary: #ffffff;
+  
+  /* Diff viewer - light theme */
+  --diff-insert-background: #d4edda;
+  --diff-insert-edit-background: #c3e6cb;
+  --diff-delete-background: #f8d7da;
+  --diff-delete-edit-background: #f5c6cb;
+  
+  /* Modal and overlay - light theme */
+  --modal-backdrop: rgba(0, 0, 0, 0.3);
+}
+
+/* Input placeholder styling */
+input::placeholder,
+textarea::placeholder {
+  color: var(--theme-foreground-tertiary);
+  opacity: 1;
+}
+
+/* Dark theme placeholder text */
+body.theme-dark input::placeholder,
+body.theme-dark textarea::placeholder {
+  color: var(--theme-foreground-tertiary);
+  opacity: 0.7;
+}
+
+/* Light theme placeholder text */
+body.theme-light input::placeholder,
+body.theme-light textarea::placeholder {
+  color: var(--theme-foreground-tertiary);
+  opacity: 0.8;
+}

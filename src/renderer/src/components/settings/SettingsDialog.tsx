@@ -6,6 +6,7 @@ import { LlmProviderName } from '@common/agent';
 
 import { Settings } from '@/pages/Settings';
 import { useSettings } from '@/context/SettingsContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 type Props = {
@@ -17,6 +18,7 @@ type Props = {
 
 export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t, i18n } = useTranslation();
+  const { setCurrentThemeById } = useTheme();
 
   const { settings: originalSettings, saveSettings } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
@@ -28,6 +30,19 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
   }, [originalSettings]);
 
+  // Apply font settings when dialog opens
+  useEffect(() => {
+    if (localSettings) {
+      const root = document.documentElement;
+      root.style.setProperty('--font-family-sans', localSettings.fontFamily || 'Sono');
+      root.style.setProperty('--font-family-mono', localSettings.monospaceFontFamily || 'Sono');
+      console.log('Font settings applied in dialog:', { 
+        sans: localSettings.fontFamily || 'Sono', 
+        mono: localSettings.monospaceFontFamily || 'Sono' 
+      });
+    }
+  }, [localSettings?.fontFamily, localSettings?.monospaceFontFamily]);
+
   const hasChanges = useMemo(() => {
     return localSettings && originalSettings && !isEqual(localSettings, originalSettings);
   }, [localSettings, originalSettings]);
@@ -38,6 +53,30 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
     if (originalSettings && localSettings?.zoomLevel !== originalSettings.zoomLevel) {
       void window.api.setZoomLevel(originalSettings.zoomLevel ?? 1);
+    }
+    // Restore original font settings if they were changed
+    if (originalSettings && localSettings && 
+        (localSettings.fontFamily !== originalSettings.fontFamily || 
+         localSettings.monospaceFontFamily !== originalSettings.monospaceFontFamily)) {
+      const root = document.documentElement;
+      root.style.setProperty('--font-family-sans', originalSettings.fontFamily || 'Sono');
+      root.style.setProperty('--font-family-mono', originalSettings.monospaceFontFamily || 'Sono');
+      console.log('Font settings restored:', { 
+        sans: originalSettings.fontFamily || 'Sono', 
+        mono: originalSettings.monospaceFontFamily || 'Sono' 
+      });
+    }
+    // Restore original theme settings if they were changed
+    if (originalSettings && localSettings && 
+        (localSettings.themeId !== originalSettings.themeId || 
+         localSettings.theme !== originalSettings.theme)) {
+      // Restore the original theme via ThemeContext
+      if (originalSettings.themeId) {
+        setCurrentThemeById(originalSettings.themeId);
+      } else if (originalSettings.theme) {
+        const fallbackThemeId = originalSettings.theme === 'light' ? 'light-default' : 'dark-default';
+        setCurrentThemeById(fallbackThemeId);
+      }
     }
     // Updated to use settings.mcpServers directly
     if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
@@ -95,6 +134,22 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
   };
 
+  const handleFontChange = (fontFamily: string, monospaceFontFamily: string) => {
+    if (localSettings) {
+      setLocalSettings({
+        ...localSettings,
+        fontFamily,
+        monospaceFontFamily,
+      });
+      
+      // Apply font changes immediately
+      const root = document.documentElement;
+      root.style.setProperty('--font-family-sans', fontFamily);
+      root.style.setProperty('--font-family-mono', monospaceFontFamily);
+      console.log('Font change handler called:', { fontFamily, monospaceFontFamily });
+    }
+  };
+
   if (showRestartConfirmDialog) {
     return (
       <ConfirmDialog
@@ -127,6 +182,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
           updateSettings={setLocalSettings}
           onLanguageChange={handleLanguageChange}
           onZoomChange={handleZoomChange}
+          onFontChange={handleFontChange}
           initialTab={initialTab}
           initialAgentProfileId={initialAgentProfileId}
           initialAgentProvider={initialAgentProvider}

@@ -25,11 +25,21 @@ const logger = winston.createLogger({
 
 // If we're not in production, also log to the console
 if (process.env.NODE_ENV !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
-    }),
-  );
+  const consoleTransport = new winston.transports.Console({
+    format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+  });
+  
+  // Handle EPIPE errors gracefully
+  consoleTransport.on('error', (error) => {
+    if ((error as any).code === 'EPIPE') {
+      // Silently ignore EPIPE errors (broken pipe)
+      return;
+    }
+    // Log other errors to stderr if possible
+    console.error('Logger console transport error:', error);
+  });
+  
+  logger.add(consoleTransport);
 }
 
 export default logger;

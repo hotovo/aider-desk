@@ -144,17 +144,24 @@ export const AgentSelector = () => {
     <div className="relative" ref={selectorRef}>
       <button
         onClick={toggleSelectorVisible}
-        className={clsx(
-          'flex items-center gap-1.5 px-2',
-          'bg-neutral-850 text-neutral-300',
-          'hover:bg-neutral-800 hover:text-neutral-100',
-          'focus:outline-none transition-colors duration-200',
-          'text-xs border-neutral-600 border rounded-md min-h-[26px]',
-        )}
+        className="flex items-center gap-1.5 px-2 focus:outline-none transition-colors duration-200 text-xs border rounded-md min-h-[26px]"
+        style={{
+          backgroundColor: 'var(--theme-background-input)',
+          color: 'var(--theme-foreground-secondary)',
+          borderColor: 'var(--theme-border-primary)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+          e.currentTarget.style.color = 'var(--theme-foreground-primary)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--theme-background-input)';
+          e.currentTarget.style.color = 'var(--theme-foreground-secondary)';
+        }}
       >
         <RiToolsFill className="w-3.5 h-3.5" />
         <span className="text-2xs truncate max-w-[250px] -mb-0.5">{activeProfile.name}</span>
-        <span className="text-2xs font-mono text-neutral-500">({enabledToolsCount ?? '...'})</span>
+        <span className="text-2xs font-mono" style={{ color: 'var(--theme-foreground-tertiary)' }}>({enabledToolsCount ?? '...'})</span>
         {activeProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-green-400 opacity-70" />}
         {activeProfile.usePowerTools && <MdFlashOn className="w-3.5 h-3.5 text-purple-400 opacity-70" />}
         {activeProfile.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-yellow-400 opacity-70" />}
@@ -162,15 +169,15 @@ export const AgentSelector = () => {
       </button>
 
       {selectorVisible && (
-        <div className="absolute bottom-full left-0 mb-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 min-w-[280px] max-w-[380px]">
+        <div className="absolute bottom-full left-0 mb-1 rounded-md shadow-lg z-10 min-w-[280px] max-w-[380px]" style={{ backgroundColor: 'var(--theme-background-secondary)', borderColor: 'var(--theme-border-primary)', border: '1px solid' }}>
           {/* Profiles List */}
-          <div className="py-2 border-b border-neutral-700">
+          <div className="py-2 border-b" style={{ borderColor: 'var(--theme-border-primary)' }}>
             <div className="flex items-center justify-between mb-2 pl-3 pr-2">
-              <span className="text-xs font-medium text-neutral-200 uppercase">{t('agentProfiles.profiles')}</span>
+              <span className="text-xs font-medium uppercase" style={{ color: 'var(--theme-foreground-primary)' }}>{t('agentProfiles.profiles')}</span>
               <IconButton
                 icon={<BiCog className="w-4 h-4" />}
                 onClick={handleOpenAgentProfiles}
-                className="opacity-60 hover:opacity-100 p-1 hover:bg-neutral-850 rounded-md"
+                className="opacity-60 hover:opacity-100 p-1 rounded-md"
                 tooltip={t('agentProfiles.manageProfiles')}
                 tooltipId="agent-selector-tooltip"
               />
@@ -179,10 +186,21 @@ export const AgentSelector = () => {
               {agentProfiles.map((profile) => (
                 <div
                   key={profile.id}
-                  className={clsx(
-                    'pl-6 pr-2 py-1 cursor-pointer transition-colors text-2xs relative',
-                    profile.id === activeProfile.id ? 'bg-neutral-750 text-neutral-100' : 'hover:bg-neutral-800 text-neutral-300',
-                  )}
+                  className="pl-6 pr-2 py-1 cursor-pointer transition-colors text-2xs relative"
+                  style={{
+                    backgroundColor: profile.id === activeProfile.id ? 'var(--theme-background-tertiary)' : 'transparent',
+                    color: profile.id === activeProfile.id ? 'var(--theme-foreground-primary)' : 'var(--theme-foreground-secondary)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (profile.id !== activeProfile.id) {
+                      e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (profile.id !== activeProfile.id) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                   onClick={() => handleSwitchProfile(profile.id)}
                 >
                   {profile.id === activeProfile.id && <MdCheck className="w-3 h-3 absolute left-1.5 top-1/2 transform -translate-y-1/2 text-green-400" />}
@@ -193,21 +211,21 @@ export const AgentSelector = () => {
           </div>
 
           {/* MCP Servers */}
-          <div className="border-b border-neutral-700">
+          <div className="border-b" style={{ borderColor: 'var(--theme-border-primary)' }}>
             <Accordion
               title={
                 <div className="flex items-center w-full">
-                  <span className="text-xs flex-1 font-medium text-neutral-200 text-left px-1 uppercase">{t('mcp.servers')}</span>
-                  <span className="text-2xs text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">
+                  <span className="text-xs flex-1 font-medium text-left px-1 uppercase" style={{ color: 'var(--theme-foreground-primary)' }}>{t('mcp.servers')}</span>
+                  <span className="text-2xs px-1.5 py-0.5 rounded" style={{ color: 'var(--theme-foreground-secondary)', backgroundColor: 'var(--theme-background-tertiary)' }}>
                     {enabledServers.length}/{Object.keys(mcpServers).length}
                   </span>
                 </div>
               }
               chevronPosition="right"
             >
-              <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 pb-2">
+              <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-[var(--scrollbar-track)] scrollbar-thumb-[var(--scrollbar-thumb)] pb-2">
                 {Object.keys(mcpServers).length === 0 ? (
-                  <div className="py-2 text-xs text-neutral-500 italic">{t('settings.agent.noServersConfiguredGlobal')}</div>
+                  <div className="py-2 text-xs italic" style={{ color: 'var(--theme-foreground-tertiary)' }}>{t('settings.agent.noServersConfiguredGlobal')}</div>
                 ) : (
                   Object.keys(mcpServers).map((serverName) => (
                     <McpServerSelectorItem

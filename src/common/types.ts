@@ -205,6 +205,42 @@ export interface AgentProfile {
   autoApprove: boolean;
 }
 
+export interface ThemeColors {
+  background: {
+    primary: string;
+    secondary: string;
+    tertiary: string;
+    input: string;
+  };
+  foreground: {
+    primary: string;
+    secondary: string;
+    tertiary: string;
+    error: string;
+  };
+  border: {
+    primary: string;
+    secondary: string;
+  };
+  accent: {
+    primary: string;
+    secondary: string;
+    tertiary: string;
+  };
+  button: {
+    primary: string;
+    secondary: string;
+    danger: string;
+  };
+}
+
+export interface Theme {
+  id: string;
+  name: string;
+  type: 'dark' | 'light';
+  colors: ThemeColors;
+}
+
 export interface SettingsData {
   onboardingFinished?: boolean;
   language: string;
@@ -212,6 +248,9 @@ export interface SettingsData {
   zoomLevel?: number;
   notificationsEnabled?: boolean;
   theme?: 'dark' | 'light';
+  themeId?: string;
+  fontFamily?: string;
+  monospaceFontFamily?: string;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

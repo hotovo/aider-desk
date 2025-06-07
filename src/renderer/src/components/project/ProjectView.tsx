@@ -609,23 +609,23 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   if (!projectSettings || !settings) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
-        <CgSpinner className="animate-spin w-10 h-10" />
-        <div className="mt-2 text-sm text-center text-white">{t('common.loadingProjectSettings')}</div>
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ backgroundColor: 'var(--theme-background-primary)' }}>
+        <CgSpinner className="animate-spin w-10 h-10" style={{ color: 'var(--theme-foreground-primary)' }} />
+        <div className="mt-2 text-sm text-center" style={{ color: 'var(--theme-foreground-primary)' }}>{t('common.loadingProjectSettings')}</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full bg-gradient-to-b from-neutral-950 to-neutral-900 relative">
+    <div className="flex h-full relative" style={{ backgroundColor: 'var(--theme-background-primary)' }}>
       {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
-          <CgSpinner className="animate-spin w-10 h-10" />
-          <div className="mt-2 text-sm text-center text-white">{t('common.startingUp')}</div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10" style={{ backgroundColor: 'var(--theme-background-primary)' }}>
+          <CgSpinner className="animate-spin w-10 h-10" style={{ color: 'var(--theme-foreground-primary)' }} />
+          <div className="mt-2 text-sm text-center" style={{ color: 'var(--theme-foreground-primary)' }}>{t('common.startingUp')}</div>
         </div>
       )}
       <div className="flex flex-col flex-grow overflow-hidden">
-        <div className="px-4 py-2 border-b border-neutral-800 bg-neutral-900">
+        <div className="px-4 py-2 border-b" style={{ borderColor: 'var(--theme-border-primary)', backgroundColor: 'var(--theme-background-secondary)' }}>
           <ProjectBar
             ref={projectTopBarRef}
             baseDir={project.baseDir}

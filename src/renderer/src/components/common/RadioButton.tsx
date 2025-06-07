@@ -34,14 +34,16 @@ export const RadioButton = ({ id, name, value, checked, onChange, label, classNa
           className="sr-only" // Hide the actual input but keep it accessible
         />
         <div
-          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-            checked ? 'bg-neutral-600 border-neutral-500' : 'bg-neutral-800 border-neutral-600'
-          } transition-colors duration-200`}
+          className="w-4 h-4 rounded-full border flex items-center justify-center transition-colors duration-200"
+          style={{
+            backgroundColor: checked ? 'var(--theme-accent-primary)' : 'var(--theme-background-input)',
+            borderColor: checked ? 'var(--theme-accent-primary)' : 'var(--theme-border-primary)'
+          }}
         >
           {checked && <div className="w-2 h-2 rounded-full bg-white"></div>}
         </div>
       </div>
-      {label && <span className="ml-2">{label}</span>}
+      {label && <span className="ml-2" style={{ color: 'var(--theme-foreground-primary)' }}>{label}</span>}
     </div>
   );
 };

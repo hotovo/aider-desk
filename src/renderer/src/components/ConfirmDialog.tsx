@@ -25,7 +25,7 @@ export const ConfirmDialog = ({
   cancelButtonText,
   children,
   disabled = false,
-  confirmButtonClass = 'bg-amber-600 hover:bg-amber-500',
+  confirmButtonClass = '',
   width,
   closeOnEscape = false,
 }: Props) => {
@@ -42,7 +42,7 @@ export const ConfirmDialog = ({
           <Button onClick={onCancel} variant="text">
             {resolvedCancelText}
           </Button>
-          <Button onClick={onConfirm} autoFocus={true} disabled={disabled} variant="contained" className={confirmButtonClass}>
+          <Button onClick={onConfirm} autoFocus={true} disabled={disabled} variant="contained" color="primary" className={confirmButtonClass}>
             {resolvedConfirmText}
           </Button>
         </>

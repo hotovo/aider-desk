@@ -620,10 +620,10 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     return (
       <div className="w-full relative">
         {question && (
-          <div className="mb-2 p-3 bg-gradient-to-b fromF-neutral-950 to-neutral-900 rounded-md border border-neutral-700 text-sm">
-            <div className="text-white text-sm mb-2 whitespace-pre-wrap">{question.text}</div>
+          <div className="mb-2 p-3 rounded-md border text-sm" style={{ backgroundColor: 'var(--theme-background-secondary)', borderColor: 'var(--theme-border-primary)' }}>
+            <div className="text-sm mb-2 whitespace-pre-wrap" style={{ color: 'var(--theme-foreground-primary)' }}>{question.text}</div>
             {question.subject && (
-              <div className="text-neutral-400 text-xs mb-3 whitespace-pre-wrap max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900 scrollbar-rounded">
+              <div className="text-xs mb-3 whitespace-pre-wrap max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-track-[var(--scrollbar-track)] scrollbar-thumb-[var(--scrollbar-thumb)] scrollbar-rounded" style={{ color: 'var(--theme-foreground-secondary)' }}>
                 {question.subject}
               </div>
             )}
@@ -633,7 +633,22 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
                   <button
                     key={index}
                     onClick={() => answerQuestion(answer.shortkey)}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === answer.shortkey ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className="px-2 py-0.5 text-xs rounded border transition-colors duration-200"
+                    style={{
+                      backgroundColor: selectedAnswer === answer.shortkey ? 'var(--theme-background-tertiary)' : 'var(--theme-background-input)',
+                      borderColor: selectedAnswer === answer.shortkey ? 'var(--theme-border-secondary)' : 'var(--theme-border-primary)',
+                      color: 'var(--theme-foreground-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedAnswer !== answer.shortkey) {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedAnswer !== answer.shortkey) {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-input)';
+                      }
+                    }}
                   >
                     {answer.text}
                   </button>
@@ -642,28 +657,88 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
                 <>
                   <button
                     onClick={() => answerQuestion('y')}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'y' ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className="px-2 py-0.5 text-xs rounded border transition-colors duration-200"
+                    style={{
+                      backgroundColor: selectedAnswer === 'y' ? 'var(--theme-background-tertiary)' : 'var(--theme-background-input)',
+                      borderColor: selectedAnswer === 'y' ? 'var(--theme-border-secondary)' : 'var(--theme-border-primary)',
+                      color: 'var(--theme-foreground-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedAnswer !== 'y') {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedAnswer !== 'y') {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-input)';
+                      }
+                    }}
                     title="Yes (Y)"
                   >
                     {t('promptField.answers.yes')}
                   </button>
                   <button
                     onClick={() => answerQuestion('n')}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'n' ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className="px-2 py-0.5 text-xs rounded border transition-colors duration-200"
+                    style={{
+                      backgroundColor: selectedAnswer === 'n' ? 'var(--theme-background-tertiary)' : 'var(--theme-background-input)',
+                      borderColor: selectedAnswer === 'n' ? 'var(--theme-border-secondary)' : 'var(--theme-border-primary)',
+                      color: 'var(--theme-foreground-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedAnswer !== 'n') {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedAnswer !== 'n') {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-input)';
+                      }
+                    }}
                     title={t('promptField.answers.no')}
                   >
                     {t('promptField.answers.no')}
                   </button>
                   <button
                     onClick={() => answerQuestion('a')}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'a' ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className="px-2 py-0.5 text-xs rounded border transition-colors duration-200"
+                    style={{
+                      backgroundColor: selectedAnswer === 'a' ? 'var(--theme-background-tertiary)' : 'var(--theme-background-input)',
+                      borderColor: selectedAnswer === 'a' ? 'var(--theme-border-secondary)' : 'var(--theme-border-primary)',
+                      color: 'var(--theme-foreground-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedAnswer !== 'a') {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedAnswer !== 'a') {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-input)';
+                      }
+                    }}
                     title={t('promptField.answers.always')}
                   >
                     {t('promptField.answers.always')}
                   </button>
                   <button
                     onClick={() => answerQuestion('d')}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'd' ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className="px-2 py-0.5 text-xs rounded border transition-colors duration-200"
+                    style={{
+                      backgroundColor: selectedAnswer === 'd' ? 'var(--theme-background-tertiary)' : 'var(--theme-background-input)',
+                      borderColor: selectedAnswer === 'd' ? 'var(--theme-border-secondary)' : 'var(--theme-border-primary)',
+                      color: 'var(--theme-foreground-primary)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedAnswer !== 'd') {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedAnswer !== 'd') {
+                        e.currentTarget.style.backgroundColor = 'var(--theme-background-input)';
+                      }
+                    }}
                     title={t('promptField.answers.dontAsk')}
                   >
                     {t('promptField.answers.dontAsk')}
@@ -686,13 +761,35 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
               minRows={1}
               maxRows={20}
               spellCheck={false}
-              className="w-full px-2 py-2 pr-8 border-2 border-neutral-700 rounded-md focus:outline-none focus:border-neutral-500 text-sm bg-neutral-850 text-white placeholder-neutral-600 resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-600"
+              className="w-full px-2 py-2 pr-8 border-2 rounded-md focus:outline-none text-sm resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-[var(--scrollbar-track)] scrollbar-thumb-[var(--scrollbar-thumb)] hover:scrollbar-thumb-[var(--scrollbar-thumb-hover)]"
+              style={{
+                backgroundColor: 'var(--theme-background-input)',
+                color: 'var(--theme-foreground-primary)',
+                borderColor: 'var(--theme-border-primary)'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--theme-border-secondary)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--theme-border-primary)';
+              }}
             />
             {processing ? (
-              <div className="absolute right-3 top-1/2 -translate-y-[16px] flex items-center space-x-2 text-neutral-400">
+              <div className="absolute right-3 top-1/2 -translate-y-[16px] flex items-center space-x-2" style={{ color: 'var(--theme-foreground-secondary)' }}>
                 <button
                   onClick={interruptResponse}
-                  className="hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-colors duration-200"
+                  className="rounded p-1 transition-colors duration-200"
+                  style={{
+                    color: 'var(--theme-foreground-secondary)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--theme-foreground-primary)';
+                    e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--theme-foreground-secondary)';
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                   title={t('promptField.stopResponse')}
                 >
                   <MdStop className="w-4 h-4" />

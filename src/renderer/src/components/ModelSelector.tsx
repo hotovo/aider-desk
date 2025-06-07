@@ -121,19 +121,43 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
       <div
         key={model}
         ref={index === highlightedModelIndex ? highlightedModelRef : undefined}
-        className={`flex items-center w-full hover:bg-neutral-700 transition-colors duration-200 ${index === highlightedModelIndex ? 'bg-neutral-700' : 'text-neutral-300'}`}
+        className="flex items-center w-full transition-colors duration-200"
+        style={{
+          backgroundColor: index === highlightedModelIndex ? 'var(--theme-background-tertiary)' : 'transparent',
+          color: 'var(--theme-foreground-secondary)'
+        }}
+        onMouseEnter={(e) => {
+          if (index !== highlightedModelIndex) {
+            e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (index !== highlightedModelIndex) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
       >
         <button
           onClick={() => onModelSelected(model)}
-          className={`flex-grow px-3 py-1 text-left text-xs
-                        ${model === selectedModel ? 'text-white font-bold' : ''}`}
+          className="flex-grow px-3 py-1 text-left text-xs"
+          style={{
+            color: model === selectedModel ? 'var(--theme-foreground-primary)' : 'inherit',
+            fontWeight: model === selectedModel ? 'bold' : 'normal'
+          }}
         >
           {model}
         </button>
         {isPreferred && (
           <button
             onClick={handleRemovePreferredModel}
-            className="px-2 py-1 text-neutral-500 hover:text-neutral-400 transition-colors duration-200"
+            className="px-2 py-1 transition-colors duration-200"
+            style={{ color: 'var(--theme-foreground-tertiary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--theme-foreground-secondary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--theme-foreground-tertiary)';
+            }}
             title={t('modelSelector.removePreferred')}
           >
             <MdClose className="w-4 h-4" />
@@ -145,33 +169,54 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
 
   return (
     <div className="relative" ref={modelSelectorRef}>
-      <button onClick={toggleVisible} className="flex items-center hover:text-neutral-300 focus:outline-none transition-colors duration-200 text-xs">
+      <button 
+        onClick={toggleVisible} 
+        className="flex items-center focus:outline-none transition-colors duration-200 text-xs"
+        style={{ color: 'var(--theme-foreground-secondary)' }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--theme-foreground-primary)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--theme-foreground-secondary)';
+        }}
+      >
         <span>{selectedModel || t('common.loading')}</span>
         <MdKeyboardArrowUp className="w-3 h-3 ml-1 transform rotate-180" />
       </button>
       {visible && (
-        <div className="absolute top-full left-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 flex flex-col w-[600px]">
-          <div className="sticky top-0 p-2 border-b border-neutral-700 bg-neutral-900 rounded-md z-10 flex items-center space-x-2">
+        <div className="absolute top-full left-0 mt-1 rounded-md shadow-lg z-10 flex flex-col w-[600px]" style={{ backgroundColor: 'var(--theme-background-secondary)', borderColor: 'var(--theme-border-primary)', border: '1px solid' }}>
+          <div className="sticky top-0 p-2 border-b rounded-md z-10 flex items-center space-x-2" style={{ borderColor: 'var(--theme-border-primary)', backgroundColor: 'var(--theme-background-secondary)' }}>
             <input
               type="text"
               autoFocus={true}
               placeholder={t('modelSelector.searchPlaceholder')}
-              className="flex-grow px-2 py-1 text-xs bg-neutral-800 text-white rounded border border-neutral-600 focus:outline-none focus:border-neutral-500"
+              className="flex-grow px-2 py-1 text-xs rounded border focus:outline-none"
+              style={{
+                backgroundColor: 'var(--theme-background-input)',
+                color: 'var(--theme-foreground-primary)',
+                borderColor: 'var(--theme-border-primary)'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--theme-border-secondary)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--theme-border-primary)';
+              }}
               value={modelSearchTerm}
               onChange={(e) => setModelSearchTerm(e.target.value)}
               onKeyDown={onModelSelectorSearchInputKeyDown}
             />
             {showCustomModelHint && (
-              <div className="flex items-center text-neutral-400" title="Press Enter to use this custom model name">
+              <div className="flex items-center" style={{ color: 'var(--theme-foreground-secondary)' }} title="Press Enter to use this custom model name">
                 <MdKeyboardReturn className="w-4 h-4" />
               </div>
             )}
           </div>
-          <div className="overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 max-h-48">
+          <div className="overflow-y-auto scrollbar-thin scrollbar-track-[var(--scrollbar-track)] scrollbar-thumb-[var(--scrollbar-thumb)] hover:scrollbar-thumb-[var(--scrollbar-thumb-hover)] max-h-48">
             {!debouncedSearchTerm && (
               <>
                 {preferredModels.map(renderModelItem)}
-                <div key="divider" className="border-t border-neutral-700 my-1" />
+                <div key="divider" className="border-t my-1" style={{ borderColor: 'var(--theme-border-primary)' }} />
               </>
             )}
             {filteredModels.map(renderModelItem)}

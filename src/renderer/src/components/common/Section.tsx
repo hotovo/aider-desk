@@ -9,8 +9,19 @@ type Props = {
 
 export const Section = ({ title, children, className }: Props) => {
   return (
-    <div className={clsx('relative border border-neutral-700 rounded-md', className)}>
-      <h2 className="absolute -top-3 left-4 px-2 bg-neutral-850 text-sm font-medium text-neutral-100">{title}</h2>
+    <div 
+      className={clsx('relative border rounded-md', className)}
+      style={{ borderColor: 'var(--theme-border-primary)' }}
+    >
+      <h2 
+        className="absolute -top-3 left-4 px-2 text-sm font-medium"
+        style={{ 
+          backgroundColor: 'var(--theme-background-primary)',
+          color: 'var(--theme-foreground-primary)'
+        }}
+      >
+        {title}
+      </h2>
       {children}
     </div>
   );

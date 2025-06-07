@@ -1,49 +1,49 @@
 .diff-viewer {
   .diff-gutter {
-    color: #4c4c4c;
+    color: var(--theme-foreground-tertiary);
     text-align: center; // Better alignment for line numbers
 
     &.diff-gutter-omit {
       &:before {
-        background-color: #1e1e2f;
+        background-color: var(--theme-background-tertiary);
       }
     }
   }
 
   .diff-code {
     padding: 0;
-    font-family: 'Sono', monospace;
+    font-family: var(--font-family-mono, 'Sono'), monospace;
   }
 
   .diff-code-insert {
-    background-color: #022c22;
+    background-color: var(--diff-insert-background, #022c22);
 
     .diff-code-edit {
-      background-color: #011f19;
+      background-color: var(--diff-insert-edit-background, #011f19);
     }
   }
 
   .diff-code-delete {
-    background-color: #3f1d25;
+    background-color: var(--diff-delete-background, #3f1d25);
 
     .diff-code-edit {
-      background-color: #2c141a;
+      background-color: var(--diff-delete-edit-background, #2c141a);
     }
   }
 
   .diff-gutter-insert {
-    background-color: #022c22;
+    background-color: var(--diff-insert-background, #022c22);
     width: 16px;
     min-width: 16px;
     max-width: 16px;
   }
 
   .diff-gutter-delete {
-    background-color: #3f1d25;
+    background-color: var(--diff-delete-background, #3f1d25);
   }
 
   ::selection {
-    background-color: #333652;
-    color: #f1f3f5;
+    background-color: var(--theme-background-input);
+    color: var(--theme-foreground-primary);
   }
 }

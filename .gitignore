@@ -17,3 +17,4 @@ dev-app-update.yml
 release-win.sh
 release-linux.sh
 start-docker.sh
+AGENT.md

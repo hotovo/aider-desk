@@ -2,7 +2,6 @@ import { ProjectData } from '@common/types';
 import { CSS } from '@dnd-kit/utilities';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Tab, TabGroup, TabList } from '@headlessui/react';
-import clsx from 'clsx';
 import { MdAdd, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -128,14 +127,30 @@ export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetAc
         </div>
         {showRightScrollButton && (
           <button
-            className="absolute right-[52px] z-10 h-full flex items-center px-2 bg-neutral-900/80 hover:bg-neutral-900 transition-colors duration-200"
+            className="absolute right-[52px] z-10 h-full flex items-center px-2 transition-colors duration-200"
+            style={{ backgroundColor: 'var(--theme-background-secondary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--theme-background-secondary)';
+            }}
             onClick={handleScrollRight}
           >
-            <MdChevronRight className="h-5 w-5 text-neutral-400" />
+            <MdChevronRight className="h-5 w-5" style={{ color: 'var(--theme-foreground-secondary)' }} />
           </button>
         )}
         <button
-          className="px-4 py-2 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700/30 transition-colors duration-200 flex items-center justify-center"
+          className="px-4 py-2 transition-colors duration-200 flex items-center justify-center"
+          style={{ color: 'var(--theme-foreground-tertiary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--theme-foreground-primary)';
+            e.currentTarget.style.backgroundColor = 'var(--theme-background-tertiary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--theme-foreground-tertiary)';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           onClick={onAddProject}
         >
           <MdAdd className="h-5 w-5" />
@@ -151,7 +166,7 @@ type SortableTabItemProps = {
   onCloseProject: (projectBaseDir: string) => void;
 };
 
-const SortableTabItem = ({ project, activeProject, onCloseProject }: SortableTabItemProps) => {
+const SortableTabItem = ({ project, onCloseProject }: SortableTabItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.baseDir });
 
   const style = {
@@ -167,22 +182,16 @@ const SortableTabItem = ({ project, activeProject, onCloseProject }: SortableTab
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
-      <Tab
-        className={({ selected }) =>
-          clsx(
-            'text-sm pl-3 py-2 pr-1 border-r border-neutral-800 transition-all duration-200 ease-in-out flex items-center gap-3 relative whitespace-nowrap',
-            selected
-              ? 'bg-gradient-to-b from-neutral-800 to-neutral-800 text-neutral-100 font-medium'
-              : 'bg-gradient-to-b from-neutral-950 to-neutral-900 text-neutral-600 hover:bg-neutral-800/50 hover:text-neutral-300',
-          )
-        }
-      >
+      <Tab className="project-tab text-sm pl-3 py-2 pr-1 border-r transition-all duration-200 ease-in-out flex items-center gap-3 relative whitespace-nowrap">
         {project.baseDir.split(/[\\/]/).pop()}
         <div
-          className={clsx(
-            'flex items-center justify-center rounded-full p-1 transition-colors duration-200 z-10',
-            activeProject?.baseDir === project.baseDir ? 'hover:bg-neutral-500/30' : 'hover:bg-neutral-600/30',
-          )}
+          className="flex items-center justify-center rounded-full p-1 transition-colors duration-200 z-10"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation(); // Prevent tab selection/drag initiation
