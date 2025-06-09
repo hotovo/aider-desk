@@ -1,13 +1,17 @@
-import { exec } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
-import { promisify } from 'util';
+import { exec } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
+import { promisify } from "util";
 
-import { delay } from '@common/utils';
-import { is } from '@electron-toolkit/utils';
+import { delay } from "@common/utils";
+import { is } from "@electron-toolkit/utils";
 
-import logger from './logger';
-import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBinPath } from './utils';
+import logger from "./logger";
+import {
+  getCurrentPythonLibVersion,
+  getLatestPythonLibVersion,
+  getPythonVenvBinPath,
+} from "./utils";
 import {
   AIDER_DESK_DIR,
   SETUP_COMPLETE_FILENAME,
@@ -16,146 +20,133 @@ import {
   RESOURCES_DIR,
   PYTHON_COMMAND,
   AIDER_DESK_MCP_SERVER_DIR,
-} from './constants';
+} from "./constants";
 
 const execAsync = promisify(exec);
 
-const SUPPORTED_PYTHON_VERSIONS = ['3.12', '3.11', '3.10', '3.9'];
+const uvPath = path.join(AIDER_DESK_DIR, "bin", "uv");
 
-/**
- * Smartly finds the best Python executable on the system, preferring the newest supported version.
- * Respects the AIDER_DESK_PYTHON environment variable if set.
- * Returns the name of the executable/command to use.
- */
-export const getOSPythonExecutable = async (): Promise<string> => {
-  const envPython = process.env.AIDER_DESK_PYTHON;
-  if (envPython) {
-    return envPython;
-  }
+// Removed SUPPORTED_PYTHON_VERSIONS
+// Removed getOSPythonExecutable function
+// Removed checkPythonVersion function
 
-  for (const version of SUPPORTED_PYTHON_VERSIONS) {
-    const candidates = [
-      `python${version}`,
-      `python${version[0]}`, // python3
-    ];
-    if (process.platform === 'win32') {
-      candidates.push(`py -${version}`);
+const createVirtualEnv = async (): Promise<void> => {
+  logger.info(
+    `Creating Python virtual environment using uv in: ${PYTHON_VENV_DIR}`,
+  );
+  try {
+    // Ensure the parent directory for PYTHON_VENV_DIR exists if uv doesn't create it
+    const venvParentDir = path.dirname(PYTHON_VENV_DIR);
+    if (!fs.existsSync(venvParentDir)) {
+      fs.mkdirSync(venvParentDir, { recursive: true });
     }
-    candidates.push('python3', 'python'); // Fallbacks
 
-    for (const candidate of candidates) {
-      try {
-        const { stdout, stderr } = await execAsync(`${candidate} --version`, {
-          windowsHide: true,
-        });
-        const output = (stdout || '') + (stderr || '');
-        const match = output.match(/Python (\d+)\.(\d+)/);
-        if (match) {
-          const [major, minor] = [parseInt(match[1]), parseInt(match[2])];
-          if (major === 3 && SUPPORTED_PYTHON_VERSIONS.includes(`3.${minor}`)) {
-            return candidate;
-          }
-        }
-      } catch {
-        // Try next candidate
-        logger.debug(`Failed to execute ${candidate}. It may not be installed or not in PATH.`);
+    const command = `"${uvPath}" venv "${PYTHON_VENV_DIR}" --python 3.12`;
+    logger.info(`Executing uv venv command: ${command}`);
+    const { stdout, stderr } = await execAsync(command, { windowsHide: true });
+
+    if (stdout.trim()) {
+      logger.debug("uv venv stdout:", { stdout: stdout.trim() });
+    }
+    if (stderr.trim()) {
+      // uv venv can output informational messages to stderr, check if it's an actual error
+      if (stderr.toLowerCase().includes("error")) {
+        logger.error("uv venv stderr:", { stderr: stderr.trim() });
+        throw new Error(`uv venv command failed: ${stderr.trim()}`);
+      } else {
+        logger.info("uv venv stderr (info):", { stderr: stderr.trim() });
       }
     }
-  }
-
-  throw new Error('No supported Python 3.9-3.12 executable found. Please install Python or set the AIDER_DESK_PYTHON environment variable.');
-};
-
-const checkPythonVersion = async (): Promise<void> => {
-  const pythonExecutable = await getOSPythonExecutable();
-  try {
-    const command = `${pythonExecutable} --version`;
-    const { stdout, stderr } = await execAsync(command, {
-      windowsHide: true,
-    });
-
-    // Extract version number from output like "Python 3.10.12"
-    const output = (stdout || '') + (stderr || '');
-    const versionMatch = output.match(/Python (\d+)\.(\d+)\.\d+/);
-    if (!versionMatch) {
-      throw new Error(
-        `Could not determine Python version (output: '${output}'). You can specify a specific Python executable by setting the AIDER_DESK_PYTHON environment variable.`,
-      );
-    }
-
-    const major = parseInt(versionMatch[1], 10);
-    const minor = parseInt(versionMatch[2], 10);
-
-    // Check if version is between 3.9 and 3.12
-    if (major !== 3 || minor < 9 || minor > 12) {
-      throw new Error(
-        `Python version ${major}.${minor} is not supported. Please install Python 3.9-3.12. You can specify a specific Python executable by setting the AIDER_DESK_PYTHON environment variable.`,
-      );
-    }
+    logger.info(
+      `Python virtual environment created successfully using uv in: ${PYTHON_VENV_DIR}`,
+    );
   } catch (error) {
-    if (error instanceof Error && error.message.includes('version')) {
-      throw error;
-    }
+    logger.error("Failed to create virtual environment using uv", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new Error(
-      `Python is not installed or an error occurred. Please install Python 3.9-3.12 or set the AIDER_DESK_PYTHON environment variable. Original error: ${error}`,
+      `Failed to create virtual environment using uv. Error: ${error}`,
     );
   }
 };
 
-const createVirtualEnv = async (): Promise<void> => {
-  const command = await getOSPythonExecutable();
-  await execAsync(`${command} -m venv "${PYTHON_VENV_DIR}"`, {
-    windowsHide: true,
-  });
-};
-
-const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> => {
+const setupAiderConnector = async (
+  cleanInstall: boolean,
+  updateProgress?: UpdateProgressFunction,
+): Promise<void> => {
   if (!fs.existsSync(AIDER_DESK_CONNECTOR_DIR)) {
     fs.mkdirSync(AIDER_DESK_CONNECTOR_DIR, { recursive: true });
   }
 
   // Copy connector.py from resources
-  const sourceConnectorPath = path.join(RESOURCES_DIR, 'connector/connector.py');
-  const destConnectorPath = path.join(AIDER_DESK_CONNECTOR_DIR, 'connector.py');
+  const sourceConnectorPath = path.join(
+    RESOURCES_DIR,
+    "connector/connector.py",
+  );
+  const destConnectorPath = path.join(AIDER_DESK_CONNECTOR_DIR, "connector.py");
   fs.copyFileSync(sourceConnectorPath, destConnectorPath);
 
   await installAiderConnectorRequirements(cleanInstall, updateProgress);
 };
 
-const installAiderConnectorRequirements = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> => {
-  const pythonBinPath = getPythonVenvBinPath();
-  const packages = ['pip', 'aider-chat', 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0', 'boto3==1.38.25'];
+const installAiderConnectorRequirements = async (
+  cleanInstall: boolean,
+  updateProgress?: UpdateProgressFunction,
+): Promise<void> => {
+  const pythonBinPath = getPythonVenvBinPath(); // This should still be valid for PYTHON_COMMAND
+  const packages = [
+    // pip is not needed to be installed explicitly, uv handles it.
+    // "pip",
+    "aider-chat",
+    "python-socketio==5.12.1",
+    "websocket-client==1.8.0",
+    "nest-asyncio==1.6.0",
+    "boto3==1.38.25",
+  ];
 
-  logger.info('Starting Aider connector requirements installation', { packages });
+  logger.info("Starting Aider connector requirements installation", {
+    packages,
+  });
 
-  for (let currentPackage = 0; currentPackage < packages.length; currentPackage++) {
+  for (
+    let currentPackage = 0;
+    currentPackage < packages.length;
+    currentPackage++
+  ) {
     const pkg = packages[currentPackage];
     if (updateProgress) {
       updateProgress({
-        step: 'Installing Requirements',
-        message: `Installing package: ${pkg.split('==')[0]} (${currentPackage + 1}/${packages.length})`,
+        step: "Installing Requirements",
+        message: `Installing package: ${pkg.split("==")[0]} (${currentPackage + 1}/${packages.length})`,
       });
     }
     try {
-      const installCommand = `"${PYTHON_COMMAND}" -m pip install --upgrade --no-cache-dir ${pkg}`;
+      // Using uv pip install. PYTHON_COMMAND should point to the python executable in the venv.
+      // uv will use this python to ensure packages are installed into the correct environment.
+      const installCommand = `"${uvPath}" pip install --python "${PYTHON_COMMAND}" --upgrade --no-cache-dir ${pkg}`;
 
       if (!cleanInstall) {
-        const packageName = pkg.split('==')[0];
+        const packageName = pkg.split("==")[0];
         const currentVersion = await getCurrentPythonLibVersion(packageName);
 
         if (currentVersion) {
-          if (pkg.includes('==')) {
+          if (pkg.includes("==")) {
             // Version-pinned package - check if matches required version
-            const requiredVersion = pkg.split('==')[1];
+            const requiredVersion = pkg.split("==")[1];
             if (currentVersion === requiredVersion) {
-              logger.info(`Package ${pkg} is already at required version ${requiredVersion}, skipping`);
+              logger.info(
+                `Package ${pkg} is already at required version ${requiredVersion}, skipping`,
+              );
               continue;
             }
           } else {
             // For non-version-pinned packages, check if newer version is available
             const latestVersion = await getLatestPythonLibVersion(packageName);
             if (latestVersion && currentVersion === latestVersion) {
-              logger.info(`Package ${pkg} is already at latest version ${currentVersion}, skipping`);
+              logger.info(
+                `Package ${pkg} is already at latest version ${currentVersion}, skipping`,
+              );
               continue;
             }
           }
@@ -174,14 +165,24 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
       });
 
       if (stdout.trim()) {
-        logger.debug(`Package ${pkg} installation output`, { stdout: stdout.trim() });
+        logger.debug(`Package ${pkg} installation output`, {
+          stdout: stdout.trim(),
+        });
       }
       if (stderr.trim()) {
-        logger.warn(`Package ${pkg} installation warnings`, { stderr: stderr.trim() });
+        logger.warn(`Package ${pkg} installation warnings`, {
+          stderr: stderr.trim(),
+        });
       }
     } catch (error) {
-      if (error instanceof Error && error.message.trim().endsWith('No module named pip') && !cleanInstall) {
-        logger.warn('Failed to install package. pip is not installed. Trying full clean venv reinstallation...');
+      if (
+        error instanceof Error &&
+        error.message.trim().endsWith("No module named pip") &&
+        !cleanInstall
+      ) {
+        logger.warn(
+          "Failed to install package. pip is not installed. Trying full clean venv reinstallation...",
+        );
         fs.rmSync(PYTHON_VENV_DIR, { recursive: true, force: true });
         await createVirtualEnv();
         await installAiderConnectorRequirements(true, updateProgress);
@@ -192,22 +193,24 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       });
-      throw new Error(`Failed to install Aider connector requirements. Package: ${pkg}. Error: ${error}`);
+      throw new Error(
+        `Failed to install Aider connector requirements. Package: ${pkg}. Error: ${error}`,
+      );
     }
   }
 
   if (updateProgress) {
     updateProgress({
-      step: 'Installing Requirements',
-      message: 'Completed installing all packages',
+      step: "Installing Requirements",
+      message: "Completed installing all packages",
     });
   }
-  logger.info('Completed Aider connector requirements installation');
+  logger.info("Completed Aider connector requirements installation");
 };
 
 const setupMcpServer = async () => {
   if (is.dev) {
-    logger.info('Skipping AiderDesk MCP server setup in dev mode');
+    logger.info("Skipping AiderDesk MCP server setup in dev mode");
     return;
   }
 
@@ -216,7 +219,7 @@ const setupMcpServer = async () => {
   }
 
   // Copy all files from the MCP server directory
-  const sourceMcpServerDir = path.join(RESOURCES_DIR, 'mcp-server');
+  const sourceMcpServerDir = path.join(RESOURCES_DIR, "mcp-server");
 
   if (fs.existsSync(sourceMcpServerDir)) {
     const files = fs.readdirSync(sourceMcpServerDir);
@@ -235,17 +238,19 @@ const setupMcpServer = async () => {
   }
 };
 
-const performUpdateCheck = async (updateProgress: UpdateProgressFunction): Promise<void> => {
+const performUpdateCheck = async (
+  updateProgress: UpdateProgressFunction,
+): Promise<void> => {
   updateProgress({
-    step: 'Update Check',
-    message: 'Updating Aider connector...',
+    step: "Update Check",
+    message: "Updating Aider connector...",
   });
 
   await setupAiderConnector(false, updateProgress);
 
   updateProgress({
-    step: 'Update Check',
-    message: 'Updating MCP server...',
+    step: "Update Check",
+    message: "Updating MCP server...",
   });
 
   await setupMcpServer();
@@ -258,18 +263,101 @@ export type UpdateProgressData = {
 
 export type UpdateProgressFunction = (data: UpdateProgressData) => void;
 
-export const performStartUp = async (updateProgress: UpdateProgressFunction): Promise<boolean> => {
-  logger.info('Starting AiderDesk setup process');
+const installUV = async (
+  updateProgress: UpdateProgressFunction,
+): Promise<void> => {
+  updateProgress({
+    step: "Installing UV",
+    message: "Checking UV installation...",
+  });
 
-  if (fs.existsSync(SETUP_COMPLETE_FILENAME) && fs.existsSync(PYTHON_VENV_DIR)) {
-    logger.info('Setup previously completed, performing update check');
+  // uvPath is now a global constant in this file
+  const uvBinDir = path.dirname(uvPath); // e.g. AIDER_DESK_DIR/bin
+  let uvFound = false;
+
+  try {
+    await execAsync(`"${uvPath}" --version`, { windowsHide: true });
+    logger.info(`UV already installed at ${uvPath}`);
+    uvFound = true;
+  } catch (error) {
+    logger.info("UV not found locally, checking system PATH...", { error });
+    try {
+      // Try running 'uv' directly, relying on system PATH
+      await execAsync("uv --version", { windowsHide: true });
+      logger.info(
+        "UV found in system PATH. Will proceed to use locally managed version if not already at desired path.",
+      );
+      // If we want to *use* the system path version, we'd change uvPath here or handle it.
+      // For now, the logic prioritizes installing to our own directory if not already there.
+    } catch (pathError) {
+      logger.info("UV not found in system PATH either.", { pathError });
+    }
+  }
+
+  // If not found at the designated uvPath, attempt installation.
+  if (!fs.existsSync(uvPath)) {
+    logger.info(`UV not found at ${uvPath}, proceeding with installation.`);
+    uvFound = false; // Force re-evaluation for installation
+  }
+
+  if (!uvFound) {
+    try {
+      logger.info(
+        `UV not found or not executable at ${uvPath}. Installing UV to ${uvBinDir}...`,
+      );
+      if (!fs.existsSync(uvBinDir)) {
+        fs.mkdirSync(uvBinDir, { recursive: true });
+      }
+
+      const installCommand = `curl -LsSf https://astral.sh/uv/install.sh | sh -s -- --to "${uvBinDir}"`;
+      logger.info(`Executing UV install command: ${installCommand}`);
+      await execAsync(installCommand, { windowsHide: true });
+
+      logger.info(`Verifying UV installation at ${uvPath}...`);
+      await execAsync(`"${uvPath}" --version`, { windowsHide: true });
+      logger.info(`UV installed and verified successfully at ${uvPath}.`);
+    } catch (error) {
+      logger.error("Failed to install UV", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error(
+        `Failed to install UV. Please ensure curl is installed and your system can run the install script from astral.sh. Error: ${error}`,
+      );
+    }
+  }
+
+  // Ensure UV is executable - The install script should handle this, but good to double check on some OSes.
+  // On POSIX systems, fs.chmodSync might be needed if the script doesn't set +x.
+  // However, the official install script usually handles this.
+  // For example: if (process.platform !== 'win32') { fs.chmodSync(uvPath, 0o755); }
+  // For now, we assume the install script makes it executable.
+
+  updateProgress({
+    step: "Installing UV",
+    message: "UV installation checked/completed.",
+  });
+};
+
+export const performStartUp = async (
+  updateProgress: UpdateProgressFunction,
+): Promise<boolean> => {
+  logger.info("Starting AiderDesk setup process");
+
+  await installUV(updateProgress);
+
+  if (
+    fs.existsSync(SETUP_COMPLETE_FILENAME) &&
+    fs.existsSync(PYTHON_VENV_DIR)
+  ) {
+    logger.info("Setup previously completed, performing update check");
     await performUpdateCheck(updateProgress);
     return true;
   }
 
   updateProgress({
-    step: 'AiderDesk Setup',
-    message: 'Performing initial setup...',
+    step: "AiderDesk Setup",
+    message: "Performing initial setup...",
   });
 
   await delay(2000);
@@ -280,51 +368,51 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
   }
 
   try {
+    // Removed:
+    // updateProgress({
+    //   step: "Checking Python Installation",
+    //   message: "Verifying Python installation...",
+    // });
+    // logger.info("Checking Python version compatibility");
+    // await checkPythonVersion();
+
     updateProgress({
-      step: 'Checking Python Installation',
-      message: 'Verifying Python installation...',
+      step: "Creating Virtual Environment",
+      message: "Setting up Python virtual environment...",
     });
 
-    logger.info('Checking Python version compatibility');
-    await checkPythonVersion();
-
-    updateProgress({
-      step: 'Creating Virtual Environment',
-      message: 'Setting up Python virtual environment...',
-    });
-
-    logger.info(`Creating Python virtual environment in: ${PYTHON_VENV_DIR}`);
+    // logger.info(`Creating Python virtual environment in: ${PYTHON_VENV_DIR}`); // createVirtualEnv now logs this
     await createVirtualEnv();
 
     updateProgress({
-      step: 'Setting Up Connector',
-      message: 'Installing Aider connector (this may take a while)...',
+      step: "Setting Up Connector",
+      message: "Installing Aider connector (this may take a while)...",
     });
 
-    logger.info('Setting up Aider connector');
+    logger.info("Setting up Aider connector");
     await setupAiderConnector(true);
 
     updateProgress({
-      step: 'Setting Up MCP Server',
-      message: 'Installing MCP server...',
+      step: "Setting Up MCP Server",
+      message: "Installing MCP server...",
     });
 
-    logger.info('Setting up MCP server');
+    logger.info("Setting up MCP server");
     await setupMcpServer();
 
     updateProgress({
-      step: 'Finishing Setup',
-      message: 'Completing installation...',
+      step: "Finishing Setup",
+      message: "Completing installation...",
     });
 
     // Create setup complete file
     logger.info(`Creating setup complete file: ${SETUP_COMPLETE_FILENAME}`);
     fs.writeFileSync(SETUP_COMPLETE_FILENAME, new Date().toISOString());
 
-    logger.info('AiderDesk setup completed successfully');
+    logger.info("AiderDesk setup completed successfully");
     return true;
   } catch (error) {
-    logger.error('AiderDesk setup failed', { error });
+    logger.error("AiderDesk setup failed", { error });
 
     // Clean up if setup fails
     if (fs.existsSync(PYTHON_VENV_DIR)) {

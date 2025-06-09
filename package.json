@@ -116,7 +116,7 @@
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@electron/notarize": "^2.5.0",
-    "@eslint/js": "^9.18.0",
+    "@eslint/js": "^9.28.0",
     "@modelcontextprotocol/sdk": "^1.7.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/electron-progressbar": "^1.2.7",
