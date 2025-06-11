@@ -124,7 +124,15 @@ const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: Updat
 
 const installAiderConnectorRequirements = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> => {
   const pythonBinPath = getPythonVenvBinPath();
-  const packages = ['pip', 'aider-chat', 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0', 'boto3==1.38.25'];
+  let aiderVersionSpecifier = 'aider-chat';
+  if (process.env.AIDER_DESK_AIDER_VERSION) {
+    if (process.env.AIDER_DESK_AIDER_VERSION.startsWith('git+')) {
+      aiderVersionSpecifier = process.env.AIDER_DESK_AIDER_VERSION;
+    } else {
+      aiderVersionSpecifier = `aider-chat==${process.env.AIDER_DESK_AIDER_VERSION}`;
+    }
+  }
+  const packages = ['pip', aiderVersionSpecifier, 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0', 'boto3==1.38.25'];
 
   logger.info('Starting Aider connector requirements installation', { packages });
 
@@ -136,6 +144,58 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
         message: `Installing package: ${pkg.split('==')[0]} (${currentPackage + 1}/${packages.length})`,
       });
     }
+
+    // Special handling for aider-chat package for better error reporting
+    if (pkg === aiderVersionSpecifier) {
+      try {
+        const installCommand = `"${PYTHON_COMMAND}" -m pip install --upgrade --no-cache-dir ${pkg}`;
+        if (!cleanInstall) {
+          const packageName = pkg.split('==')[0];
+          const currentVersion = await getCurrentPythonLibVersion(packageName);
+          if (currentVersion) {
+            if (pkg.includes('==')) {
+              const requiredVersion = pkg.split('==')[1];
+              if (currentVersion === requiredVersion) {
+                logger.info(`Package ${pkg} is already at required version ${requiredVersion}, skipping`);
+                continue;
+              }
+            } else {
+              const latestVersion = await getLatestPythonLibVersion(packageName);
+              if (latestVersion && currentVersion === latestVersion) {
+                logger.info(`Package ${pkg} is already at latest version ${currentVersion}, skipping`);
+                continue;
+              }
+            }
+          }
+        }
+        logger.info(`Installing package: ${pkg}`);
+        const { stdout, stderr } = await execAsync(installCommand, {
+          windowsHide: true,
+          env: {
+            ...process.env,
+            VIRTUAL_ENV: PYTHON_VENV_DIR,
+            PATH: `${pythonBinPath}${path.delimiter}${process.env.PATH}`,
+          },
+        });
+        if (stdout.trim()) {
+          logger.debug(`Package ${pkg} installation output`, { stdout: stdout.trim() });
+        }
+        if (stderr.trim()) {
+          logger.warn(`Package ${pkg} installation warnings`, { stderr: stderr.trim() });
+        }
+      } catch (error) {
+        logger.error(`Failed to install aider-chat package: ${pkg}`, {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+        throw new Error(
+          `Failed to install Aider connector package: ${pkg}. Please check your internet connection and try again. Original error: ${error}`,
+        );
+      }
+      continue; // Move to the next package
+    }
+
+    // Generic package installation
     try {
       const installCommand = `"${PYTHON_COMMAND}" -m pip install --upgrade --no-cache-dir ${pkg}`;
 
@@ -192,6 +252,14 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       });
+      // Specific error for pip not being installed
+      if (error instanceof Error && error.message.trim().endsWith('No module named pip') && !cleanInstall) {
+        logger.warn('Failed to install package. pip is not installed. Trying full clean venv reinstallation...');
+        fs.rmSync(PYTHON_VENV_DIR, { recursive: true, force: true });
+        await createVirtualEnv();
+        await installAiderConnectorRequirements(true, updateProgress);
+        return;
+      }
       throw new Error(`Failed to install Aider connector requirements. Package: ${pkg}. Error: ${error}`);
     }
   }

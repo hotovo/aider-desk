@@ -341,6 +341,24 @@ To prevent automatic updates, set the `AIDER_DESK_NO_AUTO_UPDATE` environment va
 - **macOS/Linux:** `export AIDER_DESK_NO_AUTO_UPDATE=true`
 - **Windows:** `$env:AIDER_DESK_NO_AUTO_UPDATE = "true"`
 
+### Custom Aider Version
+By default, AiderDesk installs the latest version of the `aider-chat` Python package. If you need to use a specific version of Aider, you can set the `AIDER_DESK_AIDER_VERSION` environment variable.
+
+For example, to use Aider version 0.36.1:
+```bash
+# macOS/Linux
+export AIDER_DESK_AIDER_VERSION=0.36.1
+
+# Windows (PowerShell)
+$env:AIDER_DESK_AIDER_VERSION = "0.36.1"
+```
+You can also specify a git URL for installing a development version of Aider:
+```bash
+# macOS/Linux
+export AIDER_DESK_AIDER_VERSION=git+https://github.com/user/aider.git@branch-name
+```
+
+This variable will be used during the initial setup and when AiderDesk checks for updates. For more detailed information, please refer to `docs/custom-aider-version.md`.
 
 ## 👨‍💻 Development Setup
 If you want to run from source, you can follow these steps:
