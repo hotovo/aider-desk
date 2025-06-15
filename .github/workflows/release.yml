@@ -13,6 +13,7 @@ jobs:
       env:
         TAR_OPTIONS: "--format=ustar"
         PUBLISH_FOR_PULL_REQUEST: true
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
     steps:
       - uses: "actions/checkout@v1"
@@ -27,13 +28,14 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: electronuserland/builder:wine
-      volumes:
-        - ~/.cache/electron:/root/.cache/electron
-        - ~/.cache/electron-builder:/root/.cache/electron-builder
       env:
         PUBLISH_FOR_PULL_REQUEST: true
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
     steps:
+      - name: Preserve $HOME set in the container
+        run: echo HOME=/root >> "$GITHUB_ENV"
+
       - uses: "actions/checkout@v1"
 
       - run: npm install
@@ -63,6 +65,6 @@ jobs:
           CSC_LINK: "./certificate.p12"
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           PUBLISH_FOR_PULL_REQUEST: true
-                
-        run: npm run build:mac -- -p always
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
+        run: npm run build:mac -- -p always
