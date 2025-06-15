@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  release-linux:
+    name: Release Linux packages
+    runs-on: ubuntu-latest
+    container:
+      image: electronuserland/builder
+      env:
+        TAR_OPTIONS: "--format=ustar"
+
+    steps:
+      - uses: "actions/checkout@v1"
+
+      - run: npm install
+
+      - name: Release Linux
+        run: npm run build:linux -- -p always
+
+  release-win:
+    name: Release Windows packages
+    runs-on: ubuntu-latest
+    container:
+      image: electronuserland/builder:wine
+
+    steps:
+      - uses: "actions/checkout@v1"
+
+      - run: npm install
+
+      - name: Release Windows
+        run: npm run build:win -- -p always
+
+  release-macos:
+    name: Release macOS packages
+    runs-on: macos-latest
+    env:
+      APPLE_ID: {{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: {{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: {{ secrets.APPLE_TEAM_ID }}
+      CSC_LINK: "./certificate.p12"
+      CSC_KEY_PASSWORD: {{ secrets.CSC_KEY_PASSWORD }}
+
+    steps:
+      - uses: "actions/checkout@v1"
+
+      - run: npm install
+
+      - name: Create certificate.p12
+        run: echo "$encoded_p12" | base64 --decode > certificate.p12
+        env:
+          encoded_p12: ${{ secrets.CSC_LINK_BASE64 }}
+
+      - name: Release macOS
+        run: npm run build:mac -- -p always
+
