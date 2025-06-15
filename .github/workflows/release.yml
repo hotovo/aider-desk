@@ -1,7 +1,8 @@
 name: Release
 
 on:
-  workflow_dispatch: # Manual trigger
+  pull_request:
+#  workflow_dispatch: # Manual trigger
 
 jobs:
   release-linux:
