@@ -38,12 +38,6 @@ jobs:
   release-macos:
     name: Release macOS packages
     runs-on: macos-latest
-    env:
-      APPLE_ID: {{ secrets.APPLE_ID }}
-      APPLE_APP_SPECIFIC_PASSWORD: {{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-      APPLE_TEAM_ID: {{ secrets.APPLE_TEAM_ID }}
-      CSC_LINK: "./certificate.p12"
-      CSC_KEY_PASSWORD: {{ secrets.CSC_KEY_PASSWORD }}
 
     steps:
       - uses: "actions/checkout@v1"
@@ -56,5 +50,12 @@ jobs:
           encoded_p12: ${{ secrets.CSC_LINK_BASE64 }}
 
       - name: Release macOS
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: "./certificate.p12"
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+                
         run: npm run build:mac -- -p always
 
