@@ -12,6 +12,7 @@ jobs:
       image: electronuserland/builder
       env:
         TAR_OPTIONS: "--format=ustar"
+        PUBLISH_FOR_PULL_REQUEST: true
 
     steps:
       - uses: "actions/checkout@v1"
@@ -26,6 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: electronuserland/builder:wine
+      volumes:
+        - ~/.cache/electron:/root/.cache/electron
+        - ~/.cache/electron-builder:/root/.cache/electron-builder
+      env:
+        PUBLISH_FOR_PULL_REQUEST: true
 
     steps:
       - uses: "actions/checkout@v1"
@@ -42,7 +48,7 @@ jobs:
     steps:
       - uses: "actions/checkout@v1"
 
-      - run: npm install
+      - run: npm install --arch=x64
 
       - name: Create certificate.p12
         run: echo "$encoded_p12" | base64 --decode > certificate.p12
@@ -56,6 +62,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_LINK: "./certificate.p12"
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          PUBLISH_FOR_PULL_REQUEST: true
                 
         run: npm run build:mac -- -p always
 
