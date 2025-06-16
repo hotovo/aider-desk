@@ -175,7 +175,6 @@ app.whenReady().then(async () => {
     progressBar.text = 'Startup complete';
     progressBar.detail = 'Everything is ready! Have fun coding!" - "Booting up UI...';
     progressBar.setCompleted();
-    await delay(1000);
   } catch (error) {
     progressBar.close();
     dialog.showErrorBox('Setup Failed', error instanceof Error ? error.message : 'Unknown error occurred during setup');
