@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
 import { RiToolsFill } from 'react-icons/ri';
@@ -11,7 +11,6 @@ import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
   POWER_TOOL_BASH,
-  POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_GLOB,
   POWER_TOOL_GREP,
@@ -24,6 +23,7 @@ import { parseToolContent } from './utils';
 
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
+import { CodeInline } from '@/components/message/CodeInline';
 
 type Props = {
   message: ToolMessage;
@@ -68,7 +68,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
     };
   }, [isInitialAutoExpand]); // Depend only on isInitialAutoExpand
 
-  const getToolName = (message: ToolMessage): string => {
+  const getToolLabel = (message: ToolMessage): ReactNode => {
     const defaultLabel = () => t('toolMessage.toolLabel', { server: formatName(message.serverName), tool: formatName(message.toolName) });
 
     switch (message.serverName) {
@@ -98,15 +98,27 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
       case POWER_TOOL_GROUP_NAME:
         switch (message.toolName) {
           case POWER_TOOL_FILE_READ:
-            return t('toolMessage.power.fileRead', { filePath: message.args.filePath as string });
-          case POWER_TOOL_FILE_EDIT:
-            return t('toolMessage.power.fileEdit', { filePath: message.args.filePath as string });
+            return (
+              <div className="flex flex-wrap gap-1">
+                <span>{t('toolMessage.power.fileRead')}</span>
+                <span>
+                  <CodeInline className="bg-neutral-900">{(message.args.filePath as string).split(/[/\\]/).pop()}</CodeInline>
+                </span>
+              </div>
+            );
           case POWER_TOOL_GLOB:
             return t('toolMessage.power.glob', { pattern: message.args.pattern as string });
           case POWER_TOOL_GREP:
             return t('toolMessage.power.grep', { filePattern: message.args.filePattern as string, searchTerm: message.args.searchTerm as string });
           case POWER_TOOL_BASH:
-            return t('toolMessage.power.bash', { command: message.args.command as string });
+            return (
+              <div className="flex flex-wrap gap-1">
+                <span>{t('toolMessage.power.bash')}</span>
+                <span>
+                  <CodeInline className="bg-neutral-900">{message.args.command as string}</CodeInline>
+                </span>
+              </div>
+            );
           case POWER_TOOL_SEMANTIC_SEARCH:
             return t('toolMessage.power.semanticSearch', { query: message.args.searchQuery as string, path: (message.args.path as string) || '' });
           default:
@@ -205,7 +217,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           <div className={`text-neutral-500 ${isExecuting ? 'animate-pulse' : ''}`}>
             <RiToolsFill className="w-4 h-4" />
           </div>
-          <div className={`text-xs text-neutral-100 whitespace-pre ${isExecuting ? 'animate-pulse' : ''}`}>{getToolName(message)}</div>
+          <div className={`text-xs text-neutral-100 whitespace-pre ${isExecuting ? 'animate-pulse' : ''} flex items-center gap-1`}>{getToolLabel(message)}</div>
           {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-neutral-400" />}
           {!isExecuting && parsedResult?.isError === true && <VscError className="text-red-500" />}
         </div>

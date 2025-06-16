@@ -262,7 +262,10 @@
       "addCommand": "/add",
       "readOnlyCommand": "/read-only",
       "modelCommand": "/model",
-      "modeSwitchingCommands": "Mode commands (/code, /agent, ...)"
+      "modeSwitchingCommands": "Mode commands (/code, /agent, ...)",
+      "keyBindings": "Key bindings",
+      "useVimBindings": "Use Vim bindings",
+      "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field."
     }
   },
   "messages": {
@@ -446,14 +449,14 @@
       "runPrompt": "Running prompt in Aider: "
     },
     "power": {
-      "fileRead": "Reading file: {{filePath}}",
+      "fileRead": "Reading",
       "fileWrite": {
-        "overwrite": "Rewriting file: {{filePath}}",
-        "append": "Appending to file: {{filePath}}",
-        "createOnly": "Creating file: {{filePath}}"
+        "overwrite": "Rewriting",
+        "append": "Appending to",
+        "createOnly": "Creating"
       },
       "fileEdit": {
-        "title": "Editing file: {{filePath}}",
+        "title": "Editing",
         "searchTerm": "Search Term",
         "regex": "Regex",
         "replacementText": "Replacement Text",
@@ -461,7 +464,7 @@
       },
       "glob": "Finding files matching pattern: {{pattern}}",
       "grep": "Searching files matching '{{filePattern}}' for '{{searchTerm}}'",
-      "bash": "Executing bash command: '{{command}}'",
+      "bash": "Running",
       "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'"
     },
     "errors": {
@@ -503,7 +506,8 @@
     },
     "invalidCommand": "Invalid command",
     "stopResponse": "Stop response",
-    "sendMessage": "Send message (Enter)"
+    "sendMessage": "Send message (Enter)",
+    "clearChat": "Clear chat"
   },
   "agentProfiles": {
     "title": "Agent Profiles",
@@ -517,7 +521,6 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
-    "clearChat": "Clear chat",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected."
   },
   "reasoningEffort": {

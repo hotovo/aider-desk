@@ -27,7 +27,8 @@ import { ZodSchema } from 'zod';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { TelemetryManager } from 'src/main/telemetry-manager';
 import { ModelInfoManager } from 'src/main/model-info-manager';
-import { cloneDeep } from 'lodash';
+import { BINARY_EXTENSIONS } from 'src/main/constants';
+import { optimizeMessages } from 'src/main/agent/optimizer';
 
 import { parseAiderEnv } from '../utils';
 import logger from '../logger';
@@ -38,7 +39,7 @@ import { createPowerToolset } from './tools/power';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { CacheControl, calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-provider';
+import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-provider';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 
@@ -70,37 +71,6 @@ export class Agent {
   }
 
   private async getFileContentForPrompt(files: ContextFile[], project: Project): Promise<string> {
-    // Common binary file extensions to exclude
-    const BINARY_EXTENSIONS = new Set([
-      '.png',
-      '.jpg',
-      '.jpeg',
-      '.gif',
-      '.bmp',
-      '.tiff',
-      '.ico', // Images
-      '.mp3',
-      '.wav',
-      '.ogg',
-      '.flac', // Audio
-      '.mp4',
-      '.mov',
-      '.avi',
-      '.mkv', // Video
-      '.zip',
-      '.tar',
-      '.gz',
-      '.7z', // Archives
-      '.pdf',
-      '.doc',
-      '.docx',
-      '.xls',
-      '.xlsx', // Documents
-      '.exe',
-      '.dll',
-      '.so', // Binaries
-    ]);
-
     const fileSections = await Promise.all(
       files.map(async (file) => {
         try {
@@ -229,6 +199,7 @@ export class Agent {
       // Process tools for this enabled server
       mcpConnector.tools.forEach((tool) => {
         const toolId = `${mcpConnector.serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`;
+        const normalizedToolId = toolId.toLowerCase().replaceAll(/\s+/g, '_');
 
         // Check approval state first from the profile
         const approvalState = profile.toolApprovals[toolId];
@@ -239,7 +210,15 @@ export class Agent {
           return; // Do not add the tool if it's never approved
         }
 
-        acc[toolId] = this.convertMpcToolToAiSdkTool(profile.provider, mcpConnector.serverName, project, profile, mcpConnector.client, tool, approvalManager);
+        acc[normalizedToolId] = this.convertMpcToolToAiSdkTool(
+          profile.provider,
+          mcpConnector.serverName,
+          project,
+          profile,
+          mcpConnector.client,
+          tool,
+          approvalManager,
+        );
       });
 
       return acc;
@@ -541,6 +520,7 @@ export class Agent {
       };
 
       let iterationCount = 0;
+      let unknownRetries = 0;
 
       while (true) {
         logger.info(`Starting iteration ${iterationCount}`);
@@ -560,7 +540,8 @@ export class Agent {
           providerOptions,
           model,
           system: systemPrompt,
-          messages: await this.optimizeMessages(messages, cacheControl),
+          messages: optimizeMessages(messages, cacheControl),
+          toolCallStreaming: true,
           tools: toolSet,
           abortSignal: this.abortController.signal,
           maxTokens: profile.maxTokens,
@@ -592,6 +573,15 @@ export class Agent {
                 content: chunk.textDelta,
                 finished: false,
               });
+            } else if (chunk.type === 'tool-call-streaming-start') {
+              project.addLogMessage('loading', 'Preparing tool...');
+            } else if (chunk.type === 'tool-call') {
+              project.addLogMessage('loading', 'Executing tool...');
+            } else {
+              // @ts-expect-error key exists
+              if (chunk.type === 'tool-result') {
+                project.addLogMessage('loading');
+              }
             }
           },
           onStepFinish: (stepResult) => {
@@ -637,6 +627,13 @@ export class Agent {
 
         messages.push(...responseMessages);
         resultMessages.push(...responseMessages);
+
+        if (finishReason === 'unknown' && unknownRetries < 3) {
+          logger.warn('Unknown finish reason. Retrying.');
+          unknownRetries++;
+          continue;
+        }
+        unknownRetries = 0;
 
         if (finishReason !== 'tool-calls') {
           logger.info(`Prompt finished. Reason: ${finishReason}`);
@@ -770,7 +767,7 @@ export class Agent {
   }
 
   interrupt() {
-    logger.info('Interrupting MCP agent run');
+    logger.info('Interrupting Agent run');
     this.abortController?.abort();
   }
 
@@ -820,23 +817,5 @@ ${text.trim()}`
         project.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.args, JSON.stringify(toolResult.result), usageReport);
       }
     }
-  }
-
-  private async optimizeMessages(messages: CoreMessage[], cacheControl: CacheControl) {
-    if (messages.length === 0) {
-      return [];
-    }
-
-    const optimizedMessages = cloneDeep(messages);
-    const lastMessage = optimizedMessages[messages.length - 1];
-
-    if (cacheControl) {
-      lastMessage.providerOptions = {
-        ...lastMessage.providerOptions,
-        ...cacheControl,
-      };
-    }
-
-    return optimizedMessages;
   }
 }

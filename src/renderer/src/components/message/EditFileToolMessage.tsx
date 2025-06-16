@@ -6,6 +6,7 @@ import clsx from 'clsx';
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
 import { CodeBlock } from '@/components/message/CodeBlock';
+import { CodeInline } from '@/components/message/CodeInline';
 
 type Props = {
   message: ToolMessage;
@@ -24,8 +25,8 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
 
   const copyContent = JSON.stringify({ args: message.args, result: content }, null, 2);
 
-  const getToolDisplayName = (): string => {
-    return t('toolMessage.power.fileEdit.title', { filePath });
+  const getToolName = (): string => {
+    return t('toolMessage.power.fileEdit.title');
   };
 
   const language = getLanguageFromPath(filePath);
@@ -36,7 +37,12 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
         <div className="text-neutral-500">
           <RiToolsFill className="w-4 h-4" />
         </div>
-        <div className="text-xs text-neutral-100">{getToolDisplayName()}</div>
+        <div className="text-xs text-neutral-100 flex flex-wrap gap-1">
+          <span>{getToolName()}</span>
+          <span>
+            <CodeInline className="bg-neutral-900">{filePath.split(/[/\\]/).pop()}</CodeInline>
+          </span>
+        </div>
       </div>
 
       <div className="text-xs text-neutral-300 bg-neutral-850">

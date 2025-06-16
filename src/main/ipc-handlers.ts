@@ -92,7 +92,7 @@ export const setupIpcHandlers = (
     if (!existingProject) {
       const newProject: ProjectData = {
         baseDir: baseDir.endsWith('/') ? baseDir.slice(0, -1) : baseDir,
-        settings: getDefaultProjectSettings(store),
+        settings: getDefaultProjectSettings(store, baseDir),
         active: true,
       };
       const updatedProjects = [...projects.map((p) => ({ ...p, active: false })), newProject];

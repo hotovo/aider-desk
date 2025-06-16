@@ -14,13 +14,15 @@ import {
   PYTHON_VENV_DIR,
   AIDER_DESK_CONNECTOR_DIR,
   RESOURCES_DIR,
-  PYTHON_COMMAND,
   AIDER_DESK_MCP_SERVER_DIR,
   UV_EXECUTABLE,
 } from './constants';
 
 const execAsync = promisify(exec);
 
+/**
+ * Checks if uv is available and accessible.
+ */
 const checkUvAvailable = async (): Promise<void> => {
   try {
     const { stdout, stderr } = await execAsync(`"${UV_EXECUTABLE}" --version`, {
@@ -63,7 +65,28 @@ const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: Updat
 
 const installAiderConnectorRequirements = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> => {
   const pythonBinPath = getPythonVenvBinPath();
-  const packages = ['pip', 'aider-chat', 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0', 'boto3==1.38.25'];
+  let aiderVersionSpecifier = 'aider-chat';
+  if (process.env.AIDER_DESK_AIDER_VERSION) {
+    if (process.env.AIDER_DESK_AIDER_VERSION.startsWith('git+')) {
+      aiderVersionSpecifier = process.env.AIDER_DESK_AIDER_VERSION;
+    } else {
+      aiderVersionSpecifier = `aider-chat==${process.env.AIDER_DESK_AIDER_VERSION}`;
+    }
+  }
+  const extraPackages = (process.env.AIDER_DESK_EXTRA_PYTHON_PACKAGES || '').split(',').filter(Boolean);
+  if (extraPackages.length > 0) {
+    logger.info(`Extra Python packages specified: ${extraPackages.join(', ')}`);
+  }
+
+  const packages = [
+    'pip',
+    aiderVersionSpecifier,
+    'python-socketio==5.12.1',
+    'websocket-client==1.8.0',
+    'nest-asyncio==1.6.0',
+    'boto3==1.38.25',
+    ...extraPackages,
+  ];
 
   logger.info('Starting Aider connector requirements installation', { packages });
 
@@ -79,11 +102,11 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
       });
     }
     try {
-      const installCommand = `"${PYTHON_COMMAND}" -m pip install --upgrade --no-cache-dir ${pkg}`;
+      const installCommand = `"${UV_EXECUTABLE}" pip install --upgrade --no-progress --no-cache-dir --link-mode=copy ${pkg}`;
 
       if (!cleanInstall) {
         const packageName = pkg.split('==')[0];
-        const currentVersion = await getCurrentPythonLibVersion(packageName);
+        const currentVersion = pkg.startsWith('git+') ? null : await getCurrentPythonLibVersion(packageName);
 
         if (currentVersion) {
           if (pkg.includes('==')) {
@@ -244,7 +267,7 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
       progress: 25,
     });
 
-    logger.info(`Creating Python virtual environment in: ${PYTHON_VENV_DIR}`);
+    logger.info(`Creating Python virtual environment with in: ${PYTHON_VENV_DIR}`);
     await createVirtualEnv();
 
     updateProgress({

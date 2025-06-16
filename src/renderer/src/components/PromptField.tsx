@@ -1,18 +1,28 @@
-import { Mode, QuestionData, PromptBehavior, SuggestionMode } from '@common/types';
-import React, { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import {
+  acceptCompletion,
+  autocompletion,
+  CompletionContext,
+  type CompletionResult,
+  currentCompletions,
+  moveCompletionSelection,
+  startCompletion,
+} from '@codemirror/autocomplete';
+import { EditorView, keymap } from '@codemirror/view';
+import { vim } from '@replit/codemirror-vim';
+import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
+import { githubDarkInit } from '@uiw/codemirror-theme-github';
+import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDebounce } from 'react-use';
-import { matchSorter } from 'match-sorter';
 import { BiSend } from 'react-icons/bi';
 import { MdStop } from 'react-icons/md';
-import TextareaAutosize from 'react-textarea-autosize';
-import getCaretCoordinates from 'textarea-caret';
+import { VscClearAll } from 'react-icons/vsc';
 
-import { showErrorNotification } from '@/utils/notifications';
-import { ModeSelector } from '@/components/ModeSelector';
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/InputHistoryMenu';
-import { CommandSuggestion } from '@/components/CommandSuggestion';
+import { ModeSelector } from '@/components/ModeSelector';
+import { showErrorNotification } from '@/utils/notifications';
+import { Button } from '@/components/common/Button';
 
 const COMMANDS = [
   '/code',
@@ -45,14 +55,18 @@ const COMMANDS = [
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
 
-const MAX_SUGGESTIONS = 10;
-
 const HISTORY_MENU_CHUNK_SIZE = 20;
 
 const isPathLike = (input: string): boolean => {
   const firstWord = input.split(' ')[0];
   return (firstWord.match(/\//g) || []).length >= 2;
 };
+
+const theme = githubDarkInit({
+  settings: {
+    background: 'transparent',
+  },
+});
 
 export interface PromptFieldRef {
   focus: () => void;
@@ -85,7 +99,7 @@ type Props = {
   promptBehavior: PromptBehavior;
 };
 
-export const PromptField = React.forwardRef<PromptFieldRef, Props>(
+export const PromptField = forwardRef<PromptFieldRef, Props>(
   (
     {
       baseDir,
@@ -116,20 +130,53 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
   ) => {
     const { t } = useTranslation();
     const [text, setText] = useState('');
-    const [debouncedText, setDebouncedText] = useState('');
-    const [suggestionsVisible, setSuggestionsVisible] = useState(false);
-    const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
-    const [currentWord, setCurrentWord] = useState('');
     const [placeholderIndex] = useState(Math.floor(Math.random() * 16));
-    const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
-    const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1);
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
     const [historyLimit, setHistoryLimit] = useState(HISTORY_MENU_CHUNK_SIZE);
     const [keepHistoryHighlightTop, setKeepHistoryHighlightTop] = useState(false);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-    const [pendingCommand, setPendingCommand] = useState<{ command: string; args?: string } | null>(null);
-    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const [pendingCommand, setPendingCommand] = useState<{
+      command: string;
+      args?: string;
+    } | null>(null);
+    const editorRef = useRef<ReactCodeMirrorRef>(null);
+
+    const completionSource = async (context: CompletionContext): Promise<CompletionResult | null> => {
+      const word = context.matchBefore(/\S*/);
+      const { state } = context;
+      const text = state.doc.toString();
+
+      if (!word || (word.from === word.to && !context.explicit)) {
+        return null;
+      }
+
+      if (text.startsWith('/')) {
+        if (text.includes(' ')) {
+          const [command, ...args] = text.split(' ');
+          const currentArg = args[args.length - 1];
+          if (command === '/add' || command === '/read-only') {
+            const files = await window.api.getAddableFiles(baseDir);
+            return {
+              from: state.doc.length - currentArg.length,
+              options: files.map((file) => ({ label: file, type: 'file' })),
+              validFor: /^\S*$/,
+            };
+          }
+        } else {
+          return {
+            from: 0,
+            options: COMMANDS.map((cmd) => ({ label: cmd, type: 'keyword' })),
+            validFor: /^\/\w*$/,
+          };
+        }
+      }
+
+      return {
+        from: word.from,
+        options: words.map((w) => ({ label: w, type: 'text' })),
+      };
+    };
 
     const historyItems = inputHistory.slice(0, historyLimit).reverse();
 
@@ -142,41 +189,20 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       }
     }, [historyLimit, inputHistory.length]);
 
-    useDebounce(
-      () => {
-        // only show suggestions if the current word is at least 3 characters long and suggestion mode is automatic
-        if (promptBehavior.suggestionMode === SuggestionMode.Automatically && currentWord.length >= 3 && !suggestionsVisible) {
-          const matched = matchSorter(words, currentWord);
-          setFilteredSuggestions(matched.slice(0, MAX_SUGGESTIONS));
-          setSuggestionsVisible(matched.length > 0);
-        }
-      },
-      promptBehavior.suggestionDelay,
-      [currentWord, words, promptBehavior.suggestionMode, promptBehavior.suggestionDelay],
-    );
-
-    useDebounce(
-      () => {
-        if (text !== debouncedText) {
-          setDebouncedText(text);
-        }
-      },
-      100,
-      [text],
-    );
-
     useImperativeHandle(ref, () => ({
       focus: () => {
-        inputRef.current?.focus();
+        editorRef.current?.view?.focus();
       },
       setText: (newText: string) => {
         setText(newText);
         // Ensure cursor is at the end after setting text
         setTimeout(() => {
-          if (inputRef.current) {
-            inputRef.current.selectionStart = newText.length;
-            inputRef.current.selectionEnd = newText.length;
-            inputRef.current.focus();
+          if (editorRef.current?.view) {
+            const end = editorRef.current.view.state.doc.length;
+            editorRef.current.view.dispatch({
+              selection: { anchor: end, head: end },
+            });
+            editorRef.current.view.focus();
           }
         }, 0);
       },
@@ -324,36 +350,14 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     };
 
     useEffect(() => {
-      const loadAddableFiles = async () => {
-        if (pendingCommand?.command === '/add' || pendingCommand?.command === '/read-only') {
-          try {
-            const files = await window.api.getAddableFiles(baseDir);
-            setFilteredSuggestions(
-              files
-                .filter((file) => file.includes(currentWord))
-                .sort()
-                .slice(0, MAX_SUGGESTIONS),
-            );
-            setSuggestionsVisible(currentWord.length > 0 && files.length > 0);
-          } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Error fetching addable files:', error);
-          }
-        }
-      };
-
-      void loadAddableFiles();
-    }, [pendingCommand, baseDir, currentWord]);
-
-    useEffect(() => {
       if (question) {
         setSelectedAnswer(question.defaultAnswer || 'y');
       }
     }, [question]);
 
     useEffect(() => {
-      if (!disabled && isActive && inputRef.current) {
-        inputRef.current.focus();
+      if (!disabled && isActive && editorRef.current) {
+        editorRef.current.view?.focus();
       }
     }, [isActive, disabled]);
 
@@ -374,119 +378,33 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       }
     }, [historyLimit, keepHistoryHighlightTop]);
 
-    useLayoutEffect(() => {
-      if (!suggestionsVisible) {
-        return;
-      }
-      const timer = requestAnimationFrame(() => {
-        const input = inputRef.current;
-        if (input) {
-          const caretPosition = getCaretCoordinates(input, input.selectionStart);
-          setCursorPosition({
-            top: caretPosition.top,
-            left: caretPosition.left,
-          });
-        }
-      });
+    const onChange = useCallback(
+      (newText: string) => {
+        setText(newText);
+        setPendingCommand(null);
 
-      return () => {
-        cancelAnimationFrame(timer);
-      };
-    }, [suggestionsVisible, debouncedText]);
-
-    const getCurrentWord = (text: string, cursorPosition: number) => {
-      const textBeforeCursor = text.slice(0, cursorPosition);
-      const words = textBeforeCursor.split(/\s/);
-      return words[words.length - 1] || '';
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newText = e.target.value;
-      setText(newText);
-      setPendingCommand(null);
-
-      const word = getCurrentWord(newText, e.target.selectionStart);
-
-      if (question) {
-        if (question?.answers) {
-          const matchedAnswer = question.answers.find((answer) => answer.shortkey.toLowerCase() === newText.toLowerCase());
-          if (matchedAnswer) {
-            setSelectedAnswer(matchedAnswer.shortkey);
+        if (question) {
+          if (question?.answers) {
+            const matchedAnswer = question.answers.find((answer) => answer.shortkey.toLowerCase() === newText.toLowerCase());
+            if (matchedAnswer) {
+              setSelectedAnswer(matchedAnswer.shortkey);
+              return;
+            } else {
+              setSelectedAnswer(null);
+            }
+          } else if (ANSWERS.includes(newText.toLowerCase())) {
+            setSelectedAnswer(newText);
             return;
           } else {
             setSelectedAnswer(null);
           }
-        } else if (ANSWERS.includes(newText.toLowerCase())) {
-          setSelectedAnswer(newText);
-          return;
-        } else {
-          setSelectedAnswer(null);
         }
-      }
-
-      if (newText.startsWith('/')) {
-        const commandMatch = COMMANDS.find((cmd) => newText.toLowerCase().startsWith(cmd.toLowerCase()));
-        if (commandMatch) {
-          if ((commandMatch === '/add' && newText !== '/add') || (commandMatch === '/read-only' && newText !== '/read-only')) {
-            setCurrentWord(word);
-          } else {
-            setSuggestionsVisible(false);
-          }
-          return;
-        }
-        const matched = COMMANDS.filter((cmd) => cmd.toLowerCase().startsWith(newText.toLowerCase())).sort();
-        setFilteredSuggestions(matched);
-        setSuggestionsVisible(matched.length > 0);
-      } else if (word.length > 0) {
-        setCurrentWord(word);
-        setHighlightedSuggestionIndex(-1);
-
-        if (suggestionsVisible) {
-          const matched = matchSorter(words, word);
-          setFilteredSuggestions(matched);
-          setSuggestionsVisible(matched.length > 0);
-        }
-      } else {
-        setSuggestionsVisible(false);
-        setCurrentWord('');
-      }
-    };
-
-    const showSuggestionsOnTab = () => {
-      if (promptBehavior.suggestionMode === SuggestionMode.OnTab && currentWord.length) {
-        const matched = matchSorter(words, currentWord);
-        setFilteredSuggestions(matched.slice(0, MAX_SUGGESTIONS));
-        setSuggestionsVisible(matched.length > 0);
-        setHighlightedSuggestionIndex(-1);
-      }
-    };
-
-    const acceptSuggestion = (suggestion: string) => {
-      if (inputRef.current) {
-        const cursorPos = inputRef.current.selectionStart;
-        const textBeforeCursor = text.slice(0, cursorPos);
-        const lastSpaceIndex = textBeforeCursor.lastIndexOf(' ');
-        const textAfterCursor = text.slice(cursorPos);
-
-        // Check if suggestion is a command prefix
-        const commandMatch = COMMANDS.find((cmd) => cmd === suggestion);
-        const newText = commandMatch ? suggestion + ' ' + textAfterCursor : textBeforeCursor.slice(0, lastSpaceIndex + 1) + suggestion + textAfterCursor;
-
-        setText(newText);
-        setSuggestionsVisible(false);
-        setCurrentWord('');
-
-        inputRef.current.focus();
-        const newCursorPos = commandMatch ? suggestion.length + 1 : lastSpaceIndex + 1 + suggestion.length;
-        inputRef.current.setSelectionRange(newCursorPos, newCursorPos);
-      }
-    };
+      },
+      [question],
+    );
 
     const prepareForNextPrompt = () => {
       setText('');
-      setCurrentWord('');
-      setSuggestionsVisible(false);
-      setHighlightedSuggestionIndex(-1);
       setPendingCommand(null);
     };
 
@@ -507,149 +425,134 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       }
     };
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      const items = e.clipboardData.items;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          window.api.runCommand(baseDir, 'paste');
-          break;
+    const getAutocompleteDetailLabel = (item: string) => {
+      if (item.startsWith('/')) {
+        if (item === '/init' && mode !== 'agent') {
+          return t('commands.agentModeOnly');
         }
+
+        return t(`commands.${item.slice(1)}`);
       }
+
+      return null;
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      // Handle CTRL+C during processing
-      if (processing && e.ctrlKey && e.key === 'c') {
-        e.preventDefault();
-        interruptResponse();
-        return;
-      }
-
-      if (question) {
-        const answers = question.answers?.map((answer) => answer.shortkey.toLowerCase()) || ANSWERS;
-        if (e.key === 'Tab' && selectedAnswer) {
-          e.preventDefault();
-          const currentIndex = answers.indexOf(selectedAnswer.toLowerCase());
-          if (currentIndex !== -1) {
-            const nextIndex = (currentIndex + (e.shiftKey ? -1 : 1) + ANSWERS.length) % ANSWERS.length;
-            setSelectedAnswer(answers[nextIndex]);
-            return;
+    const keymapExtension = keymap.of([
+      {
+        key: 'Enter',
+        preventDefault: true,
+        run: (view) => {
+          if (question && selectedAnswer) {
+            const answers = question.answers?.map((answer) => answer.shortkey.toLowerCase()) || ANSWERS;
+            if (answers.includes(selectedAnswer.toLowerCase())) {
+              answerQuestion(selectedAnswer);
+              prepareForNextPrompt();
+              return true;
+            }
+          } else if (historyMenuVisible) {
+            setHistoryMenuVisible(false);
+            view.dispatch({
+              changes: { from: 0, insert: historyItems[highlightedHistoryItemIndex] },
+              selection: { anchor: historyItems[highlightedHistoryItemIndex].length },
+            });
+          } else if (!processing || question) {
+            handleSubmit();
           }
-        }
-        if (e.key === 'Enter' && !e.shiftKey && selectedAnswer && answers.includes(selectedAnswer.toLowerCase())) {
-          e.preventDefault();
-          answerQuestion(selectedAnswer);
-          prepareForNextPrompt();
-          return;
-        }
-      }
+          return true;
+        },
+      },
+      {
+        key: 'Space',
+        run: acceptCompletion,
+      },
+      {
+        key: 'Escape',
+        run: () => {
+          if (historyMenuVisible) {
+            setHistoryMenuVisible(false);
+            setHighlightedHistoryItemIndex(-1);
+            return true;
+          } else if (processing) {
+            interruptResponse();
+            return true;
+          }
+          return false;
+        },
+      },
+      {
+        key: 'Ctrl-c',
+        run: () => {
+          if (processing) {
+            interruptResponse();
+            return true;
+          }
+          return false;
+        },
+      },
+      {
+        key: 'Tab',
+        preventDefault: true,
+        run: (view) => {
+          if (question && selectedAnswer) {
+            const answers = question.answers?.map((answer) => answer.shortkey.toLowerCase()) || ANSWERS;
+            const currentIndex = answers.indexOf(selectedAnswer.toLowerCase());
+            if (currentIndex !== -1) {
+              const nextIndex = (currentIndex + 1 + ANSWERS.length) % ANSWERS.length;
+              setSelectedAnswer(answers[nextIndex]);
+              return true;
+            }
+          }
 
-      if (historyMenuVisible) {
-        switch (e.key) {
-          case 'ArrowUp':
-            e.preventDefault();
-            if (highlightedHistoryItemIndex === 0) {
-              loadMoreHistory();
-            } else {
-              setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
-            }
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
-            break;
-          case 'Enter':
-            e.preventDefault();
-            if (historyItems[highlightedHistoryItemIndex]) {
-              setText(historyItems[highlightedHistoryItemIndex]);
-            }
-            setHistoryMenuVisible(false);
-            break;
-          case 'Escape':
-            e.preventDefault();
-            setHistoryMenuVisible(false);
-            break;
-          default:
-            setHistoryMenuVisible(false);
-            break;
-        }
-      } else if (suggestionsVisible) {
-        switch (e.key) {
-          case 'Enter':
-            if (highlightedSuggestionIndex !== -1) {
-              e.preventDefault();
-              acceptSuggestion(filteredSuggestions[highlightedSuggestionIndex]);
-            } else if ((!processing || question) && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit();
-            }
-            break;
-          case 'ArrowUp':
-            e.preventDefault();
-            setHighlightedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : filteredSuggestions.length - 1));
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            setHighlightedSuggestionIndex((prev) => (prev < filteredSuggestions.length - 1 ? prev + 1 : 0));
-            break;
-          case 'Tab':
-            e.preventDefault();
-            if (filteredSuggestions.length === 1) {
-              acceptSuggestion(filteredSuggestions[0]);
-            } else {
-              setHighlightedSuggestionIndex((prev) => (prev < filteredSuggestions.length - 1 ? prev + 1 : 0));
-            }
-            break;
-          case ' ':
-            if (highlightedSuggestionIndex !== -1) {
-              e.preventDefault();
-              acceptSuggestion(filteredSuggestions[highlightedSuggestionIndex] + ' ');
-            }
-            break;
-          case 'Escape':
-            e.preventDefault();
-            setSuggestionsVisible(false);
-            break;
-        }
-      } else {
-        switch (e.key) {
-          case 'Enter':
-            if (!e.shiftKey) {
-              e.preventDefault();
-              if (!processing || question) {
-                handleSubmit();
+          const state = view.state;
+          const completions = currentCompletions(state);
+
+          if (!completions.length) {
+            return false;
+          }
+          if (completions.length === 1) {
+            moveCompletionSelection(true)(view);
+            return acceptCompletion(view);
+          }
+
+          return moveCompletionSelection(true)(view);
+        },
+      },
+      {
+        key: 'Tab',
+        preventDefault: true,
+        run: startCompletion,
+      },
+      {
+        key: 'ArrowUp',
+        run: () => {
+          if (!text && historyItems.length > 0) {
+            if (historyMenuVisible) {
+              if (highlightedHistoryItemIndex === 0) {
+                loadMoreHistory();
+              } else {
+                setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
               }
-            }
-            break;
-          case 'Tab':
-            if (promptBehavior.suggestionMode === SuggestionMode.OnTab) {
-              e.preventDefault();
-              showSuggestionsOnTab();
-            }
-            break;
-          case 'ArrowUp':
-            if (text === '' && historyItems.length > 0) {
-              e.preventDefault();
+            } else {
               setHistoryLimit(HISTORY_MENU_CHUNK_SIZE);
               setHistoryMenuVisible(true);
               setHighlightedHistoryItemIndex(historyItems.length - 1);
             }
-            break;
-        }
-      }
-    };
-
-    const getCustomCommandDescription = (command: string) => {
-      if (command === 'init' && mode !== 'agent') {
-        return (
-          <div className="flex items-center gap-1">
-            <div className="text-neutral-100 bg-neutral-800 px-2 rounded-sm text-2xs">{t('commands.agentModeOnly')}</div>
-          </div>
-        );
-      }
-
-      return undefined;
-    };
+            return true;
+          }
+          return false;
+        },
+      },
+      {
+        key: 'ArrowDown',
+        run: () => {
+          if (historyMenuVisible) {
+            setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
+            return true;
+          }
+          return false;
+        },
+      },
+    ]);
 
     return (
       <div className="w-full relative">
@@ -707,23 +610,74 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
             </div>
           </div>
         )}
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1.5">
           <div className="relative flex-shrink-0">
-            <TextareaAutosize
-              ref={inputRef}
+            <CodeMirror
+              ref={editorRef}
               value={text}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
+              onChange={onChange}
               placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
-              disabled={disabled}
-              minRows={1}
-              maxRows={20}
+              editable={!disabled}
               spellCheck={false}
-              className="w-full px-2 py-2 pr-8 border-2 border-neutral-700 rounded-md focus:outline-none focus:border-neutral-500 text-sm bg-neutral-850 text-white placeholder-neutral-600 resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-600"
+              className="w-full px-2 py-1 pr-8 border-2 border-neutral-700 rounded-md focus:outline-none focus:border-neutral-500 text-sm bg-neutral-850 text-white placeholder-neutral-600 resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-600"
+              theme={theme}
+              basicSetup={{
+                highlightSelectionMatches: false,
+                allowMultipleSelections: false,
+                syntaxHighlighting: false,
+                lineNumbers: false,
+                foldGutter: false,
+                completionKeymap: false,
+                autocompletion: true,
+                highlightActiveLine: false,
+              }}
+              indentWithTab={false}
+              extensions={[
+                promptBehavior.useVimBindings ? vim() : keymap.of([]),
+                EditorView.lineWrapping,
+                EditorView.domEventHandlers({
+                  paste(event) {
+                    const items = event.clipboardData?.items;
+                    if (items) {
+                      for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                          window.api.runCommand(baseDir, 'paste');
+                          break;
+                        }
+                      }
+                    }
+                  },
+                }),
+                autocompletion({
+                  override: question ? [] : [completionSource],
+                  activateOnTyping: promptBehavior.suggestionMode === SuggestionMode.Automatically,
+                  activateOnTypingDelay: promptBehavior.suggestionDelay,
+                  aboveCursor: true,
+                  icons: false,
+                  selectOnOpen: false,
+                  addToOptions: [
+                    {
+                      render: (completion) => {
+                        const detail = getAutocompleteDetailLabel(completion.label);
+                        if (!detail) {
+                          return null;
+                        }
+
+                        const element = document.createElement('span');
+                        element.className =
+                          mode !== 'agent' && completion.label === '/init' ? 'cm-tooltip-autocomplete-chip' : 'cm-tooltip-autocomplete-detail';
+                        element.innerText = detail;
+                        return element;
+                      },
+                      position: 100,
+                    },
+                  ],
+                }),
+                Prec.high(keymapExtension),
+              ]}
             />
             {processing ? (
-              <div className="absolute right-3 top-1/2 -translate-y-[16px] flex items-center space-x-2 text-neutral-400">
+              <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-2 text-neutral-400">
                 <button
                   onClick={interruptResponse}
                   className="hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-colors duration-200"
@@ -737,7 +691,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
               <button
                 onClick={handleSubmit}
                 disabled={!text.trim()}
-                className={`absolute right-2 top-1/2 -translate-y-[16px] text-neutral-400 hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-all duration-200
+                className={`absolute right-2 top-1/2 -translate-y-[12px] text-neutral-400 hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-all duration-200
                 ${!text.trim() ? 'opacity-0' : 'opacity-100'}`}
                 title={t('promptField.sendMessage')}
               >
@@ -748,39 +702,18 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           <div className="relative w-full flex items-center gap-1.5">
             <ModeSelector mode={mode} onModeChange={onModeChanged} />
             {mode === 'agent' && <AgentSelector />}
+            <div className="flex-grow" />
+            <Button
+              variant="text"
+              onClick={() => clearMessages()}
+              className="hover:bg-neutral-800 border-neutral-200 text-neutral-200 hover:text-neutral-100"
+              size="xs"
+            >
+              <VscClearAll className="w-4 h-4 mr-2" />
+              {t('promptField.clearChat')}
+            </Button>
           </div>
         </div>
-        {suggestionsVisible && filteredSuggestions.length > 0 && (
-          <div
-            className="absolute bg-neutral-900 border border-neutral-700 rounded-md text-xs shadow-lg z-10 text-neutral-100
-            scrollbar-thin
-            scrollbar-track-neutral-900
-            scrollbar-thumb-neutral-800
-            hover:scrollbar-thumb-neutral-600"
-            style={{
-              bottom: `calc(100% - 4px - ${cursorPosition.top}px)`,
-              left: `${cursorPosition.left}px`,
-              maxHeight: '200px',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-            }}
-          >
-            {filteredSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                ref={index === highlightedSuggestionIndex ? (el) => el?.scrollIntoView() : null}
-                className={`px-2 py-1 cursor-pointer ${index === highlightedSuggestionIndex ? 'bg-neutral-700' : 'hover:bg-neutral-850'}`}
-                onClick={() => acceptSuggestion(suggestion)}
-              >
-                {suggestion.startsWith('/') ? (
-                  <CommandSuggestion command={suggestion.slice(1)} description={getCustomCommandDescription(suggestion.slice(1))} />
-                ) : (
-                  <span>{suggestion}</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
         {historyMenuVisible && historyItems.length > 0 && (
           <InputHistoryMenu
             items={historyItems}

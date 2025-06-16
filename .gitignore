@@ -11,6 +11,11 @@ out
 .junie*
 .env
 
+# uv binaries
+resources/linux/uv*
+resources/macos/uv*
+resources/win/uv*
+
 dev-app-update.yml
 
 # release scripts

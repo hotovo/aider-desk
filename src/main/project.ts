@@ -133,7 +133,7 @@ export class Project {
     this.currentQuestionResolves = [];
     this.questionAnswers.clear();
 
-    await this.updateAgentEstimatedTokens();
+    void this.updateAgentEstimatedTokens();
   }
 
   public addConnector(connector: Connector) {

@@ -8,8 +8,9 @@ import { SettingsData } from '@common/types';
 import { parse } from '@dotenvx/dotenvx';
 import ignore from 'ignore';
 import { fileExists } from '@common/utils';
+import YAML from 'yaml';
 
-import { PYTHON_COMMAND, PYTHON_VENV_DIR } from './constants';
+import { PYTHON_COMMAND, PYTHON_VENV_DIR, UV_EXECUTABLE } from './constants';
 import logger from './logger';
 
 const execAsync = promisify(exec);
@@ -26,7 +27,7 @@ export const getPythonVenvBinPath = (): string => {
 export const getCurrentPythonLibVersion = async (library: string): Promise<string | null> => {
   try {
     const pythonBinPath = getPythonVenvBinPath();
-    const command = `"${PYTHON_COMMAND}" -m pip show ${library}`;
+    const command = `"${UV_EXECUTABLE}" pip show ${library}`;
     const { stdout } = await execAsync(command, {
       env: {
         ...process.env,
@@ -103,6 +104,40 @@ export const parseAiderEnv = (settings: SettingsData): Record<string, string> =>
     ...aiderEnvVars, // Start with settings env
     ...(fileEnv ?? {}), // Override with file env if it exists
   };
+};
+
+export const readAiderConfProperty = (baseDir: string, property: string): string | undefined => {
+  const readProperty = (filePath: string): string | undefined => {
+    try {
+      if (fs.existsSync(filePath)) {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const config = YAML.parse(fileContent);
+        if (config && typeof config === 'object' && property in config) {
+          return config[property] as string;
+        }
+      }
+    } catch (e) {
+      logger.warn(`Failed to read or parse .aider.conf.yml at ${filePath} for property '${property}':`, e);
+    }
+    return undefined;
+  };
+
+  const projectConfigPath = path.join(baseDir, '.aider.conf.yml');
+  const projectProperty = readProperty(projectConfigPath);
+  if (projectProperty) {
+    return projectProperty;
+  }
+
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  if (homeDir) {
+    const homeConfigPath = path.join(homeDir, '.aider.conf.yml');
+    const homeProperty = readProperty(homeConfigPath);
+    if (homeProperty) {
+      return homeProperty;
+    }
+  }
+
+  return undefined;
 };
 
 export const isFileIgnored = async (projectBaseDir: string, filePath: string): Promise<boolean> => {

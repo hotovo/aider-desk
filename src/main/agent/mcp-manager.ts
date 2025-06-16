@@ -146,6 +146,9 @@ export class McpManager {
     if (!env.PATH && process.env.PATH) {
       env.PATH = process.env.PATH;
     }
+    if (!env.HOME && process.env.HOME) {
+      env.HOME = process.env.HOME;
+    }
 
     // Handle npx command on Windows
     let command = config.command;

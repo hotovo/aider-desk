@@ -6,6 +6,7 @@ import { RadioButton } from '../common/RadioButton';
 import { Select, Option } from '../common/Select';
 import { Section } from '../common/Section';
 import { Slider } from '../common/Slider';
+import { InfoIcon } from '../common/InfoIcon';
 
 import { LanguageSelector } from './LanguageSelector';
 
@@ -105,7 +106,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   };
 
   return (
-    <div className="space-y-8 min-h-[300px]">
+    <div className="space-y-6">
       <Section title={t('settings.gui')}>
         <div className="grid grid-cols-2 gap-4 p-4">
           <LanguageSelector language={settings.language} onChange={onLanguageChange} />
@@ -137,10 +138,10 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
       </Section>
 
       <Section title={t('settings.promptBehavior.title')}>
-        <div className="px-4 py-5 grid grid-cols-2 gap-10">
+        <div className="px-4 py-5 grid grid-cols-2 gap-x-10 gap-y-6">
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.showSuggestions')}</h4>
-            <div className="space-y-2 ml-2">
+            <div className="space-y-2 ml-0.5">
               <RadioButton
                 id="suggestion-automatically"
                 name="suggestion-mode"
@@ -178,7 +179,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
 
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.requireCommandConfirmation')}</h4>
-            <div className="space-y-2 ml-2">
+            <div className="space-y-2 ml-0.5">
               <Checkbox
                 label={t('settings.promptBehavior.addCommand')}
                 checked={settings.promptBehavior.requireCommandConfirmation.add}
@@ -199,6 +200,28 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
                 checked={settings.promptBehavior.requireCommandConfirmation.modeSwitching}
                 onChange={(checked) => handleCommandConfirmationChange('modeSwitching', checked)}
               />
+            </div>
+          </div>
+
+          {/* Vim key bindings */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.keyBindings')}</h4>
+            <div className="flex items-center space-x-2 ml-0.5">
+              <Checkbox
+                label={t('settings.promptBehavior.useVimBindings')}
+                checked={settings.promptBehavior.useVimBindings}
+                onChange={(checked) =>
+                  setSettings({
+                    ...settings,
+                    promptBehavior: {
+                      ...settings.promptBehavior,
+                      useVimBindings: checked,
+                    },
+                  })
+                }
+                data-testid="vim-bindings-checkbox"
+              />
+              <InfoIcon tooltip={t('settings.promptBehavior.useVimBindingsTooltip')} />
             </div>
           </div>
         </div>

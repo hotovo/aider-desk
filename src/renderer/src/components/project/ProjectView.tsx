@@ -642,7 +642,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           onRenderMarkdownChanged={handleRenderMarkdownChanged}
           onExportSessionToImage={exportMessagesToImage}
           runCommand={runCommand}
-          onClearMessages={clearMessages}
         />
         <div className="flex-grow overflow-y-auto relative">
           {renderSearchInput()}

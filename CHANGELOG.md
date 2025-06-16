@@ -1,10 +1,25 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.18.0]
 
 - added /compact command to compact conversation history
 - prompts starting with '/' are checked if they are path like before checking them as commands
 - properly closing deleted MCP servers
+- adding HOME environment to MCP server connection
+- read file power tool now denies to read binary files
+- retrying 'unknown' responses from Gemini models
+- improved prompt field with autocompletion
+- calculating cost including cached tokens for Gemini models
+- tool result containing image data is passed as image message to models
+- added duplicate tool call prevention in Agent
+- normalizing tool IDs before sending them to LLM
+- added AIDER_DESK_AIDER_VERSION environment variable to use custom version of Aider
+- fixed claude-4-sonnet-20250514 default model
+- added caching info for Requesty provider
+- setting to use Vim bindings in Prompt field
+- using uv for Python package management
+- respecting model and weak-model set in .aider.conf.yaml (project dir and $HOME) when opening project
+- added support for extra Python packages to be installed on start via AIDER_DESK_EXTRA_PYTHON_PACKAGES environment variable
 
 ## [0.17.0]
 

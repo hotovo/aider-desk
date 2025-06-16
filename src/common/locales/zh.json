@@ -443,14 +443,14 @@
       "runPrompt": "运行 Aider 提示: "
     },
     "power": {
-      "fileRead": "读取文件: {{filePath}}",
+      "fileRead": "读取文件",
       "fileWrite": {
-        "overwrite": "重写文件: {{filePath}}",
-        "append": "追加到文件: {{filePath}}",
-        "createOnly": "创建文件: {{filePath}"
+        "overwrite": "重写文件",
+        "append": "追加到文件",
+        "createOnly": "创建文件"
       },
       "fileEdit": {
-        "title": "编辑文件: {{filePath}}",
+        "title": "编辑文件",
         "searchTerm": "搜索词",
         "regex": "正则表达式",
         "replacementText": "替换文本",
@@ -458,7 +458,7 @@
       },
       "glob": "查找匹配模式的文件: {{pattern}}",
       "grep": "在匹配 {{filePattern}} 的文件中搜索 {{searchTerm}}",
-      "bash": "执行 bash 命令: {{command}}",
+      "bash": "执行 bash 命令",
       "semanticSearch": "执行语义搜索: {{query}} {{path}}"
     },
     "errors": {
@@ -500,7 +500,8 @@
     },
     "invalidCommand": "无效命令",
     "stopResponse": "停止响应",
-    "sendMessage": "发送消息(Enter)"
+    "sendMessage": "发送消息(Enter)",
+    "clearChat": "清除聊天"
   },
   "agentProfiles": {
     "title": "代理配置",
@@ -514,7 +515,6 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
-    "clearChat": "清除聊天",
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。"
   },
   "reasoningEffort": {

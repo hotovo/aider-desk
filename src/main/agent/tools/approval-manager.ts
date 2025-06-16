@@ -42,7 +42,7 @@ export class ApprovalManager {
       return [true, undefined]; // Approved and remember for this run
     }
 
-    if (answer === 'y') {
+    if (answer === 'y' || answer === 'a') {
       return [true, undefined]; // Approved for this instance
     }
 

@@ -84,6 +84,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const modelInfoManager = new ModelInfoManager();
   void modelInfoManager.init();
 
+  // Initialize agent
   const agent = new Agent(store, mcpManager, modelInfoManager, telemetryManager);
 
   // Initialize project manager

@@ -22,6 +22,7 @@ import {
 } from '@common/tools';
 import logger from 'src/main/logger';
 import { isFileIgnored } from 'src/main/utils';
+import { BINARY_EXTENSIONS } from 'src/main/constants';
 
 import { Project } from '../../project';
 
@@ -146,6 +147,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       }
 
       const absolutePath = path.resolve(project.baseDir, filePath);
+      const ext = path.extname(absolutePath).toLowerCase();
+      if (BINARY_EXTENSIONS.has(ext)) {
+        return 'Error: Binary files cannot be read.';
+      }
       try {
         const content = await fs.readFile(absolutePath, 'utf8');
         return `Here is the most recent content of '${filePath}' (ignore previous versions):\n\n${content}`;

@@ -185,6 +185,7 @@ export interface PromptBehavior {
     model: boolean;
     modeSwitching: boolean;
   };
+  useVimBindings: boolean;
 }
 
 export interface AgentProfile {

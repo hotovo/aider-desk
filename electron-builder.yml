@@ -23,6 +23,11 @@ asarUnpack:
 win:
   executableName: aider-desk
   icon: resources/icon.png
+  extraResources:
+    - from: ./resources/win
+      to: win
+      filter:
+        - '**/*'
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -42,6 +47,12 @@ mac:
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
   gatekeeperAssess: false
   notarize: true
+  x64ArchFiles: '**/macos/**/*'
+  extraResources:
+    - from: ./resources/macos
+      to: macos
+      filter:
+        - '**/*'
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
@@ -51,6 +62,11 @@ linux:
     - rpm
   maintainer: Hotovo
   category: Utility
+  extraResources:
+    - from: ./resources/linux
+      to: linux
+      filter:
+        - '**/*'
 appImage:
   artifactName: ${name}-${version}.${ext}
 deb:

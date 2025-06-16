@@ -23,8 +23,8 @@ AiderDesk is packed with features designed for modern software development:
 *   **🖥️ Intuitive GUI**: A clean, visual interface replacing command-line interactions.
 *   **📂 Multi-Project Management**: Seamlessly organize, switch between, and manage multiple codebases.
 *   **🔌 Effortless IDE Integration**: Automatically sync context files with your active editor in:
-    *   IntelliJ IDEA ([Plugin](https://plugins.jetbrains.com/plugin/26313-aiderdesk-connector) | [GitHub](https://github.com/hotovo/aider-desk-connector-intellij-plugin))
-    *   VSCode ([Extension](https://marketplace.visualstudio.com/items?itemName=hotovo-sk.aider-desk-connector) | [GitHub](https://github.com/hotovo/aider-desk-connector-vscode-extension))
+  *   IntelliJ IDEA ([Plugin](https://plugins.jetbrains.com/plugin/26313-aiderdesk-connector) | [GitHub](https://github.com/hotovo/aider-desk-connector-intellij-plugin))
+  *   VSCode ([Extension](https://marketplace.visualstudio.com/items?itemName=hotovo-sk.aider-desk-connector) | [GitHub](https://github.com/hotovo/aider-desk-connector-vscode-extension))
 *   **🤖 Powerful Agent Mode**: Utilize an autonomous AI agent (powered by Vercel AI SDK) capable of complex task planning and execution using various tools.
 *   **🧩 Extensible via MCP**: Connect to Model Context Protocol (MCP) servers to grant the Agent access to external tools like web search, documentation lookups, and more.
 *   **📄 Smart Context Management**: Automatically manage context via IDE plugins or manually control context using the integrated project file browser.
@@ -322,25 +322,35 @@ The built-in server exposes these tools to MCP clients:
 
 ## 📥 Installation
 
-### Requirements
-- Python 3.9-3.12 installed.
-
 ### Quick Start
 1. Download the latest release for your OS from [Releases](https://github.com/hotovo/aider-desk/releases).
 2. Run the executable.
 
 ### Troubleshooting
 
-#### Python Version Issues
-If AiderDesk struggles to find your Python installation, specify the path via the `AIDER_DESK_PYTHON` environment variable (usually only needed on first run):
-- **macOS/Linux:** `export AIDER_DESK_PYTHON=/path/to/your/python3.x`
-- **Windows:** `$env:AIDER_DESK_PYTHON = "C:\Path\To\Python\python.exe"`
-
 #### Disabling Auto Updates
 To prevent automatic updates, set the `AIDER_DESK_NO_AUTO_UPDATE` environment variable:
 - **macOS/Linux:** `export AIDER_DESK_NO_AUTO_UPDATE=true`
 - **Windows:** `$env:AIDER_DESK_NO_AUTO_UPDATE = "true"`
 
+### Custom Aider Version
+By default, AiderDesk installs the latest version of the `aider-chat` Python package. If you need to use a specific version of Aider, you can set the `AIDER_DESK_AIDER_VERSION` environment variable.
+
+For example, to use Aider version 0.83.1:
+```bash
+# macOS/Linux
+export AIDER_DESK_AIDER_VERSION=0.83.1
+
+# Windows (PowerShell)
+$env:AIDER_DESK_AIDER_VERSION = "0.83.1"
+```
+You can also specify a git URL for installing a development version of Aider:
+```bash
+# macOS/Linux
+export AIDER_DESK_AIDER_VERSION=git+https://github.com/user/aider.git@branch-name
+```
+
+This variable will be used during the initial setup and when AiderDesk checks for updates. For more detailed information, please refer to [docs/custom-aider-version.md](https://github.com/hotovo/aider-desk/blob/main/docs/custom-aider-version.md).
 
 ## 👨‍💻 Development Setup
 If you want to run from source, you can follow these steps:

@@ -58,7 +58,8 @@ const myFunction = () => {
   let newValue = 5;
   let value = 10;
 "</example>`,
-  [POWER_TOOL_FILE_READ]: 'Reads and returns the content of a specified file. Useful for inspecting file contents without adding them to the Aider context.',
+  [POWER_TOOL_FILE_READ]:
+    "Reads and returns the content of a specified non-binary file. Useful for inspecting file contents when analyzing user's request or before modifying it.",
   [POWER_TOOL_FILE_WRITE]: 'Writes content to a specified file. Can create a new file, overwrite an existing file, or append to an existing file.',
   [POWER_TOOL_GLOB]: 'Finds files and directories matching a specified glob pattern within the project. Useful for discovering files based on patterns.',
   [POWER_TOOL_GREP]:

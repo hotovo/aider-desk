@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  release-linux:
+    name: Release Linux packages
+    runs-on: ubuntu-latest
+    container:
+      image: electronuserland/builder
+      env:
+        TAR_OPTIONS: "--format=ustar"
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - uses: "actions/checkout@v1"
+
+      - run: npm install
+
+      - name: Release Linux
+        run: npm run build:linux -- -p always
+
+  release-win:
+    name: Release Windows packages
+    runs-on: ubuntu-latest
+    container:
+      image: electronuserland/builder:wine
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - name: Preserve $HOME set in the container
+        run: echo HOME=/root >> "$GITHUB_ENV"
+
+      - uses: "actions/checkout@v1"
+
+      - run: npm install
+
+      - name: Release Windows
+        run: npm run build:win -- -p always
+
+  release-macos:
+    name: Release macOS packages
+    runs-on: macos-latest
+
+    steps:
+      - uses: "actions/checkout@v1"
+
+      - run: npm install --arch=x64
+
+      - name: Create certificate.p12
+        run: echo "$encoded_p12" | base64 --decode > certificate.p12
+        env:
+          encoded_p12: ${{ secrets.CSC_BASE64 }}
+
+      - name: Release macOS
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: "./certificate.p12"
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+        run: npm run build:mac -- -p always
