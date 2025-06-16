@@ -152,8 +152,8 @@ app.whenReady().then(async () => {
     width: 400,
     icon,
   });
-  progressBar.text = 'Starting AiderDesk...';
-  progressBar.detail = 'Initializing...';
+  progressBar.title = 'Starting AiderDesk...';
+  progressBar.setMessage('Initializing...');
 
   await new Promise((resolve) => {
     progressBar.on('ready', () => {
@@ -162,9 +162,9 @@ app.whenReady().then(async () => {
   });
   await delay(1000);
 
-  const updateProgress = ({ step, message, progress }: UpdateProgressData) => {
-    progressBar.detail = message;
-    progressBar.text = step;
+  const updateProgress = ({ step, message, info, progress }: UpdateProgressData) => {
+    progressBar.title = step;
+    progressBar.setMessage(message, info);
     if (progress !== undefined) {
       progressBar.setProgress(progress);
     }
@@ -172,8 +172,8 @@ app.whenReady().then(async () => {
 
   try {
     await performStartUp(updateProgress);
-    progressBar.text = 'Startup complete';
-    progressBar.detail = 'Everything is ready! Have fun coding!" - "Booting up UI...';
+    progressBar.title = 'Startup complete';
+    progressBar.setMessage('Everything is ready! Have fun coding!', 'Booting up UI...');
     progressBar.setCompleted();
   } catch (error) {
     progressBar.close();

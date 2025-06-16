@@ -29,12 +29,12 @@ export class ProgressWindow {
       this.resolveReady();
     });
 
-    ipcMain.on('progress-window-set-text', (_, text: string) => {
-      this.window.webContents.send('set-text', text);
+    ipcMain.on('progress-window-set-title', (_, title: string) => {
+      this.window.webContents.send('set-title', title);
     });
 
-    ipcMain.on('progress-window-set-detail', (_, detail: string) => {
-      this.window.webContents.send('set-detail', detail);
+    ipcMain.on('progress-window-set-message', (_, message: string) => {
+      this.window.webContents.send('set-message', message);
     });
 
     ipcMain.on('progress-window-set-completed', () => {
@@ -54,12 +54,12 @@ export class ProgressWindow {
     }
   }
 
-  set text(value: string) {
-    this.window.webContents.send('set-text', value);
+  set title(value: string) {
+    this.window.webContents.send('set-title', value);
   }
 
-  set detail(value: string) {
-    this.window.webContents.send('set-detail', value);
+  setMessage(message: string, info?: string): void {
+    this.window.webContents.send('set-message', { message, info });
   }
 
   setCompleted(): void {

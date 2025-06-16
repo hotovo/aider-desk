@@ -98,6 +98,7 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
       updateProgress({
         step: 'Installing Requirements',
         message: `Installing package: ${pkg.split('==')[0]} (${currentPackage + 1}/${packages.length})`,
+        info: 'This may take a while...',
         progress: baseProgress + packageProgress,
       });
     }
@@ -203,14 +204,14 @@ const setupMcpServer = async () => {
 const performUpdateCheck = async (updateProgress: UpdateProgressFunction): Promise<void> => {
   updateProgress({
     step: 'Update Check',
-    message: 'Updating Aider connector...',
+    message: 'Checking for updates...',
   });
 
   await setupAiderConnector(false, updateProgress);
 
   updateProgress({
     step: 'Update Check',
-    message: 'Updating MCP server...',
+    message: 'Updating components...',
   });
 
   await setupMcpServer();
@@ -219,6 +220,7 @@ const performUpdateCheck = async (updateProgress: UpdateProgressFunction): Promi
 export type UpdateProgressData = {
   step: string;
   message: string;
+  info?: string;
   progress?: number; // 0-100
 };
 
@@ -264,6 +266,7 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
     updateProgress({
       step: 'Creating Virtual Environment',
       message: 'Setting up Python virtual environment with uv...',
+      info: 'This may take a while...',
       progress: 25,
     });
 
@@ -272,7 +275,8 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
 
     updateProgress({
       step: 'Setting Up Connector',
-      message: 'Installing Aider connector (this may take a while)...',
+      message: 'Installing Aider connector...',
+      info: 'This may take a while...',
       progress: 35,
     });
 
