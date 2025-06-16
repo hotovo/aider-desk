@@ -71,11 +71,11 @@
 </head>
 <body>
   <div class="text" id="text">Starting AiderDesk...</div>
-  <div class="subtitle" id="subtitle">This may take a while...</div>
   <div class="detail" id="detail">
     <span id="detail-text">Initializing...</span>
     <div class="spinner" id="spinner"></div>
   </div>
+  <div class="subtitle" id="subtitle">This may take a while...</div>
   <div class="progress-container">
     <div class="progress-bar" id="progress-bar"></div>
   </div>
@@ -86,7 +86,6 @@
     ipcRenderer.on('set-text', (_, text) => {
       document.getElementById('text').textContent = text;
       const subtitleEl = document.getElementById('subtitle');
-      const detailText = document.getElementById('detail-text').textContent;
 
       // Show subtitle during any potentially long-running operations
       const showSubtitle = [
