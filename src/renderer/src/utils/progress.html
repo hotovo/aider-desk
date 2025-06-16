@@ -87,17 +87,17 @@
       document.getElementById('text').textContent = title;
     });
 
-    ipcRenderer.on('set-message', (_, { message = '', info = '' }) => {
+    ipcRenderer.on('set-detail', (_, value, subtitle) => {
       const messageEl = document.getElementById('detail-text');
       const spinnerEl = document.getElementById('spinner');
       const infoEl = document.getElementById('subtitle');
       
-      messageEl.textContent = message;
-      const showSpinner = /installing|package|aider|connector|requirements|python|uv|venv/i.test(message.toLowerCase());
+      messageEl.textContent = value;
+      const showSpinner = /installing|package|aider|connector|requirements|python|uv|venv/i.test(value.toLowerCase());
       spinnerEl.style.display = showSpinner ? 'block' : 'none';
 
-      infoEl.textContent = info;
-      infoEl.style.display = info ? 'block' : 'none';
+      infoEl.textContent = subtitle || '';
+      infoEl.style.display = subtitle ? 'block' : 'none';
     });
 
     ipcRenderer.on('set-completed', () => {

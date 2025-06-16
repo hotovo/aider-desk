@@ -58,8 +58,8 @@ export class ProgressWindow {
     this.window.webContents.send('set-title', value);
   }
 
-  setMessage(message: string, info?: string): void {
-    this.window.webContents.send('set-message', { message, info });
+  setDetail(value: string, subtitle?: string): void {
+    this.window.webContents.send('set-detail', value, subtitle);
   }
 
   setCompleted(): void {
