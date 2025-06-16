@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- revamped starting progress bar
+
 ## [0.18.0]
 
 - added /compact command to compact conversation history
