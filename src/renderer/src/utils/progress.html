@@ -8,7 +8,7 @@
     body {
       margin: 0;
       padding: 20px;
-      background-color: #2a2c3f;
+      background-color: #222431;
       color: #f1f3f5;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       display: flex;
@@ -86,17 +86,34 @@
     ipcRenderer.on('set-text', (_, text) => {
       document.getElementById('text').textContent = text;
       const subtitleEl = document.getElementById('subtitle');
-      const showSubtitle = /install|aider|connector|requirements|package|python|uv|venv/i.test(text.toLowerCase());
+      const detailText = document.getElementById('detail-text').textContent;
+      
+      // Show subtitle during any potentially long-running operations
+      const showSubtitle = [
+        'Initial Setup',
+        'Creating Virtual Environment',
+        'Installing Requirements',
+        'Setting Up Connector', 
+        'Setting Up MCP Server',
+        'Finishing Setup'
+      ].includes(text);
+      
       subtitleEl.style.display = showSubtitle ? 'block' : 'none';
     });
 
     ipcRenderer.on('set-detail', (_, detail) => {
       const detailEl = document.getElementById('detail-text');
       const spinnerEl = document.getElementById('spinner');
+      const subtitleEl = document.getElementById('subtitle');
       detailEl.textContent = detail;
 
       const showSpinner = /installing|package|aider|connector|requirements|python|uv|venv/i.test(detail.toLowerCase());
       spinnerEl.style.display = showSpinner ? 'block' : 'none';
+      
+      // Hide subtitle when showing package installation details
+      if (detail.includes('Installing package:')) {
+        subtitleEl.style.display = 'none';
+      }
     });
 
     ipcRenderer.on('set-completed', () => {
