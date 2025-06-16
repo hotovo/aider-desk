@@ -173,7 +173,7 @@ app.whenReady().then(async () => {
   try {
     await performStartUp(updateProgress);
     progressBar.text = 'Startup complete';
-    progressBar.detail = 'Everything is ready! Have fun coding!';
+    progressBar.detail = 'Everything is ready! Have fun coding!" - "Booting up UI...';
     progressBar.setCompleted();
     await delay(1000);
   } catch (error) {

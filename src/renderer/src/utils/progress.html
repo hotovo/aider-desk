@@ -25,6 +25,22 @@
       font-size: 12px;
       color: #adb5bd;
       margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(173, 181, 189, 0.3);
+      border-top-color: #adb5bd;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      flex-shrink: 0;
+      display: none;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
     .progress-container {
       height: 16px;
@@ -48,7 +64,10 @@
 </head>
 <body>
   <div class="text" id="text">Starting AiderDesk...</div>
-  <div class="detail" id="detail">Initializing...</div>
+  <div class="detail" id="detail">
+    <span id="detail-text">Initializing...</span>
+    <div class="spinner" id="spinner"></div>
+  </div>
   <div class="progress-container">
     <div class="progress-bar" id="progress-bar"></div>
   </div>
@@ -61,7 +80,12 @@
     });
 
     ipcRenderer.on('set-detail', (_, detail) => {
-      document.getElementById('detail').textContent = detail;
+      const detailEl = document.getElementById('detail-text');
+      const spinnerEl = document.getElementById('spinner');
+      detailEl.textContent = detail;
+
+      const showSpinner = /installing|package/i.test(detail);
+      spinnerEl.style.display = showSpinner ? 'block' : 'none';
     });
 
     ipcRenderer.on('set-completed', () => {
@@ -69,7 +93,7 @@
     });
 
     const progressBar = document.getElementById('progress-bar');
-    
+
     ipcRenderer.on('set-progress', (_, progress) => {
       progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
     });
