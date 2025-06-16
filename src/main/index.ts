@@ -34,7 +34,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
     height: lastWindowState.height,
     x: lastWindowState.x,
     y: lastWindowState.y,
-    show: false, // Don't show immediately
+    show: false,
     autoHideMenuBar: true,
     icon,
     webPreferences: {
@@ -44,12 +44,8 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
     },
   });
 
-  // Set up ready-to-show listener before loading content
-  const windowReady = new Promise<void>((resolve) => {
-    mainWindow.on('ready-to-show', () => {
-      mainWindow.show();
-      resolve();
-    });
+  mainWindow.on('ready-to-show', () => {
+    mainWindow.show();
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -74,14 +70,17 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
+  // Initialize telemetry manager
   const telemetryManager = new TelemetryManager(store);
   await telemetryManager.init();
 
+  // Initialize MCP manager
   const mcpManager = new McpManager();
   const activeProject = store.getOpenProjects().find((project) => project.active);
 
   void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir);
 
+  // Initialize model info manager
   const modelInfoManager = new ModelInfoManager();
   void modelInfoManager.init();
 
@@ -102,6 +101,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   // Initialize Versions Manager (this also sets up listeners)
   const versionsManager = new VersionsManager(mainWindow, store);
 
+  // Initialize IPC handlers
   setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager);
 
   const beforeQuit = async () => {
@@ -121,7 +121,8 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
     process.exit(0);
   });
 
-  // Now load the content which will trigger ready-to-show
+  // HMR for renderer base on electron-vite cli.
+  // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     await mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
@@ -132,8 +133,6 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const settings = store.getSettings();
   mainWindow.webContents.setZoomFactor(settings.zoomLevel ?? 1.0);
 
-  // Wait for window to be fully ready
-  await windowReady;
   return mainWindow;
 };
 
@@ -144,6 +143,7 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  logger.info('------------ Starting AiderDesk... ------------');
   logger.info('Initializing fix-path...');
   (await import('fix-path')).default();
 
@@ -159,6 +159,7 @@ app.whenReady().then(async () => {
       resolve(null);
     });
   });
+  await delay(1000);
 
   const updateProgress = ({ step, message, progress }: UpdateProgressData) => {
     progressBar.detail = message;
@@ -168,28 +169,23 @@ app.whenReady().then(async () => {
     }
   };
 
-  let store: Store;
-
   try {
-    // Wait for progress bar to be ready with 1 second delay
-    await new Promise<void>((resolve) => progressBar.on('ready', () => resolve()));
-    await delay(1000);
-
-    // Run startup tasks with progress updates
     await performStartUp(updateProgress);
     progressBar.text = 'Startup complete';
     progressBar.detail = 'Everything is ready! Have fun coding!';
     progressBar.setCompleted();
     await delay(1000);
-    store = await initStore();
-    await initWindow(store);
-    progressBar.close();
   } catch (error) {
     progressBar.close();
     dialog.showErrorBox('Setup Failed', error instanceof Error ? error.message : 'Unknown error occurred during setup');
     app.quit();
     return;
   }
+
+  const store = await initStore();
+  await initWindow(store);
+
+  progressBar.close();
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0 && store) {
