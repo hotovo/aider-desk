@@ -177,18 +177,12 @@ app.whenReady().then(async () => {
 
     // Run startup tasks with progress updates
     await performStartUp(updateProgress);
-
-    // Show completion message and set completed state
     progressBar.text = 'Startup complete';
     progressBar.detail = 'Everything is ready! Have fun coding!';
     progressBar.setCompleted();
     await delay(1000);
-
-    // Initialize store and window
     store = await initStore();
     await initWindow(store);
-
-    // Close progress bar after everything is ready
     progressBar.close();
   } catch (error) {
     progressBar.close();
