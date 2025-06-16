@@ -4,11 +4,11 @@ import { createServer } from 'http';
 import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, shell } from 'electron';
-import ProgressBar from 'electron-progressbar';
 import { McpManager } from 'src/main/agent/mcp-manager';
 
 import icon from '../../resources/icon.png?asset';
 
+import { ProgressWindow } from './progress-window';
 import { Agent } from './agent';
 import { RestApiController } from './rest-api-controller';
 import { ConnectorManager } from './connector-manager';
@@ -142,40 +142,12 @@ app.whenReady().then(async () => {
   logger.info('Initializing fix-path...');
   (await import('fix-path')).default();
 
-  const progressBar = new ProgressBar({
-    text: 'Starting AiderDesk...',
-    detail: 'Initializing...',
-    closeOnComplete: false,
-    indeterminate: true,
-    style: {
-      text: {
-        fontSize: '14px',
-        fontWeight: 'bold',
-        color: '#f1f3f5',
-      },
-      detail: {
-        fontSize: '12px',
-        color: '#adb5bd',
-      },
-      bar: {
-        height: '16px',
-        borderRadius: '4px',
-        backgroundColor: '#1c2025',
-      },
-      value: {
-        backgroundColor: '#1c2025',
-        borderRadius: '4px',
-      },
-    },
-    browserWindow: {
-      width: 400,
-      icon,
-      backgroundColor: '#1c2025',
-      webPreferences: {
-        nodeIntegration: true,
-      },
-    },
+  const progressBar = new ProgressWindow({
+    width: 400,
+    icon,
   });
+  progressBar.text = 'Starting AiderDesk...';
+  progressBar.detail = 'Initializing...';
 
   await new Promise((resolve) => {
     progressBar.on('ready', () => {
