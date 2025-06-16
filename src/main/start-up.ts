@@ -131,9 +131,12 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
   for (let currentPackage = 0; currentPackage < packages.length; currentPackage++) {
     const pkg = packages[currentPackage];
     if (updateProgress) {
+      const baseProgress = 30;
+      const packageProgress = (currentPackage / packages.length) * 40;
       updateProgress({
         step: 'Installing Requirements',
         message: `Installing package: ${pkg.split('==')[0]} (${currentPackage + 1}/${packages.length})`,
+        progress: baseProgress + packageProgress,
       });
     }
     try {
@@ -254,6 +257,7 @@ const performUpdateCheck = async (updateProgress: UpdateProgressFunction): Promi
 export type UpdateProgressData = {
   step: string;
   message: string;
+  progress?: number; // 0-100
 };
 
 export type UpdateProgressFunction = (data: UpdateProgressData) => void;
@@ -268,58 +272,95 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
   }
 
   updateProgress({
-    step: 'AiderDesk Setup',
-    message: 'Performing initial setup...',
+    step: 'Initial Setup',
+    message: 'Preparing environment...',
+    progress: 5,
   });
 
-  await delay(2000);
+  await delay(1000);
 
   if (!fs.existsSync(AIDER_DESK_DIR)) {
     logger.info(`Creating AiderDesk directory: ${AIDER_DESK_DIR}`);
     fs.mkdirSync(AIDER_DESK_DIR, { recursive: true });
   }
+  updateProgress({
+    step: 'Initial Setup',
+    message: 'Environment ready',
+    progress: 10,
+  });
 
   try {
     updateProgress({
-      step: 'Checking Python Installation',
-      message: 'Verifying Python installation...',
+      step: 'Python Setup',
+      message: 'Detecting Python installation...',
+      progress: 15,
     });
 
     logger.info('Checking Python version compatibility');
     await checkPythonVersion();
+    updateProgress({
+      step: 'Python Setup',
+      message: 'Python version verified',
+      progress: 20,
+    });
 
     updateProgress({
-      step: 'Creating Virtual Environment',
-      message: 'Setting up Python virtual environment...',
+      step: 'Virtual Environment',
+      message: 'Creating Python virtual environment...',
+      progress: 25,
     });
 
     logger.info(`Creating Python virtual environment in: ${PYTHON_VENV_DIR}`);
     await createVirtualEnv();
+    updateProgress({
+      step: 'Virtual Environment',
+      message: 'Environment created',
+      progress: 30,
+    });
 
     updateProgress({
-      step: 'Setting Up Connector',
-      message: 'Installing Aider connector (this may take a while)...',
+      step: 'Dependencies',
+      message: 'Preparing to install packages...',
+      progress: 35,
     });
 
     logger.info('Setting up Aider connector');
-    await setupAiderConnector(true);
+    await setupAiderConnector(true, updateProgress);
 
     updateProgress({
-      step: 'Setting Up MCP Server',
-      message: 'Installing MCP server...',
+      step: 'Dependencies',
+      message: 'Packages installed successfully',
+      progress: 70,
+    });
+
+    updateProgress({
+      step: 'MCP Server',
+      message: 'Setting up MCP server...',
+      progress: 75,
     });
 
     logger.info('Setting up MCP server');
     await setupMcpServer();
+    updateProgress({
+      step: 'MCP Server',
+      message: 'Server ready',
+      progress: 80,
+    });
 
     updateProgress({
-      step: 'Finishing Setup',
+      step: 'Finalizing',
       message: 'Completing installation...',
+      progress: 90,
     });
 
     // Create setup complete file
     logger.info(`Creating setup complete file: ${SETUP_COMPLETE_FILENAME}`);
     fs.writeFileSync(SETUP_COMPLETE_FILENAME, new Date().toISOString());
+    updateProgress({
+      step: 'Finishing Setup',
+      message: 'Installation complete',
+      progress: 100,
+    });
 
     logger.info('AiderDesk setup completed successfully');
     return true;

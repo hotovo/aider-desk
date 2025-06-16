@@ -42,6 +42,10 @@ export class ProgressWindow {
     ipcMain.on('progress-window-set-completed', () => {
       this.window.webContents.send('set-completed');
     });
+
+    ipcMain.on('progress-window-set-progress', (_, progress: number) => {
+      this.window.webContents.send('set-progress', progress);
+    });
   }
 
   on(event: 'ready', callback: () => void): void {
@@ -60,7 +64,10 @@ export class ProgressWindow {
 
   setCompleted(): void {
     this.window.webContents.send('set-completed');
-    setTimeout(() => this.close(), 1000);
+  }
+
+  setProgress(progress: number): void {
+    this.window.webContents.send('set-progress', Math.min(100, Math.max(0, progress)));
   }
 
   close(): void {

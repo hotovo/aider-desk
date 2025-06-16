@@ -38,7 +38,7 @@
       width: 0%;
       background-color: #2d3748;
       border-radius: 4px;
-      transition: width 0.3s ease, background-color 0.3s ease;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
     }
     .completed .progress-bar {
       width: 100% !important;
@@ -68,22 +68,11 @@
       document.body.classList.add('completed');
     });
 
-    // Animate progress bar when not completed
     const progressBar = document.getElementById('progress-bar');
-    let progress = 0;
-    let direction = 1;
     
-    const animateProgress = () => {
-      if (!document.body.classList.contains('completed')) {
-        progress += direction * 0.5;
-        if (progress >= 100) direction = -1;
-        if (progress <= 0) direction = 1;
-        progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
-        requestAnimationFrame(animateProgress);
-      }
-    };
-    
-    animateProgress();
+    ipcRenderer.on('set-progress', (_, progress) => {
+      progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+    });
   </script>
 </body>
 </html>

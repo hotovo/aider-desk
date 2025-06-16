@@ -27,14 +27,14 @@ const initStore = async (): Promise<Store> => {
   return store;
 };
 
-const initWindow = async (store: Store) => {
+const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const lastWindowState = store.getWindowState();
   const mainWindow = new BrowserWindow({
     width: lastWindowState.width,
     height: lastWindowState.height,
     x: lastWindowState.x,
     y: lastWindowState.y,
-    show: false,
+    show: false, // Don't show immediately
     autoHideMenuBar: true,
     icon,
     webPreferences: {
@@ -44,8 +44,12 @@ const initWindow = async (store: Store) => {
     },
   });
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show();
+  // Set up ready-to-show listener before loading content
+  const windowReady = new Promise<void>((resolve) => {
+    mainWindow.on('ready-to-show', () => {
+      mainWindow.show();
+      resolve();
+    });
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -117,8 +121,7 @@ const initWindow = async (store: Store) => {
     process.exit(0);
   });
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
+  // Now load the content which will trigger ready-to-show
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     await mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
@@ -129,6 +132,8 @@ const initWindow = async (store: Store) => {
   const settings = store.getSettings();
   mainWindow.webContents.setZoomFactor(settings.zoomLevel ?? 1.0);
 
+  // Wait for window to be fully ready
+  await windowReady;
   return mainWindow;
 };
 
@@ -154,21 +159,37 @@ app.whenReady().then(async () => {
       resolve(null);
     });
   });
-  await delay(1000);
 
-  const updateProgress = ({ step, message }: UpdateProgressData) => {
+  const updateProgress = ({ step, message, progress }: UpdateProgressData) => {
     progressBar.detail = message;
     progressBar.text = step;
+    if (progress !== undefined) {
+      progressBar.setProgress(progress);
+    }
   };
 
+  let store: Store;
+
   try {
+    // Wait for progress bar to be ready with 1 second delay
+    await new Promise<void>((resolve) => progressBar.on('ready', () => resolve()));
+    await delay(1000);
+
+    // Run startup tasks with progress updates
     await performStartUp(updateProgress);
-    updateProgress({
-      step: 'Startup complete',
-      message: 'Everything is ready! Have fun coding!',
-    });
+
+    // Show completion message and set completed state
+    progressBar.text = 'Startup complete';
+    progressBar.detail = 'Everything is ready! Have fun coding!';
     progressBar.setCompleted();
     await delay(1000);
+
+    // Initialize store and window
+    store = await initStore();
+    await initWindow(store);
+
+    // Close progress bar after everything is ready
+    progressBar.close();
   } catch (error) {
     progressBar.close();
     dialog.showErrorBox('Setup Failed', error instanceof Error ? error.message : 'Unknown error occurred during setup');
@@ -176,13 +197,8 @@ app.whenReady().then(async () => {
     return;
   }
 
-  const store = await initStore();
-  await initWindow(store);
-
-  progressBar.close();
-
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    if (BrowserWindow.getAllWindows().length === 0 && store) {
       void initWindow(store);
     }
   });
