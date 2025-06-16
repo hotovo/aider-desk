@@ -55,7 +55,7 @@ jobs:
       - name: Create certificate.p12
         run: echo "$encoded_p12" | base64 --decode > certificate.p12
         env:
-          encoded_p12: ${{ secrets.CSC_LINK_BASE64 }}
+          encoded_p12: ${{ secrets.CSC_BASE64 }}
 
       - name: Release macOS
         env:
@@ -65,6 +65,7 @@ jobs:
           CSC_LINK: "./certificate.p12"
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           PUBLISH_FOR_PULL_REQUEST: true
+          CSC_FOR_PULL_REQUEST: true
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
         run: npm run build:mac -- -p always
