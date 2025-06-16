@@ -24,8 +24,6 @@ export class ProgressWindow {
       },
     });
 
-    this.window.loadFile('src/renderer/src/utils/progress.html');
-
     this.window.on('ready-to-show', () => {
       this.window.show();
       this.resolveReady();
@@ -46,6 +44,8 @@ export class ProgressWindow {
     ipcMain.on('progress-window-set-progress', (_, progress: number) => {
       this.window.webContents.send('set-progress', progress);
     });
+
+    this.window.loadFile('src/renderer/src/utils/progress.html');
   }
 
   on(event: 'ready', callback: () => void): void {
