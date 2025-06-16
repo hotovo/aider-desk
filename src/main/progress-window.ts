@@ -24,7 +24,7 @@ export class ProgressWindow {
       },
     });
 
-    this.window.loadFile('src/main/progress.html');
+    this.window.loadFile('src/renderer/src/utils/progress.html');
 
     this.window.on('ready-to-show', () => {
       this.window.show();
