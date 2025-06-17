@@ -27,6 +27,7 @@ import {
   CommandOutputMessage,
   isCommandOutputMessage,
   isLoadingMessage,
+  isLogMessage,
   isResponseMessage,
   isToolMessage,
   isUserMessage,
@@ -440,6 +441,11 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
+  const clearLogMessages = () => {
+    setMessages((prevMessages) => prevMessages.filter((message) => !isLogMessage(message) || message.level === 'info'));
+    setProcessing(false);
+  };
+
   const runCommand = (command: string) => {
     window.api.runCommand(project.baseDir, command);
   };
@@ -699,6 +705,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             openAgentModelSelector={projectTopBarRef.current?.openAgentModelSelector}
             disabled={!aiderModelsData}
             promptBehavior={settings.promptBehavior}
+            clearLogMessages={clearLogMessages}
           />
         </div>
       </div>

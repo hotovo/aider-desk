@@ -51,6 +51,7 @@ const COMMANDS = [
   '/compact',
   '/commit',
   '/init',
+  '/clear-logs',
 ];
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
@@ -97,6 +98,7 @@ type Props = {
   editLastUserMessage: () => void;
   disabled?: boolean;
   promptBehavior: PromptBehavior;
+  clearLogMessages: () => void;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -125,6 +127,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       openAgentModelSelector,
       disabled = false,
       promptBehavior,
+      clearLogMessages,
     }: Props,
     ref,
   ) => {
@@ -284,6 +287,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             }
             prepareForNextPrompt();
             window.api.initProjectRulesFile(baseDir);
+            break;
+          }
+          case '/clear-logs': {
+            prepareForNextPrompt();
+            clearLogMessages();
             break;
           }
           default: {
