@@ -219,7 +219,10 @@
       "optionsDocumentation": "Check the documentation for available options at",
       "envVarsDocumentation": "Check the documentation for environment variables at",
       "context": "Context",
-      "addRuleFiles": "Add rule files from project's <file>.aider-desk/rules</file> directory as read-only files."
+      "addRuleFiles": "Add rule files from project's <file>.aider-desk/rules</file> directory as read-only files.",
+      "autoCommits": "Enable auto commits",
+      "cachingEnabled": "Enable prompt caching",
+      "watchFiles": "Watch files for changes"
     },
     "common": {
       "showSecrets": "Show Secrets"
