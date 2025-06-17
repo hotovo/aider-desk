@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HiEye } from 'react-icons/hi';
 import { Trans, useTranslation } from 'react-i18next';
 import { SettingsData } from '@common/types';
@@ -19,6 +19,21 @@ type Props = {
 export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = false }: Props) => {
   const { t } = useTranslation();
   const [showEnvVars, setShowEnvVars] = useState(initialShowEnvVars);
+
+  // Initialize default values if not set
+  useEffect(() => {
+    if (settings.aider.autoCommits === undefined || settings.aider.watchFiles === undefined || settings.aider.cachingEnabled === undefined) {
+      setSettings({
+        ...settings,
+        aider: {
+          ...settings.aider,
+          autoCommits: false,
+          watchFiles: false,
+          cachingEnabled: true,
+        },
+      });
+    }
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -70,6 +85,47 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               https://aider.chat/docs/config/options.html
             </a>
           </p>
+          <div className="flex gap-4 pt-2">
+            <Checkbox
+              label={t('settings.aider.autoCommits')}
+              checked={settings.aider.autoCommits}
+              onChange={(checked) =>
+                setSettings({
+                  ...settings,
+                  aider: {
+                    ...settings.aider,
+                    autoCommits: checked,
+                  },
+                })
+              }
+            />
+            <Checkbox
+              label={t('settings.aider.cachingEnabled')}
+              checked={settings.aider.cachingEnabled}
+              onChange={(checked) =>
+                setSettings({
+                  ...settings,
+                  aider: {
+                    ...settings.aider,
+                    cachingEnabled: checked,
+                  },
+                })
+              }
+            />
+            <Checkbox
+              label={t('settings.aider.watchFiles')}
+              checked={settings.aider.watchFiles}
+              onChange={(checked) =>
+                setSettings({
+                  ...settings,
+                  aider: {
+                    ...settings.aider,
+                    watchFiles: checked,
+                  },
+                })
+              }
+            />
+          </div>
         </div>
       </Section>
 

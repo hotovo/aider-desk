@@ -219,6 +219,9 @@ export interface SettingsData {
     options: string;
     environmentVariables: string;
     addRuleFiles: boolean;
+    autoCommits: boolean;
+    cachingEnabled: boolean;
+    watchFiles: boolean;
   };
   models: {
     aiderPreferred: string[];

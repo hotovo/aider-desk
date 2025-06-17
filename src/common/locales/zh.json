@@ -210,14 +210,14 @@
     "aider": {
       "options": "选项",
       "optionsPlaceholder": "例如 --no-auto-commits --cache-prompts",
+      "autoCommits": "启用自动提交",
+      "cachingEnabled": "启用提示缓存", 
+      "watchFiles": "监视文件变化",
       "environmentVariables": "环境变量",
       "envVarsPlaceholder": "#################\n# LLM 参数:\n#\n# 包含 xxx_API_KEY 参数和您的 LLM 所需的其他参数。\n# 详情请见 https://aider.chat/docs/llms.html\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
       "optionsDocumentation": "查看文档了解可用选项：https://aider.chat/docs/faq.html#how-can-i-pass-command-line-options-to-aider",
       "envVarsDocumentation": "查看文档了解环境变量：https://aider.chat/docs/llms.html",
-      "addRuleFiles": " ",
-      "autoCommits": " ",
-      "cachingEnabled": " ",
-      "watchFiles": " "
+      "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。"
     },
     "common": {
       "showSecrets": "显示密钥"

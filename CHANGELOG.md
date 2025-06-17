@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - revamped starting progress bar
+- added user-friendly aider options configuration
 
 ## [0.18.0]
 
