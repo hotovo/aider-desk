@@ -538,7 +538,7 @@
     "architect": "Switch to architect mode. Architect mode is used to plan changes to the code base and execute them",
     "ask": "Switch to ask mode. Ask questions about the code base without editing any files",
     "clear": "Clear the chat history",
-    "clear-logs": "Remove LogMessages from chat",
+    "clear-logs": "Remove only log messages from chat",
     "code": "Switch to code mode. Ask for changes to your code",
     "commit": "Commit unstaged changes to the repo",
     "context": "Switch to context mode. Ask for changes and Aider will add relevant files to the context",
