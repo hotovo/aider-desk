@@ -442,7 +442,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const clearLogMessages = () => {
-    setMessages((prevMessages) => prevMessages.filter((message) => !isLogMessage(message) || message.level === 'info'));
+    setMessages((prevMessages) => prevMessages.filter((message) => !isLogMessage(message)));
     setProcessing(false);
   };
 
