@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - revamped starting progress bar
+- added /clear-logs command to clear log messages from chat
 
 ## [0.18.0]
 
