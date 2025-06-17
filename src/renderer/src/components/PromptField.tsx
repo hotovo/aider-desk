@@ -317,6 +317,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         runCommand,
         baseDir,
         t,
+        clearLogMessages,
       ],
     );
 
