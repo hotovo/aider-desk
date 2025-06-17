@@ -33,6 +33,9 @@ export const DEFAULT_SETTINGS: SettingsData = {
     options: '',
     environmentVariables: '',
     addRuleFiles: true,
+    autoCommits: false,
+    cachingEnabled: true,
+    watchFiles: false,
   },
   models: {
     aiderPreferred: [SONNET_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, DEEPSEEK_MODEL],
