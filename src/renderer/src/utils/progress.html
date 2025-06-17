@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starting AiderDesk...</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #222431;
+      color: #f1f3f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+    .text {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: #999ba3;
+      margin-bottom: 4px;
+      display: none;
+    }
+
+    .detail {
+      font-size: 12px;
+      color: #999ba3;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(88, 92, 117, 0.3);
+      border-top-color: #585c75;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      flex-shrink: 0;
+      display: none;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .progress-container {
+      height: 16px;
+      background-color: #191a22;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: #3d4166;
+      border-radius: 4px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+    }
+    .completed .progress-bar {
+      width: 100% !important;
+      background-color: #3b82f6;
+    }
+  </style>
+</head>
+<body>
+  <div class="text" id="text">Starting AiderDesk...</div>
+  <div class="detail" id="detail">
+    <span id="detail-text">Initializing...</span>
+    <div class="spinner" id="spinner"></div>
+  </div>
+  <div class="subtitle" id="subtitle">This may take a while...</div>
+  <div class="progress-container">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    ipcRenderer.on('set-title', (_, title) => {
+      document.getElementById('text').textContent = title;
+    });
+
+    ipcRenderer.on('set-detail', (_, value, subtitle) => {
+      const messageEl = document.getElementById('detail-text');
+      const spinnerEl = document.getElementById('spinner');
+      const infoEl = document.getElementById('subtitle');
+      
+      messageEl.textContent = value;
+      const showSpinner = /installing|package|aider|connector|requirements|python|uv|venv/i.test(value.toLowerCase());
+      spinnerEl.style.display = showSpinner ? 'block' : 'none';
+
+      infoEl.textContent = subtitle || '';
+      infoEl.style.display = subtitle ? 'block' : 'none';
+    });
+
+    ipcRenderer.on('set-completed', () => {
+      document.body.classList.add('completed');
+    });
+
+    const progressBar = document.getElementById('progress-bar');
+
+    ipcRenderer.on('set-progress', (_, progress) => {
+      progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+    });
+  </script>
+</body>
+</html>

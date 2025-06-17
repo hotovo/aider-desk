@@ -93,9 +93,13 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
   for (let currentPackage = 0; currentPackage < packages.length; currentPackage++) {
     const pkg = packages[currentPackage];
     if (updateProgress) {
+      const baseProgress = 30;
+      const packageProgress = (currentPackage / packages.length) * 40;
       updateProgress({
         step: 'Installing Requirements',
         message: `Installing package: ${pkg.split('==')[0]} (${currentPackage + 1}/${packages.length})`,
+        info: 'This may take a while...',
+        progress: baseProgress + packageProgress,
       });
     }
     try {
@@ -200,14 +204,14 @@ const setupMcpServer = async () => {
 const performUpdateCheck = async (updateProgress: UpdateProgressFunction): Promise<void> => {
   updateProgress({
     step: 'Update Check',
-    message: 'Updating Aider connector...',
+    message: 'Checking for updates...',
   });
 
   await setupAiderConnector(false, updateProgress);
 
   updateProgress({
     step: 'Update Check',
-    message: 'Updating MCP server...',
+    message: 'Updating components...',
   });
 
   await setupMcpServer();
@@ -216,6 +220,8 @@ const performUpdateCheck = async (updateProgress: UpdateProgressFunction): Promi
 export type UpdateProgressData = {
   step: string;
   message: string;
+  info?: string;
+  progress?: number; // 0-100
 };
 
 export type UpdateProgressFunction = (data: UpdateProgressData) => void;
@@ -230,21 +236,28 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
   }
 
   updateProgress({
-    step: 'AiderDesk Setup',
-    message: 'Performing initial setup...',
+    step: 'Initial Setup',
+    message: 'Preparing environment...',
+    progress: 5,
   });
 
-  await delay(2000);
+  await delay(1000);
 
   if (!fs.existsSync(AIDER_DESK_DIR)) {
     logger.info(`Creating AiderDesk directory: ${AIDER_DESK_DIR}`);
     fs.mkdirSync(AIDER_DESK_DIR, { recursive: true });
   }
+  updateProgress({
+    step: 'Initial Setup',
+    message: 'Environment ready',
+    progress: 10,
+  });
 
   try {
     updateProgress({
       step: 'Checking uv Installation',
       message: 'Verifying uv installation...',
+      progress: 15,
     });
 
     logger.info('Checking uv availability');
@@ -253,6 +266,8 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
     updateProgress({
       step: 'Creating Virtual Environment',
       message: 'Setting up Python virtual environment with uv...',
+      info: 'This may take a while...',
+      progress: 25,
     });
 
     logger.info(`Creating Python virtual environment with in: ${PYTHON_VENV_DIR}`);
@@ -260,15 +275,18 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
 
     updateProgress({
       step: 'Setting Up Connector',
-      message: 'Installing Aider connector (this may take a while)...',
+      message: 'Installing Aider connector...',
+      info: 'This may take a while...',
+      progress: 35,
     });
 
     logger.info('Setting up Aider connector');
-    await setupAiderConnector(true);
+    await setupAiderConnector(true, updateProgress);
 
     updateProgress({
       step: 'Setting Up MCP Server',
       message: 'Installing MCP server...',
+      progress: 75,
     });
 
     logger.info('Setting up MCP server');
@@ -277,11 +295,17 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
     updateProgress({
       step: 'Finishing Setup',
       message: 'Completing installation...',
+      progress: 90,
     });
 
     // Create setup complete file
     logger.info(`Creating setup complete file: ${SETUP_COMPLETE_FILENAME}`);
     fs.writeFileSync(SETUP_COMPLETE_FILENAME, new Date().toISOString());
+    updateProgress({
+      step: 'Finishing Setup',
+      message: 'Installation complete',
+      progress: 100,
+    });
 
     logger.info('AiderDesk setup completed successfully');
     return true;
