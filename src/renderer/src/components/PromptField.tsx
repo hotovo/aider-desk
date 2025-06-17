@@ -371,7 +371,13 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     }, [isActive, disabled]);
 
     useEffect(() => {
-      const commandMatch = COMMANDS.find((cmd) => text.startsWith(cmd));
+      const commandMatch = COMMANDS.find((cmd) => {
+        if (text === cmd) {
+          return true;
+        }
+
+        return text.startsWith(`${cmd} `);
+      });
       if (commandMatch) {
         invokeCommand(commandMatch, text.split(' ').slice(1).join(' '));
       }
