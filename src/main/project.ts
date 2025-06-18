@@ -288,13 +288,17 @@ export class Project {
       args.push('--read', AIDER_DESK_PROJECT_RULES_DIR);
     }
 
+    // change these to if there is a optionsArgsSet already with some option than it should not change and if there is not that if true than yes if false than no-...AI!
     if (settings.aider.autoCommits) {
       args.push('--auto-commits');
-      args.push('--commit-message', 'Aider auto-commit');
     }
 
     if (settings.aider.watchFiles) {
-      args.push('--watch');
+      args.push('--watch-files');
+    }
+
+    if (settings.aider.cachingEnabled) {
+      args.push('--cache-prompts');
     }
 
     logger.info('Running Aider with args:', { args });
