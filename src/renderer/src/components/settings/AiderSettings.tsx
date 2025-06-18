@@ -89,15 +89,16 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
             <Checkbox
               label={t('settings.aider.autoCommits')}
               checked={settings.aider.autoCommits}
-              onChange={(checked) =>
+              onChange={(checked) => {
+                console.log('Auto-commits checkbox changed:', checked);
                 setSettings({
                   ...settings,
                   aider: {
                     ...settings.aider,
                     autoCommits: checked,
                   },
-                })
-              }
+                });
+              }}
             />
             <Checkbox
               label={t('settings.aider.cachingEnabled')}

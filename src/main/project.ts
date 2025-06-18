@@ -288,16 +288,9 @@ export class Project {
       args.push('--read', AIDER_DESK_PROJECT_RULES_DIR);
     }
 
-    if (!optionsArgsSet.has('--auto-commits') && !optionsArgsSet.has('--no-auto-commits')) {
-      args.push(settings.aider.autoCommits ? '--auto-commits' : '--no-auto-commits');
-    }
-
-    if (!optionsArgsSet.has('--watch-files') && !optionsArgsSet.has('--no-watch-files')) {
-      args.push(settings.aider.watchFiles ? '--watch-files' : '--no-watch-files');
-    }
-
-    if (!optionsArgsSet.has('--cache-prompts') && !optionsArgsSet.has('--no-cache-prompts')) {
-      args.push(settings.aider.cachingEnabled ? '--cache-prompts' : '--no-cache-prompts');
+    if (settings.aider.autoCommits) {
+      args.push('--auto-commits');
+      args.push('--commit-message', 'Aider auto-commit');
     }
 
     logger.info('Running Aider with args:', { args });
