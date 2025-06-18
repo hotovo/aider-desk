@@ -20,7 +20,6 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
   const { t } = useTranslation();
   const [showEnvVars, setShowEnvVars] = useState(initialShowEnvVars);
 
-  // Initialize default values if not set
   useEffect(() => {
     if (settings.aider.autoCommits === undefined || settings.aider.watchFiles === undefined || settings.aider.cachingEnabled === undefined) {
       setSettings({
