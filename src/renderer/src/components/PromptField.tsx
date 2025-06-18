@@ -51,6 +51,7 @@ const COMMANDS = [
   '/compact',
   '/commit',
   '/init',
+  '/clear-logs',
 ];
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
@@ -97,6 +98,7 @@ type Props = {
   editLastUserMessage: () => void;
   disabled?: boolean;
   promptBehavior: PromptBehavior;
+  clearLogMessages: () => void;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -125,6 +127,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       openAgentModelSelector,
       disabled = false,
       promptBehavior,
+      clearLogMessages,
     }: Props,
     ref,
   ) => {
@@ -286,6 +289,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             window.api.initProjectRulesFile(baseDir);
             break;
           }
+          case '/clear-logs': {
+            prepareForNextPrompt();
+            clearLogMessages();
+            break;
+          }
           default: {
             setText('');
             runCommand(`${command.slice(1)} ${args || ''}`);
@@ -309,6 +317,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         runCommand,
         baseDir,
         t,
+        clearLogMessages,
       ],
     );
 
@@ -362,7 +371,13 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     }, [isActive, disabled]);
 
     useEffect(() => {
-      const commandMatch = COMMANDS.find((cmd) => text.startsWith(cmd));
+      const commandMatch = COMMANDS.find((cmd) => {
+        if (text === cmd) {
+          return true;
+        }
+
+        return text.startsWith(`${cmd} `);
+      });
       if (commandMatch) {
         invokeCommand(commandMatch, text.split(' ').slice(1).join(' '));
       }
