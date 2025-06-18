@@ -33,7 +33,7 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
         },
       });
     }
-  }, []);
+  }, [setSettings, settings]);
 
   return (
     <div className="space-y-6">
@@ -90,7 +90,6 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               label={t('settings.aider.autoCommits')}
               checked={settings.aider.autoCommits}
               onChange={(checked) => {
-                console.log('Auto-commits checkbox changed:', checked);
                 setSettings({
                   ...settings,
                   aider: {
@@ -116,16 +115,15 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
             <Checkbox
               label={t('settings.aider.watchFiles')}
               checked={settings.aider.watchFiles}
-              onChange={(checked) => {
-                console.log('Watch files checkbox changed:', checked);
+              onChange={(checked) =>
                 setSettings({
                   ...settings,
                   aider: {
                     ...settings.aider,
                     watchFiles: checked,
                   },
-                });
-              }}
+                })
+              }
             />
           </div>
         </div>

@@ -53,11 +53,6 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       const aiderAutoCommitsChanged = localSettings.aider.autoCommits !== originalSettings?.aider.autoCommits;
       const aiderWatchFilesChanged = localSettings.aider.watchFiles !== originalSettings?.aider.watchFiles;
 
-      console.log('Saving settings:', {
-        oldSettings: originalSettings?.aider,
-        newSettings: localSettings.aider 
-      });
-      
       await saveSettings(localSettings);
 
       if (aiderOptionsChanged || aiderEnvVarsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged) {
