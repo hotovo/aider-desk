@@ -293,6 +293,10 @@ export class Project {
       args.push('--commit-message', 'Aider auto-commit');
     }
 
+    if (settings.aider.watchFiles) {
+      args.push('--watch');
+    }
+
     logger.info('Running Aider with args:', { args });
 
     const env = {

@@ -116,15 +116,16 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
             <Checkbox
               label={t('settings.aider.watchFiles')}
               checked={settings.aider.watchFiles}
-              onChange={(checked) =>
+              onChange={(checked) => {
+                console.log('Watch files checkbox changed:', checked);
                 setSettings({
                   ...settings,
                   aider: {
                     ...settings.aider,
                     watchFiles: checked,
                   },
-                })
-              }
+                });
+              }}
             />
           </div>
         </div>

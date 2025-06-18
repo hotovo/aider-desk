@@ -51,6 +51,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       const aiderOptionsChanged = localSettings.aider.options !== originalSettings?.aider.options;
       const aiderEnvVarsChanged = localSettings.aider.environmentVariables !== originalSettings?.aider.environmentVariables;
       const aiderAutoCommitsChanged = localSettings.aider.autoCommits !== originalSettings?.aider.autoCommits;
+      const aiderWatchFilesChanged = localSettings.aider.watchFiles !== originalSettings?.aider.watchFiles;
 
       console.log('Saving settings:', {
         oldSettings: originalSettings?.aider,
@@ -59,7 +60,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       
       await saveSettings(localSettings);
 
-      if (aiderOptionsChanged || aiderEnvVarsChanged || aiderAutoCommitsChanged) {
+      if (aiderOptionsChanged || aiderEnvVarsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged) {
         setShowRestartConfirmDialog(true);
       } else {
         onClose();
