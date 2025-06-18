@@ -289,16 +289,23 @@ export class Project {
     }
 
     // change these to if there is a optionsArgsSet already with some option than it should not change and if there is not that if true than yes if false than no-...AI!
-    if (settings.aider.autoCommits) {
+    // Only add flags if they're not already in optionsArgsSet
+    if (settings.aider.autoCommits && !optionsArgsSet.has('--auto-commits') && !optionsArgsSet.has('--no-auto-commits')) {
       args.push('--auto-commits');
+    } else if (!settings.aider.autoCommits && !optionsArgsSet.has('--auto-commits') && !optionsArgsSet.has('--no-auto-commits')) {
+      args.push('--no-auto-commits');
     }
 
-    if (settings.aider.watchFiles) {
+    if (settings.aider.watchFiles && !optionsArgsSet.has('--watch-files') && !optionsArgsSet.has('--no-watch-files')) {
       args.push('--watch-files');
+    } else if (!settings.aider.watchFiles && !optionsArgsSet.has('--watch-files') && !optionsArgsSet.has('--no-watch-files')) {
+      args.push('--no-watch-files');
     }
 
-    if (settings.aider.cachingEnabled) {
+    if (settings.aider.cachingEnabled && !optionsArgsSet.has('--cache-prompts') && !optionsArgsSet.has('--no-cache-prompts')) {
       args.push('--cache-prompts');
+    } else if (!settings.aider.cachingEnabled && !optionsArgsSet.has('--cache-prompts') && !optionsArgsSet.has('--no-cache-prompts')) {
+      args.push('--no-cache-prompts');
     }
 
     logger.info('Running Aider with args:', { args });
