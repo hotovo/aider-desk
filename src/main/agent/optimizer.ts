@@ -1,19 +1,22 @@
+import { type AgentProfile } from '@common/types';
 import { CacheControl } from 'src/main/agent/llm-provider';
 import { cloneDeep } from 'lodash';
 import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResultPart } from 'ai';
+import { TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import logger from '../logger';
 
 /**
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
  */
-export const optimizeMessages = (messages: CoreMessage[], cacheControl: CacheControl) => {
+export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[], cacheControl: CacheControl) => {
   if (messages.length === 0) {
     return [];
   }
 
   let optimizedMessages = cloneDeep(messages);
 
+  optimizedMessages = addImportantReminders(profile, userRequestMessageIndex, optimizedMessages);
   optimizedMessages = convertImageToolResults(optimizedMessages);
   optimizedMessages = removeDoubleToolCalls(optimizedMessages);
 
@@ -38,6 +41,37 @@ export const optimizeMessages = (messages: CoreMessage[], cacheControl: CacheCon
   }
 
   return optimizedMessages;
+};
+
+const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[]): CoreMessage[] => {
+  const userRequestMessage = messages[userRequestMessageIndex] as CoreUserMessage;
+  const dontForgets: string[] = [];
+
+  if (profile.useTodoTools) {
+    dontForgets.push(
+      `Always use the TODO list tools to manage the tasks, even if small ones. Before any analyze use ${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_GET_ITEMS} to check the current list of tasks and in case it's related to the current request, resume the existing tasks.`,
+    );
+  }
+
+  if (!profile.autoApprove) {
+    dontForgets.push('Before making any changes, present the plan and wait for my approval.');
+  }
+
+  if (dontForgets.length === 0) {
+    return messages;
+  }
+
+  const importantReminders = `\n\nTHIS IS IMPORTANT:\n- ${dontForgets.join('\n- ')}`;
+
+  const updatedFirstUserMessage = {
+    ...userRequestMessage,
+    content: `${userRequestMessage.content}${importantReminders}`,
+  } satisfies CoreUserMessage;
+
+  const newMessages = [...messages];
+  newMessages[userRequestMessageIndex] = updatedFirstUserMessage;
+
+  return newMessages;
 };
 
 /**

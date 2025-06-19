@@ -36,6 +36,12 @@ import {
   POWER_TOOL_GREP,
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
+  TODO_TOOL_CLEAR_ITEMS,
+  TODO_TOOL_DESCRIPTIONS,
+  TODO_TOOL_GET_ITEMS,
+  TODO_TOOL_GROUP_NAME,
+  TODO_TOOL_SET_ITEMS,
+  TODO_TOOL_UPDATE_ITEM_COMPLETION,
 } from '@common/tools';
 import { useTranslation } from 'react-i18next';
 
@@ -121,6 +127,28 @@ const tools: Record<string, GenericTool[]> = {
       groupName: POWER_TOOL_GROUP_NAME,
       name: POWER_TOOL_BASH,
       description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_BASH],
+    },
+  ],
+  [TODO_TOOL_GROUP_NAME]: [
+    {
+      groupName: TODO_TOOL_GROUP_NAME,
+      name: TODO_TOOL_SET_ITEMS,
+      description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_SET_ITEMS],
+    },
+    {
+      groupName: TODO_TOOL_GROUP_NAME,
+      name: TODO_TOOL_GET_ITEMS,
+      description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_GET_ITEMS],
+    },
+    {
+      groupName: TODO_TOOL_GROUP_NAME,
+      name: TODO_TOOL_UPDATE_ITEM_COMPLETION,
+      description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_UPDATE_ITEM_COMPLETION],
+    },
+    {
+      groupName: TODO_TOOL_GROUP_NAME,
+      name: TODO_TOOL_CLEAR_ITEMS,
+      description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_CLEAR_ITEMS],
     },
   ],
 };
@@ -488,7 +516,8 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
                   {Object.entries(tools).map(([groupName, tools]) => {
                     const isGroupEnabled =
                       (selectedProfile.usePowerTools && groupName === POWER_TOOL_GROUP_NAME) ||
-                      (selectedProfile.useAiderTools && groupName === AIDER_TOOL_GROUP_NAME);
+                      (selectedProfile.useAiderTools && groupName === AIDER_TOOL_GROUP_NAME) ||
+                      (selectedProfile.useTodoTools && groupName === TODO_TOOL_GROUP_NAME);
                     return (
                       <div key={groupName}>
                         <GenericToolGroupItem
@@ -502,6 +531,8 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
                               handleProfileSettingChange('usePowerTools', enabled);
                             } else if (groupName === AIDER_TOOL_GROUP_NAME) {
                               handleProfileSettingChange('useAiderTools', enabled);
+                            } else if (groupName === TODO_TOOL_GROUP_NAME) {
+                              handleProfileSettingChange('useTodoTools', enabled);
                             }
                           }}
                         />

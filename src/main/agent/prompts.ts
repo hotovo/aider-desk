@@ -5,7 +5,7 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from 'src/main/constants';
 import { AgentProfile } from '@common/types';
 
 export const getSystemPrompt = async (projectDir: string, agentProfile: AgentProfile) => {
-  const { useAiderTools, usePowerTools, autoApprove } = agentProfile;
+  const { useAiderTools, usePowerTools, useTodoTools, autoApprove } = agentProfile;
   const customInstructions = getRuleFilesContent(projectDir) + agentProfile.customInstructions;
 
   return `# ROLE AND OBJECTIVE
@@ -35,6 +35,16 @@ You are AiderDesk, a meticulously thorough and highly skilled software engineeri
 
 # TASK EXECUTION AND REASONING FRAMEWORK
 
+${
+  useTodoTools
+    ? `0.  **Check for Existing Tasks (Resume or Start New):**
+    *   Your absolute first action upon receiving a new user prompt is to call the \`get_items\` tool to check for an in-progress task list.
+    *   If the tool returns a list of items and a \`initialUserPrompt\`, you MUST compare that stored prompt with the current user's prompt.
+        *   **If they are related** (e.g., the new prompt is a follow-up, a correction, or a 'continue' instruction): You MUST resume the existing task list. Acknowledge the already completed items and formulate a plan (Step 4) focusing only on the remaining, uncompleted tasks. You will then skip directly to Step 4.
+        *   **If they are NOT related** (the new prompt is for a completely new task): You MUST call the \`clear_items\` tool to discard the old list. Then, proceed with the standard workflow starting from Step 1.
+    *   If the \`get_items\` tool returns no items, proceed directly to Step 1.`
+    : ''
+}
 1.  **Analyze User Request:**
     * Deconstruct the user's request into discrete, actionable steps.
     * Define the overarching goal and the precise conditions that signify task completion.
@@ -75,6 +85,22 @@ You are AiderDesk, a meticulously thorough and highly skilled software engineeri
 - **Avoid Loops:** Repeating the same tool over and over is FORBIDDEN. You are not allowed to use the same tool with the same arguments in the row. If you are stuck in a loop, ask the user for help.
 - **Minimize Confirmation:** Confirmation is done via the application. You should not ask for confirmation in your responses when using tools.
 
+${
+  useTodoTools
+    ? `## MANAGING TASKS WITH THE TODO LIST
+
+To maintain clarity and track progress on complex tasks, you will use the TODO list tools. This workflow is mandatory.
+
+1.  **Create TODO List:** Immediately after the **Implementation Plan (Step 4)** is finalized for a *new* task, your first action **MUST** be to call the \`set_items\` tool.
+    -   Break down each step from your plan into a distinct task.
+    -   Pass these tasks as an array of items with \`name\` (string) and \`completed: false\` (boolean) to the tool.
+    -   Also provide the \`initialUserPrompt\` to the tool to preserve the original context.
+2.  **Update Progress:** As you complete each task during the **Execute Implementation (Step 5)** and **Verify Changes (Step 6)** stages, you **MUST** call the \`update_item_completion\` tool to mark the corresponding task as completed.
+3.  **Monitor Status:** If you need to review your remaining tasks at any point (e.g., during **Assess Task Completion (Step 8)**), use the \`get_items\` tool to get the current list.
+4.  **Final Cleanup:** Once the entire user request is fully resolved and you have reached the **Final Review (Step 9)**, you **MUST** call the \`clear_items\` tool to reset the list for the next request.
+`
+    : ''
+}
 ${
   useAiderTools
     ? `## UTILIZING AIDER TOOLS

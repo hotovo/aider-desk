@@ -10,6 +10,7 @@ import {
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
+  TodoItem,
   TokensInfoData,
   ToolData,
   UserMessageData,
@@ -22,6 +23,7 @@ import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
 import clsx from 'clsx';
 import { getActiveAgentProfile } from '@common/utils';
+import { TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
 
 import {
   CommandOutputMessage,
@@ -49,6 +51,7 @@ import { ProjectBar, ProjectTopBarRef } from '@/components/project/ProjectBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
 import { CostInfo } from '@/components/CostInfo';
 import { Button } from '@/components/common/Button';
+import { TodoWindow } from '@/components/project/TodoWindow';
 import 'react-resizable/css/styles.css';
 import { useSearchText } from '@/hooks/useSearchText';
 
@@ -81,6 +84,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [question, setQuestion] = useState<QuestionData | null>(null);
   const [showFrozenDialog, setShowFrozenDialog] = useState(false);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+  const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -235,7 +239,54 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       });
     };
 
+    const handleTodoTool = (toolName: string, args: Record<string, unknown> | undefined, response: string | undefined) => {
+      try {
+        switch (toolName) {
+          case TODO_TOOL_SET_ITEMS: {
+            if (args?.items && Array.isArray(args.items)) {
+              setTodoItems(args.items as TodoItem[]);
+            }
+            break;
+          }
+          case TODO_TOOL_GET_ITEMS: {
+            if (response) {
+              try {
+                const parsedResponse = JSON.parse(response);
+                if (parsedResponse.items && Array.isArray(parsedResponse.items)) {
+                  setTodoItems(parsedResponse.items);
+                }
+              } catch {
+                // If response is not JSON, it might be a message like "No todo items found"
+                if (response.includes('No todo items found')) {
+                  setTodoItems([]);
+                }
+              }
+            }
+            break;
+          }
+          case TODO_TOOL_UPDATE_ITEM_COMPLETION: {
+            if (args?.name && typeof args.completed === 'boolean') {
+              setTodoItems((prev) => prev.map((item) => (item.name === args.name ? { ...item, completed: args.completed as boolean } : item)));
+            }
+            break;
+          }
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error handling TODO tool:', error);
+      }
+    };
+
     const handleTool = (_: IpcRendererEvent, { id, serverName, toolName, args, response, usageReport }: ToolData) => {
+      if (serverName === TODO_TOOL_GROUP_NAME) {
+        handleTodoTool(toolName, args, response);
+
+        if (usageReport?.aiderTotalCost !== undefined) {
+          setAiderTotalCost(usageReport.aiderTotalCost);
+        }
+        return;
+      }
+
       const createNewToolMessage = () => {
         const toolMessage: ToolMessage = {
           id,
@@ -435,6 +486,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages([]);
     setProcessing(false);
     processingMessageRef.current = null;
+    setTodoItems([]);
 
     if (clearContext) {
       window.api.clearContext(project.baseDir);
@@ -660,6 +712,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             redoLastUserPrompt={handleRedoLastUserPrompt}
             editLastUserMessage={handleEditLastUserMessage}
           />
+          {!loading && todoItems.length > 0 && <TodoWindow todos={todoItems} />}
         </div>
         <div
           className={clsx('relative bottom-0 w-full p-4 pb-2 flex-shrink-0 flex flex-col border-t border-neutral-800', editingMessageIndex !== null && 'pt-1')}

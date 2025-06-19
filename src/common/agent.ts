@@ -151,6 +151,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   includeRepoMap: true,
   usePowerTools: false,
   useAiderTools: true,
+  useTodoTools: true,
   customInstructions: '',
   enabledServers: [],
   autoApprove: false,
@@ -165,6 +166,7 @@ export const INIT_PROJECT_RULES_AGENT_PROFILE: AgentProfile = {
   includeContextFiles: false,
   usePowerTools: true,
   useAiderTools: false,
+  useTodoTools: false,
   autoApprove: true,
   toolApprovals: {
     ...DEFAULT_AGENT_PROFILE.toolApprovals,
@@ -183,6 +185,7 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   includeContextFiles: false,
   usePowerTools: false,
   useAiderTools: false,
+  useTodoTools: false,
   autoApprove: true,
 };
 

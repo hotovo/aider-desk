@@ -199,6 +199,7 @@
       "aiderToolsTooltip": "Agent can use Aider to perform add/drop context files actions and run prompts.",
       "useAiderTools": "Use Aider tools",
       "usePowerTools": "Use Power tools",
+      "useTodoTools": "Use Todo tools",
       "includeContextFiles": "Include context files",
       "includeFilesTooltip": "Adds content of context files into the chat of agent. This will increase token usage.",
       "includeRepoMap": "Include repository map",
@@ -209,7 +210,9 @@
       "envVarPlaceholder": "{{envVar}} env var is used if left empty",
       "createNewProfile": "Create New",
       "genericTools": "Tools",
-      "noGenericToolsConfigured": "No tools configured."
+      "noGenericToolsConfigured": "No tools configured.",
+      "todoTools": "Todo tools",
+      "includeTodoToolsTooltip": "Allows the agent to manage a list of todo items, including setting, getting, updating, and clearing them."
     },
     "aider": {
       "options": "Options",
@@ -371,6 +374,9 @@
     "noToolsFound": "No tools could be found. Check your configuration.",
     "servers": "MCP servers",
     "tools": "Tools"
+  },
+  "tasks": {
+    "title": "Tasks"
   },
   "tool": {
     "noDescription": "No description",

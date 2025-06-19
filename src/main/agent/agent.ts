@@ -36,6 +36,7 @@ import { Store } from '../store';
 import { Project } from '../project';
 
 import { createPowerToolset } from './tools/power';
+import { createTodoToolset } from './tools/todo';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
@@ -234,6 +235,11 @@ export class Agent {
       Object.assign(toolSet, powerTools);
     }
 
+    if (profile.useTodoTools) {
+      const todoTools = createTodoToolset(project, profile);
+      Object.assign(toolSet, todoTools);
+    }
+
     // Add helper tools
     const helperTools = createHelpersToolset();
     Object.assign(toolSet, helperTools);
@@ -390,13 +396,13 @@ export class Agent {
     const cacheControl = getCacheControl(profile);
     const providerOptions = getProviderOptions(llmProvider);
 
+    const userRequestMessage: CoreUserMessage = {
+      role: 'user',
+      content: prompt,
+    };
     const messages = await this.prepareMessages(project, profile);
-    const resultMessages: CoreMessage[] = [
-      {
-        role: 'user',
-        content: prompt,
-      } satisfies CoreUserMessage,
-    ];
+    const resultMessages: CoreMessage[] = [userRequestMessage];
+    const initialUserRequestMessageIndex = messages.length - project.getContextMessages().length;
 
     // add user message
     messages.push(...resultMessages);
@@ -540,7 +546,7 @@ export class Agent {
           providerOptions,
           model,
           system: systemPrompt,
-          messages: optimizeMessages(messages, cacheControl),
+          messages: optimizeMessages(profile, initialUserRequestMessageIndex, messages, cacheControl),
           toolCallStreaming: true,
           tools: toolSet,
           abortSignal: this.abortController.signal,
@@ -600,6 +606,9 @@ export class Agent {
             this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile);
 
             currentResponseId = null;
+          },
+          onFinish: ({ finishReason }) => {
+            logger.info(`onFinish prompt finished. Reason: ${finishReason}`);
           },
           experimental_repairToolCall: repairToolCall,
         });
@@ -722,9 +731,7 @@ export class Agent {
       }
     }
 
-    // Add message history
-    messages.push(...project.getContextMessages());
-
+    // Add context files with content or just list of working files
     if (profile.includeContextFiles) {
       const contextFilesMessages = await this.getContextFilesMessages(project, profile);
       messages.push(...contextFilesMessages);
@@ -732,6 +739,9 @@ export class Agent {
       const workingFilesMessages = await this.getWorkingFilesMessages(project);
       messages.push(...workingFilesMessages);
     }
+
+    // Add message history
+    messages.push(...project.getContextMessages());
 
     return messages;
   }

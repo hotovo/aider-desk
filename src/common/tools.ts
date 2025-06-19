@@ -68,3 +68,17 @@ const myFunction = () => {
     'Search code in the repository using Elasticsearch-like query syntax. Use this tool first for any code-related questions to find out relationships between files and what files need to be changed.',
   [POWER_TOOL_BASH]: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',
 } as const;
+
+export const TODO_TOOL_GROUP_NAME = 'todo';
+export const TODO_TOOL_SET_ITEMS = 'set_items';
+export const TODO_TOOL_GET_ITEMS = 'get_items';
+export const TODO_TOOL_UPDATE_ITEM_COMPLETION = 'update_item_completion';
+export const TODO_TOOL_CLEAR_ITEMS = 'clear_items';
+
+export const TODO_TOOL_DESCRIPTIONS = {
+  [TODO_TOOL_SET_ITEMS]:
+    'Initializes or overwrites the current list of todo items. This tool accepts an array of todo items, each with a name (string) and completed (boolean) property. It also accepts the initialUserPrompt as an argument, allowing the agent to store the original request context for future reference.',
+  [TODO_TOOL_GET_ITEMS]: 'Retrieves the current list of todo items, including their names and completion statuses.',
+  [TODO_TOOL_UPDATE_ITEM_COMPLETION]: 'Updates the completed status of a specific todo item by its name.',
+  [TODO_TOOL_CLEAR_ITEMS]: 'Removes all existing todo items from the list.',
+} as const;

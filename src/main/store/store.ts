@@ -395,6 +395,11 @@ export class Store {
   setReleaseNotes(releaseNotes: string) {
     this.store.set('releaseNotes', releaseNotes);
   }
+
+  getAgentProfile(profileId: string): AgentProfile | undefined {
+    const settings = this.getSettings();
+    return settings.agentProfiles.find((profile) => profile.id === profileId);
+  }
 }
 
 export const appStore = new Store();

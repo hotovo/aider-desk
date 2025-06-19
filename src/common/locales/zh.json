@@ -195,6 +195,7 @@
       "aiderToolsTooltip": "代理可以使用Aider执行添加/删除上下文文件操作和运行提示。",
       "useAiderTools": "使用Aider工具",
       "usePowerTools": "使用 Power 工具",
+      "useTodoTools": "使用 Todo 工具",
       "includeContextFiles": "包含上下文文件",
       "includeFilesTooltip": "将上下文文件内容添加到代理的聊天中。这将增加令牌使用量。",
       "includeRepoMap": "包含仓库地图",
@@ -205,7 +206,9 @@
       "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",
       "createNewProfile": "创建新配置",
       "genericTools": "工具",
-      "noGenericToolsConfigured": "未配置工具。"
+      "noGenericToolsConfigured": "未配置工具。",
+      "todoTools": "待办工具",
+      "includeTodoToolsTooltip": "允许代理管理待办事项列表，包括设置、获取、更新和清除它们。"
     },
     "aider": {
       "options": "选项",
@@ -367,6 +370,9 @@
       "ask": "询问"
     },
     "tools": "工具"
+  },
+  "tasks": {
+    "title": "任务"
   },
   "tool": {
     "noDescription": "无描述",
