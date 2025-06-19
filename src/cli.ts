@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 import { spawn } from 'child_process';
-import path from 'path';
-import os from 'os';
+import * as os from 'node:os';
+import * as path from 'path';
 
 const getAppPath = () => {
   const platform = os.platform();
+  const appPath = path.join(__dirname, '..');
   if (platform === 'darwin') {
-    return path.join(__dirname, '../dist/mac/AiderDesk.app/Contents/MacOS/AiderDesk');
+    return path.join(appPath, '/mac-universal/aider-desk.app/Contents/MacOS/aider-desk');
   } else if (platform === 'win32') {
-    return path.join(__dirname, '../dist/win/AiderDesk.exe');
+    return path.join(appPath, '/win/AiderDesk.exe');
   } else {
-    return path.join(__dirname, '../dist/linux/AiderDesk');
+    return path.join(appPath, '/linux/AiderDesk');
   }
 };
 
@@ -18,10 +19,10 @@ const main = () => {
   try {
     const appPath = getAppPath();
     const args = process.argv.slice(2);
-    
+
     const child = spawn(appPath, args, {
       stdio: 'inherit',
-      detached: true
+      detached: true,
     });
 
     child.on('error', (err) => {

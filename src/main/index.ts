@@ -1,4 +1,4 @@
-import { join, resolve, normalize } from 'path';
+import path, { join } from 'path';
 import fs from 'fs';
 import { createServer } from 'http';
 
@@ -147,7 +147,7 @@ app.whenReady().then(async () => {
 
   // Handle command line arguments
   const args = process.argv.slice(1); // Skip first arg (executable path)
-  let projectPath = args.find(arg => !arg.startsWith('-'));
+  let projectPath = args.find((arg) => !arg.startsWith('-'));
 
   logger.info('------------ Starting AiderDesk... ------------');
   logger.info('Initializing fix-path...');
@@ -195,8 +195,8 @@ app.whenReady().then(async () => {
     try {
       projectPath = path.resolve(projectPath);
       const normalizedPath = path.normalize(projectPath);
-      
-      if (fs.existsSync(normalizedPath) {
+
+      if (fs.existsSync(normalizedPath)) {
         mainWindow.webContents.send('add-open-project', normalizedPath);
       } else {
         logger.warn(`Specified project path does not exist: ${normalizedPath}`);
