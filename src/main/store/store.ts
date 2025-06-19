@@ -33,8 +33,8 @@ export const DEFAULT_SETTINGS: SettingsData = {
     options: '',
     environmentVariables: '',
     addRuleFiles: true,
-    autoCommits: false,
-    cachingEnabled: true,
+    autoCommits: true,
+    cachingEnabled: false,
     watchFiles: false,
   },
   models: {

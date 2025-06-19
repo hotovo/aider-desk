@@ -217,7 +217,7 @@
     "aider": {
       "options": "Options",
       "optionsPlaceholder": "e.g. --no-auto-commits --cache-prompts",
-      "autoCommits": "Enable auto commits",
+      "autoCommits": "Auto commit of LLM changes",
       "cachingEnabled": "Enable prompt caching",
       "watchFiles": "Watch files for changes",
       "environmentVariables": "Environment Variables",
