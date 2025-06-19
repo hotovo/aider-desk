@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { HiEye } from 'react-icons/hi';
 import { Trans, useTranslation } from 'react-i18next';
 import { SettingsData } from '@common/types';
@@ -19,20 +19,6 @@ type Props = {
 export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = false }: Props) => {
   const { t } = useTranslation();
   const [showEnvVars, setShowEnvVars] = useState(initialShowEnvVars);
-
-  useEffect(() => {
-    if (settings.aider.autoCommits === undefined || settings.aider.watchFiles === undefined || settings.aider.cachingEnabled === undefined) {
-      setSettings({
-        ...settings,
-        aider: {
-          ...settings.aider,
-          autoCommits: false,
-          watchFiles: false,
-          cachingEnabled: true,
-        },
-      });
-    }
-  }, [setSettings, settings]);
 
   return (
     <div className="space-y-6">
