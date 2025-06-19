@@ -10,6 +10,7 @@
     "url": "https://github.com/hotovo/aider-desk.git"
   },
   "scripts": {
+    "build:cli": "tsc src/cli.ts --outDir dist/cli --esModuleInterop true && chmod +x dist/cli/cli.js",
     "format": "prettier --write .",
     "lint": "eslint src --fix",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
