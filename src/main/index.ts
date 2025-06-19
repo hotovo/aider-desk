@@ -1,4 +1,5 @@
-import { join } from 'path';
+import { join, resolve, normalize } from 'path';
+import fs from 'fs';
 import { createServer } from 'http';
 
 import { delay } from '@common/utils';
@@ -144,6 +145,10 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  // Handle command line arguments
+  const args = process.argv.slice(1); // Skip first arg (executable path)
+  let projectPath = args.find(arg => !arg.startsWith('-'));
+
   logger.info('------------ Starting AiderDesk... ------------');
   logger.info('Initializing fix-path...');
   (await import('fix-path')).default();
@@ -183,7 +188,23 @@ app.whenReady().then(async () => {
   }
 
   const store = await initStore();
-  await initWindow(store);
+  const mainWindow = await initWindow(store);
+
+  // Open project from command line if specified
+  if (projectPath) {
+    try {
+      projectPath = path.resolve(projectPath);
+      const normalizedPath = path.normalize(projectPath);
+      
+      if (fs.existsSync(normalizedPath) {
+        mainWindow.webContents.send('add-open-project', normalizedPath);
+      } else {
+        logger.warn(`Specified project path does not exist: ${normalizedPath}`);
+      }
+    } catch (error) {
+      logger.error('Error opening project from command line:', error);
+    }
+  }
 
   progressBar.close();
 
