@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+BASEDIR=$(dirname "$0")
+ELECTRON_RUN_AS_NODE=1 exec electron "$BASEDIR/../out/main/index.js" "$@"

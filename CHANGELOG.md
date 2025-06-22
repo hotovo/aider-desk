@@ -4,6 +4,7 @@
 
 - revamped starting progress bar
 - added /clear-logs command to clear log messages from chat
+- added option to open project in aider desk from command line
 
 ## [0.18.0]
 
