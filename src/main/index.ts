@@ -26,8 +26,7 @@ const initStore = async (): Promise<Store> => {
   const store = new Store();
   await store.init();
 
-  // Handle command line argument if provided
-  const args = process.argv.slice(app.isPackaged ? 1 : 2); // Skip electron executable path and dev args
+  const args = process.argv.slice(app.isPackaged ? 1 : 2);
   if (args.length > 0) {
     const potentialDir = args[0];
     try {

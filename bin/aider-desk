@@ -1,4 +1,16 @@
 #!/usr/bin/env sh
 
-BASEDIR=$(dirname "$0")
-ELECTRON_RUN_AS_NODE=1 exec electron "$BASEDIR/../out/main/index.js" "$@"
+# First try to find the app in the local node_modules installation
+LOCAL_APP_PATH="$(dirname "$0")/../node_modules/aider-desk/out/main/index.js"
+
+# Then try global installation path
+GLOBAL_APP_PATH="$(dirname "$(which aider-desk)")/../lib/node_modules/aider-desk/out/main/index.js"
+
+if [ -f "$LOCAL_APP_PATH" ]; then
+  exec electron "$LOCAL_APP_PATH" "$@"
+elif [ -f "$GLOBAL_APP_PATH" ]; then
+  exec electron "$GLOBAL_APP_PATH" "$@"
+else
+  echo "Error: Could not find aider-desk installation"
+  exit 1
+fi
