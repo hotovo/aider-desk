@@ -3,12 +3,6 @@
   "version": "0.18.1-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
-  "bin": {
-    "aider-desk": "./dist/cli/cli.js"
-  },
-  "files": [
-    "dist/cli"
-  ],
   "author": "Hotovo",
   "homepage": "https://www.hotovo.com",
   "repository": {
@@ -16,7 +10,6 @@
     "url": "https://github.com/hotovo/aider-desk.git"
   },
   "scripts": {
-    "build:cli": "mkdir -p dist/cli && tsc src/cli.ts --outDir dist/cli --esModuleInterop true && chmod +x dist/cli/cli.js",
     "format": "prettier --write .",
     "lint": "eslint src --fix",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
@@ -27,7 +20,6 @@
     "dev": "electron-vite dev",
     "dev:no-hmr": "NO_HMR=true electron-vite dev",
     "build:mcp": "esbuild src/mcp-server/aider-desk-mcp-server.ts --bundle --platform=node --outdir=out/mcp-server",
-    "build": "npm run typecheck && electron-vite build && npm run build:mcp && npm run build:cli",
     "postinstall": "electron-builder install-app-deps && node scripts/download-uv.mjs",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
