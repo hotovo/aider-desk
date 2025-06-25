@@ -15,8 +15,7 @@ This file provides guidance to AiderDesk when working with code in this reposito
 - `npm run typecheck:mcp` - Type check MCP server files (tsconfig.mcp-server.json)
 
 ### Linting and Formatting
-- `npm run lint` - Run ESLint with auto-fix on src directory
-- `npm run format` - Format code with Prettier
+- `eslint --fix` - Run ESLint with auto-fix and auto-format on specified file(s)
 
 ### Building
 - `npm run build` - Full build (includes type checking and MCP server build)

@@ -25,10 +25,12 @@ export const UV_EXECUTABLE =
       : path.join(RESOURCES_DIR, 'linux', 'uv');
 export const SERVER_PORT = process.env.AIDER_DESK_PORT ? parseInt(process.env.AIDER_DESK_PORT) : 24337;
 export const PID_FILES_DIR = path.join(AIDER_DESK_DIR, 'aider-processes');
-export const AIDER_DESK_PROJECT_RULES_DIR = '.aider-desk/rules';
+export const AIDER_DESK_PROJECT_DIR = '.aider-desk';
+export const AIDER_DESK_TODOS_FILE = path.join(AIDER_DESK_PROJECT_DIR, 'todos.json');
+export const AIDER_DESK_PROJECT_RULES_DIR = path.join(AIDER_DESK_PROJECT_DIR, 'rules');
 export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
-export const AIDER_DESK_TMP_DIR_NAME = 'aider-desk';
+export const AIDER_DESK_PROJECT_TMP_DIR = `${AIDER_DESK_PROJECT_DIR}/tmp`;
 export const BINARY_EXTENSIONS = new Set([
   '.png',
   '.jpg',

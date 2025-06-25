@@ -50,10 +50,13 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     if (localSettings) {
       const aiderOptionsChanged = localSettings.aider.options !== originalSettings?.aider.options;
       const aiderEnvVarsChanged = localSettings.aider.environmentVariables !== originalSettings?.aider.environmentVariables;
+      const aiderAutoCommitsChanged = localSettings.aider.autoCommits !== originalSettings?.aider.autoCommits;
+      const aiderWatchFilesChanged = localSettings.aider.watchFiles !== originalSettings?.aider.watchFiles;
+      const aiderCachingEnabledChanged = localSettings.aider.cachingEnabled !== originalSettings?.aider.cachingEnabled;
 
       await saveSettings(localSettings);
 
-      if (aiderOptionsChanged || aiderEnvVarsChanged) {
+      if (aiderOptionsChanged || aiderEnvVarsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged || aiderCachingEnabledChanged) {
         setShowRestartConfirmDialog(true);
       } else {
         onClose();

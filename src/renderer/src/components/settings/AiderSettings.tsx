@@ -70,6 +70,47 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               https://aider.chat/docs/config/options.html
             </a>
           </p>
+          <div className="flex gap-4 pt-2">
+            <Checkbox
+              label={t('settings.aider.autoCommits')}
+              checked={settings.aider.autoCommits}
+              onChange={(checked) => {
+                setSettings({
+                  ...settings,
+                  aider: {
+                    ...settings.aider,
+                    autoCommits: checked,
+                  },
+                });
+              }}
+            />
+            <Checkbox
+              label={t('settings.aider.cachingEnabled')}
+              checked={settings.aider.cachingEnabled}
+              onChange={(checked) =>
+                setSettings({
+                  ...settings,
+                  aider: {
+                    ...settings.aider,
+                    cachingEnabled: checked,
+                  },
+                })
+              }
+            />
+            <Checkbox
+              label={t('settings.aider.watchFiles')}
+              checked={settings.aider.watchFiles}
+              onChange={(checked) =>
+                setSettings({
+                  ...settings,
+                  aider: {
+                    ...settings.aider,
+                    watchFiles: checked,
+                  },
+                })
+              }
+            />
+          </div>
         </div>
       </Section>
 

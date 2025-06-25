@@ -78,6 +78,11 @@ const api: ApplicationAPI = {
   scrapeWeb: (baseDir, url) => ipcRenderer.invoke('scrape-web', baseDir, url),
   initProjectRulesFile: (baseDir) => ipcRenderer.invoke('init-project-rules-file', baseDir),
 
+  getTodos: (baseDir) => ipcRenderer.invoke('get-todos', baseDir),
+  addTodo: (baseDir, name) => ipcRenderer.invoke('add-todo', baseDir, name),
+  updateTodo: (baseDir, name, updates) => ipcRenderer.invoke('update-todo', baseDir, name, updates),
+  deleteTodo: (baseDir, name) => ipcRenderer.invoke('delete-todo', baseDir, name),
+
   loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),
 

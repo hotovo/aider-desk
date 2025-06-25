@@ -10,6 +10,7 @@ import {
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
+  TodoItem,
   TokensInfoData,
   ToolData,
   UserMessageData,
@@ -22,6 +23,7 @@ import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
 import clsx from 'clsx';
 import { getActiveAgentProfile } from '@common/utils';
+import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
 
 import {
   CommandOutputMessage,
@@ -49,6 +51,7 @@ import { ProjectBar, ProjectTopBarRef } from '@/components/project/ProjectBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
 import { CostInfo } from '@/components/CostInfo';
 import { Button } from '@/components/common/Button';
+import { TodoWindow } from '@/components/project/TodoWindow';
 import 'react-resizable/css/styles.css';
 import { useSearchText } from '@/hooks/useSearchText';
 
@@ -81,6 +84,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [question, setQuestion] = useState<QuestionData | null>(null);
   const [showFrozenDialog, setShowFrozenDialog] = useState(false);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+  const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -109,6 +113,19 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   useEffect(() => {
     window.api.startProject(project.baseDir);
+
+    // Load existing todos
+    const loadTodos = async () => {
+      try {
+        const todos = await window.api.getTodos(project.baseDir);
+        setTodoItems(todos);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error loading todos:', error);
+      }
+    };
+
+    void loadTodos();
 
     return () => {
       window.api.stopProject(project.baseDir);
@@ -235,7 +252,58 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       });
     };
 
+    const handleTodoTool = (toolName: string, args: Record<string, unknown> | undefined, response: string | undefined) => {
+      try {
+        switch (toolName) {
+          case TODO_TOOL_SET_ITEMS: {
+            if (args?.items && Array.isArray(args.items)) {
+              setTodoItems(args.items as TodoItem[]);
+            }
+            break;
+          }
+          case TODO_TOOL_GET_ITEMS: {
+            if (response) {
+              try {
+                const parsedResponse = JSON.parse(response);
+                if (parsedResponse.items && Array.isArray(parsedResponse.items)) {
+                  setTodoItems(parsedResponse.items);
+                }
+              } catch {
+                // If response is not JSON, it might be a message like "No todo items found"
+                if (response.includes('No todo items found')) {
+                  setTodoItems([]);
+                }
+              }
+            }
+            break;
+          }
+          case TODO_TOOL_UPDATE_ITEM_COMPLETION: {
+            if (args?.name && typeof args.completed === 'boolean') {
+              setTodoItems((prev) => prev.map((item) => (item.name === args.name ? { ...item, completed: args.completed as boolean } : item)));
+            }
+            break;
+          }
+          case TODO_TOOL_CLEAR_ITEMS: {
+            setTodoItems([]);
+            break;
+          }
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error handling TODO tool:', error);
+      }
+    };
+
     const handleTool = (_: IpcRendererEvent, { id, serverName, toolName, args, response, usageReport }: ToolData) => {
+      if (serverName === TODO_TOOL_GROUP_NAME) {
+        handleTodoTool(toolName, args, response);
+
+        if (usageReport?.aiderTotalCost !== undefined) {
+          setAiderTotalCost(usageReport.aiderTotalCost);
+        }
+        return;
+      }
+
       const createNewToolMessage = () => {
         const toolMessage: ToolMessage = {
           id,
@@ -513,8 +581,12 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       content: t('messages.interrupted'),
     };
     setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), interruptMessage]);
+    setQuestion(null);
 
-    if (!frozenTimeoutRef.current) {
+    if (projectSettings?.currentMode === 'agent') {
+      // using interrupt in agent mode will cancel immediately
+      setProcessing(false);
+    } else {
       frozenTimeoutRef.current = setTimeout(() => {
         if (processing) {
           setShowFrozenDialog(true);
@@ -618,6 +690,46 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
   };
 
+  const handleAddTodo = async (name: string) => {
+    try {
+      const updatedTodos = await window.api.addTodo(project.baseDir, name);
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error adding todo:', error);
+    }
+  };
+
+  const handleToggleTodo = async (name: string, completed: boolean) => {
+    try {
+      const updatedTodos = await window.api.updateTodo(project.baseDir, name, { completed });
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error toggling todo:', error);
+    }
+  };
+
+  const handleUpdateTodo = async (name: string, updates: Partial<TodoItem>) => {
+    try {
+      const updatedTodos = await window.api.updateTodo(project.baseDir, name, updates);
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error updating todo:', error);
+    }
+  };
+
+  const handleDeleteTodo = async (name: string) => {
+    try {
+      const updatedTodos = await window.api.deleteTodo(project.baseDir, name);
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error deleting todo:', error);
+    }
+  };
+
   if (!projectSettings || !settings) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
@@ -660,6 +772,15 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             redoLastUserPrompt={handleRedoLastUserPrompt}
             editLastUserMessage={handleEditLastUserMessage}
           />
+          {!loading && todoItems.length > 0 && (
+            <TodoWindow
+              todos={todoItems}
+              onToggleTodo={handleToggleTodo}
+              onAddTodo={handleAddTodo}
+              onUpdateTodo={handleUpdateTodo}
+              onDeleteTodo={handleDeleteTodo}
+            />
+          )}
         </div>
         <div
           className={clsx('relative bottom-0 w-full p-4 pb-2 flex-shrink-0 flex flex-col border-t border-neutral-800', editingMessageIndex !== null && 'pt-1')}

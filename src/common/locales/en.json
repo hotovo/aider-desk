@@ -199,6 +199,7 @@
       "aiderToolsTooltip": "Agent can use Aider to perform add/drop context files actions and run prompts.",
       "useAiderTools": "Use Aider tools",
       "usePowerTools": "Use Power tools",
+      "useTodoTools": "Use Todo tools",
       "includeContextFiles": "Include context files",
       "includeFilesTooltip": "Adds content of context files into the chat of agent. This will increase token usage.",
       "includeRepoMap": "Include repository map",
@@ -209,11 +210,16 @@
       "envVarPlaceholder": "{{envVar}} env var is used if left empty",
       "createNewProfile": "Create New",
       "genericTools": "Tools",
-      "noGenericToolsConfigured": "No tools configured."
+      "noGenericToolsConfigured": "No tools configured.",
+      "todoTools": "Todo tools",
+      "includeTodoToolsTooltip": "Allows the agent to manage a list of todo items, including setting, getting, updating, and clearing them."
     },
     "aider": {
       "options": "Options",
       "optionsPlaceholder": "e.g. --no-auto-commits --cache-prompts",
+      "autoCommits": "Auto commit of LLM changes",
+      "cachingEnabled": "Enable prompt caching",
+      "watchFiles": "Watch files for changes",
       "environmentVariables": "Environment Variables",
       "envVarsPlaceholder": "#################\n# LLM parameters:\n#\n# Include xxx_API_KEY parameters and other params needed for your LLMs.\n# See https://aider.chat/docs/llms.html for details.\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
       "optionsDocumentation": "Check the documentation for available options at",
@@ -368,6 +374,18 @@
     "noToolsFound": "No tools could be found. Check your configuration.",
     "servers": "MCP servers",
     "tools": "Tools"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "addTodo": "Add Todo",
+    "editTodo": "Edit Todo",
+    "deleteTodo": "Delete Todo",
+    "todoName": "Todo Name",
+    "todoNamePlaceholder": "Enter todo name...",
+    "saveTodo": "Save",
+    "cancelTodo": "Cancel",
+    "noTodos": "No todo items",
+    "confirmDelete": "Are you sure you want to delete this todo item?"
   },
   "tool": {
     "noDescription": "No description",

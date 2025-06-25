@@ -105,6 +105,7 @@ export class TelemetryManager {
         customInstructionsDefined: profile.customInstructions.trim().length > 0,
         useAiderTools: profile.useAiderTools,
         usePowerTools: profile.usePowerTools,
+        useTodoTools: profile.useTodoTools,
         includeContextFiles: profile.includeContextFiles,
         includeRepoMap: profile.includeRepoMap,
         autoApprove: profile.autoApprove,

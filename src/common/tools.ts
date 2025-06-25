@@ -18,6 +18,7 @@ export const POWER_TOOL_GLOB = 'glob';
 export const POWER_TOOL_GREP = 'grep';
 export const POWER_TOOL_SEMANTIC_SEARCH = 'semantic_search';
 export const POWER_TOOL_BASH = 'bash';
+export const POWER_TOOL_AGENT = 'agent';
 
 export const AIDER_TOOL_DESCRIPTIONS = {
   [AIDER_TOOL_GET_CONTEXT_FILES]: 'Get all files currently in the context for Aider to read or edit',
@@ -67,4 +68,24 @@ const myFunction = () => {
   [POWER_TOOL_SEMANTIC_SEARCH]:
     'Search code in the repository using Elasticsearch-like query syntax. Use this tool first for any code-related questions to find out relationships between files and what files need to be changed.',
   [POWER_TOOL_BASH]: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',
+  [POWER_TOOL_AGENT]: `Delegates a specific task to a sub-agent with focused context. The sub-agent operates independently with only the specified files and prompt, optimizing token usage and costs. Use this tool for isolated tasks that can be completed with limited context, such as analyzing specific files, implementing focused features, or performing targeted refactoring. The sub-agent has reduced capabilities and context to minimize operational costs while maintaining effectiveness for well-defined tasks.
+
+1. When the agent is done, it will return a single message back to you.
+2. Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
+
+Agent tool has access to \`${POWER_TOOL_SEMANTIC_SEARCH}\`, \`${POWER_TOOL_FILE_READ}\`, \`${POWER_TOOL_FILE_WRITE}\`, \`${POWER_TOOL_FILE_EDIT}\`, \`${POWER_TOOL_GLOB}\`, \`${POWER_TOOL_GREP}\` tools. Use it to offload complex tasks such as analysis and implementation that can return single message as a result.`,
+} as const;
+
+export const TODO_TOOL_GROUP_NAME = 'todo';
+export const TODO_TOOL_SET_ITEMS = 'set_items';
+export const TODO_TOOL_GET_ITEMS = 'get_items';
+export const TODO_TOOL_UPDATE_ITEM_COMPLETION = 'update_item_completion';
+export const TODO_TOOL_CLEAR_ITEMS = 'clear_items';
+
+export const TODO_TOOL_DESCRIPTIONS = {
+  [TODO_TOOL_SET_ITEMS]:
+    'Initializes or overwrites the current list of todo items. This tool accepts an array of todo items, each with a name (string) and completed (boolean) property. It also accepts the initialUserPrompt as an argument, allowing the agent to store the original request context for future reference.',
+  [TODO_TOOL_GET_ITEMS]: 'Retrieves the current list of todo items, including their names and completion statuses.',
+  [TODO_TOOL_UPDATE_ITEM_COMPLETION]: 'Updates the completed status of a specific todo item by its name.',
+  [TODO_TOOL_CLEAR_ITEMS]: 'Removes all existing todo items from the list.',
 } as const;

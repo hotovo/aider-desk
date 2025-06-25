@@ -7,8 +7,11 @@ import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
 import { search, searchSchema } from '@buger/probe';
-import { AgentProfile, FileWriteMode, ToolApprovalState } from '@common/types';
+import { AgentProfile, ContextFile, FileWriteMode, ToolApprovalState } from '@common/types';
 import {
+  POWER_TOOL_AGENT,
+  POWER_TOOL_AGENT as TOOL_AGENT,
+  POWER_TOOL_BASH,
   POWER_TOOL_BASH as TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FILE_EDIT as TOOL_FILE_EDIT,
@@ -16,13 +19,16 @@ import {
   POWER_TOOL_FILE_WRITE as TOOL_FILE_WRITE,
   POWER_TOOL_GLOB as TOOL_GLOB,
   POWER_TOOL_GREP as TOOL_GREP,
+  POWER_TOOL_GROUP_NAME,
   POWER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH as TOOL_SEMANTIC_SEARCH,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
+import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 import logger from 'src/main/logger';
 import { isFileIgnored } from 'src/main/utils';
 import { BINARY_EXTENSIONS } from 'src/main/constants';
+import { getSubAgentSystemPrompt } from 'src/main/agent/prompts';
 
 import { Project } from '../../project';
 
@@ -30,7 +36,7 @@ import { ApprovalManager } from './approval-manager';
 
 const execAsync = promisify(exec);
 
-export const createPowerToolset = (project: Project, profile: AgentProfile): ToolSet => {
+export const createPowerToolset = (project: Project, profile: AgentProfile, abortSignal?: AbortSignal): ToolSet => {
   const approvalManager = new ApprovalManager(project, profile);
 
   const fileEditTool = tool({
@@ -468,13 +474,82 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           language,
         });
 
-        logger.info(`Search results: ${JSON.stringify(results)}`);
+        logger.debug(`Search results: ${JSON.stringify(results)}`);
 
         return results;
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Error executing search command:', error);
         return `Error executing search command: ${errorMessage}`;
+      }
+    },
+  });
+
+  const agentTool = tool({
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_AGENT],
+    parameters: z.object({
+      prompt: z
+        .string()
+        .describe(
+          'A clear and concise natural language prompt describing the task the sub-agent needs to perform. This prompt should provide all necessary information for the sub-agent to complete its task independently within its limited context.',
+        ),
+      files: z
+        .array(z.string())
+        .optional()
+        .describe(
+          'An array of file paths (strings) that the main agent identifies as relevant for the sub-agent task. These files will be provided to the sub-agent as its working context, ensuring it has access to the necessary code or data without being burdened by the entire project context.',
+        ),
+    }),
+    execute: async ({ prompt, files }, { toolCallId }) => {
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_AGENT, {
+        prompt,
+        files,
+      });
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_AGENT}`;
+      const questionText = 'Approve delegating task to sub-agent?';
+      const filesText = files ? `Files: ${files.join(', ')}` : 'Files: None (sub-agent will work without file context)';
+      const questionSubject = `Prompt: ${prompt}${filesText}`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+
+      if (!isApproved) {
+        return `Sub-agent delegation denied by user. Reason: ${userInput}`;
+      }
+
+      try {
+        // Create a sub-agent profile optimized for cost and focused context
+        const subAgentProfile: AgentProfile = {
+          ...DEFAULT_AGENT_PROFILE,
+          ...profile,
+          id: 'sub-agent',
+          name: 'Sub-Agent',
+          includeContextFiles: false, // Don't include full context
+          includeRepoMap: false, // Don't include repo map for cost optimization
+          usePowerTools: true, // Enable power tools for sub-agent
+          useAiderTools: false, // Disable aider tools to prevent nested delegation
+          useTodoTools: false, // Disable todo tools for simplicity
+          enabledServers: [], // No MCP servers for sub-agent,
+          toolApprovals: {
+            ...profile.toolApprovals,
+            [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
+            [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
+          },
+        };
+
+        // Set limited context if files are provided
+        const contextFiles: ContextFile[] = (files || []).map((filePath) => ({
+          path: filePath,
+          readOnly: false,
+        }));
+
+        // Run the sub-agent with the focused context
+        const messages = await project.runSubAgent(subAgentProfile, prompt, contextFiles, getSubAgentSystemPrompt(), abortSignal);
+        return messages[messages.length - 1];
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('Error running sub-agent:', error);
+        return `Error running sub-agent: ${errorMessage}`;
       }
     },
   });
@@ -622,6 +697,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`]: grepTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`]: searchTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`]: bashTool,
+    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_AGENT}`]: agentTool,
     // TODO: disabled for now until better defined
     // [`power${TOOL_GROUP_NAME_SEPARATOR}lint`]: lintTool,
     // [`power${TOOL_GROUP_NAME_SEPARATOR}run_tests`]: runTestsTool,

@@ -33,6 +33,9 @@ export const DEFAULT_SETTINGS: SettingsData = {
     options: '',
     environmentVariables: '',
     addRuleFiles: true,
+    autoCommits: true,
+    cachingEnabled: false,
+    watchFiles: false,
   },
   models: {
     aiderPreferred: [SONNET_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, DEEPSEEK_MODEL],
@@ -168,6 +171,10 @@ export class Store {
       const mergeDefaultProperties = (agentProfile: AgentProfile) => ({
         ...DEFAULT_AGENT_PROFILE,
         ...agentProfile,
+        toolApprovals: {
+          ...DEFAULT_AGENT_PROFILE.toolApprovals,
+          ...agentProfile.toolApprovals,
+        },
       });
 
       const defaultProfile = settings.agentProfiles?.find((profile) => profile.id === DEFAULT_AGENT_PROFILE.id);
@@ -391,6 +398,11 @@ export class Store {
 
   setReleaseNotes(releaseNotes: string) {
     this.store.set('releaseNotes', releaseNotes);
+  }
+
+  getAgentProfile(profileId: string): AgentProfile | undefined {
+    const settings = this.getSettings();
+    return settings.agentProfiles.find((profile) => profile.id === profileId);
   }
 }
 

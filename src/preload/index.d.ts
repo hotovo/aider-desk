@@ -22,6 +22,7 @@ import type {
   EditFormat,
   OS,
   ModelInfo,
+  TodoItem,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -58,6 +59,12 @@ export interface ApplicationAPI {
   runCommand: (baseDir: string, command: string) => void;
   scrapeWeb: (baseDir: string, url: string) => Promise<string>;
   initProjectRulesFile: (baseDir: string) => Promise<void>;
+
+  // Todo operations
+  getTodos: (baseDir: string) => Promise<TodoItem[]>;
+  addTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
+  updateTodo: (baseDir: string, name: string, updates: Partial<TodoItem>) => Promise<TodoItem[]>;
+  deleteTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
 
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force = false) => Promise<void>;

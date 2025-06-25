@@ -5,6 +5,7 @@ import {
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
+  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
@@ -146,11 +147,13 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Ask,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Always,
   },
   includeContextFiles: true,
   includeRepoMap: true,
   usePowerTools: false,
   useAiderTools: true,
+  useTodoTools: true,
   customInstructions: '',
   enabledServers: [],
   autoApprove: false,
@@ -165,6 +168,7 @@ export const INIT_PROJECT_RULES_AGENT_PROFILE: AgentProfile = {
   includeContextFiles: false,
   usePowerTools: true,
   useAiderTools: false,
+  useTodoTools: false,
   autoApprove: true,
   toolApprovals: {
     ...DEFAULT_AGENT_PROFILE.toolApprovals,
@@ -183,6 +187,7 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   includeContextFiles: false,
   usePowerTools: false,
   useAiderTools: false,
+  useTodoTools: false,
   autoApprove: true,
 };
 

@@ -1,21 +1,33 @@
+import { type AgentProfile, ToolApprovalState } from '@common/types';
 import { CacheControl } from 'src/main/agent/llm-provider';
 import { cloneDeep } from 'lodash';
 import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResultPart } from 'ai';
+import {
+  AIDER_TOOL_GROUP_NAME,
+  AIDER_TOOL_RUN_PROMPT,
+  POWER_TOOL_AGENT,
+  POWER_TOOL_GROUP_NAME,
+  TODO_TOOL_GET_ITEMS,
+  TODO_TOOL_GROUP_NAME,
+  TOOL_GROUP_NAME_SEPARATOR,
+} from '@common/tools';
 
 import logger from '../logger';
 
 /**
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
  */
-export const optimizeMessages = (messages: CoreMessage[], cacheControl: CacheControl) => {
+export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[], cacheControl: CacheControl) => {
   if (messages.length === 0) {
     return [];
   }
 
   let optimizedMessages = cloneDeep(messages);
 
+  optimizedMessages = addImportantReminders(profile, userRequestMessageIndex, optimizedMessages);
   optimizedMessages = convertImageToolResults(optimizedMessages);
   optimizedMessages = removeDoubleToolCalls(optimizedMessages);
+  optimizedMessages = optimizeAiderMessages(optimizedMessages);
 
   logger.info('Optimized messages:', {
     before: {
@@ -38,6 +50,73 @@ export const optimizeMessages = (messages: CoreMessage[], cacheControl: CacheCon
   }
 
   return optimizedMessages;
+};
+
+const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[]): CoreMessage[] => {
+  const userRequestMessage = messages[userRequestMessageIndex] as CoreUserMessage;
+  const dontForgets: string[] = [];
+
+  if (profile.useTodoTools) {
+    dontForgets.push(
+      `Always use the TODO list tools to manage the tasks, even if small ones. Before any analyze use ${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_GET_ITEMS} to check the current list of tasks and in case it's related to the current request, resume the existing tasks.`,
+    );
+  }
+
+  if (!profile.autoApprove) {
+    dontForgets.push('Before making any changes, present the plan and wait for my approval.');
+  }
+
+  if (profile.usePowerTools && profile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`] !== ToolApprovalState.Never) {
+    dontForgets.push(
+      `Prefer using \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}\` tool to delegate analysis and complex tasks to a sub-agent.`,
+    );
+  }
+
+  if (dontForgets.length === 0) {
+    return messages;
+  }
+
+  const importantReminders = `\n\nTHIS IS IMPORTANT:\n- ${dontForgets.join('\n- ')}`;
+
+  const updatedFirstUserMessage = {
+    ...userRequestMessage,
+    content: `${userRequestMessage.content}${importantReminders}`,
+  } satisfies CoreUserMessage;
+
+  const newMessages = [...messages];
+  newMessages[userRequestMessageIndex] = updatedFirstUserMessage;
+
+  return newMessages;
+};
+
+/**
+ * For run_prompt tool, which returns `responses` array, we should replace this array with empty array.
+ */
+const optimizeAiderMessages = (messages: CoreMessage[]): CoreMessage[] => {
+  const newMessages = cloneDeep(messages);
+
+  for (const message of newMessages) {
+    if (message.role === 'tool') {
+      const toolContent = message.content as ToolContent;
+
+      for (const toolResultPart of toolContent) {
+        if (toolResultPart.toolName === `${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_RUN_PROMPT}` && toolResultPart.result) {
+          try {
+            const result = toolResultPart.result as Record<string, unknown>;
+            if (result.responses) {
+              toolResultPart.result = {
+                ...result,
+                responses: undefined,
+              };
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+  }
+  return newMessages;
 };
 
 /**

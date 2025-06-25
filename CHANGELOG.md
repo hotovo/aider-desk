@@ -1,9 +1,18 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.19.0]
 
 - revamped starting progress bar
 - added /clear-logs command to clear log messages from chat
+- added user-friendly aider options configuration
+- added TODO tasks list functionality to Agent
+- do not add the same message in a row to input history
+- removed Aider run_prompt tool responses to reduce token usage
+- added options to manage TODO list items (add, edit, remove)
+- interrupt action cancels the current question
+- optimized MCP servers reloading when switching between projects
+- added new 'agent' tool for sub-agent executions
+- updated temp directory for pasted images and web scraped content
 - added option to open project in aider desk from command line
 
 ## [0.18.0]

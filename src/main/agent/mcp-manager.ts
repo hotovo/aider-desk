@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { McpServerConfig, McpTool, SettingsData } from '@common/types';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -17,14 +18,18 @@ export interface McpConnector {
 export class McpManager {
   private mcpConnectors: Record<string, Promise<McpConnector>> = {};
   private currentProjectDir: string | null = null;
+  private currentInitId: string | null = null;
 
   async initMcpConnectors(
     mcpServers: Record<string, McpServerConfig>,
     projectDir: string | null = this.currentProjectDir,
     forceReload = false,
   ): Promise<McpConnector[]> {
+    const initId = uuidv4();
     const activeServerNames = new Set(Object.keys(mcpServers));
     const connectorsToClose: Promise<McpConnector>[] = [];
+
+    this.currentInitId = initId;
 
     for (const serverName of Object.keys(this.mcpConnectors)) {
       if (!activeServerNames.has(serverName)) {
@@ -51,6 +56,7 @@ export class McpManager {
         serverName,
         serverConfig,
         forceReload || (!!projectDir && projectDir !== this.currentProjectDir),
+        initId,
       );
     }
     this.currentProjectDir = projectDir;
@@ -58,7 +64,13 @@ export class McpManager {
     return Promise.all(Object.values(this.mcpConnectors));
   }
 
-  private async initMcpConnector(projectDir: string | null, serverName: string, config: McpServerConfig, forceReload = false): Promise<McpConnector> {
+  private async initMcpConnector(
+    projectDir: string | null,
+    serverName: string,
+    config: McpServerConfig,
+    forceReload = false,
+    initId?: string,
+  ): Promise<McpConnector> {
     const oldConnectorPromise = this.mcpConnectors[serverName];
 
     config = this.interpolateServerConfig(config, projectDir);
@@ -67,6 +79,11 @@ export class McpManager {
     if (oldConnectorPromise) {
       try {
         oldConnector = await oldConnectorPromise;
+
+        if (initId !== this.currentInitId) {
+          logger.info('MCP initialization aborted as a new request has been received.');
+          return oldConnector;
+        }
       } catch (error) {
         logger.warn(`Error retrieving old MCP connector for server ${serverName}:`, error);
       }

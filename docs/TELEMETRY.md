@@ -28,6 +28,7 @@ When telemetry is enabled, AiderDesk captures the following events:
     *   `customInstructionsDefined`: A boolean indicating whether custom instructions were provided.
     *   `useAiderTools`: A boolean indicating whether Aider tools were enabled.
     *   `usePowerTools`: A boolean indicating whether Power tools were enabled.
+    *   `useTodoTools`: A boolean indicating whether Todo tools were enabled.
     *   `includeContextFiles`: A boolean indicating whether context files were included.
     *   `includeRepoMap`: A boolean indicating whether the repository map was included.
     *   `autoApprove`: A boolean indicating whether auto-approve was enabled.

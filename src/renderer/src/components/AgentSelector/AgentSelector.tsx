@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdCheck, MdFlashOn, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap } from 'react-icons/md';
+import { MdCheck, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap } from 'react-icons/md';
 import { RiToolsFill } from 'react-icons/ri';
 import clsx from 'clsx';
 import { AgentProfile, ToolApprovalState } from '@common/types';
@@ -36,7 +36,9 @@ export const AgentSelector = () => {
 
   useEffect(() => {
     const calculateEnabledTools = async () => {
-      if (enabledServers.length === 0) {
+      const activeServers = enabledServers.filter((serverName) => mcpServers[serverName]);
+
+      if (activeServers.length === 0) {
         setEnabledToolsCount(0);
         return;
       }
@@ -45,7 +47,7 @@ export const AgentSelector = () => {
 
       try {
         const toolCounts = await Promise.all(
-          enabledServers.map(async (serverName) => {
+          activeServers.map(async (serverName) => {
             if (!mcpServers[serverName]) {
               return 0;
             }
@@ -157,12 +159,13 @@ export const AgentSelector = () => {
         <span className="text-2xs font-mono text-neutral-500">({enabledToolsCount ?? '...'})</span>
         {activeProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-green-400 opacity-70" />}
         {activeProfile.usePowerTools && <MdFlashOn className="w-3.5 h-3.5 text-purple-400 opacity-70" />}
+        {activeProfile.useTodoTools && <MdOutlineChecklist className="w-3.5 h-3.5 text-sky-400 opacity-70" />}
         {activeProfile.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-yellow-400 opacity-70" />}
         {activeProfile.includeRepoMap && <MdOutlineMap className="w-3 h-3 text-blue-400 opacity-70" />}
       </button>
 
       {selectorVisible && (
-        <div className="absolute bottom-full left-0 mb-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 min-w-[280px] max-w-[380px]">
+        <div className="absolute bottom-full left-0 mb-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 min-w-[290px] max-w-[380px]">
           {/* Profiles List */}
           <div className="py-2 border-b border-neutral-700">
             <div className="flex items-center justify-between mb-2 pl-3 pr-2">
@@ -199,7 +202,7 @@ export const AgentSelector = () => {
                 <div className="flex items-center w-full">
                   <span className="text-xs flex-1 font-medium text-neutral-200 text-left px-1 uppercase">{t('mcp.servers')}</span>
                   <span className="text-2xs text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">
-                    {enabledServers.length}/{Object.keys(mcpServers).length}
+                    {enabledServers.filter((serverName) => mcpServers[serverName]).length}/{Object.keys(mcpServers).length}
                   </span>
                 </div>
               }
@@ -232,7 +235,7 @@ export const AgentSelector = () => {
                 onChange={(isChecked) => handleToggleProfileSetting('autoApprove', isChecked)}
                 size="sm"
               />
-              <div className="flex items-center gap-1">
+              <div className="flex items-center">
                 <IconButton
                   icon={<MdOutlineHdrAuto className={clsx('w-3.5 h-3.5', activeProfile.useAiderTools ? 'text-green-400' : 'text-neutral-500 opacity-50')} />}
                   onClick={() => handleToggleProfileSetting('useAiderTools', !activeProfile.useAiderTools)}
@@ -245,6 +248,13 @@ export const AgentSelector = () => {
                   onClick={() => handleToggleProfileSetting('usePowerTools', !activeProfile.usePowerTools)}
                   className="p-1.5 hover:bg-neutral-850 rounded-md"
                   tooltip={t('settings.agent.usePowerTools')}
+                  tooltipId="agent-selector-tooltip"
+                />
+                <IconButton
+                  icon={<MdOutlineChecklist className={clsx('w-3.5 h-3.5', activeProfile.useTodoTools ? 'text-sky-400' : 'text-neutral-500 opacity-50')} />}
+                  onClick={() => handleToggleProfileSetting('useTodoTools', !activeProfile.useTodoTools)}
+                  className="p-1.5 hover:bg-neutral-850 rounded-md"
+                  tooltip={t('settings.agent.useTodoTools')}
                   tooltipId="agent-selector-tooltip"
                 />
                 <IconButton

@@ -10,6 +10,7 @@ import YAML from 'yaml';
 import {
   AgentProfile,
   ContextFile,
+  ContextMessage,
   EditFormat,
   FileEdit,
   InputHistoryData,
@@ -26,6 +27,7 @@ import {
   SettingsData,
   StartupMode,
   Task,
+  TodoItem,
   TokensInfoData,
   ToolData,
   UsageReportData,
@@ -43,7 +45,7 @@ import { TaskManager } from './task-manager';
 import { SessionManager } from './session-manager';
 import { Agent } from './agent';
 import { Connector } from './connector';
-import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
+import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
 import logger from './logger';
 import { MessageAction, ResponseMessage } from './messages';
 import { DEFAULT_MAIN_MODEL, Store } from './store';
@@ -288,6 +290,18 @@ export class Project {
       args.push('--read', AIDER_DESK_PROJECT_RULES_DIR);
     }
 
+    if (!optionsArgsSet.has('--auto-commits') && !optionsArgsSet.has('--no-auto-commits')) {
+      args.push(settings.aider.autoCommits ? '--auto-commits' : '--no-auto-commits');
+    }
+
+    if (!optionsArgsSet.has('--watch-files') && !optionsArgsSet.has('--no-watch-files')) {
+      args.push(settings.aider.watchFiles ? '--watch-files' : '--no-watch-files');
+    }
+
+    if (!optionsArgsSet.has('--cache-prompts') && !optionsArgsSet.has('--no-cache-prompts')) {
+      args.push(settings.aider.cachingEnabled ? '--cache-prompts' : '--no-cache-prompts');
+    }
+
     logger.info('Running Aider with args:', { args });
 
     const env = {
@@ -496,6 +510,16 @@ export class Project {
 
     this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
     return [];
+  }
+
+  public async runSubAgent(
+    profile: AgentProfile,
+    prompt: string,
+    contextFiles: ContextFile[],
+    systemPrompt?: string,
+    abortSignal?: AbortSignal,
+  ): Promise<ContextMessage[]> {
+    return await this.agent.runAgent(this, profile, prompt, [], contextFiles, systemPrompt, abortSignal);
   }
 
   public sendPrompt(prompt: string, mode?: Mode, clearContext = false, clearFiles = false): Promise<ResponseCompletedData[]> {
@@ -778,6 +802,11 @@ export class Project {
 
   public async addToInputHistory(message: string) {
     try {
+      const history = await this.loadInputHistory();
+      if (history.length > 0 && history[0] === message) {
+        return;
+      }
+
       const historyPath = path.isAbsolute(this.inputHistoryFile) ? this.inputHistoryFile : path.join(this.baseDir, this.inputHistoryFile);
 
       const timestamp = new Date().toISOString();
@@ -995,6 +1024,11 @@ export class Project {
 
   public interruptResponse() {
     logger.info('Interrupting response:', { baseDir: this.baseDir });
+
+    if (this.currentQuestion) {
+      this.answerQuestion('n', 'Cancelled');
+    }
+
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
     this.agent.interrupt();
   }
@@ -1288,6 +1322,74 @@ export class Project {
       return tasks;
     }
     return tasks.filter((task) => task.completed === completed);
+  }
+
+  private getTodoFilePath(): string {
+    return path.resolve(this.baseDir, AIDER_DESK_TODOS_FILE);
+  }
+
+  public async readTodoFile(): Promise<{ initialUserPrompt: string; items: TodoItem[] } | null> {
+    const todoFilePath = this.getTodoFilePath();
+    try {
+      const content = await fs.readFile(todoFilePath, 'utf8');
+      return JSON.parse(content);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  public async writeTodoFile(data: { initialUserPrompt: string; items: TodoItem[] }): Promise<void> {
+    const todoFilePath = this.getTodoFilePath();
+    await fs.mkdir(path.dirname(todoFilePath), { recursive: true });
+    await fs.writeFile(todoFilePath, JSON.stringify(data, null, 2), 'utf8');
+  }
+
+  public async getTodos(): Promise<TodoItem[]> {
+    const data = await this.readTodoFile();
+    return data?.items || [];
+  }
+
+  public async setTodos(items: TodoItem[], initialUserPrompt = ''): Promise<void> {
+    await this.writeTodoFile({ initialUserPrompt, items });
+  }
+
+  public async addTodo(name: string): Promise<TodoItem[]> {
+    const data = await this.readTodoFile();
+    const currentItems = data?.items || [];
+    const newItem: TodoItem = { name, completed: false };
+    const updatedItems = [...currentItems, newItem];
+    await this.writeTodoFile({ initialUserPrompt: data?.initialUserPrompt || '', items: updatedItems });
+    return updatedItems;
+  }
+
+  public async updateTodo(name: string, updates: Partial<TodoItem>): Promise<TodoItem[]> {
+    const data = await this.readTodoFile();
+    if (!data) {
+      throw new Error('No todo items found to update');
+    }
+
+    const itemIndex = data.items.findIndex((item) => item.name === name);
+    if (itemIndex === -1) {
+      throw new Error(`Todo item with name "${name}" not found`);
+    }
+
+    data.items[itemIndex] = { ...data.items[itemIndex], ...updates };
+    await this.writeTodoFile(data);
+    return data.items;
+  }
+
+  public async deleteTodo(name: string): Promise<TodoItem[]> {
+    const data = await this.readTodoFile();
+    if (!data) {
+      throw new Error('No todo items found to delete');
+    }
+
+    const updatedItems = data.items.filter((item) => item.name !== name);
+    await this.writeTodoFile({ initialUserPrompt: data.initialUserPrompt, items: updatedItems });
+    return updatedItems;
   }
 
   async initProjectRulesFile(): Promise<void> {

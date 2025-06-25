@@ -203,6 +203,7 @@ export interface AgentProfile {
   includeRepoMap: boolean;
   usePowerTools: boolean;
   useAiderTools: boolean;
+  useTodoTools: boolean;
   customInstructions: string;
   autoApprove: boolean;
 }
@@ -219,6 +220,9 @@ export interface SettingsData {
     options: string;
     environmentVariables: string;
     addRuleFiles: boolean;
+    autoCommits: boolean;
+    cachingEnabled: boolean;
+    watchFiles: boolean;
   };
   models: {
     aiderPreferred: string[];
@@ -322,5 +326,10 @@ export interface ModelInfo {
 export interface Task {
   id: string;
   title: string;
+  completed: boolean;
+}
+
+export interface TodoItem {
+  name: string;
   completed: boolean;
 }

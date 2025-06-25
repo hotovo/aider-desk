@@ -1,11 +1,10 @@
 import path from 'path';
 import fs from 'fs/promises';
 
-import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
-import tmp from 'tmp';
-import { AIDER_DESK_TMP_DIR_NAME } from 'src/main/constants';
+import { AIDER_DESK_PROJECT_TMP_DIR } from 'src/main/constants';
 
 import { McpManager } from './agent/mcp-manager';
 import { Agent } from './agent';
@@ -261,12 +260,13 @@ export const setupIpcHandlers = (
       if (normalizedUrl.length > 100) {
         normalizedUrl = normalizedUrl.substring(0, 100);
       }
-      const tempFilePath = path.join(tmp.tmpdir, AIDER_DESK_TMP_DIR_NAME, `${normalizedUrl}.web`);
+      const tempFilePath = path.join(baseDir, AIDER_DESK_PROJECT_TMP_DIR, `${normalizedUrl}.web`);
 
+      await fs.mkdir(path.dirname(tempFilePath), { recursive: true });
       await fs.writeFile(tempFilePath, `Scraped content of ${url}:\n\n${content}`);
 
       await project.addFile({ path: tempFilePath, readOnly: true });
-      project.addLogMessage('info', `Web content from ${url} saved to ${tempFilePath} and added to context.`);
+      project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, tempFilePath)}' and added to context.`);
     } catch (error) {
       logger.error(`Error processing scraped web content for ${url}:`, error);
       project.addLogMessage('error', `Failed to save scraped content from ${url}:\n${error instanceof Error ? error.message : String(error)}`);
@@ -355,5 +355,21 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('init-project-rules-file', async (_, baseDir: string) => {
     return await projectManager.getProject(baseDir).initProjectRulesFile();
+  });
+
+  ipcMain.handle('get-todos', async (_, baseDir: string) => {
+    return await projectManager.getProject(baseDir).getTodos();
+  });
+
+  ipcMain.handle('add-todo', async (_, baseDir: string, name: string) => {
+    return await projectManager.getProject(baseDir).addTodo(name);
+  });
+
+  ipcMain.handle('update-todo', async (_, baseDir: string, name: string, updates: Partial<TodoItem>) => {
+    return await projectManager.getProject(baseDir).updateTodo(name, updates);
+  });
+
+  ipcMain.handle('delete-todo', async (_, baseDir: string, name: string) => {
+    return await projectManager.getProject(baseDir).deleteTodo(name);
   });
 };

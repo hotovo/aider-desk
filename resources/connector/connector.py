@@ -6,6 +6,7 @@ import sys
 import asyncio
 import json
 import socketio
+import tempfile
 from aider import models
 from aider.coders import Coder
 from aider.io import InputOutput, AutoCompleter
@@ -792,7 +793,24 @@ class Connector:
       self.coder.io.processing_loading_message = True
       await self.send_log_message("loading", "Committing changes...")
 
-    self.coder.commands.run(command)
+    if command.startswith("/paste"):
+      original_mkdtemp = tempfile.mkdtemp
+      tmp_dir = os.path.join(self.base_dir, '.aider-desk', 'tmp')
+      os.makedirs(tmp_dir, exist_ok=True)
+
+      def patched_mkdtemp(*args, **kwargs):
+        kwargs['dir'] = tmp_dir
+        return original_mkdtemp(*args, **kwargs)
+
+      tempfile.mkdtemp = patched_mkdtemp
+
+      try:
+        self.coder.commands.run(command)
+      finally:
+        tempfile.mkdtemp = original_mkdtemp
+    else:
+      self.coder.commands.run(command)
+
     self.coder.io.running_shell_command = False
     self.coder.io.processing_loading_message = False
     if command.startswith("/paste"):

@@ -195,6 +195,7 @@
       "aiderToolsTooltip": "代理可以使用Aider执行添加/删除上下文文件操作和运行提示。",
       "useAiderTools": "使用Aider工具",
       "usePowerTools": "使用 Power 工具",
+      "useTodoTools": "使用 Todo 工具",
       "includeContextFiles": "包含上下文文件",
       "includeFilesTooltip": "将上下文文件内容添加到代理的聊天中。这将增加令牌使用量。",
       "includeRepoMap": "包含仓库地图",
@@ -205,15 +206,21 @@
       "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",
       "createNewProfile": "创建新配置",
       "genericTools": "工具",
-      "noGenericToolsConfigured": "未配置工具。"
+      "noGenericToolsConfigured": "未配置工具。",
+      "todoTools": "待办工具",
+      "includeTodoToolsTooltip": "允许代理管理待办事项列表，包括设置、获取、更新和清除它们。"
     },
     "aider": {
       "options": "选项",
       "optionsPlaceholder": "例如 --no-auto-commits --cache-prompts",
+      "autoCommits": "启用自动提交",
+      "cachingEnabled": "启用提示缓存", 
+      "watchFiles": "监视文件变化",
       "environmentVariables": "环境变量",
       "envVarsPlaceholder": "#################\n# LLM 参数:\n#\n# 包含 xxx_API_KEY 参数和您的 LLM 所需的其他参数。\n# 详情请见 https://aider.chat/docs/llms.html\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
       "optionsDocumentation": "查看文档了解可用选项：https://aider.chat/docs/faq.html#how-can-i-pass-command-line-options-to-aider",
-      "envVarsDocumentation": "查看文档了解环境变量：https://aider.chat/docs/llms.html"
+      "envVarsDocumentation": "查看文档了解环境变量：https://aider.chat/docs/llms.html",
+      "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。"
     },
     "common": {
       "showSecrets": "显示密钥"
@@ -363,6 +370,18 @@
       "ask": "询问"
     },
     "tools": "工具"
+  },
+  "tasks": {
+    "title": "任务",
+    "addTodo": "添加待办",
+    "editTodo": "编辑待办",
+    "deleteTodo": "删除待办",
+    "todoName": "待办名称",
+    "todoNamePlaceholder": "输入待办名称...",
+    "saveTodo": "保存",
+    "cancelTodo": "取消",
+    "noTodos": "没有待办事项",
+    "confirmDelete": "确定要删除这个待办事项吗？"
   },
   "tool": {
     "noDescription": "无描述",
