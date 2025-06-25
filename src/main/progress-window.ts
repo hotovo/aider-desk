@@ -1,3 +1,5 @@
+import { join } from 'path';
+
 import { BrowserWindow, ipcMain } from 'electron';
 
 export class ProgressWindow {
@@ -45,7 +47,7 @@ export class ProgressWindow {
       this.window.webContents.send('set-progress', progress);
     });
 
-    this.window.loadFile('src/renderer/src/utils/progress.html');
+    this.window.loadFile(join(__dirname, '../../src/renderer/src/utils/progress.html'));
   }
 
   on(event: 'ready', callback: () => void): void {
