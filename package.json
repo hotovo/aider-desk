@@ -10,8 +10,14 @@
     "url": "https://github.com/hotovo/aider-desk.git"
   },
   "bin": {
-    "aider-desk": "bin/aider-desk"
+    "aider-desk": "./bin/aider-desk"
   },
+  "files": [
+    "bin",
+    "out",
+    "src",
+    "resources"
+  ],
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint src --fix",

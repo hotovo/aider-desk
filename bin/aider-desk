@@ -1,16 +1,26 @@
 #!/usr/bin/env sh
 
-# First try to find the app in the local node_modules installation
-LOCAL_APP_PATH="$(dirname "$0")/../node_modules/aider-desk/out/main/index.js"
+# Get the directory where this script is located
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
-# Then try global installation path
-GLOBAL_APP_PATH="$(dirname "$(which aider-desk)")/../lib/node_modules/aider-desk/out/main/index.js"
+# Try different possible locations for the Electron app
+PATHS_TO_TRY=(
+  "$SCRIPT_DIR/../out/main/index.js"           # Local development
+  "$SCRIPT_DIR/../node_modules/aider-desk/out/main/index.js"  # Local install
+  "$(dirname "$(which aider-desk)")/../lib/node_modules/aider-desk/out/main/index.js" # Global install
+)
 
-if [ -f "$LOCAL_APP_PATH" ]; then
-  exec electron "$LOCAL_APP_PATH" "$@"
-elif [ -f "$GLOBAL_APP_PATH" ]; then
-  exec electron "$GLOBAL_APP_PATH" "$@"
+for APP_PATH in "${PATHS_TO_TRY[@]}"; do
+  if [ -f "$APP_PATH" ]; then
+    exec electron "$APP_PATH" "$@"
+    exit 0
+  fi
+done
+
+# If not found, try running through npx
+if command -v npx >/dev/null 2>&1; then
+  exec npx -y electron "$SCRIPT_DIR/../out/main/index.js" "$@"
 else
-  echo "Error: Could not find aider-desk installation"
+  echo "Error: Could not find aider-desk installation and npx is not available"
   exit 1
 fi
