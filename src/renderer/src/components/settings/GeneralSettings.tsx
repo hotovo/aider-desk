@@ -175,7 +175,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
                 label={t('settings.promptBehavior.onlyWhenTabPressed')}
               />
               <RadioButton
-                id="suggestion-never"
+                id="suggestion-atSign"
                 name="suggestion-mode"
                 value={SuggestionMode.MentionAtSign}
                 checked={settings.promptBehavior.suggestionMode === SuggestionMode.MentionAtSign}
