@@ -538,6 +538,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         run: startCompletion,
       },
       {
+        key: '@',
+        preventDefault: true,
+        run: startCompletion,
+      },
+      {
         key: 'ArrowUp',
         run: () => {
           if (!text && historyItems.length > 0) {
