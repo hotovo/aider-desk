@@ -34,6 +34,7 @@ AiderDesk is packed with features designed for modern software development:
 *   **🔍 Integrated Diff Viewer**: Review AI-generated code changes with a clear side-by-side comparison.
 *   **⏪ One-Click Reverts**: Easily undo specific AI modifications while keeping others.
 *   **💰 Cost Tracking**: Monitor token usage and associated costs per project session for both Aider and the Agent.
+*   **📊 Usage Dashboard**: Visualize token usage, costs, and model distribution with interactive charts and tables.
 *   **⚙️ Centralized Settings**: Manage API keys, environment variables, and configurations conveniently.
 *   **🌐 Versatile REST API**: Integrate AiderDesk with external tools and workflows.
 *   **📨 Structured Communication**: View prompts, AI responses, agent thoughts, and tool outputs in an organized format.

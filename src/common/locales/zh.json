@@ -478,7 +478,12 @@
       "glob": "查找匹配模式的文件: {{pattern}}",
       "grep": "在匹配 {{filePattern}} 的文件中搜索 {{searchTerm}}",
       "bash": "执行 bash 命令",
-      "semanticSearch": "执行语义搜索: {{query}} {{path}}"
+      "semanticSearch": "执行语义搜索: {{query}} {{path}}",
+      "agent": {
+        "running": "正在运行子代理...",
+        "completed": "子代理执行了以下查询:",
+        "prompt": "提示"
+      }
     },
     "errors": {
       "noSuchTool": "尝试使用未知工具: {{toolName}}",
@@ -609,6 +614,24 @@
     "total": "总计",
     "thisMonth": "本月",
     "today": "今天",
+    "all": "全部",
+    "tabs": {
+      "table": "表格视图",
+      "charts": "图表视图"
+    },
+    "charts": {
+      "tokenUsageTrend": "令牌使用趋势",
+      "dailyCostBreakdown": "每日成本分解",
+      "dailyMessageBreakdown": "每日消息分解",
+      "modelUsageDistribution": "模型使用分布",
+      "inputTokens": "输入令牌",
+      "outputTokens": "输出令牌",
+      "noData": "所选时间段内无数据",
+      "tokens": "令牌",
+      "cost": "成本",
+      "share": "份额",
+      "moreItems": "+{{count}} 更多"
+    },
     "error": {
       "fetch": "获取使用数据失败。"
     },

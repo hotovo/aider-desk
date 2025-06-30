@@ -30,7 +30,7 @@ import { ModelInfoManager } from 'src/main/model-info-manager';
 import { BINARY_EXTENSIONS } from 'src/main/constants';
 import { optimizeMessages } from 'src/main/agent/optimizer';
 
-import { parseAiderEnv } from '../utils';
+import { parseAiderEnv } from '../environment';
 import logger from '../logger';
 import { Store } from '../store';
 import { Project } from '../project';
@@ -417,7 +417,7 @@ export class Agent {
 
     try {
       // reinitialize MCP clients for the current project and wait for them to be ready
-      await this.mcpManager.initMcpConnectors(settings.mcpServers, project.baseDir);
+      await this.mcpManager.initMcpConnectors(settings.mcpServers, project.baseDir, false, profile.enabledServers);
     } catch (error) {
       logger.error('Error reinitializing MCP clients:', error);
       project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`);
@@ -553,6 +553,7 @@ export class Agent {
 
         let iterationError: unknown | null = null;
         let currentResponseId: null | string = null;
+        let hasReasoning: boolean = false;
         const result = streamText({
           providerOptions,
           model,
@@ -585,7 +586,45 @@ export class Agent {
           },
           onChunk: ({ chunk }) => {
             if (chunk.type === 'text-delta') {
-              currentResponseId = project.processResponseMessage({
+              if (hasReasoning) {
+                project.processResponseMessage({
+                  id: currentResponseId,
+                  action: 'response',
+                  content: '---\n► **ANSWER**\n',
+                  finished: false,
+                });
+                hasReasoning = false;
+              }
+
+              const responseId = project.processResponseMessage(
+                {
+                  id: currentResponseId,
+                  action: 'response',
+                  content: chunk.textDelta,
+                  finished: false,
+                },
+                currentResponseId === null,
+              );
+
+              if (!currentResponseId) {
+                currentResponseId = responseId;
+              }
+            } else if (chunk.type === 'reasoning') {
+              if (!hasReasoning) {
+                currentResponseId = project.processResponseMessage(
+                  {
+                    id: currentResponseId,
+                    action: 'response',
+                    content: '---\n► **THINKING**\n',
+                    finished: false,
+                  },
+                  true,
+                );
+                hasReasoning = true;
+              }
+
+              project.processResponseMessage({
+                id: currentResponseId,
                 action: 'response',
                 content: chunk.textDelta,
                 finished: false,
@@ -617,6 +656,7 @@ export class Agent {
             this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile);
 
             currentResponseId = null;
+            hasReasoning = false;
           },
           onFinish: ({ finishReason }) => {
             logger.info(`onFinish prompt finished. Reason: ${finishReason}`);

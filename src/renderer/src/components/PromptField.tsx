@@ -15,8 +15,7 @@ import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
-import { MdStop } from 'react-icons/md';
-import { VscClearAll } from 'react-icons/vsc';
+import { MdPlaylistRemove, MdStop } from 'react-icons/md';
 
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/InputHistoryMenu';
@@ -764,7 +763,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               className="hover:bg-neutral-800 border-neutral-200 text-neutral-200 hover:text-neutral-100"
               size="xs"
             >
-              <VscClearAll className="w-4 h-4 mr-2" />
+              <MdPlaylistRemove className="w-4 h-4 mr-1" />
               {t('promptField.clearChat')}
             </Button>
           </div>

@@ -546,8 +546,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         }));
 
         // Run the sub-agent with the focused context
-        const messages = await project.runSubAgent(subAgentProfile, prompt, contextFiles, getSubAgentSystemPrompt(), abortSignal);
-        return messages[messages.length - 1];
+        return await project.runSubAgent(subAgentProfile, prompt, contextFiles, getSubAgentSystemPrompt(), abortSignal);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Error running sub-agent:', error);
