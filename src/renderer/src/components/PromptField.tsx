@@ -699,7 +699,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 }),
                 autocompletion({
                   override: question ? [] : [completionSource],
-                  activateOnTyping: promptBehavior.suggestionMode === SuggestionMode.Automatically,
+                  activateOnTyping:
+                    promptBehavior.suggestionMode === SuggestionMode.Automatically || promptBehavior.suggestionMode === SuggestionMode.MentionAtSign,
                   activateOnTypingDelay: promptBehavior.suggestionDelay,
                   aboveCursor: true,
                   icons: false,
