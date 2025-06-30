@@ -154,6 +154,23 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         return null;
       }
 
+      // Handle @-based file suggestions (exclusive)
+      const atPos = text.lastIndexOf('@');
+      if (atPos >= 0 && (atPos === 0 || /\s/.test(text[atPos - 1]))) {
+        const files = await window.api.getAddableFiles(baseDir);
+        return {
+          from: atPos + 1,
+          options: files.map((file) => ({ label: file, type: 'file' })),
+          validFor: /^\S*$/,
+        };
+      }
+
+      // Only proceed with other completions if no @ pattern was matched
+      if (text.includes('@')) {
+        return null;
+      }
+
+      // Handle command suggestions
       if (text.startsWith('/')) {
         if (text.includes(' ')) {
           const [command, ...args] = text.split(' ');
@@ -540,8 +557,21 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       {
         key: '@',
         preventDefault: true,
-        run: startCompletion,
+        run: (view) => {
+          const cursorPos = view.state.selection.main.head;
+          const textBeforeCursor = view.state.doc.sliceString(0, cursorPos);
+
+          if (!/\S$/.test(textBeforeCursor)) {
+            view.dispatch({
+              changes: { from: cursorPos, insert: '@' },
+              selection: { anchor: cursorPos + 1 },
+            });
+            startCompletion(view);
+          }
+          return true;
+        },
       },
+
       {
         key: 'ArrowUp',
         run: () => {

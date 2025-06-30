@@ -4,6 +4,7 @@
 
 - removed duplicated cost from assistant message when tool is used
 - usage dashboard with tokens and cost
+- added file completion with @ mention
 
 ## [0.19.0]
 
