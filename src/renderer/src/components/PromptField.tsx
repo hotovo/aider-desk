@@ -164,11 +164,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             validFor: /^\S*$/,
           };
         }
-
-        // Only proceed with other completions if no @ pattern was matched
-        if (text.includes('@')) {
-          return null;
-        }
       }
 
       // Handle command suggestions
