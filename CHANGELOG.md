@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.20.0]
 
 - removed duplicated cost from assistant message when tool is used
 - usage dashboard with tokens and cost and charts with breakdown data
