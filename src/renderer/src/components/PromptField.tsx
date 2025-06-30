@@ -154,20 +154,22 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         return null;
       }
 
-      // Handle @-based file suggestions (exclusive)
-      const atPos = text.lastIndexOf('@');
-      if (atPos >= 0 && (atPos === 0 || /\s/.test(text[atPos - 1]))) {
-        const files = await window.api.getAddableFiles(baseDir);
-        return {
-          from: atPos + 1,
-          options: files.map((file) => ({ label: file, type: 'file' })),
-          validFor: /^\S*$/,
-        };
-      }
+      if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
+        // Handle @-based file suggestions (exclusive)
+        const atPos = text.lastIndexOf('@');
+        if (atPos >= 0 && (atPos === 0 || /\s/.test(text[atPos - 1]))) {
+          const files = await window.api.getAddableFiles(baseDir);
+          return {
+            from: atPos + 1,
+            options: files.map((file) => ({ label: file, type: 'file' })),
+            validFor: /^\S*$/,
+          };
+        }
 
-      // Only proceed with other completions if no @ pattern was matched
-      if (text.includes('@')) {
-        return null;
+        // Only proceed with other completions if no @ pattern was matched
+        if (text.includes('@')) {
+          return null;
+        }
       }
 
       // Handle command suggestions
@@ -558,6 +560,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         key: '@',
         preventDefault: true,
         run: (view) => {
+          if (promptBehavior.suggestionMode !== SuggestionMode.MentionAtSign) {
+            return false;
+          }
           const cursorPos = view.state.selection.main.head;
           const textBeforeCursor = view.state.doc.sliceString(0, cursorPos);
 
