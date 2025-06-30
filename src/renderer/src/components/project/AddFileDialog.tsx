@@ -27,7 +27,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
       for (let filePath of paths) {
         const isValid = await window.api.isValidPath(baseDir, filePath);
 
-        if (filePath.startsWith(baseDir)) {
+        if (filePath.startsWith(baseDir + '/') || filePath === baseDir) {
           filePath = filePath.slice(baseDir.length + 1);
         } else {
           switchToReadOnly = true;

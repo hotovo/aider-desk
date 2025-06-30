@@ -5,6 +5,7 @@ import debounce from 'lodash/debounce';
 import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
 import { isFileIgnored } from 'src/main/utils';
+import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, POWER_TOOL_GROUP_NAME, POWER_TOOL_AGENT } from '@common/tools';
 
 import logger from './logger';
 import { Project } from './project';
@@ -211,6 +212,7 @@ export class SessionManager {
 
   toConnectorMessages(contextMessages: ContextMessage[] = this.contextMessages): { role: MessageRole; content: string }[] {
     let aiderPrompt = '';
+    let powerToolPrompt = '';
 
     return contextMessages.flatMap((message) => {
       if (message.role === MessageRole.User || message.role === MessageRole.Assistant) {
@@ -222,8 +224,14 @@ export class SessionManager {
             if (part.type === 'tool-call') {
               const [serverName, toolName] = extractServerNameToolName(part.toolName);
               // @ts-expect-error part.args contains the prompt in this case
-              if (serverName === 'aider' && toolName === 'run_prompt' && part.args && 'prompt' in part.args) {
+              if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT && part.args && 'prompt' in part.args) {
                 aiderPrompt = part.args.prompt as string;
+                // Found the prompt, no need to check other parts of this message
+                break;
+              }
+              // @ts-expect-error part.args contains the prompt in this case
+              if (serverName === POWER_TOOL_GROUP_NAME && toolName === POWER_TOOL_AGENT && part.args && 'prompt' in part.args) {
+                powerToolPrompt = part.args.prompt as string;
                 // Found the prompt, no need to check other parts of this message
                 break;
               }
@@ -244,7 +252,7 @@ export class SessionManager {
       } else if (message.role === 'tool') {
         return message.content.flatMap((part) => {
           const [serverName, toolName] = extractServerNameToolName(part.toolName);
-          if (serverName === 'aider' && toolName === 'run_prompt' && aiderPrompt) {
+          if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT && aiderPrompt) {
             const messages = [
               {
                 role: MessageRole.User,
@@ -276,6 +284,29 @@ export class SessionManager {
                     });
                   }
                 });
+              }
+            }
+
+            return messages;
+          } else if (serverName === POWER_TOOL_GROUP_NAME && toolName === POWER_TOOL_AGENT && powerToolPrompt) {
+            const messages = [
+              {
+                role: MessageRole.User,
+                content: powerToolPrompt,
+              },
+            ];
+
+            // Extract the last assistant message from the result
+            if (Array.isArray(part.result) && part.result.length > 0) {
+              const lastMessage = part.result[part.result.length - 1];
+              if (lastMessage && lastMessage.role === MessageRole.Assistant) {
+                const content = extractTextContent(lastMessage.content);
+                if (content) {
+                  messages.push({
+                    role: MessageRole.Assistant,
+                    content: content,
+                  });
+                }
               }
             }
 
@@ -361,7 +392,7 @@ export class SessionManager {
             const [serverName, toolName] = extractServerNameToolName(part.toolName);
             this.project.addToolMessage(part.toolCallId, serverName, toolName, undefined, JSON.stringify(part.result));
 
-            if (serverName === 'aider' && toolName === 'run_prompt') {
+            if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT) {
               // @ts-expect-error part.result.responses is expected to be in the result
               const responses = part.result?.responses;
               if (responses) {
@@ -370,6 +401,45 @@ export class SessionManager {
                     ...response,
                     baseDir: this.project.baseDir,
                   });
+                });
+              }
+            }
+
+            // Handle agent tool results - process all messages from sub-agent
+            if (serverName === POWER_TOOL_GROUP_NAME && toolName === POWER_TOOL_AGENT) {
+              const messages = part.result;
+              if (Array.isArray(messages)) {
+                messages.forEach((subMessage: ContextMessage) => {
+                  if (subMessage.role === 'assistant') {
+                    if (Array.isArray(subMessage.content)) {
+                      for (const subPart of subMessage.content) {
+                        if (subPart.type === 'text' && subPart.text) {
+                          this.project.processResponseMessage({
+                            action: 'response',
+                            content: subPart.text,
+                            finished: true,
+                          });
+                        } else if (subPart.type === 'tool-call' && subPart.toolCallId) {
+                          const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
+                          this.project.addToolMessage(subPart.toolCallId, subServerName, subToolName, subPart.args as Record<string, unknown>);
+                        }
+                      }
+                    } else if (isTextContent(subMessage.content)) {
+                      const content = extractTextContent(subMessage.content);
+                      this.project.processResponseMessage({
+                        action: 'response',
+                        content: content,
+                        finished: true,
+                      });
+                    }
+                  } else if (subMessage.role === 'tool') {
+                    for (const subPart of subMessage.content) {
+                      if (subPart.type === 'tool-result') {
+                        const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
+                        this.project.addToolMessage(subPart.toolCallId, subServerName, subToolName, undefined, JSON.stringify(subPart.result));
+                      }
+                    }
+                  }
                 });
               }
             }

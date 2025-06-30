@@ -1,12 +1,20 @@
 import { v4 as uuidv4 } from 'uuid';
 import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { DEFAULT_AGENT_PROFILE, LlmProvider, LlmProviderName } from '@common/agent';
-import { parseAiderEnv, readAiderConfProperty } from 'src/main/utils';
-import { migrateSettingsV5toV6 } from 'src/main/store/migrations/v5-to-v6';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProvider, LlmProviderName } from '@common/agent';
 
 import logger from '../logger';
+import {
+  DEEPSEEK_MODEL,
+  determineAgentProvider,
+  determineMainModel,
+  determineWeakModel,
+  GEMINI_MODEL,
+  OPEN_AI_DEFAULT_MODEL,
+  SONNET_MODEL,
+} from '../environment';
 
+import { migrateSettingsV5toV6 } from './migrations/v5-to-v6';
 import { migrateV6ToV7 } from './migrations/v6-to-v7';
 import { migrateV7ToV8 } from './migrations/v7-to-v8';
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
@@ -14,13 +22,6 @@ import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
 import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
 import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v3-to-v4';
 import { migrateSettingsV4toV5 } from './migrations/v4-to-v5';
-
-const SONNET_MODEL = 'anthropic/claude-sonnet-4-20250514';
-const GEMINI_MODEL = 'gemini/gemini-2.5-pro-preview-06-05';
-const OPEN_AI_DEFAULT_MODEL = 'gpt-4.1';
-const DEEPSEEK_MODEL = 'deepseek/deepseek-chat';
-
-export const DEFAULT_MAIN_MODEL = SONNET_MODEL;
 
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',
@@ -56,51 +57,6 @@ export const DEFAULT_SETTINGS: SettingsData = {
     },
     useVimBindings: false,
   },
-};
-
-export const determineWeakModel = (baseDir: string): string | undefined => {
-  return readAiderConfProperty(baseDir, 'weak-model');
-};
-
-export const determineMainModel = (settings: SettingsData, baseDir: string): string => {
-  // Check for --model in aider options
-  const modelOptionIndex = settings.aider.options.indexOf('--model ');
-  if (modelOptionIndex !== -1) {
-    const modelStartIndex = modelOptionIndex + '--model '.length;
-    let modelEndIndex = settings.aider.options.indexOf(' ', modelStartIndex);
-    if (modelEndIndex === -1) {
-      modelEndIndex = settings.aider.options.length;
-    }
-    const modelName = settings.aider.options.substring(modelStartIndex, modelEndIndex).trim();
-    if (modelName) {
-      return modelName;
-    }
-  }
-
-  const projectModel = readAiderConfProperty(baseDir, 'model');
-  if (projectModel) {
-    return projectModel;
-  }
-
-  const env = {
-    ...process.env,
-    ...parseAiderEnv(settings),
-  };
-  // Check environment variables in order
-  if (env.ANTHROPIC_API_KEY) {
-    return SONNET_MODEL;
-  } else if (env.GEMINI_API_KEY) {
-    return GEMINI_MODEL;
-  } else if (env.OPENAI_API_KEY && !env.OPENAI_API_BASE) {
-    return OPEN_AI_DEFAULT_MODEL;
-  } else if (env.DEEPSEEK_API_KEY) {
-    return DEEPSEEK_MODEL;
-  } else if (env.OPENROUTER_API_KEY) {
-    return 'openrouter/google/gemini-2.5-pro-preview-06-05';
-  }
-
-  // Default model if no other condition is met
-  return DEFAULT_MAIN_MODEL;
 };
 
 export const getDefaultProjectSettings = (store: Store, baseDir: string): ProjectSettings => {
@@ -158,13 +114,30 @@ export class Store {
     return userId;
   }
 
+  createDefaultSettings(): SettingsData {
+    return {
+      ...DEFAULT_SETTINGS,
+      agentProfiles: this.createDefaultAgentProfiles(),
+    };
+  }
+
+  createDefaultAgentProfiles(): AgentProfile[] {
+    const provider: LlmProviderName = determineAgentProvider() || 'anthropic';
+
+    return [
+      {
+        ...DEFAULT_AGENT_PROFILE,
+        provider,
+        model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
+      },
+    ];
+  }
+
   getSettings(): SettingsData {
     const settings = this.store.get('settings');
 
     if (!settings) {
-      return {
-        ...DEFAULT_SETTINGS,
-      };
+      return this.createDefaultSettings();
     }
 
     const getAgentProfiles = () => {

@@ -484,7 +484,12 @@
       "glob": "Finding files matching pattern: {{pattern}}",
       "grep": "Searching files matching '{{filePattern}}' for '{{searchTerm}}'",
       "bash": "Running",
-      "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'"
+      "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'",
+      "agent": {
+        "running": "Running sub-agent...",
+        "completed": "Sub-agent finished.",
+        "prompt": "Prompt"
+      }
     },
     "errors": {
       "noSuchTool": "Attempted to use unknown tool: {{toolName}}",
@@ -602,6 +607,24 @@
     "total": "Total",
     "thisMonth": "This month",
     "today": "Today",
+    "all": "All",
+    "tabs": {
+      "table": "Table View",
+      "charts": "Charts View"
+    },
+    "charts": {
+      "tokenUsageTrend": "Token Usage Trend",
+      "dailyCostBreakdown": "Daily Cost Breakdown",
+      "dailyMessageBreakdown": "Daily Message Breakdown",
+      "modelUsageDistribution": "Model Usage Distribution",
+      "inputTokens": "Input Tokens",
+      "outputTokens": "Output Tokens",
+      "noData": "No data available for the selected period",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "share": "Share",
+      "moreItems": "+{{count}} more"
+    },
     "error": {
       "fetch": "Failed to fetch usage data."
     },

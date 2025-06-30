@@ -49,7 +49,8 @@ import { DataManager } from './data-manager';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
 import logger from './logger';
 import { MessageAction, ResponseMessage } from './messages';
-import { DEFAULT_MAIN_MODEL, Store } from './store';
+import { Store } from './store';
+import { DEFAULT_MAIN_MODEL } from './environment';
 
 import type { SimpleGit } from 'simple-git';
 
@@ -567,8 +568,8 @@ export class Project {
     }
   }
 
-  public processResponseMessage(message: ResponseMessage) {
-    if (!this.currentResponseMessageId) {
+  public processResponseMessage(message: ResponseMessage, forceNewId = false) {
+    if (!this.currentResponseMessageId || forceNewId) {
       this.currentResponseMessageId = uuidv4();
     }
 

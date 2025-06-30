@@ -354,7 +354,7 @@ export const getProviderOptions = (llmProvider: LlmProvider): Record<string, Rec
         ...((llmProvider.includeThoughts || llmProvider.thinkingBudget) && {
           thinkingConfig: {
             includeThoughts: llmProvider.includeThoughts,
-            thinkingBudget: llmProvider.thinkingBudget ?? 0,
+            thinkingBudget: llmProvider.thinkingBudget || null,
           },
         }),
       } satisfies GoogleGenerativeAIProviderOptions,

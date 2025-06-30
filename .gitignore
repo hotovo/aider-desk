@@ -12,6 +12,8 @@ out
 .aider-desk/tmp
 .junie*
 .env
+tsconfig.*.tsbuildinfo
+.taskmaster
 
 # uv binaries
 resources/linux/uv*

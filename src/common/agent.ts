@@ -117,16 +117,18 @@ export type LlmProvider =
 export const DEFAULT_AGENT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string[]>> = {
   openai: ['gpt-4o-mini', 'o4-mini', 'gpt-4.1', 'gpt-4.1-mini'],
   anthropic: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
-  gemini: ['gemini-2.5-pro-preview-06-05', 'gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash', 'gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-exp'],
+  gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
   deepseek: ['deepseek-chat'],
   bedrock: ['us.anthropic.claude-3-7-sonnet-20250219-v1:0', 'anthropic.claude-3-7-sonnet-20250219-v1:0'],
+  openrouter: ['anthropic/claude-sonnet-4'],
+  requesty: ['anthropic/claude-sonnet-4-20250514'],
 };
 
 const DEFAULT_AGENT_PROFILE_ID = 'default';
 
 export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   id: DEFAULT_AGENT_PROFILE_ID,
-  name: 'Default',
+  name: 'Aider',
   provider: 'anthropic',
   model: DEFAULT_AGENT_PROVIDER_MODELS.anthropic![0],
   maxIterations: 20,

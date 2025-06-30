@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaSync } from 'react-icons/fa';
+import { FaSync, FaTable, FaChartBar } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { CgSpinner } from 'react-icons/cg';
 import { UsageDataRow } from '@common/types';
 import clsx from 'clsx';
+
+import { UsageTable } from './UsageTable';
+import { TokenUsageTrendChart } from './TokenUsageTrendChart';
+import { DailyCostBreakdownChart } from './DailyCostBreakdownChart';
+import { DailyMessageBreakdownChart } from './DailyMessageBreakdownChart';
+import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
 
 import { DatePicker } from '@/components/common/DatePicker';
 import { MultiSelect } from '@/components/common/MultiSelect';
@@ -18,6 +24,11 @@ enum DatePeriod {
   ThisMonth = 'thisMonth',
   Today = 'today',
   Custom = 'custom',
+}
+
+enum ViewTab {
+  Table = 'table',
+  Charts = 'charts',
 }
 
 export const UsageDashboard = ({ onClose }: Props) => {
@@ -35,6 +46,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
   });
   const [projectFilter, setProjectFilter] = useState<string[]>([]);
   const [modelFilter, setModelFilter] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<ViewTab>(ViewTab.Table);
 
   const projectOptions = useMemo(() => {
     const projects = [...new Set(data.map((row) => row.project))];
@@ -101,64 +113,6 @@ export const UsageDashboard = ({ onClose }: Props) => {
     setFilteredData(result);
   }, [data, projectFilter, modelFilter]);
 
-  // Aggregate data by day
-  const aggregatedData = useMemo(() => {
-    const aggregatedMap = new Map<string, UsageDataRow>();
-
-    filteredData.forEach((row) => {
-      const date = new Date(row.timestamp).toISOString().split('T')[0]; // Get YYYY-MM-DD format
-      const key = date;
-
-      if (aggregatedMap.has(key)) {
-        const existing = aggregatedMap.get(key)!;
-        const newProjects = new Set(existing.project.split('\n'));
-        newProjects.add(row.project.split(/[\\/]/).pop() || row.project);
-        const newModels = new Set(existing.model.split('\n'));
-        newModels.add(row.model);
-
-        aggregatedMap.set(key, {
-          ...existing,
-          project: [...newProjects].join('\n'),
-          model: [...newModels].join('\n'),
-          input_tokens: (existing.input_tokens || 0) + (row.input_tokens || 0),
-          output_tokens: (existing.output_tokens || 0) + (row.output_tokens || 0),
-          cache_read_tokens: (existing.cache_read_tokens || 0) + (row.cache_read_tokens || 0),
-          cache_write_tokens: (existing.cache_write_tokens || 0) + (row.cache_write_tokens || 0),
-          cost: (existing.cost || 0) + (row.cost || 0),
-        });
-      } else {
-        aggregatedMap.set(key, {
-          ...row,
-          project: row.project.split(/[\\/]/).pop() || row.project,
-          timestamp: date, // Use date string for display
-        });
-      }
-    });
-
-    return Array.from(aggregatedMap.values()).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [filteredData]);
-
-  const totals = useMemo(() => {
-    return aggregatedData.reduce(
-      (acc, row) => ({
-        input: acc.input + (row.input_tokens || 0),
-        output: acc.output + (row.output_tokens || 0),
-        cacheRead: acc.cacheRead + (row.cache_read_tokens || 0),
-        cacheWrite: acc.cacheWrite + (row.cache_write_tokens || 0),
-        totalTokens: acc.totalTokens + (row.input_tokens || 0) + (row.output_tokens || 0),
-        cost: acc.cost + (row.cost || 0),
-      }),
-      {
-        input: 0,
-        output: 0,
-        cacheRead: 0,
-        cacheWrite: 0,
-        totalTokens: 0,
-        cost: 0,
-      },
-    );
-  }, [aggregatedData]);
-
   const handleRefresh = () => {
     void fetchData();
   };
@@ -214,16 +168,16 @@ export const UsageDashboard = ({ onClose }: Props) => {
             selected={projectFilter}
             onChange={setProjectFilter}
             label={t('usageDashboard.projects')}
-            className="min-w-[220px]"
-            noneSelectedLabel={t('multiselect.allSelected')}
+            className="min-w-[250px]"
+            noneSelectedLabel={t('usageDashboard.all')}
           />
           <MultiSelect
             options={modelOptions}
             selected={modelFilter}
             onChange={setModelFilter}
             label={t('usageDashboard.models')}
-            className="min-w-[220px]"
-            noneSelectedLabel={t('multiselect.allSelected')}
+            className="min-w-[250px]"
+            noneSelectedLabel={t('usageDashboard.all')}
           />
           <IconButton
             icon={<FaSync className={loading ? 'animate-spin' : ''} />}
@@ -235,64 +189,52 @@ export const UsageDashboard = ({ onClose }: Props) => {
         </div>
       </div>
 
-      {error && <div className="text-red-500 mb-4">{error}</div>}
+      {/* Tab Navigation */}
+      <div className="flex items-center border-b-2 border-neutral-800 bg-neutral-900">
+        <div className="flex bg-neutral-800 rounded-md p-1 m-4">
+          <button
+            onClick={() => setActiveTab(ViewTab.Table)}
+            className={clsx(
+              'px-4 py-2 text-sm rounded transition-colors duration-200 flex items-center space-x-2',
+              activeTab === ViewTab.Table ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+            )}
+          >
+            <FaTable className="w-4 h-4" />
+            <span>{t('usageDashboard.tabs.table')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab(ViewTab.Charts)}
+            className={clsx(
+              'px-4 py-2 text-sm rounded transition-colors duration-200 flex items-center space-x-2',
+              activeTab === ViewTab.Charts ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+            )}
+          >
+            <FaChartBar className="w-4 h-4" />
+            <span>{t('usageDashboard.tabs.charts')}</span>
+          </button>
+        </div>
+      </div>
+
+      {error && <div className="text-red-500 mb-4 mx-4">{error}</div>}
 
       {loading ? (
         <div className="flex-grow flex items-center justify-center">
           <CgSpinner className="animate-spin w-10 h-10 text-neutral-100" />
         </div>
       ) : (
-        <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
-          <div className="min-h-full">
-            <table className="w-full text-sm text-left text-neutral-400">
-              <thead className="text-xs text-neutral-100 uppercase bg-neutral-800 sticky top-0">
-                <tr>
-                  <th className="px-4 py-2">{t('usageDashboard.table.date')}</th>
-                  <th className="px-4 py-2">{t('usageDashboard.table.project')}</th>
-                  <th className="px-4 py-2">{t('usageDashboard.table.model')}</th>
-                  <th className="px-4 py-2 text-right">{t('usageDashboard.table.input')}</th>
-                  <th className="px-4 py-2 text-right">{t('usageDashboard.table.output')}</th>
-                  <th className="px-4 py-2 text-right">{t('usageDashboard.table.cacheRead')}</th>
-                  <th className="px-4 py-2 text-right">{t('usageDashboard.table.cacheWrite')}</th>
-                  <th className="px-4 py-2 text-right">{t('usageDashboard.table.totalTokens')}</th>
-                  <th className="px-4 py-2 text-right">{t('usageDashboard.table.cost')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {aggregatedData.map((row, index) => (
-                  <tr key={index} className="bg-neutral-900 border-b border-neutral-800 hover:bg-neutral-800/50 text-sm">
-                    <td className="px-4 py-2">{new Date(row.timestamp).toLocaleDateString()}</td>
-                    <td className="px-4 py-2">
-                      <div className="whitespace-pre-line text-xs">{row.project}</div>
-                    </td>
-                    <td className="px-4 py-2">
-                      <div className="whitespace-pre-line text-xs">{row.model}</div>
-                    </td>
-                    <td className="px-4 py-2 text-right">{row.input_tokens || 0}</td>
-                    <td className="px-4 py-2 text-right">{row.output_tokens || 0}</td>
-                    <td className="px-4 py-2 text-right">{row.cache_read_tokens || 0}</td>
-                    <td className="px-4 py-2 text-right">{row.cache_write_tokens || 0}</td>
-                    <td className="px-4 py-2 text-right">{(row.input_tokens || 0) + (row.output_tokens || 0)}</td>
-                    <td className="px-4 py-2 text-right">${(row.cost || 0).toFixed(6)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="sticky bottom-0 bg-neutral-800 text-xs uppercase text-neutral-100">
-                <tr>
-                  <th colSpan={3} className="px-4 py-2 text-left font-medium">
-                    {t('usageDashboard.total')}
-                  </th>
-                  <th className="px-4 py-2 text-right font-medium">{totals.input}</th>
-                  <th className="px-4 py-2 text-right font-medium">{totals.output}</th>
-                  <th className="px-4 py-2 text-right font-medium">{totals.cacheRead}</th>
-                  <th className="px-4 py-2 text-right font-medium">{totals.cacheWrite}</th>
-                  <th className="px-4 py-2 text-right font-medium">{totals.totalTokens}</th>
-                  <th className="px-4 py-2 text-right font-medium">${totals.cost.toFixed(6)}</th>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        <>
+          {activeTab === ViewTab.Table && <UsageTable data={filteredData} />}
+          {activeTab === ViewTab.Charts && (
+            <div className="flex-grow p-2 overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
+              <div className="grid grid-cols-1 xl:grid-cols-2">
+                <TokenUsageTrendChart data={filteredData} />
+                <ModelUsageDistributionChart data={filteredData} />
+                <DailyCostBreakdownChart data={filteredData} />
+                <DailyMessageBreakdownChart data={filteredData} />
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

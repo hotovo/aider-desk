@@ -24,6 +24,7 @@ export class McpManager {
     mcpServers: Record<string, McpServerConfig>,
     projectDir: string | null = this.currentProjectDir,
     forceReload = false,
+    enabledServers?: string[],
   ): Promise<McpConnector[]> {
     const initId = uuidv4();
     const activeServerNames = new Set(Object.keys(mcpServers));
@@ -61,7 +62,11 @@ export class McpManager {
     }
     this.currentProjectDir = projectDir;
 
-    return Promise.all(Object.values(this.mcpConnectors));
+    const enabledMcpConnectors = enabledServers
+      ? enabledServers.filter((serverName) => this.mcpConnectors[serverName]).map((serverName) => this.mcpConnectors[serverName])
+      : Object.values(this.mcpConnectors);
+
+    return Promise.all(enabledMcpConnectors);
   }
 
   private async initMcpConnector(

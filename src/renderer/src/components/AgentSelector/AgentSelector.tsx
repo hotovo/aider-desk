@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdCheck, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap } from 'react-icons/md';
+import { MdCheck, MdDoneAll, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap } from 'react-icons/md';
 import { RiToolsFill } from 'react-icons/ri';
 import clsx from 'clsx';
 import { AgentProfile, ToolApprovalState } from '@common/types';
@@ -157,7 +157,8 @@ export const AgentSelector = () => {
         <RiToolsFill className="w-3.5 h-3.5" />
         <span className="text-2xs truncate max-w-[250px] -mb-0.5">{activeProfile.name}</span>
         <span className="text-2xs font-mono text-neutral-500">({enabledToolsCount ?? '...'})</span>
-        {activeProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-green-400 opacity-70" />}
+        {activeProfile.autoApprove && <MdDoneAll className="w-3.5 h-3.5 text-green-400 opacity-70" />}
+        {activeProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-orange-400 opacity-90" />}
         {activeProfile.usePowerTools && <MdFlashOn className="w-3.5 h-3.5 text-purple-400 opacity-70" />}
         {activeProfile.useTodoTools && <MdOutlineChecklist className="w-3.5 h-3.5 text-sky-400 opacity-70" />}
         {activeProfile.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-yellow-400 opacity-70" />}
@@ -237,7 +238,7 @@ export const AgentSelector = () => {
               />
               <div className="flex items-center">
                 <IconButton
-                  icon={<MdOutlineHdrAuto className={clsx('w-3.5 h-3.5', activeProfile.useAiderTools ? 'text-green-400' : 'text-neutral-500 opacity-50')} />}
+                  icon={<MdOutlineHdrAuto className={clsx('w-3.5 h-3.5', activeProfile.useAiderTools ? 'text-orange-400' : 'text-neutral-500 opacity-50')} />}
                   onClick={() => handleToggleProfileSetting('useAiderTools', !activeProfile.useAiderTools)}
                   className="p-1.5 hover:bg-neutral-850 rounded-md"
                   tooltip={t('settings.agent.useAiderTools')}
