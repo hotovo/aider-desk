@@ -55,7 +55,7 @@ export const Home = () => {
     };
 
     void notify();
-  }, [isDownloading, isUpdateAvailable, versions?.aiderDeskNewVersionReady]);
+  }, []);
 
   useEffect(() => {
     const loadProjects = async () => {
