@@ -4,6 +4,7 @@
 
 - not storing tool messages without the usage report into DB
 - added cached token information for Gemini models
+- notification when update is ready to be installed
 
 ## [0.20.0]
 
