@@ -554,9 +554,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         key: '@',
         preventDefault: true,
         run: (view) => {
-          if (promptBehavior.suggestionMode !== SuggestionMode.MentionAtSign) {
-            return false;
-          }
           const cursorPos = view.state.selection.main.head;
           const textBeforeCursor = view.state.doc.sliceString(0, cursorPos);
 
@@ -565,7 +562,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               changes: { from: cursorPos, insert: '@' },
               selection: { anchor: cursorPos + 1 },
             });
-            startCompletion(view);
+
+            if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
+              startCompletion(view);
+            }
           }
           return true;
         },
@@ -700,7 +700,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 autocompletion({
                   override: question ? [] : [completionSource],
                   activateOnTyping:
-                    promptBehavior.suggestionMode === SuggestionMode.Automatically || promptBehavior.suggestionMode === SuggestionMode.MentionAtSign,
+                    promptBehavior.suggestionMode === SuggestionMode.Automatically ||
+                    (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign && text.lastIndexOf('/') === 0),
                   activateOnTypingDelay: promptBehavior.suggestionDelay,
                   aboveCursor: true,
                   icons: false,
