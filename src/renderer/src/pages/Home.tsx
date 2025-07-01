@@ -28,6 +28,7 @@ export const Home = () => {
   const [releaseNotesContent, setReleaseNotesContent] = useState<string | null>(null);
   const [modelsInfo, setModelsInfo] = useState<Record<string, ModelInfo>>({});
   const [isUsageDashboardVisible, setIsUsageDashboardVisible] = useState(false);
+  const [hasShownUpdateNotification, setHasShownUpdateNotification] = useState(false);
 
   const activeProject = openProjects.find((project) => project.active) || openProjects[0];
 
@@ -48,10 +49,11 @@ export const Home = () => {
   const showUpdateIcon = isDownloading || isUpdateAvailable || versions?.aiderDeskNewVersionReady;
 
   useEffect(() => {
-    if (versions?.aiderDeskNewVersionReady) {
+    if (versions?.aiderDeskNewVersionReady && !hasShownUpdateNotification) {
       showInfoNotification(t('settings.about.updateReadyToBeInstalled'));
+      setHasShownUpdateNotification(true);
     }
-  }, [versions, t]);
+  }, [versions, t, hasShownUpdateNotification]);
 
   useEffect(() => {
     const loadProjects = async () => {
