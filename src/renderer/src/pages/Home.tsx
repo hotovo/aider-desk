@@ -14,6 +14,7 @@ import { useVersions } from '@/hooks/useVersions';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/Dialogs/TelemetryInfoDialog';
+import { showInfoNotification } from '@/utils/notifications';
 
 export const Home = () => {
   const { t } = useTranslation();
@@ -45,6 +46,16 @@ export const Home = () => {
   const isUpdateAvailable = isAiderDeskUpdateAvailable || isAiderUpdateAvailable;
   const isDownloading = typeof versions?.aiderDeskDownloadProgress === 'number';
   const showUpdateIcon = isDownloading || isUpdateAvailable || versions?.aiderDeskNewVersionReady;
+
+  useEffect(() => {
+    const notify = async () => {
+      if (isUpdateAvailable && !isDownloading && versions?.aiderDeskNewVersionReady) {
+        showInfoNotification('Update ready to install');
+      }
+    };
+
+    void notify();
+  }, []);
 
   useEffect(() => {
     const loadProjects = async () => {
