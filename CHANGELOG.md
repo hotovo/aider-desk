@@ -1,6 +1,9 @@
 # Changelog
 
 ## [UNRELEASED]
+
+- not storing tool messages without the usage report into DB
+- added cached token information for Gemini models
 - added file completion with @ mention
 
 ## [0.20.0]
