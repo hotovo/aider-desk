@@ -1065,8 +1065,8 @@ export class Project {
       usageReport,
     };
 
-    if (response) {
-      this.dataManager.saveMessage(id, 'tool', this.baseDir, usageReport?.model || 'unknown', usageReport, {
+    if (response && usageReport) {
+      this.dataManager.saveMessage(id, 'tool', this.baseDir, usageReport.model, usageReport, {
         toolName,
         args,
         response,
