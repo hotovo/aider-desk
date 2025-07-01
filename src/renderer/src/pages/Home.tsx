@@ -48,14 +48,10 @@ export const Home = () => {
   const showUpdateIcon = isDownloading || isUpdateAvailable || versions?.aiderDeskNewVersionReady;
 
   useEffect(() => {
-    const notify = async () => {
-      if (isUpdateAvailable && !isDownloading && versions?.aiderDeskNewVersionReady) {
-        showInfoNotification(`${t('settings.about.updateReadyToBeInstalled')}`);
-      }
-    };
-
-    void notify();
-  }, []);
+    if (versions?.aiderDeskNewVersionReady) {
+      showInfoNotification(t('settings.about.updateReadyToBeInstalled'));
+    }
+  }, [versions, t]);
 
   useEffect(() => {
     const loadProjects = async () => {
