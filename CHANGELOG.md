@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- added option to open project in aider desk from command line
+
 ## [0.19.0]
 
 - revamped starting progress bar
@@ -13,7 +16,6 @@
 - optimized MCP servers reloading when switching between projects
 - added new 'agent' tool for sub-agent executions
 - updated temp directory for pasted images and web scraped content
-- added option to open project in aider desk from command line
 
 ## [0.18.0]
 
