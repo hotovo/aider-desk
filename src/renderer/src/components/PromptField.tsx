@@ -153,6 +153,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         return null;
       }
 
+      if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign && !text.startsWith('/') && !text.includes('@')) {
+        return null;
+      }
+
       if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
         // Handle @-based file suggestions (exclusive)
         const atPos = text.lastIndexOf('@');
@@ -700,8 +704,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 autocompletion({
                   override: question ? [] : [completionSource],
                   activateOnTyping:
-                    promptBehavior.suggestionMode === SuggestionMode.Automatically ||
-                    (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign && text.lastIndexOf('/') === 0),
+                    promptBehavior.suggestionMode === SuggestionMode.Automatically || promptBehavior.suggestionMode === SuggestionMode.MentionAtSign,
                   activateOnTypingDelay: promptBehavior.suggestionDelay,
                   aboveCursor: true,
                   icons: false,
