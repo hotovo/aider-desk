@@ -50,7 +50,7 @@ export const Home = () => {
   useEffect(() => {
     const notify = async () => {
       if (isUpdateAvailable && !isDownloading && versions?.aiderDeskNewVersionReady) {
-        showInfoNotification('Update ready to install');
+        showInfoNotification(`${t('settings.about.updateReadyToBeInstalled')}`);
       }
     };
 
