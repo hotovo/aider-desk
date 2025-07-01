@@ -28,7 +28,7 @@ const initStore = async (): Promise<Store> => {
 
   const args = process.argv.slice(app.isPackaged ? 1 : 2);
   if (args.length > 0) {
-    const potentialDir = args[0];
+    const potentialDir = args[args.length - 1];
     try {
       const absolutePath = join(process.cwd(), potentialDir);
       if (existsSync(absolutePath) && statSync(absolutePath).isDirectory()) {
