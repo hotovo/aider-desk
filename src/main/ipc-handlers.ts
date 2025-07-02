@@ -270,10 +270,33 @@ export const setupIpcHandlers = (
       }
 
       if (filePath != null) {
-        await fs.writeFile(filePath, `Scraped content of ${url}:\n\n${content}`);
+        try {
+          // Ensure parent directory exists
+          await fs.mkdir(path.dirname(filePath), { recursive: true });
 
-        await project.addFile({ path: filePath, readOnly: true });
-        project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, filePath)}' and added to context.`);
+          // Check if path exists and is a directory
+          try {
+            const stat = await fs.stat(filePath);
+            if (stat.isDirectory()) {
+              filePath = path.join(filePath, 'temp');
+            }
+          } catch (err) {
+            // File doesn't exist - that's fine, we'll create it
+            if (err instanceof Error && 'code' in err && err.code !== 'ENOENT') {
+              throw err;
+            }
+          }
+
+          await fs.writeFile(filePath, `Scraped content of ${url}:\n\n${content}`);
+          await project.addFile({ path: filePath, readOnly: true });
+          project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, filePath)}' and added to context.`);
+        } catch (error) {
+          logger.error(`Error saving scraped content to ${filePath}:`, error);
+          project.addLogMessage(
+            'error',
+            `Failed to save scraped content from ${url} to ${filePath}:\n${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
       }
     } catch (error) {
       logger.error(`Error processing scraped web content for ${url}:`, error);
