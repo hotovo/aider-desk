@@ -87,7 +87,7 @@ type Props = {
   showFileDialog: (readOnly: boolean) => void;
   addFiles?: (filePaths: string[], readOnly?: boolean) => void;
   clearMessages: () => void;
-  scrapeWeb: (url: string) => void;
+  scrapeWeb: (url: string, filePath?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
   interruptResponse: () => void;
@@ -254,9 +254,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             openModelSelector?.(args);
             break;
           case '/web': {
-            const url = text.replace('/web', '').trim();
+            const parts = text.replace('/web', '').trim().split(' ');
+            const url = parts[0];
+            const filePath = parts[1];
             prepareForNextPrompt();
-            scrapeWeb(url);
+            scrapeWeb(url, filePath);
             break;
           }
           case '/clear':

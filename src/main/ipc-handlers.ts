@@ -251,7 +251,7 @@ export const setupIpcHandlers = (
     }
   });
 
-  ipcMain.handle('scrape-web', async (_, baseDir: string, url: string) => {
+  ipcMain.handle('scrape-web', async (_, baseDir: string, url: string, filePath?: string) => {
     const content = await scrapeWeb(url);
     const project = projectManager.getProject(baseDir);
 
@@ -262,13 +262,19 @@ export const setupIpcHandlers = (
       if (normalizedUrl.length > 100) {
         normalizedUrl = normalizedUrl.substring(0, 100);
       }
-      const tempFilePath = path.join(baseDir, AIDER_DESK_PROJECT_TMP_DIR, `${normalizedUrl}.web`);
 
-      await fs.mkdir(path.dirname(tempFilePath), { recursive: true });
-      await fs.writeFile(tempFilePath, `Scraped content of ${url}:\n\n${content}`);
+      if (filePath === undefined || filePath == null) {
+        const filePath = path.join(baseDir, AIDER_DESK_PROJECT_TMP_DIR, `${normalizedUrl}.web`);
 
-      await project.addFile({ path: tempFilePath, readOnly: true });
-      project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, tempFilePath)}' and added to context.`);
+        await fs.mkdir(path.dirname(filePath), { recursive: true });
+      }
+
+      if (filePath != null) {
+        await fs.writeFile(filePath, `Scraped content of ${url}:\n\n${content}`);
+
+        await project.addFile({ path: filePath, readOnly: true });
+        project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, filePath)}' and added to context.`);
+      }
     } catch (error) {
       logger.error(`Error processing scraped web content for ${url}:`, error);
       project.addLogMessage('error', `Failed to save scraped content from ${url}:\n${error instanceof Error ? error.message : String(error)}`);

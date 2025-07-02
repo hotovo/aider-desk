@@ -75,7 +75,7 @@ const api: ApplicationAPI = {
   isProjectPath: (path) => ipcRenderer.invoke('is-project-path', path),
   dropFile: (baseDir, path) => ipcRenderer.send('drop-file', baseDir, path),
   runCommand: (baseDir, command) => ipcRenderer.send('run-command', baseDir, command),
-  scrapeWeb: (baseDir, url) => ipcRenderer.invoke('scrape-web', baseDir, url),
+  scrapeWeb: (baseDir, url, filePath) => ipcRenderer.invoke('scrape-web', baseDir, url, filePath),
   initProjectRulesFile: (baseDir) => ipcRenderer.invoke('init-project-rules-file', baseDir),
 
   getTodos: (baseDir) => ipcRenderer.invoke('get-todos', baseDir),

@@ -544,17 +544,17 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
-  const scrapeWeb = async (url: string) => {
+  const scrapeWeb = async (url: string, filePath?: string) => {
     setProcessing(true);
     const loadingMessage: LoadingMessage = {
       id: uuidv4(),
       type: 'loading',
       content: `Scraping ${url}...`,
     };
-    setMessages((prevMessages) => [...prevMessages, loadingMessage]);
 
+    setMessages((prevMessages) => [...prevMessages, loadingMessage]);
     try {
-      await window.api.scrapeWeb(project.baseDir, url);
+      await window.api.scrapeWeb(project.baseDir, url, filePath);
       const infoMessage: LogMessage = {
         id: uuidv4(),
         level: 'info',
