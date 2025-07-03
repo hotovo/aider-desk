@@ -283,7 +283,9 @@ export const setupIpcHandlers = (
           try {
             const stat = await fs.stat(filePath);
             if (stat.isDirectory()) {
-              filePath = path.join(filePath, 'temp');
+              filePath = path.join(filePath, 'temp.md');
+            } else if (!filePath.endsWith('.md')) {
+              filePath = path.join(filePath, '.md');
             }
           } catch (err) {
             // File doesn't exist - that's fine, we'll create it
