@@ -21,6 +21,8 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
   const isAiderUpdateAvailable = versions?.aiderAvailableVersion && versions.aiderAvailableVersion !== versions.aiderCurrentVersion;
   const isDownloading = typeof versions?.aiderDeskDownloadProgress === 'number';
 
+  const openLogsDirectory = async () => {};
+
   const handleDownloadUpdate = async () => {
     try {
       await window.api.downloadLatestAiderDesk();
@@ -100,7 +102,10 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
           <Checkbox label={t('telemetry.enabledLabel')} checked={settings.telemetryEnabled ?? false} onChange={handleTelemetryEnabledChange} />
         </div>
       </Section>
-      <div className="flex flex-col items-center space-y-2">
+      <div className="flex flex-row justify-between items-center space-x-4">
+        <Button onClick={openLogsDirectory} disabled={!versions} variant="text" size="sm">
+          {t('settings.about.openLogDirectory')}
+        </Button>
         <Button onClick={checkForUpdates} disabled={!versions} variant="text" size="sm">
           {t('settings.about.checkForUpdates')}
         </Button>
