@@ -272,11 +272,14 @@ export const setupIpcHandlers = (
       if (filePath != null) {
         try {
           // Check if path looks like a directory (ends with separator) or file (has extension)
-          const isDirectory = filePath.endsWith('/') || filePath.endsWith('\\') || !path.extname(filePath);
+          const isDirectory = filePath.endsWith('/') || filePath.endsWith('\\');
           if (isDirectory) {
             await fs.mkdir(filePath, { recursive: true });
           } else {
             await fs.mkdir(path.dirname(filePath), { recursive: true });
+            if (!filePath.endsWith('.md') && !path.extname(filePath)) {
+              filePath += '.md';
+            }
           }
 
           // Check if path exists and is a directory
@@ -284,8 +287,6 @@ export const setupIpcHandlers = (
             const stat = await fs.stat(filePath);
             if (stat.isDirectory()) {
               filePath = path.join(filePath, 'temp.md');
-            } else if (!filePath.endsWith('.md')) {
-              filePath = path.join(filePath, '.md');
             }
           } catch (err) {
             // File doesn't exist - that's fine, we'll create it
