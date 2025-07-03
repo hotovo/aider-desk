@@ -271,8 +271,13 @@ export const setupIpcHandlers = (
 
       if (filePath != null) {
         try {
-          // Ensure parent directory exists
-          await fs.mkdir(path.dirname(filePath), { recursive: true });
+          // Check if path looks like a directory (ends with separator) or file (has extension)
+          const isDirectory = filePath.endsWith('/') || filePath.endsWith('\\') || !path.extname(filePath);
+          if (isDirectory) {
+            await fs.mkdir(filePath, { recursive: true });
+          } else {
+            await fs.mkdir(path.dirname(filePath), { recursive: true });
+          }
 
           // Check if path exists and is a directory
           try {
