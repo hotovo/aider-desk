@@ -263,30 +263,30 @@ export const setupIpcHandlers = (
         normalizedUrl = normalizedUrl.substring(0, 100);
       }
 
+      let targetFilePath: string;
       if (filePath === undefined || filePath == null) {
-        const filePath = path.join(baseDir, AIDER_DESK_PROJECT_TMP_DIR, `${normalizedUrl}.web`);
-
-        await fs.mkdir(path.dirname(filePath), { recursive: true });
-      }
-
-      if (filePath != null) {
+        targetFilePath = path.join(baseDir, AIDER_DESK_PROJECT_TMP_DIR, `${normalizedUrl}.md`);
+        await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
+      } else {
+        targetFilePath = filePath;
         try {
-          // Check if path looks like a directory (ends with separator) or file (has extension)
-          const isDirectory = filePath.endsWith('/') || filePath.endsWith('\\');
+          // Check if path looks like a directory (ends with separator)
+          const isDirectory = targetFilePath.endsWith('/') || targetFilePath.endsWith('\\');
           if (isDirectory) {
-            await fs.mkdir(filePath, { recursive: true });
+            await fs.mkdir(targetFilePath, { recursive: true });
+            targetFilePath = path.join(targetFilePath, 'temp.md');
           } else {
-            await fs.mkdir(path.dirname(filePath), { recursive: true });
-            if (!filePath.endsWith('.md') && !path.extname(filePath)) {
-              filePath += '.md';
+            await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
+            if (!targetFilePath.endsWith('.md') && !path.extname(targetFilePath)) {
+              targetFilePath += '.md';
             }
           }
 
-          // Check if path exists and is a directory
+          // Check if path exists and is a directory (after potential .md append)
           try {
-            const stat = await fs.stat(filePath);
+            const stat = await fs.stat(targetFilePath);
             if (stat.isDirectory()) {
-              filePath = path.join(filePath, 'temp.md');
+              targetFilePath = path.join(targetFilePath, 'temp.md');
             }
           } catch (err) {
             // File doesn't exist - that's fine, we'll create it
@@ -294,18 +294,16 @@ export const setupIpcHandlers = (
               throw err;
             }
           }
-
-          await fs.writeFile(filePath, `Scraped content of ${url}:\n\n${content}`);
-          await project.addFile({ path: filePath, readOnly: true });
-          project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, filePath)}' and added to context.`);
         } catch (error) {
-          logger.error(`Error saving scraped content to ${filePath}:`, error);
-          project.addLogMessage(
-            'error',
-            `Failed to save scraped content from ${url} to ${filePath}:\n${error instanceof Error ? error.message : String(error)}`,
-          );
+          logger.error(`Error processing provided file path ${filePath}:`, error);
+          project.addLogMessage('error', `Failed to process provided file path ${filePath}:\n${error instanceof Error ? error.message : String(error)}`);
+          return;
         }
       }
+
+      await fs.writeFile(targetFilePath, `Scraped content of ${url}:\n\n${content}`);
+      await project.addFile({ path: targetFilePath, readOnly: true });
+      project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, targetFilePath)}' and added to context.`);
     } catch (error) {
       logger.error(`Error processing scraped web content for ${url}:`, error);
       project.addLogMessage('error', `Failed to save scraped content from ${url}:\n${error instanceof Error ? error.message : String(error)}`);

@@ -254,9 +254,20 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             openModelSelector?.(args);
             break;
           case '/web': {
-            const parts = text.replace('/web', '').trim().split(' ');
-            const url = parts[0];
-            const filePath = parts[1];
+            const commandArgs = text.replace('/web', '').trim();
+            const firstSpaceIndex = commandArgs.indexOf(' ');
+            let url: string;
+            let filePath: string | undefined;
+
+            if (firstSpaceIndex === -1) {
+              url = commandArgs; // Only URL provided
+            } else {
+              url = commandArgs.substring(0, firstSpaceIndex);
+              filePath = commandArgs.substring(firstSpaceIndex + 1).trim();
+              if (filePath === '') {
+                filePath = undefined; // If only spaces after URL, treat as no filePath
+              }
+            }
             prepareForNextPrompt();
             scrapeWeb(url, filePath);
             break;
