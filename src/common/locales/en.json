@@ -254,7 +254,8 @@
       "newAiderDeskVersionReady": "A new version is ready. Restart AiderDesk to apply the update.",
       "downloadAutomatically": "Download update automatically",
       "releaseNotes": "Release notes",
-      "openLogDirectory": "Open logs"
+      "openLogsDirectory": "Open logs directory",
+      "openLogsError": "Error opening a log directory"
     },
     "telemetry": {
       "title": "Telemetry"

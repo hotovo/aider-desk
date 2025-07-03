@@ -249,7 +249,8 @@
       "newAiderDeskVersionReady": "新版本已准备好。重启 AiderDesk 以应用更新。",
       "downloadAutomatically": "自动下载更新",
       "releaseNotes": "发行说明",
-      "openLogDirectory": ""
+      "openLogsDirectory": "",
+      "openLogsError": ""
     }
   },
   "messages": {

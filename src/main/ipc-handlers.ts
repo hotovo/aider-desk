@@ -3,8 +3,8 @@ import fs from 'fs/promises';
 
 import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { AIDER_DESK_PROJECT_TMP_DIR } from 'src/main/constants';
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { AIDER_DESK_PROJECT_TMP_DIR, LOGS_DIR } from 'src/main/constants';
 
 import { McpManager } from './agent/mcp-manager';
 import { Agent } from './agent';
@@ -377,5 +377,15 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('query-usage-data', async (_, from: string, to: string) => {
     return dataManager.queryUsageData(new Date(from), new Date(to));
+  });
+
+  ipcMain.handle('open-logs-directory', async () => {
+    try {
+      await shell.openPath(LOGS_DIR);
+      return true;
+    } catch (error) {
+      logger.error('Failed to open logs directory:', error);
+      return false;
+    }
   });
 };

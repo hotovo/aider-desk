@@ -21,7 +21,18 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
   const isAiderUpdateAvailable = versions?.aiderAvailableVersion && versions.aiderAvailableVersion !== versions.aiderCurrentVersion;
   const isDownloading = typeof versions?.aiderDeskDownloadProgress === 'number';
 
-  const openLogsDirectory = async () => {};
+  const openLogsDirectory = async () => {
+    try {
+      const success = await window.api.openLogsDirectory();
+      if (!success) {
+        toast.error(t('settings.about.openLogsError'));
+      }
+    } catch (error) {
+      toast.error(t('settings.about.openLogsError'));
+
+      console.error('Failed to open logs directory:', error);
+    }
+  };
 
   const handleDownloadUpdate = async () => {
     try {
@@ -104,7 +115,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
       </Section>
       <div className="flex flex-row justify-between items-center space-x-4">
         <Button onClick={openLogsDirectory} disabled={!versions} variant="text" size="sm">
-          {t('settings.about.openLogDirectory')}
+          {t('settings.about.openLogsDirectory')}
         </Button>
         <Button onClick={checkForUpdates} disabled={!versions} variant="text" size="sm">
           {t('settings.about.checkForUpdates')}

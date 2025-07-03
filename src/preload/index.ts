@@ -44,6 +44,7 @@ const clearProjectListeners: Record<string, (event: Electron.IpcRendererEvent, b
 const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
 
 const api: ApplicationAPI = {
+  openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   startProject: (baseDir) => ipcRenderer.send('start-project', baseDir),
