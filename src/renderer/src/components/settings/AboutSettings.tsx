@@ -114,7 +114,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
         </div>
       </Section>
       <div className="flex flex-row justify-between items-center space-x-4">
-        <Button onClick={openLogsDirectory} disabled={!versions} variant="text" size="sm">
+        <Button onClick={openLogsDirectory} variant="text" size="sm">
           {t('settings.about.openLogsDirectory')}
         </Button>
         <Button onClick={checkForUpdates} disabled={!versions} variant="text" size="sm">
