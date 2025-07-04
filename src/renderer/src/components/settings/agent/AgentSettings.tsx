@@ -2,22 +2,7 @@ import { AgentProfile, GenericTool, McpServerConfig, SettingsData, ToolApprovalS
 import { ReactNode, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
-import {
-  AVAILABLE_PROVIDERS,
-  DEFAULT_AGENT_PROFILE,
-  getLlmProviderConfig,
-  isAnthropicProvider,
-  isBedrockProvider,
-  isDeepseekProvider,
-  isGeminiProvider,
-  isOllamaProvider,
-  isOpenAiCompatibleProvider,
-  isOpenAiProvider,
-  isOpenRouterProvider,
-  isRequestyProvider,
-  LlmProvider,
-  LlmProviderName,
-} from '@common/agent';
+import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import clsx from 'clsx';
 import {
@@ -49,17 +34,6 @@ import { useTranslation } from 'react-i18next';
 import { McpServer, McpServerForm } from './McpServerForm';
 import { McpServerItem } from './McpServerItem';
 import { GenericToolGroupItem } from './GenericToolGroupItem';
-import {
-  AnthropicParameters,
-  BedrockParameters,
-  DeepseekParameters,
-  GeminiParameters,
-  OllamaParameters,
-  OpenAiCompatibleParameters,
-  OpenAiParameters,
-  OpenRouterParameters,
-  RequestyParameters,
-} from './providers';
 import { AgentProfileItem } from './AgentProfileItem';
 import { AgentRules } from './AgentRules';
 
@@ -163,24 +137,22 @@ type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
   initialProfileId?: string;
-  initialProvider?: LlmProviderName;
 };
 
-export const AgentSettings = ({ settings, setSettings, initialProfileId, initialProvider }: Props) => {
+export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props) => {
   const { t } = useTranslation();
   const [isAddingMcpServer, setIsAddingMcpServer] = useState(false);
   const [editingMcpServer, setEditingMcpServer] = useState<McpServer | null>(null);
   const [isEditingMcpServersConfig, setIsEditingMcpServersConfig] = useState(false);
   const [mcpServersReloadTrigger, setMcpServersReloadTrigger] = useState(0);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(initialProfileId || DEFAULT_AGENT_PROFILE.id);
-  const [selectedProviderName, setSelectedProviderName] = useState<LlmProviderName | null>(initialProvider || null);
+
   const [mcpServersExpanded, setMcpServersExpanded] = useState(false);
   const profileNameInputRef = useRef<HTMLInputElement>(null);
 
-  const { agentProfiles, mcpServers, llmProviders } = settings;
+  const { agentProfiles, mcpServers } = settings;
   const selectedProfile = agentProfiles.find((profile) => profile.id === selectedProfileId) || null;
   const defaultProfile = agentProfiles.find((profile) => profile.id === DEFAULT_AGENT_PROFILE.id) || DEFAULT_AGENT_PROFILE;
-  const selectedProvider = selectedProviderName ? getLlmProviderConfig(selectedProviderName, settings) : null;
 
   const handleCreateNewProfile = () => {
     const newProfileId = uuidv4();
@@ -224,16 +196,6 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
         agentProfiles: agentProfiles.map((profile) => (profile.id === selectedProfile.id ? { ...profile, [field]: value } : profile)),
       });
     }
-  };
-
-  const handleProviderParamsChange = (updatedProviderConfig: LlmProvider) => {
-    setSettings({
-      ...settings,
-      llmProviders: {
-        ...llmProviders,
-        [updatedProviderConfig.name]: updatedProviderConfig,
-      },
-    });
   };
 
   const handleToggleServerEnabled = (serverKey: string, checked: boolean) => {
@@ -356,7 +318,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
       }
     />
   ) : (
-    <div className="flex max-h-[100%] overflow-hidden -m-6">
+    <div className="flex h-[600px] max-h-[100%] overflow-hidden -m-6">
       {/* Left sidebar with profiles and providers */}
       <div className="w-[250px] border-r border-neutral-700/50 p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700">
         <h4 className="text-sm uppercase font-medium">{t('agentProfiles.profiles')}</h4>
@@ -365,10 +327,9 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
             <AgentProfileItem
               key={profile.id}
               profile={profile}
-              isSelected={selectedProfileId === profile.id && !selectedProviderName}
+              isSelected={selectedProfileId === profile.id}
               onClick={(id) => {
                 setSelectedProfileId(id);
-                setSelectedProviderName(null);
               }}
               isDefault={profile.id === DEFAULT_AGENT_PROFILE.id}
             />
@@ -380,44 +341,11 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
             <FaPlus className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.createNewProfile')}
           </button>
         </div>
-
-        <div className="mt-6 pt-4">
-          <h4 className="text-sm uppercase font-medium">{t('settings.agent.providerSettings')}</h4>
-          <div className="py-2">
-            {AVAILABLE_PROVIDERS.map((providerName) => (
-              <button
-                key={providerName}
-                onClick={() => {
-                  setSelectedProviderName(providerName);
-                  setSelectedProfileId(null);
-                }}
-                className={clsx(
-                  'w-full text-left px-2 py-1 rounded-sm text-sm transition-colors',
-                  selectedProviderName === providerName ? 'bg-neutral-800 text-white' : 'text-neutral-300 hover:bg-neutral-800',
-                )}
-              >
-                {t(`providers.${providerName}`)}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Center content area for provider settings or profile settings */}
+      {/* Center content area for profile settings */}
       <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 scrollbar-thumb-rounded-full">
-        {selectedProvider ? (
-          <div>
-            {isOpenAiProvider(selectedProvider) && <OpenAiParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            {isAnthropicProvider(selectedProvider) && <AnthropicParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            {isGeminiProvider(selectedProvider) && <GeminiParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            {isDeepseekProvider(selectedProvider) && <DeepseekParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            {isBedrockProvider(selectedProvider) && <BedrockParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            {isOpenAiCompatibleProvider(selectedProvider) && <OpenAiCompatibleParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            {isOllamaProvider(selectedProvider) && <OllamaParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            {isOpenRouterProvider(selectedProvider) && <OpenRouterParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            {isRequestyProvider(selectedProvider) && <RequestyParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-          </div>
-        ) : selectedProfile ? (
+        {selectedProfile ? (
           <div className="space-y-2">
             <Input
               ref={profileNameInputRef}

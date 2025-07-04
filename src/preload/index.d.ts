@@ -24,6 +24,7 @@ import type {
   ModelInfo,
   TodoItem,
   UsageDataRow,
+  EnvironmentVariable,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -31,7 +32,7 @@ export interface ApplicationAPI {
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
-  restartProject: (baseDir: string) => void;
+  restartProject: (baseDir: string, startupMode?: StartupMode) => void;
   runPrompt: (baseDir: string, prompt: string, mode?: Mode) => void;
   redoLastUserPrompt: (baseDir: string, mode: Mode, updatedPrompt?: string) => void;
   answerQuestion: (baseDir: string, answer: string) => void;
@@ -94,6 +95,7 @@ export interface ApplicationAPI {
   getOS: () => Promise<OS>;
   loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
   queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
+  getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
 
   addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => string;
   removeResponseChunkListener: (listenerId: string) => void;

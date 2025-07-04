@@ -1,4 +1,4 @@
-import { SettingsData } from '@common/types';
+import { SettingsData, StartupMode } from '@common/types';
 import { useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,6 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
 
   const { settings: originalSettings, saveSettings } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
-  const [showRestartConfirmDialog, setShowRestartConfirmDialog] = useState(false);
 
   useEffect(() => {
     if (originalSettings) {
@@ -49,33 +48,21 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
   const handleSave = async () => {
     if (localSettings) {
       const aiderOptionsChanged = localSettings.aider.options !== originalSettings?.aider.options;
-      const aiderEnvVarsChanged = localSettings.aider.environmentVariables !== originalSettings?.aider.environmentVariables;
       const aiderAutoCommitsChanged = localSettings.aider.autoCommits !== originalSettings?.aider.autoCommits;
       const aiderWatchFilesChanged = localSettings.aider.watchFiles !== originalSettings?.aider.watchFiles;
       const aiderCachingEnabledChanged = localSettings.aider.cachingEnabled !== originalSettings?.aider.cachingEnabled;
+      const startupModeChanged = localSettings.startupMode !== originalSettings?.startupMode;
 
       await saveSettings(localSettings);
 
-      if (aiderOptionsChanged || aiderEnvVarsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged || aiderCachingEnabledChanged) {
-        setShowRestartConfirmDialog(true);
-      } else {
-        onClose();
+      if (aiderOptionsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged || aiderCachingEnabledChanged || startupModeChanged) {
+        const openProjects = await window.api.getOpenProjects();
+        openProjects.forEach((project) => {
+          window.api.restartProject(project.baseDir, StartupMode.Last);
+        });
       }
+      onClose();
     }
-  };
-
-  const handleConfirmRestart = async () => {
-    const openProjects = await window.api.getOpenProjects();
-    openProjects.forEach((project) => {
-      window.api.restartProject(project.baseDir);
-    });
-    setShowRestartConfirmDialog(false);
-    onClose();
-  };
-
-  const handleCancelRestart = async () => {
-    setShowRestartConfirmDialog(false);
-    onClose();
   };
 
   const handleLanguageChange = (language: string) => {
@@ -97,22 +84,6 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       void window.api.setZoomLevel(zoomLevel);
     }
   };
-
-  if (showRestartConfirmDialog) {
-    return (
-      <ConfirmDialog
-        title={t('settings.aiderRestartConfirm.title')}
-        onConfirm={handleConfirmRestart}
-        onCancel={handleCancelRestart}
-        confirmButtonText={t('settings.aiderRestartConfirm.restartNow')}
-        cancelButtonText={t('settings.aiderRestartConfirm.later')}
-        width={600}
-        closeOnEscape
-      >
-        <span className="text-sm">{t('settings.aiderRestartConfirm.message')}</span>
-      </ConfirmDialog>
-    );
-  }
 
   return (
     <ConfirmDialog

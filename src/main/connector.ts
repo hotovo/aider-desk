@@ -17,6 +17,7 @@ import {
   RunCommandMessage,
   SetModelsMessage,
   CompactConversationMessage,
+  UpdateEnvVarsMessage,
 } from './messages';
 
 export class Connector {
@@ -140,6 +141,14 @@ export class Connector {
     const message: CompactConversationMessage = {
       action: 'compact-conversation',
       customInstructions,
+    };
+    this.sendMessage(message);
+  }
+
+  public sendUpdateEnvVarsMessage(environmentVariables: Record<string, unknown>) {
+    const message: UpdateEnvVarsMessage = {
+      action: 'update-env-vars',
+      environmentVariables,
     };
     this.sendMessage(message);
   }

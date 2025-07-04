@@ -124,9 +124,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     if (!baseUrl) {
       throw new Error('Base URL is required for Ollama provider. Set it in Agent provider settings or via the OLLAMA_API_BASE environment variable.');
     }
-    // Ensure the baseUrl ends with /api for ollama-ai-provider
-    const finalBaseUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-    const ollamaInstance = createOllama({ baseURL: finalBaseUrl });
+    const ollamaInstance = createOllama({ baseURL: baseUrl });
     return ollamaInstance(model, {
       simulateStreaming: true,
     });
@@ -319,14 +317,14 @@ export const getUsageReport = (
 };
 
 export type CacheControl = Record<string, Record<string, JSONValue>> | undefined;
-export const getCacheControl = (profile: AgentProfile): CacheControl => {
-  if (profile.provider === 'anthropic') {
+export const getCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl => {
+  if (isAnthropicProvider(llmProvider)) {
     return {
       anthropic: {
         cacheControl: { type: 'ephemeral' },
       },
     };
-  } else if (profile.provider === 'requesty') {
+  } else if (isRequestyProvider(llmProvider) && !llmProvider.useAutoCache) {
     if (profile.model.startsWith('anthropic/')) {
       return {
         requesty: {
@@ -334,7 +332,7 @@ export const getCacheControl = (profile: AgentProfile): CacheControl => {
         },
       };
     }
-  } else if (profile.provider === 'openrouter') {
+  } else if (isOpenRouterProvider(llmProvider)) {
     if (profile.model.startsWith('anthropic/')) {
       return {
         openrouter: {
