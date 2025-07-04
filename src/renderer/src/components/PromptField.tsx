@@ -426,6 +426,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     };
 
     const handleSubmit = () => {
+      setTimeout(() => {
+        messagesRef.current?.scrollToBottom();
+      }, 50);
       if (text) {
         if (text.startsWith('/') && !isPathLike(text) && !COMMANDS.some((cmd) => text.startsWith(cmd))) {
           showErrorNotification(t('promptField.invalidCommand'));
