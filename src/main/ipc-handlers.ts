@@ -264,35 +264,24 @@ export const setupIpcHandlers = (
       }
 
       let targetFilePath: string;
-      if (filePath === undefined || filePath == null) {
+      if (!filePath) {
         targetFilePath = path.join(baseDir, AIDER_DESK_PROJECT_TMP_DIR, `${normalizedUrl}.md`);
         await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
       } else {
-        targetFilePath = filePath;
+        if (path.isAbsolute(filePath)) {
+          targetFilePath = filePath;
+        } else {
+          targetFilePath = path.join(baseDir, filePath);
+        }
         try {
           // Check if path looks like a directory (ends with separator)
-          const isDirectory = targetFilePath.endsWith('/') || targetFilePath.endsWith('\\');
-          if (isDirectory) {
+          const isLikelyDirectory = !path.extname(targetFilePath);
+
+          if (isLikelyDirectory) {
             await fs.mkdir(targetFilePath, { recursive: true });
-            targetFilePath = path.join(targetFilePath, 'temp.md');
+            targetFilePath = path.join(targetFilePath, `${normalizedUrl}.md`);
           } else {
             await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
-            if (!targetFilePath.endsWith('.md') && !path.extname(targetFilePath)) {
-              targetFilePath += '.md';
-            }
-          }
-
-          // Check if path exists and is a directory (after potential .md append)
-          try {
-            const stat = await fs.stat(targetFilePath);
-            if (stat.isDirectory()) {
-              targetFilePath = path.join(targetFilePath, 'temp.md');
-            }
-          } catch (err) {
-            // File doesn't exist - that's fine, we'll create it
-            if (err instanceof Error && 'code' in err && err.code !== 'ENOENT') {
-              throw err;
-            }
           }
         } catch (error) {
           logger.error(`Error processing provided file path ${filePath}:`, error);
