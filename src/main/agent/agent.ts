@@ -401,7 +401,7 @@ export class Agent {
     const effectiveAbortSignal = abortSignal || this.abortController?.signal;
 
     const llmProvider = getLlmProviderConfig(profile.provider, settings);
-    const cacheControl = getCacheControl(profile);
+    const cacheControl = getCacheControl(profile, llmProvider);
     const providerOptions = getProviderOptions(llmProvider);
 
     const userRequestMessage: CoreUserMessage = {
@@ -554,6 +554,8 @@ export class Agent {
         let iterationError: unknown | null = null;
         let currentResponseId: null | string = null;
         let hasReasoning: boolean = false;
+        let finishReason = 'unknown';
+
         const result = streamText({
           providerOptions,
           model,
@@ -640,7 +642,7 @@ export class Agent {
             }
           },
           onStepFinish: (stepResult) => {
-            const { finishReason } = stepResult;
+            finishReason = stepResult.finishReason;
 
             if (finishReason === 'error') {
               logger.error('Error during prompt:', { stepResult });
@@ -682,7 +684,7 @@ export class Agent {
         }
 
         const { messages: responseMessages } = await result.response;
-        const finishReason = await result.finishReason;
+        finishReason = await result.finishReason;
 
         messages.push(...responseMessages);
         resultMessages.push(...responseMessages);

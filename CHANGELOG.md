@@ -6,6 +6,10 @@
 - added cached token information for Gemini models
 - fixed issue with unfinished stream response text preceding a tool call
 - default agent profile for new users set to Power Tools and added Aider as the second one
+- explicit cache control with Requesty Anthropic models used only when auto caching is disabled
+- unified LLM providers settings
+- improved onboarding flow with new unified LLM providers
+- button in aider about settings to show logs directory
 
 ## [0.20.0]
 

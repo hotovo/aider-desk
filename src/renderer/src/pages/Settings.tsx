@@ -1,11 +1,12 @@
 import { SettingsData } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LlmProviderName } from '@common/agent';
 
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
+import { ModelProvidersSettings } from '@/components/settings/ModelProvidersSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
 
@@ -19,8 +20,13 @@ type Props = {
   initialAgentProvider?: LlmProviderName;
 };
 
-export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomChange, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
+export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomChange, initialTab = 0, initialAgentProfileId }: Props) => {
   const { t } = useTranslation();
+  const [selectedTabIndex, setSelectedTabIndex] = useState(initialTab);
+
+  const handleSwitchToAiderTab = () => {
+    setSelectedTabIndex(2); // Aider tab is at index 2
+  };
 
   const renderTab = (label: string) => (
     <Tab
@@ -43,19 +49,19 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomCha
   );
 
   return (
-    <TabGroup className="flex flex-col flex-1 min-h-0" defaultIndex={initialTab}>
+    <TabGroup className="flex flex-col flex-1 min-h-0" selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
       <TabList className="flex bg-neutral-850 backdrop-blur-sm border border-neutral-700 rounded-t-lg shadow-lg">
         {renderTab(t('settings.tabs.general'))}
+        {renderTab(t('settings.tabs.providers'))}
         {renderTab(t('settings.tabs.aider'))}
         {renderTab(t('settings.tabs.agent'))}
         {renderTab(t('settings.tabs.about'))}
       </TabList>
       <TabPanels className="flex flex-col flex-1 overflow-hidden">
         {renderTabPanel(<GeneralSettings settings={settings} setSettings={updateSettings} onLanguageChange={onLanguageChange} onZoomChange={onZoomChange} />)}
+        {renderTabPanel(<ModelProvidersSettings settings={settings} setSettings={updateSettings} onSwitchToAiderTab={handleSwitchToAiderTab} />)}
         {renderTabPanel(<AiderSettings settings={settings} setSettings={updateSettings} />)}
-        {renderTabPanel(
-          <AgentSettings settings={settings} setSettings={updateSettings} initialProfileId={initialAgentProfileId} initialProvider={initialAgentProvider} />,
-        )}
+        {renderTabPanel(<AgentSettings settings={settings} setSettings={updateSettings} initialProfileId={initialAgentProfileId} />)}
         {renderTabPanel(<AboutSettings settings={settings} setSettings={updateSettings} />)}
       </TabPanels>
     </TabGroup>

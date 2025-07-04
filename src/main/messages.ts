@@ -30,7 +30,8 @@ export type MessageAction =
   | 'interrupt-response'
   | 'apply-edits'
   | 'compact-conversation'
-  | 'update-repo-map';
+  | 'update-repo-map'
+  | 'update-env-vars';
 
 export interface Message {
   action: MessageAction;
@@ -220,4 +221,13 @@ export interface UpdateRepoMapMessage extends Message {
 
 export const isUpdateRepoMapMessage = (message: Message): message is UpdateRepoMapMessage => {
   return message.action === 'update-repo-map';
+};
+
+export interface UpdateEnvVarsMessage extends Message {
+  action: 'update-env-vars';
+  environmentVariables: Record<string, unknown>;
+}
+
+export const isUpdateEnvVarsMessage = (message: Message): message is UpdateEnvVarsMessage => {
+  return message.action === 'update-env-vars';
 };

@@ -4,7 +4,7 @@ import path from 'path';
 import { parse } from '@dotenvx/dotenvx';
 import YAML from 'yaml';
 import { LlmProviderName } from '@common/agent';
-import { SettingsData } from '@common/types';
+import { EnvironmentVariable, SettingsData } from '@common/types';
 
 import logger from './logger';
 
@@ -14,11 +14,6 @@ export const OPEN_AI_DEFAULT_MODEL = 'openai/gpt-4.1';
 export const DEEPSEEK_MODEL = 'deepseek/deepseek-chat';
 
 export const DEFAULT_MAIN_MODEL = SONNET_MODEL;
-
-export type EnvironmentVariable = {
-  value: string | null;
-  source: string | null;
-};
 
 const readEnvFile = (filePath: string): Record<string, string> | null => {
   try {

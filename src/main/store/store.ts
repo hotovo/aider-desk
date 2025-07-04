@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, ToolApprovalState, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProvider, LlmProviderName } from '@common/agent';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
 import { POWER_TOOL_AGENT, POWER_TOOL_FILE_EDIT, POWER_TOOL_FILE_WRITE, POWER_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import logger from '../logger';
@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   },
   agentProfiles: [DEFAULT_AGENT_PROFILE],
   mcpServers: {},
-  llmProviders: {} as Record<LlmProviderName, LlmProvider>,
+  llmProviders: {},
   telemetryEnabled: true,
   promptBehavior: {
     suggestionMode: SuggestionMode.Automatically,
