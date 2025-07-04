@@ -28,6 +28,7 @@ import type {
 } from '@common/types';
 
 export interface ApplicationAPI {
+  openLogsDirectory: () => Promise<boolean>;
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   startProject: (baseDir: string) => void;

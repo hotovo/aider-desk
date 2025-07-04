@@ -9,6 +9,9 @@
 - explicit cache control with Requesty Anthropic models used only when auto caching is disabled
 - unified LLM providers settings
 - improved onboarding flow with new unified LLM providers
+- added action to open directory with logs into Settings -> Version
+- added file completion with @ mention
+- added option to open project in AiderDesk from command line
 - notification when update is ready to be installed
 
 ## [0.20.0]

@@ -1,5 +1,6 @@
 import { join } from 'path';
 import { createServer } from 'http';
+import { existsSync, statSync } from 'fs';
 
 import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
@@ -16,7 +17,7 @@ import { ConnectorManager } from './connector-manager';
 import { setupIpcHandlers } from './ipc-handlers';
 import { ProjectManager } from './project-manager';
 import { performStartUp, UpdateProgressData } from './start-up';
-import { Store } from './store';
+import { Store, getDefaultProjectSettings } from './store';
 import { VersionsManager } from './versions-manager';
 import logger from './logger';
 import { TelemetryManager } from './telemetry-manager';
@@ -25,6 +26,29 @@ import { ModelInfoManager } from './model-info-manager';
 const initStore = async (): Promise<Store> => {
   const store = new Store();
   await store.init();
+
+  const args = process.argv.slice(app.isPackaged ? 1 : 2);
+  if (args.length > 0) {
+    const potentialDir = args[args.length - 1];
+    try {
+      const absolutePath = join(process.cwd(), potentialDir);
+      if (existsSync(absolutePath) && statSync(absolutePath).isDirectory()) {
+        const normalizedDir = absolutePath;
+        store.setOpenProjects([
+          {
+            baseDir: normalizedDir,
+            active: true,
+            settings: getDefaultProjectSettings(store, normalizedDir),
+          },
+        ]);
+      } else {
+        logger.warn(`Provided path is not a directory: ${potentialDir}`);
+      }
+    } catch (error) {
+      logger.error(`Error checking directory path: ${(error as Error).message}`);
+    }
+  }
+
   return store;
 };
 

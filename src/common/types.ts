@@ -185,6 +185,7 @@ export enum StartupMode {
 export enum SuggestionMode {
   Automatically = 'automatically',
   OnTab = 'onTab',
+  MentionAtSign = 'mentionAtSign',
 }
 
 export interface PromptBehavior {

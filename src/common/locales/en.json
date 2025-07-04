@@ -314,7 +314,9 @@
       "downloadingUpdate": "Downloading update",
       "newAiderDeskVersionReady": "A new version is ready. Restart AiderDesk to apply the update.",
       "downloadAutomatically": "Download update automatically",
-      "releaseNotes": "Release notes"
+      "releaseNotes": "Release notes",
+      "openLogsDirectory": "Open logs directory",
+      "openLogsError": "Error opening a log directory"
     },
     "telemetry": {
       "title": "Telemetry"
@@ -332,7 +334,8 @@
       "modeSwitchingCommands": "Mode commands (/code, /agent, ...)",
       "keyBindings": "Key bindings",
       "useVimBindings": "Use Vim bindings",
-      "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field."
+      "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field.",
+      "modeAtSign": "@ mention mode"
     }
   },
   "messages": {

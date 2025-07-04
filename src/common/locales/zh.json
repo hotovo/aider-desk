@@ -309,7 +309,9 @@
       "downloadingUpdate": "正在下载更新",
       "newAiderDeskVersionReady": "新版本已准备好。重启 AiderDesk 以应用更新。",
       "downloadAutomatically": "自动下载更新",
-      "releaseNotes": "发行说明"
+      "releaseNotes": "发行说明",
+      "openLogsDirectory": "打开日志目录",
+      "openLogsError": "打开日志目录出错"
     }
   },
   "messages": {
@@ -656,7 +658,9 @@
     "addCommand": "/add",
     "readOnlyCommand": "/read-only",
     "modelCommand": "/model",
-    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)"
+    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)",
+    "modeAtSign": "@ 提及模式"
+
   },
   "multiselect": {
     "noneSelected": "未选择",
