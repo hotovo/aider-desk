@@ -50,7 +50,7 @@ export const Home = () => {
 
   useEffect(() => {
     if (versions?.aiderDeskNewVersionReady && !hasShownUpdateNotification) {
-      showInfoNotification(t('settings.about.updateReadyToBeInstalled'));
+      showInfoNotification(t('settings.about.newAiderDeskVersionReady'));
       setHasShownUpdateNotification(true);
     }
   }, [versions, t, hasShownUpdateNotification]);

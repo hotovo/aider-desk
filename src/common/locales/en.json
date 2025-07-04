@@ -253,8 +253,7 @@
       "downloadingUpdate": "Downloading update",
       "newAiderDeskVersionReady": "A new version is ready. Restart AiderDesk to apply the update.",
       "downloadAutomatically": "Download update automatically",
-      "releaseNotes": "Release notes",
-      "updateReadyToBeInstalled": "Update ready to be installed"
+      "releaseNotes": "Release notes"
     },
     "telemetry": {
       "title": "Telemetry"
