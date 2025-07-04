@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
-import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState } from '@common/types';
+import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, ToolApprovalState, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProvider, LlmProviderName } from '@common/agent';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
+import { POWER_TOOL_AGENT, POWER_TOOL_FILE_EDIT, POWER_TOOL_FILE_WRITE, POWER_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import logger from '../logger';
 import {
@@ -44,7 +45,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   },
   agentProfiles: [DEFAULT_AGENT_PROFILE],
   mcpServers: {},
-  llmProviders: {} as Record<LlmProviderName, LlmProvider>,
+  llmProviders: {},
   telemetryEnabled: true,
   promptBehavior: {
     suggestionMode: SuggestionMode.Automatically,
@@ -125,10 +126,28 @@ export class Store {
     const provider: LlmProviderName = determineAgentProvider() || 'anthropic';
 
     return [
+      // Power tools
       {
         ...DEFAULT_AGENT_PROFILE,
         provider,
         model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
+      },
+      // Aider
+      {
+        ...DEFAULT_AGENT_PROFILE,
+        provider,
+        model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
+        id: 'aider',
+        name: 'Aider',
+        usePowerTools: false,
+        useAiderTools: true,
+        includeRepoMap: true,
+        toolApprovals: {
+          ...DEFAULT_AGENT_PROFILE.toolApprovals,
+          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
+          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
+          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+        },
       },
     ];
   }

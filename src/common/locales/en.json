@@ -41,6 +41,7 @@
   "onboarding": {
     "title": "Welcome to Aider Desk",
     "description": "Aider Desk is your desktop companion for AI-assisted coding. This application brings the power of Aider's AI coding assistant to a user-friendly interface, helping you:",
+    "skipForNow": "Skip for now",
     "finish": "Finish Setup",
     "features": {
       "1": "Manage multiple coding projects",
@@ -50,6 +51,19 @@
       "5": "Use agentic flow for automated coding tasks and connection to MCP servers"
     },
     "getStarted": "Let's get started by configuring your Aider settings.",
+    "steps": {
+      "welcome": "Welcome",
+      "connectModel": "Connect AI Model",
+      "language": "Language",
+      "aider": "Aider",
+      "agent": "AI Agent",
+      "providers": "Providers",
+      "finish": "Finish"
+    },
+    "language": {
+      "title": "Choose Your Language",
+      "description": "Select your preferred language for the application interface."
+    },
     "aider": {
       "title": "Configure Aider",
       "description": "To get started, please configure your Aider settings. You'll need to:",
@@ -58,7 +72,43 @@
         "2": "Set any additional options for Aider",
         "3": ".env and .aider.conf.yaml are also read as they would with Aider"
       },
-      "configureLater": "You can also do that later in the Settings."
+      "configureLater": "You can also do that later in the Settings.",
+      "fineTuneTitle": "Fine-Tune Aider (Optional)",
+      "fineTuneDescription": "Advanced users can configure additional Aider settings and environment variables. This step is completely optional and can be safely skipped.",
+      "fineTuneNote": "Note: These settings are for advanced users who want to customize Aider's behavior. Most users can skip this step and configure these later in Settings if needed."
+    },
+    "providers": {
+      "title": "Model Providers",
+      "description": "Configure your LLM providers for use with both Aider and Agent modes. You can set up API keys and additional settings for various providers.",
+      "configureLater": "You can configure these later in the Settings if you prefer.",
+      "connectTitle": "Connect Your AI Model",
+      "connectDescription": "Aider Desk supports multiple AI providers including OpenAI, Anthropic, Google Gemini, and more. Your API keys are stored securely on your local machine and never shared.",
+      "advancedUsersNote": "Advanced users: You can also configure providers using environment variables in the next step's Aider configuration section."
+    },
+    "agent": {
+      "title": "Meet Your AI Agent",
+      "description": "Discover the power of autonomous AI assistance with Aider Desk's Agent mode. Your AI agent can work independently to complete complex tasks.",
+      "capabilities": "Agent Capabilities:",
+      "autonomousPlanning": "Autonomous Task Planning:",
+      "autonomousPlanningDesc": "Breaks down complex requests into manageable steps and executes them systematically.",
+      "toolUse": "Tool Use:",
+      "toolUseDesc": "Leverages various tools for file operations, web searches, and code analysis.",
+      "extensible": "Extensible via MCP:",
+      "extensibleDesc": "Connect to Model Context Protocol servers for enhanced capabilities.",
+      "configureAgent": "Configure Agent",
+      "finishLater": "Finish Setup (Configure Agent Later)",
+      "configureTitle": "Configure Your Agent (Optional)",
+      "configureDescription": "Customize your default agent profile to match your workflow. You can adjust settings like tool permissions, context preferences, and behavior rules."
+    },
+    "complete": {
+      "title": "Setup Complete!",
+      "description": "Congratulations! You've successfully set up Aider Desk. You're now ready to start coding with AI assistance.",
+      "ready": "Click 'Finish Setup' to begin your coding journey.",
+      "success": "Onboarding completed successfully! Welcome to Aider Desk."
+    },
+    "errors": {
+      "navigationFailed": "Navigation failed. Please try again.",
+      "finishFailed": "Failed to complete onboarding. Please try again."
     }
   },
   "noProjectsOpen": {
@@ -157,6 +207,7 @@
     "title": "Settings",
     "tabs": {
       "general": "General",
+      "providers": "Providers",
       "aider": "Aider",
       "agent": "Agent",
       "about": "About"
@@ -208,6 +259,7 @@
       "selectOrCreateProfile": "Select or create new agent profile",
       "newProfileName": "New Profile",
       "envVarPlaceholder": "{{envVar}} env var is used if left empty",
+      "envVarFoundPlaceholder": "Found in: {{source}}",
       "createNewProfile": "Create New",
       "genericTools": "Tools",
       "noGenericToolsConfigured": "No tools configured.",
@@ -243,6 +295,15 @@
       "restartNow": "Restart now",
       "later": "I'll do it later"
     },
+    "models": {
+      "title": "Model Providers",
+      "description": "Configure your LLM providers for use with both Aider and Agent modes. Click on a provider card to configure API key and additional settings.",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "agentOnly": "Agent only",
+      "showAllProviders": "Show All Providers",
+      "additionalProvidersInfo": "You can configure additional LLM providers for Aider by setting environment variables in the <aiderTab>Aider settings</aiderTab>."
+    },
     "about": {
       "version": "Version",
       "notAvailable": "N/A",
@@ -253,7 +314,9 @@
       "downloadingUpdate": "Downloading update",
       "newAiderDeskVersionReady": "A new version is ready. Restart AiderDesk to apply the update.",
       "downloadAutomatically": "Download update automatically",
-      "releaseNotes": "Release notes"
+      "releaseNotes": "Release notes",
+      "openLogsDirectory": "Open logs directory",
+      "openLogsError": "Error opening a log directory"
     },
     "telemetry": {
       "title": "Telemetry"

@@ -1,6 +1,6 @@
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow } from 'electron';
-import { SettingsData } from '@common/types';
+import { SettingsData, StartupMode } from '@common/types';
 import { TelemetryManager } from 'src/main/telemetry-manager';
 
 import { Agent } from './agent';
@@ -45,11 +45,11 @@ export class ProjectManager {
     return project;
   }
 
-  public startProject(baseDir: string) {
+  public startProject(baseDir: string, startupMode?: StartupMode) {
     logger.info('Starting project', { baseDir });
     const project = this.getProject(baseDir);
 
-    void project.start();
+    void project.start(startupMode);
   }
 
   public async closeProject(baseDir: string) {
@@ -63,9 +63,9 @@ export class ProjectManager {
     await project.close();
   }
 
-  public async restartProject(baseDir: string): Promise<void> {
+  public async restartProject(baseDir: string, startupMode?: StartupMode): Promise<void> {
     await this.closeProject(baseDir);
-    this.startProject(baseDir);
+    this.startProject(baseDir, startupMode);
   }
 
   public async close(): Promise<void> {

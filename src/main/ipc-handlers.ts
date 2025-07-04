@@ -1,10 +1,10 @@
 import path from 'path';
 import fs from 'fs/promises';
 
-import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { AIDER_DESK_PROJECT_TMP_DIR } from 'src/main/constants';
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { AIDER_DESK_PROJECT_TMP_DIR, LOGS_DIR } from 'src/main/constants';
 
 import { McpManager } from './agent/mcp-manager';
 import { Agent } from './agent';
@@ -17,6 +17,7 @@ import logger from './logger';
 import { VersionsManager } from './versions-manager';
 import { TelemetryManager } from './telemetry-manager';
 import { DataManager } from './data-manager';
+import { getEffectiveEnvironmentVariable } from './environment';
 
 export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
@@ -70,8 +71,8 @@ export const setupIpcHandlers = (
     store.addRecentProject(baseDir);
   });
 
-  ipcMain.on('restart-project', async (_, baseDir: string) => {
-    await projectManager.restartProject(baseDir);
+  ipcMain.on('restart-project', async (_, baseDir: string, startupMode?: StartupMode) => {
+    await projectManager.restartProject(baseDir, startupMode);
   });
 
   ipcMain.handle('show-open-dialog', async (_, options: Electron.OpenDialogSyncOptions) => {
@@ -377,5 +378,19 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('query-usage-data', async (_, from: string, to: string) => {
     return dataManager.queryUsageData(new Date(from), new Date(to));
+  });
+
+  ipcMain.handle('get-effective-environment-variable', (_, key: string, baseDir?: string) => {
+    return getEffectiveEnvironmentVariable(key, baseDir, store.getSettings());
+  });
+
+  ipcMain.handle('open-logs-directory', async () => {
+    try {
+      await shell.openPath(LOGS_DIR);
+      return true;
+    } catch (error) {
+      logger.error('Failed to open logs directory:', error);
+      return false;
+    }
   });
 };
