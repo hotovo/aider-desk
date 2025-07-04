@@ -9,6 +9,7 @@ import { Button } from '../common/Button';
 import { TodoListItem } from './TodoListItem';
 
 import { Input } from '@/components/common/Input';
+import { useProjectSettings } from '@/context/ProjectSettingsContext';
 
 type Props = {
   todos: TodoItem[];
@@ -23,6 +24,13 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddingTodo, setIsAddingTodo] = useState(false);
   const [newTodoName, setNewTodoName] = useState('');
+  const { projectSettings } = useProjectSettings();
+  const [shouldShow, setShouldShow] = useState(false);
+
+  useEffect(() => {
+    const shouldShowTodoWindow = projectSettings?.currentMode === 'agent' && projectSettings?.useTodoTools;
+    setShouldShow(shouldShowTodoWindow ?? false);
+  }, [projectSettings?.currentMode, projectSettings?.useTodoTools]);
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -62,6 +70,10 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
       setIsExpanded(false);
     }
   }, [completedCount, totalCount]);
+
+  if (!shouldShow) {
+    return null;
+  }
 
   return (
     <div className="absolute top-3 right-3 z-20 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-w-[360px]">
