@@ -9,7 +9,7 @@
 - explicit cache control with Requesty Anthropic models used only when auto caching is disabled
 - unified LLM providers settings
 - improved onboarding flow with new unified LLM providers
-- button in aider about settings to show logs directory
+- added action to open directory with logs into Settings -> Version
 
 ## [0.20.0]
 
