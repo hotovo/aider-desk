@@ -1,5 +1,5 @@
-import * as cheerio from 'cheerio';
 import { chromium } from 'playwright-core';
+import Turndown from 'turndown';
 
 interface ScraperOptions {
   verifySSL?: boolean;
@@ -31,7 +31,7 @@ export class WebScraper {
 
       // If it's HTML, convert to markdown-like text
       if (contentType.includes('text/html') || this.looksLikeHTML(content)) {
-        return this.htmlToMarkdownLike(content);
+        return this.htmlToMarkDown(content);
       }
 
       return content;
@@ -46,36 +46,10 @@ export class WebScraper {
     return htmlPatterns.some((pattern) => pattern.test(content));
   }
 
-  private htmlToMarkdownLike(html: string): string {
-    const $ = cheerio.load(html);
-
-    // Remove SVG, images, and data-based links/sources
-    $('svg, img').remove();
-    $('[href^="data:"], [src^="data:"]').remove();
-
-    // Keep only href attributes
-    $('*').each((_, el) => {
-      if (el.type === 'tag') {
-        const $el = $(el);
-        // Get all current attributes
-        const currentAttributes = Object.keys($el[0].attribs);
-
-        // Remove attributes that are not 'href'
-        currentAttributes.forEach((attr) => {
-          if (attr !== 'href') {
-            $el.removeAttr(attr);
-          }
-        });
-      }
-    });
-
-    // Convert to text, preserving some structure
-    const text = $('body')
-      .text()
-      .replace(/\n{3,}/g, '\n\n') // Reduce multiple newlines
-      .trim();
-
-    return text;
+  private htmlToMarkDown(content: string): string {
+    const turndownService = new Turndown();
+    const markdown = turndownService.turndown(content);
+    return markdown;
   }
 }
 
