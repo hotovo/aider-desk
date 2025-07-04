@@ -44,7 +44,7 @@ const initStore = async (): Promise<Store> => {
         logger.warn(`Provided path is not a directory: ${potentialDir}`);
       }
     } catch (error) {
-      logger.error(`Error checking directory path: ${error}`);
+      logger.error(`Error checking directory path: ${(error as Error).message}`);
     }
   }
 
