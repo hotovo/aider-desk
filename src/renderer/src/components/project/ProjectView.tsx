@@ -142,33 +142,49 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   useEffect(() => {
     const handleResponseChunk = (_: IpcRendererEvent, { messageId, chunk, reflectedMessage }: ResponseChunkData) => {
       const processingMessage = processingMessageRef.current;
-      if (!processingMessage || processingMessage.id !== messageId) {
-        const newMessages: Message[] = [];
-
-        if (reflectedMessage) {
-          const reflected: ReflectedMessage = {
-            id: uuidv4(),
-            type: 'reflected-message',
-            content: reflectedMessage,
-            responseMessageId: messageId,
-          };
-
-          newMessages.push(reflected);
-        }
-
-        const newResponseMessage: ResponseMessage = {
-          id: messageId,
-          type: 'response',
-          content: chunk,
-          processing: true,
-        };
-        processingMessageRef.current = newResponseMessage;
-        newMessages.push(newResponseMessage);
-        setMessages((prevMessages) => prevMessages.filter((message) => !isLoadingMessage(message)).concat(...newMessages));
-        setProcessing(true);
-      } else {
+      if (processingMessage && processingMessage.id === messageId) {
         processingMessage.content += chunk;
         setMessages((prevMessages) => prevMessages.map((message) => (message.id === messageId ? processingMessage : message)));
+      } else {
+        setMessages((prevMessages) => {
+          const existingMessageIndex = prevMessages.findIndex((message) => message.id === messageId);
+          const newMessages: Message[] = [];
+
+          if (reflectedMessage) {
+            const reflected: ReflectedMessage = {
+              id: uuidv4(),
+              type: 'reflected-message',
+              content: reflectedMessage,
+              responseMessageId: messageId,
+            };
+
+            newMessages.push(reflected);
+          }
+
+          if (existingMessageIndex === -1) {
+            const newResponseMessage: ResponseMessage = {
+              id: messageId,
+              type: 'response',
+              content: chunk,
+              processing: true,
+            };
+            processingMessageRef.current = newResponseMessage;
+            newMessages.push(newResponseMessage);
+            setProcessing(true);
+
+            return prevMessages.filter((message) => !isLoadingMessage(message)).concat(...newMessages);
+          } else {
+            return prevMessages.map((message) => {
+              if (message.id === messageId) {
+                return {
+                  ...message,
+                  content: message.content + chunk,
+                };
+              }
+              return message;
+            });
+          }
+        });
       }
     };
 

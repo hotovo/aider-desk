@@ -34,7 +34,27 @@ import {
   UserMessageData,
 } from '@common/types';
 import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
-import { INIT_PROJECT_RULES_AGENT_PROFILE, COMPACT_CONVERSATION_AGENT_PROFILE } from '@common/agent';
+import {
+  INIT_PROJECT_RULES_AGENT_PROFILE,
+  COMPACT_CONVERSATION_AGENT_PROFILE,
+  getLlmProviderConfig,
+  isOpenAiProvider,
+  isOllamaProvider,
+  isOpenAiCompatibleProvider,
+  isAnthropicProvider,
+  isGeminiProvider,
+  isDeepseekProvider,
+  isOpenRouterProvider,
+  isBedrockProvider,
+  OpenAiCompatibleProvider,
+  AnthropicProvider,
+  BedrockProvider,
+  OpenRouterProvider,
+  DeepseekProvider,
+  GeminiProvider,
+  OpenAiProvider,
+  OllamaProvider,
+} from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
 import { parse } from '@dotenvx/dotenvx';
@@ -45,10 +65,12 @@ import { TaskManager } from './task-manager';
 import { SessionManager } from './session-manager';
 import { Agent } from './agent';
 import { Connector } from './connector';
+import { DataManager } from './data-manager';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
 import logger from './logger';
 import { MessageAction, ResponseMessage } from './messages';
-import { DEFAULT_MAIN_MODEL, Store } from './store';
+import { Store } from './store';
+import { DEFAULT_MAIN_MODEL } from './environment';
 
 import type { SimpleGit } from 'simple-git';
 
@@ -83,6 +105,7 @@ export class Project {
     private readonly store: Store,
     private readonly agent: Agent,
     private readonly telemetryManager: TelemetryManager,
+    private readonly dataManager: DataManager,
   ) {
     this.git = simpleGit(this.baseDir);
     this.tokensInfo = {
@@ -95,12 +118,13 @@ export class Project {
     };
   }
 
-  public async start() {
+  public async start(startupMode?: StartupMode) {
     const settings = this.store.getSettings();
+    const mode = startupMode ?? settings.startupMode;
 
     try {
       // Handle different startup modes
-      switch (settings.startupMode) {
+      switch (mode) {
         case StartupMode.Empty:
           // Don't load any session, start fresh
           logger.info('Starting with empty session');
@@ -154,6 +178,9 @@ export class Project {
       this.sessionManager.toConnectorMessages().forEach((message) => {
         connector.sendAddMessageMessage(message.role, message.content, false);
       });
+    }
+    if (connector.listenTo.includes('update-env-vars')) {
+      this.sendUpdateEnvVars(this.store.getSettings());
     }
 
     // Set input history file if provided by the connector
@@ -239,7 +266,7 @@ export class Project {
     const weakModel = projectSettings.weakModel;
     const editFormat = projectSettings.editFormat;
     const reasoningEffort = projectSettings.reasoningEffort;
-    const environmentVariables = parse(settings.aider.environmentVariables);
+    const environmentVariables = this.getEnvironmentVariablesForAider(settings);
     const thinkingTokens = projectSettings.thinkingTokens;
 
     logger.info('Running Aider for project', {
@@ -349,6 +376,41 @@ export class Project {
     });
 
     void this.writeAiderProcessPidFile();
+  }
+
+  private getEnvironmentVariablesForAider(settings: SettingsData): Record<string, unknown> {
+    const openAiProvider = getLlmProviderConfig('openai', settings) as OpenAiProvider;
+    const openAiApiKey = (isOpenAiProvider(openAiProvider) && openAiProvider.apiKey) || undefined;
+
+    const ollamaProvider = getLlmProviderConfig('ollama', settings) as OllamaProvider;
+    const ollamaBaseUrl = (isOllamaProvider(ollamaProvider) && ollamaProvider.baseUrl) || undefined;
+
+    const openAiCompatibleProvider = getLlmProviderConfig('openai-compatible', settings) as OpenAiCompatibleProvider;
+    const anthropicProvider = getLlmProviderConfig('anthropic', settings) as AnthropicProvider;
+    const geminiProvider = getLlmProviderConfig('gemini', settings) as GeminiProvider;
+    const deepseekProvider = getLlmProviderConfig('deepseek', settings) as DeepseekProvider;
+    const openRouterProvider = getLlmProviderConfig('openrouter', settings) as OpenRouterProvider;
+    const bedrockProvider = getLlmProviderConfig('bedrock', settings) as BedrockProvider;
+
+    return {
+      OPENAI_API_KEY: openAiApiKey,
+      ...(!openAiApiKey
+        ? // only set OPENAI_API_KEY and OPENAI_API_BASE if openai is not used
+          {
+            OPENAI_API_KEY: (isOpenAiCompatibleProvider(openAiCompatibleProvider) && openAiCompatibleProvider.apiKey) || undefined,
+            OPENAI_API_BASE: (isOpenAiCompatibleProvider(openAiCompatibleProvider) && openAiCompatibleProvider.baseUrl) || undefined,
+          }
+        : {}),
+      ANTHROPIC_API_KEY: (isAnthropicProvider(anthropicProvider) && anthropicProvider.apiKey) || undefined,
+      GEMINI_API_KEY: (isGeminiProvider(geminiProvider) && geminiProvider.apiKey) || undefined,
+      DEEPSEEK_API_KEY: (isDeepseekProvider(deepseekProvider) && deepseekProvider.apiKey) || undefined,
+      OPENROUTER_API_KEY: (isOpenRouterProvider(openRouterProvider) && openRouterProvider.apiKey) || undefined,
+      AWS_REGION: (isBedrockProvider(bedrockProvider) && bedrockProvider.region) || undefined,
+      AWS_ACCESS_KEY_ID: (isBedrockProvider(bedrockProvider) && bedrockProvider.accessKeyId) || undefined,
+      AWS_SECRET_ACCESS_KEY: (isBedrockProvider(bedrockProvider) && bedrockProvider.secretAccessKey) || undefined,
+      OLLAMA_API_BASE: (ollamaBaseUrl && (ollamaBaseUrl.endsWith('/api') ? ollamaBaseUrl.slice(0, -4) : ollamaBaseUrl)) || undefined,
+      ...parse(settings.aider.environmentVariables),
+    };
   }
 
   public isStarted() {
@@ -565,8 +627,8 @@ export class Project {
     }
   }
 
-  public processResponseMessage(message: ResponseMessage) {
-    if (!this.currentResponseMessageId) {
+  public processResponseMessage(message: ResponseMessage, forceNewId = false) {
+    if (!this.currentResponseMessageId || forceNewId) {
       this.currentResponseMessageId = uuidv4();
     }
 
@@ -585,12 +647,16 @@ export class Project {
 
       const usageReport = message.usageReport
         ? typeof message.usageReport === 'string'
-          ? parseUsageReport(message.usageReport)
+          ? parseUsageReport(this.aiderModels?.mainModel || 'unknown', message.usageReport)
           : message.usageReport
         : undefined;
 
       if (usageReport) {
-        logger.info(`Usage report: ${JSON.stringify(usageReport)}`);
+        this.dataManager.saveMessage(message.id || this.currentResponseMessageId, 'assistant', this.baseDir, usageReport.model, usageReport, message.content);
+      }
+
+      if (usageReport) {
+        logger.debug(`Usage report: ${JSON.stringify(usageReport)}`);
         this.updateTotalCosts(usageReport);
       }
       const data: ResponseCompletedData = {
@@ -1058,6 +1124,14 @@ export class Project {
       usageReport,
     };
 
+    if (response && usageReport) {
+      this.dataManager.saveMessage(id, 'tool', this.baseDir, usageReport.model, usageReport, {
+        toolName,
+        args,
+        response,
+      });
+    }
+
     // Update total costs when adding the tool message
     if (usageReport) {
       this.updateTotalCosts(usageReport);
@@ -1132,18 +1206,6 @@ export class Project {
     this.sessionManager.toConnectorMessages().forEach((message) => {
       this.sendAddMessage(message.role, message.content, false);
     });
-  }
-
-  public addContextMessage(role: MessageRole, content: string, acknowledge = false) {
-    logger.info('Adding context message:', {
-      baseDir: this.baseDir,
-      role,
-      content: content.length > 100 ? `${content.slice()}...` : content,
-    });
-
-    this.sessionManager.addContextMessage(role, content);
-    this.sendAddMessage(role, content, acknowledge);
-    void this.updateAgentEstimatedTokens();
   }
 
   public async compactConversation(mode: Mode, customInstructions?: string) {
@@ -1306,6 +1368,20 @@ export class Project {
       logger.info('Agent settings affecting token count changed, updating estimated tokens.');
       void this.updateAgentEstimatedTokens();
     }
+
+    // Check for changes in environment variables or LLM providers
+    const aiderEnvVarsChanged = oldSettings.aider.environmentVariables !== newSettings.aider.environmentVariables;
+    const llmProvidersChanged = JSON.stringify(oldSettings.llmProviders) !== JSON.stringify(newSettings.llmProviders);
+
+    if (aiderEnvVarsChanged || llmProvidersChanged) {
+      this.sendUpdateEnvVars(newSettings);
+    }
+  }
+
+  private sendUpdateEnvVars(settings: SettingsData) {
+    logger.info('Environment variables or LLM providers changed, updating connectors.');
+    const updatedEnvironmentVariables = this.getEnvironmentVariablesForAider(settings);
+    this.findMessageConnectors('update-env-vars').forEach((connector) => connector.sendUpdateEnvVarsMessage(updatedEnvironmentVariables));
   }
 
   async updateTask(taskId: string, updates: { title?: string; completed?: boolean }): Promise<Task | undefined> {
@@ -1328,7 +1404,10 @@ export class Project {
     return path.resolve(this.baseDir, AIDER_DESK_TODOS_FILE);
   }
 
-  public async readTodoFile(): Promise<{ initialUserPrompt: string; items: TodoItem[] } | null> {
+  public async readTodoFile(): Promise<{
+    initialUserPrompt: string;
+    items: TodoItem[];
+  } | null> {
     const todoFilePath = this.getTodoFilePath();
     try {
       const content = await fs.readFile(todoFilePath, 'utf8');
@@ -1361,7 +1440,10 @@ export class Project {
     const currentItems = data?.items || [];
     const newItem: TodoItem = { name, completed: false };
     const updatedItems = [...currentItems, newItem];
-    await this.writeTodoFile({ initialUserPrompt: data?.initialUserPrompt || '', items: updatedItems });
+    await this.writeTodoFile({
+      initialUserPrompt: data?.initialUserPrompt || '',
+      items: updatedItems,
+    });
     return updatedItems;
   }
 
@@ -1388,12 +1470,17 @@ export class Project {
     }
 
     const updatedItems = data.items.filter((item) => item.name !== name);
-    await this.writeTodoFile({ initialUserPrompt: data.initialUserPrompt, items: updatedItems });
+    await this.writeTodoFile({
+      initialUserPrompt: data.initialUserPrompt,
+      items: updatedItems,
+    });
     return updatedItems;
   }
 
   async initProjectRulesFile(): Promise<void> {
-    logger.info('Initializing PROJECT.md rules file', { baseDir: this.baseDir });
+    logger.info('Initializing PROJECT.md rules file', {
+      baseDir: this.baseDir,
+    });
 
     this.addLogMessage('loading', 'Analyzing project to create PROJECT.md rules file...');
 
@@ -1425,7 +1512,9 @@ export class Project {
       const projectRulesExists = await fileExists(projectRulesPath);
 
       if (projectRulesExists) {
-        logger.info('PROJECT.md file created successfully', { path: projectRulesPath });
+        logger.info('PROJECT.md file created successfully', {
+          path: projectRulesPath,
+        });
         this.addLogMessage('info', 'PROJECT.md has been successfully initialized.');
 
         // Ask the user if they want to add this file to .aider.conf.yml
@@ -1481,7 +1570,9 @@ export class Project {
         const yamlContent = YAML.stringify(config);
         await fs.writeFile(aiderConfigPath, yamlContent, 'utf8');
 
-        logger.info('Added PROJECT.md to .aider.conf.yml', { path: aiderConfigPath });
+        logger.info('Added PROJECT.md to .aider.conf.yml', {
+          path: aiderConfigPath,
+        });
         this.addLogMessage('info', `Added ${projectRulesRelativePath} to .aider.conf.yml`);
       } else {
         logger.info('PROJECT.md already exists in .aider.conf.yml');

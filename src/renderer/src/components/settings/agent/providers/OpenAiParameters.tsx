@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { OpenAiProvider } from '@common/agent';
 
 import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
 type Props = {
   provider: OpenAiProvider;
@@ -14,23 +15,24 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
 
   const apiKey = provider.apiKey || '';
 
+  const { environmentVariable: openAiApiKeyEnv } = useEffectiveEnvironmentVariable('OPENAI_API_KEY');
+
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
   };
 
   return (
     <div className="space-y-2">
-      <h3 className="text-md font-medium uppercase mb-5">
-        {t('providers.openai')} {t('settings.agent.providerSettings')}
-      </h3>
       <Input
         label={t('openai.apiKey')}
         type="password"
         value={apiKey}
         onChange={handleApiKeyChange}
-        placeholder={t('settings.agent.envVarPlaceholder', {
-          envVar: 'OPENAI_API_KEY',
-        })}
+        placeholder={
+          openAiApiKeyEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: openAiApiKeyEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'OPENAI_API_KEY' })
+        }
       />
     </div>
   );

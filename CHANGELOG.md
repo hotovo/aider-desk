@@ -1,7 +1,29 @@
 # Changelog
 
 ## [UNRELEASED]
-- added option to open project in aider desk from command line
+
+- not storing tool messages without the usage report into DB
+- added cached token information for Gemini models
+- fixed issue with unfinished stream response text preceding a tool call
+- default agent profile for new users set to Power Tools and added Aider as the second one
+- explicit cache control with Requesty Anthropic models used only when auto caching is disabled
+- unified LLM providers settings
+- improved onboarding flow with new unified LLM providers
+- added action to open directory with logs into Settings -> Version
+- added file completion with @ mention
+- added option to open project in AiderDesk from command line
+
+## [0.20.0]
+
+- removed duplicated cost from assistant message when tool is used
+- usage dashboard with tokens and cost and charts with breakdown data
+- updated to GA gemini models
+- omitting error message for failing MCP server that are not enabled
+- sub-agent tool presentation and context persistence improvements
+- added icon for auto-approve to agent selector for immediate recognition
+- showing streaming of reasoning (thinking) on agent messages
+- determining default agent model based on available API keys in environment
+- properly pasting files with path outside of project that start with project dir
 
 ## [0.19.0]
 

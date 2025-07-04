@@ -12,6 +12,7 @@ export const AIDER_DESK_WEBSITE = 'https://github.com/hotovo/aider-desk';
 export const AIDER_DESK_DIR = app.getPath('userData');
 export const RESOURCES_DIR = is.dev ? path.join(__dirname, '..', '..', 'resources') : process.resourcesPath;
 export const LOGS_DIR = path.join(AIDER_DESK_DIR, 'logs');
+export const DB_FILE_PATH = path.join(AIDER_DESK_DIR, 'aider-desk.db');
 export const SETUP_COMPLETE_FILENAME = path.join(AIDER_DESK_DIR, 'setup-complete');
 export const PYTHON_VENV_DIR = path.join(AIDER_DESK_DIR, 'python-venv');
 export const PYTHON_COMMAND = process.platform === 'win32' ? path.join(PYTHON_VENV_DIR, 'Scripts', 'python.exe') : path.join(PYTHON_VENV_DIR, 'bin', 'python');

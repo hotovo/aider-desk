@@ -6,6 +6,7 @@ import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, shell } from 'electron';
 import { McpManager } from 'src/main/agent/mcp-manager';
+import { DataManager } from 'src/main/data-manager';
 
 import icon from '../../resources/icon.png?asset';
 
@@ -108,11 +109,15 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const modelInfoManager = new ModelInfoManager();
   void modelInfoManager.init();
 
+  // Initialize data manager
+  const dataManager = new DataManager();
+  dataManager.init();
+
   // Initialize agent
   const agent = new Agent(store, mcpManager, modelInfoManager, telemetryManager);
 
   // Initialize project manager
-  const projectManager = new ProjectManager(mainWindow, store, agent, telemetryManager);
+  const projectManager = new ProjectManager(mainWindow, store, agent, telemetryManager, dataManager);
 
   // Create HTTP server
   const httpServer = createServer();
@@ -127,7 +132,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const versionsManager = new VersionsManager(mainWindow, store);
 
   // Initialize IPC handlers
-  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager);
+  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager, dataManager);
 
   const beforeQuit = async () => {
     await mcpManager.close();

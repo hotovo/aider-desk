@@ -15,8 +15,7 @@ import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
-import { MdStop } from 'react-icons/md';
-import { VscClearAll } from 'react-icons/vsc';
+import { MdPlaylistRemove, MdStop } from 'react-icons/md';
 
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/InputHistoryMenu';
@@ -154,6 +153,24 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         return null;
       }
 
+      if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign && !text.startsWith('/') && !text.includes('@')) {
+        return null;
+      }
+
+      if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
+        // Handle @-based file suggestions (exclusive)
+        const atPos = text.lastIndexOf('@');
+        if (atPos >= 0 && (atPos === 0 || /\s/.test(text[atPos - 1]))) {
+          const files = await window.api.getAddableFiles(baseDir);
+          return {
+            from: atPos + 1,
+            options: files.map((file) => ({ label: file, type: 'file' })),
+            validFor: /^\S*$/,
+          };
+        }
+      }
+
+      // Handle command suggestions
       if (text.startsWith('/')) {
         if (text.includes(' ')) {
           const [command, ...args] = text.split(' ');
@@ -538,6 +555,27 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         run: startCompletion,
       },
       {
+        key: '@',
+        preventDefault: true,
+        run: (view) => {
+          const cursorPos = view.state.selection.main.head;
+          const textBeforeCursor = view.state.doc.sliceString(0, cursorPos);
+
+          if (!/\S$/.test(textBeforeCursor)) {
+            view.dispatch({
+              changes: { from: cursorPos, insert: '@' },
+              selection: { anchor: cursorPos + 1 },
+            });
+
+            if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
+              startCompletion(view);
+            }
+          }
+          return true;
+        },
+      },
+
+      {
         key: 'ArrowUp',
         run: () => {
           if (!text && historyItems.length > 0) {
@@ -665,7 +703,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 }),
                 autocompletion({
                   override: question ? [] : [completionSource],
-                  activateOnTyping: promptBehavior.suggestionMode === SuggestionMode.Automatically,
+                  activateOnTyping:
+                    promptBehavior.suggestionMode === SuggestionMode.Automatically || promptBehavior.suggestionMode === SuggestionMode.MentionAtSign,
                   activateOnTypingDelay: promptBehavior.suggestionDelay,
                   aboveCursor: true,
                   icons: false,
@@ -724,7 +763,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               className="hover:bg-neutral-800 border-neutral-200 text-neutral-200 hover:text-neutral-100"
               size="xs"
             >
-              <VscClearAll className="w-4 h-4 mr-2" />
+              <MdPlaylistRemove className="w-4 h-4 mr-1" />
               {t('promptField.clearChat')}
             </Button>
           </div>

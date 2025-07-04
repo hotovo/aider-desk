@@ -35,7 +35,7 @@ export const extractTextContent = (content: unknown): string => {
 
 export const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const parseUsageReport = (report: string): UsageReportData => {
+export const parseUsageReport = (model: string, report: string): UsageReportData => {
   const sentMatch = report.match(/Tokens: ([\d.]+k?) sent/);
   const receivedMatch = report.match(/([\d.]+k?) received/);
   const messageCostMatch = report.match(/Cost: \$(\d+\.\d+) message/);
@@ -55,6 +55,7 @@ export const parseUsageReport = (report: string): UsageReportData => {
   const aiderTotalCost = totalCostMatch ? parseFloat(totalCostMatch[1]) : 0;
 
   return {
+    model,
     sentTokens,
     receivedTokens,
     messageCost,

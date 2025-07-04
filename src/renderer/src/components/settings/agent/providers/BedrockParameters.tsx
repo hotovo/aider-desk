@@ -4,6 +4,7 @@ import { BedrockProvider } from '@common/agent';
 
 import { Input } from '@/components/common/Input';
 import { InfoIcon } from '@/components/common/InfoIcon';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
 type Props = {
   provider: BedrockProvider;
@@ -17,6 +18,11 @@ export const BedrockParameters = ({ provider, onChange }: Props) => {
   const accessKeyId = provider.accessKeyId || '';
   const secretAccessKey = provider.secretAccessKey || '';
   const sessionToken = provider.sessionToken || '';
+
+  const { environmentVariable: awsRegionEnv } = useEffectiveEnvironmentVariable('AWS_REGION');
+  const { environmentVariable: awsAccessKeyIdEnv } = useEffectiveEnvironmentVariable('AWS_ACCESS_KEY_ID');
+  const { environmentVariable: awsSecretAccessKeyEnv } = useEffectiveEnvironmentVariable('AWS_SECRET_ACCESS_KEY');
+  const { environmentVariable: awsSessionTokenEnv } = useEffectiveEnvironmentVariable('AWS_SESSION_TOKEN');
 
   const handleRegionChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, region: e.target.value });
@@ -36,10 +42,12 @@ export const BedrockParameters = ({ provider, onChange }: Props) => {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-md font-medium uppercase mb-5">
-        {t('providers.bedrock')} {t('settings.agent.providerSettings')}
-      </h3>
-      <Input label={t('bedrock.region')} value={region} onChange={handleRegionChange} placeholder={t('bedrock.regionPlaceholder')} />
+      <Input
+        label={t('bedrock.region')}
+        value={region}
+        onChange={handleRegionChange}
+        placeholder={awsRegionEnv ? t('settings.agent.envVarFoundPlaceholder', { source: awsRegionEnv.source }) : t('bedrock.regionPlaceholder')}
+      />
       <Input
         label={
           <div className="flex items-center">
@@ -49,9 +57,11 @@ export const BedrockParameters = ({ provider, onChange }: Props) => {
         }
         value={accessKeyId}
         onChange={handleAccessKeyIdChange}
-        placeholder={t('settings.agent.envVarPlaceholder', {
-          envVar: 'AWS_ACCESS_KEY_ID',
-        })}
+        placeholder={
+          awsAccessKeyIdEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: awsAccessKeyIdEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'AWS_ACCESS_KEY_ID' })
+        }
       />
       <Input
         label={
@@ -63,9 +73,11 @@ export const BedrockParameters = ({ provider, onChange }: Props) => {
         type="password"
         value={secretAccessKey}
         onChange={handleSecretAccessKeyChange}
-        placeholder={t('settings.agent.envVarPlaceholder', {
-          envVar: 'AWS_SECRET_ACCESS_KEY',
-        })}
+        placeholder={
+          awsSecretAccessKeyEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: awsSecretAccessKeyEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'AWS_SECRET_ACCESS_KEY' })
+        }
       />
       <Input
         label={
@@ -77,9 +89,11 @@ export const BedrockParameters = ({ provider, onChange }: Props) => {
         type="password"
         value={sessionToken}
         onChange={handleSessionTokenChange}
-        placeholder={t('settings.agent.envVarPlaceholder', {
-          envVar: 'AWS_SESSION_TOKEN',
-        })}
+        placeholder={
+          awsSessionTokenEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: awsSessionTokenEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'AWS_SESSION_TOKEN' })
+        }
       />
     </div>
   );

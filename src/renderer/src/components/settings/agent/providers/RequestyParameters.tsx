@@ -9,6 +9,7 @@ import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 import Select from '@/components/common/Select';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
 type Props = {
   provider: RequestyProvider;
@@ -19,6 +20,8 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
   const { apiKey, models, useAutoCache, reasoningEffort } = provider;
+
+  const { environmentVariable: requestyApiKeyEnv } = useEffectiveEnvironmentVariable('REQUESTY_API_KEY');
 
   const reasoningOptions = [
     { value: 'none', label: t('reasoningEffort.none') },
@@ -46,12 +49,9 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-md font-medium uppercase !pb-0">
-        {t('providers.requesty')} {t('settings.agent.providerSettings')}
-      </h3>
       <div className="!mt-0 !mb-5">
-        <a href="https://requesty.ai" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
-          https://requesty.ai
+        <a href="https://app.requesty.ai/api-keys" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
+          Get Requesty API key
         </a>
       </div>
       <Input
@@ -59,9 +59,11 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
         type="password"
         value={apiKey}
         onChange={handleApiKeyChange}
-        placeholder={t('settings.agent.envVarPlaceholder', {
-          envVar: 'REQUESTY_API_KEY',
-        })}
+        placeholder={
+          requestyApiKeyEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: requestyApiKeyEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'REQUESTY_API_KEY' })
+        }
       />
       <div className="grid grid-cols-2 gap-x-10">
         <Select

@@ -1,8 +1,9 @@
 import { ModelInfo, ProjectData } from '@common/types';
 import { useCallback, useEffect, useState } from 'react';
-import { MdSettings, MdUpload } from 'react-icons/md';
+import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 
+import { UsageDashboard } from '@/components/usage/UsageDashboard';
 import { IconButton } from '@/components/common/IconButton';
 import { NoProjectsOpen } from '@/components/project/NoProjectsOpen';
 import { OpenProjectDialog } from '@/components/project/OpenProjectDialog';
@@ -25,6 +26,7 @@ export const Home = () => {
   const [showSettingsTab, setShowSettingsTab] = useState<number | null>(null);
   const [releaseNotesContent, setReleaseNotesContent] = useState<string | null>(null);
   const [modelsInfo, setModelsInfo] = useState<Record<string, ModelInfo>>({});
+  const [isUsageDashboardVisible, setIsUsageDashboardVisible] = useState(false);
 
   const activeProject = openProjects.find((project) => project.active) || openProjects[0];
 
@@ -177,7 +179,7 @@ export const Home = () => {
 
   return (
     <div className="flex flex-col h-screen p-[4px] bg-gradient-to-b from-neutral-950 to-neutral-900">
-      <div className="flex flex-col h-screen border-2 border-neutral-600">
+      <div className="flex flex-col h-screen border-2 border-neutral-600 relative">
         <div className="flex border-b-2 border-neutral-600 justify-between bg-gradient-to-b from-neutral-950 to-neutral-900">
           <ProjectTabs
             openProjects={openProjects}
@@ -199,6 +201,12 @@ export const Home = () => {
               />
             )}
             <IconButton
+              icon={<MdBarChart className="h-5 w-5 text-neutral-200" />}
+              tooltip={t('usageDashboard.title')}
+              onClick={() => setIsUsageDashboardVisible(true)}
+              className="px-4 py-2 hover:text-neutral-200 hover:bg-neutral-700/30 transition-colors duration-200"
+            />
+            <IconButton
               icon={<MdSettings className="h-5 w-5 text-neutral-200" />}
               tooltip={t('settings.title')}
               onClick={() => {
@@ -212,6 +220,7 @@ export const Home = () => {
           <OpenProjectDialog onClose={() => setIsOpenProjectDialogVisible(false)} onAddProject={handleAddProject} openProjects={openProjects} />
         )}
         {showSettingsTab !== null && <SettingsDialog onClose={() => setShowSettingsTab(null)} initialTab={showSettingsTab} />}
+        {isUsageDashboardVisible && <UsageDashboard onClose={() => setIsUsageDashboardVisible(false)} />}
         {releaseNotesContent && versions && (
           <HtmlInfoDialog
             title={`${t('settings.about.releaseNotes')} - ${versions.aiderDeskCurrentVersion}`}

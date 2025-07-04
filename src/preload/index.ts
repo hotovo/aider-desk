@@ -44,11 +44,12 @@ const clearProjectListeners: Record<string, (event: Electron.IpcRendererEvent, b
 const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
 
 const api: ApplicationAPI = {
+  openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   startProject: (baseDir) => ipcRenderer.send('start-project', baseDir),
   stopProject: (baseDir) => ipcRenderer.send('stop-project', baseDir),
-  restartProject: (baseDir) => ipcRenderer.send('restart-project', baseDir),
+  restartProject: (baseDir, startupMode) => ipcRenderer.send('restart-project', baseDir, startupMode),
   runPrompt: (baseDir, prompt, mode) => ipcRenderer.send('run-prompt', baseDir, prompt, mode),
   redoLastUserPrompt: (baseDir, mode, updatedPrompt?) => ipcRenderer.send('redo-last-user-prompt', baseDir, mode, updatedPrompt),
   answerQuestion: (baseDir, answer) => ipcRenderer.send('answer-question', baseDir, answer),
@@ -108,6 +109,8 @@ const api: ApplicationAPI = {
   clearReleaseNotes: () => ipcRenderer.invoke('clear-release-notes'),
   getOS: (): Promise<OS> => ipcRenderer.invoke('get-os'),
   loadModelsInfo: () => ipcRenderer.invoke('load-models-info'),
+  queryUsageData: (from, to) => ipcRenderer.invoke('query-usage-data', from, to),
+  getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => ipcRenderer.invoke('get-effective-environment-variable', key, baseDir),
 
   addResponseChunkListener: (baseDir, callback) => {
     const listenerId = uuidv4();

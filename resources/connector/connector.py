@@ -362,7 +362,8 @@ class Connector:
         'run-command',
         'add-message',
         'interrupt-response',
-        'apply-edits'
+        'apply-edits',
+        'update-env-vars'
       ],
       'inputHistoryFile': self.coder.io.input_history_file
     })
@@ -563,6 +564,14 @@ class Connector:
         await self.send_update_context_files()
         await self.send_tokens_info()
 
+      elif action == "update-env-vars":
+        environment_variables = message.get('environmentVariables')
+        if environment_variables:
+          await self.update_environment_variables(environment_variables)
+
+          main_model = models.Model(self.coder.main_model.name, weak_model=self.coder.main_model.weak_model.name)
+          self.coder.main_model = main_model
+
       else:
         return json.dumps({
           "error": f"Unknown action: {action}"
@@ -736,6 +745,16 @@ class Connector:
         "action": "prompt-finished",
         "promptId": prompt_id
       })
+
+  async def update_environment_variables(self, environment_variables):
+    """Update environment variables for the Aider process"""
+    try:
+      # Update the environment variables in the current process
+      for key, value in environment_variables.items():
+        if value is not None:
+          os.environ[key] = str(value)
+    except Exception as e:
+      await self.send_log_message("error", f"Failed to update environment variables: {str(e)}")
 
   async def add_file(self, path, read_only, no_update=False):
     """Add a file to the coder's tracked files"""

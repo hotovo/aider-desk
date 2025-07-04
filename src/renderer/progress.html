@@ -52,15 +52,15 @@
     .progress-container {
       height: 16px;
       background-color: #191a22;
-      border-radius: 4px;
+      border-radius: 2px;
       overflow: hidden;
       margin-bottom: 8px;
     }
     .progress-bar {
       height: 100%;
-      width: 0%;
+      width: 0;
       background-color: #3d4166;
-      border-radius: 4px;
+      border-radius: 2px;
       transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
     }
     .completed .progress-bar {
@@ -91,7 +91,7 @@
       const messageEl = document.getElementById('detail-text');
       const spinnerEl = document.getElementById('spinner');
       const infoEl = document.getElementById('subtitle');
-      
+
       messageEl.textContent = value;
       const showSpinner = /installing|package|aider|connector|requirements|python|uv|venv/i.test(value.toLowerCase());
       spinnerEl.style.display = showSpinner ? 'block' : 'none';

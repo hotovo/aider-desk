@@ -1,9 +1,10 @@
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow } from 'electron';
-import { SettingsData } from '@common/types';
+import { SettingsData, StartupMode } from '@common/types';
 import { TelemetryManager } from 'src/main/telemetry-manager';
 
 import { Agent } from './agent';
+import { DataManager } from './data-manager';
 import logger from './logger';
 import { Project } from './project';
 import { Store } from './store';
@@ -16,6 +17,7 @@ export class ProjectManager {
     private readonly store: Store,
     private readonly agent: Agent,
     private readonly telemetryManager: TelemetryManager,
+    private readonly dataManager: DataManager,
   ) {
     this.mainWindow = mainWindow;
     this.store = store;
@@ -28,7 +30,7 @@ export class ProjectManager {
 
   private createProject(baseDir: string) {
     logger.info('Creating new project', { baseDir });
-    const project = new Project(this.mainWindow, baseDir, this.store, this.agent, this.telemetryManager);
+    const project = new Project(this.mainWindow, baseDir, this.store, this.agent, this.telemetryManager, this.dataManager);
     this.projects.push(project);
     return project;
   }
@@ -43,11 +45,11 @@ export class ProjectManager {
     return project;
   }
 
-  public startProject(baseDir: string) {
+  public startProject(baseDir: string, startupMode?: StartupMode) {
     logger.info('Starting project', { baseDir });
     const project = this.getProject(baseDir);
 
-    void project.start();
+    void project.start(startupMode);
   }
 
   public async closeProject(baseDir: string) {
@@ -61,9 +63,9 @@ export class ProjectManager {
     await project.close();
   }
 
-  public async restartProject(baseDir: string): Promise<void> {
+  public async restartProject(baseDir: string, startupMode?: StartupMode): Promise<void> {
     await this.closeProject(baseDir);
-    this.startProject(baseDir);
+    this.startProject(baseDir, startupMode);
   }
 
   public async close(): Promise<void> {

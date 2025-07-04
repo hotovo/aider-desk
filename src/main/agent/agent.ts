@@ -30,7 +30,7 @@ import { ModelInfoManager } from 'src/main/model-info-manager';
 import { BINARY_EXTENSIONS } from 'src/main/constants';
 import { optimizeMessages } from 'src/main/agent/optimizer';
 
-import { parseAiderEnv } from '../utils';
+import { parseAiderEnv } from '../environment';
 import logger from '../logger';
 import { Store } from '../store';
 import { Project } from '../project';
@@ -401,7 +401,7 @@ export class Agent {
     const effectiveAbortSignal = abortSignal || this.abortController?.signal;
 
     const llmProvider = getLlmProviderConfig(profile.provider, settings);
-    const cacheControl = getCacheControl(profile);
+    const cacheControl = getCacheControl(profile, llmProvider);
     const providerOptions = getProviderOptions(llmProvider);
 
     const userRequestMessage: CoreUserMessage = {
@@ -417,7 +417,7 @@ export class Agent {
 
     try {
       // reinitialize MCP clients for the current project and wait for them to be ready
-      await this.mcpManager.initMcpConnectors(settings.mcpServers, project.baseDir);
+      await this.mcpManager.initMcpConnectors(settings.mcpServers, project.baseDir, false, profile.enabledServers);
     } catch (error) {
       logger.error('Error reinitializing MCP clients:', error);
       project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`);
@@ -553,6 +553,9 @@ export class Agent {
 
         let iterationError: unknown | null = null;
         let currentResponseId: null | string = null;
+        let hasReasoning: boolean = false;
+        let finishReason = 'unknown';
+
         const result = streamText({
           providerOptions,
           model,
@@ -564,7 +567,6 @@ export class Agent {
           maxTokens: profile.maxTokens,
           maxRetries: 5,
           temperature: profile.temperature,
-          experimental_continueSteps: true,
           onError: ({ error }) => {
             if (effectiveAbortSignal?.aborted) {
               return;
@@ -585,7 +587,45 @@ export class Agent {
           },
           onChunk: ({ chunk }) => {
             if (chunk.type === 'text-delta') {
-              currentResponseId = project.processResponseMessage({
+              if (hasReasoning) {
+                project.processResponseMessage({
+                  id: currentResponseId,
+                  action: 'response',
+                  content: '---\n► **ANSWER**\n',
+                  finished: false,
+                });
+                hasReasoning = false;
+              }
+
+              const responseId = project.processResponseMessage(
+                {
+                  id: currentResponseId,
+                  action: 'response',
+                  content: chunk.textDelta,
+                  finished: false,
+                },
+                currentResponseId === null,
+              );
+
+              if (!currentResponseId) {
+                currentResponseId = responseId;
+              }
+            } else if (chunk.type === 'reasoning') {
+              if (!hasReasoning) {
+                currentResponseId = project.processResponseMessage(
+                  {
+                    id: currentResponseId,
+                    action: 'response',
+                    content: '---\n► **THINKING**\n',
+                    finished: false,
+                  },
+                  true,
+                );
+                hasReasoning = true;
+              }
+
+              project.processResponseMessage({
+                id: currentResponseId,
                 action: 'response',
                 content: chunk.textDelta,
                 finished: false,
@@ -602,7 +642,7 @@ export class Agent {
             }
           },
           onStepFinish: (stepResult) => {
-            const { finishReason } = stepResult;
+            finishReason = stepResult.finishReason;
 
             if (finishReason === 'error') {
               logger.error('Error during prompt:', { stepResult });
@@ -617,6 +657,7 @@ export class Agent {
             this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile);
 
             currentResponseId = null;
+            hasReasoning = false;
           },
           onFinish: ({ finishReason }) => {
             logger.info(`onFinish prompt finished. Reason: ${finishReason}`);
@@ -643,7 +684,7 @@ export class Agent {
         }
 
         const { messages: responseMessages } = await result.response;
-        const finishReason = await result.finishReason;
+        finishReason = await result.finishReason;
 
         messages.push(...responseMessages);
         resultMessages.push(...responseMessages);
@@ -827,7 +868,8 @@ ${reasoning.trim()}
 ${text.trim()}`
             : reasoning || text,
         finished: true,
-        usageReport,
+        // only send usage report if there are no tool results
+        usageReport: toolResults?.length ? undefined : usageReport,
       });
       project.addLogMessage('loading');
     }

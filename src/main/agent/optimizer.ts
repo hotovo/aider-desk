@@ -1,4 +1,4 @@
-import { type AgentProfile, ToolApprovalState } from '@common/types';
+import { type AgentProfile } from '@common/types';
 import { CacheControl } from 'src/main/agent/llm-provider';
 import { cloneDeep } from 'lodash';
 import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResultPart } from 'ai';
@@ -28,6 +28,7 @@ export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex:
   optimizedMessages = convertImageToolResults(optimizedMessages);
   optimizedMessages = removeDoubleToolCalls(optimizedMessages);
   optimizedMessages = optimizeAiderMessages(optimizedMessages);
+  optimizedMessages = optimizeAgentMessages(optimizedMessages);
 
   logger.info('Optimized messages:', {
     before: {
@@ -36,7 +37,7 @@ export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex:
     },
     after: {
       count: optimizedMessages.length,
-      roles: optimizedMessages.map((m) => m.role),
+      roles: optimizedMessages.map((message) => message.role),
     },
   });
 
@@ -64,12 +65,6 @@ const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: n
 
   if (!profile.autoApprove) {
     dontForgets.push('Before making any changes, present the plan and wait for my approval.');
-  }
-
-  if (profile.usePowerTools && profile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`] !== ToolApprovalState.Never) {
-    dontForgets.push(
-      `Prefer using \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}\` tool to delegate analysis and complex tasks to a sub-agent.`,
-    );
   }
 
   if (dontForgets.length === 0) {
@@ -108,6 +103,35 @@ const optimizeAiderMessages = (messages: CoreMessage[]): CoreMessage[] => {
                 ...result,
                 responses: undefined,
               };
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+  }
+  return newMessages;
+};
+
+/**
+ * For agent tool, which now returns an array of messages, we should replace this array with only the last message for LLM processing.
+ */
+const optimizeAgentMessages = (messages: CoreMessage[]): CoreMessage[] => {
+  const newMessages = cloneDeep(messages);
+
+  for (const message of newMessages) {
+    if (message.role === 'tool') {
+      const toolContent = message.content as ToolContent;
+
+      for (const toolResultPart of toolContent) {
+        if (toolResultPart.toolName === `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}` && toolResultPart.result) {
+          try {
+            const result = toolResultPart.result;
+            // Check if result is an array of messages
+            if (Array.isArray(result) && result.length > 0) {
+              // Replace the array with only the last message for LLM processing
+              toolResultPart.result = result[result.length - 1];
             }
           } catch {
             // ignore

@@ -117,20 +117,22 @@ export type LlmProvider =
 export const DEFAULT_AGENT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string[]>> = {
   openai: ['gpt-4o-mini', 'o4-mini', 'gpt-4.1', 'gpt-4.1-mini'],
   anthropic: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
-  gemini: ['gemini-2.5-pro-preview-06-05', 'gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash', 'gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-exp'],
+  gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
   deepseek: ['deepseek-chat'],
   bedrock: ['us.anthropic.claude-3-7-sonnet-20250219-v1:0', 'anthropic.claude-3-7-sonnet-20250219-v1:0'],
+  openrouter: ['anthropic/claude-sonnet-4'],
+  requesty: ['anthropic/claude-sonnet-4-20250514'],
 };
 
 const DEFAULT_AGENT_PROFILE_ID = 'default';
 
 export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   id: DEFAULT_AGENT_PROFILE_ID,
-  name: 'Default',
+  name: 'Power Tools',
   provider: 'anthropic',
   model: DEFAULT_AGENT_PROVIDER_MODELS.anthropic![0],
-  maxIterations: 20,
-  maxTokens: 2000,
+  maxIterations: 100,
+  maxTokens: 4000,
   minTimeBetweenToolCalls: 0,
   temperature: 0.1,
   toolApprovals: {
@@ -150,9 +152,9 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Always,
   },
   includeContextFiles: true,
-  includeRepoMap: true,
-  usePowerTools: false,
-  useAiderTools: true,
+  includeRepoMap: false,
+  usePowerTools: true,
+  useAiderTools: false,
   useTodoTools: true,
   customInstructions: '',
   enabledServers: [],
@@ -175,6 +177,7 @@ export const INIT_PROJECT_RULES_AGENT_PROFILE: AgentProfile = {
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
   },
 };
 
@@ -189,6 +192,10 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   useAiderTools: false,
   useTodoTools: false,
   autoApprove: true,
+  toolApprovals: {
+    ...DEFAULT_AGENT_PROFILE.toolApprovals,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
+  },
 };
 
 export const getLlmProviderConfig = (providerName: LlmProviderName, settings: SettingsData | null): LlmProvider => {

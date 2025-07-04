@@ -1,4 +1,15 @@
-import { LlmProvider, LlmProviderName } from '@common/agent';
+import {
+  AnthropicProvider,
+  BedrockProvider,
+  DeepseekProvider,
+  GeminiProvider,
+  LlmProviderName,
+  OllamaProvider,
+  OpenAiCompatibleProvider,
+  OpenAiProvider,
+  OpenRouterProvider,
+  RequestyProvider,
+} from '@common/agent';
 
 import type { CoreMessage } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
@@ -174,6 +185,7 @@ export enum StartupMode {
 export enum SuggestionMode {
   Automatically = 'automatically',
   OnTab = 'onTab',
+  MentionAtSign = 'mentionAtSign',
 }
 
 export interface PromptBehavior {
@@ -208,6 +220,11 @@ export interface AgentProfile {
   autoApprove: boolean;
 }
 
+export interface EnvironmentVariable {
+  value: string;
+  source: string;
+}
+
 export interface SettingsData {
   onboardingFinished?: boolean;
   language: string;
@@ -230,13 +247,24 @@ export interface SettingsData {
   };
   agentProfiles: AgentProfile[];
   mcpServers: Record<string, McpServerConfig>;
-  llmProviders: Record<LlmProviderName, LlmProvider>;
+  llmProviders: {
+    openai?: OpenAiProvider;
+    anthropic?: AnthropicProvider;
+    gemini?: GeminiProvider;
+    bedrock?: BedrockProvider;
+    deepseek?: DeepseekProvider;
+    ollama?: OllamaProvider;
+    'openai-compatible'?: OpenAiCompatibleProvider;
+    openrouter?: OpenRouterProvider;
+    requesty?: RequestyProvider;
+  };
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
   promptBehavior: PromptBehavior;
 }
 
 export interface UsageReportData {
+  model: string;
   sentTokens: number;
   receivedTokens: number;
   messageCost: number;
@@ -332,4 +360,15 @@ export interface Task {
 export interface TodoItem {
   name: string;
   completed: boolean;
+}
+
+export interface UsageDataRow {
+  timestamp: string;
+  project: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  cost: number;
 }
