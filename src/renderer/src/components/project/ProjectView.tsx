@@ -842,6 +842,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             disabled={!aiderModelsData}
             promptBehavior={settings.promptBehavior}
             clearLogMessages={clearLogMessages}
+            messagesRef={messagesRef}
           />
         </div>
       </div>
