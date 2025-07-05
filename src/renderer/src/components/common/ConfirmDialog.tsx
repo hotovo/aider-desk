@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { BaseDialog } from './BaseDialog';
-import { Button } from './common/Button';
+import { Button } from './Button';
 
 type Props = {
   title: string;

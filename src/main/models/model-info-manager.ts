@@ -1,6 +1,6 @@
 import { ModelInfo } from '@common/types';
 
-import logger from './logger';
+import logger from '@/logger';
 
 const MODEL_INFO_URL = 'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json';
 

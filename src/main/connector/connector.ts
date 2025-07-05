@@ -3,7 +3,7 @@ import path from 'path';
 import { ContextFile, EditFormat, FileEdit, MessageRole, Mode } from '@common/types';
 import { Socket } from 'socket.io';
 
-import logger from './logger';
+import logger from '@/logger';
 import {
   AddFileMessage,
   AddMessageMessage,
@@ -18,7 +18,7 @@ import {
   SetModelsMessage,
   CompactConversationMessage,
   UpdateEnvVarsMessage,
-} from './messages';
+} from '@/messages';
 
 export class Connector {
   socket: Socket;

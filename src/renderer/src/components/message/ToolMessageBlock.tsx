@@ -23,7 +23,7 @@ import { parseToolContent } from './utils';
 
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
-import { CodeInline } from '@/components/message/CodeInline';
+import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {
   message: ToolMessage;

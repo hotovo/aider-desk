@@ -30,6 +30,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
     } catch (error) {
       toast.error(t('settings.about.openLogsError'));
 
+      // eslint-disable-next-line no-console
       console.error('Failed to open logs directory:', error);
     }
   };

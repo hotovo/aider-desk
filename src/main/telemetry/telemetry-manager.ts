@@ -2,9 +2,8 @@ import { PostHog } from 'posthog-node';
 import { AgentProfile, Mode, SettingsData } from '@common/types';
 import { app } from 'electron';
 
-import { Store } from './store';
-import logger from './logger';
-
+import { Store } from '@/store';
+import logger from '@/logger';
 import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST } from '@/constants';
 
 export class TelemetryManager {

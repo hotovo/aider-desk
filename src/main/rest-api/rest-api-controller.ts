@@ -5,10 +5,8 @@ import cors from 'cors';
 import { z } from 'zod';
 import { delay } from '@common/utils';
 
-import { ProjectManager } from './project-manager';
-import logger from './logger';
-
-import { Project } from '@/project';
+import logger from '@/logger';
+import { Project, ProjectManager } from '@/project';
 import { SERVER_PORT } from '@/constants';
 
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes

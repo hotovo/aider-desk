@@ -6,14 +6,8 @@ import YAML from 'yaml';
 import { LlmProviderName } from '@common/agent';
 import { EnvironmentVariable, SettingsData } from '@common/types';
 
-import logger from './logger';
-
-export const SONNET_MODEL = 'anthropic/claude-sonnet-4-20250514';
-export const GEMINI_MODEL = 'gemini/gemini-2.5-pro';
-export const OPEN_AI_DEFAULT_MODEL = 'openai/gpt-4.1';
-export const DEEPSEEK_MODEL = 'deepseek/deepseek-chat';
-
-export const DEFAULT_MAIN_MODEL = SONNET_MODEL;
+import logger from '@/logger';
+import { DEEPSEEK_MODEL, DEFAULT_MAIN_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
 
 const readEnvFile = (filePath: string): Record<string, string> | null => {
   try {

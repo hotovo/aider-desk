@@ -1,7 +1,7 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
-import { LOGS_DIR } from './constants';
+import { LOGS_DIR } from '@/constants';
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',

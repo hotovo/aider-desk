@@ -5,7 +5,7 @@ import { ProjectData } from '@common/types';
 
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { Accordion } from '@/components/common/Accordion';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 

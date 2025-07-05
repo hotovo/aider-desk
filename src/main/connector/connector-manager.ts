@@ -4,7 +4,7 @@ import { ModelsData, QuestionData, TokensInfoData } from '@common/types';
 import { BrowserWindow } from 'electron';
 import { Server, Socket } from 'socket.io';
 
-import logger from './logger';
+import logger from '@/logger';
 import {
   isAddFileMessage,
   isAskQuestionMessage,
@@ -20,10 +20,9 @@ import {
   isUseCommandOutputMessage,
   LogMessage,
   Message,
-} from './messages';
-
-import { Connector } from '@/connector';
-import { ProjectManager } from '@/project-manager';
+} from '@/messages';
+import { Connector } from '@/connector/connector';
+import { ProjectManager } from '@/project';
 import { SERVER_PORT } from '@/constants';
 
 export class ConnectorManager {

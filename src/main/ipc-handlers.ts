@@ -5,19 +5,16 @@ import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSe
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
-import { McpManager } from '@/agent/mcp-manager';
-import { Agent } from '@/agent';
-import { getFilePathSuggestions, isProjectPath, isValidPath } from '@/file-system';
-import { ModelInfoManager } from '@/model-info-manager';
-import { ProjectManager } from '@/project-manager';
+import { McpManager, Agent } from '@/agent';
+import { getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, getEffectiveEnvironmentVariable } from '@/utils';
+import { ModelInfoManager } from '@/models';
+import { ProjectManager } from '@/project';
 import { getDefaultProjectSettings, Store } from '@/store';
-import { scrapeWeb } from '@/web-scrapper';
 import logger from '@/logger';
-import { VersionsManager } from '@/versions-manager';
-import { TelemetryManager } from '@/telemetry-manager';
+import { VersionsManager } from '@/versions';
+import { TelemetryManager } from '@/telemetry';
 import { DataManager } from '@/data-manager';
-import { getEffectiveEnvironmentVariable } from '@/environment';
-import { AIDER_DESK_PROJECT_TMP_DIR, LOGS_DIR } from '@/constants';
+import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 
 export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
@@ -263,7 +260,7 @@ export const setupIpcHandlers = (
       if (normalizedUrl.length > 100) {
         normalizedUrl = normalizedUrl.substring(0, 100);
       }
-      const tempFilePath = path.join(baseDir, AIDER_DESK_PROJECT_TMP_DIR, `${normalizedUrl}.web`);
+      const tempFilePath = path.join(baseDir, AIDER_DESK_TMP_DIR, `${normalizedUrl}.web`);
 
       await fs.mkdir(path.dirname(tempFilePath), { recursive: true });
       await fs.writeFile(tempFilePath, `Scraped content of ${url}:\n\n${content}`);

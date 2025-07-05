@@ -8,7 +8,7 @@ import { Input } from '@/components/common/Input';
 import { Section } from '@/components/common/Section';
 import { TextArea } from '@/components/common/TextArea';
 import { Checkbox } from '@/components/common/Checkbox';
-import { CodeInline } from '@/components/message';
+import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {
   settings: SettingsData;

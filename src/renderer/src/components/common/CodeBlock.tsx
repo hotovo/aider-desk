@@ -5,9 +5,9 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { MdKeyboardArrowDown, MdUndo } from 'react-icons/md';
 import { VscCode } from 'react-icons/vsc';
 
-import { IconButton } from '../common/IconButton';
+import { CopyMessageButton } from '../message/CopyMessageButton';
 
-import { CopyMessageButton } from './CopyMessageButton';
+import { IconButton } from './IconButton';
 
 import { DiffViewer } from '@/components/common/DiffViewer';
 

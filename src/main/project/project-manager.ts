@@ -2,7 +2,7 @@ import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow } from 'electron';
 import { SettingsData, StartupMode } from '@common/types';
 
-import { TelemetryManager } from '@/telemetry-manager';
+import { TelemetryManager } from '@/telemetry';
 import { Agent } from '@/agent';
 import { DataManager } from '@/data-manager';
 import logger from '@/logger';

@@ -4,17 +4,6 @@ import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
 import { POWER_TOOL_AGENT, POWER_TOOL_FILE_EDIT, POWER_TOOL_FILE_WRITE, POWER_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
-import logger from '../logger';
-import {
-  DEEPSEEK_MODEL,
-  determineAgentProvider,
-  determineMainModel,
-  determineWeakModel,
-  GEMINI_MODEL,
-  OPEN_AI_DEFAULT_MODEL,
-  SONNET_MODEL,
-} from '../environment';
-
 import { migrateSettingsV5toV6 } from './migrations/v5-to-v6';
 import { migrateV6ToV7 } from './migrations/v6-to-v7';
 import { migrateV7ToV8 } from './migrations/v7-to-v8';
@@ -23,6 +12,10 @@ import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
 import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
 import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v3-to-v4';
 import { migrateSettingsV4toV5 } from './migrations/v4-to-v5';
+
+import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
+import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
+import logger from '@/logger';
 
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',

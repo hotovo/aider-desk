@@ -1,4 +1,4 @@
-import { BaseDialog } from '@/components/BaseDialog';
+import { BaseDialog } from '@/components/common/BaseDialog';
 
 type Props = {
   title: string;

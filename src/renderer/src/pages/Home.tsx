@@ -13,7 +13,7 @@ import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { useVersions } from '@/hooks/useVersions';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
-import { TelemetryInfoDialog } from '@/components/Dialogs/TelemetryInfoDialog';
+import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
 
 export const Home = () => {

@@ -1,13 +1,9 @@
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import fsPromises from 'fs/promises';
 
-import ignore from 'ignore';
-import { fileExists } from '@common/utils';
-
-import { PYTHON_COMMAND, PYTHON_VENV_DIR, UV_EXECUTABLE } from './constants';
-import logger from './logger';
+import { PYTHON_COMMAND, PYTHON_VENV_DIR, UV_EXECUTABLE } from '@/constants';
+import logger from '@/logger';
 
 const execAsync = promisify(exec);
 
@@ -75,30 +71,5 @@ export const getLatestPythonLibVersion = async (library: string): Promise<string
   } catch (error) {
     logger.error(`Failed to get latest available version for library '${library}'`, { error });
     return null;
-  }
-};
-
-export const isFileIgnored = async (projectBaseDir: string, filePath: string): Promise<boolean> => {
-  const gitignorePath = path.join(projectBaseDir, '.gitignore');
-
-  if (!(await fileExists(gitignorePath))) {
-    logger.debug('No .gitignore file found, not checking for ignored files');
-    return false;
-  }
-
-  try {
-    const gitignoreContent = await fsPromises.readFile(gitignorePath, 'utf8');
-    const ig = ignore().add(gitignoreContent);
-
-    // Make the path relative to the base directory
-    const absolutePath = path.resolve(projectBaseDir, filePath);
-    const relativePath = path.relative(projectBaseDir, absolutePath);
-
-    logger.debug(`Checking if file is ignored: ${relativePath}, ${absolutePath}`);
-
-    return ig.ignores(relativePath);
-  } catch (error) {
-    logger.debug(`Failed to check if file is ignored: ${filePath}`, { error });
-    return false;
   }
 };

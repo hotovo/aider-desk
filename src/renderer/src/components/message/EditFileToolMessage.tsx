@@ -5,8 +5,8 @@ import clsx from 'clsx';
 
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
-import { CodeBlock } from '@/components/message/CodeBlock';
-import { CodeInline } from '@/components/message/CodeInline';
+import { CodeBlock } from '@/components/common/CodeBlock';
+import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {
   message: ToolMessage;

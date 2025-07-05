@@ -9,7 +9,7 @@ import type { CustomCommand } from '@common/types';
 
 import { AIDER_DESK_COMMANDS_DIR } from '@/constants';
 import logger from '@/logger';
-import { Project } from '@/project';
+import { Project } from '@/project/project';
 
 export class CustomCommandManager {
   private commands: Map<string, CustomCommand> = new Map();

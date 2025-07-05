@@ -64,17 +64,17 @@ import type { SimpleGit } from 'simple-git';
 
 import { getInitProjectPrompt, getCompactConversationPrompt, getSystemPrompt, CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS } from '@/agent/prompts';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
-import { TaskManager } from '@/task-manager';
-import { SessionManager } from '@/session-manager';
+import { TaskManager } from '@/tasks';
+import { SessionManager } from '@/session';
 import { Agent } from '@/agent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
 import logger from '@/logger';
 import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
-import { DEFAULT_MAIN_MODEL } from '@/environment';
-import { CustomCommandManager } from '@/custom-command-manager';
-import { TelemetryManager } from '@/telemetry-manager';
+import { DEFAULT_MAIN_MODEL } from '@/models';
+import { CustomCommandManager } from '@/custom-commands';
+import { TelemetryManager } from '@/telemetry';
 
 export class Project {
   private process: ChildProcessWithoutNullStreams | null = null;

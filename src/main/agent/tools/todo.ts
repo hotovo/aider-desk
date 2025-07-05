@@ -11,9 +11,9 @@ import {
 } from '@common/tools';
 import { AgentProfile, ToolApprovalState } from '@common/types';
 
-import { Project } from '../../project';
-
 import { ApprovalManager } from './approval-manager';
+
+import { Project } from '@/project';
 
 export const createTodoToolset = (project: Project, profile: AgentProfile): ToolSet => {
   const approvalManager = new ApprovalManager(project, profile);

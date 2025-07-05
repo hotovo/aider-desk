@@ -8,21 +8,19 @@ import { app, BrowserWindow, dialog, shell } from 'electron';
 
 import icon from '../../resources/icon.png?asset';
 
-import { ProgressWindow } from './progress-window';
-import { Agent } from './agent';
-import { RestApiController } from './rest-api-controller';
-import { ConnectorManager } from './connector-manager';
-import { setupIpcHandlers } from './ipc-handlers';
-import { ProjectManager } from './project-manager';
-import { performStartUp, UpdateProgressData } from './start-up';
-import { Store, getDefaultProjectSettings } from './store';
-import { VersionsManager } from './versions-manager';
-import logger from './logger';
-import { TelemetryManager } from './telemetry-manager';
-import { ModelInfoManager } from './model-info-manager';
-
+import { ProgressWindow } from '@/progress-window';
+import { Agent, McpManager } from '@/agent';
+import { RestApiController } from '@/rest-api';
+import { ConnectorManager } from '@/connector';
+import { setupIpcHandlers } from '@/ipc-handlers';
+import { ProjectManager } from '@/project';
+import { performStartUp, UpdateProgressData } from '@/start-up';
+import { Store, getDefaultProjectSettings } from '@/store';
+import { VersionsManager } from '@/versions';
+import logger from '@/logger';
+import { TelemetryManager } from '@/telemetry';
+import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
-import { McpManager } from '@/agent/mcp-manager';
 
 const initStore = async (): Promise<Store> => {
   const store = new Store();

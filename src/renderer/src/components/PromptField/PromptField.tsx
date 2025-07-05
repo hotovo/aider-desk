@@ -19,8 +19,8 @@ import { MdPlaylistRemove, MdStop } from 'react-icons/md';
 
 import { MessagesRef } from '@/components/message/Messages';
 import { AgentSelector } from '@/components/AgentSelector';
-import { InputHistoryMenu } from '@/components/InputHistoryMenu';
-import { ModeSelector } from '@/components/ModeSelector';
+import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
+import { ModeSelector } from '@/components/PromptField/ModeSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
 import { useCustomCommands } from '@/hooks/useCustomCommands';

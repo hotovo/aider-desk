@@ -5,9 +5,9 @@ import { autoUpdater } from 'electron-updater';
 import { app, BrowserWindow } from 'electron';
 import { is } from '@electron-toolkit/utils';
 
-import { getCurrentPythonLibVersion, getLatestPythonLibVersion } from './utils';
-import logger from './logger';
-import { Store } from './store';
+import { getCurrentPythonLibVersion, getLatestPythonLibVersion } from '@/utils';
+import logger from '@/logger';
+import { Store } from '@/store';
 
 export class VersionsManager {
   private readonly checkInterval = 10 * 60 * 1000; // 10 minutes

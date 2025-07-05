@@ -26,26 +26,25 @@ import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.j
 import { ZodSchema } from 'zod';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
-import { parseAiderEnv } from '../environment';
-import logger from '../logger';
-import { Store } from '../store';
-import { Project } from '../project';
-
 import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-provider';
+import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-providers';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
+import { Project } from '@/project';
+import { Store } from '@/store';
+import logger from '@/logger';
+import { parseAiderEnv } from '@/utils';
 import { optimizeMessages } from '@/agent/optimizer';
 import { BINARY_EXTENSIONS } from '@/constants';
-import { ModelInfoManager } from '@/model-info-manager';
-import { TelemetryManager } from '@/telemetry-manager';
+import { ModelInfoManager } from '@/models/model-info-manager';
+import { TelemetryManager } from '@/telemetry/telemetry-manager';
 
 export class Agent {
   private abortController: AbortController | null = null;

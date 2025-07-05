@@ -1,7 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import fsPromises from 'fs/promises';
 
-import logger from './logger';
+import ignore from 'ignore';
+import { fileExists } from '@common/utils';
+
+import logger from '@/logger';
 
 export const getFilePathSuggestions = async (currentPath: string, directoriesOnly = false): Promise<string[]> => {
   try {
@@ -57,6 +61,31 @@ export const isValidPath = async (baseDir: string, filePath: string): Promise<bo
 
     return stats.isDirectory() || stats.isFile();
   } catch {
+    return false;
+  }
+};
+
+export const isFileIgnored = async (projectBaseDir: string, filePath: string): Promise<boolean> => {
+  const gitignorePath = path.join(projectBaseDir, '.gitignore');
+
+  if (!(await fileExists(gitignorePath))) {
+    logger.debug('No .gitignore file found, not checking for ignored files');
+    return false;
+  }
+
+  try {
+    const gitignoreContent = await fsPromises.readFile(gitignorePath, 'utf8');
+    const ig = ignore().add(gitignoreContent);
+
+    // Make the path relative to the base directory
+    const absolutePath = path.resolve(projectBaseDir, filePath);
+    const relativePath = path.relative(projectBaseDir, absolutePath);
+
+    logger.debug(`Checking if file is ignored: ${relativePath}, ${absolutePath}`);
+
+    return ig.ignores(relativePath);
+  } catch (error) {
+    logger.debug(`Failed to check if file is ignored: ${filePath}`, { error });
     return false;
   }
 };
