@@ -1645,6 +1645,7 @@ export class Project {
     this.addUserMessage(prompt, 'agent');
     this.addLogMessage('loading');
 
-    await this.runAgent(profile, prompt, systemPrompt);
+    const messages = command.includeContext === false ? [] : undefined;
+    await this.agent.runAgent(this, profile, prompt, messages, undefined, systemPrompt);
   }
 }

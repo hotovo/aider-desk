@@ -114,7 +114,14 @@ export class CustomCommandManager {
       const name = path.basename(filePath, '.md');
       const args = Array.isArray(parsed.arguments) ? parsed.arguments : [];
       const template = parsed.__content?.trim() || '';
-      commands.set(name, { name, description: parsed.description || 'Not specified', arguments: args, template });
+      const includeContext = typeof parsed.includeContext === 'boolean' ? parsed.includeContext : true;
+      commands.set(name, {
+        name,
+        description: parsed.description || 'Not specified',
+        arguments: args,
+        template,
+        includeContext,
+      });
     } catch (err) {
       logger.error(`Failed to parse command file ${filePath}: ${err}`);
       // Optionally: send error to chat window via IPC or callback

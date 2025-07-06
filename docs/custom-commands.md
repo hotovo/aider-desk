@@ -44,6 +44,7 @@ Any line starting with `!` will be treated as a shell command.
 *   `arguments` (array of objects, optional): An array defining the expected arguments for the command. Each argument object can have:
     *   `description` (string, **required**): A description of what the argument represents.
     *   `required` (boolean, optional): Set to `true` if the argument is mandatory, `false` otherwise. Defaults to `true`.
+*   `includeContext` (boolean, optional): Determines whether the current conversation context (chat history and context files) should be included when the command is run. Defaults to `true`. If set to `false`, the agent will receive an empty list of messages. This is useful for commands that should operate independently of the current chat session.
 
 ### Command Template:
 
@@ -113,3 +114,19 @@ To use it, you could type:
 *   `/generate-commit` (for the entire staged diff)
 *   `/generate-commit HEAD~1` (for the diff from the previous commit)
 *   `/generate-commit src/main/project.ts` (for changes in a specific file)
+
+### Example 3: Command without Context
+
+This command will list files in the root of the project, without including the current chat history or context files.
+
+Create a file named `~/.aider-desk/commands/list-root.md`:
+
+```markdown
+---
+description: Lists files in the project root directory, ignoring current context.
+includeContext: false
+---
+!ls -la ./
+```
+
+To use it, type `/list-root` in the prompt field and press Enter. The agent will only receive the `!ls -la ./` instruction and no prior conversation.
