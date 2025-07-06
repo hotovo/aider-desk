@@ -43,6 +43,7 @@ import { InfoIcon } from '@/components/common/InfoIcon';
 import { Accordion } from '@/components/common/Accordion';
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
+import { TextArea } from '@/components/common/TextArea';
 
 const tools: Record<string, GenericTool[]> = {
   [AIDER_TOOL_GROUP_NAME]: [
@@ -353,6 +354,14 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               value={selectedProfile.name}
               onChange={(e) => handleProfileSettingChange('name', e.target.value)}
               className="mb-2"
+            />
+            <TextArea
+              label={t('agentProfiles.profileDescription')}
+              id="agent-profile-description"
+              className="mb-2 min-h-[60px]"
+              value={selectedProfile.description || ''}
+              onChange={(e) => handleProfileSettingChange('description', e.target.value)}
+              placeholder={t('agentProfiles.profileDescriptionPlaceholder')}
             />
 
             {renderSectionAccordion(

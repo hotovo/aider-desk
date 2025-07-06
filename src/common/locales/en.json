@@ -605,6 +605,8 @@
     "profiles": "Profiles",
     "createNew": "New Profile",
     "profileName": "Name",
+    "profileDescription": "Description",
+    "profileDescriptionPlaceholder": "Describe this agent profile (purpose, tools, etc.)",
     "tools": "Tools"
   },
   "projectBar": {

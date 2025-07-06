@@ -208,6 +208,7 @@ export interface PromptBehavior {
 export interface AgentProfile {
   id: string;
   name: string;
+  description: string;
   provider: LlmProviderName;
   model: string;
   maxIterations: number;
