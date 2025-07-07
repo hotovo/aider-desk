@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- todo list disappearance outside agent mode or without useTodoTools enabled
+
 ## [0.21.0]
 
 - not storing tool messages without the usage report into DB
@@ -17,7 +20,6 @@
 - fixed issue with maximizing window on startup
 - added description to agent profile
 - removed rule files from the context files presented to agent as they are already in system prompt
-- todo list disappearance outside agent mode or without useTodoTools enabled
 
 ## [0.20.0]
 
