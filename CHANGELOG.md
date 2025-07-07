@@ -9,6 +9,7 @@
 - explicit cache control with Requesty Anthropic models used only when auto caching is disabled
 - unified LLM providers settings
 - improved onboarding flow with new unified LLM providers
+- todo list disappearance outside agent mode or without useTodoTools enabled
 
 ## [0.20.0]
 

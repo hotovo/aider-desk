@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { MdExpandLess, MdOutlineChecklist, MdAdd } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { TodoItem } from '@common/types';
+import { SettingsData, TodoItem } from '@common/types';
+import { getActiveAgentProfile } from '@common/utils';
 
 import { IconButton } from '../common/IconButton';
 import { Button } from '../common/Button';
@@ -17,9 +18,10 @@ type Props = {
   onAddTodo?: (name: string) => void;
   onUpdateTodo?: (name: string, updates: Partial<TodoItem>) => void;
   onDeleteTodo?: (name: string) => void;
+  settings: SettingsData;
 };
 
-export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo }: Props) => {
+export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, settings }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddingTodo, setIsAddingTodo] = useState(false);
@@ -28,9 +30,13 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
   const [shouldShow, setShouldShow] = useState(false);
 
   useEffect(() => {
-    const shouldShowTodoWindow = projectSettings?.currentMode === 'agent' && projectSettings?.useTodoTools;
-    setShouldShow(shouldShowTodoWindow ?? false);
-  }, [projectSettings?.currentMode, projectSettings?.useTodoTools]);
+    const shouldShowTodoWindow = projectSettings?.currentMode === 'agent';
+    if (shouldShowTodoWindow && getActiveAgentProfile(settings, projectSettings)?.useTodoTools) {
+      setShouldShow(true);
+    } else {
+      setShouldShow(false);
+    }
+  }, [projectSettings, settings]);
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);

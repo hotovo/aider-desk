@@ -141,7 +141,6 @@ export interface ProjectSettings {
   thinkingTokens?: string;
   currentMode: Mode;
   renderMarkdown: boolean;
-  useTodoTools?: boolean;
 }
 
 export interface ProjectData {
