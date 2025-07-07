@@ -1,6 +1,6 @@
 import { AgentProfile, QuestionData, ToolApprovalState } from '@common/types';
 
-import { Project } from '../../project';
+import { Project } from '@/project';
 
 export class ApprovalManager {
   private alwaysApproveForRunKeys: Set<string> = new Set();

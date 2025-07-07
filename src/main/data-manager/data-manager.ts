@@ -1,8 +1,8 @@
 import { UsageReportData, UsageDataRow } from '@common/types';
 import Database from 'better-sqlite3';
 
-import logger from '../logger';
-import { DB_FILE_PATH } from '../constants';
+import logger from '@/logger';
+import { DB_FILE_PATH } from '@/constants';
 
 /**
  * Manages the application's database connection and structure.

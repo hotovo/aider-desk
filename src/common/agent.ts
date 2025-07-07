@@ -129,10 +129,11 @@ const DEFAULT_AGENT_PROFILE_ID = 'default';
 export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   id: DEFAULT_AGENT_PROFILE_ID,
   name: 'Power Tools',
+  description: '',
   provider: 'anthropic',
   model: DEFAULT_AGENT_PROVIDER_MODELS.anthropic![0],
   maxIterations: 100,
-  maxTokens: 4000,
+  maxTokens: 8192,
   minTimeBetweenToolCalls: 0,
   temperature: 0.1,
   toolApprovals: {

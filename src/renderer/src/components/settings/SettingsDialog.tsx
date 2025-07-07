@@ -6,7 +6,7 @@ import { LlmProviderName } from '@common/agent';
 
 import { Settings } from '@/pages/Settings';
 import { useSettings } from '@/context/SettingsContext';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 type Props = {
   onClose: () => void;

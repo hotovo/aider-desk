@@ -43,6 +43,7 @@ import { InfoIcon } from '@/components/common/InfoIcon';
 import { Accordion } from '@/components/common/Accordion';
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
+import { TextArea } from '@/components/common/TextArea';
 
 const tools: Record<string, GenericTool[]> = {
   [AIDER_TOOL_GROUP_NAME]: [
@@ -320,7 +321,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
   ) : (
     <div className="flex h-[600px] max-h-[100%] overflow-hidden -m-6">
       {/* Left sidebar with profiles and providers */}
-      <div className="w-[250px] border-r border-neutral-700/50 p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700">
+      <div className="w-[260px] border-r border-neutral-700/50 p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700">
         <h4 className="text-sm uppercase font-medium">{t('agentProfiles.profiles')}</h4>
         <div className="py-2">
           {agentProfiles.map((profile) => (
@@ -353,6 +354,14 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               value={selectedProfile.name}
               onChange={(e) => handleProfileSettingChange('name', e.target.value)}
               className="mb-2"
+            />
+            <TextArea
+              label={t('agentProfiles.profileDescription')}
+              id="agent-profile-description"
+              className="mb-2 min-h-[100px]"
+              value={selectedProfile.description || ''}
+              onChange={(e) => handleProfileSettingChange('description', e.target.value)}
+              placeholder={t('agentProfiles.profileDescriptionPlaceholder')}
             />
 
             {renderSectionAccordion(

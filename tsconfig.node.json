@@ -11,6 +11,9 @@
     "types": ["electron-vite/node"],
     "baseUrl": ".",
     "paths": {
+      "@/*": [
+        "src/main/*"
+      ],
       "@common/*": [
         "src/common/*"
       ],

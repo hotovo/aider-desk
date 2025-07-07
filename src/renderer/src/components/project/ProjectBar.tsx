@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { IconButton } from '@/components/common/IconButton';
 import { AgentModelSelector } from '@/components/AgentModelSelector';
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
-import { EditFormatSelector } from '@/components/EditFormatSelector';
+import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector';
 import { SessionsPopup } from '@/components/SessionsPopup';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { useSettings } from '@/context/SettingsContext';

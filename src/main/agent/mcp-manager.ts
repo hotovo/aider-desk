@@ -3,7 +3,7 @@ import { McpServerConfig, McpTool, SettingsData } from '@common/types';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
-import logger from '../logger';
+import logger from '@/logger';
 
 // increasing timeout for MCP client requests
 export const MCP_CLIENT_TIMEOUT = 600_000;

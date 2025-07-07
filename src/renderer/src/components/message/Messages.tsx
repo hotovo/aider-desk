@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState, WheelEvent } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 
 import { MessageBlock } from './MessageBlock';
@@ -9,6 +9,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 export type MessagesRef = {
   exportToImage: () => void;
   container: HTMLDivElement | null;
+  scrollToBottom: () => void;
 };
 
 type Props = {
@@ -28,9 +29,9 @@ export const Messages = forwardRef<MessagesRef, Props>(
     const [scrollingPaused, setScrollingPaused] = useState(false);
     const lastUserMessageIndex = messages.findLastIndex(isUserMessage);
 
-    const handleScroll = (e: WheelEvent<HTMLDivElement>) => {
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const element = e.currentTarget;
-      const isAtBottom = element.scrollHeight - element.scrollTop === element.clientHeight;
+      const isAtBottom = element.scrollHeight - element.scrollTop < element.clientHeight + 5;
       setScrollingPaused(!isAtBottom);
     };
 
@@ -62,9 +63,15 @@ export const Messages = forwardRef<MessagesRef, Props>(
       }
     };
 
+    const scrollToBottom = () => {
+      setScrollingPaused(false);
+      messagesEndRef.current?.scrollIntoView();
+    };
+
     useImperativeHandle(ref, () => ({
       exportToImage,
       container: messagesContainerRef.current,
+      scrollToBottom,
     }));
 
     return (
@@ -75,7 +82,7 @@ export const Messages = forwardRef<MessagesRef, Props>(
       scrollbar-track-neutral-900
       scrollbar-thumb-neutral-700
       hover:scrollbar-thumb-neutral-600"
-        onWheel={handleScroll}
+        onScroll={handleScroll}
       >
         <StyledTooltip id="usage-info-tooltip" />
         {messages.map((message, index) => (

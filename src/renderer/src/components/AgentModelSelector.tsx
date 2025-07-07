@@ -172,7 +172,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
         />
         <IconButton icon={<BiCog className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-neutral-700 rounded-md" />
       </div>
-      {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={2} initialAgentProvider={activeAgentProfile?.provider} />}
+      {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={1} initialAgentProvider={activeAgentProfile?.provider} />}
     </>
   );
 });

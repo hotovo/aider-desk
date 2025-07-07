@@ -314,7 +314,9 @@
       "downloadingUpdate": "Downloading update",
       "newAiderDeskVersionReady": "A new version is ready. Restart AiderDesk to apply the update.",
       "downloadAutomatically": "Download update automatically",
-      "releaseNotes": "Release notes"
+      "releaseNotes": "Release notes",
+      "openLogsDirectory": "Open logs directory",
+      "openLogsError": "Error opening a log directory"
     },
     "telemetry": {
       "title": "Telemetry"
@@ -332,7 +334,8 @@
       "modeSwitchingCommands": "Mode commands (/code, /agent, ...)",
       "keyBindings": "Key bindings",
       "useVimBindings": "Use Vim bindings",
-      "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field."
+      "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field.",
+      "modeAtSign": "@ mention mode"
     }
   },
   "messages": {
@@ -591,7 +594,8 @@
     "invalidCommand": "Invalid command",
     "stopResponse": "Stop response",
     "sendMessage": "Send message (Enter)",
-    "clearChat": "Clear chat"
+    "clearChat": "Clear chat",
+    "agentModeOnly": "Available in Agent mode only"
   },
   "agentProfiles": {
     "title": "Agent Profiles",
@@ -601,6 +605,8 @@
     "profiles": "Profiles",
     "createNew": "New Profile",
     "profileName": "Name",
+    "profileDescription": "Description",
+    "profileDescriptionPlaceholder": "Describe this agent profile (purpose, tools, etc.)",
     "tools": "Tools"
   },
   "projectBar": {

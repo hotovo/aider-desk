@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { BaseDialog } from './BaseDialog';
+import { BaseDialog } from './common/BaseDialog';
 import { Button } from './common/Button';
 import { Checkbox } from './common/Checkbox';
 import { Input } from './common/Input';

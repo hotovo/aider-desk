@@ -309,7 +309,9 @@
       "downloadingUpdate": "正在下载更新",
       "newAiderDeskVersionReady": "新版本已准备好。重启 AiderDesk 以应用更新。",
       "downloadAutomatically": "自动下载更新",
-      "releaseNotes": "发行说明"
+      "releaseNotes": "发行说明",
+      "openLogsDirectory": "打开日志目录",
+      "openLogsError": "打开日志目录出错"
     }
   },
   "messages": {
@@ -586,7 +588,8 @@
     "invalidCommand": "无效命令",
     "stopResponse": "停止响应",
     "sendMessage": "发送消息(Enter)",
-    "clearChat": "清除聊天"
+    "clearChat": "清除聊天",
+    "agentModeOnly": "仅在代理模式下可用"
   },
   "agentProfiles": {
     "title": "代理配置",
@@ -596,6 +599,8 @@
     "profiles": "配置列表",
     "createNew": "创建新配置",
     "profileName": "名称",
+    "profileDescription": "描述",
+    "profileDescriptionPlaceholder": "描述此代理配置（用途、工具等）",
     "tools": "工具"
   },
   "projectBar": {
@@ -656,7 +661,9 @@
     "addCommand": "/add",
     "readOnlyCommand": "/read-only",
     "modelCommand": "/model",
-    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)"
+    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)",
+    "modeAtSign": "@ 提及模式"
+
   },
   "multiselect": {
     "noneSelected": "未选择",

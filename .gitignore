@@ -27,6 +27,6 @@ release-win.sh
 release-linux.sh
 start-docker.sh
 
-session-*.md
+./session-*.md
 .claude-trace
 repomix-output.txt

@@ -25,26 +25,26 @@ import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { ZodSchema } from 'zod';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
-import { TelemetryManager } from 'src/main/telemetry-manager';
-import { ModelInfoManager } from 'src/main/model-info-manager';
-import { BINARY_EXTENSIONS } from 'src/main/constants';
-import { optimizeMessages } from 'src/main/agent/optimizer';
-
-import { parseAiderEnv } from '../environment';
-import logger from '../logger';
-import { Store } from '../store';
-import { Project } from '../project';
 
 import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-provider';
+import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-providers';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
+
+import { AIDER_DESK_PROJECT_RULES_DIR, BINARY_EXTENSIONS } from '@/constants';
+import { Project } from '@/project';
+import { Store } from '@/store';
+import logger from '@/logger';
+import { parseAiderEnv } from '@/utils';
+import { optimizeMessages } from '@/agent/optimizer';
+import { ModelInfoManager } from '@/models/model-info-manager';
+import { TelemetryManager } from '@/telemetry/telemetry-manager';
 
 export class Agent {
   private abortController: AbortController | null = null;
@@ -113,9 +113,22 @@ export class Agent {
   private async getContextFilesMessages(project: Project, contextFiles: ContextFile[]): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];
 
-    if (contextFiles.length > 0) {
+    // Filter out rule files as they are already included in the system prompt
+    const filteredContextFiles = contextFiles.filter((file) => {
+      const normalizedPath = path.normalize(file.path);
+      const normalizedRulesDir = path.normalize(AIDER_DESK_PROJECT_RULES_DIR);
+
+      // Check if the file is within the rules directory
+      return (
+        !normalizedPath.startsWith(normalizedRulesDir + path.sep) &&
+        !normalizedPath.startsWith(normalizedRulesDir + '/') &&
+        normalizedPath !== normalizedRulesDir
+      );
+    });
+
+    if (filteredContextFiles.length > 0) {
       // Separate readonly and editable files
-      const [readOnlyFiles, editableFiles] = contextFiles.reduce(
+      const [readOnlyFiles, editableFiles] = filteredContextFiles.reduce(
         ([readOnly, editable], file) => (file.readOnly ? [[...readOnly, file], editable] : [readOnly, [...editable, file]]),
         [[], []] as [ContextFile[], ContextFile[]],
       );

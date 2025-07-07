@@ -74,6 +74,11 @@ export interface ContextFilesUpdatedData {
   files: ContextFile[];
 }
 
+export interface CustomCommandsUpdatedData {
+  baseDir: string;
+  commands: CustomCommand[];
+}
+
 export interface AutocompletionData {
   baseDir: string;
   words: string[];
@@ -185,6 +190,7 @@ export enum StartupMode {
 export enum SuggestionMode {
   Automatically = 'automatically',
   OnTab = 'onTab',
+  MentionAtSign = 'mentionAtSign',
 }
 
 export interface PromptBehavior {
@@ -202,6 +208,7 @@ export interface PromptBehavior {
 export interface AgentProfile {
   id: string;
   name: string;
+  description: string;
   provider: LlmProviderName;
   model: string;
   maxIterations: number;
@@ -370,4 +377,17 @@ export interface UsageDataRow {
   cache_read_tokens: number;
   cache_write_tokens: number;
   cost: number;
+}
+
+export interface CustomCommandArgument {
+  description: string;
+  required?: boolean;
+}
+
+export interface CustomCommand {
+  name: string;
+  description: string;
+  arguments: CustomCommandArgument[];
+  template: string;
+  includeContext?: boolean;
 }

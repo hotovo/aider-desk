@@ -6,17 +6,17 @@ import { promisify } from 'util';
 import { delay } from '@common/utils';
 import { is } from '@electron-toolkit/utils';
 
-import logger from './logger';
-import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBinPath } from './utils';
+import logger from '@/logger';
+import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBinPath } from '@/utils';
 import {
-  AIDER_DESK_DIR,
+  AIDER_DESK_DATA_DIR,
   SETUP_COMPLETE_FILENAME,
   PYTHON_VENV_DIR,
   AIDER_DESK_CONNECTOR_DIR,
   RESOURCES_DIR,
   AIDER_DESK_MCP_SERVER_DIR,
   UV_EXECUTABLE,
-} from './constants';
+} from '@/constants';
 
 const execAsync = promisify(exec);
 
@@ -243,9 +243,9 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
 
   await delay(1000);
 
-  if (!fs.existsSync(AIDER_DESK_DIR)) {
-    logger.info(`Creating AiderDesk directory: ${AIDER_DESK_DIR}`);
-    fs.mkdirSync(AIDER_DESK_DIR, { recursive: true });
+  if (!fs.existsSync(AIDER_DESK_DATA_DIR)) {
+    logger.info(`Creating AiderDesk directory: ${AIDER_DESK_DATA_DIR}`);
+    fs.mkdirSync(AIDER_DESK_DATA_DIR, { recursive: true });
   }
   updateProgress({
     step: 'Initial Setup',

@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.21.0]
 
 - not storing tool messages without the usage report into DB
 - added cached token information for Gemini models
@@ -9,6 +9,14 @@
 - explicit cache control with Requesty Anthropic models used only when auto caching is disabled
 - unified LLM providers settings
 - improved onboarding flow with new unified LLM providers
+- added action to open directory with logs into Settings -> Version
+- added file completion with @ mention
+- added option to open project in AiderDesk from command line
+- notification when update is ready to be installed
+- custom commands in Agent mode
+- fixed issue with maximizing window on startup
+- added description to agent profile
+- removed rule files from the context files presented to agent as they are already in system prompt
 - todo list disappearance outside agent mode or without useTodoTools enabled
 
 ## [0.20.0]
