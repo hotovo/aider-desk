@@ -80,6 +80,10 @@ export const setupIpcHandlers = (
     return await projectManager.getProject(baseDir).loadInputHistory();
   });
 
+  ipcMain.handle('add-to-input-history', async (_, baseDir: string, text: string) => {
+    return await projectManager.getProject(baseDir).addToInputHistory(text);
+  });
+
   ipcMain.handle('get-open-projects', async () => {
     return store.getOpenProjects();
   });

@@ -746,8 +746,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
-  const handleInputHistory = (text: string) => {
-    setInputHistory([text, ...inputHistory]);
+  const handleAddToInputHistory = (text: string) => {
+    window.api.addToInputHistory(project.baseDir, text);
   };
 
   if (!projectSettings || !settings) {
@@ -847,7 +847,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             promptBehavior={settings.promptBehavior}
             clearLogMessages={clearLogMessages}
             messagesRef={messagesRef}
-            addToInputHistory={handleInputHistory}
+            addToInputHistory={handleAddToInputHistory}
           />
         </div>
       </div>
