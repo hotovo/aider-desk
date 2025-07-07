@@ -30,12 +30,8 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
   const [shouldShow, setShouldShow] = useState(false);
 
   useEffect(() => {
-    const shouldShowTodoWindow = projectSettings?.currentMode === 'agent';
-    if (shouldShowTodoWindow && getActiveAgentProfile(settings, projectSettings)?.useTodoTools) {
-      setShouldShow(true);
-    } else {
-      setShouldShow(false);
-    }
+    const shouldShowTodoWindow = projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
+    setShouldShow(shouldShowTodoWindow ?? false);
   }, [projectSettings, settings]);
 
   const handleToggleExpand = () => {
@@ -77,7 +73,7 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
     }
   }, [completedCount, totalCount]);
 
-  if (!shouldShow) {
+  if (!projectSettings || !settings || !shouldShow) {
     return null;
   }
 
