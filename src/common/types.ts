@@ -1,4 +1,15 @@
-import { LlmProvider, LlmProviderName } from '@common/agent';
+import {
+  AnthropicProvider,
+  BedrockProvider,
+  DeepseekProvider,
+  GeminiProvider,
+  LlmProviderName,
+  OllamaProvider,
+  OpenAiCompatibleProvider,
+  OpenAiProvider,
+  OpenRouterProvider,
+  RequestyProvider,
+} from '@common/agent';
 
 import type { CoreMessage } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
@@ -61,6 +72,11 @@ export interface ToolData {
 export interface ContextFilesUpdatedData {
   baseDir: string;
   files: ContextFile[];
+}
+
+export interface CustomCommandsUpdatedData {
+  baseDir: string;
+  commands: CustomCommand[];
 }
 
 export interface AutocompletionData {
@@ -174,6 +190,7 @@ export enum StartupMode {
 export enum SuggestionMode {
   Automatically = 'automatically',
   OnTab = 'onTab',
+  MentionAtSign = 'mentionAtSign',
 }
 
 export interface PromptBehavior {
@@ -191,6 +208,7 @@ export interface PromptBehavior {
 export interface AgentProfile {
   id: string;
   name: string;
+  description: string;
   provider: LlmProviderName;
   model: string;
   maxIterations: number;
@@ -206,6 +224,11 @@ export interface AgentProfile {
   useTodoTools: boolean;
   customInstructions: string;
   autoApprove: boolean;
+}
+
+export interface EnvironmentVariable {
+  value: string;
+  source: string;
 }
 
 export interface SettingsData {
@@ -230,7 +253,17 @@ export interface SettingsData {
   };
   agentProfiles: AgentProfile[];
   mcpServers: Record<string, McpServerConfig>;
-  llmProviders: Record<LlmProviderName, LlmProvider>;
+  llmProviders: {
+    openai?: OpenAiProvider;
+    anthropic?: AnthropicProvider;
+    gemini?: GeminiProvider;
+    bedrock?: BedrockProvider;
+    deepseek?: DeepseekProvider;
+    ollama?: OllamaProvider;
+    'openai-compatible'?: OpenAiCompatibleProvider;
+    openrouter?: OpenRouterProvider;
+    requesty?: RequestyProvider;
+  };
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
   promptBehavior: PromptBehavior;
@@ -344,4 +377,17 @@ export interface UsageDataRow {
   cache_read_tokens: number;
   cache_write_tokens: number;
   cost: number;
+}
+
+export interface CustomCommandArgument {
+  description: string;
+  required?: boolean;
+}
+
+export interface CustomCommand {
+  name: string;
+  description: string;
+  arguments: CustomCommandArgument[];
+  template: string;
+  includeContext?: boolean;
 }

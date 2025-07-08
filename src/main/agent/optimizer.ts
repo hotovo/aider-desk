@@ -1,5 +1,4 @@
 import { type AgentProfile } from '@common/types';
-import { CacheControl } from 'src/main/agent/llm-provider';
 import { cloneDeep } from 'lodash';
 import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResultPart } from 'ai';
 import {
@@ -12,7 +11,8 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 
-import logger from '../logger';
+import logger from '@/logger';
+import { CacheControl } from '@/agent';
 
 /**
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.

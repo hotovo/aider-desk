@@ -26,3 +26,7 @@ dev-app-update.yml
 release-win.sh
 release-linux.sh
 start-docker.sh
+
+./session-*.md
+.claude-trace
+repomix-output.txt

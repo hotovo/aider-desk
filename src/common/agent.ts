@@ -128,11 +128,12 @@ const DEFAULT_AGENT_PROFILE_ID = 'default';
 
 export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   id: DEFAULT_AGENT_PROFILE_ID,
-  name: 'Aider',
+  name: 'Power Tools',
+  description: '',
   provider: 'anthropic',
   model: DEFAULT_AGENT_PROVIDER_MODELS.anthropic![0],
-  maxIterations: 20,
-  maxTokens: 2000,
+  maxIterations: 100,
+  maxTokens: 8192,
   minTimeBetweenToolCalls: 0,
   temperature: 0.1,
   toolApprovals: {
@@ -152,9 +153,9 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Always,
   },
   includeContextFiles: true,
-  includeRepoMap: true,
-  usePowerTools: false,
-  useAiderTools: true,
+  includeRepoMap: false,
+  usePowerTools: true,
+  useAiderTools: false,
   useTodoTools: true,
   customInstructions: '',
   enabledServers: [],

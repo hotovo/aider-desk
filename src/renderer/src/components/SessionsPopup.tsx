@@ -5,8 +5,8 @@ import { IoDocumentTextOutline, IoListOutline, IoTrashOutline, IoAddOutline, IoS
 import { LuImageDown } from 'react-icons/lu';
 import { RiChatDownloadLine } from 'react-icons/ri';
 
-import { ConfirmDialog } from './ConfirmDialog';
-import { StyledTooltip } from './common/StyledTooltip';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 type Props = {
   sessions: SessionData[];

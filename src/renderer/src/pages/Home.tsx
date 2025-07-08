@@ -13,7 +13,8 @@ import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { useVersions } from '@/hooks/useVersions';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
-import { TelemetryInfoDialog } from '@/components/Dialogs/TelemetryInfoDialog';
+import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
+import { showInfoNotification } from '@/utils/notifications';
 
 export const Home = () => {
   const { t } = useTranslation();
@@ -27,6 +28,7 @@ export const Home = () => {
   const [releaseNotesContent, setReleaseNotesContent] = useState<string | null>(null);
   const [modelsInfo, setModelsInfo] = useState<Record<string, ModelInfo>>({});
   const [isUsageDashboardVisible, setIsUsageDashboardVisible] = useState(false);
+  const [hasShownUpdateNotification, setHasShownUpdateNotification] = useState(false);
 
   const activeProject = openProjects.find((project) => project.active) || openProjects[0];
 
@@ -45,6 +47,13 @@ export const Home = () => {
   const isUpdateAvailable = isAiderDeskUpdateAvailable || isAiderUpdateAvailable;
   const isDownloading = typeof versions?.aiderDeskDownloadProgress === 'number';
   const showUpdateIcon = isDownloading || isUpdateAvailable || versions?.aiderDeskNewVersionReady;
+
+  useEffect(() => {
+    if (versions?.aiderDeskNewVersionReady && !hasShownUpdateNotification) {
+      showInfoNotification(t('settings.about.newAiderDeskVersionReady'));
+      setHasShownUpdateNotification(true);
+    }
+  }, [versions, t, hasShownUpdateNotification]);
 
   useEffect(() => {
     const loadProjects = async () => {

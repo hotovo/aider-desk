@@ -2,7 +2,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { AgentProfile } from '@common/types';
 
 import { TextArea } from '@/components/common/TextArea';
-import { CodeInline } from '@/components/message';
+import { CodeInline } from '@/components/common/CodeInline';
 
 const CUSTOM_INSTRUCTIONS_PLACEHOLDER = `## Probe Tools Usage
 

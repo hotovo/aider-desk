@@ -41,6 +41,7 @@
   "onboarding": {
     "title": "欢迎使用 Aider Desk",
     "description": "Aider Desk 是您的 AI 辅助编程桌面伴侣。本应用将 Aider 的 AI 编程助手功能带到用户友好的界面中，帮助您：",
+    "skipForNow": "暂时跳过",
     "finish": "完成设置",
     "features": {
       "1": "管理多个编程项目",
@@ -50,6 +51,19 @@
       "5": "使用代理流程进行自动化编码任务并连接到 MCP 服务器"
     },
     "getStarted": "让我们从配置您的 Aider 设置开始。",
+    "steps": {
+      "welcome": "欢迎",
+      "connectModel": "连接AI模型",
+      "language": "语言",
+      "aider": "Aider",
+      "agent": "AI代理",
+      "providers": "提供商",
+      "finish": "完成"
+    },
+    "language": {
+      "title": "选择您的语言",
+      "description": "为应用程序界面选择您的首选语言。"
+    },
     "aider": {
       "title": "配置 Aider",
       "description": "要开始使用，请配置您的 Aider 设置。您需要：",
@@ -58,7 +72,43 @@
         "2": "为 Aider 设置任何其他选项",
         "3": ".env 和 .aider.conf.yaml 文件也会像使用 Aider 一样被读取"
       },
-      "configureLater": "您也可以稍后在设置中进行配置。"
+      "configureLater": "您也可以稍后在设置中进行配置。",
+      "fineTuneTitle": "微调 Aider（可选）",
+      "fineTuneDescription": "高级用户可以配置额外的 Aider 设置和环境变量。此步骤完全可选，可以安全跳过。",
+      "fineTuneNote": "注意：这些设置适用于想要自定义 Aider 行为的高级用户。大多数用户可以跳过此步骤，如需要可稍后在设置中配置。"
+    },
+    "providers": {
+      "title": "模型提供商",
+      "description": "配置您的 LLM 提供商以在 Aider 和 Agent 模式中使用。您可以为各种提供商设置 API 密钥和其他设置。",
+      "configureLater": "如果您愿意，可以稍后在设置中配置这些。",
+      "connectTitle": "连接您的AI模型",
+      "connectDescription": "Aider Desk 支持多个AI提供商，包括OpenAI、Anthropic、Google Gemini等。您的API密钥安全存储在本地机器上，绝不会被共享。",
+      "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。"
+    },
+    "agent": {
+      "title": "认识您的AI代理",
+      "description": "通过 Aider Desk 的代理模式发现自主AI辅助的强大功能。您的AI代理可以独立工作来完成复杂任务。",
+      "capabilities": "代理功能：",
+      "autonomousPlanning": "自主任务规划：",
+      "autonomousPlanningDesc": "将复杂请求分解为可管理的步骤并系统性地执行它们。",
+      "toolUse": "工具使用：",
+      "toolUseDesc": "利用各种工具进行文件操作、网络搜索和代码分析。",
+      "extensible": "通过MCP扩展：",
+      "extensibleDesc": "连接到模型上下文协议服务器以增强功能。",
+      "configureAgent": "配置代理",
+      "finishLater": "完成设置（稍后配置代理）",
+      "configureTitle": "配置您的代理（可选）",
+      "configureDescription": "自定义您的默认代理配置以匹配您的工作流程。您可以调整工具权限、上下文偏好和行为规则等设置。"
+    },
+    "complete": {
+      "title": "设置完成！",
+      "description": "恭喜！您已成功设置 Aider Desk。现在您可以开始使用 AI 辅助编程了。",
+      "ready": "点击'完成设置'开始您的编程之旅。",
+      "success": "引导完成成功！欢迎使用 Aider Desk。"
+    },
+    "errors": {
+      "navigationFailed": "导航失败。请重试。",
+      "finishFailed": "完成引导失败。请重试。"
     }
   },
   "noProjectsOpen": {
@@ -154,6 +204,7 @@
     "title": "设置",
     "tabs": {
       "general": "通用",
+      "providers": "模型提供者",
       "aider": "Aider",
       "agent": "服务器",
       "about": "关于"
@@ -204,6 +255,7 @@
       "selectOrCreateProfile": "选择或创建新的代理配置",
       "newProfileName": "新配置",
       "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",
+      "envVarFoundPlaceholder": "找到于: {{source}}",
       "createNewProfile": "创建新配置",
       "genericTools": "工具",
       "noGenericToolsConfigured": "未配置工具。",
@@ -238,6 +290,15 @@
       "restartNow": "立即重启",
       "later": "稍后处理"
     },
+    "models": {
+      "title": "模型提供商",
+      "description": "配置您的 LLM 提供商以在 Aider 和 Agent 模式中使用。点击提供商卡片来配置其设置。",
+      "configured": "已配置",
+      "notConfigured": "未配置",
+      "agentOnly": "仅代理",
+      "showAllProviders": "显示所有提供商",
+      "additionalProvidersInfo": "需要更多提供商？您可以在<aiderTab>Aider 设置</aiderTab>中通过设置环境变量来配置更多 LLM 提供商。"
+    },
     "about": {
       "version": "版本",
       "notAvailable": "不可用",
@@ -248,7 +309,9 @@
       "downloadingUpdate": "正在下载更新",
       "newAiderDeskVersionReady": "新版本已准备好。重启 AiderDesk 以应用更新。",
       "downloadAutomatically": "自动下载更新",
-      "releaseNotes": "发行说明"
+      "releaseNotes": "发行说明",
+      "openLogsDirectory": "打开日志目录",
+      "openLogsError": "打开日志目录出错"
     }
   },
   "messages": {
@@ -525,7 +588,8 @@
     "invalidCommand": "无效命令",
     "stopResponse": "停止响应",
     "sendMessage": "发送消息(Enter)",
-    "clearChat": "清除聊天"
+    "clearChat": "清除聊天",
+    "agentModeOnly": "仅在代理模式下可用"
   },
   "agentProfiles": {
     "title": "代理配置",
@@ -535,6 +599,8 @@
     "profiles": "配置列表",
     "createNew": "创建新配置",
     "profileName": "名称",
+    "profileDescription": "描述",
+    "profileDescriptionPlaceholder": "描述此代理配置（用途、工具等）",
     "tools": "工具"
   },
   "projectBar": {
@@ -595,7 +661,9 @@
     "addCommand": "/add",
     "readOnlyCommand": "/read-only",
     "modelCommand": "/model",
-    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)"
+    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)",
+    "modeAtSign": "@ 提及模式"
+
   },
   "multiselect": {
     "noneSelected": "未选择",

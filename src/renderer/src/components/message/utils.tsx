@@ -1,9 +1,10 @@
 import React from 'react';
 import { Remark } from 'react-remark';
 
-import { CodeBlock } from './CodeBlock';
-import { CodeInline } from './CodeInline';
 import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
+
+import { CodeBlock } from '@/components/common/CodeBlock';
+import { CodeInline } from '@/components/common/CodeInline';
 
 const ALL_FENCES = [
   ['````', '````'],

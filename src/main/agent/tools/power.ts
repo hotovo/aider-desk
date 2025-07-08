@@ -25,14 +25,14 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
-import logger from 'src/main/logger';
-import { isFileIgnored } from 'src/main/utils';
-import { BINARY_EXTENSIONS } from 'src/main/constants';
-import { getSubAgentSystemPrompt } from 'src/main/agent/prompts';
-
-import { Project } from '../../project';
 
 import { ApprovalManager } from './approval-manager';
+
+import { Project } from '@/project';
+import logger from '@/logger';
+import { isFileIgnored } from '@/utils';
+import { BINARY_EXTENSIONS } from '@/constants';
+import { getSubAgentSystemPrompt } from '@/agent';
 
 const execAsync = promisify(exec);
 

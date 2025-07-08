@@ -2,6 +2,7 @@ import type { ElectronAPI } from '@electron-toolkit/preload';
 import type {
   AutocompletionData,
   ContextFilesUpdatedData,
+  CustomCommandsUpdatedData,
   InputHistoryData,
   ModelsData,
   ProjectData,
@@ -24,14 +25,17 @@ import type {
   ModelInfo,
   TodoItem,
   UsageDataRow,
+  EnvironmentVariable,
+  CustomCommand,
 } from '@common/types';
 
 export interface ApplicationAPI {
+  openLogsDirectory: () => Promise<boolean>;
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
-  restartProject: (baseDir: string) => void;
+  restartProject: (baseDir: string, startupMode?: StartupMode) => void;
   runPrompt: (baseDir: string, prompt: string, mode?: Mode) => void;
   redoLastUserPrompt: (baseDir: string, mode: Mode, updatedPrompt?: string) => void;
   answerQuestion: (baseDir: string, answer: string) => void;
@@ -94,6 +98,7 @@ export interface ApplicationAPI {
   getOS: () => Promise<OS>;
   loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
   queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
+  getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
 
   addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => string;
   removeResponseChunkListener: (listenerId: string) => void;
@@ -105,7 +110,9 @@ export interface ApplicationAPI {
   removeLogListener: (listenerId: string) => void;
 
   addContextFilesUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => void) => string;
+  addCustomCommandsUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => void) => string;
   removeContextFilesUpdatedListener: (listenerId: string) => void;
+  removeCustomCommandsUpdatedListener: (listenerId: string) => void;
 
   addUpdateAutocompletionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: AutocompletionData) => void) => string;
   removeUpdateAutocompletionListener: (listenerId: string) => void;
@@ -139,6 +146,9 @@ export interface ApplicationAPI {
 
   addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => string;
   removeVersionsInfoUpdatedListener: (listenerId: string) => void;
+
+  getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
+  runCustomCommand: (baseDir: string, commandName: string, args: string[]) => Promise<void>;
 }
 
 declare global {

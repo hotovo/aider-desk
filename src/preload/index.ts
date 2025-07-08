@@ -3,6 +3,7 @@ import {
   CommandOutputData,
   ContextFile,
   ContextFilesUpdatedData,
+  CustomCommandsUpdatedData,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -31,6 +32,7 @@ const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean => {
 const responseChunkListeners: Record<string, (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void> = {};
 const responseFinishedListeners: Record<string, (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => void> = {};
 const contextFilesUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: { baseDir: string; files: ContextFile[] }) => void> = {};
+const customCommandsUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => void> = {};
 const updateAutocompletionListeners: Record<string, (event: Electron.IpcRendererEvent, data: AutocompletionData) => void> = {};
 const askQuestionListeners: Record<string, (event: Electron.IpcRendererEvent, data: QuestionData) => void> = {};
 const updateAiderModelsListeners: Record<string, (event: Electron.IpcRendererEvent, data: ModelsData & { baseDir: string }) => void> = {};
@@ -44,11 +46,12 @@ const clearProjectListeners: Record<string, (event: Electron.IpcRendererEvent, b
 const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
 
 const api: ApplicationAPI = {
+  openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   startProject: (baseDir) => ipcRenderer.send('start-project', baseDir),
   stopProject: (baseDir) => ipcRenderer.send('stop-project', baseDir),
-  restartProject: (baseDir) => ipcRenderer.send('restart-project', baseDir),
+  restartProject: (baseDir, startupMode) => ipcRenderer.send('restart-project', baseDir, startupMode),
   runPrompt: (baseDir, prompt, mode) => ipcRenderer.send('run-prompt', baseDir, prompt, mode),
   redoLastUserPrompt: (baseDir, mode, updatedPrompt?) => ipcRenderer.send('redo-last-user-prompt', baseDir, mode, updatedPrompt),
   answerQuestion: (baseDir, answer) => ipcRenderer.send('answer-question', baseDir, answer),
@@ -109,6 +112,7 @@ const api: ApplicationAPI = {
   getOS: (): Promise<OS> => ipcRenderer.invoke('get-os'),
   loadModelsInfo: () => ipcRenderer.invoke('load-models-info'),
   queryUsageData: (from, to) => ipcRenderer.invoke('query-usage-data', from, to),
+  getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => ipcRenderer.invoke('get-effective-environment-variable', key, baseDir),
 
   addResponseChunkListener: (baseDir, callback) => {
     const listenerId = uuidv4();
@@ -164,6 +168,25 @@ const api: ApplicationAPI = {
     if (callback) {
       ipcRenderer.removeListener('context-files-updated', callback);
       delete contextFilesUpdatedListeners[listenerId];
+    }
+  },
+
+  addCustomCommandsUpdatedListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    customCommandsUpdatedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
+        return;
+      }
+      callback(event, data);
+    };
+    ipcRenderer.on('custom-commands-updated', customCommandsUpdatedListeners[listenerId]);
+    return listenerId;
+  },
+  removeCustomCommandsUpdatedListener: (listenerId) => {
+    const callback = customCommandsUpdatedListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('custom-commands-updated', callback);
+      delete customCommandsUpdatedListeners[listenerId];
     }
   },
 
@@ -373,6 +396,9 @@ const api: ApplicationAPI = {
       delete versionsInfoUpdatedListeners[listenerId];
     }
   },
+
+  getCustomCommands: (baseDir: string) => ipcRenderer.invoke('get-custom-commands', baseDir),
+  runCustomCommand: (baseDir: string, commandName: string, args: string[]) => ipcRenderer.invoke('run-custom-command', baseDir, commandName, args),
 };
 
 if (process.contextIsolated) {

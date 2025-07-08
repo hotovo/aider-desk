@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { FileFinder } from '@/components/project/FileFinder';
 import { FileChip } from '@/components/common/FileChip';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Checkbox } from '@/components/common/Checkbox';
 
 type Props = {

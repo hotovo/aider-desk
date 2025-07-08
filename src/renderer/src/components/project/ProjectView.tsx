@@ -41,7 +41,7 @@ import {
   ToolMessage,
   UserMessage,
 } from '@/types/message';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { ContextFiles } from '@/components/ContextFiles';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { useSettings } from '@/context/SettingsContext';
@@ -842,6 +842,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             disabled={!aiderModelsData}
             promptBehavior={settings.promptBehavior}
             clearLogMessages={clearLogMessages}
+            messagesRef={messagesRef}
           />
         </div>
       </div>

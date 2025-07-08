@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { OllamaProvider } from '@common/agent';
 
 import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
 type Props = {
   provider: OllamaProvider;
@@ -14,16 +15,21 @@ export const OllamaParameters = ({ provider, onChange }: Props) => {
 
   const baseUrl = provider.baseUrl || '';
 
+  const { environmentVariable: ollamaApiBaseEnv } = useEffectiveEnvironmentVariable('OLLAMA_API_BASE');
+
   const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, baseUrl: e.target.value });
   };
 
   return (
     <div className="space-y-2">
-      <h3 className="text-md font-medium uppercase mb-5">
-        {t('providers.ollama')} {t('settings.agent.providerSettings')}
-      </h3>
-      <Input label={t('ollama.baseUrl')} type="text" value={baseUrl} onChange={handleBaseUrlChange} placeholder={t('ollama.baseUrlPlaceholder')} />
+      <Input
+        label={t('ollama.baseUrl')}
+        type="text"
+        value={baseUrl}
+        onChange={handleBaseUrlChange}
+        placeholder={ollamaApiBaseEnv ? t('settings.agent.envVarFoundPlaceholder', { source: ollamaApiBaseEnv.source }) : t('ollama.baseUrlPlaceholder')}
+      />
     </div>
   );
 };

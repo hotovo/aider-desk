@@ -27,6 +27,7 @@ AiderDesk is packed with features designed for modern software development:
   *   VSCode ([Extension](https://marketplace.visualstudio.com/items?itemName=hotovo-sk.aider-desk-connector) | [GitHub](https://github.com/hotovo/aider-desk-connector-vscode-extension))
 *   **🤖 Powerful Agent Mode**: Utilize an autonomous AI agent (powered by Vercel AI SDK) capable of complex task planning and execution using various tools.
 *   **🧩 Extensible via MCP**: Connect to Model Context Protocol (MCP) servers to grant the Agent access to external tools like web search, documentation lookups, and more.
+*   **✍️ Custom Commands**: Define and execute your own commands to automate tasks and extend AiderDesk's capabilities. [Learn more](docs/custom-commands.md)
 *   **📄 Smart Context Management**: Automatically manage context via IDE plugins or manually control context using the integrated project file browser.
 *   **💾 Robust Session Management**: Save and load entire work sessions (chat history, context files) to easily switch between tasks or resume later.
 *   **🔄 Flexible Model Switching**: Change AI models on the fly while retaining your conversation and context.

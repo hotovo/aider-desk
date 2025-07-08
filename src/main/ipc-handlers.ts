@@ -1,22 +1,20 @@
 import path from 'path';
 import fs from 'fs/promises';
 
-import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { AIDER_DESK_PROJECT_TMP_DIR } from 'src/main/constants';
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
-import { McpManager } from './agent/mcp-manager';
-import { Agent } from './agent';
-import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
-import { ModelInfoManager } from './model-info-manager';
-import { ProjectManager } from './project-manager';
-import { getDefaultProjectSettings, Store } from './store';
-import { scrapeWeb } from './web-scrapper';
-import logger from './logger';
-import { VersionsManager } from './versions-manager';
-import { TelemetryManager } from './telemetry-manager';
-import { DataManager } from './data-manager';
+import { McpManager, Agent } from '@/agent';
+import { getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, getEffectiveEnvironmentVariable } from '@/utils';
+import { ModelInfoManager } from '@/models';
+import { ProjectManager } from '@/project';
+import { getDefaultProjectSettings, Store } from '@/store';
+import logger from '@/logger';
+import { VersionsManager } from '@/versions';
+import { TelemetryManager } from '@/telemetry';
+import { DataManager } from '@/data-manager';
+import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 
 export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
@@ -70,8 +68,8 @@ export const setupIpcHandlers = (
     store.addRecentProject(baseDir);
   });
 
-  ipcMain.on('restart-project', async (_, baseDir: string) => {
-    await projectManager.restartProject(baseDir);
+  ipcMain.on('restart-project', async (_, baseDir: string, startupMode?: StartupMode) => {
+    await projectManager.restartProject(baseDir, startupMode);
   });
 
   ipcMain.handle('show-open-dialog', async (_, options: Electron.OpenDialogSyncOptions) => {
@@ -265,7 +263,7 @@ export const setupIpcHandlers = (
 
       let targetFilePath: string;
       if (!filePath) {
-        targetFilePath = path.join(baseDir, AIDER_DESK_PROJECT_TMP_DIR, `${normalizedUrl}.md`);
+        targetFilePath = path.join(baseDir, AIDER_DESK_TMP_DIR, `${normalizedUrl}.md`);
         await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
       } else {
         if (path.isAbsolute(filePath)) {
@@ -401,5 +399,27 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('query-usage-data', async (_, from: string, to: string) => {
     return dataManager.queryUsageData(new Date(from), new Date(to));
+  });
+
+  ipcMain.handle('get-effective-environment-variable', (_, key: string, baseDir?: string) => {
+    return getEffectiveEnvironmentVariable(key, baseDir, store.getSettings());
+  });
+
+  ipcMain.handle('open-logs-directory', async () => {
+    try {
+      await shell.openPath(LOGS_DIR);
+      return true;
+    } catch (error) {
+      logger.error('Failed to open logs directory:', error);
+      return false;
+    }
+  });
+
+  ipcMain.handle('get-custom-commands', async (_, baseDir: string) => {
+    return projectManager.getCustomCommands(baseDir);
+  });
+
+  ipcMain.handle('run-custom-command', async (_, baseDir: string, commandName: string, args: string[]) => {
+    await projectManager.getProject(baseDir).runCustomCommand(commandName, args);
   });
 };

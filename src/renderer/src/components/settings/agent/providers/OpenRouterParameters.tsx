@@ -5,6 +5,7 @@ import { OpenRouterProvider } from '@common/agent';
 import { ProviderModels } from './ProviderModels';
 
 import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
 type Props = {
   provider: OpenRouterProvider;
@@ -17,6 +18,8 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
   const apiKey = provider.apiKey || '';
   const models = provider.models || [];
 
+  const { environmentVariable: openRouterApiKeyEnv } = useEffectiveEnvironmentVariable('OPENROUTER_API_KEY');
+
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
   };
@@ -27,12 +30,9 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-md font-medium uppercase">
-        {t('providers.openrouter')} {t('settings.agent.providerSettings')}
-      </h3>
       <div className="!mt-0 !mb-5">
-        <a href="https://requesty.ai" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
-          https://openrouter.ai
+        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
+          Get OpenRouter API key
         </a>
       </div>
       <Input
@@ -40,7 +40,11 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
         type="password"
         value={apiKey}
         onChange={handleApiKeyChange}
-        placeholder={t('settings.agent.envVarPlaceholder', { envVar: 'OPENROUTER_API_KEY' })}
+        placeholder={
+          openRouterApiKeyEnv
+            ? t('settings.agent.envVarFoundPlaceholder', { source: openRouterApiKeyEnv.source })
+            : t('settings.agent.envVarPlaceholder', { envVar: 'OPENROUTER_API_KEY' })
+        }
       />
       <ProviderModels models={models} onChange={handleModelsChange} />
     </div>
