@@ -1,5 +1,6 @@
 import { chromium } from 'playwright-core';
 import Turndown from 'turndown';
+import * as cheerio from 'cheerio';
 
 interface ScraperOptions {
   verifySSL?: boolean;
@@ -46,9 +47,24 @@ export class WebScraper {
     return htmlPatterns.some((pattern) => pattern.test(content));
   }
 
+  private cleanHtml(content: string): string {
+    const $ = cheerio.load(content);
+
+    $('script, style, link, noscript, iframe, svg, meta, img, video, audio, canvas, form, button, input, select, textarea').remove();
+
+    // Remove comments
+    $('*')
+      .contents()
+      .filter((_, node) => node.type === 'comment')
+      .remove();
+
+    return $.html();
+  }
+
   private htmlToMarkDown(content: string): string {
+    const cleanedHtml = this.cleanHtml(content);
     const turndownService = new Turndown();
-    const markdown = turndownService.turndown(content);
+    const markdown = turndownService.turndown(cleanedHtml);
     return markdown;
   }
 }
