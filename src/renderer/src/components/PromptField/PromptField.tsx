@@ -590,21 +590,34 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         run: startCompletion,
       },
       {
+        key: '/',
+        preventDefault: true,
+        run: (view) => {
+          const cursorPos = view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: cursorPos, insert: '/' },
+            selection: { anchor: cursorPos + 1 },
+          });
+          if (cursorPos === 0) {
+            startCompletion(view);
+          }
+          return true;
+        },
+      },
+      {
         key: '@',
         preventDefault: true,
         run: (view) => {
           const cursorPos = view.state.selection.main.head;
           const textBeforeCursor = view.state.doc.sliceString(0, cursorPos);
 
-          if (!/\S$/.test(textBeforeCursor)) {
-            view.dispatch({
-              changes: { from: cursorPos, insert: '@' },
-              selection: { anchor: cursorPos + 1 },
-            });
+          view.dispatch({
+            changes: { from: cursorPos, insert: '@' },
+            selection: { anchor: cursorPos + 1 },
+          });
 
-            if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
-              startCompletion(view);
-            }
+          if (!/\S$/.test(textBeforeCursor) && promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
+            startCompletion(view);
           }
           return true;
         },
