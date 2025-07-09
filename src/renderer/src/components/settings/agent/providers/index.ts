@@ -1,6 +1,7 @@
 export * from './OpenAiParameters';
 export * from './AnthropicParameters';
 export * from './GeminiParameters';
+export * from './LmStudioParameters';
 export * from './BedrockParameters';
 export * from './DeepseekParameters';
 export * from './OpenAiCompatibleParameters';

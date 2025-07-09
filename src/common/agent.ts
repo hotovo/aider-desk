@@ -17,7 +17,17 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 
-export type LlmProviderName = 'openai' | 'anthropic' | 'gemini' | 'bedrock' | 'deepseek' | 'openai-compatible' | 'ollama' | 'openrouter' | 'requesty';
+export type LlmProviderName =
+  | 'openai'
+  | 'anthropic'
+  | 'gemini'
+  | 'lmstudio'
+  | 'bedrock'
+  | 'deepseek'
+  | 'openai-compatible'
+  | 'ollama'
+  | 'openrouter'
+  | 'requesty';
 
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -33,6 +43,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'bedrock',
   'deepseek',
   'gemini',
+  'lmstudio',
   'ollama',
   'openai',
   'openai-compatible',
@@ -60,7 +71,15 @@ export interface GeminiProvider extends LlmProviderBase {
   thinkingBudget: number;
   useSearchGrounding: boolean;
 }
+
 export const isGeminiProvider = (provider: LlmProviderBase): provider is GeminiProvider => provider.name === 'gemini';
+
+export interface LmStudioProvider extends LlmProviderBase {
+  name: 'lmstudio';
+  baseUrl: string;
+  models: string[];
+}
+export const isLmStudioProvider = (provider: LlmProviderBase): provider is LmStudioProvider => provider.name === 'lmstudio';
 
 export interface DeepseekProvider extends LlmProviderBase {
   name: 'deepseek';
@@ -107,6 +126,7 @@ export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
   | GeminiProvider
+  | LmStudioProvider
   | BedrockProvider
   | DeepseekProvider
   | OpenAiCompatibleProvider
@@ -264,6 +284,13 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           apiKey: '',
           models: [],
         } satisfies OpenRouterProvider;
+        break;
+      case 'lmstudio':
+        provider = {
+          name: 'lmstudio',
+          baseUrl: 'http://localhost:1234/v1',
+          models: [],
+        } satisfies LmStudioProvider;
         break;
       case 'requesty':
         provider = {

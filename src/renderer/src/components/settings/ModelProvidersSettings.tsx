@@ -5,6 +5,7 @@ import {
   isBedrockProvider,
   isDeepseekProvider,
   isGeminiProvider,
+  isLmStudioProvider,
   isOllamaProvider,
   isOpenAiCompatibleProvider,
   isOpenAiProvider,
@@ -82,6 +83,8 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
       return !!provider.apiKey || !!openrouterApiKey?.value;
     } else if (isRequestyProvider(provider)) {
       return !!provider.apiKey || !!requestyApiKey?.value;
+    } else if (isLmStudioProvider(provider)) {
+      return !!provider.baseUrl;
     } else {
       return false;
     }
