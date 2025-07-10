@@ -27,12 +27,6 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
   const [isAddingTodo, setIsAddingTodo] = useState(false);
   const [newTodoName, setNewTodoName] = useState('');
   const { projectSettings } = useProjectSettings();
-  const [shouldShow, setShouldShow] = useState(false);
-
-  useEffect(() => {
-    const shouldShowTodoWindow = projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
-    setShouldShow(shouldShowTodoWindow ?? false);
-  }, [projectSettings, settings]);
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -73,7 +67,8 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
     }
   }, [completedCount, totalCount]);
 
-  if (!projectSettings || !settings || !shouldShow) {
+  const visible = projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
+  if (!projectSettings || !settings || !visible) {
     return null;
   }
 
