@@ -673,7 +673,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const restartProject = () => {
-    void window.api.restartProject(project.baseDir);
+    void window.api.restartProject(project.baseDir, settings?.startupMode);
     clearSession();
   };
 
