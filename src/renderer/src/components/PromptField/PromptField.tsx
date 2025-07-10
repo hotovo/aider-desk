@@ -471,12 +471,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           const customCommand = customCommands.find((command) => command.name === cmd);
 
           if (customCommand) {
-            if (mode !== 'agent') {
-              showErrorNotification(t('promptField.agentModeOnly'));
-              return;
-            }
-
-            window.api.runCustomCommand(baseDir, cmd, args);
+            window.api.runCustomCommand(baseDir, cmd, args, mode);
             prepareForNextPrompt();
             return;
           }
@@ -504,7 +499,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         const commandName = item.slice(1);
         const customCommand = customCommands.find((cmd) => cmd.name === commandName);
         if (customCommand) {
-          return mode === 'agent' ? [customCommand.description, false] : [t('commands.agentModeOnly'), true];
+          return [customCommand.description, false];
         }
 
         if (item === '/init' && mode !== 'agent') {

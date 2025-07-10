@@ -418,5 +418,3 @@ ${customInstructions ? `#### [ADDITIONAL INSTRUCTIONS]\n\n${customInstructions}\
 *(Optional) Describe the immediate next action you will take. This step MUST be a direct continuation of the "Current Work" and be explicitly requested by the user. If the previous task was completed, state "None" unless the user has already provided a new, explicit task.*
 `;
 };
-
-export const CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS = `You are executing a custom command. In this mode you don't have to plan your work if the user's instruction is clear and requires no further analysis, just do the job. Treat any line in the user's prompt that begins with an exclamation mark (!) as a shell command to be executed using the '${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}' tool or any other available tool for bash command.`;

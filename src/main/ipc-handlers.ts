@@ -400,7 +400,7 @@ export const setupIpcHandlers = (
     return projectManager.getCustomCommands(baseDir);
   });
 
-  ipcMain.handle('run-custom-command', async (_, baseDir: string, commandName: string, args: string[]) => {
-    await projectManager.getProject(baseDir).runCustomCommand(commandName, args);
+  ipcMain.handle('run-custom-command', async (_, baseDir: string, commandName: string, args: string[], mode: Mode) => {
+    await projectManager.getProject(baseDir).runCustomCommand(commandName, args, mode);
   });
 };
