@@ -62,7 +62,7 @@ import { parse } from '@dotenvx/dotenvx';
 
 import type { SimpleGit } from 'simple-git';
 
-import { getInitProjectPrompt, getCompactConversationPrompt, getSystemPrompt, CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS } from '@/agent/prompts';
+import { getInitProjectPrompt, getCompactConversationPrompt, getSystemPrompt } from '@/agent/prompts';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
 import { TaskManager } from '@/tasks';
 import { SessionManager } from '@/session';
@@ -73,7 +73,7 @@ import logger from '@/logger';
 import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
-import { CustomCommandManager } from '@/custom-commands';
+import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 
 export class Project {
@@ -543,28 +543,32 @@ export class Project {
         throw new Error('No active Agent profile found');
       }
 
-      return this.runAgent(profile, prompt);
+      return this.runPromptInAgent(profile, prompt);
     } else {
-      const responses = await this.sendPrompt(prompt, mode);
-
-      // add messages to session
-      this.sessionManager.addContextMessage(MessageRole.User, prompt);
-      for (const response of responses) {
-        if (response.reflectedMessage) {
-          this.sessionManager.addContextMessage(MessageRole.User, response.reflectedMessage);
-        }
-        if (response.content) {
-          this.sessionManager.addContextMessage(MessageRole.Assistant, response.content);
-        }
-      }
-
-      this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
-
-      return responses;
+      return this.runPromptInAider(prompt, mode);
     }
   }
 
-  public async runAgent(
+  public async runPromptInAider(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
+    const responses = await this.sendPrompt(prompt, mode);
+
+    // add messages to session
+    this.sessionManager.addContextMessage(MessageRole.User, prompt);
+    for (const response of responses) {
+      if (response.reflectedMessage) {
+        this.sessionManager.addContextMessage(MessageRole.User, response.reflectedMessage);
+      }
+      if (response.content) {
+        this.sessionManager.addContextMessage(MessageRole.Assistant, response.content);
+      }
+    }
+
+    this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
+
+    return responses;
+  }
+
+  public async runPromptInAgent(
     profile: AgentProfile,
     prompt: string,
     contextMessages?: ContextMessage[],
@@ -1170,7 +1174,7 @@ export class Project {
   public addUserMessage(content: string, mode?: Mode) {
     logger.info('Adding user message:', {
       baseDir: this.baseDir,
-      content,
+      content: content.substring(0, 100),
       mode,
     });
 
@@ -1516,7 +1520,7 @@ export class Project {
       };
 
       // Run the agent with the modified profile
-      await this.runAgent(initProjectRulesAgentProfile, getInitProjectPrompt());
+      await this.runPromptInAgent(initProjectRulesAgentProfile, getInitProjectPrompt());
 
       // Check if the PROJECT.md file was created
       const projectRulesPath = path.join(this.baseDir, '.aider-desk', 'rules', 'PROJECT.md');
@@ -1606,7 +1610,7 @@ export class Project {
     });
   }
 
-  public async runCustomCommand(commandName: string, args: string[]): Promise<void> {
+  public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void> {
     const command = this.customCommandManager.getCommand(commandName);
     if (!command) {
       this.addLogMessage('error', `Custom command '${commandName}' not found.`);
@@ -1617,9 +1621,8 @@ export class Project {
       return;
     }
 
-    logger.info('Running custom command:', { commandName, args });
-
-    this.telemetryManager.captureCustomCommand(commandName, args.length);
+    logger.info('Running custom command:', { commandName, args, mode });
+    this.telemetryManager.captureCustomCommand(commandName, args.length, mode);
 
     if (args.length < command.arguments.filter((arg) => arg.required !== false).length) {
       this.addLogMessage(
@@ -1632,27 +1635,52 @@ export class Project {
       });
       return;
     }
-    let prompt = command.template;
-    for (let i = 0; i < command.arguments.length; i++) {
-      const value = args[i] !== undefined ? args[i] : '';
-      prompt = prompt.replaceAll(`{{${i + 1}}}`, value);
+
+    this.addLogMessage('loading', 'Executing custom command...');
+
+    let prompt: string;
+    try {
+      prompt = await this.customCommandManager.processCommandTemplate(command, args);
+    } catch (error) {
+      // Handle shell command execution errors
+      if (error instanceof ShellCommandError) {
+        this.addLogMessage(
+          'error',
+          `Shell command failed: ${error.command}
+${error.stderr}`,
+          true,
+        );
+        return;
+      }
+      // Re-throw other errors
+      throw error;
     }
-    // Optionally handle @file references here if needed
-    const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
-    if (!profile) {
-      this.addLogMessage('error', 'No active Agent profile found');
-      return;
-    }
-    const systemPrompt = await getSystemPrompt(this.baseDir, profile, CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS);
 
     await this.addToInputHistory(`/${commandName}${args.length > 0 ? ' ' + args.join(' ') : ''}`);
 
-    // for now only in agent mode
-    this.addUserMessage(prompt, 'agent');
+    this.addUserMessage(prompt, mode);
     this.addLogMessage('loading');
 
-    const messages = command.includeContext === false ? [] : undefined;
-    const contextFiles = command.includeContext === false ? [] : undefined;
-    await this.runAgent(profile, prompt, messages, contextFiles, systemPrompt);
+    try {
+      if (mode === 'agent') {
+        // Agent mode logic
+        const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
+        if (!profile) {
+          this.addLogMessage('error', 'No active Agent profile found');
+          return;
+        }
+        const systemPrompt = await getSystemPrompt(this.baseDir, profile);
+
+        const messages = command.includeContext === false ? [] : undefined;
+        const contextFiles = command.includeContext === false ? [] : undefined;
+        await this.runPromptInAgent(profile, prompt, messages, contextFiles, systemPrompt);
+      } else {
+        // All other modes (code, ask, architect)
+        await this.runPromptInAider(prompt, mode);
+      }
+    } finally {
+      // Clear loading message after execution completes (success or failure)
+      this.addLogMessage('loading', '', true);
+    }
   }
 }
