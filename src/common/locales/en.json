@@ -650,7 +650,7 @@
     "think-tokens": "Set the thinking token budget (supports formats like 8096, 8k, 10.5k, 0.5M)",
     "tokens": "Report on the number of tokens used by the current chat context",
     "undo": "Undo the last git commit if it was done by Aider",
-    "web": "Scrape a webpage, and store in the context"
+    "web": "Scrape a webpage and save it to a file. Use /web url [file] with optional [file]."
   },
   "telemetry": {
     "title": "Telemetry Information",
