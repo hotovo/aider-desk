@@ -40,7 +40,6 @@ export interface ApplicationAPI {
   redoLastUserPrompt: (baseDir: string, mode: Mode, updatedPrompt?: string) => void;
   answerQuestion: (baseDir: string, answer: string) => void;
   loadInputHistory: (baseDir: string) => Promise<string[]>;
-  addToInputHistory: (baseDir: string, text: string) => void;
   dialog: {
     showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
   };
@@ -63,7 +62,7 @@ export interface ApplicationAPI {
   isProjectPath: (path: string) => Promise<boolean>;
   dropFile: (baseDir: string, path: string) => void;
   runCommand: (baseDir: string, command: string) => void;
-  scrapeWeb: (baseDir: string, url: string) => Promise<string>;
+  scrapeWeb: (baseDir: string, url: string, filePath?: string) => Promise<string>;
   initProjectRulesFile: (baseDir: string) => Promise<void>;
 
   // Todo operations

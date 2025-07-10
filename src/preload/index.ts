@@ -56,7 +56,6 @@ const api: ApplicationAPI = {
   redoLastUserPrompt: (baseDir, mode, updatedPrompt?) => ipcRenderer.send('redo-last-user-prompt', baseDir, mode, updatedPrompt),
   answerQuestion: (baseDir, answer) => ipcRenderer.send('answer-question', baseDir, answer),
   loadInputHistory: (baseDir) => ipcRenderer.invoke('load-input-history', baseDir),
-  addToInputHistory: (baseDir, text) => ipcRenderer.invoke('add-to-input-history', baseDir, text),
   dialog: {
     showOpenDialog: (options: Electron.OpenDialogSyncOptions) => ipcRenderer.invoke('show-open-dialog', options),
   },

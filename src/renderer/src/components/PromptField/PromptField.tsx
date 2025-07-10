@@ -89,7 +89,7 @@ type Props = {
   showFileDialog: (readOnly: boolean) => void;
   addFiles?: (filePaths: string[], readOnly?: boolean) => void;
   clearMessages: () => void;
-  scrapeWeb: (url: string, path?: string) => void;
+  scrapeWeb: (url: string, filePath?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
   interruptResponse: () => void;
@@ -279,9 +279,22 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             openModelSelector?.(args);
             break;
           case '/web': {
-            const url = text.replace('/web', '').trim();
+            const commandArgs = text.replace('/web', '').trim();
+            const firstSpaceIndex = commandArgs.indexOf(' ');
+            let url: string;
+            let filePath: string | undefined;
+
+            if (firstSpaceIndex === -1) {
+              url = commandArgs; // Only URL provided
+            } else {
+              url = commandArgs.substring(0, firstSpaceIndex);
+              filePath = commandArgs.substring(firstSpaceIndex + 1).trim();
+              if (filePath === '') {
+                filePath = undefined; // If only spaces after URL, treat as no filePath
+              }
+            }
             prepareForNextPrompt();
-            scrapeWeb(url);
+            scrapeWeb(url, filePath);
             break;
           }
           case '/clear':
