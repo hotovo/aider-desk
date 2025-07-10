@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { MdExpandLess, MdOutlineChecklist, MdAdd } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { TodoItem } from '@common/types';
+import { SettingsData, TodoItem } from '@common/types';
+import { getActiveAgentProfile } from '@common/utils';
 
 import { IconButton } from '../common/IconButton';
 import { Button } from '../common/Button';
@@ -9,6 +10,7 @@ import { Button } from '../common/Button';
 import { TodoListItem } from './TodoListItem';
 
 import { Input } from '@/components/common/Input';
+import { useProjectSettings } from '@/context/ProjectSettingsContext';
 
 type Props = {
   todos: TodoItem[];
@@ -16,13 +18,15 @@ type Props = {
   onAddTodo?: (name: string) => void;
   onUpdateTodo?: (name: string, updates: Partial<TodoItem>) => void;
   onDeleteTodo?: (name: string) => void;
+  settings: SettingsData;
 };
 
-export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo }: Props) => {
+export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, settings }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddingTodo, setIsAddingTodo] = useState(false);
   const [newTodoName, setNewTodoName] = useState('');
+  const { projectSettings } = useProjectSettings();
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -62,6 +66,11 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
       setIsExpanded(false);
     }
   }, [completedCount, totalCount]);
+
+  const visible = projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
+  if (!projectSettings || !settings || !visible) {
+    return null;
+  }
 
   return (
     <div className="absolute top-3 right-3 z-20 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-w-[360px]">

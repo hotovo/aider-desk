@@ -795,6 +795,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               onAddTodo={handleAddTodo}
               onUpdateTodo={handleUpdateTodo}
               onDeleteTodo={handleDeleteTodo}
+              settings={settings}
             />
           )}
         </div>
