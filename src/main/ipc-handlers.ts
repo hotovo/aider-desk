@@ -80,10 +80,6 @@ export const setupIpcHandlers = (
     return await projectManager.getProject(baseDir).loadInputHistory();
   });
 
-  ipcMain.handle('add-to-input-history', async (_, baseDir: string, text: string) => {
-    return await projectManager.getProject(baseDir).addToInputHistory(text);
-  });
-
   ipcMain.handle('get-open-projects', async () => {
     return store.getOpenProjects();
   });
@@ -270,6 +266,7 @@ export const setupIpcHandlers = (
       await fs.writeFile(tempFilePath, `Scraped content of ${url}:\n\n${content}`);
 
       await project.addFile({ path: tempFilePath, readOnly: true });
+      await project.addToInputHistory(`/web ${url}`);
       project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, tempFilePath)}' and added to context.`);
     } catch (error) {
       logger.error(`Error processing scraped web content for ${url}:`, error);

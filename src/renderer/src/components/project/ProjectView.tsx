@@ -746,10 +746,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
-  const handleAddToInputHistory = (text: string) => {
-    window.api.addToInputHistory(project.baseDir, text);
-  };
-
   if (!projectSettings || !settings) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
@@ -847,7 +843,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             promptBehavior={settings.promptBehavior}
             clearLogMessages={clearLogMessages}
             messagesRef={messagesRef}
-            addToInputHistory={handleAddToInputHistory}
           />
         </div>
       </div>

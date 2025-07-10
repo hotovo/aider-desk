@@ -89,7 +89,7 @@ type Props = {
   showFileDialog: (readOnly: boolean) => void;
   addFiles?: (filePaths: string[], readOnly?: boolean) => void;
   clearMessages: () => void;
-  scrapeWeb: (url: string) => void;
+  scrapeWeb: (url: string, path?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
   interruptResponse: () => void;
@@ -101,7 +101,6 @@ type Props = {
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
   messagesRef: RefObject<MessagesRef>;
-  addToInputHistory: (text: string) => void;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -132,7 +131,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       promptBehavior,
       clearLogMessages,
       messagesRef,
-      addToInputHistory,
     }: Props,
     ref,
   ) => {
@@ -283,7 +281,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/web': {
             const url = text.replace('/web', '').trim();
             prepareForNextPrompt();
-            addToInputHistory(text);
             scrapeWeb(url);
             break;
           }
