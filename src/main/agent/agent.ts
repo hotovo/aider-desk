@@ -8,6 +8,7 @@ import {
   APICallError,
   type CoreMessage,
   type CoreUserMessage,
+  type FinishReason,
   generateText,
   InvalidToolArgumentsError,
   NoSuchToolError,
@@ -550,7 +551,7 @@ export class Agent {
       };
 
       let iterationCount = 0;
-      let unknownRetries = 0;
+      let retryCount = 0;
 
       while (true) {
         logger.info(`Starting iteration ${iterationCount}`);
@@ -567,7 +568,8 @@ export class Agent {
         let iterationError: unknown | null = null;
         let currentResponseId: null | string = null;
         let hasReasoning: boolean = false;
-        let finishReason = 'unknown';
+        let finishReason: null | FinishReason = null;
+        let responseMessages: CoreMessage[] = [];
 
         const result = streamText({
           providerOptions,
@@ -671,6 +673,7 @@ export class Agent {
 
             currentResponseId = null;
             hasReasoning = false;
+            responseMessages = stepResult.response.messages;
           },
           onFinish: ({ finishReason }) => {
             logger.info(`onFinish prompt finished. Reason: ${finishReason}`);
@@ -696,18 +699,22 @@ export class Agent {
           }
         }
 
-        const { messages: responseMessages } = await result.response;
-        finishReason = await result.finishReason;
-
         messages.push(...responseMessages);
         resultMessages.push(...responseMessages);
 
-        if (finishReason === 'unknown' && unknownRetries < 3) {
-          logger.warn('Unknown finish reason. Retrying.');
-          unknownRetries++;
+        if ((finishReason === 'unknown' || finishReason === 'other') && retryCount < 3) {
+          logger.warn(`Finish reason: ${finishReason}. Retrying...`);
+          retryCount++;
           continue;
         }
-        unknownRetries = 0;
+        retryCount = 0;
+
+        if (finishReason === 'length') {
+          project.addLogMessage(
+            'warning',
+            'The Agent has reached the maximum number of allowed tokens. To allow more tokens, go to Settings -> Agent -> Parameters and increase Max Tokens.',
+          );
+        }
 
         if (finishReason !== 'tool-calls') {
           logger.info(`Prompt finished. Reason: ${finishReason}`);
@@ -722,7 +729,7 @@ export class Agent {
 
       logger.error('Error running prompt:', error);
       if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
-        project.addLogMessage('error', `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> Agent -> Providers.`);
+        project.addLogMessage('error', `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> Providers.`);
       } else {
         project.addLogMessage('error', `Error running MCP servers: ${error instanceof Error ? error.message : String(error)}`);
       }

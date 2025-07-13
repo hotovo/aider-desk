@@ -1,6 +1,7 @@
 import React from 'react';
 import { Remark } from 'react-remark';
 
+import { CustomCommandBashBlock } from './CustomCommandBashBlock';
 import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
 
 import { CodeBlock } from '@/components/common/CodeBlock';
@@ -138,6 +139,35 @@ export const parseMessageContent = (baseDir: string, content: string, allFiles: 
     const line = lines[i];
 
     if (!isInCodeBlock) {
+      // Check for custom-command-bash blocks
+      if (line.trim() === '<custom-command-bash>') {
+        // Process any accumulated text first
+        processTextBlock();
+
+        // Find the end of the custom-command-bash block
+        let endIndex = -1;
+        for (let j = i + 1; j < lines.length; j++) {
+          if (lines[j].trim() === '</custom-command-bash>') {
+            endIndex = j;
+            break;
+          }
+        }
+
+        if (endIndex !== -1) {
+          // Extract the content between the tags
+          const blockContent = lines.slice(i, endIndex + 1).join('\n');
+          const customCommandBashContent = parseCustomCommandBashFormat(baseDir, blockContent);
+
+          if (customCommandBashContent) {
+            parts.push(customCommandBashContent);
+          }
+
+          // Skip to after the closing tag
+          i = endIndex;
+          continue;
+        }
+      }
+
       // Check if line starts a code block
       const matchingFence = ALL_FENCES.find(([start]) => line.trim().startsWith(start));
       if (matchingFence) {
@@ -257,6 +287,45 @@ export const parseThinkingAnswerFormat = (content: string, baseDir: string = '',
   }
 
   return null;
+};
+
+export const parseCustomCommandBashFormat = (baseDir: string, content: string): React.ReactNode | null => {
+  // Find the opening tag
+  const openTagStart = content.indexOf('<custom-command-bash>');
+  if (openTagStart === -1) {
+    return null;
+  }
+
+  // Find the closing tag
+  const closeTagStart = content.lastIndexOf('</custom-command-bash>');
+  if (closeTagStart === -1 || closeTagStart <= openTagStart) {
+    return null;
+  }
+
+  // Extract content between opening and closing tags
+  const innerContent = content.substring(openTagStart + '<custom-command-bash>'.length, closeTagStart);
+
+  // Find command tags
+  const commandStart = innerContent.indexOf('<command>');
+  const commandEnd = innerContent.indexOf('</command>');
+
+  if (commandStart === -1 || commandEnd === -1 || commandEnd <= commandStart) {
+    return null;
+  }
+
+  // Find output tags (search after the command closing tag)
+  const outputStart = innerContent.indexOf('<output>', commandEnd);
+  const outputEnd = innerContent.lastIndexOf('</output>');
+
+  if (outputStart === -1 || outputEnd === -1 || outputEnd <= outputStart) {
+    return null;
+  }
+
+  // Extract command and output content
+  const command = innerContent.substring(commandStart + '<command>'.length, commandEnd).trim();
+  const output = innerContent.substring(outputStart + '<output>'.length, outputEnd).trim();
+
+  return <CustomCommandBashBlock baseDir={baseDir} command={command} output={output} />;
 };
 
 // --- Tool Message Parsing ---

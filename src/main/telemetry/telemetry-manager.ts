@@ -115,7 +115,7 @@ export class TelemetryManager {
     });
   }
 
-  captureCustomCommand(commandName: string, argsCount: number) {
+  captureCustomCommand(commandName: string, argsCount: number, mode: Mode) {
     if (!this.store.getSettings().telemetryEnabled) {
       return;
     }
@@ -125,6 +125,7 @@ export class TelemetryManager {
       properties: {
         commandName,
         argsCount,
+        mode,
       },
     });
   }

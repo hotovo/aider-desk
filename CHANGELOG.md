@@ -1,5 +1,15 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added custom commands availability to all modes
+- added info message when agent hits max output tokens
+- improved handling of unknown finish reason during agent iteration
+- fixed UnicodeEncodeError on Windows inside Aider
+- correctly handling stored answer
+- added retry for other finish reason in Agent run
+- todo list disappearance outside agent mode or without useTodoTools enabled
+
 ## [0.21.0]
 
 - not storing tool messages without the usage report into DB

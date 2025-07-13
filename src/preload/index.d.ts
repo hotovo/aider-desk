@@ -148,7 +148,7 @@ export interface ApplicationAPI {
   removeVersionsInfoUpdatedListener: (listenerId: string) => void;
 
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
-  runCustomCommand: (baseDir: string, commandName: string, args: string[]) => Promise<void>;
+  runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
 }
 
 declare global {
