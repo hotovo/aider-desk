@@ -175,6 +175,7 @@ class ConnectorInputOutput(InputOutput):
 
     if result == "y" and self.connector.running_coder and question == "Edit the files?":
       # Process architect coder
+      wait_for_async(self.connector, self.connector.send_log_message("loading", "Editing files..."))
       wait_for_async(self.connector, run_editor_coder_stream(self.connector.running_coder, self.connector))
       return False
 

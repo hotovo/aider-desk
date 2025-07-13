@@ -339,6 +339,7 @@ export class Project {
       ...process.env,
       ...environmentVariables,
       PYTHONPATH: AIDER_DESK_CONNECTOR_DIR,
+      PYTHONUTF8: '1',
       BASE_DIR: this.baseDir,
       CONNECTOR_SERVER_URL: `http://localhost:${SERVER_PORT}`,
     };
@@ -935,6 +936,11 @@ export class Project {
       question: questionData,
       answer: storedAnswer,
     });
+
+    // At this point, this.currentQuestion should be null due to the loop above,
+    // or it was null initially.
+    this.currentQuestion = questionData;
+
     if (storedAnswer) {
       logger.info('Found stored answer for question:', {
         baseDir: this.baseDir,
@@ -945,13 +951,11 @@ export class Project {
       if (!questionData.internal) {
         // Auto-answer based on stored preference
         this.answerQuestion(storedAnswer);
+      } else {
+        this.currentQuestion = null;
       }
       return Promise.resolve([storedAnswer, undefined]);
     }
-
-    // At this point, this.currentQuestion should be null due to the loop above,
-    // or it was null initially.
-    this.currentQuestion = questionData;
 
     this.notifyIfEnabled('Waiting for your input', questionData.text);
 

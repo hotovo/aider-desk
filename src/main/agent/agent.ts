@@ -551,7 +551,7 @@ export class Agent {
       };
 
       let iterationCount = 0;
-      let unknownRetries = 0;
+      let retryCount = 0;
 
       while (true) {
         logger.info(`Starting iteration ${iterationCount}`);
@@ -702,12 +702,12 @@ export class Agent {
         messages.push(...responseMessages);
         resultMessages.push(...responseMessages);
 
-        if (finishReason === 'unknown' && unknownRetries < 3) {
-          logger.warn('Unknown finish reason. Retrying.');
-          unknownRetries++;
+        if ((finishReason === 'unknown' || finishReason === 'other') && retryCount < 3) {
+          logger.warn(`Finish reason: ${finishReason}. Retrying...`);
+          retryCount++;
           continue;
         }
-        unknownRetries = 0;
+        retryCount = 0;
 
         if (finishReason === 'length') {
           project.addLogMessage(
