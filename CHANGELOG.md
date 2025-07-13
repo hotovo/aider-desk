@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.22.0]
 
 - added custom commands availability to all modes
 - added info message when agent hits max output tokens
