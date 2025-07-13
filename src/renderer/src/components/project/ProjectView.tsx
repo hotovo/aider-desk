@@ -555,13 +555,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages((prevMessages) => [...prevMessages, loadingMessage]);
     try {
       await window.api.scrapeWeb(project.baseDir, url, filePath);
-      const infoMessage: LogMessage = {
-        id: uuidv4(),
-        level: 'info',
-        type: 'log',
-        content: `Content from ${url} has been added to the chat.`,
-      };
-      setMessages((prevMessages) => [...prevMessages, infoMessage]);
     } catch (error) {
       if (error instanceof Error) {
         const getMessage = () => {
