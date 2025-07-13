@@ -544,24 +544,17 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
-  const scrapeWeb = async (url: string) => {
+  const scrapeWeb = async (url: string, filePath?: string) => {
     setProcessing(true);
     const loadingMessage: LoadingMessage = {
       id: uuidv4(),
       type: 'loading',
       content: `Scraping ${url}...`,
     };
-    setMessages((prevMessages) => [...prevMessages, loadingMessage]);
 
+    setMessages((prevMessages) => [...prevMessages, loadingMessage]);
     try {
-      await window.api.scrapeWeb(project.baseDir, url);
-      const infoMessage: LogMessage = {
-        id: uuidv4(),
-        level: 'info',
-        type: 'log',
-        content: `Content from ${url} has been added to the chat.`,
-      };
-      setMessages((prevMessages) => [...prevMessages, infoMessage]);
+      await window.api.scrapeWeb(project.baseDir, url, filePath);
     } catch (error) {
       if (error instanceof Error) {
         const getMessage = () => {
@@ -795,6 +788,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               onAddTodo={handleAddTodo}
               onUpdateTodo={handleUpdateTodo}
               onDeleteTodo={handleDeleteTodo}
+              settings={settings}
             />
           )}
         </div>
