@@ -51,13 +51,12 @@ Any line starting with `!` will be treated as a shell command.
 The content of the Markdown file below the YAML front matter is the command's template. This template will be sent to the AiderDesk agent as a prompt.
 
 *   **Argument Substitution:** Use `{{1}}`, `{{2}}`, `{{3}}`, and so on, to insert the values of the arguments passed to the command. `{{1}}` corresponds to the first argument, `{{2}}` to the second, and so forth.
-*   **Shell Commands:** Any line in the template that starts with an exclamation mark (`!`) will be interpreted as a shell command and executed using the `power---bash` tool (or other relevant tools if applicable). For example, `!git diff` or `!ls -la {{1}}`.
+*   **Shell Commands:** Any line in the template that starts with an exclamation mark (`!`) will be interpreted as a shell command. These commands are executed *before* the final prompt is sent to the LLM, and their `stdout` replaces the command line in the assembled prompt. For example, `!git diff` or `!ls -la {{1}}`.
 
 ## How to Use Custom Commands
 
 Custom commands can be executed directly from the prompt field in AiderDesk.
 
-1.  **Agent Mode:** Custom commands are currently only available when AiderDesk is in "Agent" mode.
 2.  **Typing the Command:** Start typing `/` followed by the command's name (e.g., `/mycommand`).
 3.  **Autocompletion:** As you type, AiderDesk's prompt field will provide autocompletion suggestions for your custom commands, along with their descriptions.
 4.  **Passing Arguments:** If your command expects arguments, provide them after the command name, separated by spaces. For example:
@@ -65,7 +64,12 @@ Custom commands can be executed directly from the prompt field in AiderDesk.
     /mycommand arg1 "argument with spaces" arg3
     ```
     **Note:** Currently, arguments with spaces must be enclosed in double quotes.
-5.  **Execution:** Press Enter to execute the command. AiderDesk will substitute the arguments into your command's template and send it to the agent for processing.
+5.  **Execution:** Press Enter to execute the command. AiderDesk will substitute the arguments into your command's template, execute any embedded shell commands, and then send the fully assembled prompt to the appropriate handler (Aider or Agent) based on the active mode.
+    *   **Note on Mode Selection:** The effectiveness of a custom command depends on the active mode.
+        *   Use **Code** mode for commands intended to modify files within the current context.
+        *   Use **Ask** mode for general queries or information retrieval that do not involve file modifications.
+        *   For commands designed to leverage advanced reasoning and tool use, ensure you are in **Agent** mode.
+        *   Other modes like **Architect** or **Context** should be chosen based on their specific functionalities and the command's purpose.
 
 ## Examples
 
