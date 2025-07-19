@@ -79,9 +79,6 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
     if (isRequestyProvider(provider)) {
       return <RequestyParameters provider={provider} onChange={onProviderChange} />;
     }
-    if (isLmStudioProvider(provider)) {
-      return <LmStudioParameters provider={provider} onChange={onProviderChange} />;
-    }
     return null;
   };
 

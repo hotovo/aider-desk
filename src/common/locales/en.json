@@ -188,11 +188,16 @@
     "autoCacheLabel": "Use Auto Cache",
     "autoCacheTooltip": "This will instruct the router to attempt to cache the response from the provider. If a similar request has been cached previously, it might be served from the cache (depending on the provider’s caching strategy and TTL)."
   },
+  "lmstudio": {
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
+  },
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "lmstudio": "LM Studio",
     "ollama": "Ollama",
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",

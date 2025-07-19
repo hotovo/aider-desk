@@ -77,7 +77,6 @@ export const isGeminiProvider = (provider: LlmProviderBase): provider is GeminiP
 export interface LmStudioProvider extends LlmProviderBase {
   name: 'lmstudio';
   baseUrl: string;
-  models: string[];
 }
 export const isLmStudioProvider = (provider: LlmProviderBase): provider is LmStudioProvider => provider.name === 'lmstudio';
 
@@ -135,9 +134,10 @@ export type LlmProvider =
   | RequestyProvider;
 
 export const DEFAULT_AGENT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string[]>> = {
-  openai: ['gpt-4o-mini', 'o4-mini', 'gpt-4.1', 'gpt-4.1-mini'],
+  openai: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o-mini', 'o4-mini'],
   anthropic: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
   gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
+  lmstudio: ['qwen/qwen3-8b'],
   deepseek: ['deepseek-chat'],
   bedrock: ['us.anthropic.claude-3-7-sonnet-20250219-v1:0', 'anthropic.claude-3-7-sonnet-20250219-v1:0'],
   openrouter: ['anthropic/claude-sonnet-4'],
@@ -275,7 +275,7 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
       case 'ollama':
         provider = {
           name: 'ollama',
-          baseUrl: 'http://localhost:11434/api',
+          baseUrl: '',
         } satisfies OllamaProvider;
         break;
       case 'openrouter':
@@ -288,8 +288,7 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
       case 'lmstudio':
         provider = {
           name: 'lmstudio',
-          baseUrl: 'http://localhost:1234/v1',
-          models: [],
+          baseUrl: '',
         } satisfies LmStudioProvider;
         break;
       case 'requesty':

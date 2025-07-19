@@ -2,8 +2,6 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LmStudioProvider } from '@common/agent';
 
-import { ProviderModels } from './ProviderModels';
-
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
@@ -23,10 +21,6 @@ export const LmStudioParameters = ({ provider, onChange }: Props) => {
     onChange({ ...provider, baseUrl: e.target.value });
   };
 
-  const handleModelsChange = (updatedModels: string[]) => {
-    onChange({ ...provider, models: updatedModels });
-  };
-
   return (
     <div className="space-y-2">
       <Input
@@ -36,7 +30,6 @@ export const LmStudioParameters = ({ provider, onChange }: Props) => {
         onChange={handleBaseUrlChange}
         placeholder={lmStudioBaseEnv ? t('settings.agent.envVarFoundPlaceholder', { source: lmStudioBaseEnv.source }) : t('lmstudio.baseUrlPlaceholder')}
       />
-      <ProviderModels models={provider.models || []} onChange={handleModelsChange} />
     </div>
   );
 };

@@ -18,6 +18,7 @@ import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { IconButton } from '@/components/common/IconButton';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { useOllamaModels } from '@/hooks/useOllamaModels';
+import { useLmStudioModels } from '@/hooks/useLmStudioModels';
 import { useSettings } from '@/context/SettingsContext';
 import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { showErrorNotification } from '@/utils/notifications';
@@ -37,7 +38,13 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
     return ollamaProvider && isOllamaProvider(ollamaProvider) ? ollamaProvider.baseUrl : '';
   }, [settings?.llmProviders]);
 
+  const lmStudioBaseUrl = useMemo(() => {
+    const lmStudioProvider = settings?.llmProviders['lmstudio'];
+    return lmStudioProvider?.baseUrl || '';
+  }, [settings?.llmProviders]);
+
   const ollamaModels = useOllamaModels(ollamaBaseUrl);
+  const lmStudioModels = useLmStudioModels(lmStudioBaseUrl);
 
   const agentModels = useMemo(() => {
     const models: string[] = [];
@@ -57,6 +64,11 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
           }
           break;
         }
+        case 'lmstudio':
+          if (lmStudioModels.length > 0) {
+            models.push(...lmStudioModels.map((model) => `lmstudio/${model}`));
+          }
+          break;
         default:
           models.push(...(DEFAULT_AGENT_PROVIDER_MODELS[provider] || []).map((model) => `${provider}/${model}`));
           break;
@@ -70,7 +82,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
       }
     }
     return models;
-  }, [activeAgentProfile, ollamaModels, settings?.llmProviders]);
+  }, [activeAgentProfile, ollamaModels, lmStudioModels, settings?.llmProviders]);
 
   const selectedModelDisplay = activeAgentProfile ? `${activeAgentProfile.provider}/${activeAgentProfile.model}` : t('common.notSet');
 

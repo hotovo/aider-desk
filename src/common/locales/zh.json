@@ -151,6 +151,10 @@
     "baseUrl": "基础 URL",
     "baseUrlPlaceholder": "例如 http://localhost:11434/api"
   },
+  "lmstudio": {
+    "baseUrl": "基础 URL",
+    "baseUrlPlaceholder": "例如 http://localhost:1234/v1"
+  },
   "anthropic": {
     "apiKey": "API 密钥"
   },
@@ -190,6 +194,7 @@
     "bedrock": "Bedrock",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "lmstudio": "LM Studio",
     "ollama": "Ollama",
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
