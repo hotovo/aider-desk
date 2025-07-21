@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MdAdd, MdExpandLess, MdOutlineChecklist } from 'react-icons/md';
+import { MdAdd, MdExpandLess, MdOutlineChecklist, MdPlaylistRemove } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';
 
@@ -40,6 +40,14 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
     }
   };
 
+  const handleClearDoneTodo = () => {
+    const doneTodos = todos.filter((todo) => todo.completed);
+    if (doneTodos.length === 0) {
+      return;
+    }
+    doneTodos.forEach((todo) => onDeleteTodo?.(todo.name));
+  };
+
   const handleCancelAdd = () => {
     setNewTodoName('');
     setIsAddingTodo(false);
@@ -76,6 +84,12 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
               </span>
             </div>
             <div className="flex items-center">
+              <IconButton
+                icon={<MdPlaylistRemove className="w-4 h-4" />}
+                onClick={handleClearDoneTodo}
+                tooltip={t('tasks.clearDoneTodo')}
+                className="text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded-md p-2 transition-colors"
+              />
               <IconButton
                 icon={<MdAdd className="w-4 h-4" />}
                 onClick={handleAddTodo}

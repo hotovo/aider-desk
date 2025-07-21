@@ -454,7 +454,8 @@
     "saveTodo": "保存",
     "cancelTodo": "取消",
     "noTodos": "没有待办事项",
-    "confirmDelete": "确定要删除这个待办事项吗？"
+    "confirmDelete": "确定要删除这个待办事项吗？",
+    "clearDoneTodo": ""
   },
   "tool": {
     "noDescription": "无描述",
