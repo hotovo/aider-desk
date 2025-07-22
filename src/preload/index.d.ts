@@ -70,7 +70,7 @@ export interface ApplicationAPI {
   addTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
   updateTodo: (baseDir: string, name: string, updates: Partial<TodoItem>) => Promise<TodoItem[]>;
   deleteTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
-  clearDoneTodos: (baseDir: string) => Promise<TodoItem[]>;
+  clearAllTodos: (baseDir: string) => Promise<TodoItem[]>;
 
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force = false) => Promise<void>;

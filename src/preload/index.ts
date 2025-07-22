@@ -85,7 +85,7 @@ const api: ApplicationAPI = {
   addTodo: (baseDir, name) => ipcRenderer.invoke('add-todo', baseDir, name),
   updateTodo: (baseDir, name, updates) => ipcRenderer.invoke('update-todo', baseDir, name, updates),
   deleteTodo: (baseDir, name) => ipcRenderer.invoke('delete-todo', baseDir, name),
-  clearDoneTodos: (baseDir) => ipcRenderer.invoke('clear-done-todos', baseDir),
+  clearAllTodos: (baseDir) => ipcRenderer.invoke('clear-all-todos', baseDir),
 
   loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),

@@ -16,10 +16,10 @@ type Props = {
   onAddTodo?: (name: string) => void;
   onUpdateTodo?: (name: string, updates: Partial<TodoItem>) => void;
   onDeleteTodo?: (name: string) => void;
-  onClearDoneTodos: () => void;
+  onClearAllTodos: () => void;
 };
 
-export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onClearDoneTodos }: Props) => {
+export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onClearAllTodos }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddingTodo, setIsAddingTodo] = useState(false);
@@ -79,8 +79,8 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
             <div className="flex items-center">
               <IconButton
                 icon={<MdPlaylistRemove className="w-4 h-4" />}
-                onClick={onClearDoneTodos}
-                tooltip={t('tasks.clearDoneTodos')}
+                onClick={onClearAllTodos}
+                tooltip={t('tasks.clearAllTodos')}
                 className="text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded-md p-2 transition-colors"
               />
               <IconButton

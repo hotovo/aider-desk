@@ -1500,18 +1500,17 @@ export class Project {
     return updatedItems;
   }
 
-  public async clearDoneTodos(): Promise<TodoItem[]> {
+  public async clearAllTodos(): Promise<TodoItem[]> {
     const data = await this.readTodoFile();
     if (!data) {
       throw new Error('No todo items found to clear');
     }
 
-    const updatedItems = data.items.filter((item) => !item.completed);
     await this.writeTodoFile({
       initialUserPrompt: data.initialUserPrompt,
-      items: updatedItems,
+      items: [],
     });
-    return updatedItems;
+    return [];
   }
 
   async initProjectRulesFile(): Promise<void> {
