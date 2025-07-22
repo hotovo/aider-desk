@@ -1503,7 +1503,7 @@ export class Project {
   public async clearDoneTodos(): Promise<TodoItem[]> {
     const data = await this.readTodoFile();
     if (!data) {
-      throw new Error('No todo items found to cleared');
+      throw new Error('No todo items found to clear');
     }
 
     const updatedItems = data.items.filter((item) => !item.completed);
