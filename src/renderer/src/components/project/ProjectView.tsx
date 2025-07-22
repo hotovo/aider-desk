@@ -749,7 +749,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       setTodoItems(updatedTodos);
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error clearing done todos:', error);
+      console.error('Error clearing all todos:', error);
     }
   };
 
