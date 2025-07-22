@@ -243,12 +243,16 @@ export class McpManager {
     } else if (config.url) {
       const baseUrl = new URL(config.url);
       try {
-        const transport = new StreamableHTTPClientTransport(new URL(baseUrl));
+        const transport = new StreamableHTTPClientTransport(new URL(baseUrl), {
+          headers: config.headers,
+        });
         logger.debug(`Connecting to MCP server using Streamable HTTP: ${serverName}`);
         await client.connect(transport);
         logger.debug(`Connected to MCP server: ${serverName}`);
       } catch {
-        const sseTransport = new SSEClientTransport(baseUrl);
+        const sseTransport = new SSEClientTransport(baseUrl, {
+          headers: config.headers,
+        });
         logger.debug(`Connecting to MCP server using SSE: ${serverName}`);
         await client.connect(sseTransport);
         logger.debug(`Connected to MCP server: ${serverName}`);
