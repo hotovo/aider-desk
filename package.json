@@ -73,6 +73,7 @@
     "fix-path": "^4.0.0",
     "focus-trap-react": "^11.0.3",
     "framer-motion": "^11.18.2",
+    "fuse.js": "^7.1.0",
     "glob": "^11.0.2",
     "gpt-tokenizer": "^2.9.0",
     "html-to-image": "^1.11.13",

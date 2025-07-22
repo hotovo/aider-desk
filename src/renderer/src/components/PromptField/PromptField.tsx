@@ -14,6 +14,7 @@ import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import Fuse from 'fuse.js';
 import { BiSend } from 'react-icons/bi';
 import { MdPlaylistRemove, MdStop } from 'react-icons/md';
 
@@ -205,7 +206,15 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       };
     };
 
-    const historyItems = inputHistory.slice(0, historyLimit).reverse();
+    const fuse = new Fuse(inputHistory, {
+      includeScore: true,
+      threshold: 0.4,
+    });
+
+    const historyItems =
+      historyMenuVisible && text.trim().length > 0
+        ? fuse.search(text).map((result) => result.item)
+        : inputHistory.slice(0, historyLimit).reverse();
 
     const loadMoreHistory = useCallback(() => {
       if (historyLimit < inputHistory.length) {
@@ -635,7 +644,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       {
         key: 'ArrowUp',
         run: () => {
-          if (!text && historyItems.length > 0) {
+          if (historyItems.length > 0) {
             if (historyMenuVisible) {
               if (highlightedHistoryItemIndex === 0) {
                 loadMoreHistory();
