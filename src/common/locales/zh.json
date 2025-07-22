@@ -455,7 +455,7 @@
     "cancelTodo": "取消",
     "noTodos": "没有待办事项",
     "confirmDelete": "确定要删除这个待办事项吗？",
-    "clearDoneTodo": ""
+    "clearDoneTodos": "清除已完成任务"
   },
   "tool": {
     "noDescription": "无描述",

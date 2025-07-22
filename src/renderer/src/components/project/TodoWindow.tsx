@@ -80,7 +80,7 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
               <IconButton
                 icon={<MdPlaylistRemove className="w-4 h-4" />}
                 onClick={onClearDoneTodos}
-                tooltip={t('tasks.clearDoneTodo')}
+                tooltip={t('tasks.clearDoneTodos')}
                 className="text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded-md p-2 transition-colors"
               />
               <IconButton

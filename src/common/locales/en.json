@@ -459,7 +459,7 @@
     "saveTodo": "Save",
     "cancelTodo": "Cancel",
     "noTodos": "No todo items",
-    "clearDoneTodo": "Clear done tasks"
+    "clearDoneTodos": "Clear done tasks"
   },
   "tool": {
     "noDescription": "No description",
