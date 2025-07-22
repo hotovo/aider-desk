@@ -16,9 +16,10 @@ type Props = {
   onAddTodo?: (name: string) => void;
   onUpdateTodo?: (name: string, updates: Partial<TodoItem>) => void;
   onDeleteTodo?: (name: string) => void;
+  onClearDoneTodos: () => void;
 };
 
-export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo }: Props) => {
+export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onClearDoneTodos }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddingTodo, setIsAddingTodo] = useState(false);
@@ -38,14 +39,6 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
       setNewTodoName('');
       setIsAddingTodo(false);
     }
-  };
-
-  const handleClearDoneTodo = () => {
-    const doneTodos = todos.filter((todo) => todo.completed);
-    if (doneTodos.length === 0) {
-      return;
-    }
-    doneTodos.forEach((todo) => onDeleteTodo?.(todo.name));
   };
 
   const handleCancelAdd = () => {
@@ -86,7 +79,7 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
             <div className="flex items-center">
               <IconButton
                 icon={<MdPlaylistRemove className="w-4 h-4" />}
-                onClick={handleClearDoneTodo}
+                onClick={onClearDoneTodos}
                 tooltip={t('tasks.clearDoneTodo')}
                 className="text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded-md p-2 transition-colors"
               />
