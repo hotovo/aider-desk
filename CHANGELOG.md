@@ -1,7 +1,7 @@
 # Changelog
 
 ## [UNRELEASED]
-- Added button that clears all tasks in todo list
+- added button that clears all tasks in todo list
 
 ## [0.23.0]
 
