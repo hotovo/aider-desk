@@ -402,6 +402,10 @@ export const setupIpcHandlers = (
     return await projectManager.getProject(baseDir).deleteTodo(name);
   });
 
+  ipcMain.handle('clear-all-todos', async (_, baseDir: string) => {
+    return await projectManager.getProject(baseDir).clearAllTodos();
+  });
+
   ipcMain.handle('query-usage-data', async (_, from: string, to: string) => {
     return dataManager.queryUsageData(new Date(from), new Date(to));
   });

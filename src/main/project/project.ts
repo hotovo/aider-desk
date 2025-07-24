@@ -1507,6 +1507,19 @@ export class Project {
     return updatedItems;
   }
 
+  public async clearAllTodos(): Promise<TodoItem[]> {
+    const data = await this.readTodoFile();
+    if (!data) {
+      throw new Error('No todo items found to clear');
+    }
+
+    await this.writeTodoFile({
+      initialUserPrompt: data.initialUserPrompt,
+      items: [],
+    });
+    return [];
+  }
+
   async initProjectRulesFile(): Promise<void> {
     logger.info('Initializing PROJECT.md rules file', {
       baseDir: this.baseDir,
