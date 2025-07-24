@@ -5,6 +5,7 @@
 - support for headers in streamable MCP servers
 - added search to input history
 - added Langfuse OpenTelemetry instrumentation for Agent and Aider
+- fixed last session reload after restart
 
 ## [0.23.0]
 
