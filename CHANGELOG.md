@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- fixed last session reload after restart
+
 ## [0.21.0]
 
 - not storing tool messages without the usage report into DB
