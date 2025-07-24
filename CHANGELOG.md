@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- fixed architect mode interruption while editing files
+
 ## [0.23.0]
 
 - fixed laggy prompt field clearing after submitting message
