@@ -65,10 +65,18 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
 
       // Sanitize escape characters from searchTerm and replacementText
       const sanitize = (str: string) => {
+        // Check if string contains single escaped backslashes (like \n, \t, etc.)
+        const hasSingleEscaped = /\\[nrt"'](?!\\)/.test(str);
+
+        // Only sanitize if no single escaped backslashes are found
+        if (hasSingleEscaped) {
+          return str;
+        }
+
         // Remove leading backslash
-        let s = str.replace(/^\\+/, '');
-        // Remove escaped newlines, quotes, tabs, etc.
-        s = s.replace(/\\[nrt"']/g, (match) => {
+        let updated = str.replace(/^\\+/, '');
+        // Remove escaped newlines, quotes, tabs, etc. only when they have double backslashes
+        updated = updated.replace(/\\[nrt"']/g, (match) => {
           switch (match) {
             case '\\n':
               return '\n';
@@ -84,7 +92,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
               return '';
           }
         });
-        return s;
+        return updated;
       };
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_EDIT}`;

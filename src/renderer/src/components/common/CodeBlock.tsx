@@ -9,14 +9,18 @@ import { CopyMessageButton } from '../message/CopyMessageButton';
 
 import { IconButton } from './IconButton';
 
-import { DiffViewer } from '@/components/common/DiffViewer';
+import { DiffViewer, UDiffViewer } from '@/components/common/DiffViewer';
 
 const SEARCH_MARKER = /^<{5,9} SEARCH[^\n]*$/m;
 const DIVIDER_MARKER = /^={5,9}\s*$/m;
 const REPLACE_MARKER = /^>{5,9} REPLACE\s*$/m;
 
-const isDiffContent = (content: string): boolean => {
+const isCustomDiffContent = (content: string): boolean => {
   return SEARCH_MARKER.test(content);
+};
+
+const isUdiffContent = (content: string): boolean => {
+  return /^---\s/m.test(content) && /^\+\+\+\s/m.test(content);
 };
 
 const parseDiffContent = (content: string): { oldValue: string; newValue: string } => {
@@ -65,8 +69,10 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
   const [changesReverted, setChangesReverted] = useState(false);
 
   const isExplicitDiff = oldValue !== undefined && newValue !== undefined;
-  const isChildrenDiff = !isExplicitDiff && children ? isDiffContent(children) : false;
-  const displayAsDiff = isExplicitDiff || isChildrenDiff;
+  const isCustomChildrenDiff = !isExplicitDiff && children ? isCustomDiffContent(children) : false;
+  const isUdiffChildrenDiff = !isExplicitDiff && children ? isUdiffContent(children) : false;
+  const displayAsDiff = isExplicitDiff || isCustomChildrenDiff;
+  const displayAsUdiff = isUdiffChildrenDiff;
 
   let diffOldValue = '';
   let diffNewValue = '';
@@ -77,7 +83,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
     diffOldValue = oldValue!; // Known to be string
     diffNewValue = newValue!; // Known to be string
     stringToCopy = newValue!;
-  } else if (isChildrenDiff) {
+  } else if (isCustomChildrenDiff) {
     const parsed = parseDiffContent(children!); // children is non-null and a diff
     diffOldValue = parsed.oldValue;
     diffNewValue = parsed.newValue;
@@ -89,9 +95,11 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
   }
 
   const content = useMemo(() => {
-    if (displayAsDiff) {
+    if (displayAsUdiff && children) {
+      return <UDiffViewer udiff={children} language={language} />;
+    } else if (displayAsDiff) {
       return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} />;
-    } else if (codeForSyntaxHighlight) {
+    } else if (codeForSyntaxHighlight && language) {
       let html = codeForSyntaxHighlight;
 
       const grammar = Prism.languages[language];
@@ -109,9 +117,14 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
           <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: html }} />
         </pre>
       );
+    } else {
+      return (
+        <pre>
+          <code className="text-2xs">{codeForSyntaxHighlight}</code>
+        </pre>
+      );
     }
-    return null;
-  }, [codeForSyntaxHighlight, diffNewValue, diffOldValue, displayAsDiff, language]);
+  }, [codeForSyntaxHighlight, diffNewValue, diffOldValue, displayAsDiff, displayAsUdiff, children, language]);
 
   const handleRevertChanges = () => {
     if (file && displayAsDiff) {

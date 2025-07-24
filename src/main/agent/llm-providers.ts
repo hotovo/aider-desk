@@ -2,6 +2,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import { createDeepSeek } from '@ai-sdk/deepseek';
+import { createGroq } from '@ai-sdk/groq';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createOllama } from 'ollama-ai-provider';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
@@ -13,6 +14,8 @@ import {
   isBedrockProvider,
   isDeepseekProvider,
   isGeminiProvider,
+  isGroqProvider,
+  isLmStudioProvider,
   isOllamaProvider,
   isOpenAiCompatibleProvider,
   isOpenAiProvider,
@@ -73,6 +76,23 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     }
     const deepseekProvider = createDeepSeek({ apiKey });
     return deepseekProvider(model);
+  } else if (isGroqProvider(provider)) {
+    const apiKey = provider.apiKey || env['GROQ_API_KEY'];
+    if (!apiKey) {
+      throw new Error('Groq API key is required in Agent provider settings or Aider environment variables (GROQ_API_KEY)');
+    }
+    const groqProvider = createGroq({ apiKey });
+    return groqProvider(model);
+  } else if (isLmStudioProvider(provider)) {
+    const baseUrl = provider.baseUrl || env['LMSTUDIO_API_BASE'];
+    if (!baseUrl) {
+      throw new Error('Base URL is required for LMStudio provider. Set it in Agent provider settings or via the LMSTUDIO_API_BASE environment variable.');
+    }
+    const lmStudioProvider = createOpenAICompatible({
+      name: 'lmstudio',
+      baseURL: baseUrl,
+    });
+    return lmStudioProvider(model);
   } else if (isOpenAiCompatibleProvider(provider)) {
     const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
     if (!apiKey) {

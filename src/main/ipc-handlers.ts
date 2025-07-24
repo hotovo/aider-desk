@@ -249,7 +249,7 @@ export const setupIpcHandlers = (
     }
   });
 
-  ipcMain.handle('scrape-web', async (_, baseDir: string, url: string) => {
+  ipcMain.handle('scrape-web', async (_, baseDir: string, url: string, filePath?: string) => {
     const content = await scrapeWeb(url);
     const project = projectManager.getProject(baseDir);
 
@@ -260,13 +260,42 @@ export const setupIpcHandlers = (
       if (normalizedUrl.length > 100) {
         normalizedUrl = normalizedUrl.substring(0, 100);
       }
-      const tempFilePath = path.join(baseDir, AIDER_DESK_TMP_DIR, `${normalizedUrl}.web`);
 
-      await fs.mkdir(path.dirname(tempFilePath), { recursive: true });
-      await fs.writeFile(tempFilePath, `Scraped content of ${url}:\n\n${content}`);
+      let targetFilePath: string;
+      if (!filePath) {
+        targetFilePath = path.join(baseDir, AIDER_DESK_TMP_DIR, `${normalizedUrl}.md`);
+        await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
+      } else {
+        if (path.isAbsolute(filePath)) {
+          targetFilePath = filePath;
+        } else {
+          targetFilePath = path.join(baseDir, filePath);
+        }
+        try {
+          // Check if path looks like a directory (ends with separator)
+          const isLikelyDirectory = !path.extname(targetFilePath);
 
-      await project.addFile({ path: tempFilePath, readOnly: true });
-      project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, tempFilePath)}' and added to context.`);
+          if (isLikelyDirectory) {
+            await fs.mkdir(targetFilePath, { recursive: true });
+            targetFilePath = path.join(targetFilePath, `${normalizedUrl}.md`);
+          } else {
+            await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
+          }
+        } catch (error) {
+          logger.error(`Error processing provided file path ${filePath}:`, error);
+          project.addLogMessage('error', `Failed to process provided file path ${filePath}:\n${error instanceof Error ? error.message : String(error)}`);
+          return;
+        }
+      }
+
+      await fs.writeFile(targetFilePath, `Scraped content of ${url}:\n\n${content}`);
+      await project.addFile({ path: targetFilePath, readOnly: true });
+      if (filePath) {
+        await project.addToInputHistory(`/web ${url} ${filePath}`);
+      } else {
+        await project.addToInputHistory(`/web ${url}`);
+      }
+      project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, targetFilePath)}' and added to context.`);
     } catch (error) {
       logger.error(`Error processing scraped web content for ${url}:`, error);
       project.addLogMessage('error', `Failed to save scraped content from ${url}:\n${error instanceof Error ? error.message : String(error)}`);
@@ -395,7 +424,7 @@ export const setupIpcHandlers = (
     return projectManager.getCustomCommands(baseDir);
   });
 
-  ipcMain.handle('run-custom-command', async (_, baseDir: string, commandName: string, args: string[]) => {
-    await projectManager.getProject(baseDir).runCustomCommand(commandName, args);
+  ipcMain.handle('run-custom-command', async (_, baseDir: string, commandName: string, args: string[], mode: Mode) => {
+    await projectManager.getProject(baseDir).runCustomCommand(commandName, args, mode);
   });
 };

@@ -30,8 +30,29 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 export const getSystemPrompt = async (projectDir: string, agentProfile: AgentProfile, additionalInstructions?: string) => {
   const { useAiderTools, usePowerTools, useTodoTools, autoApprove } = agentProfile;
   const customInstructions = [getRuleFilesContent(projectDir), agentProfile.customInstructions, additionalInstructions].filter(Boolean).join('\n\n').trim();
+
+  // Check individual power tool permissions
   const agentToolAllowed =
     usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`] !== ToolApprovalState.Never;
+  const semanticSearchAllowed =
+    usePowerTools &&
+    agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}`] !== ToolApprovalState.Never;
+  const fileReadAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`] !== ToolApprovalState.Never;
+  const fileWriteAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`] !== ToolApprovalState.Never;
+  const fileEditAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`] !== ToolApprovalState.Never;
+  const globAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}`] !== ToolApprovalState.Never;
+  const grepAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}`] !== ToolApprovalState.Never;
+  const bashAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`] !== ToolApprovalState.Never;
+
+  // Check if any power tools are allowed
+  const anyPowerToolsAllowed =
+    semanticSearchAllowed || fileReadAllowed || fileWriteAllowed || fileEditAllowed || globAllowed || grepAllowed || bashAllowed || agentToolAllowed;
 
   return `# ROLE AND OBJECTIVE
 
@@ -89,16 +110,14 @@ ${
     * Apply the planned changes to the confirmed list of files using appropriate tools: (e.g., modification tools like 'aider run_prompt' if available or available code generation utilities).
     * **Instruction:** Ensure all relevant files identified in Step 3 are incorporated into the context *before* utilizing any file modification tools.
 6.  **Verify Changes:**
-    * If feasible, employ tools (e.g., run automated tests, execute static analysis) to verify the correctness and integrity of the solution across all modified files.
-    * Report the verification results clearly and concisely.
-7.  **Interpret Verification Results and Correct:**
+    * If there is information about how to verify changes either using linting tools, typechecking or unit tests, always verify after the task is completed.
     * Analyze the outcomes from the verification step.
     * If errors are detected, revisit Step 4 (Develop Implementation Plan) to refine the strategy or Step 5 (Execute Implementation) to correct the changes. Ensure the plan is updated accordingly and that changes are re-verified.
-8.  **Assess Task Completion:**
+7.  **Assess Task Completion:**
     * Evaluate whether the predefined completion conditions (from Step 1) have been met.
-    * If yes, proceed to the Review stage.
+    * If yes, proceed to the Final Summary stage.
     * If not, determine the subsequent necessary action and loop back to the appropriate earlier step (e.g., return to Step 3 if additional context is required, or to Step 4 to plan the next sub-task). This iterative process is key.
-9.  **Final Review and Summary:**
+8.  **Final Summary:**
     * Briefly summarize the actions undertaken and the final state of the system.
     * Confirm that the overarching goal of the request has been successfully achieved.
 
@@ -123,7 +142,7 @@ To maintain clarity and track progress on complex tasks, you will use the TODO l
     -   Also provide the \`initialUserPrompt\` to the tool to preserve the original context.
 2.  **Update Progress:** As you complete each task during the **Execute Implementation (Step 5)** and **Verify Changes (Step 6)** stages, you **MUST** call the \`${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_UPDATE_ITEM_COMPLETION}\` tool to mark the corresponding task as completed.
 3.  **Monitor Status:** User can update the TODO list at any point, so after each call of \`update_item_completion\`, check the response of the tool to get the updated status and update your plan accordingly. If you need to review your remaining tasks at any point (e.g., during **Assess Task Completion (Step 8)**), use the \`${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_GET_ITEMS}\` tool to get the current list.
-4.  **Final Status:** Once the entire user request is fully resolved and you have reached the **Final Review (Step 9)**, make sure that all the completed items are marked as completed.
+4.  **Final Status:** Once the entire user request is fully resolved and you have reached the **Final Review (Step 8)**, make sure that all the completed items are marked as completed.
 
 Whenever using the ${TODO_TOOL_GROUP_NAME} tools **DO NOT** mention it in your response, DO NOT say stuff like 'I will now add the tasks to the TODO list' or 'I will now mark the task as completed', just call the tool. User sees the current state in the UI.
 `
@@ -144,24 +163,49 @@ ${
     : ''
 }
 ${
-  usePowerTools
+  anyPowerToolsAllowed
     ? `
 ## UTILIZING POWER TOOLS
-
-Power tools offer direct file system interaction and command execution. Employ them as follows:
-
-- **To Search for Code or Functionality:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}\` to locate relevant code segments or features within the project.
-- **To Inspect File Contents:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}\` to view the content of a file without including it in the primary context.
-- **To Manage Files (Create, Overwrite, Append):** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}\` for creating new files, replacing existing file content, or adding content to the end of a file.
-- **To Perform Targeted File Edits:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}\` to replace specific strings or patterns within files.
-- **To Find Files by Pattern:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}\` to identify files that match specified patterns.
-- **To Search File Content with Regular Expressions:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}\` to find text within files using regular expressions.
+${
+  semanticSearchAllowed
+    ? `
+- **To Search for Code or Functionality:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}\` to locate relevant code segments or features within the project.`
+    : ''
+}${
+        fileReadAllowed
+          ? `
+- **To Inspect File Contents:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}\` to view the content of a file without including it in the primary context.`
+          : ''
+      }${
+        fileWriteAllowed
+          ? `
+- **To Manage Files (Create, Overwrite, Append):** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}\` for creating new files, replacing existing file content, or adding content to the end of a file.`
+          : ''
+      }${
+        fileEditAllowed
+          ? `
+- **To Perform Targeted File Edits:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}\` to replace specific strings or patterns within files.`
+          : ''
+      }${
+        globAllowed
+          ? `
+- **To Find Files by Pattern:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}\` to identify files that match specified patterns.`
+          : ''
+      }${
+        grepAllowed
+          ? `
+- **To Search File Content with Regular Expressions:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}\` to find text within files using regular expressions.`
+          : ''
+      }${
+        bashAllowed
+          ? `
 - **To Execute Shell Commands:**
     - Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}\` to run shell commands.
-    - **Instruction:** Before execution, verify all \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}\` commands for safety and correctness to prevent unintended system modifications.
-${
-  agentToolAllowed
-    ? `
+    - **Instruction:** Before execution, verify all \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}\` commands for safety and correctness to prevent unintended system modifications.`
+          : ''
+      }${
+        agentToolAllowed
+          ? `
 - **To Delegate Complex, Isolated Tasks or Analysis:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}\`.
     - **For Analysis:** This is the preferred method for complex initial analysis (See Step 2).
     - **For Execution:** Use this for tasks that are complex enough to require their own reasoning loop but can be completed with a limited set of files (e.g., refactoring a single function, writing a new unit test).
@@ -171,11 +215,10 @@ ${
         3. A precise specification of the final output format you expect the sub-agent to return.
     - **Parameters:** Use the \`files\` parameter to provide all necessary context files for the task.
 `
-    : ''
-}
-${
-  useAiderTools
-    ? `
+          : ''
+      }${
+        useAiderTools && fileEditAllowed && fileWriteAllowed
+          ? `
 - **Comparison to Aider \`${AIDER_TOOL_RUN_PROMPT}\`':**
     - Power tools offer granular control but require more precise instructions.
     - Aider's \`${AIDER_TOOL_RUN_PROMPT}\` is generally preferred for complex coding tasks, refactoring, or when a broader understanding of the code is needed, as it leverages Aider's advanced reasoning.
@@ -183,8 +226,8 @@ ${
 
 - **Context Management:** Unlike Aider tools, Power tools operate directly on the file system and do not inherently use Aider's context file list unless their parameters (like file paths) are derived from it.
 `
-    : ''
-}`
+          : ''
+      }`
     : ''
 }
 # RESPONSE STYLE
@@ -418,5 +461,3 @@ ${customInstructions ? `#### [ADDITIONAL INSTRUCTIONS]\n\n${customInstructions}\
 *(Optional) Describe the immediate next action you will take. This step MUST be a direct continuation of the "Current Work" and be explicitly requested by the user. If the previous task was completed, state "None" unless the user has already provided a new, explicit task.*
 `;
 };
-
-export const CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS = `You are executing a custom command. In this mode you don't have to plan your work if the user's instruction is clear and requires no further analysis, just do the job. Treat any line in the user's prompt that begins with an exclamation mark (!) as a shell command to be executed using the '${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}' tool or any other available tool for bash command.`;

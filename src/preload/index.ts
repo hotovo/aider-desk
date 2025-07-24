@@ -9,6 +9,7 @@ import {
   LogData,
   McpServerConfig,
   ModelsData,
+  OS,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -16,11 +17,10 @@ import {
   ToolData,
   UserMessageData,
   VersionsInfo,
-  OS,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { electronAPI } from '@electron-toolkit/preload';
-import { webUtils, contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
 import { ApplicationAPI } from './index.d';
@@ -78,7 +78,7 @@ const api: ApplicationAPI = {
   isProjectPath: (path) => ipcRenderer.invoke('is-project-path', path),
   dropFile: (baseDir, path) => ipcRenderer.send('drop-file', baseDir, path),
   runCommand: (baseDir, command) => ipcRenderer.send('run-command', baseDir, command),
-  scrapeWeb: (baseDir, url) => ipcRenderer.invoke('scrape-web', baseDir, url),
+  scrapeWeb: (baseDir, url, filePath) => ipcRenderer.invoke('scrape-web', baseDir, url, filePath),
   initProjectRulesFile: (baseDir) => ipcRenderer.invoke('init-project-rules-file', baseDir),
 
   getTodos: (baseDir) => ipcRenderer.invoke('get-todos', baseDir),
@@ -397,8 +397,8 @@ const api: ApplicationAPI = {
     }
   },
 
-  getCustomCommands: (baseDir: string) => ipcRenderer.invoke('get-custom-commands', baseDir),
-  runCustomCommand: (baseDir: string, commandName: string, args: string[]) => ipcRenderer.invoke('run-custom-command', baseDir, commandName, args),
+  getCustomCommands: (baseDir) => ipcRenderer.invoke('get-custom-commands', baseDir),
+  runCustomCommand: (baseDir, commandName, args, mode) => ipcRenderer.invoke('run-custom-command', baseDir, commandName, args, mode),
 };
 
 if (process.contextIsolated) {

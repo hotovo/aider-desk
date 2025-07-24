@@ -1,31 +1,12 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Diff, Hunk, parseDiff, tokenize } from 'react-diff-view';
+import { Diff, Hunk, parseDiff } from 'react-diff-view';
 import { diffLines, formatLines } from 'unidiff';
-import refractor from 'refractor';
+
+import { createTokens } from './utils';
 
 import 'react-diff-view/style/index.css';
 import './DiffViewer.scss';
-
-const createTokens = (hunks, language: string) => {
-  if (!hunks) {
-    return undefined;
-  }
-
-  const options = {
-    highlight: true,
-    refractor,
-    language,
-  };
-
-  try {
-    return tokenize(hunks, options);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to tokenize diff hunks:', error);
-    return undefined;
-  }
-};
 
 type Props = {
   oldValue: string;

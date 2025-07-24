@@ -151,6 +151,10 @@
     "baseUrl": "基础 URL",
     "baseUrlPlaceholder": "例如 http://localhost:11434/api"
   },
+  "lmstudio": {
+    "baseUrl": "基础 URL",
+    "baseUrlPlaceholder": "例如 http://localhost:1234/v1"
+  },
   "anthropic": {
     "apiKey": "API 密钥"
   },
@@ -162,6 +166,10 @@
     "includeThoughtsTooltip": "启用后，代理的内部思考过程将包含在对话历史中，这有助于调试或理解其决策。",
     "useSearchGrounding": "使用搜索基础",
     "useSearchGroundingTooltip": "启用后，代理将使用搜索结果作为其响应的基础，从而提高准确性和相关性。"
+  },
+  "groq": {
+    "apiKey": "API 密钥",
+    "modelPlaceholder": "例如 moonshotai/kimi-k2-instruct"
   },
   "deepseek": {
     "apiKey": "API 密钥"
@@ -190,6 +198,8 @@
     "bedrock": "Bedrock",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "groq": "Groq",
+    "lmstudio": "LM Studio",
     "ollama": "Ollama",
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
@@ -644,7 +654,7 @@
     "think-tokens": "设置思考令牌预算（支持 8096、8k、10.5k、0.5M 等格式）",
     "tokens": "报告当前聊天上下文使用的令牌数量",
     "undo": "撤消 Aider 完成的最后一次 git 提交",
-    "web": "抓取网页并存储在上下文中"
+    "web": "抓取网页内容并保存到文件。使用 /web url [文件] 格式，其中 [文件] 为可选参数"
   },
   "telemetry": {
     "title": "遥测信息",

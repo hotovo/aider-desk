@@ -13,6 +13,9 @@ const MCP_SERVER_EXAMPLE_JSON = `{
     "puppeteer": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "remote": {
+      "url": "http://localhost:8080"
     }
   }
 }`;
@@ -21,21 +24,33 @@ const MCP_SERVER_EXAMPLE_NO_PARENT = `{
   "puppeteer": {
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+  },
+  "remote": {
+    "url": "http://localhost:8080"
   }
 }`;
 
 const MCP_SERVER_EXAMPLE_BARE = `"puppeteer": {
   "command": "npx",
   "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+},
+"remote": {
+  "url": "http://localhost:8080"
 }`;
 
 const McpServersRecordSchema = z.record(
-  z.object({
-    command: z.string(),
-    args: z.array(z.string()).readonly(),
-    env: z.record(z.string()).readonly().optional(),
-    enabled: z.boolean().optional(),
-  }),
+  z.union([
+    z.object({
+      command: z.string(),
+      args: z.array(z.string()).readonly().optional(),
+      env: z.record(z.string()).readonly().optional(),
+      url: z.undefined().optional(),
+    }),
+    z.object({
+      url: z.string().url(),
+      headers: z.record(z.string()).readonly().optional(),
+    }),
+  ]),
 );
 
 export const McpServerConfigSchema = z.union([

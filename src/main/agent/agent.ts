@@ -8,6 +8,7 @@ import {
   APICallError,
   type CoreMessage,
   type CoreUserMessage,
+  type FinishReason,
   generateText,
   InvalidToolArgumentsError,
   NoSuchToolError,
@@ -71,7 +72,7 @@ export class Agent {
     }
   }
 
-  private async getFileContentForPrompt(files: ContextFile[], project: Project): Promise<string> {
+  private async getFilesContentForPrompt(files: ContextFile[], project: Project): Promise<string> {
     const fileSections = await Promise.all(
       files.map(async (file) => {
         try {
@@ -85,7 +86,13 @@ export class Agent {
           }
 
           // Read file as text
-          const content = await fs.readFile(filePath, 'utf8');
+          const fileContent = await fs.readFile(filePath, 'utf8');
+
+          // Add line numbers to content
+          const lines = fileContent.split('\n');
+          const numberedLines = lines.map((line, index) => `${index + 1} | ${line}`);
+          const content = numberedLines.join('\n');
+
           return {
             path: file.path,
             content,
@@ -105,12 +112,12 @@ export class Agent {
       .filter(Boolean)
       .map((file) => {
         const filePath = path.isAbsolute(file!.path) ? path.relative(project.baseDir, file!.path) : file!.path;
-        return `File: ${filePath}\n\`\`\`\n${file!.content}\n\`\`\`\n\n`;
+        return `<file>\n  <path>${filePath}</path>\n  <content-with-line-numbers>\n${file!.content}</content-with-line-numbers>\n</file>`;
       })
       .join('\n\n'); // Join sections into a single string
   }
 
-  private async getContextFilesMessages(project: Project, contextFiles: ContextFile[]): Promise<CoreMessage[]> {
+  private async getContextFilesMessages(project: Project, profile: AgentProfile, contextFiles: ContextFile[]): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];
 
     // Filter out rule files as they are already included in the system prompt
@@ -135,35 +142,40 @@ export class Agent {
 
       // Process readonly files first
       if (readOnlyFiles.length > 0) {
-        const fileContent = await this.getFileContentForPrompt(readOnlyFiles, project);
+        const fileContent = await this.getFilesContentForPrompt(readOnlyFiles, project);
         if (fileContent) {
           messages.push({
             role: 'user',
             content:
-              'The following files are included in the Aider context for reference purposes only. These files are READ-ONLY, and their content is provided below. Do not attempt to edit these files:\n\n' +
+              (profile.useAiderTools
+                ? 'The following files are already part of the Aider context as READ-ONLY reference material. You can analyze and reference their content, but you must NOT modify, edit, or suggest changes to these files. Use them only for understanding context and making informed decisions about other files:\n\n'
+                : 'The following files are provided as READ-ONLY reference material. You can analyze and reference their content, but you must NOT modify, edit, or suggest changes to these files. Use them only for understanding context and making informed decisions:\n\n') +
               fileContent,
           });
           messages.push({
             role: 'assistant',
-            content: 'OK, I will use these files as references and will not try to edit them.',
+            content: 'Understood. I will use the provided files as read-only references and will not attempt to modify their content.',
           });
         }
       }
 
       // Process editable files
       if (editableFiles.length > 0) {
-        const fileContent = await this.getFileContentForPrompt(editableFiles, project);
+        const fileContent = await this.getFilesContentForPrompt(editableFiles, project);
         if (fileContent) {
           messages.push({
             role: 'user',
             content:
-              'The following files are currently in the Aider context and are available for editing. Their content, as provided below, is up-to-date:\n\n' +
+              (profile.useAiderTools
+                ? 'The following files are available for editing and modification. These files are already loaded in the Aider context, so you can directly use Aider tools to modify them without needing to add them to the context first. The content shown below is current and up-to-date:\n\n'
+                : 'The following files are available for editing and modification. The content shown below is current and up-to-date, so you can reference it directly without needing to read the files again. You may suggest changes or modifications to these files:\n\n') +
               fileContent,
           });
           messages.push({
             role: 'assistant',
-            content:
-              "OK, I understand. These are files already added in the Aider context, so I don't have to re-add them. Their content is up-to-date, so I don't have to read them again, unless I have changed them meanwhile.",
+            content: profile.useAiderTools
+              ? 'Acknowledged. These files are already part of the Aider context and are available for direct editing using Aider tools. I do not need to re-add them.'
+              : 'Understood. The content of these files is current, and I will refer to them as editable files without needing to read them again.',
           });
         }
       }
@@ -550,7 +562,7 @@ export class Agent {
       };
 
       let iterationCount = 0;
-      let unknownRetries = 0;
+      let retryCount = 0;
 
       while (true) {
         logger.info(`Starting iteration ${iterationCount}`);
@@ -567,7 +579,8 @@ export class Agent {
         let iterationError: unknown | null = null;
         let currentResponseId: null | string = null;
         let hasReasoning: boolean = false;
-        let finishReason = 'unknown';
+        let finishReason: null | FinishReason = null;
+        let responseMessages: CoreMessage[] = [];
 
         const result = streamText({
           providerOptions,
@@ -580,6 +593,9 @@ export class Agent {
           maxTokens: profile.maxTokens,
           maxRetries: 5,
           temperature: profile.temperature,
+          experimental_telemetry: {
+            isEnabled: true,
+          },
           onError: ({ error }) => {
             if (effectiveAbortSignal?.aborted) {
               return;
@@ -671,6 +687,7 @@ export class Agent {
 
             currentResponseId = null;
             hasReasoning = false;
+            responseMessages = stepResult.response.messages;
           },
           onFinish: ({ finishReason }) => {
             logger.info(`onFinish prompt finished. Reason: ${finishReason}`);
@@ -696,18 +713,22 @@ export class Agent {
           }
         }
 
-        const { messages: responseMessages } = await result.response;
-        finishReason = await result.finishReason;
-
         messages.push(...responseMessages);
         resultMessages.push(...responseMessages);
 
-        if (finishReason === 'unknown' && unknownRetries < 3) {
-          logger.warn('Unknown finish reason. Retrying.');
-          unknownRetries++;
+        if ((finishReason === 'unknown' || finishReason === 'other') && retryCount < 3) {
+          logger.warn(`Finish reason: ${finishReason}. Retrying...`);
+          retryCount++;
           continue;
         }
-        unknownRetries = 0;
+        retryCount = 0;
+
+        if (finishReason === 'length') {
+          project.addLogMessage(
+            'warning',
+            'The Agent has reached the maximum number of allowed tokens. To allow more tokens, go to Settings -> Agent -> Parameters and increase Max Tokens.',
+          );
+        }
 
         if (finishReason !== 'tool-calls') {
           logger.info(`Prompt finished. Reason: ${finishReason}`);
@@ -722,7 +743,7 @@ export class Agent {
 
       logger.error('Error running prompt:', error);
       if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
-        project.addLogMessage('error', `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> Agent -> Providers.`);
+        project.addLogMessage('error', `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> Providers.`);
       } else {
         project.addLogMessage('error', `Error running MCP servers: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -800,7 +821,7 @@ export class Agent {
 
     // Add context files with content or just list of working files
     if (profile.includeContextFiles) {
-      const contextFilesMessages = await this.getContextFilesMessages(project, contextFiles);
+      const contextFilesMessages = await this.getContextFilesMessages(project, profile, contextFiles);
       messages.push(...contextFilesMessages);
     } else {
       const workingFilesMessages = await this.getWorkingFilesMessages(contextFiles);

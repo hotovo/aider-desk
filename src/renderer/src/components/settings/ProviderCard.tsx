@@ -3,6 +3,8 @@ import {
   isBedrockProvider,
   isDeepseekProvider,
   isGeminiProvider,
+  isGroqProvider,
+  isLmStudioProvider,
   isOllamaProvider,
   isOpenAiCompatibleProvider,
   isOpenAiProvider,
@@ -21,6 +23,8 @@ import {
   BedrockParameters,
   DeepseekParameters,
   GeminiParameters,
+  GroqParameters,
+  LmStudioParameters,
   OllamaParameters,
   OpenAiCompatibleParameters,
   OpenAiParameters,
@@ -55,6 +59,12 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
     }
     if (isGeminiProvider(provider)) {
       return <GeminiParameters provider={provider} onChange={onProviderChange} />;
+    }
+    if (isGroqProvider(provider)) {
+      return <GroqParameters provider={provider} onChange={onProviderChange} />;
+    }
+    if (isLmStudioProvider(provider)) {
+      return <LmStudioParameters provider={provider} onChange={onProviderChange} />;
     }
     if (isDeepseekProvider(provider)) {
       return <DeepseekParameters provider={provider} onChange={onProviderChange} />;

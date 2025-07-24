@@ -164,6 +164,10 @@
     "useSearchGrounding": "Use Search grounding",
     "useSearchGroundingTooltip": "When enabled, the model will use search results to ground its responses, improving accuracy and relevance."
   },
+  "groq": {
+    "apiKey": "API Key",
+    "modelPlaceholder": "e.g. moonshotai/kimi-k2-instruct"
+  },
   "deepseek": {
     "apiKey": "API Key"
   },
@@ -188,11 +192,17 @@
     "autoCacheLabel": "Use Auto Cache",
     "autoCacheTooltip": "This will instruct the router to attempt to cache the response from the provider. If a similar request has been cached previously, it might be served from the cache (depending on the provider’s caching strategy and TTL)."
   },
+  "lmstudio": {
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
+  },
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "groq": "Groq",
+    "lmstudio": "LM Studio",
     "ollama": "Ollama",
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
@@ -650,7 +660,7 @@
     "think-tokens": "Set the thinking token budget (supports formats like 8096, 8k, 10.5k, 0.5M)",
     "tokens": "Report on the number of tokens used by the current chat context",
     "undo": "Undo the last git commit if it was done by Aider",
-    "web": "Scrape a webpage, and store in the context"
+    "web": "Scrape a webpage and save it to a file. Use /web url [file] with optional [file]."
   },
   "telemetry": {
     "title": "Telemetry Information",

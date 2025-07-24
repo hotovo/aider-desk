@@ -1,4 +1,4 @@
-import { Remark } from 'react-remark';
+import ReactMarkdown from 'react-markdown';
 
 import { BaseDialog } from '@/components/common/BaseDialog';
 
@@ -12,7 +12,7 @@ export const MarkdownInfoDialog = ({ title, text, onClose }: Props) => {
   return (
     <BaseDialog title={title} onClose={onClose} width={640} closeOnEscape={true}>
       <div className="prose prose-sm prose-invert max-w-none">
-        <Remark>{text}</Remark>
+        <ReactMarkdown>{text}</ReactMarkdown>
       </div>
     </BaseDialog>
   );

@@ -17,7 +17,18 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 
-export type LlmProviderName = 'openai' | 'anthropic' | 'gemini' | 'bedrock' | 'deepseek' | 'openai-compatible' | 'ollama' | 'openrouter' | 'requesty';
+export type LlmProviderName =
+  | 'openai'
+  | 'anthropic'
+  | 'gemini'
+  | 'lmstudio'
+  | 'bedrock'
+  | 'deepseek'
+  | 'openai-compatible'
+  | 'ollama'
+  | 'openrouter'
+  | 'requesty'
+  | 'groq';
 
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -33,6 +44,8 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'bedrock',
   'deepseek',
   'gemini',
+  'groq',
+  'lmstudio',
   'ollama',
   'openai',
   'openai-compatible',
@@ -60,13 +73,27 @@ export interface GeminiProvider extends LlmProviderBase {
   thinkingBudget: number;
   useSearchGrounding: boolean;
 }
+
 export const isGeminiProvider = (provider: LlmProviderBase): provider is GeminiProvider => provider.name === 'gemini';
+
+export interface LmStudioProvider extends LlmProviderBase {
+  name: 'lmstudio';
+  baseUrl: string;
+}
+export const isLmStudioProvider = (provider: LlmProviderBase): provider is LmStudioProvider => provider.name === 'lmstudio';
 
 export interface DeepseekProvider extends LlmProviderBase {
   name: 'deepseek';
   apiKey: string;
 }
 export const isDeepseekProvider = (provider: LlmProviderBase): provider is DeepseekProvider => provider.name === 'deepseek';
+
+export interface GroqProvider extends LlmProviderBase {
+  name: 'groq';
+  apiKey: string;
+  models: string[];
+}
+export const isGroqProvider = (provider: LlmProviderBase): provider is GroqProvider => provider.name === 'groq';
 
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
@@ -107,17 +134,21 @@ export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
   | GeminiProvider
+  | LmStudioProvider
   | BedrockProvider
   | DeepseekProvider
+  | GroqProvider
   | OpenAiCompatibleProvider
   | OllamaProvider
   | OpenRouterProvider
   | RequestyProvider;
 
 export const DEFAULT_AGENT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string[]>> = {
-  openai: ['gpt-4o-mini', 'o4-mini', 'gpt-4.1', 'gpt-4.1-mini'],
+  openai: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o-mini', 'o4-mini'],
   anthropic: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
   gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
+  groq: ['moonshotai/kimi-k2-instruct'],
+  lmstudio: ['qwen/qwen3-8b'],
   deepseek: ['deepseek-chat'],
   bedrock: ['us.anthropic.claude-3-7-sonnet-20250219-v1:0', 'anthropic.claude-3-7-sonnet-20250219-v1:0'],
   openrouter: ['anthropic/claude-sonnet-4'],
@@ -230,6 +261,13 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           customBaseUrl: '',
         } satisfies GeminiProvider;
         break;
+      case 'groq':
+        provider = {
+          name: 'groq',
+          apiKey: '',
+          models: [],
+        } satisfies GroqProvider;
+        break;
       case 'deepseek':
         provider = {
           name: 'deepseek',
@@ -255,7 +293,7 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
       case 'ollama':
         provider = {
           name: 'ollama',
-          baseUrl: 'http://localhost:11434/api',
+          baseUrl: '',
         } satisfies OllamaProvider;
         break;
       case 'openrouter':
@@ -264,6 +302,12 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           apiKey: '',
           models: [],
         } satisfies OpenRouterProvider;
+        break;
+      case 'lmstudio':
+        provider = {
+          name: 'lmstudio',
+          baseUrl: '',
+        } satisfies LmStudioProvider;
         break;
       case 'requesty':
         provider = {

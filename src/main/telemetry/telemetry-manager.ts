@@ -33,17 +33,29 @@ export class TelemetryManager {
   }
 
   async init(): Promise<void> {
-    this.client = new PostHog(POSTHOG_PUBLIC_API_KEY, {
-      host: POSTHOG_HOST,
-    });
-    logger.info('TelemetryManager initialized for PostHog.');
-    this.client.identify({
-      distinctId: this.distinctId,
-      properties: {
-        os: process.platform,
-        version: app.getVersion(),
-      },
-    });
+    try {
+      await import('./open-telemetry');
+
+      this.client = new PostHog(POSTHOG_PUBLIC_API_KEY, {
+        host: POSTHOG_HOST,
+      });
+      logger.info('TelemetryManager initialized for PostHog.');
+      this.client.identify({
+        distinctId: this.distinctId,
+        properties: {
+          os: process.platform,
+          version: app.getVersion(),
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to initialize TelemetryManager:', error);
+      if (this.client) {
+        await this.client.shutdown().catch((shutdownError) => {
+          logger.error('Error shutting down PostHog client during failed initialization:', shutdownError);
+        });
+        this.client = undefined;
+      }
+    }
   }
 
   async destroy(): Promise<void> {
@@ -115,7 +127,7 @@ export class TelemetryManager {
     });
   }
 
-  captureCustomCommand(commandName: string, argsCount: number) {
+  captureCustomCommand(commandName: string, argsCount: number, mode: Mode) {
     if (!this.store.getSettings().telemetryEnabled) {
       return;
     }
@@ -125,6 +137,7 @@ export class TelemetryManager {
       properties: {
         commandName,
         argsCount,
+        mode,
       },
     });
   }

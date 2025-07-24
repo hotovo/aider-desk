@@ -12,12 +12,12 @@ import { vim } from '@replit/codemirror-vim';
 import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, RefObject } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useDebounce } from 'react-use';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdPlaylistRemove, MdStop } from 'react-icons/md';
 
-import { MessagesRef } from '@/components/message/Messages';
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
@@ -89,7 +89,7 @@ type Props = {
   showFileDialog: (readOnly: boolean) => void;
   addFiles?: (filePaths: string[], readOnly?: boolean) => void;
   clearMessages: () => void;
-  scrapeWeb: (url: string) => void;
+  scrapeWeb: (url: string, filePath?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
   interruptResponse: () => void;
@@ -100,7 +100,6 @@ type Props = {
   disabled?: boolean;
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
-  messagesRef: RefObject<MessagesRef>;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -130,12 +129,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       disabled = false,
       promptBehavior,
       clearLogMessages,
-      messagesRef,
     }: Props,
     ref,
   ) => {
     const { t } = useTranslation();
     const [text, setText] = useState('');
+    const [debouncedText, setDebouncedText] = useState('');
     const [placeholderIndex] = useState(Math.floor(Math.random() * 16));
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
@@ -193,7 +192,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           const customCmds = customCommands.map((cmd) => `/${cmd.name}`);
           return {
             from: 0,
-            options: [...COMMANDS, ...customCmds].map((cmd) => ({ label: cmd, type: 'keyword' })),
+            options: [...COMMANDS, ...customCmds].map((cmd) => ({
+              label: cmd,
+              type: 'keyword',
+            })),
             validFor: /^\/\w*$/,
           };
         }
@@ -205,16 +207,30 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       };
     };
 
-    const historyItems = inputHistory.slice(0, historyLimit).reverse();
+    useDebounce(
+      () => {
+        setDebouncedText(text);
+        setHighlightedHistoryItemIndex(0);
+      },
+      30,
+      [text],
+    );
+
+    const allHistoryItems =
+      historyMenuVisible && debouncedText.trim().length > 0
+        ? inputHistory.filter((item) => item.toLowerCase().includes(debouncedText.trim().toLowerCase()))
+        : inputHistory;
+
+    const historyItems = allHistoryItems.slice(0, historyLimit);
 
     const loadMoreHistory = useCallback(() => {
-      if (historyLimit < inputHistory.length) {
-        const additional = Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length - historyLimit);
+      if (historyLimit < allHistoryItems.length) {
+        const additional = Math.min(HISTORY_MENU_CHUNK_SIZE, allHistoryItems.length - historyLimit);
         setHistoryLimit((prev) => prev + additional);
-        setHighlightedHistoryItemIndex((prev) => prev + additional);
+        setHighlightedHistoryItemIndex((prev) => prev + 1);
         setKeepHistoryHighlightTop(true);
       }
-    }, [historyLimit, inputHistory.length]);
+    }, [historyLimit, allHistoryItems.length]);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -279,9 +295,22 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             openModelSelector?.(args);
             break;
           case '/web': {
-            const url = text.replace('/web', '').trim();
+            const commandArgs = text.replace('/web', '').trim();
+            const firstSpaceIndex = commandArgs.indexOf(' ');
+            let url: string;
+            let filePath: string | undefined;
+
+            if (firstSpaceIndex === -1) {
+              url = commandArgs; // Only URL provided
+            } else {
+              url = commandArgs.substring(0, firstSpaceIndex);
+              filePath = commandArgs.substring(firstSpaceIndex + 1).trim();
+              if (filePath === '') {
+                filePath = undefined; // If only spaces after URL, treat as no filePath
+              }
+            }
             prepareForNextPrompt();
-            scrapeWeb(url);
+            scrapeWeb(url, filePath);
             break;
           }
           case '/clear':
@@ -408,8 +437,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     }, [text, invokeCommand]);
 
     useEffect(() => {
-      setHistoryLimit(Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length));
-    }, [inputHistory]);
+      setHistoryLimit(Math.min(HISTORY_MENU_CHUNK_SIZE, allHistoryItems.length));
+    }, [allHistoryItems.length]);
 
     useEffect(() => {
       if (keepHistoryHighlightTop) {
@@ -448,9 +477,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     };
 
     const handleSubmit = () => {
-      setTimeout(() => {
-        messagesRef.current?.scrollToBottom();
-      }, 50);
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
           // Check if it's a custom command
@@ -458,12 +484,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           const customCommand = customCommands.find((command) => command.name === cmd);
 
           if (customCommand) {
-            if (mode !== 'agent') {
-              showErrorNotification(t('promptField.agentModeOnly'));
-              return;
-            }
-
-            window.api.runCustomCommand(baseDir, cmd, args);
+            window.api.runCustomCommand(baseDir, cmd, args, mode);
             prepareForNextPrompt();
             return;
           }
@@ -480,7 +501,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         } else {
           runPrompt(text);
           prepareForNextPrompt();
-          messagesRef.current?.scrollToBottom();
         }
       }
     };
@@ -491,7 +511,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         const commandName = item.slice(1);
         const customCommand = customCommands.find((cmd) => cmd.name === commandName);
         if (customCommand) {
-          return mode === 'agent' ? [customCommand.description, false] : [t('commands.agentModeOnly'), true];
+          return [customCommand.description, false];
         }
 
         if (item === '/init' && mode !== 'agent') {
@@ -519,8 +539,13 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           } else if (historyMenuVisible) {
             setHistoryMenuVisible(false);
             view.dispatch({
-              changes: { from: 0, insert: historyItems[highlightedHistoryItemIndex] },
-              selection: { anchor: historyItems[highlightedHistoryItemIndex].length },
+              changes: {
+                from: 0,
+                insert: historyItems[historyItems.length - 1 - highlightedHistoryItemIndex],
+              },
+              selection: {
+                anchor: historyItems[historyItems.length - 1 - highlightedHistoryItemIndex].length,
+              },
             });
           } else if (!processing || question) {
             handleSubmit();
@@ -590,21 +615,34 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         run: startCompletion,
       },
       {
+        key: '/',
+        preventDefault: true,
+        run: (view) => {
+          const cursorPos = view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: cursorPos, insert: '/' },
+            selection: { anchor: cursorPos + 1 },
+          });
+          if (cursorPos === 0) {
+            startCompletion(view);
+          }
+          return true;
+        },
+      },
+      {
         key: '@',
         preventDefault: true,
         run: (view) => {
           const cursorPos = view.state.selection.main.head;
           const textBeforeCursor = view.state.doc.sliceString(0, cursorPos);
 
-          if (!/\S$/.test(textBeforeCursor)) {
-            view.dispatch({
-              changes: { from: cursorPos, insert: '@' },
-              selection: { anchor: cursorPos + 1 },
-            });
+          view.dispatch({
+            changes: { from: cursorPos, insert: '@' },
+            selection: { anchor: cursorPos + 1 },
+          });
 
-            if (promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
-              startCompletion(view);
-            }
+          if (!/\S$/.test(textBeforeCursor) && promptBehavior.suggestionMode === SuggestionMode.MentionAtSign) {
+            startCompletion(view);
           }
           return true;
         },
@@ -613,19 +651,20 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       {
         key: 'ArrowUp',
         run: () => {
-          if (!text && historyItems.length > 0) {
+          if (historyItems.length > 0) {
             if (historyMenuVisible) {
-              if (highlightedHistoryItemIndex === 0) {
+              if (highlightedHistoryItemIndex === historyItems.length - 1) {
                 loadMoreHistory();
               } else {
-                setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
+                setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
               }
-            } else {
+              return true;
+            } else if (!text) {
               setHistoryLimit(HISTORY_MENU_CHUNK_SIZE);
               setHistoryMenuVisible(true);
-              setHighlightedHistoryItemIndex(historyItems.length - 1);
+              setHighlightedHistoryItemIndex(0);
+              return true;
             }
-            return true;
           }
           return false;
         },
@@ -634,7 +673,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         key: 'ArrowDown',
         run: () => {
           if (historyMenuVisible) {
-            setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
+            setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
             return true;
           }
           return false;
@@ -737,7 +776,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                   },
                 }),
                 autocompletion({
-                  override: question ? [] : [completionSource],
+                  override: question || historyMenuVisible ? [] : [completionSource],
                   activateOnTyping:
                     promptBehavior.suggestionMode === SuggestionMode.Automatically || promptBehavior.suggestionMode === SuggestionMode.MentionAtSign,
                   activateOnTypingDelay: promptBehavior.suggestionDelay,

@@ -1,8 +1,9 @@
 import clsx from 'clsx';
+import { ReactNode } from 'react';
 
 type Props = {
   className?: string;
-  children?: string;
+  children?: ReactNode;
 };
 
 export const CodeInline = ({ className, children }: Props) => {

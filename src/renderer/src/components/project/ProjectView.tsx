@@ -111,6 +111,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   }, [projectSettings, settings, modelsInfo, aiderModelsData?.info?.max_input_tokens]);
 
+  const todoListVisible = useMemo(() => {
+    return projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
+  }, [projectSettings, settings]);
+
   useEffect(() => {
     window.api.startProject(project.baseDir);
 
@@ -544,24 +548,17 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
-  const scrapeWeb = async (url: string) => {
+  const scrapeWeb = async (url: string, filePath?: string) => {
     setProcessing(true);
     const loadingMessage: LoadingMessage = {
       id: uuidv4(),
       type: 'loading',
       content: `Scraping ${url}...`,
     };
-    setMessages((prevMessages) => [...prevMessages, loadingMessage]);
 
+    setMessages((prevMessages) => [...prevMessages, loadingMessage]);
     try {
-      await window.api.scrapeWeb(project.baseDir, url);
-      const infoMessage: LogMessage = {
-        id: uuidv4(),
-        level: 'info',
-        type: 'log',
-        content: `Content from ${url} has been added to the chat.`,
-      };
-      setMessages((prevMessages) => [...prevMessages, infoMessage]);
+      await window.api.scrapeWeb(project.baseDir, url, filePath);
     } catch (error) {
       if (error instanceof Error) {
         const getMessage = () => {
@@ -788,7 +785,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             redoLastUserPrompt={handleRedoLastUserPrompt}
             editLastUserMessage={handleEditLastUserMessage}
           />
-          {!loading && todoItems.length > 0 && (
+          {!loading && todoItems.length > 0 && todoListVisible && (
             <TodoWindow
               todos={todoItems}
               onToggleTodo={handleToggleTodo}
@@ -842,7 +839,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             disabled={!aiderModelsData}
             promptBehavior={settings.promptBehavior}
             clearLogMessages={clearLogMessages}
-            messagesRef={messagesRef}
           />
         </div>
       </div>

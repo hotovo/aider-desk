@@ -85,6 +85,8 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
     'websocket-client==1.8.0',
     'nest-asyncio==1.6.0',
     'boto3==1.38.25',
+    'opentelemetry-api==1.35.0',
+    'opentelemetry-sdk==1.35.0',
     ...extraPackages,
   ];
 

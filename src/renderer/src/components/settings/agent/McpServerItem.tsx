@@ -36,15 +36,19 @@ export const McpServerItem = ({
   const { t } = useTranslation();
   const [tools, setTools] = useState<McpTool[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadTools = async () => {
       try {
         const loadedTools = await window.api.loadMcpServerTools(serverName, config);
         setTools(loadedTools);
+        setError(null);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to load MCP server tools:', error);
+        setTools(null);
+        setError(error instanceof Error ? error.message : String(error));
       } finally {
         setLoading(false);
       }
@@ -111,6 +115,8 @@ export const McpServerItem = ({
       <Accordion title={renderTitle()} buttonClassName="px-2" chevronPosition="right">
         {loading ? (
           <div className="text-xs text-neutral-500 p-2">{t('common.loading')}</div>
+        ) : error ? (
+          <div className="text-xs text-red-400 p-4">{error}</div>
         ) : tools && tools.length > 0 ? (
           <div>
             <div className="text-xs p-2 pt-1 rounded mt-1 space-y-2">

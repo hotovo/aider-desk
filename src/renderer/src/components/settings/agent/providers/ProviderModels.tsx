@@ -11,9 +11,10 @@ import { IconButton } from '@/components/common/IconButton';
 type Props = {
   models: string[];
   onChange: (updatedModels: string[]) => void;
+  placeholder?: string;
 };
 
-export const ProviderModels = ({ models, onChange }: Props) => {
+export const ProviderModels = ({ models, onChange, placeholder }: Props) => {
   const { t } = useTranslation();
 
   const [newModel, setNewModel] = useState('');
@@ -48,7 +49,13 @@ export const ProviderModels = ({ models, onChange }: Props) => {
         </div>
       </div>
       <div className="flex items-end space-x-2">
-        <Input type="text" value={newModel} onChange={(e) => setNewModel(e.target.value)} placeholder={t('model.placeholder')} wrapperClassName="flex-grow" />
+        <Input
+          type="text"
+          value={newModel}
+          onChange={(e) => setNewModel(e.target.value)}
+          placeholder={placeholder || t('model.placeholder')}
+          wrapperClassName="flex-grow"
+        />
         <Button onClick={handleAddModel} disabled={!newModel.trim()} variant="text">
           <HiPlus className="mr-1 w-3 h-3" />
           {t('common.add')}

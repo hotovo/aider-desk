@@ -12,8 +12,4 @@ jobs:
     steps:
       - name: Add wladimiiir as reviewer
         uses: kentaro-m/auto-assign-action@v2.0.0
-        with:
-          addReviewers: true
-          reviewers:
-            - wladimiiir
 

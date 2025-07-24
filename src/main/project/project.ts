@@ -47,6 +47,7 @@ import {
   isDeepseekProvider,
   isOpenRouterProvider,
   isBedrockProvider,
+  isLmStudioProvider,
   OpenAiCompatibleProvider,
   AnthropicProvider,
   BedrockProvider,
@@ -55,6 +56,7 @@ import {
   GeminiProvider,
   OpenAiProvider,
   OllamaProvider,
+  LmStudioProvider,
 } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
@@ -62,7 +64,7 @@ import { parse } from '@dotenvx/dotenvx';
 
 import type { SimpleGit } from 'simple-git';
 
-import { getInitProjectPrompt, getCompactConversationPrompt, getSystemPrompt, CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS } from '@/agent/prompts';
+import { getInitProjectPrompt, getCompactConversationPrompt, getSystemPrompt } from '@/agent/prompts';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
 import { TaskManager } from '@/tasks';
 import { SessionManager } from '@/session';
@@ -73,8 +75,8 @@ import logger from '@/logger';
 import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
-import { CustomCommandManager } from '@/custom-commands';
-import { TelemetryManager } from '@/telemetry';
+import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
+import { TelemetryManager, getLangfuseEnvironmentVariables } from '@/telemetry';
 
 export class Project {
   private process: ChildProcessWithoutNullStreams | null = null;
@@ -339,6 +341,7 @@ export class Project {
       ...process.env,
       ...environmentVariables,
       PYTHONPATH: AIDER_DESK_CONNECTOR_DIR,
+      PYTHONUTF8: process.env.AIDER_DESK_OMIT_PYTHONUTF8 ? undefined : '1',
       BASE_DIR: this.baseDir,
       CONNECTOR_SERVER_URL: `http://localhost:${SERVER_PORT}`,
     };
@@ -392,6 +395,7 @@ export class Project {
     const openAiCompatibleProvider = getLlmProviderConfig('openai-compatible', settings) as OpenAiCompatibleProvider;
     const anthropicProvider = getLlmProviderConfig('anthropic', settings) as AnthropicProvider;
     const geminiProvider = getLlmProviderConfig('gemini', settings) as GeminiProvider;
+    const lmStudioProvider = getLlmProviderConfig('lmstudio', settings) as LmStudioProvider;
     const deepseekProvider = getLlmProviderConfig('deepseek', settings) as DeepseekProvider;
     const openRouterProvider = getLlmProviderConfig('openrouter', settings) as OpenRouterProvider;
     const bedrockProvider = getLlmProviderConfig('bedrock', settings) as BedrockProvider;
@@ -407,6 +411,7 @@ export class Project {
         : {}),
       ANTHROPIC_API_KEY: (isAnthropicProvider(anthropicProvider) && anthropicProvider.apiKey) || undefined,
       GEMINI_API_KEY: (isGeminiProvider(geminiProvider) && geminiProvider.apiKey) || undefined,
+      LM_STUDIO_API_KEY: (isLmStudioProvider(lmStudioProvider) && lmStudioProvider.baseUrl) || undefined,
       DEEPSEEK_API_KEY: (isDeepseekProvider(deepseekProvider) && deepseekProvider.apiKey) || undefined,
       OPENROUTER_API_KEY: (isOpenRouterProvider(openRouterProvider) && openRouterProvider.apiKey) || undefined,
       AWS_REGION: (isBedrockProvider(bedrockProvider) && bedrockProvider.region) || undefined,
@@ -414,6 +419,13 @@ export class Project {
       AWS_SECRET_ACCESS_KEY: (isBedrockProvider(bedrockProvider) && bedrockProvider.secretAccessKey) || undefined,
       OLLAMA_API_BASE: (ollamaBaseUrl && (ollamaBaseUrl.endsWith('/api') ? ollamaBaseUrl.slice(0, -4) : ollamaBaseUrl)) || undefined,
       ...parse(settings.aider.environmentVariables),
+      ...this.getTelemetryEnvironmentVariablesForAider(settings),
+    };
+  }
+
+  private getTelemetryEnvironmentVariablesForAider(settings: SettingsData): Record<string, unknown> {
+    return {
+      ...getLangfuseEnvironmentVariables(this.baseDir, settings),
     };
   }
 
@@ -543,28 +555,32 @@ export class Project {
         throw new Error('No active Agent profile found');
       }
 
-      return this.runAgent(profile, prompt);
+      return this.runPromptInAgent(profile, prompt);
     } else {
-      const responses = await this.sendPrompt(prompt, mode);
-
-      // add messages to session
-      this.sessionManager.addContextMessage(MessageRole.User, prompt);
-      for (const response of responses) {
-        if (response.reflectedMessage) {
-          this.sessionManager.addContextMessage(MessageRole.User, response.reflectedMessage);
-        }
-        if (response.content) {
-          this.sessionManager.addContextMessage(MessageRole.Assistant, response.content);
-        }
-      }
-
-      this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
-
-      return responses;
+      return this.runPromptInAider(prompt, mode);
     }
   }
 
-  public async runAgent(
+  public async runPromptInAider(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
+    const responses = await this.sendPrompt(prompt, mode);
+
+    // add messages to session
+    this.sessionManager.addContextMessage(MessageRole.User, prompt);
+    for (const response of responses) {
+      if (response.reflectedMessage) {
+        this.sessionManager.addContextMessage(MessageRole.User, response.reflectedMessage);
+      }
+      if (response.content) {
+        this.sessionManager.addContextMessage(MessageRole.Assistant, response.content);
+      }
+    }
+
+    this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
+
+    return responses;
+  }
+
+  public async runPromptInAgent(
     profile: AgentProfile,
     prompt: string,
     contextMessages?: ContextMessage[],
@@ -931,6 +947,11 @@ export class Project {
       question: questionData,
       answer: storedAnswer,
     });
+
+    // At this point, this.currentQuestion should be null due to the loop above,
+    // or it was null initially.
+    this.currentQuestion = questionData;
+
     if (storedAnswer) {
       logger.info('Found stored answer for question:', {
         baseDir: this.baseDir,
@@ -941,13 +962,11 @@ export class Project {
       if (!questionData.internal) {
         // Auto-answer based on stored preference
         this.answerQuestion(storedAnswer);
+      } else {
+        this.currentQuestion = null;
       }
       return Promise.resolve([storedAnswer, undefined]);
     }
-
-    // At this point, this.currentQuestion should be null due to the loop above,
-    // or it was null initially.
-    this.currentQuestion = questionData;
 
     this.notifyIfEnabled('Waiting for your input', questionData.text);
 
@@ -1170,7 +1189,7 @@ export class Project {
   public addUserMessage(content: string, mode?: Mode) {
     logger.info('Adding user message:', {
       baseDir: this.baseDir,
-      content,
+      content: content.substring(0, 100),
       mode,
     });
 
@@ -1516,7 +1535,7 @@ export class Project {
       };
 
       // Run the agent with the modified profile
-      await this.runAgent(initProjectRulesAgentProfile, getInitProjectPrompt());
+      await this.runPromptInAgent(initProjectRulesAgentProfile, getInitProjectPrompt());
 
       // Check if the PROJECT.md file was created
       const projectRulesPath = path.join(this.baseDir, '.aider-desk', 'rules', 'PROJECT.md');
@@ -1606,7 +1625,7 @@ export class Project {
     });
   }
 
-  public async runCustomCommand(commandName: string, args: string[]): Promise<void> {
+  public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void> {
     const command = this.customCommandManager.getCommand(commandName);
     if (!command) {
       this.addLogMessage('error', `Custom command '${commandName}' not found.`);
@@ -1617,9 +1636,8 @@ export class Project {
       return;
     }
 
-    logger.info('Running custom command:', { commandName, args });
-
-    this.telemetryManager.captureCustomCommand(commandName, args.length);
+    logger.info('Running custom command:', { commandName, args, mode });
+    this.telemetryManager.captureCustomCommand(commandName, args.length, mode);
 
     if (args.length < command.arguments.filter((arg) => arg.required !== false).length) {
       this.addLogMessage(
@@ -1632,27 +1650,52 @@ export class Project {
       });
       return;
     }
-    let prompt = command.template;
-    for (let i = 0; i < command.arguments.length; i++) {
-      const value = args[i] !== undefined ? args[i] : '';
-      prompt = prompt.replaceAll(`{{${i + 1}}}`, value);
+
+    this.addLogMessage('loading', 'Executing custom command...');
+
+    let prompt: string;
+    try {
+      prompt = await this.customCommandManager.processCommandTemplate(command, args);
+    } catch (error) {
+      // Handle shell command execution errors
+      if (error instanceof ShellCommandError) {
+        this.addLogMessage(
+          'error',
+          `Shell command failed: ${error.command}
+${error.stderr}`,
+          true,
+        );
+        return;
+      }
+      // Re-throw other errors
+      throw error;
     }
-    // Optionally handle @file references here if needed
-    const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
-    if (!profile) {
-      this.addLogMessage('error', 'No active Agent profile found');
-      return;
-    }
-    const systemPrompt = await getSystemPrompt(this.baseDir, profile, CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS);
 
     await this.addToInputHistory(`/${commandName}${args.length > 0 ? ' ' + args.join(' ') : ''}`);
 
-    // for now only in agent mode
-    this.addUserMessage(prompt, 'agent');
+    this.addUserMessage(prompt, mode);
     this.addLogMessage('loading');
 
-    const messages = command.includeContext === false ? [] : undefined;
-    const contextFiles = command.includeContext === false ? [] : undefined;
-    await this.runAgent(profile, prompt, messages, contextFiles, systemPrompt);
+    try {
+      if (mode === 'agent') {
+        // Agent mode logic
+        const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
+        if (!profile) {
+          this.addLogMessage('error', 'No active Agent profile found');
+          return;
+        }
+        const systemPrompt = await getSystemPrompt(this.baseDir, profile);
+
+        const messages = command.includeContext === false ? [] : undefined;
+        const contextFiles = command.includeContext === false ? [] : undefined;
+        await this.runPromptInAgent(profile, prompt, messages, contextFiles, systemPrompt);
+      } else {
+        // All other modes (code, ask, architect)
+        await this.runPromptInAider(prompt, mode);
+      }
+    } finally {
+      // Clear loading message after execution completes (success or failure)
+      this.addLogMessage('loading', '', true);
+    }
   }
 }
