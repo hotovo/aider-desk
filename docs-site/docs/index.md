@@ -1,4 +1,11 @@
 
+---
+sidebar_position: 1
+title: Introduction
+slug: /
+sidebar_label: 'Getting Started'
+---
+
 # ✨ AiderDesk: AI-Powered Coding
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hotovo/aider-desk)

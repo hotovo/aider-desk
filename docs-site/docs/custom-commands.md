@@ -108,7 +108,7 @@ The message should be a single line, starting with a type (e.g., `feat`, `fix`, 
 Provide the commit message in the following format:
 
 ```
-<type>[optional scope]: <description>
+<type></type>[optional scope]: <description></description>
 ```
 
 Only answer with the commit message, nothing else.
