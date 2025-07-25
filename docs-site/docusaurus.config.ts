@@ -64,11 +64,11 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: '../resources/icon.png',
+    image: './img/icon.png',
     navbar: {
       logo: {
         alt: 'My Site Logo',
-        src: '../resources/icon.png',
+        src: '/img/icon.png',
       },
       items: [
         {
@@ -80,17 +80,6 @@ const config: Config = {
     },
     footer: {
       style: 'dark',
-      links: [
-        {
-          title: 'More',
-          items: [
-            {
-              label: 'GitHub',
-              href: 'https://github.com/hotovo/aider-desk',
-            },
-          ],
-        },
-      ],
       copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
     },
     prism: {
