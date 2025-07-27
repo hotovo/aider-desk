@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.24.0]
 
 - support for headers in streamable MCP servers
 - added search to input history
