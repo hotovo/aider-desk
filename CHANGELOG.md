@@ -5,6 +5,7 @@
 - support for headers in streamable MCP servers
 - added search to input history
 - added Langfuse OpenTelemetry instrumentation for Agent and Aider
+- added action to clears all todo list tasks
 
 ## [0.23.0]
 
