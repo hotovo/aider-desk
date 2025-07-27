@@ -13,6 +13,7 @@ import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/type
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useDebounce } from 'react-use';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdPlaylistRemove, MdStop } from 'react-icons/md';
@@ -133,6 +134,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
   ) => {
     const { t } = useTranslation();
     const [text, setText] = useState('');
+    const [debouncedText, setDebouncedText] = useState('');
     const [placeholderIndex] = useState(Math.floor(Math.random() * 16));
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
@@ -205,16 +207,30 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       };
     };
 
-    const historyItems = inputHistory.slice(0, historyLimit).reverse();
+    useDebounce(
+      () => {
+        setDebouncedText(text);
+        setHighlightedHistoryItemIndex(0);
+      },
+      30,
+      [text],
+    );
+
+    const allHistoryItems =
+      historyMenuVisible && debouncedText.trim().length > 0
+        ? inputHistory.filter((item) => item.toLowerCase().includes(debouncedText.trim().toLowerCase()))
+        : inputHistory;
+
+    const historyItems = allHistoryItems.slice(0, historyLimit);
 
     const loadMoreHistory = useCallback(() => {
-      if (historyLimit < inputHistory.length) {
-        const additional = Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length - historyLimit);
+      if (historyLimit < allHistoryItems.length) {
+        const additional = Math.min(HISTORY_MENU_CHUNK_SIZE, allHistoryItems.length - historyLimit);
         setHistoryLimit((prev) => prev + additional);
-        setHighlightedHistoryItemIndex((prev) => prev + additional);
+        setHighlightedHistoryItemIndex((prev) => prev + 1);
         setKeepHistoryHighlightTop(true);
       }
-    }, [historyLimit, inputHistory.length]);
+    }, [historyLimit, allHistoryItems.length]);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -421,8 +437,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     }, [text, invokeCommand]);
 
     useEffect(() => {
-      setHistoryLimit(Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length));
-    }, [inputHistory]);
+      setHistoryLimit(Math.min(HISTORY_MENU_CHUNK_SIZE, allHistoryItems.length));
+    }, [allHistoryItems.length]);
 
     useEffect(() => {
       if (keepHistoryHighlightTop) {
@@ -525,10 +541,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             view.dispatch({
               changes: {
                 from: 0,
-                insert: historyItems[highlightedHistoryItemIndex],
+                insert: historyItems[historyItems.length - 1 - highlightedHistoryItemIndex],
               },
               selection: {
-                anchor: historyItems[highlightedHistoryItemIndex].length,
+                anchor: historyItems[historyItems.length - 1 - highlightedHistoryItemIndex].length,
               },
             });
           } else if (!processing || question) {
@@ -635,19 +651,20 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       {
         key: 'ArrowUp',
         run: () => {
-          if (!text && historyItems.length > 0) {
+          if (historyItems.length > 0) {
             if (historyMenuVisible) {
-              if (highlightedHistoryItemIndex === 0) {
+              if (highlightedHistoryItemIndex === historyItems.length - 1) {
                 loadMoreHistory();
               } else {
-                setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
+                setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
               }
-            } else {
+              return true;
+            } else if (!text) {
               setHistoryLimit(HISTORY_MENU_CHUNK_SIZE);
               setHistoryMenuVisible(true);
-              setHighlightedHistoryItemIndex(historyItems.length - 1);
+              setHighlightedHistoryItemIndex(0);
+              return true;
             }
-            return true;
           }
           return false;
         },
@@ -656,7 +673,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         key: 'ArrowDown',
         run: () => {
           if (historyMenuVisible) {
-            setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
+            setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
             return true;
           }
           return false;
@@ -759,7 +776,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                   },
                 }),
                 autocompletion({
-                  override: question ? [] : [completionSource],
+                  override: question || historyMenuVisible ? [] : [completionSource],
                   activateOnTyping:
                     promptBehavior.suggestionMode === SuggestionMode.Automatically || promptBehavior.suggestionMode === SuggestionMode.MentionAtSign,
                   activateOnTypingDelay: promptBehavior.suggestionDelay,

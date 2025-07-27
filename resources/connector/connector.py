@@ -15,6 +15,7 @@ from aider.main import main as cli_main
 from aider.utils import is_image_file
 from concurrent.futures import ThreadPoolExecutor
 import nest_asyncio
+import litellm
 import types
 nest_asyncio.apply()
 
@@ -1087,6 +1088,9 @@ def main(argv=None):
     server_url = os.getenv("CONNECTOR_SERVER_URL", "http://localhost:24337")
     base_dir = os.getenv("BASE_DIR", os.getcwd())
 
+    # Telemetry
+    setup_telemetry()
+
     # Create connector instance
     connector = Connector(
       base_dir,
@@ -1111,6 +1115,17 @@ def main(argv=None):
   except Exception as e:
     sys.stderr.write(f"Unexpected error: {str(e)}\n")
     sys.exit(4)
+
+def setup_telemetry():
+  langfuse_public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
+  langfuse_secret_key = os.getenv("LANGFUSE_SECRET_KEY")
+  langfuse_host = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+
+  if langfuse_public_key and langfuse_secret_key:
+    os.environ["LANGFUSE_PUBLIC_KEY"] = langfuse_public_key
+    os.environ["LANGFUSE_SECRET_KEY"] = langfuse_secret_key
+    os.environ["LANGFUSE_HOST"] = langfuse_host
+    litellm.callbacks = ["langfuse_otel"]
 
 
 if __name__ == "__main__":

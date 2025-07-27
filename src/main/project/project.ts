@@ -76,7 +76,7 @@ import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
-import { TelemetryManager } from '@/telemetry';
+import { TelemetryManager, getLangfuseEnvironmentVariables } from '@/telemetry';
 
 export class Project {
   private process: ChildProcessWithoutNullStreams | null = null;
@@ -419,6 +419,13 @@ export class Project {
       AWS_SECRET_ACCESS_KEY: (isBedrockProvider(bedrockProvider) && bedrockProvider.secretAccessKey) || undefined,
       OLLAMA_API_BASE: (ollamaBaseUrl && (ollamaBaseUrl.endsWith('/api') ? ollamaBaseUrl.slice(0, -4) : ollamaBaseUrl)) || undefined,
       ...parse(settings.aider.environmentVariables),
+      ...this.getTelemetryEnvironmentVariablesForAider(settings),
+    };
+  }
+
+  private getTelemetryEnvironmentVariablesForAider(settings: SettingsData): Record<string, unknown> {
+    return {
+      ...getLangfuseEnvironmentVariables(this.baseDir, settings),
     };
   }
 
@@ -1498,6 +1505,19 @@ export class Project {
       items: updatedItems,
     });
     return updatedItems;
+  }
+
+  public async clearAllTodos(): Promise<TodoItem[]> {
+    const data = await this.readTodoFile();
+    if (!data) {
+      throw new Error('No todo items found to clear');
+    }
+
+    await this.writeTodoFile({
+      initialUserPrompt: data.initialUserPrompt,
+      items: [],
+    });
+    return [];
   }
 
   async initProjectRulesFile(): Promise<void> {

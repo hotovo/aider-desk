@@ -48,6 +48,7 @@ const McpServersRecordSchema = z.record(
     }),
     z.object({
       url: z.string().url(),
+      headers: z.record(z.string()).readonly().optional(),
     }),
   ]),
 );

@@ -23,6 +23,22 @@ The configuration is a JSON object that specifies how to run the MCP server. Aid
 
 The configuration requires a `command` and an array of `args`. You can also provide environment variables in an `env` object.
 
+For streamable http servers, you can also specify `url` and `headers`.
+
+**Example: Adding a streamable http server**
+```json
+{
+  "mcpServers": {
+    "http-server": {
+      "url": "http://localhost:8000/mcp",
+      "headers": {
+        "x-api-key": "super-secret-key"
+      }
+    }
+  }
+}
+```
+
 **Example: Adding a Puppeteer server for web browsing**
 ```json
 {

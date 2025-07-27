@@ -459,7 +459,8 @@
     "saveTodo": "Save",
     "cancelTodo": "Cancel",
     "noTodos": "No todo items",
-    "confirmDelete": "Are you sure you want to delete this todo item?"
+    "confirmDelete": "Are you sure you want to delete this todo item?",
+    "clearAllTodos": "Clear all tasks"
   },
   "tool": {
     "noDescription": "No description",
