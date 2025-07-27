@@ -1,5 +1,11 @@
 # Changelog
 
+## [UNRELEASED]
+
+- support for headers in streamable MCP servers
+- added search to input history
+- added Langfuse OpenTelemetry instrumentation for Agent and Aider
+
 ## [0.23.0]
 
 - fixed laggy prompt field clearing after submitting message

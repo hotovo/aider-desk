@@ -252,7 +252,7 @@ export class CustomCommandManager {
 
       logger.info('Shell command executed successfully:', {
         command: commandPortion,
-        stdout: stdout.trim(),
+        stdout: stdout.trim().slice(0, 100),
       });
 
       return this.formatShellOutput(commandPortion, stdout.trim());

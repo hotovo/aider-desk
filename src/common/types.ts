@@ -330,6 +330,7 @@ export interface McpServerConfig {
   args?: string[];
   env?: Readonly<Record<string, string>>;
   url?: string;
+  headers?: Readonly<Record<string, string>>;
 }
 
 export interface VersionsInfo {

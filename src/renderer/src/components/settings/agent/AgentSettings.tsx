@@ -220,7 +220,13 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
   };
 
   const handleMcpServersReload = async () => {
-    void window.api.reloadMcpServers(mcpServers, true);
+    try {
+      void window.api.reloadMcpServers(mcpServers, true);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to reload MCP servers:', error);
+    }
+
     setMcpServersReloadTrigger((prev) => prev + 1);
   };
 

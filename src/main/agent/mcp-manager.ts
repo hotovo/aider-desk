@@ -243,12 +243,22 @@ export class McpManager {
     } else if (config.url) {
       const baseUrl = new URL(config.url);
       try {
-        const transport = new StreamableHTTPClientTransport(new URL(baseUrl));
+        const transport = new StreamableHTTPClientTransport(new URL(baseUrl), {
+          requestInit: {
+            headers: config.headers,
+          },
+        });
         logger.debug(`Connecting to MCP server using Streamable HTTP: ${serverName}`);
         await client.connect(transport);
         logger.debug(`Connected to MCP server: ${serverName}`);
-      } catch {
-        const sseTransport = new SSEClientTransport(baseUrl);
+      } catch (error) {
+        logger.debug(`Failed to connect to MCP server using Streamable HTTP: ${serverName}`, { message: (error as Error).message });
+
+        const sseTransport = new SSEClientTransport(baseUrl, {
+          requestInit: {
+            headers: config.headers,
+          },
+        });
         logger.debug(`Connecting to MCP server using SSE: ${serverName}`);
         await client.connect(sseTransport);
         logger.debug(`Connected to MCP server: ${serverName}`);
@@ -292,7 +302,7 @@ export class McpManager {
         return connector.tools;
       } catch (error) {
         logger.error(`Error retrieving tools for MCP server ${serverName}, client promise rejected:`, error);
-        return null;
+        throw error;
       }
     }
     logger.warn(`No MCP client promise found for server: ${serverName}`);

@@ -593,6 +593,9 @@ export class Agent {
           maxTokens: profile.maxTokens,
           maxRetries: 5,
           temperature: profile.temperature,
+          experimental_telemetry: {
+            isEnabled: true,
+          },
           onError: ({ error }) => {
             if (effectiveAbortSignal?.aborted) {
               return;
