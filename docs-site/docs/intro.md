@@ -9,8 +9,6 @@ sidebar_label: 'Introduction'
 
 AiderDesk supercharges your coding workflow by combining the power of [aider](https://aider.chat) with an intuitive desktop interface, enabling seamless AI-assisted code generation, modification, and project management.
 
-AiderDesk supercharges your coding workflow by combining the power of [aider](https://aider.chat) with an intuitive desktop interface, enabling seamless AI-assisted code generation, modification, and project management.
-
 ## Getting Started
 
 ### Installation

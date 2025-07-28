@@ -55,13 +55,37 @@
 
 .heroBanner {
   padding: 2rem 0;
-  text-align: center;
   position: relative;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.heroContent {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.heroText {
+  text-align: left;
+  flex: 1;
+  min-width: 300px;
+}
+
+.heroIcon {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .heroIcon {
@@ -78,9 +102,17 @@
 }
 
 @media screen and (max-width: 996px) {
+  .heroContent {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  .heroText {
+    text-align: center;
+  }
   .heroIcon {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
   }
 }
 
