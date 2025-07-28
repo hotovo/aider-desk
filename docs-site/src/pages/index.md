@@ -1,53 +1,65 @@
 ---
-title: Welcome
+title: AiderDesk - AI-Powered Coding Assistant
 ---
-# 👋 Welcome to AiderDesk Documentation
 
-**AiderDesk** is your AI-powered coding companion that brings the power of [aider](https://aider.chat) into a beautiful desktop interface. This documentation will help you get the most out of AiderDesk's features and capabilities.
+<div align="center">
+  <h1>Supercharge Your Coding with AI</h1>
+  <p>The most powerful way to integrate AI into your development workflow</p>
+</div>
 
-## ✨ Why Choose AiderDesk?
+## Transform How You Code
 
-AiderDesk supercharges your development workflow with:
+AiderDesk brings the power of AI directly into your development environment, making coding faster, smarter, and more enjoyable.
 
-* **🤖 AI-Powered Coding** - Generate and modify code with natural language
-* **📂 Multi-Project Management** - Work across multiple codebases seamlessly
-* **🔌 IDE Integration** - Sync with VSCode and IntelliJ IDEA
-* **🛠️ Agent Mode** - Autonomous AI agent for complex tasks
-* **📊 Cost Tracking** - Monitor token usage and expenses
-* **🔍 Smart Context** - Intelligent file management for better AI responses
+<div align="center">
+  <img src="../../docs/images/screenshot.png" alt="AiderDesk Interface" width="800"/>
+</div>
 
-## 🚀 Quick Start
+## Why Developers Love AiderDesk
 
-1. **Download** the latest version from [Releases](https://github.com/hotovo/aider-desk/releases)
-2. **Install** for your OS (Windows/macOS/Linux)
-3. **Configure** your AI provider API keys
-4. **Open** a project and start coding with AI!
+<div class="features">
+  <div class="feature">
+    <h3>AI-Powered Assistance</h3>
+    <p>Generate, modify, and explain code with natural language prompts</p>
+  </div>
 
-```bash
-# For developers wanting to run from source:
-git clone https://github.com/hotovo/aider-desk.git
-cd aider-desk
-npm install
-npm run dev
-```
+  <div class="feature">
+    <h3>Context-Aware</h3>
+    <p>Understands your entire project for more relevant suggestions</p>
+  </div>
 
-## 📚 Explore the Docs
+  <div class="feature">
+    <h3>️Lightning Fast</h3>
+    <p>Get AI assistance without leaving your development flow</p>
+  </div>
+</div>
 
-- [Getting Started Guide](/docs/intro) - First steps with AiderDesk
-- [Agent Mode](/docs/agent-mode) - Using the autonomous AI agent
-- [Custom Commands](/docs/custom-commands) - Create your own commands
-- [Context Management](/docs/context) - Mastering file context
-- [REST API](/docs/api) - Integration options
+## Perfect For
 
-## 🔗 Important Links
+ **Full-stack developers** looking to accelerate their workflow
+ **Teams** wanting consistent, high-quality code
+ **Open source maintainers** handling complex projects
+ **Learners** who want to understand code better
 
-* [GitHub Repository](https://github.com/hotovo/aider-desk) - Source code and issues
-* [Latest Releases](https://github.com/hotovo/aider-desk/releases) - Download binaries
-* [VSCode Extension](https://marketplace.visualstudio.com/items?itemName=hotovo-sk.aider-desk-connector) - IDE integration
-* [IntelliJ Plugin](https://plugins.jetbrains.com/plugin/26313-aiderdesk-connector) - JetBrains IDE support
+## Get Started in Seconds
 
-## 💬 Need Help?
+<div align="center">
+  <a href="https://github.com/hotovo/aider-desk/releases" class="button">Download Now</a>
+  <p>Available for Windows, macOS and Linux</p>
+</div>
 
-Join our community discussions on [GitHub Discussions](https://github.com/hotovo/aider-desk/discussions) or open an issue if you encounter any problems.
+## See It In Action
 
-Happy coding with AI! 🎉
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=9oyIdntCh7g">
+    <img src="https://img.youtube.com/vi/9oyIdntCh7g/0.jpg" alt="AiderDesk Demo" width="600"/>
+  </a>
+</div>
+
+## Connect With Us
+
+Have questions or feedback? Join our growing community!
+
+[GitHub Discussions](https://github.com/hotovo/aider-desk/discussions) |
+[Twitter](https://twitter.com/aiderdesk) |
+[Discord](https://discord.gg/aiderdesk)

@@ -43,7 +43,7 @@ const config: Config = {
       'classic',
       {
         docs: {
-          routeBasePath: '/intro',
+          routeBasePath: '/docs',
           sidebarPath: './sidebars.ts',
         },
         blog: {
@@ -107,10 +107,10 @@ const config: Config = {
       },
       items: [
         {
-          to: '/intro',
+          to: '/docs',
           label: 'DOCS',
           position: 'right',
-          activeBaseRegex: '^/intro',
+          activeBaseRegex: '^/docs',
         },
         {
           href: 'https://github.com/hotovo/aider-desk',
