@@ -43,7 +43,7 @@ const Home: React.FC = () => {
 
       <section className={styles.container}>
         <h2>Perfect For</h2>
-        <ul className={styles.textCenter}>
+        <ul className={`${styles.textCenter} ${styles.noBullets}`}>
           <li>
             <strong>Full-stack developers</strong> looking to accelerate their workflow
           </li>

@@ -15,7 +15,7 @@
   flex-wrap: wrap;
   gap: 2rem;
   justify-content: center;
-  margin: 2rem 0;
+  margin-top: 2rem;
 }
 
 .feature {
@@ -28,6 +28,12 @@
   text-align: center;
 }
 
+.noBullets {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
 .buttons {
   display: flex;
   align-items: center;
@@ -36,7 +42,7 @@
 }
 
 .heroBanner {
-  padding: 4rem 0;
+  padding: 1rem 0;
   text-align: center;
   position: relative;
   overflow: hidden;
