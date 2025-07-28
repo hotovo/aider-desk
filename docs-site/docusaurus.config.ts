@@ -103,7 +103,7 @@ const config: Config = {
       logo: {
         alt: 'AiderDesk Logo',
         src: '/img/icon.png',
-        href: '/welcome-page',
+        href: '/welcome',
       },
       items: [
         {
