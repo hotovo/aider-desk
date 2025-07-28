@@ -44,13 +44,12 @@
 
 .docButton {
   background-color: var(--ifm-color-primary-light-grey);
-  color: black;
+  color: var(--ifm-navbar-background-color-black-to-grey);
   transition: all 0.2s ease;
 }
 
 .docButton:hover {
   background-color: var(--ifm-color-primary-dark-grey);
-  color: black;
   text-decoration: none;
 }
 
