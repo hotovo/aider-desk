@@ -39,6 +39,19 @@
   align-items: center;
   justify-content: center;
   margin: 2rem 0;
+  gap: 1rem;
+}
+
+.docButton {
+  background-color: var(--ifm-color-primary-light-grey);
+  color: black;
+  transition: all 0.2s ease;
+}
+
+.docButton:hover {
+  background-color: var(--ifm-color-primary-dark-grey);
+  color: black;
+  text-decoration: none;
 }
 
 .heroBanner {

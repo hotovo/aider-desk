@@ -65,7 +65,7 @@ const Home: React.FC = () => {
           <a href="https://github.com/hotovo/aider-desk/releases" className="button button--primary button--lg">
             Download Now
           </a>
-          <a href="/docs" className="button button--secondary button--lg" style={{ marginLeft: '1rem' }}>
+          <a href="/docs" className={`button button--lg ${styles.docButton}`}>
             Documentation
           </a>
         </div>
