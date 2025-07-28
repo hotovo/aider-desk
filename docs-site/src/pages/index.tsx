@@ -7,8 +7,11 @@ const Home: React.FC = () => {
   return (
     <Layout>
       <div className={styles.heroBanner}>
-        <h1>Supercharge Your Coding with AI</h1>
-        <p>The most powerful way to integrate AI into your development workflow</p>
+        <img src="/img/icon.png" alt="AiderDesk Logo" className={styles.heroIcon} />
+        <div>
+          <h1>Supercharge Your Coding with AI</h1>
+          <p>The most powerful way to integrate AI into your development workflow</p>
+        </div>
       </div>
 
       <section className={styles.container}>
