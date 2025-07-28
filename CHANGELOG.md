@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- fixed last session reload after restart
+
 ## [0.24.0]
 
 - support for headers in streamable MCP servers
