@@ -743,6 +743,16 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
+  const handleClearAllTodos = async () => {
+    try {
+      const updatedTodos = await window.api.clearAllTodos(project.baseDir);
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error clearing all todos:', error);
+    }
+  };
+
   if (!projectSettings || !settings) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
@@ -792,6 +802,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               onAddTodo={handleAddTodo}
               onUpdateTodo={handleUpdateTodo}
               onDeleteTodo={handleDeleteTodo}
+              onClearAllTodos={handleClearAllTodos}
             />
           )}
         </div>

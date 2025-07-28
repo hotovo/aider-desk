@@ -1,11 +1,15 @@
 # Changelog
 
 ## [UNRELEASED]
+- fixed last session reload after restart
+
+## [0.24.0]
 
 - support for headers in streamable MCP servers
 - added search to input history
 - added Langfuse OpenTelemetry instrumentation for Agent and Aider
-- fixed last session reload after restart
+- added action to clears all todo list tasks
+- fixed architect mode interruption while editing files
 
 ## [0.23.0]
 

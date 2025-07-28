@@ -66,6 +66,8 @@ async def run_editor_coder_stream(architect_coder, connector):
   whole_content = ""
   # run the editor coder
   for chunk in editor_coder.run_stream(architect_coder.partial_response_content):
+    if connector.interrupted:
+      break
     # add small sleeps here to allow other coroutines to run
     await connector.sio.emit('message', {
       "action": "response",
