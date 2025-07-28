@@ -1,3 +1,9 @@
+---
+sidebar_position: 12
+title: "Aider Tools"
+sidebar_label: "Aider Tools"
+---
+
 # Aider Tools in Agent Mode
 
 When **Agent Mode** is active, the agent can interact with the underlying Aider instance using a dedicated set of tools. This allows the agent to leverage Aider's powerful code generation and modification capabilities as part of a larger, autonomous task.

@@ -1,3 +1,9 @@
+---
+sidebar_position: 15
+title: "Settings Overview"
+sidebar_label: "Settings"
+---
+
 # Settings Overview
 
 AiderDesk provides a centralized location to manage all your configurations. You can access it by clicking the gear icon in the top-right corner of the application.

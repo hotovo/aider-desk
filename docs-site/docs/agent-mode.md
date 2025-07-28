@@ -1,3 +1,9 @@
+---
+sidebar_position: 9
+title: "Agent Mode"
+sidebar_label: "Agent Mode"
+---
+
 # Agent Mode
 
 Agent Mode in AiderDesk transforms the application into a powerful, autonomous assistant capable of handling complex software engineering tasks. Powered by the Vercel AI SDK, the agent can plan, reason, and utilize a suite of tools to achieve its goals with minimal human intervention.

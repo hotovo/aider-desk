@@ -1,3 +1,9 @@
+---
+sidebar_position: 27
+title: "Telemetry"
+sidebar_label: "Telemetry"
+---
+
 # Telemetry in AiderDesk
 
 AiderDesk collects anonymous telemetry data to help us understand how the application is used and to identify areas for improvement. This data is crucial for making informed decisions about future development, fixing bugs, and enhancing user experience.

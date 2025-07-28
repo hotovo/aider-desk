@@ -1,3 +1,9 @@
+---
+sidebar_position: 18
+title: "Prompt Behavior"
+sidebar_label: "Prompt Behavior"
+---
+
 # Prompt Behavior Settings
 
 Customize the behavior of the prompt input field to match your workflow. These settings can be found in **Settings > General > Prompt Behavior**.

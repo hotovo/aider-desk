@@ -1,3 +1,9 @@
+---
+sidebar_position: 20
+title: "Web Scraping"
+sidebar_label: "Web Scraping"
+---
+
 # Web Scraping
 
 AiderDesk includes a powerful web scraping feature that allows you to pull content from any URL directly into your chat context. This is incredibly useful for providing the AI with external information, such as documentation, articles, or API references.

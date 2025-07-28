@@ -1,3 +1,9 @@
+---
+sidebar_position: 21
+title: "IDE Integration"
+sidebar_label: "IDE Integration"
+---
+
 # IDE Integration
 
 AiderDesk is designed to work seamlessly with your favorite Integrated Development Environment (IDE). Through dedicated plugins and extensions, you can automatically sync the files you are working on with AiderDesk's context, creating a fluid and efficient workflow.

@@ -1,3 +1,9 @@
+---
+sidebar_position: 14
+title: "MCP Servers"
+sidebar_label: "MCP Servers"
+---
+
 # MCP Servers
 
 AiderDesk's Agent Mode can be extended with external tools through the **Model Context Protocol (MCP)**. By connecting to MCP servers, you can grant the agent new capabilities, such as web browsing, accessing documentation, or interacting with custom internal services.

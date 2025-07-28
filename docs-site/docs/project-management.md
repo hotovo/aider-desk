@@ -1,3 +1,9 @@
+---
+sidebar_position: 3
+title: "Project Management"
+sidebar_label: "Projects"
+---
+
 # Project Management
 
 AiderDesk is designed to handle multiple projects simultaneously, allowing you to seamlessly switch between different codebases without losing context.

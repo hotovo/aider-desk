@@ -1,3 +1,9 @@
+---
+sidebar_position: 17
+title: "Project-Specific Rules"
+sidebar_label: "Project Rules"
+---
+
 # Project-Specific Rules
 
 To ensure the AI agent adheres to the specific conventions, architecture, and best practices of your project, you can provide it with custom rule files. This is a powerful feature for tailoring the agent's behavior and improving the quality of its output.

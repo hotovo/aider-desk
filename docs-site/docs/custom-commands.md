@@ -1,3 +1,9 @@
+---
+sidebar_position: 6
+title: "Custom Commands"
+sidebar_label: "Custom Commands"
+---
+
 # Custom Commands
 
 AiderDesk allows you to define and use custom commands to automate repetitive tasks or extend AiderDesk's functionality. These commands are defined in Markdown files with YAML front matter and can be executed directly from the prompt field.

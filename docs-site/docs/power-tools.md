@@ -1,3 +1,9 @@
+---
+sidebar_position: 13
+title: "Power Tools"
+sidebar_label: "Power Tools"
+---
+
 # Power Tools - AiderDesk User Guide
 
 Power tools are a collection of specialized AI tools that provide direct file system interaction and development operations within AiderDesk. They give the AI agent granular control over your project files and environment, enabling more efficient and targeted operations.

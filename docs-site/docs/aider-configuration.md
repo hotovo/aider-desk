@@ -1,3 +1,9 @@
+---
+sidebar_position: 16
+title: "Aider Configuration"
+sidebar_label: "Aider Configuration"
+---
+
 # Aider Configuration
 
 AiderDesk offers several ways to configure the underlying Aider engine, providing flexibility for advanced users. Configuration is loaded with the following priority (from highest to lowest):

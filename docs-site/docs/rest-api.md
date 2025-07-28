@@ -1,3 +1,9 @@
+---
+sidebar_position: 22
+title: "REST API"
+sidebar_label: "REST API"
+---
+
 # REST API
 
 AiderDesk exposes a REST API that allows external tools, such as IDE plugins, to interact with the application programmatically. The API runs on the same port as the main application, which defaults to `24337` but can be configured with the `AIDER_DESK_PORT` environment variable.

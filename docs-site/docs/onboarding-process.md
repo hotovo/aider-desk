@@ -1,3 +1,9 @@
+---
+sidebar_position: 2
+title: "Onboarding Process"
+sidebar_label: "Onboarding Process"
+---
+
 # Onboarding Process
 
 Welcome to AiderDesk! The first time you launch the application, you will be guided through a simple onboarding process to get everything set up for AI-powered development.

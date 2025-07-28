@@ -1,3 +1,9 @@
+---
+sidebar_position: 23
+title: "Compact Command"
+sidebar_label: "Compact"
+---
+
 # `/compact` Command
 
 The `/compact` command helps you summarize your conversation history with AiderDesk. This is particularly useful for long conversations, as it condenses the previous interactions into a concise summary, allowing the AI agent to maintain context more efficiently without being overwhelmed by excessive history.

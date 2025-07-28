@@ -1,3 +1,9 @@
+---
+sidebar_position: 8
+title: "Session Management"
+sidebar_label: "Sessions"
+---
+
 # Session Management
 
 AiderDesk's session management allows you to save and restore your work, ensuring you never lose context when switching between tasks or projects. A session includes the complete chat history and the list of files in the context.

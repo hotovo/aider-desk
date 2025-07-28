@@ -1,3 +1,9 @@
+---
+sidebar_position: 10
+title: "Project Analysis"
+sidebar_label: "Project Analysis"
+---
+
 # `/init` Command
 
 The `/init` command is a powerful feature that helps the AI agent understand the specifics of your project. It automatically analyzes your codebase and generates a special `PROJECT.md` file inside `.aider-desk/rules/` or your current project.

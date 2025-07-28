@@ -1,3 +1,9 @@
+---
+sidebar_position: 11
+title: "Task Management"
+sidebar_label: "Task Management"
+---
+
 # Task Management with the TODO List
 
 AiderDesk includes a task management system designed to help the agent track and complete complex, multi-step tasks. This feature is primarily used in **Agent Mode**.

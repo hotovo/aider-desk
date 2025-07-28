@@ -1,3 +1,9 @@
+---
+sidebar_position: 24
+title: "Custom Aider Version"
+sidebar_label: "Custom Aider Version"
+---
+
 # Using a Custom Aider Version
 
 AiderDesk allows you to specify a custom version of the `aider-chat` Python package to be used. This is particularly useful if you need to test a specific Aider release, a development branch, or even a local clone of the Aider repository.

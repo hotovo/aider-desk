@@ -2,13 +2,16 @@
 sidebar_position: 1
 title: Introduction
 slug: /
-sidebar_label: 'Intro'
+sidebar_label: 'Introduction'
 ---
-# INTRO
+
+# Introduction
 
 AiderDesk supercharges your coding workflow by combining the power of [aider](https://aider.chat) with an intuitive desktop interface, enabling seamless AI-assisted code generation, modification, and project management.
 
-## 🚀 Getting Started
+AiderDesk supercharges your coding workflow by combining the power of [aider](https://aider.chat) with an intuitive desktop interface, enabling seamless AI-assisted code generation, modification, and project management.
+
+## Getting Started
 
 ### Installation
 
@@ -85,7 +88,7 @@ Before getting started, configure these key settings:
    - Enable/disable automatic context sync
    - Set preferred diff view style
 
-## ✨ Key Features
+## Key Features
 
 - **AI-Powered Coding**:
   - Generate new code from natural language
@@ -103,7 +106,7 @@ Before getting started, configure these key settings:
   - Multiple AI provider support
   - Built-in diff viewer with side-by-side comparison
 
-## 👨‍💻 Development Setup
+## Development Setup
 If you want to run from source, you can follow these steps:
 
 ```bash
@@ -128,7 +131,7 @@ $ npm run build:mac
 $ npm run build:linux
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions from the community! Here's how you can help improve aider-desk:
 

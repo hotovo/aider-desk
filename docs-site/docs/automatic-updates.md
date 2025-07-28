@@ -1,3 +1,9 @@
+---
+sidebar_position: 26
+title: "Automatic Updates"
+sidebar_label: "Automatic Updates"
+---
+
 # Automatic Updates
 
 AiderDesk is designed to keep itself and the integrated Aider library up-to-date with minimal effort.

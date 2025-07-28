@@ -1,3 +1,9 @@
+---
+sidebar_position: 7
+title: "Reviewing Code Changes"
+sidebar_label: "Code Changes"
+---
+
 # Reviewing Code Changes
 
 One of AiderDesk's most powerful features is the ability to clearly visualize and manage the code changes proposed by the AI.

@@ -1,3 +1,9 @@
+---
+sidebar_position: 25
+title: "Extra Python Packages"
+sidebar_label: "Extra Python Packages"
+---
+
 # AIDER_DESK_EXTRA_PYTHON_PACKAGES
 
 The `AIDER_DESK_EXTRA_PYTHON_PACKAGES` environment variable allows you to install additional Python packages into AiderDesk's virtual environment. This can be useful for a few reasons:

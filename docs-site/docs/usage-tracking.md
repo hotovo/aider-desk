@@ -1,3 +1,9 @@
+---
+sidebar_position: 19
+title: "Usage and Cost Tracking"
+sidebar_label: "Usage Tracking"
+---
+
 # Usage and Cost Tracking
 
 AiderDesk provides detailed tools to help you monitor your token usage and associated costs, ensuring you stay in control of your spending.
