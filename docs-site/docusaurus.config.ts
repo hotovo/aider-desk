@@ -101,10 +101,17 @@ const config: Config = {
     // },
     navbar: {
       logo: {
-        alt: 'My Site Logo',
+        alt: 'AiderDesk Logo',
         src: '/img/icon.png',
+        href: '/welcome-page',
       },
       items: [
+        {
+          to: '/',
+          label: 'DOCS',
+          position: 'right',
+          activeBaseRegex: '^/(?!welcome-page)',
+        },
         {
           href: 'https://github.com/hotovo/aider-desk',
           label: 'GitHub',
