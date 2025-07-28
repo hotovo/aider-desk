@@ -1,5 +1,5 @@
 ---
-sidebar_position: 19
+sidebar_position: 1
 title: "Usage and Cost Tracking"
 sidebar_label: "Usage Tracking"
 ---

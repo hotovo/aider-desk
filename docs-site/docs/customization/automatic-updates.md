@@ -1,5 +1,5 @@
 ---
-sidebar_position: 26
+sidebar_position: 3
 title: "Automatic Updates"
 sidebar_label: "Automatic Updates"
 ---

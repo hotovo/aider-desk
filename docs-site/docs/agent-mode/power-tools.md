@@ -1,5 +1,5 @@
 ---
-sidebar_position: 13
+sidebar_position: 5
 title: "Power Tools"
 sidebar_label: "Power Tools"
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 14
+sidebar_position: 6
 title: "MCP Servers"
 sidebar_label: "MCP Servers"
 ---

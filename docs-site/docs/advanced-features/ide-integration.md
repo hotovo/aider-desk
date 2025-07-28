@@ -1,5 +1,5 @@
 ---
-sidebar_position: 21
+sidebar_position: 3
 title: "IDE Integration"
 sidebar_label: "IDE Integration"
 ---

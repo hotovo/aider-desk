@@ -1,6 +1,6 @@
 ---
-sidebar_position: 24
-title: "Custom Aider Version"
+sidebar_position: 1
+title: "Custom Aider Version" 
 sidebar_label: "Custom Aider Version"
 ---
 

@@ -1,6 +1,6 @@
 ---
-sidebar_position: 10
-title: "Project Analysis"
+sidebar_position: 2
+title: "Project Analysis" 
 sidebar_label: "Project Analysis"
 ---
 

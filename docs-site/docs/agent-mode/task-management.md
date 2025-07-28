@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 3
 title: "Task Management"
 sidebar_label: "Task Management"
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 16
+sidebar_position: 2
 title: "Aider Configuration"
 sidebar_label: "Aider Configuration"
 ---

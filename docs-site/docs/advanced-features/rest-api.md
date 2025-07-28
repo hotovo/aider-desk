@@ -1,5 +1,5 @@
 ---
-sidebar_position: 22
+sidebar_position: 4
 title: "REST API"
 sidebar_label: "REST API"
 ---

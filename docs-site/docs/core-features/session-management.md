@@ -31,3 +31,9 @@ Click the **History** icon (<svg xmlns="http://www.w3.org/2000/svg" width="16" h
 - **Export**:
     - **Export as Markdown**: Click the **Markdown** icon to save the current chat history as a markdown file.
     - **Export as Image**: Click the **Image** icon to save a screenshot of the current chat window as a PNG file.
+---
+sidebar_position: 5
+title: "Session Management"
+sidebar_label: "Sessions"
+slug: "/core-features/sessions"
+---

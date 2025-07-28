@@ -1,7 +1,8 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 title: "Onboarding Process"
-sidebar_label: "Onboarding Process"
+sidebar_label: "Onboarding"
+slug: "/getting-started/onboarding"
 ---
 
 # Onboarding Process

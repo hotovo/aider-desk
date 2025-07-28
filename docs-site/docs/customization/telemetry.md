@@ -1,5 +1,5 @@
 ---
-sidebar_position: 27
+sidebar_position: 4
 title: "Telemetry"
 sidebar_label: "Telemetry"
 ---

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 17
+sidebar_position: 3
 title: "Project-Specific Rules"
 sidebar_label: "Project Rules"
 ---

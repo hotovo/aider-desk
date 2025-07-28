@@ -1,5 +1,5 @@
 ---
-sidebar_position: 25
+sidebar_position: 2
 title: "Extra Python Packages"
 sidebar_label: "Extra Python Packages"
 ---

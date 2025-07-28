@@ -57,3 +57,9 @@ AiderDesk provides a set of built-in commands that you can use in the prompt fie
 - **/map-refresh**: Forces a refresh of the repository map.
 - **/commit**: Commits any unstaged changes in your repository.
 - **/init**: Initializes a `PROJECT.md` rule file for your project (only available in Agent Mode).
+---
+sidebar_position: 2
+title: "Commands Reference"
+sidebar_label: "Commands"
+slug: "/core-features/commands"
+---
