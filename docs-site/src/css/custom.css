@@ -19,6 +19,11 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
+/* Remove external link icon from navbar items */
+.navbar__item--no-external-icon svg {
+  display: none;
+}
+
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
   --ifm-color-primary: #25c2a0;

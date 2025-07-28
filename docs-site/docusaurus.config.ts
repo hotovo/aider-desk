@@ -108,7 +108,7 @@ const config: Config = {
       items: [
         {
           to: '/docs',
-          label: 'DOCS',
+          label: 'Docs',
           position: 'right',
           activeBaseRegex: '^/docs',
         },
@@ -116,6 +116,7 @@ const config: Config = {
           href: 'https://github.com/hotovo/aider-desk',
           label: 'GitHub',
           position: 'right',
+          className: 'navbar__item--no-external-icon',
         },
       ],
     },
