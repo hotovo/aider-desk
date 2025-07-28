@@ -1,3 +1,6 @@
+---
+title: Welcome
+---
 # 👋 Welcome to AiderDesk Documentation
 
 **AiderDesk** is your AI-powered coding companion that brings the power of [aider](https://aider.chat) into a beautiful desktop interface. This documentation will help you get the most out of AiderDesk's features and capabilities.
@@ -7,7 +10,7 @@
 AiderDesk supercharges your development workflow with:
 
 * **🤖 AI-Powered Coding** - Generate and modify code with natural language
-* **📂 Multi-Project Management** - Work across multiple codebases seamlessly  
+* **📂 Multi-Project Management** - Work across multiple codebases seamlessly
 * **🔌 IDE Integration** - Sync with VSCode and IntelliJ IDEA
 * **🛠️ Agent Mode** - Autonomous AI agent for complex tasks
 * **📊 Cost Tracking** - Monitor token usage and expenses
@@ -31,7 +34,7 @@ npm run dev
 ## 📚 Explore the Docs
 
 - [Getting Started Guide](/docs/intro) - First steps with AiderDesk
-- [Agent Mode](/docs/agent-mode) - Using the autonomous AI agent  
+- [Agent Mode](/docs/agent-mode) - Using the autonomous AI agent
 - [Custom Commands](/docs/custom-commands) - Create your own commands
 - [Context Management](/docs/context) - Mastering file context
 - [REST API](/docs/api) - Integration options

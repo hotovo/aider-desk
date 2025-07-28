@@ -43,7 +43,7 @@ const config: Config = {
       'classic',
       {
         docs: {
-          routeBasePath: '/',
+          routeBasePath: '/intro',
           sidebarPath: './sidebars.ts',
         },
         blog: {
@@ -103,14 +103,14 @@ const config: Config = {
       logo: {
         alt: 'AiderDesk Logo',
         src: '/img/icon.png',
-        href: '/welcome',
+        href: '/',
       },
       items: [
         {
-          to: '/',
+          to: '/intro',
           label: 'DOCS',
           position: 'right',
-          activeBaseRegex: '^/(?!welcome-page)',
+          activeBaseRegex: '^/intro',
         },
         {
           href: 'https://github.com/hotovo/aider-desk',
