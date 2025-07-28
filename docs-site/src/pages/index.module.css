@@ -3,6 +3,38 @@
  * and scoped locally.
  */
 
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  text-align: center;
+}
+
+.features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.feature {
+  flex: 1;
+  min-width: 250px;
+  max-width: 300px;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
 .heroBanner {
   padding: 4rem 0;
   text-align: center;
@@ -14,10 +46,8 @@
   .heroBanner {
     padding: 2rem;
   }
-}
 
-.buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  .feature {
+    min-width: 100%;
+  }
 }
