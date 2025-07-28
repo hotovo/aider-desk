@@ -7,7 +7,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'My Site',
-  themes: ['@docusaurus/theme-search-algolia'],
+  //themes: ['@docusaurus/theme-search-algolia'],
   tagline: 'Dinosaurs are cool',
   favicon: 'img/favicon.ico',
 
