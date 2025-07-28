@@ -17,7 +17,7 @@ const Home: React.FC = () => {
       </section>
 
       <div className={styles.container}>
-        <img src="../../docs/images/screenshot.png" alt="AiderDesk Interface" width="800" />
+        <img src="./img/screenshot.png" alt="AiderDesk Interface" />
       </div>
 
       <section className={styles.container}>
