@@ -21,6 +21,19 @@ const Home: React.FC = () => {
       </div>
 
       <section className={styles.container}>
+        <h2>Get Started in Seconds</h2>
+        <div className={styles.buttons}>
+          <a href="https://github.com/hotovo/aider-desk/releases" className="button button--primary button--lg">
+            Download Now
+          </a>
+          <a href="/docs" className={`button button--lg ${styles.docButton}`}>
+            Documentation
+          </a>
+        </div>
+        <p>Available for Windows, macOS and Linux</p>
+      </section>
+
+      <section className={styles.container}>
         <h2>Why Developers Love AiderDesk</h2>
 
         <div className={styles.features}>
@@ -57,19 +70,6 @@ const Home: React.FC = () => {
             <strong>Learners</strong> who want to understand code better
           </li>
         </ul>
-      </section>
-
-      <section className={styles.container}>
-        <h2>Get Started in Seconds</h2>
-        <div className={styles.buttons}>
-          <a href="https://github.com/hotovo/aider-desk/releases" className="button button--primary button--lg">
-            Download Now
-          </a>
-          <a href="/docs" className={`button button--lg ${styles.docButton}`}>
-            Documentation
-          </a>
-        </div>
-        <p>Available for Windows, macOS and Linux</p>
       </section>
 
       <section className={styles.container}>
