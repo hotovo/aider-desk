@@ -61,7 +61,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
         aggregatedMap.set(key, {
           ...row,
           project: row.project.split(/[\\/]/).pop() || row.project,
-          timestamp: key, // Use date string for display
+          timestamp: row.timestamp,
         });
       }
     });
@@ -90,6 +90,24 @@ export const UsageTable = ({ data, groupBy }: Props) => {
     );
   }, [aggregatedData]);
 
+  const formatDateByGroup = (date: Date, groupBy: GroupBy): string => {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // Months are 0-indexed
+
+    switch (groupBy) {
+      case GroupBy.Year:
+        return year.toString();
+      case GroupBy.Month:
+        return `${month}/${year}`;
+      case GroupBy.Day:
+        return date.toLocaleDateString();
+      case GroupBy.Hour:
+        return date.toLocaleTimeString([], { hour: '2-digit' });
+      default:
+        return date.toLocaleDateString();
+    }
+  };
+
   return (
     <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700 m-2">
       <div className="border border-neutral-800">
@@ -110,7 +128,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
           <tbody>
             {aggregatedData.map((row, index) => (
               <tr key={index} className="bg-neutral-900 border-b border-neutral-800 hover:bg-neutral-800/50 text-sm">
-                <td className="px-4 py-2 text-xs">{new Date(row.timestamp).toLocaleDateString()}</td>
+                <td className="px-4 py-2 text-xs">{formatDateByGroup(new Date(row.timestamp), groupBy)}</td>
                 <td className="px-4 py-2">
                   <div className="whitespace-pre-line text-xs">{row.project}</div>
                 </td>
