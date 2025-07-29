@@ -46,12 +46,14 @@ export const formatDateByGroup = (timestamp: string, groupBy: GroupBy): string =
     case GroupBy.Day:
       return date.toLocaleDateString();
     case GroupBy.Hour:
-      return date.toLocaleString([], {
-        year: 'numeric',
-        day: 'numeric',
-        month: 'numeric',
-        hour: '2-digit',
-      });
+      return date
+        .toLocaleString([], {
+          year: 'numeric',
+          day: 'numeric',
+          month: 'numeric',
+          hour: '2-digit',
+        })
+        .replace(',', '');
     default:
       return date.toLocaleDateString();
   }
