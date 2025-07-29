@@ -182,7 +182,10 @@ export const UsageDashboard = ({ onClose }: Props) => {
               { value: GroupBy.Year, label: t('usageDashboard.year') },
             ]}
             value={selectedGroupBy}
-            onChange={(value) => setSelectedGroupBy(value as GroupBy)}
+            onChange={(value) => {
+              setSelectedGroupBy(value as GroupBy);
+              void fetchData();
+            }}
             label={t('usageDashboard.groupBy')}
             className="min-w-[120px]"
           />
