@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+- added all option to usage dashboard period switch
+- added groupBy option to usage dashboard
+
 ## [0.24.0]
 
 - support for headers in streamable MCP servers
