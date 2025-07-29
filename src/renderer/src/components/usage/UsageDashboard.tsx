@@ -76,7 +76,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
       // This month
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     } else {
-      startDate = new Date(now.getFullYear(), 0, 1);
+      startDate = new Date(0);
     }
 
     setDateRange([startDate, endDate]);
