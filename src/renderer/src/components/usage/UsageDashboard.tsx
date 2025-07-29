@@ -21,7 +21,7 @@ type Props = {
 };
 
 enum DatePeriod {
-  ThisYear = 'ThisYear',
+  All = 'All',
   ThisMonth = 'thisMonth',
   Today = 'today',
   Custom = 'custom',
@@ -164,13 +164,13 @@ export const UsageDashboard = ({ onClose }: Props) => {
               {t('usageDashboard.thisMonth')}
             </button>
             <button
-              onClick={() => handlePeriodChange(DatePeriod.ThisYear)}
+              onClick={() => handlePeriodChange(DatePeriod.All)}
               className={clsx(
                 'px-3 py-1 text-sm rounded transition-colors duration-200',
-                selectedPeriod === DatePeriod.ThisYear ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+                selectedPeriod === DatePeriod.All ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
               )}
             >
-              {t('usageDashboard.thisYear')}
+              {t('usageDashboard.All')}
             </button>
           </div>
         </div>
