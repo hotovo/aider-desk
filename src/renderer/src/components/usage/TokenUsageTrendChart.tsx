@@ -55,10 +55,6 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
     return Array.from(aggregatedMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [data]);
 
-  const formatDate = (dateStr: string) => {
-    return dateStr;
-  };
-
   const formatTokens = (value: number) => {
     if (value >= 1000000) {
       return `${(value / 1000000).toFixed(1)}M`;
@@ -86,7 +82,7 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#3d4166" />
-            <XAxis dataKey="date" tickFormatter={formatDate} stroke="#8c8e95" fontSize={12} />
+            <XAxis dataKey="date" stroke="#8c8e95" fontSize={12} />
             <YAxis tickFormatter={formatTokens} stroke="#8c8e95" fontSize={12} />
             <Tooltip
               contentStyle={{
@@ -95,7 +91,6 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
                 borderRadius: '6px',
                 color: '#f1f3f5',
               }}
-              labelFormatter={(label) => formatDate(label as string)}
               wrapperClassName="text-xs"
               formatter={(value: number, name: string) => [
                 formatTokens(value),
