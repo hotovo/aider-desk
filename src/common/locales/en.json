@@ -696,8 +696,8 @@
     },
     "charts": {
       "tokenUsageTrend": "Token Usage Trend",
-      "dailyCostBreakdown": "Daily Cost Breakdown",
-      "dailyMessageBreakdown": "Daily Message Breakdown",
+      "costBreakdown": "Cost Breakdown",
+      "messageBreakdown": "Message Breakdown",
       "modelUsageDistribution": "Model Usage Distribution",
       "inputTokens": "Input Tokens",
       "outputTokens": "Output Tokens",

@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsageDataRow } from '@common/types';
 
+import { formatDateByGroup, getPeriodKey } from './utils';
+
 enum GroupBy {
   Year = 'year',
   Month = 'month',
@@ -20,22 +22,6 @@ export const UsageTable = ({ data, groupBy }: Props) => {
   // Aggregate data by day
   const aggregatedData = useMemo(() => {
     const aggregatedMap = new Map<string, UsageDataRow>();
-
-    const getPeriodKey = (timestamp: string, groupBy: GroupBy): string => {
-      const dateObj = new Date(timestamp);
-
-      switch (groupBy) {
-        case GroupBy.Hour:
-          return dateObj.toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
-        case GroupBy.Day:
-          return dateObj.toISOString().split('T')[0]; // "YYYY-MM-DD"
-        case GroupBy.Year:
-          return dateObj.toISOString().slice(0, 4); // "YYYY"
-        // default is month
-        default:
-          return dateObj.toISOString().slice(0, 7); // "YYYY-MM"
-      }
-    };
 
     data.forEach((row) => {
       const key = getPeriodKey(row.timestamp, groupBy);
@@ -89,24 +75,6 @@ export const UsageTable = ({ data, groupBy }: Props) => {
       },
     );
   }, [aggregatedData]);
-
-  const formatDateByGroup = (date: Date, groupBy: GroupBy): string => {
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1; // Months are 0-indexed
-
-    switch (groupBy) {
-      case GroupBy.Year:
-        return year.toString();
-      case GroupBy.Month:
-        return `${month}/${year}`;
-      case GroupBy.Day:
-        return date.toLocaleDateString();
-      case GroupBy.Hour:
-        return date.toLocaleTimeString([], { hour: '2-digit' });
-      default:
-        return date.toLocaleDateString();
-    }
-  };
 
   return (
     <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700 m-2">

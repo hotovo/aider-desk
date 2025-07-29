@@ -253,10 +253,10 @@ export const UsageDashboard = ({ onClose }: Props) => {
           {activeTab === ViewTab.Charts && (
             <div className="flex-grow p-2 overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
               <div className="grid grid-cols-1 xl:grid-cols-2">
-                <TokenUsageTrendChart data={filteredData} />
+                <TokenUsageTrendChart data={filteredData} groupBy={selectedGroupBy} />
                 <ModelUsageDistributionChart data={filteredData} />
-                <DailyCostBreakdownChart data={filteredData} />
-                <DailyMessageBreakdownChart data={filteredData} />
+                <DailyCostBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
+                <DailyMessageBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
               </div>
             </div>
           )}

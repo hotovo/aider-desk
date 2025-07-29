@@ -3,18 +3,26 @@ import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 
-import { generateColorPalette } from './utils';
+import { formatDateByGroup, generateColorPalette, getPeriodKey } from './utils';
 
 type CostChartDataPoint = {
   date: string;
   [projectKey: string]: string | number; // Dynamic project keys for stacked data
 };
 
+enum GroupBy {
+  Year = 'year',
+  Month = 'month',
+  Day = 'day',
+  Hour = 'hour',
+}
+
 type Props = {
   data: UsageDataRow[];
+  groupBy: GroupBy;
 };
 
-export const DailyCostBreakdownChart = ({ data }: Props) => {
+export const DailyCostBreakdownChart = ({ data, groupBy }: Props) => {
   const { t } = useTranslation();
 
   // Process data for stacked bar chart (aggregate by day and project)
@@ -24,7 +32,7 @@ export const DailyCostBreakdownChart = ({ data }: Props) => {
 
     // First pass: collect all projects and aggregate data
     data.forEach((row) => {
-      const date = new Date(row.timestamp).toISOString().split('T')[0];
+      const date = getPeriodKey(row.timestamp, groupBy);
       const projectDisplayName = row.project.split('/').pop() || row.project;
 
       projectSet.add(projectDisplayName);
@@ -62,7 +70,7 @@ export const DailyCostBreakdownChart = ({ data }: Props) => {
   }, [data]);
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
+    return formatDateByGroup(new Date(dateStr), groupBy);
   };
 
   const formatCurrency = (value: number) => {
@@ -93,7 +101,7 @@ export const DailyCostBreakdownChart = ({ data }: Props) => {
   return (
     <div className="flex-grow p-2">
       <div className="bg-neutral-900 border border-neutral-800 p-4">
-        <h3 className="text-sm font-medium text-neutral-100 mb-4">{t('usageDashboard.charts.dailyCostBreakdown')}</h3>
+        <h3 className="text-sm font-medium text-neutral-100 mb-4">{t('usageDashboard.charts.costBreakdown')}</h3>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={chartData} margin={{ top: 5, right: 5, left: 20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#3d4166" />

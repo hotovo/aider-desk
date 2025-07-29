@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 
+import { formatDateByGroup, getPeriodKey } from './utils';
+
 type ChartDataPoint = {
   date: string;
   inputTokens: number;
@@ -10,11 +12,19 @@ type ChartDataPoint = {
   totalTokens: number;
 };
 
+enum GroupBy {
+  Year = 'year',
+  Month = 'month',
+  Day = 'day',
+  Hour = 'hour',
+}
+
 type Props = {
   data: UsageDataRow[];
+  groupBy: GroupBy;
 };
 
-export const TokenUsageTrendChart = ({ data }: Props) => {
+export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
   const { t } = useTranslation();
 
   // Process data for trend chart (aggregate by day)
@@ -22,7 +32,7 @@ export const TokenUsageTrendChart = ({ data }: Props) => {
     const aggregatedMap = new Map<string, ChartDataPoint>();
 
     data.forEach((row) => {
-      const date = new Date(row.timestamp).toISOString().split('T')[0]; // Get YYYY-MM-DD format
+      const date = getPeriodKey(row.timestamp, groupBy); // Get YYYY-MM-DD format
 
       if (aggregatedMap.has(date)) {
         const existing = aggregatedMap.get(date)!;
@@ -46,7 +56,7 @@ export const TokenUsageTrendChart = ({ data }: Props) => {
   }, [data]);
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
+    return formatDateByGroup(new Date(dateStr), groupBy);
   };
 
   const formatTokens = (value: number) => {
