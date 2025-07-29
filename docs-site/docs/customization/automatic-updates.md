@@ -24,4 +24,4 @@ The application uses `electron-updater` to manage updates.
 
 The `aider-chat` Python library is managed within a dedicated virtual environment. AiderDesk checks for new versions of the library on startup and will automatically install the latest version to ensure you always have access to the newest features and bug fixes. You will be notified in the **About** settings page if a new version is available, and it will be installed the next time you restart AiderDesk.
 
-For information on using a specific version of Aider, see the [Configuration](./configuration.md) documentation.
+For information on using a specific version of Aider, see the [Aider Configuration](../configuration/aider-configuration.md) documentation.

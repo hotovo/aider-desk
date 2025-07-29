@@ -17,7 +17,7 @@ AiderDesk offers several chat modes to tailor the AI's behavior to your specific
 ### Agent
 - **Command**: `/agent`
 - **Purpose**: Activates the autonomous agent. Use this mode for high-level, complex tasks that may require multiple steps, reasoning, and the use of various tools (e.g., "implement a new API endpoint" or "refactor the user authentication flow").
-- **See Also**: [Agent Mode](./agent-mode.md)
+- **See Also**: [Agent Mode](../agent-mode/agent-mode.md)
 
 ### Ask
 - **Command**: `/ask`

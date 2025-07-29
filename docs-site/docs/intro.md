@@ -149,5 +149,3 @@ Please follow these guidelines:
 - Write clear commit messages and PR descriptions
 
 For major changes, please open an issue first to discuss what you would like to change.
-
-See our [Contributing Guidelines](CONTRIBUTING.md) for details.

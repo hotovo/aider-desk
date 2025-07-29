@@ -28,7 +28,7 @@ Configure the underlying `aider-chat` engine.
 - **Options**: Pass command-line arguments directly to Aider.
 - **Environment Variables**: Set environment variables for the Aider process.
 - **Context**: Control automatic inclusion of rule files.
-For more details, see [Configuration](./configuration.md).
+<!-- For more details, see [Configuration](./configuration.md). -->
 
 ### Agent
 
@@ -36,7 +36,7 @@ Configure the powerful Agent Mode.
 - **Agent Profiles**: Create and manage different profiles for the agent, each with its own model, tools, and behaviors.
 - **MCP Servers**: Add and manage external tools via MCP servers.
 - **Tool Approvals**: Set permissions for each tool on a per-profile basis.
-See [Agent Mode](./agent-mode.md) and [MCP Servers](./mcp-servers.md) for more information.
+See [Agent Mode](../agent-mode/agent-mode.md) and [MCP Servers](../agent-mode/mcp-servers.md) for more information.
 
 ### About
 
@@ -44,4 +44,4 @@ View version information for AiderDesk and the integrated Aider library.
 - **Check for Updates**: Manually trigger an update check.
 - **Automatic Updates**: Enable or disable automatic downloading of AiderDesk updates.
 - **Logs**: Open the directory containing application logs for troubleshooting.
-See [Automatic Updates](./automatic-updates.md) for more details.
+See [Automatic Updates](../customization/automatic-updates.md) for more details.
