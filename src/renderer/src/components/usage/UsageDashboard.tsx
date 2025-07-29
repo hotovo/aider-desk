@@ -6,6 +6,8 @@ import { CgSpinner } from 'react-icons/cg';
 import { UsageDataRow } from '@common/types';
 import clsx from 'clsx';
 
+import { Select } from '../common/Select';
+
 import { UsageTable } from './UsageTable';
 import { TokenUsageTrendChart } from './TokenUsageTrendChart';
 import { DailyCostBreakdownChart } from './DailyCostBreakdownChart';
@@ -21,10 +23,17 @@ type Props = {
 };
 
 enum DatePeriod {
-  All = 'All',
+  All = 'all',
   ThisMonth = 'thisMonth',
   Today = 'today',
   Custom = 'custom',
+}
+
+enum DatePeriodGroup {
+  Year = 'year',
+  Month = 'month',
+  Day = 'day',
+  Hour = 'hour',
 }
 
 enum ViewTab {
@@ -40,6 +49,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedPeriod, setSelectedPeriod] = useState<DatePeriod>(DatePeriod.ThisMonth);
+  const [selectedPeriodGroup, setSelectedPeriodGroup] = useState<DatePeriodGroup>(DatePeriodGroup.Month);
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -145,36 +155,37 @@ export const UsageDashboard = ({ onClose }: Props) => {
             onChange={handleDateRangeChange}
           />
           <div className="flex bg-neutral-800 rounded-md p-1">
-            <button
-              onClick={() => handlePeriodChange(DatePeriod.Today)}
-              className={clsx(
-                'px-3 py-1 text-sm rounded transition-colors duration-200',
-                selectedPeriod === DatePeriod.Today ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
-              )}
-            >
-              {t('usageDashboard.today')}
-            </button>
-            <button
-              onClick={() => handlePeriodChange(DatePeriod.ThisMonth)}
-              className={clsx(
-                'px-3 py-1 text-sm rounded transition-colors duration-200',
-                selectedPeriod === DatePeriod.ThisMonth ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
-              )}
-            >
-              {t('usageDashboard.thisMonth')}
-            </button>
-            <button
-              onClick={() => handlePeriodChange(DatePeriod.All)}
-              className={clsx(
-                'px-3 py-1 text-sm rounded transition-colors duration-200',
-                selectedPeriod === DatePeriod.All ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
-              )}
-            >
-              {t('usageDashboard.All')}
-            </button>
+            {[
+              { value: DatePeriod.Today, label: t('usageDashboard.today') },
+              { value: DatePeriod.ThisMonth, label: t('usageDashboard.thisMonth') },
+              { value: DatePeriod.All, label: t('usageDashboard.all') },
+            ].map((period) => (
+              <button
+                key={period.value}
+                onClick={() => handlePeriodChange(period.value)}
+                className={clsx(
+                  'px-3 py-1 text-sm rounded transition-colors duration-200',
+                  selectedPeriod === period.value ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+                )}
+              >
+                {period.label}
+              </button>
+            ))}
           </div>
         </div>
         <div className="flex items-end space-x-2">
+          <Select
+            options={[
+              { value: DatePeriodGroup.Hour, label: t('usageDashboard.hour') },
+              { value: DatePeriodGroup.Day, label: t('usageDashboard.day') },
+              { value: DatePeriodGroup.Month, label: t('usageDashboard.month') },
+              { value: DatePeriodGroup.Year, label: t('usageDashboard.year') },
+            ]}
+            value={selectedPeriodGroup}
+            onChange={(value) => setSelectedPeriodGroup(value as DatePeriodGroup)}
+            label={t('usageDashboard.groupBy')}
+            className="min-w-[120px]"
+          />
           <MultiSelect
             options={projectOptions}
             selected={projectFilter}

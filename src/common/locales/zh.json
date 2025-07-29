@@ -690,9 +690,13 @@
     "dateRange": "日期范围",
     "total": "总计",
     "thisMonth": "本月",
-    "All": "",
     "today": "今天",
     "all": "全部",
+    "groupBy": "",
+    "hour": "Hour",
+    "day": "Day",
+    "month": "Month",
+    "year": "Year",
     "tabs": {
       "table": "表格视图",
       "charts": "图表视图"

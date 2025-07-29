@@ -683,9 +683,13 @@
     "dateRange": "Date Range",
     "total": "Total",
     "thisMonth": "This month",
-    "All": "All",
     "today": "Today",
     "all": "All",
+    "groupBy": "Group by",
+    "hour": "Hour",
+    "day": "Day",
+    "month": "Month",
+    "year": "Year",
     "tabs": {
       "table": "Table View",
       "charts": "Charts View"
