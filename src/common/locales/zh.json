@@ -693,10 +693,10 @@
     "today": "今天",
     "all": "全部",
     "groupBy": "",
-    "hour": "Hour",
-    "day": "Day",
-    "month": "Month",
-    "year": "Year",
+    "hour": "",
+    "day": "",
+    "month": "",
+    "year": "",
     "tabs": {
       "table": "表格视图",
       "charts": "图表视图"

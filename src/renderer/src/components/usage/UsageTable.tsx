@@ -2,20 +2,43 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsageDataRow } from '@common/types';
 
+enum GroupBy {
+  Year = 'year',
+  Month = 'month',
+  Day = 'day',
+  Hour = 'hour',
+}
+
 type Props = {
   data: UsageDataRow[];
+  groupBy: GroupBy;
 };
 
-export const UsageTable = ({ data }: Props) => {
+export const UsageTable = ({ data, groupBy }: Props) => {
   const { t } = useTranslation();
 
   // Aggregate data by day
   const aggregatedData = useMemo(() => {
     const aggregatedMap = new Map<string, UsageDataRow>();
 
+    const getPeriodKey = (timestamp: string, groupBy: GroupBy): string => {
+      const dateObj = new Date(timestamp);
+
+      switch (groupBy) {
+        case GroupBy.Hour:
+          return dateObj.toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
+        case GroupBy.Day:
+          return dateObj.toISOString().split('T')[0]; // "YYYY-MM-DD"
+        case GroupBy.Year:
+          return dateObj.toISOString().slice(0, 4); // "YYYY"
+        // default is month
+        default:
+          return dateObj.toISOString().slice(0, 7); // "YYYY-MM"
+      }
+    };
+
     data.forEach((row) => {
-      const date = new Date(row.timestamp).toISOString().split('T')[0]; // Get YYYY-MM-DD format
-      const key = date;
+      const key = getPeriodKey(row.timestamp, groupBy);
 
       if (aggregatedMap.has(key)) {
         const existing = aggregatedMap.get(key)!;
@@ -38,7 +61,7 @@ export const UsageTable = ({ data }: Props) => {
         aggregatedMap.set(key, {
           ...row,
           project: row.project.split(/[\\/]/).pop() || row.project,
-          timestamp: date, // Use date string for display
+          timestamp: key, // Use date string for display
         });
       }
     });

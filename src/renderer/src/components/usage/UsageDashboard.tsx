@@ -29,7 +29,7 @@ enum DatePeriod {
   Custom = 'custom',
 }
 
-enum DatePeriodGroup {
+enum GroupBy {
   Year = 'year',
   Month = 'month',
   Day = 'day',
@@ -49,7 +49,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedPeriod, setSelectedPeriod] = useState<DatePeriod>(DatePeriod.ThisMonth);
-  const [selectedPeriodGroup, setSelectedPeriodGroup] = useState<DatePeriodGroup>(DatePeriodGroup.Month);
+  const [selectedGroupBy, setSelectedGroupBy] = useState<GroupBy>(GroupBy.Month);
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -176,13 +176,13 @@ export const UsageDashboard = ({ onClose }: Props) => {
         <div className="flex items-end space-x-2">
           <Select
             options={[
-              { value: DatePeriodGroup.Hour, label: t('usageDashboard.hour') },
-              { value: DatePeriodGroup.Day, label: t('usageDashboard.day') },
-              { value: DatePeriodGroup.Month, label: t('usageDashboard.month') },
-              { value: DatePeriodGroup.Year, label: t('usageDashboard.year') },
+              { value: GroupBy.Hour, label: t('usageDashboard.hour') },
+              { value: GroupBy.Day, label: t('usageDashboard.day') },
+              { value: GroupBy.Month, label: t('usageDashboard.month') },
+              { value: GroupBy.Year, label: t('usageDashboard.year') },
             ]}
-            value={selectedPeriodGroup}
-            onChange={(value) => setSelectedPeriodGroup(value as DatePeriodGroup)}
+            value={selectedGroupBy}
+            onChange={(value) => setSelectedGroupBy(value as GroupBy)}
             label={t('usageDashboard.groupBy')}
             className="min-w-[120px]"
           />
@@ -246,7 +246,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
         </div>
       ) : (
         <>
-          {activeTab === ViewTab.Table && <UsageTable data={filteredData} />}
+          {activeTab === ViewTab.Table && <UsageTable data={filteredData} groupBy={selectedGroupBy} />}
           {activeTab === ViewTab.Charts && (
             <div className="flex-grow p-2 overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
               <div className="grid grid-cols-1 xl:grid-cols-2">
