@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsageDataRow } from '@common/types';
 
-import { formatDateByGroup, getPeriodKey } from './utils';
+import { formatDateByGroup } from './utils';
 
 enum GroupBy {
   Year = 'year',
@@ -24,7 +24,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
     const aggregatedMap = new Map<string, UsageDataRow>();
 
     data.forEach((row) => {
-      const key = getPeriodKey(row.timestamp, groupBy);
+      const key = formatDateByGroup(row.timestamp, groupBy);
 
       if (aggregatedMap.has(key)) {
         const existing = aggregatedMap.get(key)!;
@@ -96,7 +96,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
           <tbody>
             {aggregatedData.map((row, index) => (
               <tr key={index} className="bg-neutral-900 border-b border-neutral-800 hover:bg-neutral-800/50 text-sm">
-                <td className="px-4 py-2 text-xs">{formatDateByGroup(new Date(row.timestamp), groupBy)}</td>
+                <td className="px-4 py-2 text-xs">{formatDateByGroup(row.timestamp, groupBy)}</td>
                 <td className="px-4 py-2">
                   <div className="whitespace-pre-line text-xs">{row.project}</div>
                 </td>

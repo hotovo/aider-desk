@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 
-import { formatDateByGroup, generateColorPalette, getPeriodKey } from './utils';
+import { formatDateByGroup, generateColorPalette } from './utils';
 
-type CostChartDataPoint = {
+type MessageChartDataPoint = {
   date: string;
   [projectKey: string]: string | number; // Dynamic project keys for stacked data
 };
@@ -22,7 +22,7 @@ type Props = {
   groupBy: GroupBy;
 };
 
-export const DailyCostBreakdownChart = ({ data, groupBy }: Props) => {
+export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
   const { t } = useTranslation();
 
   // Process data for stacked bar chart (aggregate by day and project)
@@ -32,7 +32,7 @@ export const DailyCostBreakdownChart = ({ data, groupBy }: Props) => {
 
     // First pass: collect all projects and aggregate data
     data.forEach((row) => {
-      const date = getPeriodKey(row.timestamp, groupBy);
+      const date = formatDateByGroup(row.timestamp, groupBy);
       const projectDisplayName = row.project.split('/').pop() || row.project;
 
       projectSet.add(projectDisplayName);
@@ -42,16 +42,16 @@ export const DailyCostBreakdownChart = ({ data, groupBy }: Props) => {
       }
 
       const dateMap = aggregatedMap.get(date)!;
-      const currentCost = dateMap.get(projectDisplayName) || 0;
-      dateMap.set(projectDisplayName, currentCost + (row.cost || 0));
+      const currentCount = dateMap.get(projectDisplayName) || 0;
+      dateMap.set(projectDisplayName, currentCount + 1); // Each row is one message
     });
 
     // Convert to array format for Recharts
-    const processedData: CostChartDataPoint[] = Array.from(aggregatedMap.entries())
-      .map(([date, projectCosts]) => {
-        const dataPoint: CostChartDataPoint = { date };
-        projectCosts.forEach((cost, project) => {
-          dataPoint[project] = cost;
+    const processedData: MessageChartDataPoint[] = Array.from(aggregatedMap.entries())
+      .map(([date, projectCounts]) => {
+        const dataPoint: MessageChartDataPoint = { date };
+        projectCounts.forEach((count, project) => {
+          dataPoint[project] = count;
         });
         return dataPoint;
       })
@@ -70,17 +70,11 @@ export const DailyCostBreakdownChart = ({ data, groupBy }: Props) => {
   }, [data]);
 
   const formatDate = (dateStr: string) => {
-    return formatDateByGroup(new Date(dateStr), groupBy);
+    return dateStr;
   };
 
-  const formatCurrency = (value: number) => {
-    if (value >= 1) {
-      return `$${value.toFixed(2)}`;
-    }
-    if (value >= 0.01) {
-      return `$${value.toFixed(4)}`;
-    }
-    return `$${value.toFixed(6)}`;
+  const formatCount = (value: number) => {
+    return value.toString();
   };
 
   // Limit legend items to prevent overcrowding
@@ -101,12 +95,12 @@ export const DailyCostBreakdownChart = ({ data, groupBy }: Props) => {
   return (
     <div className="flex-grow p-2">
       <div className="bg-neutral-900 border border-neutral-800 p-4">
-        <h3 className="text-sm font-medium text-neutral-100 mb-4">{t('usageDashboard.charts.costBreakdown')}</h3>
+        <h3 className="text-sm font-medium text-neutral-100 mb-4">{t('usageDashboard.charts.messageBreakdown')}</h3>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={chartData} margin={{ top: 5, right: 5, left: 20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#3d4166" />
             <XAxis dataKey="date" tickFormatter={formatDate} stroke="#8c8e95" fontSize={12} />
-            <YAxis tickFormatter={formatCurrency} stroke="#8c8e95" fontSize={12} />
+            <YAxis tickFormatter={formatCount} stroke="#8c8e95" fontSize={12} />
             <Tooltip
               contentStyle={{
                 backgroundColor: '#222431',
@@ -116,7 +110,7 @@ export const DailyCostBreakdownChart = ({ data, groupBy }: Props) => {
               }}
               labelFormatter={(label) => formatDate(label as string)}
               wrapperClassName="text-xs"
-              formatter={(value: number, name: string) => [formatCurrency(value), name]}
+              formatter={(value: number, name: string) => [formatCount(value), name]}
               cursor={{ fill: '#999ba310' }}
             />
             <Legend
@@ -131,11 +125,11 @@ export const DailyCostBreakdownChart = ({ data, groupBy }: Props) => {
               wrapperStyle={{ fontSize: '12px' }}
             />
             {displayProjects.map((project) => (
-              <Bar key={project} dataKey={project} stackId="cost" fill={projectColors.get(project)} />
+              <Bar key={project} dataKey={project} stackId="messages" fill={projectColors.get(project)} />
             ))}
             {/* Render remaining projects without legend */}
             {projectKeys.slice(maxLegendItems).map((project) => (
-              <Bar key={project} dataKey={project} stackId="cost" fill={projectColors.get(project)} legendType="none" />
+              <Bar key={project} dataKey={project} stackId="messages" fill={projectColors.get(project)} legendType="none" />
             ))}
           </BarChart>
         </ResponsiveContainer>

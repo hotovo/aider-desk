@@ -34,26 +34,10 @@ enum GroupBy {
   Hour = 'hour',
 }
 
-export const getPeriodKey = (timestamp: string, groupBy: GroupBy): string => {
-  const dateObj = new Date(timestamp);
-
-  switch (groupBy) {
-    case GroupBy.Hour:
-      return dateObj.toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
-    case GroupBy.Month:
-      return dateObj.toISOString().slice(0, 7); // "YYYY-MM"
-    case GroupBy.Year:
-      return dateObj.toISOString().slice(0, 4); // "YYYY"
-    // default is day
-    default:
-      return dateObj.toISOString().split('T')[0]; // "YYYY-MM-DD"
-  }
-};
-
-export const formatDateByGroup = (date: Date, groupBy: GroupBy): string => {
+export const formatDateByGroup = (timestamp: string, groupBy: GroupBy): string => {
+  const date = new Date(timestamp);
   const year = date.getFullYear();
   const month = date.getMonth() + 1; // Months are 0-indexed
-
   switch (groupBy) {
     case GroupBy.Year:
       return year.toString();
@@ -62,7 +46,12 @@ export const formatDateByGroup = (date: Date, groupBy: GroupBy): string => {
     case GroupBy.Day:
       return date.toLocaleDateString();
     case GroupBy.Hour:
-      return date.toLocaleTimeString([], { hour: '2-digit' });
+      return date.toLocaleString([], {
+        year: 'numeric',
+        day: 'numeric',
+        month: 'numeric',
+        hour: '2-digit',
+      });
     default:
       return date.toLocaleDateString();
   }

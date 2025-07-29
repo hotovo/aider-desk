@@ -126,7 +126,7 @@ export class DataManager {
           cost
         FROM messages
         WHERE timestamp >= ? AND timestamp <= ?
-        ORDER BY timestamp DESC;
+        ORDER BY timestaqueryUsageDatamp DESC;
       `;
 
       const stmt = this.db.prepare(sql);

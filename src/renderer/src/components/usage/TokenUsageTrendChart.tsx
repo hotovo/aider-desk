@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 
-import { formatDateByGroup, getPeriodKey } from './utils';
+import { formatDateByGroup } from './utils';
 
 type ChartDataPoint = {
   date: string;
@@ -32,7 +32,7 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
     const aggregatedMap = new Map<string, ChartDataPoint>();
 
     data.forEach((row) => {
-      const date = getPeriodKey(row.timestamp, groupBy); // Get YYYY-MM-DD format
+      const date = formatDateByGroup(row.timestamp, groupBy); // Get YYYY-MM-DD format
 
       if (aggregatedMap.has(date)) {
         const existing = aggregatedMap.get(date)!;
@@ -56,7 +56,7 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
   }, [data]);
 
   const formatDate = (dateStr: string) => {
-    return formatDateByGroup(new Date(dateStr), groupBy);
+    return dateStr;
   };
 
   const formatTokens = (value: number) => {

@@ -10,8 +10,8 @@ import { Select } from '../common/Select';
 
 import { UsageTable } from './UsageTable';
 import { TokenUsageTrendChart } from './TokenUsageTrendChart';
-import { DailyCostBreakdownChart } from './DailyCostBreakdownChart';
-import { DailyMessageBreakdownChart } from './DailyMessageBreakdownChart';
+import { CostBreakdownChart } from './CostBreakdownChart';
+import { MessageBreakdownChart } from './MessageBreakdownChart';
 import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
 
 import { DatePicker } from '@/components/common/DatePicker';
@@ -255,8 +255,8 @@ export const UsageDashboard = ({ onClose }: Props) => {
               <div className="grid grid-cols-1 xl:grid-cols-2">
                 <TokenUsageTrendChart data={filteredData} groupBy={selectedGroupBy} />
                 <ModelUsageDistributionChart data={filteredData} />
-                <DailyCostBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
-                <DailyMessageBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
+                <CostBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
+                <MessageBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
               </div>
             </div>
           )}
