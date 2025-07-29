@@ -49,7 +49,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedPeriod, setSelectedPeriod] = useState<DatePeriod>(DatePeriod.ThisMonth);
-  const [selectedGroupBy, setSelectedGroupBy] = useState<GroupBy>(GroupBy.Month);
+  const [selectedGroupBy, setSelectedGroupBy] = useState<GroupBy>(GroupBy.Day);
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

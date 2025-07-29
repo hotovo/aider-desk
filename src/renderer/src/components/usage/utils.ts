@@ -40,13 +40,13 @@ export const getPeriodKey = (timestamp: string, groupBy: GroupBy): string => {
   switch (groupBy) {
     case GroupBy.Hour:
       return dateObj.toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
-    case GroupBy.Day:
-      return dateObj.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    case GroupBy.Month:
+      return dateObj.toISOString().slice(0, 7); // "YYYY-MM"
     case GroupBy.Year:
       return dateObj.toISOString().slice(0, 4); // "YYYY"
-    // default is month
+    // default is day
     default:
-      return dateObj.toISOString().slice(0, 7); // "YYYY-MM"
+      return dateObj.toISOString().split('T')[0]; // "YYYY-MM-DD"
   }
 };
 
