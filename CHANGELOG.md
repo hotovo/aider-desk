@@ -1,7 +1,7 @@
 # Changelog
 
 ## [UNRELEASED]
-- added all option to usage dashboard time range switch
+- added "All" option to usage dashboard time range switch
 - added groupBy option to usage dashboard
 
 ## [0.24.0]

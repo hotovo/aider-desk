@@ -686,10 +686,12 @@
     "today": "Today",
     "all": "All",
     "groupBy": "Group by",
-    "hour": "Hour",
-    "day": "Day",
-    "month": "Month",
-    "year": "Year",
+    "periods": {
+      "hour": "Hour",
+      "day": "Day",
+      "month": "Month",
+      "year": "Year"
+    },
     "tabs": {
       "table": "Table View",
       "charts": "Charts View"

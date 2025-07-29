@@ -176,10 +176,10 @@ export const UsageDashboard = ({ onClose }: Props) => {
         <div className="flex items-end space-x-2">
           <Select
             options={[
-              { value: GroupBy.Hour, label: t('usageDashboard.hour') },
-              { value: GroupBy.Day, label: t('usageDashboard.day') },
-              { value: GroupBy.Month, label: t('usageDashboard.month') },
-              { value: GroupBy.Year, label: t('usageDashboard.year') },
+              { value: GroupBy.Hour, label: t('usageDashboard.periods.hour') },
+              { value: GroupBy.Day, label: t('usageDashboard.periods.day') },
+              { value: GroupBy.Month, label: t('usageDashboard.periods.month') },
+              { value: GroupBy.Year, label: t('usageDashboard.periods.year') },
             ]}
             value={selectedGroupBy}
             onChange={(value) => {

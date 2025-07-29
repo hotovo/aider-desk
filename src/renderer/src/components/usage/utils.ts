@@ -37,24 +37,20 @@ enum GroupBy {
 export const formatDateByGroup = (timestamp: string, groupBy: GroupBy): string => {
   const date = new Date(timestamp);
   const year = date.getFullYear();
-  const month = date.getMonth() + 1; // Months are 0-indexed
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const hour = date.getHours().toString().padStart(2, '0');
+
   switch (groupBy) {
     case GroupBy.Year:
       return year.toString();
     case GroupBy.Month:
-      return `${month}/${year}`;
+      return `${year}-${month}`;
     case GroupBy.Day:
-      return date.toLocaleDateString();
+      return `${year}-${month}-${day}`;
     case GroupBy.Hour:
-      return date
-        .toLocaleString([], {
-          year: 'numeric',
-          day: 'numeric',
-          month: 'numeric',
-          hour: '2-digit',
-        })
-        .replace(',', '');
+      return `${year}-${month}-${day} ${hour}:00`;
     default:
-      return date.toLocaleDateString();
+      return `${year}-${month}-${day}`;
   }
 };
