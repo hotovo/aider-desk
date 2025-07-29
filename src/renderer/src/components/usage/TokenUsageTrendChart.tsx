@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 
-import { formatDateByGroup } from './utils';
+import { formatDateByGroup, GroupBy } from './utils';
 
 type ChartDataPoint = {
   date: string;
@@ -11,13 +11,6 @@ type ChartDataPoint = {
   outputTokens: number;
   totalTokens: number;
 };
-
-enum GroupBy {
-  Year = 'year',
-  Month = 'month',
-  Day = 'day',
-  Hour = 'hour',
-}
 
 type Props = {
   data: UsageDataRow[];

@@ -13,6 +13,7 @@ import { TokenUsageTrendChart } from './TokenUsageTrendChart';
 import { CostBreakdownChart } from './CostBreakdownChart';
 import { MessageBreakdownChart } from './MessageBreakdownChart';
 import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
+import { GroupBy } from './utils';
 
 import { DatePicker } from '@/components/common/DatePicker';
 import { MultiSelect } from '@/components/common/MultiSelect';
@@ -27,13 +28,6 @@ enum DatePeriod {
   ThisMonth = 'thisMonth',
   Today = 'today',
   Custom = 'custom',
-}
-
-enum GroupBy {
-  Year = 'year',
-  Month = 'month',
-  Day = 'day',
-  Hour = 'hour',
 }
 
 enum ViewTab {

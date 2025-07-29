@@ -2,14 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsageDataRow } from '@common/types';
 
-import { formatDateByGroup } from './utils';
-
-enum GroupBy {
-  Year = 'year',
-  Month = 'month',
-  Day = 'day',
-  Hour = 'hour',
-}
+import { formatDateByGroup, GroupBy } from './utils';
 
 type Props = {
   data: UsageDataRow[];

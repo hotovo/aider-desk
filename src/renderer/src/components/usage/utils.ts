@@ -27,7 +27,7 @@ export const generateColorPalette = (count: number): string[] => {
   return colors;
 };
 
-enum GroupBy {
+export enum GroupBy {
   Year = 'year',
   Month = 'month',
   Day = 'day',

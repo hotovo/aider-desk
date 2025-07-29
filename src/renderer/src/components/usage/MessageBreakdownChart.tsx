@@ -3,19 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 
-import { formatDateByGroup, generateColorPalette } from './utils';
+import { generateColorPalette, formatDateByGroup, GroupBy } from './utils';
 
 type MessageChartDataPoint = {
   date: string;
   [projectKey: string]: string | number; // Dynamic project keys for stacked data
 };
-
-enum GroupBy {
-  Year = 'year',
-  Month = 'month',
-  Day = 'day',
-  Hour = 'hour',
-}
 
 type Props = {
   data: UsageDataRow[];
