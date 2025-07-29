@@ -21,6 +21,7 @@ type Props = {
 };
 
 enum DatePeriod {
+  ThisYear = 'ThisYear',
   ThisMonth = 'thisMonth',
   Today = 'today',
   Custom = 'custom',
@@ -67,9 +68,11 @@ export const UsageDashboard = ({ onClose }: Props) => {
 
     if (period === DatePeriod.Today) {
       startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    } else {
+    } else if (period === DatePeriod.ThisMonth) {
       // This month
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      startDate = new Date(now.getFullYear(), 0, 1);
     }
 
     setDateRange([startDate, endDate]);
@@ -143,6 +146,15 @@ export const UsageDashboard = ({ onClose }: Props) => {
           />
           <div className="flex bg-neutral-800 rounded-md p-1">
             <button
+              onClick={() => handlePeriodChange(DatePeriod.Today)}
+              className={clsx(
+                'px-3 py-1 text-sm rounded transition-colors duration-200',
+                selectedPeriod === DatePeriod.Today ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+              )}
+            >
+              {t('usageDashboard.today')}
+            </button>
+            <button
               onClick={() => handlePeriodChange(DatePeriod.ThisMonth)}
               className={clsx(
                 'px-3 py-1 text-sm rounded transition-colors duration-200',
@@ -152,13 +164,13 @@ export const UsageDashboard = ({ onClose }: Props) => {
               {t('usageDashboard.thisMonth')}
             </button>
             <button
-              onClick={() => handlePeriodChange(DatePeriod.Today)}
+              onClick={() => handlePeriodChange(DatePeriod.ThisYear)}
               className={clsx(
                 'px-3 py-1 text-sm rounded transition-colors duration-200',
-                selectedPeriod === DatePeriod.Today ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+                selectedPeriod === DatePeriod.ThisYear ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
               )}
             >
-              {t('usageDashboard.today')}
+              {t('usageDashboard.thisYear')}
             </button>
           </div>
         </div>
