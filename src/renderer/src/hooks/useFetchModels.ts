@@ -1,17 +1,26 @@
 import { useEffect, useState } from 'react';
 
-export const useRequestyModels = (apiKey: string) => {
-  const [toSelectModels, setToSelectModels] = useState<string[]>([]);
+interface OpenRouterModel {
+  id: string;
+  // others not needed
+}
+
+interface OpenRouterResponse {
+  data: OpenRouterModel[];
+}
+
+export const useFetchModels = (apiKey: string, url: string) => {
+  const [models, setModels] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchModels = async () => {
       if (!apiKey) {
-        setToSelectModels([]);
+        setModels([]);
         return;
       }
 
       try {
-        const response = await fetch('https://router.requesty.ai/v1/models', {
+        const response = await fetch(url, {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
@@ -22,17 +31,18 @@ export const useRequestyModels = (apiKey: string) => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data: OpenRouterResponse = await response.json();
+
         const modelIds = data.data?.map((model: { id: string }) => model.id) || [];
-        setToSelectModels(modelIds);
+        setModels(modelIds);
       } catch (err) {
-        console.error('Error fetching OpenRouter models:', err);
-        setToSelectModels([]);
+        console.error('Error fetching models from ' + url + ':', err);
+        setModels([]);
       }
     };
 
     fetchModels();
   }, [apiKey]);
 
-  return { toSelectModels };
+  return { toSelectModels: models };
 };

@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 import Select from '@/components/common/Select';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { useRequestyModels } from '@/hooks/useRequestyModels';
+import { useFetchModels } from '@/hooks/useFetchModels';
 
 type Props = {
   provider: RequestyProvider;
@@ -34,7 +34,7 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
 
   // Use the effective API key (from provider or environment)
   const effectiveApiKey = apiKey || requestyApiKeyEnv?.value || '';
-  const { toSelectModels } = useRequestyModels(effectiveApiKey);
+  const { toSelectModels } = useFetchModels(effectiveApiKey, 'https://router.requesty.ai/v1/models');
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });

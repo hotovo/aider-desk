@@ -6,7 +6,7 @@ import { ProviderModels } from './ProviderModels';
 
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { useOpenRouterModels } from '@/hooks/useOpenRouterModels';
+import { useFetchModels } from '@/hooks/useFetchModels';
 
 type Props = {
   provider: OpenRouterProvider;
@@ -23,7 +23,7 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
 
   // Use the effective API key (from provider or environment)
   const effectiveApiKey = apiKey || openRouterApiKeyEnv?.value || '';
-  const { toSelectModels } = useOpenRouterModels(effectiveApiKey);
+  const { toSelectModels } = useFetchModels(effectiveApiKey, 'https://openrouter.ai/api/v1/models');
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
