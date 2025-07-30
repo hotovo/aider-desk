@@ -4,28 +4,63 @@ import { OpenRouterProvider } from '@common/agent';
 import { InfoIcon } from '@/components/common/InfoIcon';
 import { Input } from '@/components/common/Input';
 import { Select } from '@/components/common/Select';
+import { Checkbox } from '@/components/common/Checkbox';
 
 type Props = {
   provider: OpenRouterProvider;
+  onChange: (updated: OpenRouterProvider) => void;
 };
 
-export const AdvancedSettings = ({ provider }: Props) => {
+export const AdvancedSettings = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
   const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    provider.order = e.target.value.split(',');
+    onChange({
+      ...provider,
+      order: e.target.value.split(','),
+    });
   };
 
   const handleOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    provider.only = e.target.value.split(',');
+    onChange({
+      ...provider,
+      only: e.target.value.split(','),
+    });
   };
 
   const handleIgnoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    provider.ignore = e.target.value.split(',');
+    onChange({
+      ...provider,
+      ignore: e.target.value.split(','),
+    });
   };
 
   const handleQuantizationsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    provider.quantizations = e.target.value.split(',');
+    onChange({
+      ...provider,
+      quantizations: e.target.value.split(','),
+    });
+  };
+
+  const handleAllowFallbacksChange = (checked: boolean) => {
+    onChange({
+      ...provider,
+      allowFallbacks: checked,
+    });
+  };
+
+  const handleDataCollectionChange = (value: string) => {
+    onChange({
+      ...provider,
+      dataCollection: value as 'allow' | 'deny',
+    });
+  };
+
+  const handleSortChange = (value: string) => {
+    onChange({
+      ...provider,
+      sort: value as 'price' | 'throughput',
+    });
   };
 
   return (
@@ -52,8 +87,12 @@ export const AdvancedSettings = ({ provider }: Props) => {
         onChange={handleOrderChange}
       />
 
-      <div className="flex items-center text-xs">
-        {t('onboarding.providers.allowFallbacks')}
+      <div className="flex text-xs">
+        <div className="flex items-center gap-2 text-xs">
+          <Checkbox onChange={handleAllowFallbacksChange} checked={provider.allowFallbacks !== undefined ? !provider.allowFallbacks : true} />
+          {t('onboarding.providers.allowFallbacks')}
+        </div>
+
         <div className="flex items-center gap-2 text-xs">
           <InfoIcon className="ml-1" tooltip={t('onboarding.providers.allowFallbacksDescription')} />
           <a
@@ -67,19 +106,31 @@ export const AdvancedSettings = ({ provider }: Props) => {
         </div>
       </div>
 
-      <div className="flex items-center text-xs">
-        {t('onboarding.providers.dataCollection')}
-        <div className="flex items-center gap-2 text-xs">
-          <InfoIcon className="ml-1" tooltip={t('onboarding.providers.dataCollectionDescription')} />
-          <a
-            href="https://openrouter.ai/docs/features/provider-routing#requiring-providers-to-comply-with-data-policies"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 ml-1"
-          >
-            {t('settings.common.learnMore')}
-          </a>
-        </div>
+      <div className="flex items-center text-xs max-w-[260px]">
+        <Select
+          label={
+            <div className="flex items-center text-xs">
+              {t('onboarding.providers.dataCollection')}
+              <div className="flex items-center gap-2 text-xs">
+                <InfoIcon className="ml-1" tooltip={t('onboarding.providers.dataCollectionDescription')} />
+                <a
+                  href="https://openrouter.ai/docs/features/provider-routing#requiring-providers-to-comply-with-data-policies"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 ml-1"
+                >
+                  {t('settings.common.learnMore')}
+                </a>
+              </div>
+            </div>
+          }
+          options={[
+            { label: 'allow', value: 'allow' },
+            { label: 'deny', value: 'deny' },
+          ]}
+          value={provider.dataCollection || 'allow'}
+          onChange={handleDataCollectionChange}
+        />
       </div>
 
       <Input
@@ -148,33 +199,32 @@ export const AdvancedSettings = ({ provider }: Props) => {
         onChange={handleQuantizationsChange}
       />
 
-      <Select
-        className="text-xs"
-        label={
-          <div className="flex items-center text-xs">
-            {t('onboarding.providers.sort')}
-            <div className="flex items-center gap-2 text-xs">
-              <InfoIcon className="ml-1" tooltip={t('onboarding.providers.sortDescription')} />
-              <a
-                href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 ml-1"
-              >
-                {t('settings.common.learnMore')}
-              </a>
+      <div className="flex items-center text-xs max-w-[260px]">
+        <Select
+          label={
+            <div className="flex items-center text-xs">
+              {t('onboarding.providers.sort')}
+              <div className="flex items-center gap-2 text-xs">
+                <InfoIcon className="ml-1" tooltip={t('onboarding.providers.sortDescription')} />
+                <a
+                  href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 ml-1"
+                >
+                  {t('settings.common.learnMore')}
+                </a>
+              </div>
             </div>
-          </div>
-        }
-        options={[
-          { label: 'price', value: 'price' },
-          { label: 'throughput', value: 'throughput' },
-        ]}
-        value={provider.sort || 'price'}
-        onChange={(value) => {
-          provider.sort = value as 'price' | 'throughput';
-        }}
-      />
+          }
+          options={[
+            { label: 'price', value: 'price' },
+            { label: 'throughput', value: 'throughput' },
+          ]}
+          value={provider.sort || 'price'}
+          onChange={handleSortChange}
+        />
+      </div>
     </div>
   );
 };
