@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 import Select from '@/components/common/Select';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+import { useRequestyModels } from '@/hooks/useRequestyModels';
 
 type Props = {
   provider: RequestyProvider;
@@ -30,6 +31,10 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
     { value: 'high', label: t('reasoningEffort.high') },
     { value: 'max', label: t('reasoningEffort.max') },
   ];
+
+  // Use the effective API key (from provider or environment)
+  const effectiveApiKey = apiKey || requestyApiKeyEnv?.value || '';
+  const { toSelectModels } = useRequestyModels(effectiveApiKey);
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
@@ -82,7 +87,7 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
           <InfoIcon tooltip={t('requesty.autoCacheTooltip')} />
         </div>
       </div>
-      <ProviderModels models={models} onChange={handleModelsChange} />
+      <ProviderModels models={models} onChange={handleModelsChange} toSelectModels={toSelectModels} />
     </div>
   );
 };
