@@ -12,7 +12,6 @@ type Props = {
 export const UsageTable = ({ data, groupBy }: Props) => {
   const { t } = useTranslation();
 
-  // Aggregate data by day
   const aggregatedData = useMemo(() => {
     const aggregatedMap = new Map<string, UsageDataRow>();
 
@@ -46,7 +45,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
     });
 
     return Array.from(aggregatedMap.values()).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [data]);
+  }, [data, groupBy]);
 
   const totals = useMemo(() => {
     return aggregatedData.reduce(
