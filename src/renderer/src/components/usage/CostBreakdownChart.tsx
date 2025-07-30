@@ -60,7 +60,7 @@ export const CostBreakdownChart = ({ data, groupBy }: Props) => {
       projectKeys: projects,
       projectColors: colorMap,
     };
-  }, [data]);
+  }, [data, groupBy]);
 
   const formatCurrency = (value: number) => {
     if (value >= 1) {

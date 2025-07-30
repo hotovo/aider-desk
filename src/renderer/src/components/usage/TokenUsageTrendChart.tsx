@@ -46,7 +46,7 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
     });
 
     return Array.from(aggregatedMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [data]);
+  }, [data, groupBy]);
 
   const formatTokens = (value: number) => {
     if (value >= 1000000) {

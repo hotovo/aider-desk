@@ -60,7 +60,7 @@ export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
       projectKeys: projects,
       projectColors: colorMap,
     };
-  }, [data]);
+  }, [data, groupBy]);
 
   const formatCount = (value: number) => {
     return value.toString();
