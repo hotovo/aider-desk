@@ -83,7 +83,8 @@
       "configureLater": "如果您愿意，可以稍后在设置中配置这些。",
       "connectTitle": "连接您的AI模型",
       "connectDescription": "Aider Desk 支持多个AI提供商，包括OpenAI、Anthropic、Google Gemini等。您的API密钥安全存储在本地机器上，绝不会被共享。",
-      "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。"
+      "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。",
+      "advancedSettings": ""
     },
     "agent": {
       "title": "认识您的AI代理",

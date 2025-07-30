@@ -83,7 +83,8 @@
       "configureLater": "You can configure these later in the Settings if you prefer.",
       "connectTitle": "Connect Your AI Model",
       "connectDescription": "Aider Desk supports multiple AI providers including OpenAI, Anthropic, Google Gemini, and more. Your API keys are stored securely on your local machine and never shared.",
-      "advancedUsersNote": "Advanced users: You can also configure providers using environment variables in the next step's Aider configuration section."
+      "advancedUsersNote": "Advanced users: You can also configure providers using environment variables in the next step's Aider configuration section.",
+      "advancedSettings": "Advanced settings"
     },
     "agent": {
       "title": "Meet Your AI Agent",
