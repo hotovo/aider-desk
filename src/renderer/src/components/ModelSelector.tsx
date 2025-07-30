@@ -144,9 +144,15 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
 
   return (
     <div className="relative" ref={modelSelectorRef}>
-      <button onClick={toggleVisible} className="flex items-center hover:text-neutral-300 focus:outline-none transition-colors duration-200 text-xs">
+      <button
+        onClick={selectedModel ? toggleVisible : undefined}
+        disabled={!selectedModel}
+        className={`flex items-center focus:outline-none transition-colors duration-200 text-xs ${
+          selectedModel ? 'hover:text-neutral-300' : 'text-neutral-500 cursor-not-allowed'
+        }`}
+      >
         <span>{selectedModel || t('common.loading')}</span>
-        <MdKeyboardArrowUp className="w-3 h-3 ml-1 transform rotate-180" />
+        <MdKeyboardArrowUp className={`w-3 h-3 ml-1 transform rotate-180 ${!selectedModel ? 'text-neutral-500' : ''}`} />
       </button>
       {visible && (
         <div className="absolute top-full left-0 mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 flex flex-col w-[600px]">

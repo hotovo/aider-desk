@@ -1,6 +1,7 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 
+import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
@@ -8,7 +9,7 @@ import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, POWER_TOOL_GROUP_NAME, PO
 
 import logger from '@/logger';
 import { Project } from '@/project';
-import { isFileIgnored } from '@/utils';
+import { isDirectory, isFileIgnored } from '@/utils';
 
 const AUTOSAVED_SESSION_NAME = '.autosaved';
 
@@ -64,48 +65,82 @@ export class SessionManager {
     return isFileIgnored(this.project.baseDir, contextFile.path);
   }
 
-  async addContextFile(contextFile: ContextFile) {
+  async addContextFile(contextFile: ContextFile): Promise<ContextFile[]> {
+    const isDir = await isDirectory(contextFile.path);
     const alreadyAdded = this.contextFiles.find((file) => file.path === contextFile.path);
     if (alreadyAdded) {
-      return false;
+      return [];
     }
 
-    // skip ignore check for folders
-    const isFolder = contextFile.path.endsWith('/') || contextFile.path.endsWith(path.sep);
-    if (!isFolder) {
-      if (await this.isFileIgnored(contextFile)) {
-        logger.debug('Skipping ignored file:', { path: contextFile.path });
-        return false;
+    // For directories, recursively add all files and subdirectories
+    if (isDir) {
+      const addedFiles: ContextFile[] = [];
+
+      try {
+        const entries = await fs.readdir(contextFile.path, { withFileTypes: true });
+        for (const entry of entries) {
+          const entryPath = path.join(contextFile.path, entry.name);
+          const entryContextFile: ContextFile = {
+            path: entryPath,
+            readOnly: contextFile.readOnly ?? false,
+          };
+
+          // Recursively add files and directories
+          const newAddedFiles = await this.addContextFile(entryContextFile);
+          addedFiles.push(...newAddedFiles);
+        }
+      } catch (error) {
+        logger.error('Failed to read directory:', { path: contextFile.path, error });
       }
+
+      if (addedFiles.length > 0) {
+        this.saveAsAutosaved();
+      }
+      return addedFiles;
     }
 
-    this.contextFiles.push({
+    // For files, check if ignored and add if not
+    if (await this.isFileIgnored(contextFile)) {
+      logger.debug('Skipping ignored file:', { path: contextFile.path });
+      return [];
+    }
+
+    const newContextFile = {
       ...contextFile,
       readOnly: contextFile.readOnly ?? false,
-    });
-
+    };
+    this.contextFiles.push(newContextFile);
     this.saveAsAutosaved();
-    return true;
+    return [newContextFile];
   }
 
-  dropContextFile(filePath: string) {
+  dropContextFile(filePath: string): ContextFile[] {
     const absolutePath = path.resolve(this.project.baseDir, filePath);
+    const droppedFiles: ContextFile[] = [];
 
-    const file = this.contextFiles.find((f) => {
+    // Filter out files that match the path or are within the directory path
+    this.contextFiles = this.contextFiles.filter((f) => {
       const contextFileAbsolutePath = path.resolve(this.project.baseDir, f.path);
-      return (
+
+      // Check if file matches exactly or is within the directory path
+      const isMatch =
         f.path === filePath || // Exact match
-        contextFileAbsolutePath === filePath || // Absolute path matches
-        contextFileAbsolutePath === absolutePath // Relative path matches when converted to absolute
-      );
+        contextFileAbsolutePath === absolutePath || // Absolute path matches
+        !path.relative(absolutePath, contextFileAbsolutePath).startsWith('..'); // File is within the directory
+
+      if (isMatch) {
+        droppedFiles.push(f);
+        return false; // Remove from contextFiles
+      }
+
+      return true; // Keep in contextFiles
     });
 
-    if (file) {
-      this.contextFiles = this.contextFiles.filter((f) => f !== file);
+    if (droppedFiles.length > 0) {
       this.saveAsAutosaved();
     }
 
-    return file;
+    return droppedFiles;
   }
 
   setContextFiles(contextFiles: ContextFile[], save = true) {
@@ -360,6 +395,7 @@ export class SessionManager {
           for (const part of message.content) {
             if (part.type === 'text' && part.text) {
               this.project.processResponseMessage({
+                id: uuidv4(),
                 action: 'response',
                 content: part.text,
                 finished: true,
@@ -378,6 +414,7 @@ export class SessionManager {
         } else if (isTextContent(message.content)) {
           const content = extractTextContent(message.content);
           this.project.processResponseMessage({
+            id: uuidv4(),
             action: 'response',
             content: content,
             finished: true,
@@ -397,7 +434,7 @@ export class SessionManager {
               const responses = part.result?.responses;
               if (responses) {
                 responses.forEach((response: Pick<ResponseCompletedData, 'messageId' | 'content' | 'reflectedMessage'>) => {
-                  this.project.addResponseCompletedMessage({
+                  this.project.sendResponseCompleted({
                     ...response,
                     baseDir: this.project.baseDir,
                   });
@@ -415,6 +452,7 @@ export class SessionManager {
                       for (const subPart of subMessage.content) {
                         if (subPart.type === 'text' && subPart.text) {
                           this.project.processResponseMessage({
+                            id: uuidv4(),
                             action: 'response',
                             content: subPart.text,
                             finished: true,
@@ -427,6 +465,7 @@ export class SessionManager {
                     } else if (isTextContent(subMessage.content)) {
                       const content = extractTextContent(subMessage.content);
                       this.project.processResponseMessage({
+                        id: uuidv4(),
                         action: 'response',
                         content: content,
                         finished: true,
@@ -490,10 +529,10 @@ export class SessionManager {
   private debouncedSaveAsAutosaved = debounce(async () => {
     logger.info('Saving session as autosaved', { projectDir: this.project.baseDir });
     await this.save('.autosaved');
-  }, 3000);
+  }, 1000);
 
   private saveAsAutosaved() {
-    this.debouncedSaveAsAutosaved();
+    void this.debouncedSaveAsAutosaved();
   }
 
   async loadAutosaved(): Promise<void> {

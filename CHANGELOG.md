@@ -1,6 +1,11 @@
 # Changelog
 
 ## [UNRELEASED]
+
+- improved connection and communication with Aider
+- reading cached tokens when working with Aider modes
+- fixed start up with using local Aider installation via AIDER_DESK_AIDER_VERSION
+- fixed command output messages in the context
 - added "All" option to usage dashboard time range switch
 - added groupBy option to usage dashboard
 
