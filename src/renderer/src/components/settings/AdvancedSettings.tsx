@@ -3,6 +3,7 @@ import { OpenRouterProvider } from '@common/agent';
 
 import { InfoIcon } from '@/components/common/InfoIcon';
 import { Input } from '@/components/common/Input';
+import { Select } from '@/components/common/Select';
 
 type Props = {
   provider: OpenRouterProvider;
@@ -147,20 +148,33 @@ export const AdvancedSettings = ({ provider }: Props) => {
         onChange={handleQuantizationsChange}
       />
 
-      <div className="flex items-center text-xs">
-        {t('onboarding.providers.sort')}
-        <div className="flex items-center gap-2 text-xs">
-          <InfoIcon className="ml-1" tooltip={t('onboarding.providers.sortDescription')} />
-          <a
-            href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 ml-1"
-          >
-            {t('settings.common.learnMore')}
-          </a>
-        </div>
-      </div>
+      <Select
+        className="text-xs"
+        label={
+          <div className="flex items-center text-xs">
+            {t('onboarding.providers.sort')}
+            <div className="flex items-center gap-2 text-xs">
+              <InfoIcon className="ml-1" tooltip={t('onboarding.providers.sortDescription')} />
+              <a
+                href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 ml-1"
+              >
+                {t('settings.common.learnMore')}
+              </a>
+            </div>
+          </div>
+        }
+        options={[
+          { label: 'price', value: 'price' },
+          { label: 'throughput', value: 'throughput' },
+        ]}
+        value={provider.sort || 'price'}
+        onChange={(value) => {
+          provider.sort = value as 'price' | 'throughput';
+        }}
+      />
     </div>
   );
 };
