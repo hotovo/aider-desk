@@ -82,7 +82,7 @@ export const AdvancedSettings = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 text-xs">
+      <div className="flex items-center text-xs">
         {t('onboarding.providers.quantizations')}
         <div className="flex items-center gap-2 text-xs">
           <InfoIcon className="ml-1" tooltip={t('onboarding.providers.quantizationsDescription')} />
