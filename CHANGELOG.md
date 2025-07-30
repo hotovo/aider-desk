@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- added dropdown list populated with models loaded directly from the Requesty and OpenRouter APIs
+
 ## [0.24.0]
 
 - support for headers in streamable MCP servers

@@ -11,7 +11,7 @@ export const useRequestyModels = (apiKey: string) => {
       }
 
       try {
-        const response = await fetch('https://requesty.ai/api/v1/models', {
+        const response = await fetch('https://router.requesty.ai/v1/models', {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
