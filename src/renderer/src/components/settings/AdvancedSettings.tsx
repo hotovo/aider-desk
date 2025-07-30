@@ -7,67 +7,95 @@ export const AdvancedSettings = () => {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center text-xs">
+      <div className="flex items-center gap-1 text-xs">
         {t('onboarding.providers.order')}
-        <InfoIcon
-          className="ml-1"
-          tooltip={t('onboarding.providers.orderDescription')}
-          url="https://openrouter.ai/docs/features/provider-routing#ordering-specific-providers"
-        />
+        <InfoIcon className="ml-1" tooltip={t('onboarding.providers.orderDescription')} />
+        <a
+          href="https://openrouter.ai/docs/features/provider-routing#ordering-specific-providers"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 ml-1"
+        >
+          {t('settings.common.learnMore')}
+        </a>
       </div>
 
-      <div className="flex items-center text-xs">
+      <div className="flex items-center gap-1 text-xs">
         {t('onboarding.providers.allowFallbacks')}
-        <InfoIcon
-          className="ml-1"
-          tooltip={t('onboarding.providers.allowFallbacksDescription')}
-          url="https://openrouter.ai/docs/features/provider-routing#disabling-fallbacks"
-        />
+        <InfoIcon className="ml-1" tooltip={t('onboarding.providers.allowFallbacksDescription')} />
+        <a
+          href="https://openrouter.ai/docs/features/provider-routing#disabling-fallbacks"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 ml-1"
+        >
+          {t('settings.common.learnMore')}
+        </a>
       </div>
 
-      <div className="flex items-center text-xs">
+      <div className="flex items-center gap-1 text-xs">
         {t('onboarding.providers.dataCollection')}
-        <InfoIcon
-          className="ml-1"
-          tooltip={t('onboarding.providers.dataCollectionDescription')}
-          url="https://openrouter.ai/docs/features/provider-routing#requiring-providers-to-comply-with-data-policies"
-        />
+        <InfoIcon className="ml-1" tooltip={t('onboarding.providers.dataCollectionDescription')} />
+        <a
+          href="https://openrouter.ai/docs/features/provider-routing#requiring-providers-to-comply-with-data-policies"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 ml-1"
+        >
+          {t('settings.common.learnMore')}
+        </a>
       </div>
 
-      <div className="flex items-center text-xs">
+      <div className="flex items-center gap-1 text-xs">
         {t('onboarding.providers.only')}
-        <InfoIcon
-          className="ml-1"
-          tooltip={t('onboarding.providers.onlyDescription')}
-          url="https://openrouter.ai/docs/features/provider-routing#allowing-only-specific-providers"
-        />
+        <InfoIcon className="ml-1" tooltip={t('onboarding.providers.onlyDescription')} />
+        <a
+          href="https://openrouter.ai/docs/features/provider-routing#allowing-only-specific-providers"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 ml-1"
+        >
+          {t('settings.common.learnMore')}
+        </a>
       </div>
 
-      <div className="flex items-center text-xs">
+      <div className="flex items-center gap-1 text-xs">
         {t('onboarding.providers.ignore')}
-        <InfoIcon
-          className="ml-1"
-          tooltip={t('onboarding.providers.ignoreDescription')}
-          url="https://openrouter.ai/docs/features/provider-routing#ignoring-providers"
-        />
+        <InfoIcon className="ml-1" tooltip={t('onboarding.providers.ignoreDescription')} />
+        <a
+          href="https://openrouter.ai/docs/features/provider-routing#ignoring-providers"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 ml-1"
+        >
+          {t('settings.common.learnMore')}
+        </a>
       </div>
 
-      <div className="flex items-center text-xs">
+      <div className="flex items-center gap-1 text-xs">
         {t('onboarding.providers.quantizations')}
-        <InfoIcon
-          className="ml-1"
-          tooltip={t('onboarding.providers.quantizationsDescription')}
-          url="https://openrouter.ai/docs/features/provider-routing#quantization"
-        />
+        <InfoIcon className="ml-1" tooltip={t('onboarding.providers.quantizationsDescription')} />
+        <a
+          href="https://openrouter.ai/docs/features/provider-routing#quantization"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 ml-1"
+        >
+          {t('settings.common.learnMore')}
+        </a>
       </div>
 
-      <div className="flex items-center text-xs">
+      <div className="flex items-center gap-1 text-xs">
         {t('onboarding.providers.sort')}
-        <InfoIcon
-          className="ml-1"
-          tooltip={t('onboarding.providers.sortDescription')}
-          url="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
-        />
+        <InfoIcon className="ml-1" tooltip={t('onboarding.providers.sortDescription')} />
+        <a
+          href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 hover:text-blue-300 ml-1"
+        >
+          {t('settings.common.learnMore')}
+        </a>
       </div>
     </div>
   );

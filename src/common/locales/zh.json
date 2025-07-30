@@ -300,7 +300,8 @@
       "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。"
     },
     "common": {
-      "showSecrets": "显示密钥"
+      "showSecrets": "显示密钥",
+      "learnMore": "了解更多"
     },
     "notificationsEnabled": "通知已启用",
     "zoom": "缩放级别",

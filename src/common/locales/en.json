@@ -305,7 +305,8 @@
       "addRuleFiles": "Add rule files from project's <file>.aider-desk/rules</file> directory as read-only files."
     },
     "common": {
-      "showSecrets": "Show Secrets"
+      "showSecrets": "Show Secrets",
+      "learnMore": "Learn more"
     },
     "notificationsEnabled": "Notifications enabled",
     "zoom": "Zoom level",
