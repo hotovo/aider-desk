@@ -118,6 +118,14 @@ export interface OpenRouterProvider extends LlmProviderBase {
   name: 'openrouter';
   apiKey: string;
   models: string[];
+  // Advanced routing options
+  order?: string[];
+  allowFallbacks?: boolean;
+  dataCollection?: 'allow' | 'deny';
+  only?: string[];
+  ignore?: string[];
+  quantizations?: string[];
+  sort?: 'price' | 'throughput';
 }
 export const isOpenRouterProvider = (provider: LlmProviderBase): provider is OpenRouterProvider => provider.name === 'openrouter';
 

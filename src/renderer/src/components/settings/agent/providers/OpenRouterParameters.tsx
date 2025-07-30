@@ -52,7 +52,7 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
       {renderSectionAccordion(
         t('onboarding.providers.advancedSettings'),
         <div className="space-y-2">
-          <AdvancedSettings></AdvancedSettings>
+          <AdvancedSettings provider={provider} />
         </div>,
       )}
       <Input
