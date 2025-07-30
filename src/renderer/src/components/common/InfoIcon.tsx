@@ -9,9 +9,15 @@ type Props = {
   tooltipId?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  url?: string;
 };
 
-export const InfoIcon = ({ tooltip, tooltipId, className, size = 'md' }: Props) => {
+export const InfoIcon = ({ tooltip, tooltipId, className, size = 'md', url }: Props) => {
+  const handleClick = () => {
+    if (url) {
+      window.open(url);
+    }
+  };
   return (
     <IconButton
       icon={
@@ -26,7 +32,7 @@ export const InfoIcon = ({ tooltip, tooltipId, className, size = 'md' }: Props) 
       tooltip={tooltip}
       tooltipId={tooltipId}
       className={`ml-2 text-neutral-500 ${className || ''}`}
-      onClick={() => {}}
+      onClick={handleClick}
     />
   );
 };
