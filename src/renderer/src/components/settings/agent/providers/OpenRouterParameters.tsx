@@ -7,6 +7,7 @@ import { ProviderModels } from './ProviderModels';
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 import { Accordion } from '@/components/common/Accordion';
+import { AdvancedSettings } from '@/components/settings/AdvancedSettings';
 
 type Props = {
   provider: OpenRouterProvider;
@@ -48,7 +49,12 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
           Get OpenRouter API key
         </a>
       </div>
-      {renderSectionAccordion(t('onboarding.providers.advancedSettings'), <div className="space-y-2"></div>)}
+      {renderSectionAccordion(
+        t('onboarding.providers.advancedSettings'),
+        <div className="space-y-2">
+          <AdvancedSettings></AdvancedSettings>
+        </div>,
+      )}
       <Input
         label={t('openRouter.apiKey')}
         type="password"
