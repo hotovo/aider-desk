@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- added OpenRouter advanced settings
+
 ## [0.24.0]
 
 - support for headers in streamable MCP servers
