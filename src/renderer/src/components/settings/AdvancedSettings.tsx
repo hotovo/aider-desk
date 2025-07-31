@@ -67,7 +67,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
     <div className="space-y-2">
       <Input
         label={
-          <div className="flex items-center">
+          <div className="flex items-center text-xs">
             {t('onboarding.providers.order')}
             <div className="flex items-center gap-2">
               <InfoIcon className="ml-1" tooltip={t('onboarding.providers.orderDescription')} />
@@ -91,7 +91,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
         <div className="flex items-center gap-2">
           <Checkbox
             label={
-              <div className="flex items-center text-sm">
+              <div className="flex items-center text-xs">
                 {t('onboarding.providers.allowFallbacks')}
                 <div className="flex items-center gap-2">
                   <InfoIcon className="ml-1" tooltip={t('onboarding.providers.allowFallbacksDescription')} />
@@ -115,7 +115,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
       <div className="flex items-center max-w-[260px]">
         <Select
           label={
-            <div className="flex items-center">
+            <div className="flex items-center text-xs">
               {t('onboarding.providers.dataCollection')}
               <div className="flex items-center gap-2">
                 <InfoIcon className="ml-1" tooltip={t('onboarding.providers.dataCollectionDescription')} />
@@ -141,7 +141,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
 
       <Input
         label={
-          <div className="flex items-center">
+          <div className="flex items-center text-xs">
             {t('onboarding.providers.only')}
             <div className="flex items-center gap-2">
               <InfoIcon className="ml-1" tooltip={t('onboarding.providers.onlyDescription')} />
@@ -163,7 +163,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
 
       <Input
         label={
-          <div className="flex items-center">
+          <div className="flex items-center text-xs">
             {t('onboarding.providers.ignore')}
             <div className="flex items-center gap-2">
               <InfoIcon className="ml-1" tooltip={t('onboarding.providers.ignoreDescription')} />
@@ -185,7 +185,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
 
       <Input
         label={
-          <div className="flex items-center">
+          <div className="flex items-center text-xs">
             {t('onboarding.providers.quantizations')}
             <div className="flex items-center gap-2">
               <InfoIcon className="ml-1" tooltip={t('onboarding.providers.quantizationsDescription')} />
@@ -208,7 +208,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
       <div className="flex items-center max-w-[260px]">
         <Select
           label={
-            <div className="flex items-center">
+            <div className="flex items-center text-xs">
               {t('onboarding.providers.sort')}
               <div className="flex items-center gap-2">
                 <InfoIcon className="ml-1" tooltip={t('onboarding.providers.sortDescription')} />
