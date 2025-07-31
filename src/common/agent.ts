@@ -119,13 +119,13 @@ export interface OpenRouterProvider extends LlmProviderBase {
   apiKey: string;
   models: string[];
   // Advanced routing options
-  order?: string[];
-  allowFallbacks?: boolean;
-  dataCollection?: 'allow' | 'deny';
-  only?: string[];
-  ignore?: string[];
-  quantizations?: string[];
-  sort?: 'price' | 'throughput';
+  order: string[];
+  allowFallbacks: boolean;
+  dataCollection: 'allow' | 'deny';
+  only: string[];
+  ignore: string[];
+  quantizations: string[];
+  sort: 'price' | 'throughput';
 }
 export const isOpenRouterProvider = (provider: LlmProviderBase): provider is OpenRouterProvider => provider.name === 'openrouter';
 
@@ -309,6 +309,13 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           name: 'openrouter',
           apiKey: '',
           models: [],
+          order: [],
+          allowFallbacks: true,
+          dataCollection: 'allow',
+          only: [],
+          ignore: [],
+          quantizations: [],
+          sort: 'price',
         } satisfies OpenRouterProvider;
         break;
       case 'lmstudio':

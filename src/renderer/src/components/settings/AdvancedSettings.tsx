@@ -89,7 +89,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
 
       <div className="flex text-xs">
         <div className="flex items-center gap-2 text-xs">
-          <Checkbox onChange={handleAllowFallbacksChange} checked={provider.allowFallbacks !== undefined ? !provider.allowFallbacks : true} />
+          <Checkbox onChange={handleAllowFallbacksChange} checked={provider.allowFallbacks} />
           {t('onboarding.providers.allowFallbacks')}
         </div>
 
