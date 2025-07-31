@@ -151,7 +151,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
           </div>
         }
         placeholder="e.g. antrhopic, openai"
-        value={provider.order}
+        value={provider.only}
         onChange={handleOnlyChange}
       />
 
@@ -173,7 +173,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
           </div>
         }
         placeholder="e.g. antrhopic, openai"
-        value={provider.order}
+        value={provider.ignore}
         onChange={handleIgnoreChange}
       />
 
@@ -195,7 +195,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
           </div>
         }
         placeholder="e.g. int4, int8"
-        value={provider.order}
+        value={provider.quantizations}
         onChange={handleQuantizationsChange}
       />
 
