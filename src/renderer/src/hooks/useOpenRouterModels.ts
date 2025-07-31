@@ -9,7 +9,7 @@ interface OpenRouterResponse {
   data: OpenRouterModel[];
 }
 
-export const useFetchModels = (apiKey: string, url: string) => {
+export const useOpenRouterModels = (apiKey: string) => {
   const [models, setModels] = useState<string[]>([]);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export const useFetchModels = (apiKey: string, url: string) => {
       }
 
       try {
-        const response = await fetch(url, {
+        const response = await fetch('https://openrouter.ai/api/v1/models', {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
@@ -34,9 +34,10 @@ export const useFetchModels = (apiKey: string, url: string) => {
         const data: OpenRouterResponse = await response.json();
 
         const modelIds = data.data?.map((model: { id: string }) => model.id) || [];
+        modelIds.sort();
         setModels(modelIds);
       } catch (err) {
-        console.error('Error fetching models from ' + url + ':', err);
+        console.error('Error fetching OpenRouter models:', err);
         setModels([]);
       }
     };
@@ -44,5 +45,5 @@ export const useFetchModels = (apiKey: string, url: string) => {
     fetchModels();
   }, [apiKey]);
 
-  return { toSelectModels: models };
+  return models;
 };

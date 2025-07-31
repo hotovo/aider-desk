@@ -62,7 +62,7 @@ export const ProviderModels = ({ models, onChange, placeholder, toSelectModels }
           ))}
         </div>
       </div>
-      <MultiSelect options={selectOptions} selected={selectedModels} onChange={setSelectedModels} />
+      <MultiSelect options={selectOptions} selected={selectedModels} onChange={setSelectedModels} noneSelectedLabel="Choose models to add..." />
       <div className="flex items-end space-x-2">
         <Input
           type="text"
