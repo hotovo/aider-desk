@@ -6,11 +6,14 @@ import { CgSpinner } from 'react-icons/cg';
 import { UsageDataRow } from '@common/types';
 import clsx from 'clsx';
 
+import { Select } from '../common/Select';
+
 import { UsageTable } from './UsageTable';
 import { TokenUsageTrendChart } from './TokenUsageTrendChart';
-import { DailyCostBreakdownChart } from './DailyCostBreakdownChart';
-import { DailyMessageBreakdownChart } from './DailyMessageBreakdownChart';
+import { CostBreakdownChart } from './CostBreakdownChart';
+import { MessageBreakdownChart } from './MessageBreakdownChart';
 import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
+import { GroupBy } from './utils';
 
 import { DatePicker } from '@/components/common/DatePicker';
 import { MultiSelect } from '@/components/common/MultiSelect';
@@ -21,6 +24,7 @@ type Props = {
 };
 
 enum DatePeriod {
+  All = 'all',
   ThisMonth = 'thisMonth',
   Today = 'today',
   Custom = 'custom',
@@ -39,6 +43,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedPeriod, setSelectedPeriod] = useState<DatePeriod>(DatePeriod.ThisMonth);
+  const [selectedGroupBy, setSelectedGroupBy] = useState<GroupBy>(GroupBy.Day);
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>(() => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -67,9 +72,11 @@ export const UsageDashboard = ({ onClose }: Props) => {
 
     if (period === DatePeriod.Today) {
       startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    } else {
+    } else if (period === DatePeriod.ThisMonth) {
       // This month
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      startDate = new Date(0);
     }
 
     setDateRange([startDate, endDate]);
@@ -142,27 +149,39 @@ export const UsageDashboard = ({ onClose }: Props) => {
             onChange={handleDateRangeChange}
           />
           <div className="flex bg-neutral-800 rounded-md p-1">
-            <button
-              onClick={() => handlePeriodChange(DatePeriod.ThisMonth)}
-              className={clsx(
-                'px-3 py-1 text-sm rounded transition-colors duration-200',
-                selectedPeriod === DatePeriod.ThisMonth ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
-              )}
-            >
-              {t('usageDashboard.thisMonth')}
-            </button>
-            <button
-              onClick={() => handlePeriodChange(DatePeriod.Today)}
-              className={clsx(
-                'px-3 py-1 text-sm rounded transition-colors duration-200',
-                selectedPeriod === DatePeriod.Today ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
-              )}
-            >
-              {t('usageDashboard.today')}
-            </button>
+            {[
+              { value: DatePeriod.Today, label: t('usageDashboard.today') },
+              { value: DatePeriod.ThisMonth, label: t('usageDashboard.thisMonth') },
+              { value: DatePeriod.All, label: t('usageDashboard.all') },
+            ].map((period) => (
+              <button
+                key={period.value}
+                onClick={() => handlePeriodChange(period.value)}
+                className={clsx(
+                  'px-3 py-1 text-sm rounded transition-colors duration-200',
+                  selectedPeriod === period.value ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+                )}
+              >
+                {period.label}
+              </button>
+            ))}
           </div>
         </div>
         <div className="flex items-end space-x-2">
+          <Select
+            options={[
+              { value: GroupBy.Hour, label: t('usageDashboard.periods.hour') },
+              { value: GroupBy.Day, label: t('usageDashboard.periods.day') },
+              { value: GroupBy.Month, label: t('usageDashboard.periods.month') },
+              { value: GroupBy.Year, label: t('usageDashboard.periods.year') },
+            ]}
+            value={selectedGroupBy}
+            onChange={(value) => {
+              setSelectedGroupBy(value as GroupBy);
+            }}
+            label={t('usageDashboard.groupBy')}
+            className="min-w-[120px]"
+          />
           <MultiSelect
             options={projectOptions}
             selected={projectFilter}
@@ -223,14 +242,14 @@ export const UsageDashboard = ({ onClose }: Props) => {
         </div>
       ) : (
         <>
-          {activeTab === ViewTab.Table && <UsageTable data={filteredData} />}
+          {activeTab === ViewTab.Table && <UsageTable data={filteredData} groupBy={selectedGroupBy} />}
           {activeTab === ViewTab.Charts && (
             <div className="flex-grow p-2 overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
               <div className="grid grid-cols-1 xl:grid-cols-2">
-                <TokenUsageTrendChart data={filteredData} />
+                <TokenUsageTrendChart data={filteredData} groupBy={selectedGroupBy} />
                 <ModelUsageDistributionChart data={filteredData} />
-                <DailyCostBreakdownChart data={filteredData} />
-                <DailyMessageBreakdownChart data={filteredData} />
+                <CostBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
+                <MessageBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
               </div>
             </div>
           )}

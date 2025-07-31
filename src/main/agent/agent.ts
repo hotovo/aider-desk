@@ -3,6 +3,7 @@ import path from 'path';
 import { homedir } from 'os';
 
 import dotenv from 'dotenv';
+import { v4 as uuidv4 } from 'uuid';
 import { AgentProfile, ContextFile, ContextMessage, McpTool, SettingsData, ToolApprovalState, UsageReportData } from '@common/types';
 import {
   APICallError,
@@ -455,6 +456,8 @@ export class Agent {
       tools: Object.keys(toolSet),
     });
 
+    let currentResponseId: string = uuidv4();
+
     try {
       const model = createLlm(llmProvider, profile.model, await this.getLlmEnv(project));
 
@@ -577,7 +580,6 @@ export class Agent {
         }
 
         let iterationError: unknown | null = null;
-        let currentResponseId: null | string = null;
         let hasReasoning: boolean = false;
         let finishReason: null | FinishReason = null;
         let responseMessages: CoreMessage[] = [];
@@ -626,30 +628,20 @@ export class Agent {
                 hasReasoning = false;
               }
 
-              const responseId = project.processResponseMessage(
-                {
-                  id: currentResponseId,
-                  action: 'response',
-                  content: chunk.textDelta,
-                  finished: false,
-                },
-                currentResponseId === null,
-              );
-
-              if (!currentResponseId) {
-                currentResponseId = responseId;
-              }
+              project.processResponseMessage({
+                id: currentResponseId,
+                action: 'response',
+                content: chunk.textDelta,
+                finished: false,
+              });
             } else if (chunk.type === 'reasoning') {
               if (!hasReasoning) {
-                currentResponseId = project.processResponseMessage(
-                  {
-                    id: currentResponseId,
-                    action: 'response',
-                    content: '---\n► **THINKING**\n',
-                    finished: false,
-                  },
-                  true,
-                );
+                project.processResponseMessage({
+                  id: currentResponseId,
+                  action: 'response',
+                  content: '---\n► **THINKING**\n',
+                  finished: false,
+                });
                 hasReasoning = true;
               }
 
@@ -685,7 +677,7 @@ export class Agent {
 
             this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile);
 
-            currentResponseId = null;
+            currentResponseId = uuidv4();
             hasReasoning = false;
             responseMessages = stepResult.response.messages;
           },
@@ -755,6 +747,7 @@ export class Agent {
 
       // Always send a final "finished" message, regardless of whether there was text or tools
       project.processResponseMessage({
+        id: currentResponseId,
         action: 'response',
         content: '',
         finished: true,
@@ -870,7 +863,7 @@ export class Agent {
   }
 
   private processStep<TOOLS extends ToolSet>(
-    currentResponseId: string | null,
+    currentResponseId: string,
     { reasoning, text, toolCalls, toolResults, finishReason, usage, providerMetadata }: StepResult<TOOLS>,
     project: Project,
     profile: AgentProfile,

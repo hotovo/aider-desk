@@ -184,7 +184,7 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
         };
       }
 
-      const responses = await project.sendPrompt(prompt, 'code', true);
+      const responses = await project.sendPrompt(prompt, 'code', []);
 
       // Notify that we are still processing after aider finishes
       project.addLogMessage('loading');

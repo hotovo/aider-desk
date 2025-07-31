@@ -817,7 +817,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={!text.trim()}
+                disabled={!text.trim() || disabled}
                 className={`absolute right-2 top-1/2 -translate-y-[12px] text-neutral-400 hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-all duration-200
                 ${!text.trim() ? 'opacity-0' : 'opacity-100'}`}
                 title={t('promptField.sendMessage')}
