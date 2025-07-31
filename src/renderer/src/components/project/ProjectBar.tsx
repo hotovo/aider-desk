@@ -157,12 +157,18 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
 
     const updateEditFormat = useCallback(
       (format: EditFormat) => {
-        window.api.updateEditFormat(baseDir, format);
         if (modelsData && onModelsChange) {
+          // Create new object with updated format before state update
+          modelsData.modelEditFormats[modelsData.mainModel] = format;
+
+          // Update local state first for immediate UI feedback
           onModelsChange({
             ...modelsData,
-            editFormat: format,
+            modelEditFormats: modelsData.modelEditFormats,
           });
+
+          // Then call API to persist the change
+          window.api.updateEditFormat(baseDir, modelsData.modelEditFormats);
         }
       },
       [baseDir, modelsData, onModelsChange],
@@ -259,7 +265,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       };
       void saveSettings(updatedSettings);
     };
-
+    console.log('model', modelsData);
     return (
       <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-neutral-800 bg-neutral-900">
         <div className="flex items-center h-full">
@@ -325,13 +331,13 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 removePreferredModel={handleRemovePreferredModel}
               />
             </div>
-            {modelsData?.editFormat && (
+            {modelsData?.modelEditFormats && (
               <>
                 <div className="h-3 w-px bg-neutral-600/50"></div>
                 <div className="flex items-center space-x-1">
                   <BsCodeSlash className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="edit-format-tooltip" />
                   <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
-                  <EditFormatSelector currentFormat={modelsData.editFormat || 'diff'} onFormatChange={updateEditFormat} />
+                  <EditFormatSelector currentFormat={modelsData.modelEditFormats[modelsData.mainModel]} onFormatChange={updateEditFormat} />
                 </div>
               </>
             )}

@@ -144,7 +144,7 @@ export interface SetModelsMessage extends Message {
   action: 'set-models';
   mainModel: string;
   weakModel?: string | null;
-  editFormat?: EditFormat;
+  modelEditFormats: Record<string, EditFormat>;
   info?: RawModelInfo;
   hasError?: boolean;
 }

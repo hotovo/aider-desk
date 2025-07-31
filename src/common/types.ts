@@ -141,7 +141,7 @@ export interface ProjectSettings {
   weakModel?: string | null;
   architectModel?: string | null;
   agentProfileId: string;
-  editFormat?: EditFormat | null;
+  modelEditFormats: Record<string, EditFormat>;
   reasoningEffort?: string;
   thinkingTokens?: string;
   currentMode: Mode;
@@ -171,7 +171,7 @@ export interface ModelsData {
   architectModel?: string | null;
   reasoningEffort?: string;
   thinkingTokens?: string;
-  editFormat?: EditFormat;
+  modelEditFormats: Record<string, EditFormat>;
   info?: RawModelInfo;
   error?: string;
 }

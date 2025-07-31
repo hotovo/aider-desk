@@ -187,10 +187,9 @@ export const setupIpcHandlers = (
     if (clearWeakModel) {
       projectSettings.weakModel = null;
     }
-    projectSettings.editFormat = null;
 
     store.saveProjectSettings(baseDir, projectSettings);
-    projectManager.getProject(baseDir).updateModels(mainModel, projectSettings?.weakModel || null);
+    projectManager.getProject(baseDir).updateModels(mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats);
   });
 
   ipcMain.on('update-weak-model', (_, baseDir: string, weakModel: string) => {
@@ -199,7 +198,7 @@ export const setupIpcHandlers = (
     store.saveProjectSettings(baseDir, projectSettings);
 
     const project = projectManager.getProject(baseDir);
-    project.updateModels(projectSettings.mainModel, weakModel);
+    project.updateModels(projectSettings.mainModel, weakModel, projectSettings.modelEditFormats);
   });
 
   ipcMain.on('update-architect-model', (_, baseDir: string, architectModel: string) => {
@@ -211,11 +210,12 @@ export const setupIpcHandlers = (
     project.setArchitectModel(architectModel);
   });
 
-  ipcMain.on('update-edit-format', (_, baseDir: string, format: EditFormat) => {
+  ipcMain.on('update-edit-format', (_, baseDir: string, modelEditFormats: Record<string, EditFormat>) => {
     const projectSettings = store.getProjectSettings(baseDir);
-    projectSettings.editFormat = format;
+    // Update just the current model's edit format while preserving others
+    projectSettings.modelEditFormats = modelEditFormats;
     store.saveProjectSettings(baseDir, projectSettings);
-    projectManager.getProject(baseDir).updateModels(projectSettings.mainModel, projectSettings?.weakModel || null, format);
+    projectManager.getProject(baseDir).updateModels(projectSettings.mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats);
   });
 
   ipcMain.on('run-command', (_, baseDir: string, command: string) => {

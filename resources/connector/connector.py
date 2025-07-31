@@ -1100,7 +1100,7 @@ class Connector:
       "weakModel": self.coder.main_model.weak_model.name,
       "reasoningEffort": self.coder.main_model.get_reasoning_effort() if self.coder.main_model.get_reasoning_effort() is not None else self.reasoning_effort,
       "thinkingTokens": self.coder.main_model.get_thinking_tokens() if self.coder.main_model.get_thinking_tokens() is not None else self.thinking_tokens,
-      "editFormat": self.coder.edit_format,
+      "modelEditFormats": {self.coder.main_model.name: self.coder.edit_format},
       "info": info,
       "error": error
     })
