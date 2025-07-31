@@ -41,7 +41,6 @@ import {
   ToolMessage,
   UserMessage,
 } from '@/types/message';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { ContextFiles } from '@/components/ContextFiles';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { useSettings } from '@/context/SettingsContext';
@@ -82,7 +81,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [aiderTotalCost, setAiderTotalCost] = useState(0);
   const [tokensInfo, setTokensInfo] = useState<TokensInfoData | null>(null);
   const [question, setQuestion] = useState<QuestionData | null>(null);
-  const [showFrozenDialog, setShowFrozenDialog] = useState(false);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
 
@@ -90,7 +88,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const promptFieldRef = useRef<PromptFieldRef>(null);
   const projectTopBarRef = useRef<ProjectTopBarRef>(null);
   const messagesRef = useRef<MessagesRef>(null);
-  const frozenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
 
@@ -116,7 +113,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   }, [projectSettings, settings]);
 
   useEffect(() => {
-    window.api.startProject(project.baseDir);
+    const handleProjectStarted = () => {
+      setLoading(false);
+    };
+    const projectStartedListenerId = window.api.addProjectStartedListener(project.baseDir, handleProjectStarted);
 
     // Load existing todos
     const loadTodos = async () => {
@@ -129,19 +129,14 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
+    window.api.startProject(project.baseDir);
     void loadTodos();
 
     return () => {
+      window.api.removeProjectStartedListener(projectStartedListenerId);
       window.api.stopProject(project.baseDir);
     };
   }, [project.baseDir]);
-
-  useEffect(() => {
-    if (!processing && frozenTimeoutRef.current) {
-      clearTimeout(frozenTimeoutRef.current);
-      frozenTimeoutRef.current = null;
-    }
-  }, [processing]);
 
   useEffect(() => {
     const handleResponseChunk = (_: IpcRendererEvent, { messageId, chunk, reflectedMessage }: ResponseChunkData) => {
@@ -507,8 +502,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const clearSession = () => {
-    setShowFrozenDialog(false);
-    setLoading(true);
     setMessages([]);
     setAiderTotalCost(0);
     setProcessing(false);
@@ -595,23 +588,12 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     };
     setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), interruptMessage]);
     setQuestion(null);
-
-    if (projectSettings?.currentMode === 'agent') {
-      // using interrupt in agent mode will cancel immediately
-      setProcessing(false);
-    } else {
-      frozenTimeoutRef.current = setTimeout(() => {
-        if (processing) {
-          setShowFrozenDialog(true);
-        }
-        frozenTimeoutRef.current = null;
-      }, 10000);
-    }
+    setProcessing(false);
   };
 
-  const handleModelChange = () => {
+  const handleModelChange = (modelsData: ModelsData | null) => {
+    setAiderModelsData(modelsData);
     promptFieldRef.current?.focus();
-    setAiderModelsData(null);
   };
 
   const handleModeChange = (mode: Mode) => {
@@ -670,6 +652,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const restartProject = () => {
+    setLoading(true);
     void window.api.restartProject(project.baseDir);
     clearSession();
   };
@@ -715,7 +698,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleToggleTodo = async (name: string, completed: boolean) => {
     try {
-      const updatedTodos = await window.api.updateTodo(project.baseDir, name, { completed });
+      const updatedTodos = await window.api.updateTodo(project.baseDir, name, {
+        completed,
+      });
       setTodoItems(updatedTodos);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -778,7 +763,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           allModels={availableModels}
           mode={projectSettings.currentMode}
           renderMarkdown={projectSettings.renderMarkdown}
-          onModelChange={handleModelChange}
+          onModelsChange={handleModelChange}
           onRenderMarkdownChanged={handleRenderMarkdownChanged}
           onExportSessionToImage={exportMessagesToImage}
           runCommand={runCommand}
@@ -885,18 +870,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           />
         </div>
       </ResizableBox>
-      {showFrozenDialog && (
-        <ConfirmDialog
-          title={t('errors.frozenTitle')}
-          onConfirm={restartProject}
-          onCancel={() => setShowFrozenDialog(false)}
-          confirmButtonText="Restart"
-          cancelButtonText="Wait"
-          closeOnEscape={false}
-        >
-          {t('errors.frozenMessage')}
-        </ConfirmDialog>
-      )}
       {addFileDialogOptions && (
         <AddFileDialog
           baseDir={project.baseDir}

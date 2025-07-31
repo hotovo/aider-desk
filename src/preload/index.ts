@@ -43,6 +43,7 @@ const toolListeners: Record<string, (event: Electron.IpcRendererEvent, data: Too
 const inputHistoryUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: InputHistoryData) => void> = {};
 const userMessageListeners: Record<string, (event: Electron.IpcRendererEvent, data: UserMessageData) => void> = {};
 const clearProjectListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string, clearMessages: boolean, clearSession: boolean) => void> = {};
+const projectStartedListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string) => void> = {};
 const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
 
 const api: ApplicationAPI = {
@@ -379,6 +380,25 @@ const api: ApplicationAPI = {
     if (callback) {
       ipcRenderer.removeListener('clear-project', callback);
       delete clearProjectListeners[listenerId];
+    }
+  },
+
+  addProjectStartedListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    projectStartedListeners[listenerId] = (event: Electron.IpcRendererEvent, receivedBaseDir: string) => {
+      if (!compareBaseDirs(receivedBaseDir, baseDir)) {
+        return;
+      }
+      callback(event, receivedBaseDir);
+    };
+    ipcRenderer.on('project-started', projectStartedListeners[listenerId]);
+    return listenerId;
+  },
+  removeProjectStartedListener: (listenerId) => {
+    const callback = projectStartedListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('project-started', callback);
+      delete projectStartedListeners[listenerId];
     }
   },
 

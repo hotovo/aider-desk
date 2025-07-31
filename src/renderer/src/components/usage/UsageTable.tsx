@@ -2,20 +2,21 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsageDataRow } from '@common/types';
 
+import { formatDateByGroup, GroupBy } from './utils';
+
 type Props = {
   data: UsageDataRow[];
+  groupBy: GroupBy;
 };
 
-export const UsageTable = ({ data }: Props) => {
+export const UsageTable = ({ data, groupBy }: Props) => {
   const { t } = useTranslation();
 
-  // Aggregate data by day
   const aggregatedData = useMemo(() => {
     const aggregatedMap = new Map<string, UsageDataRow>();
 
     data.forEach((row) => {
-      const date = new Date(row.timestamp).toISOString().split('T')[0]; // Get YYYY-MM-DD format
-      const key = date;
+      const key = formatDateByGroup(row.timestamp, groupBy);
 
       if (aggregatedMap.has(key)) {
         const existing = aggregatedMap.get(key)!;
@@ -38,13 +39,13 @@ export const UsageTable = ({ data }: Props) => {
         aggregatedMap.set(key, {
           ...row,
           project: row.project.split(/[\\/]/).pop() || row.project,
-          timestamp: date, // Use date string for display
+          timestamp: row.timestamp,
         });
       }
     });
 
     return Array.from(aggregatedMap.values()).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [data]);
+  }, [data, groupBy]);
 
   const totals = useMemo(() => {
     return aggregatedData.reduce(
@@ -87,7 +88,7 @@ export const UsageTable = ({ data }: Props) => {
           <tbody>
             {aggregatedData.map((row, index) => (
               <tr key={index} className="bg-neutral-900 border-b border-neutral-800 hover:bg-neutral-800/50 text-sm">
-                <td className="px-4 py-2 text-xs">{new Date(row.timestamp).toLocaleDateString()}</td>
+                <td className="px-4 py-2 text-xs">{formatDateByGroup(row.timestamp, groupBy)}</td>
                 <td className="px-4 py-2">
                   <div className="whitespace-pre-line text-xs">{row.project}</div>
                 </td>

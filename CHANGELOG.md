@@ -1,6 +1,14 @@
 # Changelog
 
 ## [UNRELEASED]
+
+- improved connection and communication with Aider
+- reading cached tokens when working with Aider modes
+- fixed start up with using local Aider installation via AIDER_DESK_AIDER_VERSION
+- fixed command output messages in the context
+- added hourly, daily, monthly, yearly aggregation for dashboard data
+- added support for non-git projects
+- fixed map-refresh command not to display the map
 - added OpenRouter advanced settings
 
 ## [0.24.0]
