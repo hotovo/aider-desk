@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 
+import { formatDateByGroup, GroupBy } from './utils';
+
 type ChartDataPoint = {
   date: string;
   inputTokens: number;
@@ -12,9 +14,10 @@ type ChartDataPoint = {
 
 type Props = {
   data: UsageDataRow[];
+  groupBy: GroupBy;
 };
 
-export const TokenUsageTrendChart = ({ data }: Props) => {
+export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
   const { t } = useTranslation();
 
   // Process data for trend chart (aggregate by day)
@@ -22,7 +25,7 @@ export const TokenUsageTrendChart = ({ data }: Props) => {
     const aggregatedMap = new Map<string, ChartDataPoint>();
 
     data.forEach((row) => {
-      const date = new Date(row.timestamp).toISOString().split('T')[0]; // Get YYYY-MM-DD format
+      const date = formatDateByGroup(row.timestamp, groupBy); // Get YYYY-MM-DD format
 
       if (aggregatedMap.has(date)) {
         const existing = aggregatedMap.get(date)!;
@@ -43,11 +46,7 @@ export const TokenUsageTrendChart = ({ data }: Props) => {
     });
 
     return Array.from(aggregatedMap.values()).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [data]);
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
-  };
+  }, [data, groupBy]);
 
   const formatTokens = (value: number) => {
     if (value >= 1000000) {
@@ -76,7 +75,7 @@ export const TokenUsageTrendChart = ({ data }: Props) => {
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#3d4166" />
-            <XAxis dataKey="date" tickFormatter={formatDate} stroke="#8c8e95" fontSize={12} />
+            <XAxis dataKey="date" stroke="#8c8e95" fontSize={12} />
             <YAxis tickFormatter={formatTokens} stroke="#8c8e95" fontSize={12} />
             <Tooltip
               contentStyle={{
@@ -85,7 +84,6 @@ export const TokenUsageTrendChart = ({ data }: Props) => {
                 borderRadius: '6px',
                 color: '#f1f3f5',
               }}
-              labelFormatter={(label) => formatDate(label as string)}
               wrapperClassName="text-xs"
               formatter={(value: number, name: string) => [
                 formatTokens(value),

@@ -65,6 +65,15 @@ export const isValidPath = async (baseDir: string, filePath: string): Promise<bo
   }
 };
 
+export const isDirectory = async (path: string): Promise<boolean> => {
+  try {
+    const stats = await fs.promises.stat(path);
+    return stats.isDirectory();
+  } catch {
+    return false;
+  }
+};
+
 export const isFileIgnored = async (projectBaseDir: string, filePath: string): Promise<boolean> => {
   const gitignorePath = path.join(projectBaseDir, '.gitignore');
 

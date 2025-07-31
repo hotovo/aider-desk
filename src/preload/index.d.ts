@@ -145,6 +145,9 @@ export interface ApplicationAPI {
   addClearProjectListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, clearMessages: boolean, clearSession: boolean) => void) => string;
   removeClearProjectListener: (listenerId: string) => void;
 
+  addProjectStartedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, baseDir: string) => void) => string;
+  removeProjectStartedListener: (listenerId: string) => void;
+
   addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => string;
   removeVersionsInfoUpdatedListener: (listenerId: string) => void;
 
