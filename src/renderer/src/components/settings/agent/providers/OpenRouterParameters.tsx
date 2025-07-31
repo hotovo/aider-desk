@@ -23,7 +23,7 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
 
   // Use the effective API key (from provider or environment)
   const effectiveApiKey = apiKey || openRouterApiKeyEnv?.value || '';
-  const toSelectModels = useOpenRouterModels(effectiveApiKey);
+  const availableModels = useOpenRouterModels(effectiveApiKey);
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
@@ -51,7 +51,7 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
             : t('settings.agent.envVarPlaceholder', { envVar: 'OPENROUTER_API_KEY' })
         }
       />
-      <ProviderModels models={models} onChange={handleModelsChange} toSelectModels={toSelectModels} />
+      <ProviderModels models={models} onChange={handleModelsChange} availableModels={availableModels} />
     </div>
   );
 };

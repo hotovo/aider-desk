@@ -13,14 +13,16 @@ type Props = {
   models: string[];
   onChange: (updatedModels: string[]) => void;
   placeholder?: string;
-  toSelectModels?: string[];
+  availableModels?: string[];
 };
 
-export const ProviderModels = ({ models, onChange, placeholder, toSelectModels }: Props) => {
+export const ProviderModels = ({ models, onChange, placeholder, availableModels }: Props) => {
   const { t } = useTranslation();
 
   const [newModel, setNewModel] = useState('');
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
+
+  const notSelectedModels = availableModels ? availableModels.filter((model) => !models.includes(model)) : [];
 
   const handleModelsChange = (updatedModels: string[]) => {
     onChange(updatedModels);
@@ -44,7 +46,7 @@ export const ProviderModels = ({ models, onChange, placeholder, toSelectModels }
   };
 
   const selectOptions =
-    toSelectModels?.map((model) => ({
+    notSelectedModels?.map((model) => ({
       value: model,
       label: model,
     })) || [];
@@ -62,15 +64,24 @@ export const ProviderModels = ({ models, onChange, placeholder, toSelectModels }
           ))}
         </div>
       </div>
-      <MultiSelect options={selectOptions} selected={selectedModels} onChange={setSelectedModels} noneSelectedLabel="Choose models to add..." />
       <div className="flex items-end space-x-2">
-        <Input
-          type="text"
-          value={newModel}
-          onChange={(e) => setNewModel(e.target.value)}
-          placeholder={placeholder || t('model.placeholder')}
-          wrapperClassName="flex-grow"
-        />
+        {availableModels !== undefined && availableModels.length > 0 ? (
+          <MultiSelect
+            className="flex-grow"
+            options={selectOptions}
+            selected={selectedModels}
+            onChange={setSelectedModels}
+            noneSelectedLabel="Choose models to add..."
+          />
+        ) : (
+          <Input
+            type="text"
+            value={newModel}
+            onChange={(e) => setNewModel(e.target.value)}
+            placeholder={placeholder || t('model.placeholder')}
+            wrapperClassName="flex-grow"
+          />
+        )}
         <Button onClick={handleAddModels} disabled={!newModel.trim() && selectedModels.length === 0} variant="text">
           <HiPlus className="mr-1 w-3 h-3" />
           {t('common.add')}

@@ -34,7 +34,7 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
 
   // Use the effective API key (from provider or environment)
   const effectiveApiKey = apiKey || requestyApiKeyEnv?.value || '';
-  const toSelectModels = useRequestyModels(effectiveApiKey);
+  const availableModels = useRequestyModels(effectiveApiKey);
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
@@ -87,7 +87,7 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
           <InfoIcon tooltip={t('requesty.autoCacheTooltip')} />
         </div>
       </div>
-      <ProviderModels models={models} onChange={handleModelsChange} toSelectModels={toSelectModels} />
+      <ProviderModels models={models} onChange={handleModelsChange} availableModels={availableModels} />
     </div>
   );
 };
