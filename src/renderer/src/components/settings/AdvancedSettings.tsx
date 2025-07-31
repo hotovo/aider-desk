@@ -17,28 +17,40 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
   const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({
       ...provider,
-      order: e.target.value.split(','),
+      order: e.target.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
     });
   };
 
   const handleOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({
       ...provider,
-      only: e.target.value.split(','),
+      only: e.target.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
     });
   };
 
   const handleIgnoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({
       ...provider,
-      ignore: e.target.value.split(','),
+      ignore: e.target.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
     });
   };
 
   const handleQuantizationsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({
       ...provider,
-      quantizations: e.target.value.split(','),
+      quantizations: e.target.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
     });
   };
 
@@ -82,7 +94,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
             </div>
           </div>
         }
-        placeholder="e.g. antrhopic, openai"
+        placeholder="e.g. anthropic, openai"
         value={provider.order}
         onChange={handleOrderChange}
       />
@@ -156,7 +168,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
             </div>
           </div>
         }
-        placeholder="e.g. antrhopic, openai"
+        placeholder="e.g. anthropic, openai"
         value={provider.only}
         onChange={handleOnlyChange}
       />
@@ -178,7 +190,7 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
             </div>
           </div>
         }
-        placeholder="e.g. antrhopic, openai"
+        placeholder="e.g. anthropic, openai"
         value={provider.ignore}
         onChange={handleIgnoreChange}
       />
