@@ -67,9 +67,9 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
     <div className="space-y-2">
       <Input
         label={
-          <div className="flex items-center text-xs">
+          <div className="flex items-center">
             {t('onboarding.providers.order')}
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2">
               <InfoIcon className="ml-1" tooltip={t('onboarding.providers.orderDescription')} />
               <a
                 href="https://openrouter.ai/docs/features/provider-routing#ordering-specific-providers"
@@ -87,31 +87,37 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
         onChange={handleOrderChange}
       />
 
-      <div className="flex text-xs">
-        <div className="flex items-center gap-2 text-xs">
-          <Checkbox onChange={handleAllowFallbacksChange} checked={provider.allowFallbacks} />
-          {t('onboarding.providers.allowFallbacks')}
-        </div>
-
-        <div className="flex items-center gap-2 text-xs">
-          <InfoIcon className="ml-1" tooltip={t('onboarding.providers.allowFallbacksDescription')} />
-          <a
-            href="https://openrouter.ai/docs/features/provider-routing#disabling-fallbacks"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 ml-1"
-          >
-            {t('settings.common.learnMore')}
-          </a>
+      <div className="flex">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            label={
+              <div className="flex items-center text-sm">
+                {t('onboarding.providers.allowFallbacks')}
+                <div className="flex items-center gap-2">
+                  <InfoIcon className="ml-1" tooltip={t('onboarding.providers.allowFallbacksDescription')} />
+                  <a
+                    href="https://openrouter.ai/docs/features/provider-routing#disabling-fallbacks"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 ml-1"
+                  >
+                    {t('settings.common.learnMore')}
+                  </a>
+                </div>
+              </div>
+            }
+            onChange={handleAllowFallbacksChange}
+            checked={provider.allowFallbacks}
+          />
         </div>
       </div>
 
-      <div className="flex items-center text-xs max-w-[260px]">
+      <div className="flex items-center max-w-[260px]">
         <Select
           label={
-            <div className="flex items-center text-xs">
+            <div className="flex items-center">
               {t('onboarding.providers.dataCollection')}
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2">
                 <InfoIcon className="ml-1" tooltip={t('onboarding.providers.dataCollectionDescription')} />
                 <a
                   href="https://openrouter.ai/docs/features/provider-routing#requiring-providers-to-comply-with-data-policies"
@@ -135,9 +141,9 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
 
       <Input
         label={
-          <div className="flex items-center text-xs">
+          <div className="flex items-center">
             {t('onboarding.providers.only')}
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2">
               <InfoIcon className="ml-1" tooltip={t('onboarding.providers.onlyDescription')} />
               <a
                 href="https://openrouter.ai/docs/features/provider-routing#allowing-only-specific-providers"
@@ -157,9 +163,9 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
 
       <Input
         label={
-          <div className="flex items-center text-xs">
+          <div className="flex items-center">
             {t('onboarding.providers.ignore')}
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2">
               <InfoIcon className="ml-1" tooltip={t('onboarding.providers.ignoreDescription')} />
               <a
                 href="https://openrouter.ai/docs/features/provider-routing#ignoring-providers"
@@ -179,9 +185,9 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
 
       <Input
         label={
-          <div className="flex items-center text-xs">
+          <div className="flex items-center">
             {t('onboarding.providers.quantizations')}
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2">
               <InfoIcon className="ml-1" tooltip={t('onboarding.providers.quantizationsDescription')} />
               <a
                 href="https://openrouter.ai/docs/features/provider-routing#quantization"
@@ -199,12 +205,12 @@ export const AdvancedSettings = ({ provider, onChange }: Props) => {
         onChange={handleQuantizationsChange}
       />
 
-      <div className="flex items-center text-xs max-w-[260px]">
+      <div className="flex items-center max-w-[260px]">
         <Select
           label={
-            <div className="flex items-center text-xs">
+            <div className="flex items-center">
               {t('onboarding.providers.sort')}
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2">
                 <InfoIcon className="ml-1" tooltip={t('onboarding.providers.sortDescription')} />
                 <a
                   href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
