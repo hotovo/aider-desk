@@ -52,7 +52,7 @@ export interface ApplicationAPI {
   updateMainModel: (baseDir: string, model: string) => void;
   updateWeakModel: (baseDir: string, model: string) => void;
   updateArchitectModel: (baseDir: string, model: string) => void;
-  updateEditFormat: (baseDir: string, format: EditFormat) => void;
+  updateEditFormat: (baseDir: string, modelEditFormats: Record<string, EditFormat>) => void;
   getProjectSettings: (baseDir: string) => Promise<ProjectSettings>;
   patchProjectSettings: (baseDir: string, settings: Partial<ProjectSettings>) => Promise<ProjectSettings>;
   getFilePathSuggestions: (currentPath: string, directoriesOnly?: boolean) => Promise<string[]>;

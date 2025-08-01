@@ -91,7 +91,8 @@ export class Connector {
     this.sendMessage(message);
   };
 
-  public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat?: EditFormat): void {
+  public sendSetModelsMessage(mainModel: string, weakModel: string | null, modelEditFormats: Record<string, EditFormat>): void {
+    const editFormat = modelEditFormats[mainModel];
     const message: SetModelsMessage = {
       action: 'set-models',
       mainModel,

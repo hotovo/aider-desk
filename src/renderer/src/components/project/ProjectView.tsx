@@ -1,6 +1,7 @@
 import {
   AutocompletionData,
   CommandOutputData,
+  EditFormat,
   InputHistoryData,
   LogData,
   Mode,
@@ -88,6 +89,11 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const promptFieldRef = useRef<PromptFieldRef>(null);
   const projectTopBarRef = useRef<ProjectTopBarRef>(null);
   const messagesRef = useRef<MessagesRef>(null);
+  const [modelEditFormats, setModelEditFormats] = useState<Record<string, EditFormat>>(projectSettings?.modelEditFormats || {});
+
+  useEffect(() => {
+    setModelEditFormats(projectSettings?.modelEditFormats || {});
+  }, [projectSettings?.modelEditFormats]);
 
   const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
 
@@ -760,6 +766,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           ref={projectTopBarRef}
           baseDir={project.baseDir}
           modelsData={aiderModelsData}
+          modelEditFormats={modelEditFormats}
           allModels={availableModels}
           mode={projectSettings.currentMode}
           renderMarkdown={projectSettings.renderMarkdown}

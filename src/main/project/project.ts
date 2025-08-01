@@ -284,7 +284,7 @@ export class Project {
     const projectSettings = this.store.getProjectSettings(this.baseDir);
     const mainModel = projectSettings.mainModel || DEFAULT_MAIN_MODEL;
     const weakModel = projectSettings.weakModel;
-    const editFormat = projectSettings.editFormat;
+    const modelEditFormats = projectSettings.modelEditFormats;
     const reasoningEffort = projectSettings.reasoningEffort;
     const environmentVariables = this.getEnvironmentVariablesForAider(settings);
     const thinkingTokens = projectSettings.thinkingTokens;
@@ -321,8 +321,8 @@ export class Project {
       args.push('--weak-model', weakModel);
     }
 
-    if (editFormat) {
-      args.push('--edit-format', editFormat);
+    if (modelEditFormats[mainModel]) {
+      args.push('--edit-format', modelEditFormats[mainModel]);
     }
 
     if (reasoningEffort !== undefined && !optionsArgsSet.has('--reasoning-effort')) {
@@ -1035,13 +1035,14 @@ export class Project {
     this.mainWindow.webContents.send('update-aider-models', this.aiderModels);
   }
 
-  public updateModels(mainModel: string, weakModel: string | null, editFormat?: EditFormat) {
+  public updateModels(mainModel: string, weakModel: string | null, modelEditFormats: Record<string, EditFormat>) {
     logger.info('Updating models:', {
       mainModel,
       weakModel,
-      editFormat,
+      modelEditFormats,
     });
-    this.findMessageConnectors('set-models').forEach((connector) => connector.sendSetModelsMessage(mainModel, weakModel, editFormat));
+
+    this.findMessageConnectors('set-models').forEach((connector) => connector.sendSetModelsMessage(mainModel, weakModel, modelEditFormats));
   }
 
   public setArchitectModel(architectModel: string) {
