@@ -480,9 +480,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     };
 
     const handleSubmit = () => {
-      setTimeout(() => {
-        messagesRef.current?.scrollToBottom();
-      }, 50);
+      messagesRef.current?.scrollToBottom();
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
           // Check if it's a custom command
@@ -507,7 +505,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         } else {
           runPrompt(text);
           prepareForNextPrompt();
-          messagesRef.current?.scrollToBottom();
         }
       }
     };
