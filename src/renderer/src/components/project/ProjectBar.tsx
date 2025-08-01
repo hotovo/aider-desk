@@ -62,7 +62,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     const [sessions, setSessions] = useState<SessionData[]>([]);
     const [sessionPopupVisible, showSessionPopup, hideSessionPopup] = useBooleanState(false);
     const sessionPopupRef = useRef<HTMLDivElement>(null);
-    const [currentEditFormat, setCurrentEditFormat] = useState<EditFormat>('diff');
+    const [currentEditFormat, setCurrentEditFormat] = useState<EditFormat>('whole');
 
     useImperativeHandle(ref, () => ({
       openMainModelSelector: (model) => {
@@ -140,9 +140,10 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           onModelsChange(null);
         }
         if (!(mainModel in modelEditFormats)) {
-          modelEditFormats[mainModel] = 'diff';
+          void updateEditFormat('whole');
+        } else {
+          setCurrentEditFormat(modelEditFormats[mainModel]);
         }
-        setCurrentEditFormat(modelEditFormats[mainModel]);
       },
       [baseDir, modelEditFormats, modelsData, onModelsChange, updatePreferredModels],
     );
@@ -182,10 +183,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         }
 
         modelEditFormats[modelsData.mainModel] = format;
-        console.log('joooj', modelEditFormats);
-
         window.api.updateEditFormat(baseDir, modelEditFormats);
-
         setCurrentEditFormat(modelEditFormats[modelsData.mainModel]);
       },
       [baseDir, modelsData, onModelsChange],

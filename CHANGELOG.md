@@ -9,6 +9,7 @@
 - added hourly, daily, monthly, yearly aggregation for dashboard data
 - added support for non-git projects
 - fixed map-refresh command not to display the map
+- aider-desk now remembers editFormat per model per project and reuses it
 
 ## [0.24.0]
 
