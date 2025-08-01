@@ -210,10 +210,13 @@ export const setupIpcHandlers = (
     project.setArchitectModel(architectModel);
   });
 
-  ipcMain.on('update-edit-format', (_, baseDir: string, modelEditFormats: Record<string, EditFormat>) => {
+  ipcMain.on('update-edit-format', (_, baseDir: string, updatedFormats: Record<string, EditFormat>) => {
     const projectSettings = store.getProjectSettings(baseDir);
     // Update just the current model's edit format while preserving others
-    projectSettings.modelEditFormats = modelEditFormats;
+    projectSettings.modelEditFormats = {
+      ...projectSettings.modelEditFormats,
+      ...updatedFormats,
+    };
     store.saveProjectSettings(baseDir, projectSettings);
     projectManager.getProject(baseDir).updateModels(projectSettings.mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats);
   });

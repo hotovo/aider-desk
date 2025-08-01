@@ -29,6 +29,7 @@ type Props = {
   baseDir: string;
   allModels?: string[];
   modelsData: ModelsData | null;
+  modelEditFormats: Record<string, EditFormat>;
   mode: Mode;
   renderMarkdown: boolean;
   onModelsChange?: (modelsData: ModelsData | null) => void;
@@ -38,7 +39,21 @@ type Props = {
 };
 
 export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
-  ({ baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelsChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand }, ref) => {
+  (
+    {
+      baseDir,
+      allModels = [],
+      modelsData,
+      modelEditFormats,
+      mode,
+      renderMarkdown,
+      onModelsChange,
+      onRenderMarkdownChanged,
+      onExportSessionToImage,
+      runCommand,
+    },
+    ref,
+  ) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
     const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
@@ -47,6 +62,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     const [sessions, setSessions] = useState<SessionData[]>([]);
     const [sessionPopupVisible, showSessionPopup, hideSessionPopup] = useBooleanState(false);
     const sessionPopupRef = useRef<HTMLDivElement>(null);
+    const [currentEditFormat, setCurrentEditFormat] = useState<EditFormat>('diff');
 
     useImperativeHandle(ref, () => ({
       openMainModelSelector: (model) => {
@@ -123,8 +139,12 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         if (modelsData && onModelsChange) {
           onModelsChange(null);
         }
+        if (!(mainModel in modelEditFormats)) {
+          modelEditFormats[mainModel] = 'diff';
+        }
+        setCurrentEditFormat(modelEditFormats[mainModel]);
       },
-      [baseDir, modelsData, onModelsChange, updatePreferredModels],
+      [baseDir, modelEditFormats, modelsData, onModelsChange, updatePreferredModels],
     );
 
     const updateWeakModel = useCallback(
@@ -156,20 +176,17 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     );
 
     const updateEditFormat = useCallback(
-      (format: EditFormat) => {
-        if (modelsData && onModelsChange) {
-          // Create new object with updated format before state update
-          modelsData.modelEditFormats[modelsData.mainModel] = format;
-
-          // Update local state first for immediate UI feedback
-          onModelsChange({
-            ...modelsData,
-            modelEditFormats: modelsData.modelEditFormats,
-          });
-
-          // Then call API to persist the change
-          window.api.updateEditFormat(baseDir, modelsData.modelEditFormats);
+      async (format: EditFormat) => {
+        if (!modelsData || !onModelsChange) {
+          return;
         }
+
+        modelEditFormats[modelsData.mainModel] = format;
+        console.log('joooj', modelEditFormats);
+
+        window.api.updateEditFormat(baseDir, modelEditFormats);
+
+        setCurrentEditFormat(modelEditFormats[modelsData.mainModel]);
       },
       [baseDir, modelsData, onModelsChange],
     );
@@ -331,13 +348,13 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 removePreferredModel={handleRemovePreferredModel}
               />
             </div>
-            {modelsData?.modelEditFormats && (
+            {modelEditFormats && (
               <>
                 <div className="h-3 w-px bg-neutral-600/50"></div>
                 <div className="flex items-center space-x-1">
                   <BsCodeSlash className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="edit-format-tooltip" />
                   <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
-                  <EditFormatSelector currentFormat={modelsData.modelEditFormats[modelsData.mainModel]} onFormatChange={updateEditFormat} />
+                  <EditFormatSelector currentFormat={currentEditFormat} onFormatChange={updateEditFormat} />
                 </div>
               </>
             )}
