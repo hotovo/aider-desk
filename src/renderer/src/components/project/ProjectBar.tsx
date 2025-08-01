@@ -140,7 +140,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           onModelsChange(null);
         }
         if (!(mainModel in modelEditFormats)) {
-          void updateEditFormat('whole');
+          void updateEditFormat('whole', mainModel);
         } else {
           setCurrentEditFormat(modelEditFormats[mainModel]);
         }
@@ -177,16 +177,18 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     );
 
     const updateEditFormat = useCallback(
-      async (format: EditFormat) => {
-        if (!modelsData || !onModelsChange) {
+      (format: EditFormat, modelToUpdate?: string) => {
+        const targetModel = modelToUpdate || modelsData?.mainModel;
+        if (!targetModel) {
           return;
         }
+        console.log('joooj', targetModel);
 
-        modelEditFormats[modelsData.mainModel] = format;
-        window.api.updateEditFormat(baseDir, modelEditFormats);
-        setCurrentEditFormat(modelEditFormats[modelsData.mainModel]);
+        // Send only the specific update to the backend.
+        window.api.updateEditFormat(baseDir, { [targetModel]: format });
+        setCurrentEditFormat(format);
       },
-      [baseDir, modelsData, onModelsChange],
+      [baseDir, modelsData?.mainModel],
     );
 
     const loadSessions = useCallback(async () => {
@@ -280,7 +282,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       };
       void saveSettings(updatedSettings);
     };
-    console.log('model', modelsData);
+
     return (
       <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-neutral-800 bg-neutral-900">
         <div className="flex items-center h-full">
