@@ -92,11 +92,12 @@ export class Connector {
   };
 
   public sendSetModelsMessage(mainModel: string, weakModel: string | null, modelEditFormats: Record<string, EditFormat>): void {
+    const editFormat = modelEditFormats[mainModel];
     const message: SetModelsMessage = {
       action: 'set-models',
       mainModel,
       weakModel,
-      modelEditFormats,
+      editFormat,
     };
     this.sendMessage(message);
   }
