@@ -846,7 +846,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             )}
             <PromptField
               ref={promptFieldRef}
-              messagesRef={messagesRef}
               baseDir={project.baseDir}
               inputHistory={inputHistory}
               processing={processing}
@@ -873,6 +872,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               clearLogMessages={clearLogMessages}
               toggleTerminal={toggleTerminal}
               terminalVisible={terminalVisible}
+              scrollToBottom={messagesRef.current?.scrollToBottom}
             />
           </div>
         </div>

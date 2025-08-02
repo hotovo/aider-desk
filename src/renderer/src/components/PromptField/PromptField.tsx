@@ -12,7 +12,7 @@ import { vim } from '@replit/codemirror-vim';
 import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
-import { forwardRef, RefObject, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDebounce } from 'react-use';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
@@ -25,7 +25,6 @@ import { ModeSelector } from '@/components/PromptField/ModeSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
 import { useCustomCommands } from '@/hooks/useCustomCommands';
-import { MessagesRef } from '@/components/message';
 
 const COMMANDS = [
   '/code',
@@ -105,7 +104,7 @@ type Props = {
   clearLogMessages: () => void;
   toggleTerminal?: () => void;
   terminalVisible?: boolean;
-  messagesRef: RefObject<MessagesRef>;
+  scrollToBottom?: () => void;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -137,7 +136,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       clearLogMessages,
       toggleTerminal,
       terminalVisible = false,
-      messagesRef,
+      scrollToBottom,
     }: Props,
     ref,
   ) => {
@@ -501,7 +500,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     };
 
     const handleSubmit = () => {
-      messagesRef.current?.scrollToBottom();
+      scrollToBottom?.();
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
           // Check if it's a custom command
