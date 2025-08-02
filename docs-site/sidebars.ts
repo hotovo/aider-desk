@@ -1,7 +1,5 @@
 import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
-// This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
-
 /**
  * Creating a sidebar enables you to:
  - create an ordered group of docs
@@ -20,70 +18,72 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Getting Started',
       collapsed: false,
-      items: ['getting-started/onboarding-process', 'getting-started/project-management'],
+      items: ['getting-started/installation', 'getting-started/quick-start'],
     },
     {
       type: 'category',
-      label: 'Core Features',
-      collapsed: true,
+      label: 'Core Concepts',
+      collapsed: false,
       items: [
-        'core-features/chat-modes',
-        'core-features/commands-reference',
-        'core-features/custom-commands',
-        'core-features/reviewing-code-changes',
-        'core-features/session-management',
+        'core-concepts/projects',
+        'core-concepts/chat-interface',
+        'core-concepts/context-files',
+        'core-concepts/sessions',
+        {
+          type: 'category',
+          label: 'Agent Mode',
+          collapsed: true,
+          items: [
+            'core-concepts/agent-mode/index',
+            'core-concepts/agent-mode/profiles',
+            'core-concepts/agent-mode/tools',
+            'core-concepts/agent-mode/parameters',
+          ],
+        },
       ],
     },
     {
       type: 'category',
-      label: 'Agent Mode',
-      collapsed: true,
+      label: 'Features',
+      collapsed: false,
       items: [
-        'agent-mode/agent-mode',
-        'agent-mode/init',
-        'agent-mode/task-management',
-        'agent-mode/aider-tools',
-        'agent-mode/power-tools',
-        'agent-mode/mcp-servers',
+        'features/multi-project-management',
+        'features/ide-integration',
+        'features/custom-commands',
+        'features/diff-viewer',
+        'features/usage-tracking',
+        'features/todo-list',
       ],
     },
     {
       type: 'category',
       label: 'Configuration',
-      collapsed: true,
-      items: ['configuration/settings', 'configuration/aider-configuration', 'configuration/project-specific-rules', 'configuration/prompt-behavior'],
-    },
-    {
-      type: 'category',
-      label: 'Advanced Features',
-      collapsed: true,
+      collapsed: false,
       items: [
-        'advanced-features/usage-tracking',
-        'advanced-features/web-scraping',
-        'advanced-features/ide-integration',
-        'advanced-features/rest-api',
-        'advanced-features/compact',
+        'configuration/index',
+        'configuration/general-settings',
+        'configuration/model-providers',
+        'configuration/aider-settings',
       ],
     },
     {
       type: 'category',
-      label: 'Customization & Extensions',
-      collapsed: true,
-      items: ['customization/custom-aider-version', 'customization/extra-python-packages', 'customization/automatic-updates', 'customization/telemetry'],
+      label: 'Advanced Topics',
+      collapsed: false,
+      items: [
+        'advanced-topics/mcp-servers',
+        'advanced-topics/aiderdesk-as-mcp-server',
+        'advanced-topics/custom-aider-version',
+        'advanced-topics/environment-variables',
+      ],
     },
-  ],
-  // But you can create a sidebar manually
-  /*
-  tutorialSidebar: [
-    'intro',
-    'hello',
     {
       type: 'category',
-      label: 'Tutorial',
-      items: ['tutorial-basics/create-a-document'],
+      label: 'API Reference',
+      collapsed: false,
+      items: ['api-reference/rest-api'],
     },
   ],
-   */
 };
 
 export default sidebars;
