@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { OpenRouterProvider } from '@common/agent';
 
 import { ProviderModels } from './ProviderModels';
+import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
 
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 import { useOpenRouterModels } from '@/hooks/useOpenRouterModels';
 import { Accordion } from '@/components/common/Accordion';
-import { AdvancedSettings } from '@/components/settings/AdvancedSettings';
 
 type Props = {
   provider: OpenRouterProvider;
@@ -54,12 +54,6 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
           Get OpenRouter API key
         </a>
       </div>
-      {renderSectionAccordion(
-        t('onboarding.providers.advancedSettings'),
-        <div className="space-y-2">
-          <AdvancedSettings provider={provider} onChange={onChange} />
-        </div>,
-      )}
       <Input
         label={t('openRouter.apiKey')}
         type="password"
@@ -71,6 +65,12 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
             : t('settings.agent.envVarPlaceholder', { envVar: 'OPENROUTER_API_KEY' })
         }
       />
+      {renderSectionAccordion(
+        t('onboarding.providers.advancedSettings'),
+        <div className="space-y-2">
+          <OpenRouterAdvancedSettings provider={provider} onChange={onChange} />
+        </div>,
+      )}
       <ProviderModels models={models} onChange={handleModelsChange} availableModels={availableModels} />
     </div>
   );

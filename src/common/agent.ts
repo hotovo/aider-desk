@@ -120,12 +120,12 @@ export interface OpenRouterProvider extends LlmProviderBase {
   models: string[];
   // Advanced routing options
   order: string[];
-  allowFallbacks: boolean;
-  dataCollection: 'allow' | 'deny';
   only: string[];
   ignore: string[];
+  allowFallbacks: boolean;
+  dataCollection: 'allow' | 'deny';
   quantizations: string[];
-  sort: 'price' | 'throughput';
+  sort: 'price' | 'throughput' | null;
 }
 export const isOpenRouterProvider = (provider: LlmProviderBase): provider is OpenRouterProvider => provider.name === 'openrouter';
 
@@ -238,7 +238,7 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   },
 };
 
-export const getLlmProviderConfig = (providerName: LlmProviderName, settings: SettingsData | null): LlmProvider => {
+export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: SettingsData | null): LlmProvider => {
   let provider = settings?.llmProviders[providerName] || null;
 
   if (!provider) {
