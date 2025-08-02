@@ -5,6 +5,7 @@ import { existsSync, statSync } from 'fs';
 import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, shell } from 'electron';
+import * as Sentry from '@sentry/electron/main';
 
 import icon from '../../resources/icon.png?asset';
 
@@ -173,6 +174,16 @@ app.whenReady().then(async () => {
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
+  });
+
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    beforeSend(event) {
+      if (event.type === 'transaction') {
+        return null;
+      }
+      return event;
+    },
   });
 
   logger.info('------------ Starting AiderDesk... ------------');

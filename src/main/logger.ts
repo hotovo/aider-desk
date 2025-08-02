@@ -2,6 +2,7 @@ import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
 import { LOGS_DIR } from '@/constants';
+import { SentryTransport } from './sentry-transport';
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -20,6 +21,7 @@ const logger = winston.createLogger({
       maxSize: '20m',
       maxFiles: '14d',
     }),
+    new SentryTransport(),
   ],
 });
 

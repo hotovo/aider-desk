@@ -51,6 +51,7 @@
     "@playwright/test": "^1.53.2",
     "@replit/codemirror-vim": "^6.3.0",
     "@requesty/ai-sdk": "^0.0.9",
+    "@sentry/electron": "^6.8.0",
     "@smithy/eventstream-codec": "^2.0.0",
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",
