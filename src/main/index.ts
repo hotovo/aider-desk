@@ -129,7 +129,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const httpServer = createServer();
 
   // Create and initialize REST API controller
-  const restApiController = new RestApiController(projectManager, httpServer);
+  const restApiController = new RestApiController(projectManager, httpServer, store);
 
   // Initialize connector manager with the server
   const connectorManager = new ConnectorManager(mainWindow, projectManager, httpServer);

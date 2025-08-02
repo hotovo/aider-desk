@@ -1073,6 +1073,14 @@ export class Project {
     return files;
   }
 
+  public getAiderModels(): ModelsData | null {
+    return this.aiderModels;
+  }
+
+  public getTokensInfo(): TokensInfoData {
+    return this.tokensInfo;
+  }
+
   public getContextFiles(): ContextFile[] {
     return this.sessionManager.getContextFiles();
   }
