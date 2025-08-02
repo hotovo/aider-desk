@@ -51,6 +51,7 @@ import { PromptField, PromptFieldRef } from '@/components/PromptField';
 import { CostInfo } from '@/components/CostInfo';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
+import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
 import 'react-resizable/css/styles.css';
 import { useSearchText } from '@/hooks/useSearchText';
 
@@ -83,11 +84,13 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [question, setQuestion] = useState<QuestionData | null>(null);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
+  const [terminalVisible, setTerminalVisible] = useState(false);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
   const projectTopBarRef = useRef<ProjectTopBarRef>(null);
   const messagesRef = useRef<MessagesRef>(null);
+  const terminalViewRef = useRef<TerminalViewRef | null>(null);
 
   const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
 
@@ -522,6 +525,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
+  const toggleTerminal = () => {
+    setTerminalVisible(!terminalVisible);
+  };
+
   const clearLogMessages = () => {
     setMessages((prevMessages) => prevMessages.filter((message) => !isLogMessage(message)));
   };
@@ -738,6 +745,14 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
+  const handleTerminalViewResize = () => {
+    terminalViewRef.current?.resize();
+  };
+
+  const handleCopyTerminalOutput = (output: string) => {
+    promptFieldRef.current?.appendText(output);
+  };
+
   if (!projectSettings || !settings) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
@@ -768,18 +783,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           onExportSessionToImage={exportMessagesToImage}
           runCommand={runCommand}
         />
-        <div className="flex-grow overflow-y-auto relative">
+        <div className="flex-grow overflow-y-hidden relative flex flex-col">
           {renderSearchInput()}
-          <Messages
-            ref={messagesRef}
-            baseDir={project.baseDir}
-            messages={messages}
-            allFiles={allFiles}
-            renderMarkdown={projectSettings.renderMarkdown}
-            removeMessage={handleRemoveMessage}
-            redoLastUserPrompt={handleRedoLastUserPrompt}
-            editLastUserMessage={handleEditLastUserMessage}
-          />
           {!loading && todoItems.length > 0 && todoListVisible && (
             <TodoWindow
               todos={todoItems}
@@ -790,52 +795,86 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               onClearAllTodos={handleClearAllTodos}
             />
           )}
+          <div className="overflow-hidden flex-grow">
+            <Messages
+              ref={messagesRef}
+              baseDir={project.baseDir}
+              messages={messages}
+              allFiles={allFiles}
+              renderMarkdown={projectSettings.renderMarkdown}
+              removeMessage={handleRemoveMessage}
+              redoLastUserPrompt={handleRedoLastUserPrompt}
+              editLastUserMessage={handleEditLastUserMessage}
+            />
+          </div>
+          <ResizableBox
+            className="flex flex-col flex-shrink-0"
+            height={terminalVisible ? 200 : 0}
+            width={Infinity}
+            axis="y"
+            resizeHandles={terminalVisible ? ['n'] : []}
+            minConstraints={[Infinity, 100]}
+            maxConstraints={[Infinity, window.innerHeight / 2]}
+            onResize={handleTerminalViewResize}
+          >
+            <TerminalView
+              ref={terminalViewRef}
+              baseDir={project.baseDir}
+              visible={terminalVisible}
+              className="border-t border-neutral-800 flex-grow"
+              onVisibilityChange={setTerminalVisible}
+              onCopyOutput={handleCopyTerminalOutput}
+            />
+          </ResizableBox>
         </div>
-        <div
-          className={clsx('relative bottom-0 w-full p-4 pb-2 flex-shrink-0 flex flex-col border-t border-neutral-800', editingMessageIndex !== null && 'pt-1')}
-        >
-          {editingMessageIndex !== null && (
-            <div className="flex items-center justify-between px-2 py-1 text-xs text-neutral-400 border-b border-neutral-700 mb-2">
-              <span>{t('messages.editingLastMessage')}</span>
-              <Button
-                size="xs"
-                variant="text"
-                onClick={() => {
-                  setEditingMessageIndex(null);
-                  promptFieldRef.current?.setText('');
-                }}
-              >
-                {t('messages.cancelEdit')}
-              </Button>
-            </div>
-          )}
-          <PromptField
-            ref={promptFieldRef}
-            baseDir={project.baseDir}
-            inputHistory={inputHistory}
-            processing={processing}
-            mode={projectSettings.currentMode}
-            onModeChanged={handleModeChange}
-            runPrompt={runPrompt}
-            editLastUserMessage={handleEditLastUserMessage}
-            isActive={isActive}
-            words={autocompletionWords}
-            clearMessages={clearMessages}
-            scrapeWeb={scrapeWeb}
-            showFileDialog={showFileDialog}
-            addFiles={handleAddFiles}
-            question={question}
-            answerQuestion={answerQuestion}
-            interruptResponse={handleInterruptResponse}
-            runCommand={runCommand}
-            runTests={runTests}
-            redoLastUserPrompt={handleRedoLastUserPrompt}
-            openModelSelector={projectTopBarRef.current?.openMainModelSelector}
-            openAgentModelSelector={projectTopBarRef.current?.openAgentModelSelector}
-            disabled={!aiderModelsData}
-            promptBehavior={settings.promptBehavior}
-            clearLogMessages={clearLogMessages}
-          />
+        <div className={clsx('relative w-full flex-shrink-0 flex flex-col border-t border-neutral-800', editingMessageIndex !== null && 'pt-1')}>
+          <div className={clsx('p-4 pb-2', editingMessageIndex !== null && 'pt-1')}>
+            {editingMessageIndex !== null && (
+              <div className="flex items-center justify-between px-2 py-1 text-xs text-neutral-400 border-b border-neutral-700 mb-2">
+                <span>{t('messages.editingLastMessage')}</span>
+                <Button
+                  size="xs"
+                  variant="text"
+                  onClick={() => {
+                    setEditingMessageIndex(null);
+                    promptFieldRef.current?.setText('');
+                  }}
+                >
+                  {t('messages.cancelEdit')}
+                </Button>
+              </div>
+            )}
+            <PromptField
+              ref={promptFieldRef}
+              baseDir={project.baseDir}
+              inputHistory={inputHistory}
+              processing={processing}
+              mode={projectSettings.currentMode}
+              onModeChanged={handleModeChange}
+              runPrompt={runPrompt}
+              editLastUserMessage={handleEditLastUserMessage}
+              isActive={isActive}
+              words={autocompletionWords}
+              clearMessages={clearMessages}
+              scrapeWeb={scrapeWeb}
+              showFileDialog={showFileDialog}
+              addFiles={handleAddFiles}
+              question={question}
+              answerQuestion={answerQuestion}
+              interruptResponse={handleInterruptResponse}
+              runCommand={runCommand}
+              runTests={runTests}
+              redoLastUserPrompt={handleRedoLastUserPrompt}
+              openModelSelector={projectTopBarRef.current?.openMainModelSelector}
+              openAgentModelSelector={projectTopBarRef.current?.openAgentModelSelector}
+              disabled={!aiderModelsData}
+              promptBehavior={settings.promptBehavior}
+              clearLogMessages={clearLogMessages}
+              toggleTerminal={toggleTerminal}
+              terminalVisible={terminalVisible}
+              scrollToBottom={messagesRef.current?.scrollToBottom}
+            />
+          </div>
         </div>
       </div>
       <ResizableBox

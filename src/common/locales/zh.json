@@ -731,5 +731,10 @@
       "totalTokens": "总令牌数",
       "cost": "成本"
     }
+  },
+  "terminal": {
+    "copyOutput": "复制终端输出到提示",
+    "minimize": "最小化终端",
+    "addTerminal": "添加新终端"
   }
 }
