@@ -1,0 +1,7 @@
+.xterm-viewport {
+  @apply scrollbar-thin scrollbar-track-neutral-950 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700;
+}
+
+.xterm-screen {
+  @apply px-3;
+}

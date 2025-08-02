@@ -723,5 +723,10 @@
       "totalTokens": "Total Tokens",
       "cost": "Cost"
     }
+  },
+  "terminal": {
+    "copyOutput": "Copy terminal output to prompt",
+    "minimize": "Minimize terminal",
+    "addTerminal": "Add new terminal"
   }
 }

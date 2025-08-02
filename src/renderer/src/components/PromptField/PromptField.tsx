@@ -17,6 +17,7 @@ import { useDebounce } from 'react-use';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdPlaylistRemove, MdStop } from 'react-icons/md';
+import { VscTerminal } from 'react-icons/vsc';
 
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
@@ -74,6 +75,7 @@ const theme = githubDarkInit({
 export interface PromptFieldRef {
   focus: () => void;
   setText: (text: string) => void;
+  appendText: (text: string) => void;
 }
 
 type Props = {
@@ -101,6 +103,8 @@ type Props = {
   disabled?: boolean;
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
+  toggleTerminal?: () => void;
+  terminalVisible?: boolean;
   messagesRef: RefObject<MessagesRef>;
 };
 
@@ -131,6 +135,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       disabled = false,
       promptBehavior,
       clearLogMessages,
+      toggleTerminal,
+      terminalVisible = false,
       messagesRef,
     }: Props,
     ref,
@@ -242,6 +248,21 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       setText: (newText: string) => {
         setText(newText);
         // Ensure cursor is at the end after setting text
+        setTimeout(() => {
+          if (editorRef.current?.view) {
+            const end = editorRef.current.view.state.doc.length;
+            editorRef.current.view.dispatch({
+              selection: { anchor: end, head: end },
+            });
+            editorRef.current.view.focus();
+          }
+        }, 0);
+      },
+      appendText: (textToAppend: string) => {
+        const currentText = text;
+        const newText = currentText ? `${currentText}\n${textToAppend}` : textToAppend;
+        setText(newText);
+        // Ensure cursor is at the end after appending text
         setTimeout(() => {
           if (editorRef.current?.view) {
             const end = editorRef.current.view.state.doc.length;
@@ -834,6 +855,19 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             <ModeSelector mode={mode} onModeChange={onModeChanged} />
             {mode === 'agent' && <AgentSelector />}
             <div className="flex-grow" />
+            {toggleTerminal && (
+              <Button
+                variant="text"
+                onClick={toggleTerminal}
+                className={`hover:bg-neutral-800 border-neutral-200 hover:text-neutral-100 ${
+                  terminalVisible ? 'text-neutral-100 bg-neutral-800' : 'text-neutral-200'
+                }`}
+                size="xs"
+              >
+                <VscTerminal className="w-4 h-4 mr-1" />
+                Terminal
+              </Button>
+            )}
             <Button
               variant="text"
               onClick={() => clearMessages()}
