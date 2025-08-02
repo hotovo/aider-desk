@@ -9,7 +9,9 @@
 - added hourly, daily, monthly, yearly aggregation for dashboard data
 - added support for non-git projects
 - fixed map-refresh command not to display the map
-- added OpenRouter advanced settings
+- added integrated terminal component
+- added model selectors loaded from the Requesty and OpenRouter APIs
+- added advanced settings to OpenRouter provider
 
 ## [0.24.0]
 

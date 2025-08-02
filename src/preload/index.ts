@@ -13,6 +13,8 @@ import {
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
+  TerminalData,
+  TerminalExitData,
   TokensInfoData,
   ToolData,
   UserMessageData,
@@ -45,6 +47,8 @@ const userMessageListeners: Record<string, (event: Electron.IpcRendererEvent, da
 const clearProjectListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string, clearMessages: boolean, clearSession: boolean) => void> = {};
 const projectStartedListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string) => void> = {};
 const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
+const terminalDataListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalData) => void> = {};
+const terminalExitListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalExitData) => void> = {};
 
 const api: ApplicationAPI = {
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
@@ -418,8 +422,54 @@ const api: ApplicationAPI = {
     }
   },
 
+  addTerminalDataListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    terminalDataListeners[listenerId] = (event: Electron.IpcRendererEvent, data: TerminalData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
+        return;
+      }
+      callback(event, data);
+    };
+    ipcRenderer.on('terminal-data', terminalDataListeners[listenerId]);
+    return listenerId;
+  },
+  removeTerminalDataListener: (listenerId) => {
+    const callback = terminalDataListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('terminal-data', callback);
+      delete terminalDataListeners[listenerId];
+    }
+  },
+
+  addTerminalExitListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    terminalExitListeners[listenerId] = (event: Electron.IpcRendererEvent, data: TerminalExitData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
+        return;
+      }
+      callback(event, data);
+    };
+    ipcRenderer.on('terminal-exit', terminalExitListeners[listenerId]);
+    return listenerId;
+  },
+  removeTerminalExitListener: (listenerId) => {
+    const callback = terminalExitListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('terminal-exit', callback);
+      delete terminalExitListeners[listenerId];
+    }
+  },
+
   getCustomCommands: (baseDir) => ipcRenderer.invoke('get-custom-commands', baseDir),
   runCustomCommand: (baseDir, commandName, args, mode) => ipcRenderer.invoke('run-custom-command', baseDir, commandName, args, mode),
+
+  // Terminal operations
+  createTerminal: (baseDir, cols, rows) => ipcRenderer.invoke('terminal-create', baseDir, cols, rows),
+  writeToTerminal: (terminalId, data) => ipcRenderer.invoke('terminal-write', terminalId, data),
+  resizeTerminal: (terminalId, cols, rows) => ipcRenderer.invoke('terminal-resize', terminalId, cols, rows),
+  closeTerminal: (terminalId) => ipcRenderer.invoke('terminal-close', terminalId),
+  getTerminalForProject: (baseDir) => ipcRenderer.invoke('terminal-get-for-project', baseDir),
+  getAllTerminalsForProject: (baseDir) => ipcRenderer.invoke('terminal-get-all-for-project', baseDir),
 };
 
 if (process.contextIsolated) {

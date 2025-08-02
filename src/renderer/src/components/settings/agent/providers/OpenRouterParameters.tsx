@@ -6,6 +6,7 @@ import { ProviderModels } from './ProviderModels';
 
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+import { useOpenRouterModels } from '@/hooks/useOpenRouterModels';
 import { Accordion } from '@/components/common/Accordion';
 import { AdvancedSettings } from '@/components/settings/AdvancedSettings';
 
@@ -21,6 +22,10 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
   const models = provider.models || [];
 
   const { environmentVariable: openRouterApiKeyEnv } = useEffectiveEnvironmentVariable('OPENROUTER_API_KEY');
+
+  // Use the effective API key (from provider or environment)
+  const effectiveApiKey = apiKey || openRouterApiKeyEnv?.value || '';
+  const availableModels = useOpenRouterModels(effectiveApiKey);
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
@@ -66,7 +71,7 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
             : t('settings.agent.envVarPlaceholder', { envVar: 'OPENROUTER_API_KEY' })
         }
       />
-      <ProviderModels models={models} onChange={handleModelsChange} />
+      <ProviderModels models={models} onChange={handleModelsChange} availableModels={availableModels} />
     </div>
   );
 };

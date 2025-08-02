@@ -154,7 +154,8 @@
   "model": {
     "label": "模型",
     "selectLabel": "模型",
-    "placeholder": "输入模型名称"
+    "placeholder": "输入模型名称",
+    "chooseModelsToAdd": "选择要添加的模型..."
   },
   "openai": {
     "apiKey": "API 密钥",
@@ -746,5 +747,10 @@
       "totalTokens": "总令牌数",
       "cost": "成本"
     }
+  },
+  "terminal": {
+    "copyOutput": "复制终端输出到提示",
+    "minimize": "最小化终端",
+    "addTerminal": "添加新终端"
   }
 }

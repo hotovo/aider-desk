@@ -155,7 +155,8 @@
     "label": "Model",
     "labelMultiple": "Models",
     "selectLabel": "Model",
-    "placeholder": "e.g. anthropic/claude-sonnet-4-20250514"
+    "placeholder": "e.g. anthropic/claude-sonnet-4-20250514",
+    "chooseModelsToAdd": "Choose models to add..."
   },
   "openai": {
     "apiKey": "API Key",
@@ -739,5 +740,10 @@
       "totalTokens": "Total Tokens",
       "cost": "Cost"
     }
+  },
+  "terminal": {
+    "copyOutput": "Copy terminal output to prompt",
+    "minimize": "Minimize terminal",
+    "addTerminal": "Add new terminal"
   }
 }
