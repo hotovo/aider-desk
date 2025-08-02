@@ -3,6 +3,7 @@ import path from 'path';
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import {
   TOOL_GROUP_NAME_SEPARATOR,
   AIDER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
@@ -184,7 +185,10 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
         };
       }
 
+      const groupId = uuidv4();
+      project.agentRunStarted(groupId, prompt, profile, 'aider-run');
       const responses = await project.sendPrompt(prompt, 'code', []);
+      project.agentRunCompleted(groupId);
 
       // Notify that we are still processing after aider finishes
       project.addLogMessage('loading');

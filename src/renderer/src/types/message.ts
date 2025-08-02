@@ -1,9 +1,10 @@
-import { Mode, TokensInfoData, UsageReportData } from '@common/types';
+import { AgentProfile, GroupType, Mode, TokensInfoData, UsageReportData } from '@common/types';
 
 export interface Message {
   id: string;
-  type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool';
+  type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool' | 'group';
   content: string;
+  children?: Message[];
 }
 
 export interface UserMessage extends Message {
@@ -80,4 +81,16 @@ export const isTokensInfoMessage = (message: Message): message is TokensInfoMess
 
 export const isToolMessage = (message: Message): message is ToolMessage => {
   return message.type === 'tool';
+};
+
+export interface GroupMessage extends Message {
+  type: 'group';
+  prompt: string;
+  profile: AgentProfile;
+  children: Message[];
+  groupType: GroupType;
+}
+
+export const isGroupMessage = (message: Message): message is GroupMessage => {
+  return message.type === 'group';
 };

@@ -1,4 +1,6 @@
 import {
+  AgentRunCompletedData,
+  AgentRunStartedData,
   AutocompletionData,
   CommandOutputData,
   InputHistoryData,
@@ -27,6 +29,7 @@ import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_
 
 import {
   CommandOutputMessage,
+  GroupMessage,
   isCommandOutputMessage,
   isLoadingMessage,
   isLogMessage,
@@ -54,6 +57,7 @@ import { TodoWindow } from '@/components/project/TodoWindow';
 import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
 import 'react-resizable/css/styles.css';
 import { useSearchText } from '@/hooks/useSearchText';
+import { useMessages } from '@/hooks/useMessages';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -70,7 +74,25 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const { settings } = useSettings();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const {
+    messages,
+    setMessages,
+    addMessage,
+    updateMessage,
+    completeMessage,
+    addCommandOutput,
+    addToolMessage,
+    addLogMessage,
+    addLoadingMessage,
+    removeLoadingMessage,
+    addUserMessage,
+    startGroup,
+    endGroup,
+    clearMessages: clearMessagesState,
+    removeMessageById,
+    setProcessingMessage,
+    truncateMessages,
+  } = useMessages();
   const [processing, setProcessing] = useState(false);
   const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
   const [allFiles, setAllFiles] = useState<string[]>([]);
@@ -86,7 +108,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
   const [terminalVisible, setTerminalVisible] = useState(false);
 
-  const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
   const projectTopBarRef = useRef<ProjectTopBarRef>(null);
   const messagesRef = useRef<MessagesRef>(null);
@@ -143,131 +164,47 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   useEffect(() => {
     const handleResponseChunk = (_: IpcRendererEvent, { messageId, chunk, reflectedMessage }: ResponseChunkData) => {
-      const processingMessage = processingMessageRef.current;
-      if (processingMessage && processingMessage.id === messageId) {
-        processingMessage.content += chunk;
-        setMessages((prevMessages) => prevMessages.map((message) => (message.id === messageId ? processingMessage : message)));
+      const existingMessage = messages.find((m) => m.id === messageId);
+      if (!existingMessage) {
+        const newResponseMessage: ResponseMessage = {
+          id: messageId,
+          type: 'response',
+          content: chunk,
+          processing: true,
+        };
+        setProcessingMessage(newResponseMessage);
+        addMessage(newResponseMessage, reflectedMessage);
+        setProcessing(true);
       } else {
-        setMessages((prevMessages) => {
-          const existingMessageIndex = prevMessages.findIndex((message) => message.id === messageId);
-          const newMessages: Message[] = [];
-
-          if (reflectedMessage) {
-            const reflected: ReflectedMessage = {
-              id: uuidv4(),
-              type: 'reflected-message',
-              content: reflectedMessage,
-              responseMessageId: messageId,
-            };
-
-            newMessages.push(reflected);
-          }
-
-          if (existingMessageIndex === -1) {
-            const newResponseMessage: ResponseMessage = {
-              id: messageId,
-              type: 'response',
-              content: chunk,
-              processing: true,
-            };
-            processingMessageRef.current = newResponseMessage;
-            newMessages.push(newResponseMessage);
-            setProcessing(true);
-
-            return prevMessages.filter((message) => !isLoadingMessage(message)).concat(...newMessages);
-          } else {
-            return prevMessages.map((message) => {
-              if (message.id === messageId) {
-                return {
-                  ...message,
-                  content: message.content + chunk,
-                };
-              }
-              return message;
-            });
-          }
-        });
+        updateMessage(messageId, chunk);
       }
     };
 
     const handleResponseCompleted = (_: IpcRendererEvent, { messageId, usageReport, content, reflectedMessage }: ResponseCompletedData) => {
-      const processingMessage = processingMessageRef.current;
+      const responseMessage = messages.find((message) => message.id === messageId) as ResponseMessage | undefined;
 
-      if (content) {
-        setMessages((prevMessages) => {
-          // If no processing message exists, find the last response message
-          const responseMessage = prevMessages.find((message) => message.id === messageId) as ResponseMessage | undefined;
-          if (responseMessage) {
-            return prevMessages.map((message) =>
-              message.id === messageId
-                ? {
-                    ...responseMessage,
-                    content,
-                    processing: false,
-                    usageReport,
-                  }
-                : message,
-            );
-          } else {
-            if (reflectedMessage) {
-              const reflected: ReflectedMessage = {
-                id: uuidv4(),
-                type: 'reflected-message',
-                content: reflectedMessage,
-                responseMessageId: messageId,
-              };
-              return prevMessages.filter((message) => !isLoadingMessage(message)).concat(reflected);
-            }
-
-            // If no response message exists, create a new one
-            const newResponseMessage: ResponseMessage = {
-              id: messageId,
-              type: 'response',
-              content,
-              processing: false,
-              usageReport,
-            };
-            return prevMessages.filter((message) => !isLoadingMessage(message)).concat(newResponseMessage);
-          }
-        });
-      } else if (processingMessage && processingMessage.id === messageId) {
-        processingMessage.processing = false;
-        processingMessage.usageReport = usageReport;
-        processingMessage.content = content || processingMessage.content;
-        setMessages((prevMessages) => prevMessages.map((message) => (message.id === messageId ? processingMessage : message)));
+      if (responseMessage) {
+        completeMessage(messageId, usageReport, content);
       } else {
-        setMessages((prevMessages) => prevMessages.filter((message) => !isLoadingMessage(message)));
+        const newResponseMessage: ResponseMessage = {
+          id: messageId,
+          type: 'response',
+          content: content || '',
+          processing: false,
+          usageReport,
+        };
+        addMessage(newResponseMessage, reflectedMessage);
       }
 
-      if (usageReport) {
-        if (usageReport.aiderTotalCost !== undefined) {
-          setAiderTotalCost(usageReport.aiderTotalCost);
-        }
+      if (usageReport?.aiderTotalCost !== undefined) {
+        setAiderTotalCost(usageReport.aiderTotalCost);
       }
 
       setProcessing(false);
     };
 
     const handleCommandOutput = (_: IpcRendererEvent, { command, output }: CommandOutputData) => {
-      setMessages((prevMessages) => {
-        const lastMessage = prevMessages[prevMessages.length - 1];
-
-        if (lastMessage && isCommandOutputMessage(lastMessage) && lastMessage.command === command) {
-          const updatedLastMessage: CommandOutputMessage = {
-            ...lastMessage,
-            content: lastMessage.content + output,
-          };
-          return prevMessages.slice(0, -1).concat(updatedLastMessage);
-        } else {
-          const commandOutputMessage: CommandOutputMessage = {
-            id: uuidv4(),
-            type: 'command-output',
-            command,
-            content: output,
-          };
-          return prevMessages.filter((message) => !isLoadingMessage(message)).concat(commandOutputMessage);
-        }
-      });
+      addCommandOutput(command, output);
     };
 
     const handleTodoTool = (toolName: string, args: Record<string, unknown> | undefined, response: string | undefined) => {
@@ -315,46 +252,12 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     const handleTool = (_: IpcRendererEvent, { id, serverName, toolName, args, response, usageReport }: ToolData) => {
       if (serverName === TODO_TOOL_GROUP_NAME) {
         handleTodoTool(toolName, args, response);
-
         if (usageReport?.aiderTotalCost !== undefined) {
           setAiderTotalCost(usageReport.aiderTotalCost);
         }
         return;
       }
-
-      const createNewToolMessage = () => {
-        const toolMessage: ToolMessage = {
-          id,
-          type: 'tool',
-          serverName,
-          toolName,
-          args: args || {},
-          content: response || '',
-          usageReport,
-        };
-        return toolMessage;
-      };
-
-      setMessages((prevMessages) => {
-        const loadingMessages = prevMessages.filter(isLoadingMessage);
-        const nonLoadingMessages = prevMessages.filter((message) => !isLoadingMessage(message) && message.id !== id);
-        const toolMessageIndex = prevMessages.findIndex((message) => message.id === id);
-        const toolMessage = prevMessages[toolMessageIndex];
-
-        if (toolMessage) {
-          const updatedMessages = [...prevMessages];
-          updatedMessages[toolMessageIndex] = {
-            ...createNewToolMessage(),
-            ...toolMessage,
-            content: response || '',
-            usageReport,
-          } as ToolMessage;
-          return updatedMessages;
-        } else {
-          return [...nonLoadingMessages, createNewToolMessage(), ...loadingMessages];
-        }
-      });
-
+      addToolMessage({ id, type: 'tool', serverName, toolName, args: args || {}, content: response || '', usageReport });
       if (usageReport?.aiderTotalCost !== undefined) {
         setAiderTotalCost(usageReport.aiderTotalCost);
       }
@@ -363,41 +266,13 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     const handleLog = (_: IpcRendererEvent, { level, message, finished }: LogData) => {
       if (level === 'loading') {
         if (finished) {
-          setMessages((prevMessages) => prevMessages.filter((message) => !isLoadingMessage(message)));
+          removeLoadingMessage();
         } else {
-          const loadingMessage: LoadingMessage = {
-            id: uuidv4(),
-            type: 'loading',
-            content: message || t('messages.thinking'),
-          };
-
-          setMessages((prevMessages) => {
-            const existingLoadingIndex = prevMessages.findIndex(isLoadingMessage);
-            if (existingLoadingIndex !== -1) {
-              // Update existing loading message
-              const updatedMessages = [...prevMessages];
-              updatedMessages[existingLoadingIndex] = {
-                ...updatedMessages[existingLoadingIndex],
-                content: loadingMessage.content,
-              };
-
-              return updatedMessages;
-            } else {
-              // Add new loading message
-              return [...prevMessages, loadingMessage];
-            }
-          });
+          addLoadingMessage(message || t('messages.thinking'));
           setProcessing(true);
         }
       } else {
-        const logMessage: LogMessage = {
-          id: uuidv4(),
-          type: 'log',
-          level,
-          content: message || '',
-        };
-        setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), logMessage]);
-
+        addLogMessage({ level, content: message || '' });
         if (finished) {
           setProcessing(false);
         }
@@ -413,15 +288,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     const handleUpdateAiderModels = (_: IpcRendererEvent, data: ModelsData) => {
       setAiderModelsData(data);
       setLoading(false);
-
       if (data.error) {
-        const errorMessage: LogMessage = {
-          id: uuidv4(),
-          type: 'log',
-          level: 'error',
-          content: data.error,
-        };
-        setMessages((prevMessages) => [...prevMessages, errorMessage]);
+        addLogMessage({ level: 'error', content: data.error });
       }
     };
 
@@ -438,17 +306,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     };
 
     const handleUserMessage = (_: IpcRendererEvent, data: UserMessageData) => {
-      const userMessage: UserMessage = {
-        id: uuidv4(),
-        type: 'user',
-        mode: data.mode || projectSettings?.currentMode || 'code', // Use projectSettings.currentMode as fallback
+      addUserMessage({
+        mode: data.mode || projectSettings?.currentMode || 'code',
         content: data.content,
-      };
-
-      setMessages((prevMessages) => {
-        const loadingMessages = prevMessages.filter(isLoadingMessage);
-        const nonLoadingMessages = prevMessages.filter((message) => !isLoadingMessage(message));
-        return [...nonLoadingMessages, userMessage, ...loadingMessages];
       });
     };
 
@@ -458,6 +318,14 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       } else if (messages) {
         clearMessages(false);
       }
+    };
+
+    const handleAgentRunStarted = (_: IpcRendererEvent, { id, prompt, profile, groupType }: AgentRunStartedData) => {
+      startGroup(id, prompt, profile, groupType);
+    };
+
+    const handleAgentRunCompleted = () => {
+      endGroup();
     };
 
     const autocompletionListenerId = window.api.addUpdateAutocompletionListener(project.baseDir, handleUpdateAutocompletion);
@@ -472,6 +340,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     const inputHistoryListenerId = window.api.addInputHistoryUpdatedListener(project.baseDir, handleInputHistoryUpdate);
     const userMessageListenerId = window.api.addUserMessageListener(project.baseDir, handleUserMessage);
     const clearProjectListenerId = window.api.addClearProjectListener(project.baseDir, handleClearProject);
+    const agentRunStartedListenerId = window.api.addAgentRunStartedListener(project.baseDir, handleAgentRunStarted);
+    const agentRunCompletedListenerId = window.api.addAgentRunCompletedListener(project.baseDir, handleAgentRunCompleted);
 
     return () => {
       window.api.removeUpdateAutocompletionListener(autocompletionListenerId);
@@ -486,9 +356,11 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       window.api.removeInputHistoryUpdatedListener(inputHistoryListenerId);
       window.api.removeUserMessageListener(userMessageListenerId);
       window.api.removeClearProjectListener(clearProjectListenerId);
+      window.api.removeAgentRunStartedListener(agentRunStartedListenerId);
+      window.api.removeAgentRunCompletedListener(agentRunCompletedListenerId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.baseDir]);
+  }, [project.baseDir, projectSettings?.currentMode]);
 
   const handleAddFiles = (filePaths: string[], readOnly = false) => {
     for (const filePath of filePaths) {
@@ -505,20 +377,18 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const clearSession = () => {
-    setMessages([]);
+    clearMessagesState();
     setAiderTotalCost(0);
     setProcessing(false);
     setTokensInfo(null);
     setQuestion(null);
     setAiderModelsData(null);
     setEditingMessageIndex(null);
-    processingMessageRef.current = null;
   };
 
   const clearMessages = (clearContext = true) => {
-    setMessages([]);
+    clearMessagesState();
     setProcessing(false);
-    processingMessageRef.current = null;
 
     if (clearContext) {
       window.api.clearContext(project.baseDir);
@@ -550,13 +420,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const scrapeWeb = async (url: string, filePath?: string) => {
     setProcessing(true);
-    const loadingMessage: LoadingMessage = {
-      id: uuidv4(),
-      type: 'loading',
-      content: `Scraping ${url}...`,
-    };
+    addLoadingMessage(`Scraping ${url}...`);
 
-    setMessages((prevMessages) => [...prevMessages, loadingMessage]);
     try {
       await window.api.scrapeWeb(project.baseDir, url, filePath);
     } catch (error) {
@@ -570,30 +435,20 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             return `Error during scraping: ${error.message}`;
           }
         };
-
-        const errorMessage: LogMessage = {
-          id: uuidv4(),
-          level: 'error',
-          type: 'log',
-          content: getMessage(),
-        };
-        setMessages((prevMessages) => [...prevMessages, errorMessage]);
+        addLogMessage({ level: 'error', content: getMessage() });
       }
     } finally {
-      setMessages((prevMessages) => prevMessages.filter((message) => message !== loadingMessage));
+      removeLoadingMessage();
       setProcessing(false);
     }
   };
 
   const handleInterruptResponse = () => {
     window.api.interruptResponse(project.baseDir);
-    const interruptMessage: LogMessage = {
-      id: uuidv4(),
-      type: 'log',
+    addLogMessage({
       level: 'warning',
       content: t('messages.interrupted'),
-    };
-    setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), interruptMessage]);
+    });
     setQuestion(null);
     setProcessing(false);
   };
@@ -622,9 +477,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
     if (editingMessageIndex !== null) {
       // This submission is an edit of a previous message
-      const newMessages = messages.slice(0, editingMessageIndex);
+      truncateMessages(editingMessageIndex);
       setEditingMessageIndex(null); // Clear editing state
-      setMessages(newMessages);
       window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode, prompt);
     } else {
       window.api.runPrompt(project.baseDir, prompt, projectSettings.currentMode);
@@ -675,8 +529,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
 
     // Keep messages up to and excluding the one being redone
-    const newMessages = messages.slice(0, lastUserMessageIndex);
-    setMessages(newMessages);
+    truncateMessages(lastUserMessageIndex);
     if (projectSettings) {
       // Ensure projectSettings is available
       window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode);
@@ -690,7 +543,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       window.api.removeLastMessage(project.baseDir);
     }
 
-    setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
+    removeMessageById(messageToRemove.id);
   };
 
   const handleAddTodo = async (name: string) => {

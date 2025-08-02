@@ -1,5 +1,7 @@
 import type { ElectronAPI } from '@electron-toolkit/preload';
 import type {
+  AgentRunCompletedData,
+  AgentRunStartedData,
   AutocompletionData,
   ContextFilesUpdatedData,
   CustomCommandsUpdatedData,
@@ -158,6 +160,12 @@ export interface ApplicationAPI {
 
   addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => string;
   removeTerminalExitListener: (listenerId: string) => void;
+
+  addAgentRunStartedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: AgentRunStartedData) => void) => string;
+  removeAgentRunStartedListener: (listenerId: string) => void;
+
+  addAgentRunCompletedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: AgentRunCompletedData) => void) => string;
+  removeAgentRunCompletedListener: (listenerId: string) => void;
 
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
   runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;

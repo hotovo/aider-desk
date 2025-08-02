@@ -1,4 +1,6 @@
 import {
+  AgentRunCompletedData,
+  AgentRunStartedData,
   AutocompletionData,
   CommandOutputData,
   ContextFile,
@@ -49,6 +51,8 @@ const projectStartedListeners: Record<string, (event: Electron.IpcRendererEvent,
 const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
 const terminalDataListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalData) => void> = {};
 const terminalExitListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalExitData) => void> = {};
+const agentRunStartedListeners: Record<string, (event: Electron.IpcRendererEvent, data: AgentRunStartedData) => void> = {};
+const agentRunCompletedListeners: Record<string, (event: Electron.IpcRendererEvent, data: AgentRunCompletedData) => void> = {};
 
 const api: ApplicationAPI = {
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
@@ -457,6 +461,44 @@ const api: ApplicationAPI = {
     if (callback) {
       ipcRenderer.removeListener('terminal-exit', callback);
       delete terminalExitListeners[listenerId];
+    }
+  },
+
+  addAgentRunStartedListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    agentRunStartedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: AgentRunStartedData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
+        return;
+      }
+      callback(event, data);
+    };
+    ipcRenderer.on('agent-run-started', agentRunStartedListeners[listenerId]);
+    return listenerId;
+  },
+  removeAgentRunStartedListener: (listenerId) => {
+    const callback = agentRunStartedListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('agent-run-started', callback);
+      delete agentRunStartedListeners[listenerId];
+    }
+  },
+
+  addAgentRunCompletedListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    agentRunCompletedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: AgentRunCompletedData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
+        return;
+      }
+      callback(event, data);
+    };
+    ipcRenderer.on('agent-run-completed', agentRunCompletedListeners[listenerId]);
+    return listenerId;
+  },
+  removeAgentRunCompletedListener: (listenerId) => {
+    const callback = agentRunCompletedListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('agent-run-completed', callback);
+      delete agentRunCompletedListeners[listenerId];
     }
   },
 

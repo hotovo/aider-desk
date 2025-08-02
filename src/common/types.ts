@@ -406,3 +406,18 @@ export interface TerminalExitData {
   exitCode: number;
   signal?: number;
 }
+
+export type GroupType = 'sub-agent' | 'aider-run';
+
+export interface AgentRunStartedData {
+  baseDir: string;
+  id: string;
+  prompt: string;
+  profile: AgentProfile;
+  groupType: GroupType;
+}
+
+export interface AgentRunCompletedData {
+  baseDir: string;
+  id: string;
+}

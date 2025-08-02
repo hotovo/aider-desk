@@ -13,6 +13,7 @@ import {
   ContextMessage,
   CustomCommand,
   EditFormat,
+  GroupType,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -628,12 +629,37 @@ export class Project {
 
   public async runSubAgent(
     profile: AgentProfile,
-    prompt: string,
+    prompt:string,
     contextFiles: ContextFile[],
     systemPrompt?: string,
     abortSignal?: AbortSignal,
   ): Promise<ContextMessage[]> {
-    return await this.agent.runAgent(this, profile, prompt, [], contextFiles, systemPrompt, abortSignal);
+    const groupId = uuidv4();
+    this.agentRunStarted(groupId, prompt, profile, 'sub-agent');
+    const result = await this.agent.runAgent(this, profile, prompt, [], contextFiles, systemPrompt, abortSignal);
+    this.agentRunCompleted(groupId);
+    return result;
+  }
+
+  public agentRunStarted(id: string, prompt: string, profile: AgentProfile, groupType: GroupType) {
+    logger.info('Agent run started:', { id, prompt, groupType });
+    const data: AgentRunStartedData = {
+      baseDir: this.baseDir,
+      id,
+      prompt,
+      profile,
+      groupType,
+    };
+    this.mainWindow.webContents.send('agent-run-started', data);
+  }
+
+  public agentRunCompleted(id: string) {
+    logger.info('Agent run completed:', { id });
+    const data: AgentRunCompletedData = {
+      baseDir: this.baseDir,
+      id,
+    };
+    this.mainWindow.webContents.send('agent-run-completed', data);
   }
 
   public sendPrompt(prompt: string, mode?: Mode, messages?: { role: MessageRole; content: string }[], files?: ContextFile[]): Promise<ResponseCompletedData[]> {

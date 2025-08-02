@@ -3,8 +3,9 @@ import { toPng } from 'html-to-image';
 
 import { MessageBlock } from './MessageBlock';
 
-import { isUserMessage, Message } from '@/types/message';
+import { isGroupMessage, isUserMessage, Message } from '@/types/message';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { GroupMessageBlock } from './GroupMessageBlock';
 
 export type MessagesRef = {
   exportToImage: () => void;
@@ -85,18 +86,34 @@ export const Messages = forwardRef<MessagesRef, Props>(
         onScroll={handleScroll}
       >
         <StyledTooltip id="usage-info-tooltip" />
-        {messages.map((message, index) => (
-          <MessageBlock
-            key={message.id || index}
-            baseDir={baseDir}
-            message={message}
-            allFiles={allFiles}
-            renderMarkdown={renderMarkdown}
-            remove={index === messages.length - 1 ? () => removeMessage(message) : undefined}
-            redo={index === lastUserMessageIndex ? redoLastUserPrompt : undefined}
-            edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
-          />
-        ))}
+        {messages.map((message, index) => {
+          if (isGroupMessage(message)) {
+            return (
+              <GroupMessageBlock
+                key={message.id || index}
+                baseDir={baseDir}
+                message={message}
+                allFiles={allFiles}
+                renderMarkdown={renderMarkdown}
+                remove={(msg: Message) => removeMessage(msg)}
+                redo={redoLastUserPrompt}
+                edit={editLastUserMessage}
+              />
+            );
+          }
+          return (
+            <MessageBlock
+              key={message.id || index}
+              baseDir={baseDir}
+              message={message}
+              allFiles={allFiles}
+              renderMarkdown={renderMarkdown}
+              remove={index === messages.length - 1 ? () => removeMessage(message) : undefined}
+              redo={index === lastUserMessageIndex ? redoLastUserPrompt : undefined}
+              edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
+            />
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
     );
