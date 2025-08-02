@@ -139,7 +139,8 @@
   "model": {
     "label": "模型",
     "selectLabel": "模型",
-    "placeholder": "输入模型名称"
+    "placeholder": "输入模型名称",
+    "chooseModelsToAdd": "选择要添加的模型..."
   },
   "openai": {
     "apiKey": "API 密钥",

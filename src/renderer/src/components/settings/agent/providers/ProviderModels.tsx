@@ -71,7 +71,8 @@ export const ProviderModels = ({ models, onChange, placeholder, availableModels 
             options={selectOptions}
             selected={selectedModels}
             onChange={setSelectedModels}
-            noneSelectedLabel="Choose models to add..."
+            noneSelectedLabel={t('model.chooseModelsToAdd')}
+            filterInput={true}
           />
         ) : (
           <Input
