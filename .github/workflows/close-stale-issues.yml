@@ -1,0 +1,71 @@
+name: Close Stale Issues
+
+on:
+  schedule:
+    - cron: '0 12 * * *' # Runs daily at noon
+
+permissions:
+  issues: write
+
+jobs:
+  close-stale-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find and close stale issues
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const userToCheck = 'wladimiiir';
+            const excludedTypes = ['Feature', 'OtherType', 'AnotherType']; // Add any issue types to exclude here
+            const daysToClose = 30; // Close issues older than 30 days of inactivity.
+            const closeMessage = 'This issue has been inactive for more than 30 days, and the last comment was from our team member, suggesting a potential resolution or asking for more information. As there has been no response, we are closing this issue. If you still need help, please feel free to open a new issue and reference this one.';
+
+            // Get a list of all open issues
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+
+            for (const issue of issues) {
+              // Check if the issue type is in the excludedTypes array
+              if (issue.type && excludedTypes.includes(issue.type)) {
+                console.log(`Skipping issue #${issue.number} as its type '${issue.type}' is in the excluded list.`);
+                continue;
+              }
+
+              const thirtyDaysAgo = new Date(Date.now() - daysToClose * 24 * 60 * 60 * 1000);
+              const issueUpdatedAt = new Date(issue.updated_at);
+
+              if (issueUpdatedAt < thirtyDaysAgo) {
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  per_page: 100
+                });
+
+                const lastActivity = comments.length > 0 ? comments[comments.length - 1] : issue;
+
+                if (lastActivity.user.login === userToCheck) {
+                  console.log(`Closing issue #${issue.number} as it is older than ${daysToClose} days and the last message is from ${userToCheck}.`);
+
+                  // First, add a comment to the issue
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    body: closeMessage
+                  });
+
+                  // Then, close the issue
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    state: 'closed'
+                  });
+                }
+              }
+            }
