@@ -1,6 +1,6 @@
 import * as os from 'os';
 
-import * as pty from 'node-pty';
+import * as pty from '@homebridge/node-pty-prebuilt-multiarch';
 import { BrowserWindow } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
