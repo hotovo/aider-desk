@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.25.0]
 
 - improved connection and communication with Aider
 - reading cached tokens when working with Aider modes
