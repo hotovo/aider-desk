@@ -28,10 +28,10 @@ import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 
 import { ApprovalManager } from './approval-manager';
 
+import { isBinary } from 'istextorbinary';
 import { Project } from '@/project';
 import logger from '@/logger';
 import { isFileIgnored } from '@/utils';
-import { BINARY_EXTENSIONS } from '@/constants';
 import { getSubAgentSystemPrompt } from '@/agent';
 
 const execAsync = promisify(exec);
@@ -163,12 +163,12 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       }
 
       const absolutePath = path.resolve(project.baseDir, filePath);
-      const ext = path.extname(absolutePath).toLowerCase();
-      if (BINARY_EXTENSIONS.has(ext)) {
-        return 'Error: Binary files cannot be read.';
-      }
       try {
-        const content = await fs.readFile(absolutePath, 'utf8');
+        const fileContentBuffer = await fs.readFile(absolutePath);
+        if (isBinary(absolutePath, fileContentBuffer)) {
+          return 'Error: Binary files cannot be read.';
+        }
+        const content = fileContentBuffer.toString('utf8');
         return `Here is the most recent content of '${filePath}' (ignore previous versions):\n\n${content}`;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

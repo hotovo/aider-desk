@@ -26,6 +26,7 @@ import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { ZodSchema } from 'zod';
+import { isBinary } from 'istextorbinary';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { createPowerToolset } from './tools/power';
@@ -39,7 +40,7 @@ import { ApprovalManager } from './tools/approval-manager';
 
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
-import { AIDER_DESK_PROJECT_RULES_DIR, BINARY_EXTENSIONS } from '@/constants';
+import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Project } from '@/project';
 import { Store } from '@/store';
 import logger from '@/logger';
@@ -78,16 +79,16 @@ export class Agent {
       files.map(async (file) => {
         try {
           const filePath = path.resolve(project.baseDir, file.path);
-          const ext = path.extname(filePath).toLowerCase();
+          const fileContentBuffer = await fs.readFile(filePath);
 
           // Skip known binary extensions
-          if (BINARY_EXTENSIONS.has(ext)) {
+          if (isBinary(filePath, fileContentBuffer)) {
             logger.debug(`Skipping binary file: ${file.path}`);
             return null;
           }
 
           // Read file as text
-          const fileContent = await fs.readFile(filePath, 'utf8');
+          const fileContent = fileContentBuffer.toString('utf8');
 
           // Add line numbers to content
           const lines = fileContent.split('\n');
