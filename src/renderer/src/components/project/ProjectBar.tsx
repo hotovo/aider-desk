@@ -131,6 +131,20 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       [saveSettings, settings],
     );
 
+    const updateEditFormat = useCallback(
+      (format: EditFormat, modelToUpdate?: string) => {
+        const targetModel = modelToUpdate || modelsData?.mainModel;
+        if (!targetModel) {
+          return;
+        }
+
+        // Send only the specific update to the backend.
+        window.api.updateEditFormat(baseDir, { [targetModel]: format });
+        setCurrentEditFormat(format);
+      },
+      [baseDir, modelsData?.mainModel],
+    );
+
     const updateMainModel = useCallback(
       (mainModel: string) => {
         window.api.updateMainModel(baseDir, mainModel);
@@ -145,7 +159,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           setCurrentEditFormat(modelEditFormats[mainModel]);
         }
       },
-      [baseDir, modelEditFormats, modelsData, onModelsChange, updatePreferredModels],
+      [baseDir, modelEditFormats, modelsData, onModelsChange, updateEditFormat, updatePreferredModels],
     );
 
     const updateWeakModel = useCallback(
@@ -174,20 +188,6 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         }
       },
       [baseDir, modelsData, onModelsChange, updatePreferredModels],
-    );
-
-    const updateEditFormat = useCallback(
-      (format: EditFormat, modelToUpdate?: string) => {
-        const targetModel = modelToUpdate || modelsData?.mainModel;
-        if (!targetModel) {
-          return;
-        }
-
-        // Send only the specific update to the backend.
-        window.api.updateEditFormat(baseDir, { [targetModel]: format });
-        setCurrentEditFormat(format);
-      },
-      [baseDir, modelsData?.mainModel],
     );
 
     const loadSessions = useCallback(async () => {
