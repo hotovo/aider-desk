@@ -79,6 +79,9 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
           handleOptionSelect(options[highlightedIndex]);
         }
         break;
+      case 'Tab':
+        setIsOpen(false);
+        break;
     }
   };
 
