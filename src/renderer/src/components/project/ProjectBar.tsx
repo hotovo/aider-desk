@@ -62,7 +62,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     const [sessions, setSessions] = useState<SessionData[]>([]);
     const [sessionPopupVisible, showSessionPopup, hideSessionPopup] = useBooleanState(false);
     const sessionPopupRef = useRef<HTMLDivElement>(null);
-    const [currentEditFormat, setCurrentEditFormat] = useState<EditFormat>('whole');
+    const [currentEditFormat, setCurrentEditFormat] = useState<EditFormat | null>(null);
 
     useImperativeHandle(ref, () => ({
       openMainModelSelector: (model) => {
@@ -182,7 +182,6 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         if (!targetModel) {
           return;
         }
-        console.log('joooj', targetModel);
 
         // Send only the specific update to the backend.
         window.api.updateEditFormat(baseDir, { [targetModel]: format });
@@ -348,7 +347,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 removePreferredModel={handleRemovePreferredModel}
               />
             </div>
-            {modelEditFormats && (
+            {currentEditFormat && (
               <>
                 <div className="h-3 w-px bg-neutral-600/50"></div>
                 <div className="flex items-center space-x-1">

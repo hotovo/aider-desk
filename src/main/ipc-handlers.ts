@@ -44,17 +44,11 @@ export const setupIpcHandlers = (
   });
 
   ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {
-    const project = projectManager.getProject(baseDir);
-    await project.runPrompt(prompt, mode);
-    // Ensure UI updates and scrolls to bottom after prompt is fully processed
-    mainWindow.webContents.send('ensure-scroll', baseDir);
+    void projectManager.getProject(baseDir).runPrompt(prompt, mode);
   });
 
   ipcMain.on('answer-question', (_, baseDir: string, answer: string) => {
-    const project = projectManager.getProject(baseDir);
-    project.answerQuestion(answer);
-    // Ensure UI updates and scrolls to bottom
-    mainWindow.webContents.send('ensure-scroll', baseDir);
+    projectManager.getProject(baseDir).answerQuestion(answer);
   });
 
   ipcMain.on('drop-file', (_, baseDir: string, filePath: string) => {
