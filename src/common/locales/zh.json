@@ -309,7 +309,10 @@
     "theme": "主题",
     "themeOptions": {
       "dark": "深色",
-      "light": "浅色"
+      "light": "浅色",
+      "blue": "蓝色",
+      "green": "绿色", 
+      "purple": "紫色"
     },
     "aiderRestartConfirm": {
       "title": "需要重启",

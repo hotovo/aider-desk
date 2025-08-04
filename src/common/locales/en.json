@@ -314,7 +314,10 @@
     "theme": "Theme",
     "themeOptions": {
       "dark": "Dark",
-      "light": "Light"
+      "light": "Light",
+      "blue": "Blue",
+      "green": "Green",
+      "purple": "Purple"
     },
     "aiderRestartConfirm": {
       "title": "Restart Required",

@@ -10,34 +10,63 @@ module.exports = {
       },
       colors: {
         text: {
-          error: '#e16b6b',
+          error: 'var(--color-error)',
         },
+        // Theme-based colors
+        bg: {
+          primary: 'var(--color-bg-primary)',
+          secondary: 'var(--color-bg-secondary)',
+          tertiary: 'var(--color-bg-tertiary)',
+        },
+        text: {
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          muted: 'var(--color-text-muted)',
+          error: 'var(--color-error)',
+        },
+        border: {
+          default: 'var(--color-border-default)',
+          accent: 'var(--color-border-accent)',
+        },
+        accent: {
+          primary: 'var(--color-accent-primary)',
+          secondary: 'var(--color-accent-secondary)',
+        },
+        success: 'var(--color-success)',
+        warning: 'var(--color-warning)',
+        error: 'var(--color-error)',
+        input: {
+          bg: 'var(--color-input-bg)',
+          border: 'var(--color-input-border)',
+          text: 'var(--color-input-text)',
+        },
+        // Keep existing neutral/gray colors for backward compatibility
         neutral: {
-          50: '#f8f9fa',
-          100: '#f1f3f5',
-          200: '#999ba3',
-          300: '#8c8e95',
-          400: '#7b7d86',
-          500: '#585c75',
-          600: '#3d4166',
-          700: '#333652',
-          800: '#2a2c3f',
-          850: '#222431',
-          900: '#191a22',
-          950: '#141417',
+          50: '#var(--color-text-primary)',
+          100: 'var(--color-text-primary)',
+          200: 'var(----color-text-secondary)',
+          300: 'var(--color-text-muted)',
+          400: 'var(--color-text-muted)',
+          500: 'var(--color-border-accent)',
+          600: 'var(--color-border-default)',
+          700: 'var(--color-bg-tertiary)',
+          800: 'var(--color-bg-secondary)',
+          850: 'var(--color-bg-secondary)',
+          900: 'var(--color-bg-primary)',
+          950: 'var(--color-bg-primary)',
         },
         gray: {
-          50: '#f8f9fa',    // Lightest, almost white
-          100: '#f1f3f5',   // Very light gray
-          200: '#e9ecef',   // Light gray
-          300: '#dee2e6',   // Soft gray
-          400: '#ced4da',   // Medium light gray
-          500: '#adb5bd',   // Medium gray
-          600: '#6c757d',   // Muted gray
-          700: '#495057',   // Dark muted gray
-          800: '#343a40',   // Very dark gray
-          900: '#252a30',   // Darkest gray, almost black
-          950: '#18181b',   // Ultra dark, near black
+          50: '#f8f9fa',
+          100: '#f1f3f5',
+          200: '#e9ecef',
+          300: '#dee2e6',
+          400: '#ced4da',
+          500: '#adb5bd',
+          600: '#6c757d',
+          700: '#495057',
+          800: '#343a40',
+          900: '#252a30',
+          950: '#18181b',
         }
       },
       borderRadius: {

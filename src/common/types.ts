@@ -232,13 +232,22 @@ export interface EnvironmentVariable {
   source: string;
 }
 
+export type ThemeName = 'light' | 'dark' | 'blue' | 'green' | 'purple';
+export const THEME_NAMES: ThemeName[] = ['light', 'dark', 'blue', 'green', 'purple'];
+
+export interface Theme {
+  name: ThemeName;
+  displayName: string;
+  description: string;
+}
+
 export interface SettingsData {
   onboardingFinished?: boolean;
   language: string;
   startupMode?: StartupMode;
   zoomLevel?: number;
   notificationsEnabled?: boolean;
-  theme?: 'dark' | 'light';
+  theme?: ThemeName;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { SettingsData, StartupMode, SuggestionMode } from '@common/types';
+import { SettingsData, StartupMode, SuggestionMode, ThemeName, THEME_NAMES } from '@common/types';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -31,10 +31,10 @@ type Props = {
 export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange }: Props) => {
   const { t } = useTranslation();
 
-  const themeOptions: Option[] = [
-    { label: t('settings.themeOptions.dark'), value: 'dark' },
-    { label: t('settings.themeOptions.light'), value: 'light' },
-  ];
+  const themeOptions: Option[] = THEME_NAMES.map((theme) => ({
+    label: t(`settings.themeOptions.${theme}`),
+    value: theme,
+  }));
 
   const handleStartupModeChange = (mode: StartupMode) => {
     setSettings({
@@ -64,7 +64,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const handleThemeChange = (value: string) => {
     setSettings({
       ...settings,
-      theme: value === 'light' ? 'light' : 'dark',
+      theme: value as ThemeName,
     });
   };
 

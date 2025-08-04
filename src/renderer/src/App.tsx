@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
+import '@/styles/themes.css';
 import { useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
+import { THEME_NAMES } from '@common/types';
 
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
@@ -16,9 +18,13 @@ const ThemeManager = () => {
   const { settings } = useSettings();
 
   useEffect(() => {
-    const className = settings?.theme === 'light' ? 'theme-light' : 'theme-dark';
-    document.body.classList.remove('theme-light', 'theme-dark');
-    document.body.classList.add(className);
+    // Remove all theme classes first
+    const themeClasses = ['theme-light', 'theme-dark', 'theme-blue', 'theme-green', 'theme-purple'];
+    document.body.classList.remove(...themeClasses);
+
+    // Add the current theme class, default to dark
+    const theme = settings?.theme && THEME_NAMES.includes(settings.theme) ? settings.theme : 'dark';
+    document.body.classList.add(`theme-${theme}`);
   }, [settings?.theme]);
 
   return null;
