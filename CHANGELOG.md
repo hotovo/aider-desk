@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- added keyboard navigation to select component
+
 ## [0.25.0]
 
 - improved connection and communication with Aider
