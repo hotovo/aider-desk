@@ -78,6 +78,7 @@ export interface ResponseMessage extends Message {
   commitHash?: string;
   commitMessage?: string;
   diff?: string;
+  sequenceNumber?: number;
 }
 
 export const isResponseMessage = (message: Message): message is ResponseMessage => {

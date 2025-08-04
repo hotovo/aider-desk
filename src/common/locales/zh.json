@@ -83,7 +83,22 @@
       "configureLater": "如果您愿意，可以稍后在设置中配置这些。",
       "connectTitle": "连接您的AI模型",
       "connectDescription": "Aider Desk 支持多个AI提供商，包括OpenAI、Anthropic、Google Gemini等。您的API密钥安全存储在本地机器上，绝不会被共享。",
-      "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。"
+      "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。",
+      "advancedSettings": "高级设置",
+      "order": "排序",
+      "orderDescription": "按顺序尝试的提供商列表（例如 [\"anthropic\", \"openai\"]）",
+      "allowFallbacks": "允许备用选项",
+      "allowFallbacksDescription": "当主提供商不可用时是否允许使用备用提供商",
+      "dataCollection": "数据收集",
+      "dataCollectionDescription": "控制是否使用可能存储数据的提供商",
+      "only": "仅限",
+      "onlyDescription": "仅允许用于此请求的提供商列表",
+      "ignore": "忽略",
+      "ignoreDescription": "为此请求跳过的提供商列表",
+      "quantizations": "量化",
+      "quantizationsDescription": "按量化级别过滤的列表（例如 [\"int4\", \"int8\"]）",
+      "sort": "排序",
+      "sortDescription": "按价格或吞吐量对提供商进行排序"
     },
     "agent": {
       "title": "认识您的AI代理",
@@ -139,7 +154,8 @@
   "model": {
     "label": "模型",
     "selectLabel": "模型",
-    "placeholder": "输入模型名称"
+    "placeholder": "输入模型名称",
+    "chooseModelsToAdd": "选择要添加的模型..."
   },
   "openai": {
     "apiKey": "API 密钥",
@@ -285,7 +301,8 @@
       "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。"
     },
     "common": {
-      "showSecrets": "显示密钥"
+      "showSecrets": "显示密钥",
+      "learnMore": "了解更多"
     },
     "notificationsEnabled": "通知已启用",
     "zoom": "缩放级别",
@@ -730,5 +747,10 @@
       "totalTokens": "总令牌数",
       "cost": "成本"
     }
+  },
+  "terminal": {
+    "copyOutput": "复制终端输出到提示",
+    "minimize": "最小化终端",
+    "addTerminal": "添加新终端"
   }
 }

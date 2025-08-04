@@ -1,6 +1,10 @@
 # Changelog
 
 ## [UNRELEASED]
+- aider-desk now remembers editFormat per model per project and reuses it
+
+
+## [0.25.0]
 
 - improved connection and communication with Aider
 - reading cached tokens when working with Aider modes
@@ -9,7 +13,10 @@
 - added hourly, daily, monthly, yearly aggregation for dashboard data
 - added support for non-git projects
 - fixed map-refresh command not to display the map
-- aider-desk now remembers editFormat per model per project and reuses it
+- added integrated terminal component
+- added model selectors loaded from the Requesty and OpenRouter APIs
+- added advanced settings to OpenRouter provider
+- correctly handling user's rejected message to Architect plan
 
 ## [0.24.0]
 

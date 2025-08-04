@@ -1,11 +1,14 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenRouterProvider } from '@common/agent';
 
 import { ProviderModels } from './ProviderModels';
+import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
 
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+import { useOpenRouterModels } from '@/hooks/useOpenRouterModels';
+import { Accordion } from '@/components/common/Accordion';
 
 type Props = {
   provider: OpenRouterProvider;
@@ -20,6 +23,10 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
 
   const { environmentVariable: openRouterApiKeyEnv } = useEffectiveEnvironmentVariable('OPENROUTER_API_KEY');
 
+  // Use the effective API key (from provider or environment)
+  const effectiveApiKey = apiKey || openRouterApiKeyEnv?.value || '';
+  const availableModels = useOpenRouterModels(effectiveApiKey);
+
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
   };
@@ -27,6 +34,18 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
   const handleModelsChange = (updatedModels: string[]) => {
     onChange({ ...provider, models: updatedModels });
   };
+
+  const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) => (
+    <Accordion
+      title={<div className="flex-1 text-left text-sm font-medium px-2">{title}</div>}
+      chevronPosition="right"
+      className="mb-2 border rounded-md border-neutral-700"
+      isOpen={open}
+      onOpenChange={setOpen}
+    >
+      <div className="p-4 pt-2">{children}</div>
+    </Accordion>
+  );
 
   return (
     <div className="space-y-2">
@@ -46,7 +65,13 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
             : t('settings.agent.envVarPlaceholder', { envVar: 'OPENROUTER_API_KEY' })
         }
       />
-      <ProviderModels models={models} onChange={handleModelsChange} />
+      {renderSectionAccordion(
+        t('onboarding.providers.advancedSettings'),
+        <div className="space-y-2">
+          <OpenRouterAdvancedSettings provider={provider} onChange={onChange} />
+        </div>,
+      )}
+      <ProviderModels models={models} onChange={handleModelsChange} availableModels={availableModels} />
     </div>
   );
 };

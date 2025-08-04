@@ -5,8 +5,8 @@ import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSe
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
-import { McpManager, Agent } from '@/agent';
-import { getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, getEffectiveEnvironmentVariable } from '@/utils';
+import { Agent, McpManager } from '@/agent';
+import { getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
 import { ModelInfoManager } from '@/models';
 import { ProjectManager } from '@/project';
 import { getDefaultProjectSettings, Store } from '@/store';
@@ -15,6 +15,7 @@ import { VersionsManager } from '@/versions';
 import { TelemetryManager } from '@/telemetry';
 import { DataManager } from '@/data-manager';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
+import { TerminalManager } from '@/terminal/terminal-manager';
 
 export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
@@ -26,6 +27,7 @@ export const setupIpcHandlers = (
   modelInfoManager: ModelInfoManager,
   telemetryManager: TelemetryManager,
   dataManager: DataManager,
+  terminalManager: TerminalManager,
 ) => {
   ipcMain.handle('load-settings', () => {
     return store.getSettings();
@@ -65,6 +67,7 @@ export const setupIpcHandlers = (
 
   ipcMain.on('stop-project', async (_, baseDir: string) => {
     await projectManager.closeProject(baseDir);
+    terminalManager.closeTerminalForProject(baseDir);
     store.addRecentProject(baseDir);
   });
 
@@ -436,5 +439,42 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('run-custom-command', async (_, baseDir: string, commandName: string, args: string[], mode: Mode) => {
     await projectManager.getProject(baseDir).runCustomCommand(commandName, args, mode);
+  });
+
+  // Terminal handlers
+  ipcMain.handle('terminal-create', async (_, baseDir: string, cols?: number, rows?: number) => {
+    try {
+      return terminalManager.createTerminal(baseDir, cols, rows);
+    } catch (error) {
+      logger.error('Failed to create terminal:', { baseDir, error });
+      throw error;
+    }
+  });
+
+  ipcMain.handle('terminal-write', async (_, terminalId: string, data: string) => {
+    return terminalManager.writeToTerminal(terminalId, data);
+  });
+
+  ipcMain.handle('terminal-resize', async (_, terminalId: string, cols: number, rows: number) => {
+    return terminalManager.resizeTerminal(terminalId, cols, rows);
+  });
+
+  ipcMain.handle('terminal-close', async (_, terminalId: string) => {
+    return terminalManager.closeTerminal(terminalId);
+  });
+
+  ipcMain.handle('terminal-get-for-project', async (_, baseDir: string) => {
+    const terminal = terminalManager.getTerminalForProject(baseDir);
+    return terminal ? terminal.id : null;
+  });
+
+  ipcMain.handle('terminal-get-all-for-project', async (_, baseDir: string) => {
+    const terminals = terminalManager.getTerminalsForProject(baseDir);
+    return terminals.map((terminal) => ({
+      id: terminal.id,
+      baseDir: terminal.baseDir,
+      cols: terminal.cols,
+      rows: terminal.rows,
+    }));
   });
 };

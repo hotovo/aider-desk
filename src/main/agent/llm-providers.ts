@@ -164,6 +164,13 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
       extraBody: {
         provider: {
           require_parameters: true,
+          order: provider.order?.length ? provider.order : undefined,
+          only: provider.only?.length ? provider.only : undefined,
+          ignore: provider.ignore?.length ? provider.ignore : undefined,
+          allow_fallbacks: provider.allowFallbacks,
+          data_collection: provider.dataCollection,
+          quantizations: provider.quantizations?.length ? provider.quantizations : undefined,
+          sort: provider.sort || undefined,
         },
       },
     });

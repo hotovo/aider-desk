@@ -83,7 +83,22 @@
       "configureLater": "You can configure these later in the Settings if you prefer.",
       "connectTitle": "Connect Your AI Model",
       "connectDescription": "Aider Desk supports multiple AI providers including OpenAI, Anthropic, Google Gemini, and more. Your API keys are stored securely on your local machine and never shared.",
-      "advancedUsersNote": "Advanced users: You can also configure providers using environment variables in the next step's Aider configuration section."
+      "advancedUsersNote": "Advanced users: You can also configure providers using environment variables in the next step's Aider configuration section.",
+      "advancedSettings": "Advanced settings",
+      "order": "Order",
+      "orderDescription": "List of provider slugs to try in order (e.g. [\"anthropic\", \"openai\"]).",
+      "allowFallbacks": "Allow Fallbacks",
+      "allowFallbacksDescription": "Whether to allow backup providers when the primary is unavailable.",
+      "dataCollection": "Data Collection",
+      "dataCollectionDescription": "Control whether to use providers that may store data.",
+      "only": "Only",
+      "onlyDescription": "List of provider slugs to allow.",
+      "ignore": "Ignore",
+      "ignoreDescription": "List of provider slugs to skip.",
+      "quantizations": "Quantizations",
+      "quantizationsDescription": "List of quantization levels to filter by (e.g. [\"int4\", \"int8\"]).",
+      "sort": "Sort",
+      "sortDescription": "Sort providers by price or throughput."
     },
     "agent": {
       "title": "Meet Your AI Agent",
@@ -140,7 +155,8 @@
     "label": "Model",
     "labelMultiple": "Models",
     "selectLabel": "Model",
-    "placeholder": "e.g. anthropic/claude-sonnet-4-20250514"
+    "placeholder": "e.g. anthropic/claude-sonnet-4-20250514",
+    "chooseModelsToAdd": "Choose models to add..."
   },
   "openai": {
     "apiKey": "API Key",
@@ -290,7 +306,8 @@
       "addRuleFiles": "Add rule files from project's <file>.aider-desk/rules</file> directory as read-only files."
     },
     "common": {
-      "showSecrets": "Show Secrets"
+      "showSecrets": "Show Secrets",
+      "learnMore": "Learn more"
     },
     "notificationsEnabled": "Notifications enabled",
     "zoom": "Zoom level",
@@ -723,5 +740,10 @@
       "totalTokens": "Total Tokens",
       "cost": "Cost"
     }
+  },
+  "terminal": {
+    "copyOutput": "Copy terminal output to prompt",
+    "minimize": "Minimize terminal",
+    "addTerminal": "Add new terminal"
   }
 }

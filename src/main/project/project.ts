@@ -549,7 +549,7 @@ export class Project {
   public async runPrompt(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
     if (this.currentQuestion) {
       if (this.answerQuestion('n', prompt)) {
-        // processed by the answerQuestion function
+        logger.debug('Processed by the answerQuestion function.');
         return [];
       }
     }
@@ -658,7 +658,16 @@ export class Project {
     return this.store.getProjectSettings(this.baseDir).architectModel || null;
   }
 
-  public promptFinished() {
+  public promptFinished(promptId?: string) {
+    if (promptId && promptId !== this.currentPromptId) {
+      logger.debug('Received prompt finished for different prompt id', {
+        baseDir: this.baseDir,
+        expectedPromptId: this.currentPromptId,
+        receivedPromptId: promptId,
+      });
+      return;
+    }
+
     if (this.currentResponseMessageId) {
       this.mainWindow.webContents.send('response-completed', {
         messageId: this.currentResponseMessageId,
@@ -720,6 +729,7 @@ export class Project {
         commitMessage: message.commitMessage,
         diff: message.diff,
         usageReport,
+        sequenceNumber: message.sequenceNumber,
       };
 
       this.sendResponseCompleted(data);
@@ -728,6 +738,8 @@ export class Project {
 
       // Collect the completed response
       this.currentPromptResponses.push(data);
+      // Sort by sequence number when adding
+      this.currentPromptResponses.sort((a, b) => (a.sequenceNumber || 0) - (b.sequenceNumber || 0));
     }
   }
 
@@ -960,7 +972,7 @@ export class Project {
     this.mainWindow.webContents.send('input-history-updated', inputHistoryData);
   }
 
-  public async askQuestion(questionData: QuestionData): Promise<[string, string | undefined]> {
+  public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promise<[string, string | undefined]> {
     if (this.currentQuestion) {
       // Wait if another question is already pending
       await new Promise((resolve) => {
@@ -1010,8 +1022,13 @@ export class Project {
 
     // Store the resolve function for the promise
     return new Promise<[string, string | undefined]>((resolve) => {
-      this.currentQuestionResolves.push(resolve);
+      if (awaitAnswer) {
+        this.currentQuestionResolves.push(resolve);
+      }
       this.mainWindow.webContents.send('ask-question', questionData);
+      if (!awaitAnswer) {
+        resolve(['', undefined]);
+      }
     });
   }
 

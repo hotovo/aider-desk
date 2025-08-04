@@ -133,6 +133,7 @@ class PromptExecutor:
 
   async def _run_prompt_async(self, prompt_id: str, prompt: str, mode=None, architect_model=None, messages=None, files=None, coder=None):
     coder_provided = coder is not None
+    sequence_number = 0
 
     if not coder_provided:
       coder_model = self.connector.coder.main_model
@@ -140,6 +141,7 @@ class PromptExecutor:
 
       if mode == "architect" and architect_model:
         running_model = models.Model(architect_model, weak_model=coder_model.weak_model.name, editor_model=coder_model.name)
+        sequence_number = -1
 
       coder = clone_coder(
         self.connector,
@@ -196,7 +198,8 @@ class PromptExecutor:
       "content": whole_content,
       "finished": True,
       "editedFiles": list(coder.aider_edited_files),
-      "usageReport": get_usage_report()
+      "usageReport": get_usage_report(),
+      "sequenceNumber": sequence_number,
     }
 
     # Add commit info if there was one
@@ -237,6 +240,7 @@ class PromptExecutor:
           {"reflectedMessage": reflection_prompt}
         )
 
+        sequence_number += 1
         response_data = {
           "id": response_id,
           "action": "response",
@@ -244,7 +248,8 @@ class PromptExecutor:
           "reflectedMessage": reflection_prompt,
           "finished": True,
           "editedFiles": list(coder.aider_edited_files),
-          "usageReport": get_usage_report()
+          "usageReport": get_usage_report(),
+          "sequenceNumber": sequence_number,
         }
 
         if whole_content or not self.is_prompt_interrupted(prompt_id):

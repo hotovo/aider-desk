@@ -146,7 +146,7 @@ export class ConnectorManager {
           defaultAnswer: message.defaultAnswer,
           isGroupQuestion: message.isGroupQuestion,
         };
-        this.projectManager.getProject(connector.baseDir).askQuestion(questionData);
+        void this.projectManager.getProject(connector.baseDir).askQuestion(questionData, false);
       } else if (isSetModelsMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
@@ -197,7 +197,7 @@ export class ConnectorManager {
           baseDir: connector.baseDir,
           promptId: message.promptId,
         });
-        this.projectManager.getProject(connector.baseDir).promptFinished();
+        this.projectManager.getProject(connector.baseDir).promptFinished(message.promptId);
       } else if (isUpdateRepoMapMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {

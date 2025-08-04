@@ -42,6 +42,7 @@ export interface ResponseCompletedData {
   commitMessage?: string;
   diff?: string;
   usageReport?: UsageReportData;
+  sequenceNumber?: number;
 }
 
 export interface CommandOutputData {
@@ -391,4 +392,17 @@ export interface CustomCommand {
   arguments: CustomCommandArgument[];
   template: string;
   includeContext?: boolean;
+}
+
+export interface TerminalData {
+  terminalId: string;
+  baseDir: string;
+  data: string;
+}
+
+export interface TerminalExitData {
+  terminalId: string;
+  baseDir: string;
+  exitCode: number;
+  signal?: number;
 }

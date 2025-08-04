@@ -12,6 +12,8 @@ import type {
   ResponseCompletedData,
   SessionData,
   SettingsData,
+  TerminalData,
+  TerminalExitData,
   TokensInfoData,
   UserMessageData,
   McpServerConfig,
@@ -151,8 +153,22 @@ export interface ApplicationAPI {
   addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => string;
   removeVersionsInfoUpdatedListener: (listenerId: string) => void;
 
+  addTerminalDataListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalData) => void) => string;
+  removeTerminalDataListener: (listenerId: string) => void;
+
+  addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => string;
+  removeTerminalExitListener: (listenerId: string) => void;
+
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
   runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
+
+  // Terminal operations
+  createTerminal: (baseDir: string, cols?: number, rows?: number) => Promise<string>;
+  writeToTerminal: (terminalId: string, data: string) => Promise<boolean>;
+  resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;
+  closeTerminal: (terminalId: string) => Promise<boolean>;
+  getTerminalForProject: (baseDir: string) => Promise<string | null>;
+  getAllTerminalsForProject: (baseDir: string) => Promise<Array<{ id: string; baseDir: string; cols: number; rows: number }>>;
 }
 
 declare global {
