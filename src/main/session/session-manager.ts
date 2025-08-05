@@ -66,18 +66,21 @@ export class SessionManager {
   }
 
   async addContextFile(contextFile: ContextFile): Promise<ContextFile[]> {
-    const isDir = await isDirectory(contextFile.path);
-    const alreadyAdded = this.contextFiles.find((file) => file.path === contextFile.path);
+    const absolutePath = path.resolve(this.project.baseDir, contextFile.path);
+    const isDir = await isDirectory(absolutePath);
+    const alreadyAdded = this.contextFiles.find((file) => path.resolve(this.project.baseDir, file.path) === absolutePath);
     if (alreadyAdded) {
       return [];
     }
 
     // For directories, recursively add all files and subdirectories
     if (isDir) {
+      logger.debug('Recursively adding files in directory to context:', { path: contextFile.path, absolutePath });
+
       const addedFiles: ContextFile[] = [];
 
       try {
-        const entries = await fs.readdir(contextFile.path, { withFileTypes: true });
+        const entries = await fs.readdir(absolutePath, { withFileTypes: true });
         for (const entry of entries) {
           const entryPath = path.join(contextFile.path, entry.name);
           const entryContextFile: ContextFile = {
@@ -93,25 +96,22 @@ export class SessionManager {
         logger.error('Failed to read directory:', { path: contextFile.path, error });
       }
 
-      if (addedFiles.length > 0) {
-        this.saveAsAutosaved();
-      }
       return addedFiles;
-    }
+    } else {
+      // For files, check if ignored and add if not
+      if (await this.isFileIgnored(contextFile)) {
+        logger.debug('Skipping ignored file:', { path: contextFile.path });
+        return [];
+      }
 
-    // For files, check if ignored and add if not
-    if (await this.isFileIgnored(contextFile)) {
-      logger.debug('Skipping ignored file:', { path: contextFile.path });
-      return [];
+      const newContextFile = {
+        ...contextFile,
+        readOnly: contextFile.readOnly ?? false,
+      };
+      this.contextFiles.push(newContextFile);
+      this.saveAsAutosaved();
+      return [newContextFile];
     }
-
-    const newContextFile = {
-      ...contextFile,
-      readOnly: contextFile.readOnly ?? false,
-    };
-    this.contextFiles.push(newContextFile);
-    this.saveAsAutosaved();
-    return [newContextFile];
   }
 
   dropContextFile(filePath: string): ContextFile[] {

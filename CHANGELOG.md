@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.25.1]
+
+- properly adding files recursively when directory is added to context
+
 ## [0.25.0]
 
 - improved connection and communication with Aider
