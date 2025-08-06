@@ -166,9 +166,9 @@ export const AgentSelector = () => {
       </button>
 
       {selectorVisible && (
-        <div className="absolute bottom-full left-0 mb-1 bg-[var(--color-bg-primary-light)] border border-[var(--color-border-dark)] rounded-md shadow-lg z-10 min-w-[290px] max-w-[380px]">
+        <div className="absolute bottom-full left-0 mb-1 bg-[var(--color-bg-primary-light)] border border-[var(--color-border-default-dark)] rounded-md shadow-lg z-10 min-w-[290px] max-w-[380px]">
           {/* Profiles List */}
-          <div className="py-2 border-b border-[var(--color-border-dark)]">
+          <div className="py-2 border-b border-[var(--color-border-dafault-dark)]">
             <div className="flex items-center justify-between mb-2 pl-3 pr-2">
               <span className="text-xs font-medium text-[var(--color-text-secondary)] uppercase">{t('agentProfiles.profiles')}</span>
               <IconButton
@@ -201,7 +201,7 @@ export const AgentSelector = () => {
           </div>
 
           {/* MCP Servers */}
-          <div className="border-b border-[var(--color-border-dark)]">
+          <div className="border-b border-[var(--color-border-default-dark)]">
             <Accordion
               title={
                 <div className="flex items-center w-full">

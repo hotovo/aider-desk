@@ -43,17 +43,21 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
     return (
       <div className="flex w-full flex-col">
         <div className="flex w-full">
-          <div className="flex-1 overflow-auto px-4 py-3 border-r border-neutral-850">
-            <h3 className="mt-0 mb-2 text-xs font-semibold text-neutral-200">Old Value</h3>
-            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-neutral-100 leading-normal bg-neutral-850 px-3 py-2 rounded">{oldValue}</pre>
+          <div className="flex-1 overflow-auto px-4 py-3 border-r border-[var(--color-border-dark)]">
+            <h3 className="mt-0 mb-2 text-xs font-semibold text-[var(--color-text-secondary)]">Old Value</h3>
+            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-[var(--color-text-primary)] leading-normal bg-[var(--color-bg-secondary)] px-3 py-2 rounded">
+              {oldValue}
+            </pre>
           </div>
           <div className="flex-1 overflow-auto px-4 py-3">
-            <h3 className="mt-0 mb-2 text-xs font-semibold text-neutral-200">New Value</h3>
-            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-neutral-100 leading-normal bg-neutral-850 px-3 py-2 rounded">{newValue}</pre>
+            <h3 className="mt-0 mb-2 text-xs font-semibold text-[var(--color-text-secondary)]">New Value</h3>
+            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-[var(--color-text-primary)] leading-normal bg-[var(--color-bg-secondary)] px-3 py-2 rounded">
+              {newValue}
+            </pre>
           </div>
         </div>
         {diffError.message && (
-          <div className="w-full px-4 py-2 bg-red-900/50 text-red-300  text-xs text-center">
+          <div className="w-full px-4 py-2 bg-[var(--color-diffviewer-bg-primary)] text-[var(--color-diffviewer-text-primary)] text-xs text-center">
             Error: {diffError.message}
             <br />
             Please report an issue in https://github.com/hotovo/aider-desk/issues.
@@ -65,7 +69,7 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
 
   if (!diffFile || !diffFile.hunks || diffFile.hunks.length === 0) {
     // No error, but no diff file (e.g., identical content)
-    return <div className="flex w-full justify-center items-center py-4 text-neutral-400 text-xs">{t('diffViewer.noChanges')}</div>;
+    return <div className="flex w-full justify-center items-center py-4 text-[var(--color-text-muted-light)] text-xs">{t('diffViewer.noChanges')}</div>;
   }
 
   return (

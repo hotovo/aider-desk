@@ -15,9 +15,9 @@ module.exports = {
         // Theme-based colors
         bg: {
           primary: 'var(--color-bg-primary)',
-          primaryLight: 'var(--color-primary-light)',
+          primaryLight: 'var(--color-bg-primary-light)',
           secondary: 'var(--color-bg-secondary)',
-          secondaryLight: 'var(--color-secondary-light)',
+          secondaryLight: 'var(--color-bg-secondary-light)',
           tertiary: 'var(--color-bg-tertiary)',
           tertiary30: 'var(--color-bg-tertiary-30)',
           tertiary50: 'var(--color-bg-tertiary-50)',
@@ -29,10 +29,13 @@ module.exports = {
           tertiary: 'var(--color-text-tertiary)',
           muted: 'var(--color-text-muted)',
           mutedLight: 'var(--color-text-muted-light)',
+          dark: 'var(--color-text-dark)',
           error: 'var(--color-error)',
         },
         border: {
+          dark: 'var(--color-border-dark)',
           default: 'var(--color-border-default)',
+          defaultDark: 'var(--color-border-default-dark)',
           accent: 'var(--color-border-accent)',
         },
         accent: {

@@ -39,8 +39,8 @@
   --color-bg-secondary: #222431; /* neutral-850 */
   --color-bg-secondary-light: #2a2c3f; /* neutral-800 */
   --color-bg-tertiary: #333652; /* neutral-700 */
-  --color-bg---color-bg-tertiary-30: rgba(51, 54, 82, 0.3);
-  --color-bg---color-bg-tertiary-50: rgba(51, 54, 82, 0.5);
+  --color-bg---color-bg-tertiary-30: #3336524C;
+  --color-bg---color-bg-tertiary-50: #3336527F;
   --color-bg-fourth: #3d4166; /* neutral-600 */
 
   /* Text Colors */
@@ -49,9 +49,11 @@
   --color-text-tertiary: #8c8e95;  /* neutral-300 */
   --color-text-muted-light: #7b7d86; /* neutral-400 */
   --color-text-muted: #585c75; /* neutral-500 */
+  --color-text-dark: #333652; /* neutral-700 */
 
   /* Border Colors */
-  --color-border-dark: #333652; /* neutral-700 */
+  --color-border-dark: #222431; /* neutral-850 */
+  --color-border-default-dark: #333652; /* neutral-700 */
   --color-border-default: #3d4166; /* neutral-600 */
   --color-border-accent: #585c75; /* neutral-500 */
 
@@ -76,6 +78,8 @@
   --color-agent-contextfiles: #facc15; /* yellow-500 */
   --color-agent-repomap: #60a5fa; /* blue-500 */
 
+  --color-diffviewer-bg-primary: #7f1d1d80; /* red-900 opacity 0,5*/
+  --color-diffviewer-text-primary: #fca5a5; /* red-300 */
 }
 
 .theme-blue {
