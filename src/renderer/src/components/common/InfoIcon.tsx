@@ -25,7 +25,7 @@ export const InfoIcon = ({ tooltip, tooltipId, className, size = 'md' }: Props) 
       }
       tooltip={tooltip}
       tooltipId={tooltipId}
-      className={`ml-2 text-neutral-500 ${className || ''}`}
+      className={`ml-2 text-[var(--color-text-muted)] ${className || ''}`}
       onClick={() => {}}
     />
   );

@@ -39,12 +39,14 @@ export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm'
         <div
           className={clsx(
             'rounded border flex items-center justify-center transition-colors duration-200 w-4 h-4',
-            checked ? 'bg-neutral-600 border-neutral-500' : 'bg-neutral-800 border-neutral-600',
+            checked
+              ? 'bg-[var(--color-bg-fourth)] border-[var(--color-border-accent)]'
+              : 'bg-[var(--color-bg-secondary-light)] border-[var(--color-border-default)]',
           )}
         >
           {checked && (
             <svg
-              className={clsx('text-white', {
+              className={clsx('text-[var(--color-text-primary)]', {
                 'w-3 h-3': size === 'sm',
                 'w-4 h-4': size === 'md',
               })}

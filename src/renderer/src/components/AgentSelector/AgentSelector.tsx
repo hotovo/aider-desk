@@ -168,7 +168,7 @@ export const AgentSelector = () => {
       {selectorVisible && (
         <div className="absolute bottom-full left-0 mb-1 bg-[var(--color-bg-primary-light)] border border-[var(--color-border-default-dark)] rounded-md shadow-lg z-10 min-w-[290px] max-w-[380px]">
           {/* Profiles List */}
-          <div className="py-2 border-b border-[var(--color-border-dafault-dark)]">
+          <div className="py-2 border-b border-[var(--color-border-default-dark)]">
             <div className="flex items-center justify-between mb-2 pl-3 pr-2">
               <span className="text-xs font-medium text-[var(--color-text-secondary)] uppercase">{t('agentProfiles.profiles')}</span>
               <IconButton
@@ -246,7 +246,7 @@ export const AgentSelector = () => {
                     <MdOutlineHdrAuto
                       className={clsx(
                         'w-3.5 h-3.5',
-                        activeProfile.useAiderTools ? 'text-[var(--color-agent-autoapprove)]' : 'text-[var(--color-text-muted)] opacity-50',
+                        activeProfile.useAiderTools ? 'text-[var(--color-agent-aidertools)]' : 'text-[var(--color-text-muted)] opacity-50',
                       )}
                     />
                   }
