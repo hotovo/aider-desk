@@ -174,6 +174,14 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
 };
 
 app.whenReady().then(async () => {
+  // Set proxy server if provided
+  const proxyServerArg = process.argv.find((arg) => arg.startsWith('--proxy-server='));
+  if (proxyServerArg) {
+    const proxyAddress = proxyServerArg.split('=')[1];
+    app.commandLine.appendSwitch('proxy-server', proxyAddress);
+    logger.info(`Proxy server set to: ${proxyAddress}`);
+  }
+
   electronApp.setAppUserModelId('com.hotovo.aider-desk');
 
   app.on('browser-window-created', (_, window) => {
