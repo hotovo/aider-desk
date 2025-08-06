@@ -37,7 +37,7 @@ mac:
   category: public.app-category.developer-tools
   target:
     - target: default
-  artifactName: ${productName}-${version}-macos.${ext}
+  artifactName: ${productName}-${version}-macos-${arch}.${ext}
   type: distribution
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist
