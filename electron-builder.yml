@@ -20,7 +20,7 @@ extraResources:
       - '**/*'
 asarUnpack:
   - resources/**
-beforePack: scripts/beforePack.js
+beforePack: scripts/before-pack.js
 win:
   executableName: aider-desk
   icon: resources/icon.png
@@ -70,7 +70,7 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 deb:
   compression: 'gz'
-npmRebuild: false
+npmRebuild: true
 publish:
   provider: github
   releaseType: draft

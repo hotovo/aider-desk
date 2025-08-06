@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import { createWriteStream, existsSync, mkdirSync, unlinkSync, renameSync, rmdirSync } from 'fs';
 import { join } from 'path';
+import fs from 'fs';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
 import { extract } from "tar";
@@ -108,6 +109,27 @@ async function downloadAllUVs() {
         await downloadAndExtractUVForPlatform(target);
     }
     console.log("All necessary uv executables processed.");
+
+    // After downloading all, copy the correct one for the current platform if it's macOS
+    if (process.platform === 'darwin') {
+        const arch = process.arch;
+        const sourceDir = join(RESOURCES_DIR, `macos-${arch}`);
+        const targetDir = join(RESOURCES_DIR, 'macos');
+        const sourceFile = join(sourceDir, 'uv');
+        const targetFile = join(targetDir, 'uv');
+
+        if (!existsSync(targetDir)) {
+            mkdirSync(targetDir, { recursive: true });
+        }
+
+        if (existsSync(sourceFile)) {
+            console.log(`Copying uv for local development on macOS ${arch}...`);
+            fs.copyFileSync(sourceFile, targetFile);
+            console.log('uv copied successfully for local development.');
+        } else {
+            console.error(`uv binary for macOS ${arch} not found at ${sourceFile}, skipping copy for local development.`);
+        }
+    }
 }
 
 downloadAllUVs();

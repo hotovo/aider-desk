@@ -26,8 +26,6 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux",
-    "pack:mac:x64": "mkdir -p resources/macos && cp resources/macos-x64/uv resources/macos/uv",
-    "pack:mac:arm64": "mkdir -p resources/macos && cp resources/macos-arm64/uv resources/macos/uv",
     "prepare": "husky"
   },
   "dependencies": {
