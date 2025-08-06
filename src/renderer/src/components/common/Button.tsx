@@ -17,19 +17,19 @@ type Props = {
 
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
   primary: {
-    contained: 'bg-amber-600 hover:bg-amber-500 text-white',
-    text: 'text-amber-600 hover:bg-amber-600/10',
-    outline: 'border-amber-600 text-amber-600 hover:bg-amber-600/10',
+    contained: 'bg-[var(--color-warning)] hover:bg-[var(--color-warning-light)] text-[var(--color-text-primary)]',
+    text: 'text-[var(--color-warning)] hover:bg-[var(--color-warning-10)]',
+    outline: 'border-[var(--color-warning)] text-[var(--color-warning)] hover:bg-[var(--color-warning-10)]',
   },
   secondary: {
-    contained: 'bg-blue-600 hover:bg-blue-500 text-white',
-    text: 'text-blue-600 hover:bg-blue-600/10',
-    outline: 'border-blue-600 text-blue-600 hover:bg-blue-600/10',
+    contained: 'bg-[var(--color-info)] hover:bg-[var(--color-info-light)] text-white',
+    text: 'text-[var(--color-info)] hover:bg-[var(--color-info-10)]',
+    outline: 'border-[var(--color-info)] text-[var(--color-info)] hover:bg-[var(--color-info-10)]',
   },
   danger: {
-    contained: 'bg-red-500 hover:bg-red-500 text-white',
-    text: 'text-red-500 hover:bg-red-500/10',
-    outline: 'border-red-500 text-red-500 hover:bg-red-500/10',
+    contained: 'bg-[var(--color-error)] hover:bg-red-[var(--color-error)] text-white',
+    text: 'text-[var(--color-error)] hover:bg-[var(--color-error-10)]',
+    outline: 'border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error-10)]',
   },
 };
 
@@ -50,7 +50,7 @@ export const Button = ({
   size = 'md',
 }: Props) => {
   const baseColorClasses = disabled
-    ? 'bg-neutral-700/50 text-neutral-500 cursor-not-allowed hover:bg-neutral-700/50 hover:text-neutral-500'
+    ? 'bg-[var(--color-bg-tertiary-50)] text-[var(--color-text-muted)] cursor-not-allowed hover:bg-[var(--color-bg-tertiary-50)]  hover:text-[var(--color-text-muted)]'
     : colorClasses[color][variant];
 
   const baseSizeClasses = sizeClasses[size];

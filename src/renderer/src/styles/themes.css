@@ -38,10 +38,12 @@
   --color-bg-primary-light: #191a22; /* neutral-900 */
   --color-bg-secondary: #222431; /* neutral-850 */
   --color-bg-secondary-light: #2a2c3f; /* neutral-800 */
+  --color-bg-secondary-light-80: #2a2c3ff2;
   --color-bg-tertiary: #333652; /* neutral-700 */
-  --color-bg---color-bg-tertiary-30: #3336524C;
-  --color-bg---color-bg-tertiary-50: #3336527F;
+  --color-bg-tertiary-30: #3336524C;
+  --color-bg-tertiary-50: #3336527F;
   --color-bg-fourth: #3d4166; /* neutral-600 */
+  --color-bg-fifth: #585c75; /* neutral-500 */
 
   /* Text Colors */
   --color-text-primary: #f1f3f5; /* neutral-100 */
@@ -63,20 +65,27 @@
 
   /* Status Colors */
   --color-success: #22c55e; /* green-500 */
-  --color-warning: #f59e0b; /* amber-500 */
+  --color-warning: #d97706; /* amber-600 */
+  --color-warning-10: #d9770619;
+  --color-warning-light: #f59e0b; /* amber-500 */
   --color-error: #ef4444; /* red-500 */
+  --color-error-10: #ef44441a;
+  --color-error-light: #f87171;
+  --color-info: #2563eb; /* blue-600 */
+  --color-info-light: #3b82f6; /* blue-500 */
+  --color-info-10: #2563eb1a;
 
   /* Input Colors */
   --color-input-bg: #191a22; /* neutral-900 */
   --color-input-border: #3d4166; /* neutral-600 */
   --color-input-text: #f1f3f5; /* neutral-100 */
 
-  --color-agent-autoapprove: #4ade80; /* green-500 */
-  --color-agent-aidertools: #fb923c; /* orange-500 */
-  --color-agent-powertools: #c084fc; /* purple-500 */
-  --color-agent-todotools: #38bdf8; /* sky-500 */
-  --color-agent-contextfiles: #facc15; /* yellow-500 */
-  --color-agent-repomap: #60a5fa; /* blue-500 */
+  --color-agent-autoapprove: #4ade80; /* green-400 */
+  --color-agent-aidertools: #fb923c; /* orange-400 */
+  --color-agent-powertools: #c084fc; /* purple-400 */
+  --color-agent-todotools: #38bdf8; /* sky-400 */
+  --color-agent-contextfiles: #facc15; /* yellow-400 */
+  --color-agent-repomap: #60a5fa; /* blue-400 */
 
   --color-diffviewer-bg-primary: #7f1d1d80; /* red-900 opacity 0,5*/
   --color-diffviewer-text-primary: #fca5a5; /* red-300 */

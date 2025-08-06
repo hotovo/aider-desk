@@ -42,7 +42,7 @@ export const Accordion = ({
     <div className={className}>
       <button
         onClick={handleOpenChange}
-        className={clsx('w-full flex items-center gap-2 p-2 rounded hover:bg-[var(--color-bg---color-bg-tertiary-50)] transition-colors', buttonClassName)}
+        className={clsx('w-full flex items-center gap-2 p-2 rounded hover:bg-[var(--color-bg-tertiary-50)] transition-colors', buttonClassName)}
       >
         {chevronPosition === 'left' && chevron}
         {title}
