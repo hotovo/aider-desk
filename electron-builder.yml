@@ -53,7 +53,7 @@ mac:
       filter:
         - '**/*'
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-${arch}.${ext}
 linux:
   target:
     - AppImage
