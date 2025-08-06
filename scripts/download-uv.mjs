@@ -14,7 +14,8 @@ const RESOURCES_DIR = './resources';
 
 const TARGET_PLATFORMS = [
     { platform: 'linux', arch: 'x64', filename: 'uv-x86_64-unknown-linux-gnu.tar.gz', extractSubdir: 'linux', uvExeName: 'uv' },
-    { platform: 'darwin', arch: 'x64', filename: 'uv-x86_64-apple-darwin.tar.gz', extractSubdir: 'macos', uvExeName: 'uv' },
+    { platform: 'darwin', arch: 'x64', filename: 'uv-x86_64-apple-darwin.tar.gz', extractSubdir: 'macos-x64', uvExeName: 'uv' },
+    { platform: 'darwin', arch: 'arm64', filename: 'uv-aarch64-apple-darwin.tar.gz', extractSubdir: 'macos-arm64', uvExeName: 'uv' },
     { platform: 'win32', arch: 'x64', filename: 'uv-x86_64-pc-windows-msvc.zip', extractSubdir: 'win', uvExeName: 'uv.exe' }
 ];
 

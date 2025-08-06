@@ -37,7 +37,6 @@ mac:
   category: public.app-category.developer-tools
   target:
     - target: default
-      arch: [universal]
   artifactName: ${productName}-${version}-macos.${ext}
   type: distribution
   hardenedRuntime: true
@@ -47,12 +46,12 @@ mac:
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
   gatekeeperAssess: false
   notarize: true
-  x64ArchFiles: '**/macos/**/*'
   extraResources:
     - from: ./resources/macos
       to: macos
       filter:
         - '**/*'
+beforePack: npm run pack:mac:${arch}
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
