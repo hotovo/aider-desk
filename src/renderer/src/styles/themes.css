@@ -35,17 +35,23 @@
 .theme-dark {
   /* Background Colors */
   --color-bg-primary: #141417; /* neutral-950 */
-  --color-bg-secondary: #191a22; /* neutral-900 */
-  --color-bg-tertiary: #2a2c3f; /* neutral-800 */
-  --color-bg-fourth: #333652; /* neutral-700 */
-  --color-bg-fifth: #3d4166; /* neutral-600 */
+  --color-bg-primary-light: #191a22; /* neutral-900 */
+  --color-bg-secondary: #222431; /* neutral-850 */
+  --color-bg-secondary-light: #2a2c3f; /* neutral-800 */
+  --color-bg-tertiary: #333652; /* neutral-700 */
+  --color-bg---color-bg-tertiary-30: rgba(51, 54, 82, 0.3);
+  --color-bg---color-bg-tertiary-50: rgba(51, 54, 82, 0.5);
+  --color-bg-fourth: #3d4166; /* neutral-600 */
 
   /* Text Colors */
   --color-text-primary: #f1f3f5; /* neutral-100 */
   --color-text-secondary: #999ba3; /* neutral-200 */
-  --color-text-muted: #7b7d86; /* neutral-400 */
+  --color-text-tertiary: #8c8e95;  /* neutral-300 */
+  --color-text-muted-light: #7b7d86; /* neutral-400 */
+  --color-text-muted: #585c75; /* neutral-500 */
 
   /* Border Colors */
+  --color-border-dark: #333652; /* neutral-700 */
   --color-border-default: #3d4166; /* neutral-600 */
   --color-border-accent: #585c75; /* neutral-500 */
 
@@ -62,6 +68,14 @@
   --color-input-bg: #191a22; /* neutral-900 */
   --color-input-border: #3d4166; /* neutral-600 */
   --color-input-text: #f1f3f5; /* neutral-100 */
+
+  --color-agent-autoapprove: #4ade80; /* green-500 */
+  --color-agent-aidertools: #fb923c; /* orange-500 */
+  --color-agent-powertools: #c084fc; /* purple-500 */
+  --color-agent-todotools: #38bdf8; /* sky-500 */
+  --color-agent-contextfiles: #facc15; /* yellow-500 */
+  --color-agent-repomap: #60a5fa; /* blue-500 */
+
 }
 
 .theme-blue {

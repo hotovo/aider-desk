@@ -101,7 +101,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
         rightElement={
           <IconButton
             onClick={handleSelectProject}
-            className="p-1.5 rounded-md hover:bg-neutral-700/50 transition-colors"
+            className="p-1.5 rounded-md hover:bg-[var(--color-bg-tertiary-50)] transition-colors"
             tooltip={t('dialogs.browseFoldersTooltip')}
             tooltipId="browseTooltipId"
             icon={<FaFolder className="w-4 h-4" />}
@@ -110,7 +110,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
         onSubmit={handleAddProject}
       />
 
-      {isProjectAlreadyOpen && <div className="text-red-500 text-2xs mt-1 px-2">{t('dialogs.projectAlreadyOpenWarning')}</div>}
+      {isProjectAlreadyOpen && <div className="text-[var(--color-error)] text-2xs mt-1 px-2">{t('dialogs.projectAlreadyOpenWarning')}</div>}
 
       {recentProjects.length > 0 && (
         <Accordion className="mt-2" title={<div className="flex items-center gap-2 text-sm">{t('dialogs.recentProjects')}</div>}>

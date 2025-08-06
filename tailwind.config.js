@@ -15,13 +15,20 @@ module.exports = {
         // Theme-based colors
         bg: {
           primary: 'var(--color-bg-primary)',
+          primaryLight: 'var(--color-primary-light)',
           secondary: 'var(--color-bg-secondary)',
+          secondaryLight: 'var(--color-secondary-light)',
           tertiary: 'var(--color-bg-tertiary)',
+          tertiary30: 'var(--color-bg-tertiary-30)',
+          tertiary50: 'var(--color-bg-tertiary-50)',
+          fourth: 'var(--color-bg-fourth)',
         },
         text: {
           primary: 'var(--color-text-primary)',
           secondary: 'var(--color-text-secondary)',
+          tertiary: 'var(--color-text-tertiary)',
           muted: 'var(--color-text-muted)',
+          mutedLight: 'var(--color-text-muted-light)',
           error: 'var(--color-error)',
         },
         border: {
@@ -39,6 +46,14 @@ module.exports = {
           bg: 'var(--color-input-bg)',
           border: 'var(--color-input-border)',
           text: 'var(--color-input-text)',
+        },
+        agent: {
+          autoApprove: 'var(--color-agent-autoapprove)',
+          aiderTools: 'var(--color-agent-aidertools)',
+          powerTools: 'var(--color-agent-powertools)',
+          todoTools: 'var(-color-agent-todotools)',
+          contextFiles: 'var(--color-agent-contextfiles)',
+          repoMap: 'var(--color-agent-repomap)',
         },
         // Keep existing neutral/gray colors for backward compatibility
         neutral: {

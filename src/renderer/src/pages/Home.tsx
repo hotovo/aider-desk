@@ -187,9 +187,9 @@ export const Home = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen p-[4px] bg-gradient-to-b from-[var(--color-bg-primary)] [var(--color-bg-secondary)]">
+    <div className="flex flex-col h-screen p-[4px] bg-gradient-to-b from-[var(--color-bg-primary)] to-[var(--color-bg-primary-light)]">
       <div className="flex flex-col h-screen border-2 border-[var(--color-border-default)] relative">
-        <div className="flex border-b-2 border-[var(--color-border-default)] justify-between bg-gradient-to-b from-[var(--color-bg-primary)] [var(--color-bg-secondary)]">
+        <div className="flex border-b-2 border-[var(--color-border-default)] justify-between bg-gradient-to-b from-[var(--color-bg-primary)] to-[var(--color-bg-primary-light)]">
           <ProjectTabs
             openProjects={openProjects}
             activeProject={activeProject}
@@ -206,22 +206,22 @@ export const Home = () => {
                 onClick={() => {
                   setShowSettingsTab(3);
                 }}
-                className="px-4 py-2 hover:[var(--color-text-secondary)] hover:[var(--color-bg-fourth)]/30 transition-colors duration-200"
+                className="px-4 py-2 hover:bg-[var(--color-bg-tertiary-30)] transition-colors duration-200"
               />
             )}
             <IconButton
               icon={<MdBarChart className="h-5 w-5 text-[var(--color-text-secondary)]" />}
               tooltip={t('usageDashboard.title')}
               onClick={() => setIsUsageDashboardVisible(true)}
-              className="px-4 py-2 hover:text-secondary hover:bg--color-beg-fourth transition-colors duration-200"
+              className="px-4 py-2 hover:bg-[var(--color-bg-tertiary-30)] transition-colors duration-200"
             />
             <IconButton
-              icon={<MdSettings className="h-5 w-5 text-neutral-200" />}
+              icon={<MdSettings className="h-5 w-5 text-[var(--color-text-secondary)]" />}
               tooltip={t('settings.title')}
               onClick={() => {
                 setShowSettingsTab(0);
               }}
-              className="px-4 py-2 hover:text-neutral-200 hover:bg-neutral-700/30 transition-colors duration-200"
+              className="px-4 py-2 hover:bg-[var(--color-bg-tertiary-30)] transition-colors duration-200"
             />
           </div>
         </div>
