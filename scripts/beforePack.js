@@ -4,7 +4,7 @@ const path = require('path');
 
 exports.default = async function(context) {
   console.log('beforePack hook started');
-  const { arch } = context;
+  const arch = context.arch === 1 ? 'x64' : context.arch === 3 ? 'arm64' : undefined;
   const platform = context.packager.platform.name;
   console.log(`Platform: ${platform}, Arch: ${arch}`);
 
