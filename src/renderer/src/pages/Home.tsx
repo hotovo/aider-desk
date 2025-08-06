@@ -187,9 +187,9 @@ export const Home = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen p-[4px] bg-gradient-to-b from-neutral-950 to-neutral-900">
-      <div className="flex flex-col h-screen border-2 border-neutral-600 relative">
-        <div className="flex border-b-2 border-neutral-600 justify-between bg-gradient-to-b from-neutral-950 to-neutral-900">
+    <div className="flex flex-col h-screen p-[4px] bg-gradient-to-b from-[var(--color-bg-primary)] [var(--color-bg-secondary)]">
+      <div className="flex flex-col h-screen border-2 border-[var(--color-border-default)] relative">
+        <div className="flex border-b-2 border-[var(--color-border-default)] justify-between bg-gradient-to-b from-[var(--color-bg-primary)] [var(--color-bg-secondary)]">
           <ProjectTabs
             openProjects={openProjects}
             activeProject={activeProject}
@@ -201,19 +201,19 @@ export const Home = () => {
           <div className="flex items-center">
             {showUpdateIcon && (
               <IconButton
-                icon={<MdUpload className="h-5 w-5 text-neutral-100 animate-pulse animate-slow" />}
+                icon={<MdUpload className="h-5 w-5 text-[var(--color-text-primary)] animate-pulse animate-slow" />}
                 tooltip={getUpdateTooltip()}
                 onClick={() => {
                   setShowSettingsTab(3);
                 }}
-                className="px-4 py-2 hover:text-neutral-200 hover:bg-neutral-700/30 transition-colors duration-200"
+                className="px-4 py-2 hover:[var(--color-text-secondary)] hover:[var(--color-bg-fourth)]/30 transition-colors duration-200"
               />
             )}
             <IconButton
-              icon={<MdBarChart className="h-5 w-5 text-neutral-200" />}
+              icon={<MdBarChart className="h-5 w-5 text-[var(--color-text-secondary)]" />}
               tooltip={t('usageDashboard.title')}
               onClick={() => setIsUsageDashboardVisible(true)}
-              className="px-4 py-2 hover:text-neutral-200 hover:bg-neutral-700/30 transition-colors duration-200"
+              className="px-4 py-2 hover:text-secondary hover:bg--color-beg-fourth transition-colors duration-200"
             />
             <IconButton
               icon={<MdSettings className="h-5 w-5 text-neutral-200" />}

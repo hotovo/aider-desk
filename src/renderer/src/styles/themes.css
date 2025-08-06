@@ -34,9 +34,11 @@
 
 .theme-dark {
   /* Background Colors */
-  --color-bg-primary: #191a22; /* neutral-900 */
-  --color-bg-secondary: #2a2c3f; /* neutral-800 */
-  --color-bg-tertiary: #333652; /* neutral-700 */
+  --color-bg-primary: #141417; /* neutral-950 */
+  --color-bg-secondary: #191a22; /* neutral-900 */
+  --color-bg-tertiary: #2a2c3f; /* neutral-800 */
+  --color-bg-fourth: #333652; /* neutral-700 */
+  --color-bg-fifth: #3d4166; /* neutral-600 */
 
   /* Text Colors */
   --color-text-primary: #f1f3f5; /* neutral-100 */
