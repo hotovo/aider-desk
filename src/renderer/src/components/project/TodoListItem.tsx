@@ -71,13 +71,13 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
           <IconButton
             icon={<MdCheck className="w-3 h-3" />}
             onClick={handleSaveEdit}
-            className="text-successs hover:text-successLight hover:bg-success10 rounded p-1"
+            className="text-success hover:text-successLight hover:bg-success10 rounded p-1"
             disabled={!editName.trim()}
           />
           <IconButton
             icon={<MdClose className="w-3 h-3" />}
             onClick={handleCancelEdit}
-            className="text-errorLight hover:text-errorLight hover:bg-error10 rounded p-1"
+            className="text-error hover:text-errorLight hover:bg-error10 rounded p-1"
           />
         </div>
       ) : (
