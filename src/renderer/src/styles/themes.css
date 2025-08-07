@@ -73,6 +73,7 @@
   --color-warning-10: #d9770619;
   --color-warning-light: #f59e0b; /* amber-500 */
   --color-error: #ef4444; /* red-500 */
+  --color-error-dark: #991b1b; /* red-500 */
   --color-error-10: #ef44441a;
   --color-error-light: #f87171;
   --color-info: #2563eb; /* blue-600 */

@@ -313,7 +313,10 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                   <>
                     {showAllFiles ? (
                       <>
-                        <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-red-800">
+                        <button
+                          onClick={dropFile(item as TreeItem)}
+                          className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-errorDark"
+                        >
                           <HiX className="w-4 h-4" />
                         </button>
                         <button
@@ -331,14 +334,17 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {(item as TreeItem).file?.readOnly && (
                       <TbPencilOff
-                        className="w-4 h-4 text-neutral-400"
+                        className="w-4 h-4 text-text-mutedLight"
                         data-tooltip-id="context-files-tooltip"
                         data-tooltip-content={t('contextFiles.readOnly')}
                       />
                     )}
                     {showAllFiles ? (
                       files.some((f) => f.path === (item as TreeItem).file?.path) ? (
-                        <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-red-800">
+                        <button
+                          onClick={dropFile(item as TreeItem)}
+                          className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-errorDark"
+                        >
                           <HiX className="w-4 h-4" />
                         </button>
                       ) : (
@@ -352,7 +358,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                         </button>
                       )
                     ) : (
-                      <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-red-800">
+                      <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-errorDark">
                         <HiX className="w-4 h-4" />
                       </button>
                     )}
