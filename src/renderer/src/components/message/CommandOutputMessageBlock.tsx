@@ -11,7 +11,8 @@ type Props = {
 
 export const CommandOutputMessageBlock = ({ message }: Props) => {
   const { t } = useTranslation();
-  const baseClasses = 'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-primaryLight border border-border-darkLight text-gray-100';
+  const baseClasses =
+    'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-primaryLight border border-border-darkLight text-text-primary';
 
   return (
     <div className={`${baseClasses} bg-bg-primaryLight border-border-darkLight text-text-tertiary relative group`}>

@@ -49,10 +49,15 @@ module.exports = {
         warning: 'var(--color-warning)',
         warningLight: 'var(--color-warning-light)',
         warning10: 'var(--color-warning-10)',
+        warning30: 'var(--color-warning-30)',
+
         error: 'var(--color-error)',
         errorLight: 'var(--color-error-light)',
         errorDark: 'var(--color-error-dark)',
         error10: 'var(--color-error-10)',
+        error15: 'var(--color-error-15)',
+        error30: 'var(--color-error-30)',
+
         info: 'var(--color-info)',
         infoLight: 'var(--color-info-light)',
         info10: 'var(--color-info-10)',

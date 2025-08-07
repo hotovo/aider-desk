@@ -71,11 +71,16 @@
   --color-success: #22c55e; /* green-500 */
   --color-warning: #d97706; /* amber-600 */
   --color-warning-10: #d9770619;
+  --color-warning-30: #d977064c;
   --color-warning-light: #f59e0b; /* amber-500 */
+
   --color-error: #ef4444; /* red-500 */
-  --color-error-dark: #991b1b; /* red-500 */
+  --color-error-dark: #991b1b;
   --color-error-10: #ef44441a;
+  --color-error-15: #ef444426;
+  --color-error-30: #ef44444c;
   --color-error-light: #f87171;
+
   --color-info: #2563eb; /* blue-600 */
   --color-info-light: #3b82f6; /* blue-500 */
   --color-info-10: #2563eb1a;
