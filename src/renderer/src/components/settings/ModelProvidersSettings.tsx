@@ -89,6 +89,8 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
       return !!provider.apiKey || !!requestyApiKey?.value;
     } else if (isLmStudioProvider(provider)) {
       return !!provider.baseUrl;
+    } else if (isVertexAiProvider(provider)) {
+      return !!provider.project && !!provider.location;
     } else {
       return false;
     }

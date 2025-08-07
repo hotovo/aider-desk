@@ -75,6 +75,9 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     const vertexProvider = createVertexAI({
       project: provider.project,
       location: provider.location,
+      ...(provider.googleCloudCredentialsJson && {
+        credentials: JSON.parse(provider.googleCloudCredentialsJson),
+      }),
     });
     return vertexProvider(model);
   } else if (isDeepseekProvider(provider)) {
