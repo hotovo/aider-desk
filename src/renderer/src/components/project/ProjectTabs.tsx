@@ -111,7 +111,7 @@ export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetAc
       <TabList className="flex items-center relative overflow-hidden">
         {showLeftScrollButton && (
           <button
-            className="absolute left-0 z-10 h-full flex items-center px-2 bg-neutral-900/80 hover:bg-neutral-900 transition-colors duration-200"
+            className="absolute left-0 z-10 h-full flex items-center px-2 bg-bg-primaryLight hover:bg-bg-secondary transition-colors duration-200"
             onClick={handleScrollLeft}
           >
             <MdChevronLeft className="h-5 w-5 text-text-mutedLight" />
@@ -128,14 +128,14 @@ export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetAc
         </div>
         {showRightScrollButton && (
           <button
-            className="absolute right-[52px] z-10 h-full flex items-center px-2 bg-neutral-900/80 hover:bg-neutral-900 transition-colors duration-200"
+            className="absolute right-[52px] z-10 h-full flex items-center px-2 bg-bg-primaryLight hover:bg-bg-secondary transition-colors duration-200"
             onClick={handleScrollRight}
           >
             <MdChevronRight className="h-5 w-5 text-text-mutedLight" />
           </button>
         )}
         <button
-          className="px-4 py-2 text-text-mutedLight hover:text-text-secondary hover:bg-neutral-700/30 transition-colors duration-200 flex items-center justify-center"
+          className="px-4 py-2 text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondary transition-colors duration-200 flex items-center justify-center"
           onClick={onAddProject}
         >
           <MdAdd className="h-5 w-5" />

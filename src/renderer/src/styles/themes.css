@@ -36,6 +36,7 @@
   /* Background Colors */
   --color-bg-primary: #141417; /* neutral-950 */
   --color-bg-primary-light: #191a22; /* neutral-900 */
+  --color-bg-primary-light-50: #191a2280;
   --color-bg-secondary: #222431; /* neutral-850 */
   --color-bg-secondary-light: #2a2c3f; /* neutral-800 */
   --color-bg-secondary-light-80: #2a2c3ff2;
@@ -57,6 +58,7 @@
   /* Border Colors */
   --color-border-dark: #222431; /* neutral-850 */
   --color-border-dark-light: #2a2c3f; /* neutral-800 */
+  --color-border-dark-light-80: #2a2c3f80;
   --color-border-default-dark: #333652; /* neutral-700 */
   --color-border-default: #3d4166; /* neutral-600 */
   --color-border-accent: #585c75; /* neutral-500 */
@@ -69,6 +71,9 @@
 
   /* Status Colors */
   --color-success: #22c55e; /* green-500 */
+  --color-success-light: #22c55e;
+  --color-success-10: #22c55e1a;
+
   --color-warning: #d97706; /* amber-600 */
   --color-warning-10: #d9770619;
   --color-warning-30: #d977064c;

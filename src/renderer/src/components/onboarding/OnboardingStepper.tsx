@@ -25,9 +25,9 @@ export const OnboardingStepper = ({ steps, currentStep }: Props) => {
             <div className="flex flex-col items-center">
               <div
                 className={clsx('w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors', {
-                  'bg-blue-600 text-white': isCurrent,
-                  'bg-green-600 text-white': isCompleted,
-                  'bg-neutral-700 text-neutral-400': isFuture,
+                  'bg-info text-text-primary': isCurrent,
+                  'bg-success text-text-primary': isCompleted,
+                  'bg-bg-tertiary text-text-mutedLight': isFuture,
                 })}
               >
                 {isCompleted ? <HiCheck className="w-4 h-4" /> : <span>{stepNumber}</span>}
@@ -36,9 +36,9 @@ export const OnboardingStepper = ({ steps, currentStep }: Props) => {
               {/* Step Title */}
               <span
                 className={clsx('mt-2 text-xs font-medium text-center max-w-20', {
-                  'text-blue-400': isCurrent,
-                  'text-green-400': isCompleted,
-                  'text-neutral-500': isFuture,
+                  'text-agent-repoMap': isCurrent,
+                  'text-agent-autoApprove': isCompleted,
+                  'text-text-muted': isFuture,
                 })}
               >
                 {step.title}
@@ -49,8 +49,8 @@ export const OnboardingStepper = ({ steps, currentStep }: Props) => {
             {index < steps.length - 1 && (
               <div
                 className={clsx('flex-1 h-0.5 mx-4 transition-colors', {
-                  'bg-green-600': stepNumber < currentStep,
-                  'bg-neutral-700': stepNumber >= currentStep,
+                  'bg-success': stepNumber < currentStep,
+                  'bg-bg-tertiary': stepNumber >= currentStep,
                 })}
               />
             )}

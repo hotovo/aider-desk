@@ -43,7 +43,7 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
     return (
       <div className="flex w-full flex-col">
         <div className="flex w-full">
-          <div className="flex-1 overflow-auto px-4 py-3 border-r border--border-dark">
+          <div className="flex-1 overflow-auto px-4 py-3 border-r border-border-dark">
             <h3 className="mt-0 mb-2 text-xs font-semibold text-text-secondary">Old Value</h3>
             <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-text-primary leading-normal bg-bg-secondary px-3 py-2 rounded">{oldValue}</pre>
           </div>
@@ -53,7 +53,7 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
           </div>
         </div>
         {diffError.message && (
-          <div className="w-full px-4 py-2 bg-diffViewerBgPrimary text-diffViewerTextPrimary text-xs text-center">
+          <div className="w-full px-4 py-2 bg-info text-diffViewerTextPrimary text-xs text-center">
             Error: {diffError.message}
             <br />
             Please report an issue in https://github.com/hotovo/aider-desk/issues.

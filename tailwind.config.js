@@ -13,6 +13,7 @@ module.exports = {
         bg: {
           primary: 'var(--color-bg-primary)',
           primaryLight: 'var(--color-bg-primary-light)',
+          primaryLight50: 'var(--color-bg-primary-light-50)',
           secondary: 'var(--color-bg-secondary)',
           secondaryLight: 'var(--color-bg-secondary-light)',
           secondaryLight80: 'var(--color-bg-secondary-light-80)',
@@ -35,6 +36,7 @@ module.exports = {
         border: {
           dark: 'var(--color-border-dark)',
           darkLight: 'var(--color-border-dark-light)',
+          darkLight50: 'var(--color-border-dark-light-50)',
           default: 'var(--color-border-default)',
           defaultDark: 'var(--color-border-default-dark)',
           accent: 'var(--color-border-accent)',
@@ -46,6 +48,9 @@ module.exports = {
           light: 'var(--color-accent-light)',
         },
         success: 'var(--color-success)',
+        successLight: 'var(--color-success-light)',
+        success10: 'var(--color-success-10)',
+
         warning: 'var(--color-warning)',
         warningLight: 'var(--color-warning-light)',
         warning10: 'var(--color-warning-10)',
@@ -70,7 +75,7 @@ module.exports = {
           autoApprove: 'var(--color-agent-autoapprove)',
           aiderTools: 'var(--color-agent-aidertools)',
           powerTools: 'var(--color-agent-powertools)',
-          todoTools: 'var(-color-agent-todotools)',
+          todoTools: 'var(--color-agent-todotools)',
           contextFiles: 'var(--color-agent-contextfiles)',
           repoMap: 'var(--color-agent-repomap)',
         },

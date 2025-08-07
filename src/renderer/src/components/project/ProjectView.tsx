@@ -755,19 +755,19 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   if (!projectSettings || !settings) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-bg-primary to-bg-primaryLight z-10">
         <CgSpinner className="animate-spin w-10 h-10" />
-        <div className="mt-2 text-sm text-center text-white">{t('common.loadingProjectSettings')}</div>
+        <div className="mt-2 text-sm text-center text-text-primary">{t('common.loadingProjectSettings')}</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full bg-gradient-to-b from-neutral-950 to-neutral-900 relative">
+    <div className="flex h-full bg-gradient-to-b from-bg-primary to-bg-primaryLight relative">
       {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-bg-primary to-bg-primaryLight z-10">
           <CgSpinner className="animate-spin w-10 h-10" />
-          <div className="mt-2 text-sm text-center text-white">{t('common.startingUp')}</div>
+          <div className="mt-2 text-sm text-center text-text-primary">{t('common.startingUp')}</div>
         </div>
       )}
       <div className="flex flex-col flex-grow overflow-hidden">
@@ -821,16 +821,16 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               ref={terminalViewRef}
               baseDir={project.baseDir}
               visible={terminalVisible}
-              className="border-t border-neutral-800 flex-grow"
+              className="border-t border-border-darkLight flex-grow"
               onVisibilityChange={setTerminalVisible}
               onCopyOutput={handleCopyTerminalOutput}
             />
           </ResizableBox>
         </div>
-        <div className={clsx('relative w-full flex-shrink-0 flex flex-col border-t border-neutral-800', editingMessageIndex !== null && 'pt-1')}>
+        <div className={clsx('relative w-full flex-shrink-0 flex flex-col border-t border-border-darkLight', editingMessageIndex !== null && 'pt-1')}>
           <div className={clsx('p-4 pb-2', editingMessageIndex !== null && 'pt-1')}>
             {editingMessageIndex !== null && (
-              <div className="flex items-center justify-between px-2 py-1 text-xs text-neutral-400 border-b border-neutral-700 mb-2">
+              <div className="flex items-center justify-between px-2 py-1 text-xs text-text-mutedLight border-b border-border-defaultDark mb-2">
                 <span>{t('messages.editingLastMessage')}</span>
                 <Button
                   size="xs"
@@ -884,7 +884,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
         maxConstraints={[window.innerWidth - 300, Infinity]}
         axis="x"
         resizeHandles={['w']}
-        className="border-l border-neutral-800 flex flex-col flex-shrink-0"
+        className="border-l border-border-darkLight flex flex-col flex-shrink-0"
       >
         <div className="flex flex-col h-full">
           <div className="flex-grow flex flex-col overflow-y-hidden">

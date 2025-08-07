@@ -65,14 +65,14 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
   }, [completedCount, totalCount]);
 
   return (
-    <div className="absolute top-3 right-3 z-20 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg max-w-[360px]">
+    <div className="absolute top-3 right-3 z-20 bg-bg-primaryLight border border-border-defaultDark rounded-md shadow-lg max-w-[360px]">
       {isExpanded ? (
         <div>
           {/* Header */}
-          <div className="flex items-center justify-between p-0.5 pl-2 border-b border-neutral-700">
+          <div className="flex items-center justify-between p-0.5 pl-2 border-b border-border-defaultDark">
             <div className="flex items-center gap-2 rounded-md transition-colors flex-1">
-              <MdOutlineChecklist className="w-4 h-4 text-sky-400" />
-              <span className="text-xs font-medium text-neutral-200">
+              <MdOutlineChecklist className="w-4 h-4 text-agent-todoTools" />
+              <span className="text-xs font-medium text-text-secondary">
                 {t('tasks.title')} ({completedCount}/{totalCount})
               </span>
             </div>
@@ -81,35 +81,35 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
                 icon={<MdPlaylistRemove className="w-4 h-4" />}
                 onClick={onClearAllTodos}
                 tooltip={t('tasks.clearAllTodos')}
-                className="text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded-md p-2 transition-colors"
+                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondaryLight rounded-md p-2 transition-colors"
               />
               <IconButton
                 icon={<MdAdd className="w-4 h-4" />}
                 onClick={handleAddTodo}
                 tooltip={t('tasks.addTodo')}
-                className="text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded-md p-2 transition-colors"
+                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondaryLight rounded-md p-2 transition-colors"
               />
               <IconButton
                 icon={<MdExpandLess className="w-4 h-4" />}
                 onClick={handleToggleExpand}
-                className="text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded-md p-2 transition-colors"
+                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondaryLight rounded-md p-2 transition-colors"
               />
             </div>
           </div>
 
           {/* Content */}
           <div className="overflow-hidden">
-            <div className="p-3 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-600">
+            <div className="p-3 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-secondaryLight hover:scrollbar-thumb-bg-fourth">
               {/* Add Todo Input */}
               {isAddingTodo && (
-                <div className="mb-3 p-2 bg-neutral-800 rounded border border-neutral-600">
+                <div className="mb-3 p-2 bg-bg-secondaryLight rounded border border-border-default">
                   <Input
                     type="text"
                     value={newTodoName}
                     onChange={(e) => setNewTodoName(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder={t('tasks.todoNamePlaceholder')}
-                    className="bg-transparent text-xs text-neutral-200 placeholder-neutral-500 border-none outline-none py-0 px-1"
+                    className="bg-transparent text-xs text-text-secondary placeholder-text-muted border-none outline-none py-0 px-1"
                     autoFocus
                   />
                   <div className="flex items-center justify-end gap-2 mt-2">
@@ -131,7 +131,7 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
                   ))}
                 </div>
               ) : (
-                !isAddingTodo && <div className="text-sm text-neutral-500 text-center py-4">{t('tasks.noTodos')}</div>
+                !isAddingTodo && <div className="text-sm text-text-muted text-center py-4">{t('tasks.noTodos')}</div>
               )}
             </div>
           </div>
@@ -140,10 +140,10 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
         /* Collapsed state */
         <div className="p-0.5">
           <IconButton
-            icon={<MdOutlineChecklist className="w-4 h-4 text-sky-400" />}
+            icon={<MdOutlineChecklist className="w-4 h-4 text-agent-todoTools" />}
             onClick={handleToggleExpand}
             tooltip={`${t('tasks.title')} (${completedCount}/${totalCount})`}
-            className="hover:bg-neutral-800 rounded-md p-2 transition-colors"
+            className="hover:bg-bg-secondaryLight rounded-md p-2 transition-colors"
           />
         </div>
       )}
