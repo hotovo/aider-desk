@@ -35,10 +35,12 @@ export const RadioButton = ({ id, name, value, checked, onChange, label, classNa
         />
         <div
           className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-            checked ? 'bg-neutral-600 border-neutral-500' : 'bg-neutral-800 border-neutral-600'
+            checked
+              ? 'bg-[var(--color-bg-fourth)] border-[var(--color-border-accent)]'
+              : 'bg-[var(--color-bg-secondary-light)] border-[var(--color-border-default)]'
           } transition-colors duration-200`}
         >
-          {checked && <div className="w-2 h-2 rounded-full bg-white"></div>}
+          {checked && <div className="w-2 h-2 rounded-full bg-[var(--color-text-primary)]"></div>}
         </div>
       </div>
       {label && <span className="ml-2">{label}</span>}

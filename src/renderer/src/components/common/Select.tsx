@@ -56,13 +56,13 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
 
   return (
     <div ref={containerRef} className="relative">
-      {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-1">{label}</label>}
       {/* Button container */}
       <div ref={containerRef} className="relative">
         <button
           type="button"
           onClick={handleToggleDropdown}
-          className={`flex w-full min-w-[8rem] bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 placeholder-neutral-500 pl-2 pr-1 ${sizeClasses[size]} ${className}`}
+          className={`flex w-full min-w-[8rem] bg-[var(--color-bg-secondary-light)] border-2 border-[var(--color-border-default)] rounded focus:outline-none focus:border-[var(--color-border-light)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] pl-2 pr-1 ${sizeClasses[size]} ${className}`}
         >
           <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
             <span className="block truncate">{selectedOption?.label || t('select.placeholder')}</span>
@@ -77,7 +77,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
         createPortal(
           <ul
             ref={dropdownRef}
-            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-neutral-800 py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-200"
+            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-[var(--color-bg-secondary-light)] py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-200"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,
@@ -89,15 +89,15 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
               <li
                 key={opt.value}
                 onClick={() => handleOptionSelect(opt)}
-                className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]}
-                ${selectedOption?.value === opt.value ? 'bg-neutral-700' : 'hover:bg-neutral-700'}`}
+                className={`relative cursor-default py-2 pr-9 pl-3 text-[var(--color-text-primary)] select-none text-sm ${sizeClasses[size]}
+                ${selectedOption?.value === opt.value ? 'bg-[var(--color-bg-tertiary)]' : 'hover:bg-[var(--color-bg-tertiary)]'}`}
                 role="option"
               >
                 <div className="flex items-center">
                   <span className="block truncate">{opt.label}</span>
                 </div>
                 {selectedOption?.value === opt.value && (
-                  <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-neutral-300">
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-[var(--color-text-tertiary)]">
                     <HiCheck className="size-4" />
                   </span>
                 )}

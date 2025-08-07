@@ -1,3 +1,10 @@
+/* Custom scrollbar styling for Select dropdown */
+.select-dropdown {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-bg-fourth) var(--color-bg-secondary-light);
+}
+
+/* Light theme inversion - keep this last to override scrollbar colors if needed */
 body.theme-light .select-dropdown {
   filter: invert(1) hue-rotate(180deg);
 }
