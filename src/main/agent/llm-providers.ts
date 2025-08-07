@@ -1,6 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
+import { createVertexAI } from '@ai-sdk/google-vertex';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createGroq } from '@ai-sdk/groq';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
@@ -14,6 +15,7 @@ import {
   isBedrockProvider,
   isDeepseekProvider,
   isGeminiProvider,
+  isVertexAiProvider,
   isGroqProvider,
   isLmStudioProvider,
   isOllamaProvider,
@@ -69,6 +71,12 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     return googleProvider(model, {
       useSearchGrounding: provider.useSearchGrounding,
     });
+  } else if (isVertexAiProvider(provider)) {
+    const vertexProvider = createVertexAI({
+      project: provider.project,
+      location: provider.location,
+    });
+    return vertexProvider(model);
   } else if (isDeepseekProvider(provider)) {
     const apiKey = provider.apiKey || env['DEEPSEEK_API_KEY'];
     if (!apiKey) {
@@ -282,7 +290,7 @@ export const calculateCost = (
 
     inputCost = (sentTokens - cachedPromptTokens) * modelInfo.inputCostPerToken;
     cacheCost = cachedPromptTokens * (modelInfo.cacheReadInputTokenCost ?? modelInfo.inputCostPerToken);
-  } else if (profile.provider === 'gemini') {
+  } else if (profile.provider === 'gemini' || profile.provider === 'vertex-ai') {
     const { google } = providerMetadata as GoogleMetadata;
     const cachedPromptTokens = google.cachedContentTokenCount ?? 0;
 
@@ -330,7 +338,7 @@ export const getUsageReport = (
     const { openrouter } = providerMetadata as OpenRouterMetadata;
     usageReportData.cacheReadTokens = openrouter.usage.promptTokensDetails?.cachedTokens;
     usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;
-  } else if (profile.provider === 'gemini') {
+  } else if (profile.provider === 'gemini' || profile.provider === 'vertex-ai') {
     const { google } = providerMetadata as GoogleMetadata;
     usageReportData.cacheReadTokens = google.cachedContentTokenCount;
     usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;
