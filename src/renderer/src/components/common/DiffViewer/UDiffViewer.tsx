@@ -33,7 +33,7 @@ export const UDiffViewer = ({ udiff, language }: Props) => {
 
         return (
           <div key={index} className="diff-viewer-container">
-            <div className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2">
+            <div className="text-xs font-semibold text-text-secondary mb-2">
               {file.oldPath !== file.newPath ? (
                 <span>
                   {file.oldPath} → {file.newPath}

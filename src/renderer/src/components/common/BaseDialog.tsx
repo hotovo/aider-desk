@@ -39,21 +39,18 @@ export const BaseDialog = ({ title, onClose, children, footer, width = 384, clos
       >
         <div
           style={{ width: `${width}px` }}
-          className="bg-[var(--color-bg-secondary-light-80)] shadow-2xl rounded-xl border border-[var(--color-bg-tertiary-50)] max-h-[90vh] flex flex-col"
+          className="bg-bg-secondaryLight80 shadow-2xl rounded-xl border border-bg-tertiary50 max-h-[90vh] flex flex-col"
           ref={dialogRef}
         >
-          <div className="px-6 py-4 border-b border-[var(--color-bg-tertiary-50)] flex-shrink-0">
-            <h2 className="text-lg font-medium text-[var(--color-text-primary)] uppercase">{title}</h2>
+          <div className="px-6 py-4 border-b border-bg-tertiary50 flex-shrink-0">
+            <h2 className="text-lg font-medium text-text-primary uppercase">{title}</h2>
           </div>
-          <div className="p-6 flex flex-col flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-[var(--color-bg-secondary-light)] scrollbar-thumb-[var(--color-bg-fourth)] scrollbar-thumb-rounded-full">
+          <div className="p-6 flex flex-col flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-fourth scrollbar-thumb-rounded-full">
             {children}
           </div>
-          <div className="px-6 py-4 border-t border-[var(--color-bg-tertiary-50)] flex justify-end space-x-3 flex-shrink-0">
+          <div className="px-6 py-4 border-t border-bg-tertiary50 flex justify-end space-x-3 flex-shrink-0">
             {footer || (
-              <button
-                onClick={onClose}
-                className="bg-[var(--color-bg-fourth)] text-[var(--color-text-primary)] px-4 py-2 rounded hover:bg-[var(--color-bg-fifth)]"
-              >
+              <button onClick={onClose} className="bg-bg-fourth text-text-primary px-4 py-2 rounded hover:bg-bg-fifth">
                 {t('common.cancel')}
               </button>
             )}

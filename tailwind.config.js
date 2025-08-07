@@ -9,19 +9,18 @@ module.exports = {
         sans: ['Inter', ...defaultTheme.fontFamily.sans],
       },
       colors: {
-        text: {
-          error: 'var(--color-error)',
-        },
         // Theme-based colors
         bg: {
           primary: 'var(--color-bg-primary)',
           primaryLight: 'var(--color-bg-primary-light)',
           secondary: 'var(--color-bg-secondary)',
           secondaryLight: 'var(--color-bg-secondary-light)',
+          secondaryLight80: 'var(--color-bg-secondary-light-80)',
           tertiary: 'var(--color-bg-tertiary)',
           tertiary30: 'var(--color-bg-tertiary-30)',
           tertiary50: 'var(--color-bg-tertiary-50)',
           fourth: 'var(--color-bg-fourth)',
+          fifth: 'var(--color-bg-fifth)',
         },
         text: {
           primary: 'var(--color-text-primary)',
@@ -34,17 +33,27 @@ module.exports = {
         },
         border: {
           dark: 'var(--color-border-dark)',
+          darkLight: 'var(--color-border-dark-light)',
           default: 'var(--color-border-default)',
           defaultDark: 'var(--color-border-default-dark)',
           accent: 'var(--color-border-accent)',
+          light: 'var(--color-border-light)',
         },
         accent: {
           primary: 'var(--color-accent-primary)',
           secondary: 'var(--color-accent-secondary)',
+          light: 'var(--color-accent-light)',
         },
         success: 'var(--color-success)',
         warning: 'var(--color-warning)',
+        warningLight: 'var(--color-warning-light)',
+        warning10: 'var(--color-warning-10)',
         error: 'var(--color-error)',
+        errorLight: 'var(--color-error-light)',
+        error10: 'var(--color-error-10)',
+        info: 'var(--color-info)',
+        infoLight: 'var(--color-info-light)',
+        info10: 'var(--color-info-10)',
         input: {
           bg: 'var(--color-input-bg)',
           border: 'var(--color-input-border)',
@@ -58,6 +67,8 @@ module.exports = {
           contextFiles: 'var(--color-agent-contextfiles)',
           repoMap: 'var(--color-agent-repomap)',
         },
+        diffViewerBgPrimary: 'var(--color-diffviewer-bg-primary)',
+        diffViewerTextPrimary: 'var(--color-diffviewer-text-primary)',
         // Keep existing neutral/gray colors for backward compatibility
         neutral: {
           50: '#f8f9fa',

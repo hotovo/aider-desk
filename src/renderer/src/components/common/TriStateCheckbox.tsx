@@ -34,18 +34,18 @@ export const TriStateCheckbox = ({ label, state, onChange, className = '', ...pr
         <div
           className={`w-4 h-4 rounded border flex items-center justify-center ${
             state === 'checked'
-              ? 'bg-neutral-600 border-neutral-500'
+              ? 'bg-bg-fourth border-border-accent'
               : state === 'indeterminate'
-                ? 'bg-neutral-700 border-neutral-500'
-                : 'bg-neutral-800 border-neutral-600'
+                ? 'bg-bg-tertiary border-border-accent'
+                : 'bg-bg-secondaryLight border-border-default'
           } transition-colors duration-200`}
         >
           {state === 'checked' && (
-            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-3 h-3 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
           )}
-          {state === 'indeterminate' && <div className="w-2 h-0.5 bg-neutral-100" />}
+          {state === 'indeterminate' && <div className="w-2 h-0.5 bg-text-primary" />}
         </div>
       </div>
       {label && <span className="ml-2">{label}</span>}

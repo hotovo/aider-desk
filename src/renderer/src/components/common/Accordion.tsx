@@ -42,7 +42,7 @@ export const Accordion = ({
     <div className={className}>
       <button
         onClick={handleOpenChange}
-        className={clsx('w-full flex items-center gap-2 p-2 rounded hover:bg-[var(--color-bg-tertiary-50)] transition-colors', buttonClassName)}
+        className={clsx('w-full flex items-center gap-2 p-2 rounded hover:bg-bg-tertiary50 transition-colors', buttonClassName)}
       >
         {chevronPosition === 'left' && chevron}
         {title}
@@ -51,9 +51,7 @@ export const Accordion = ({
       <div
         className={clsx(
           'overflow-hidden transition-all duration-200',
-          isOpen
-            ? 'max-h-screen opacity-100 overflow-y-auto scrollbar-thin scrollbar-track-[var(--color-bg-secondary)] scrollbar-thumb-[var(--color-bg-tertiary)] hover:scrollbar-thumb[var(--color-bg-fourth)]'
-            : 'max-h-0 opacity-0',
+          isOpen ? 'max-h-screen opacity-100 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary' : 'max-h-0 opacity-0',
         )}
       >
         {children}

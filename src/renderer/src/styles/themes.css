@@ -64,6 +64,7 @@
   /* Accent Colors */
   --color-accent-primary: #585c75; /* neutral-500 */
   --color-accent-secondary: #7b7d86; /* neutral-400 */
+  --color-accent-light: #999ba3; /* neutral-400 */
 
   /* Status Colors */
   --color-success: #22c55e; /* green-500 */
