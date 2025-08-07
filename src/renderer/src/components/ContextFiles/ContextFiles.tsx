@@ -212,7 +212,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
         <h3 className="text-md font-semibold uppercase pl-1 flex-grow">{t('contextFiles.title')}</h3>
         <button
           onClick={handleDropAllFiles}
-          className="p-1.5 hover:bg-neutral-700 rounded-md disabled:text-neutral-600 disabled:hover:bg-transparent"
+          className="p-1.5 hover:bg-bg-tertiary rounded-md disabled:text-text-mutedDark disabled:hover:bg-transparent"
           data-tooltip-id="context-files-tooltip"
           data-tooltip-content={t('contextFiles.dropAll')}
           data-tooltip-delay-show={500}
@@ -224,7 +224,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
           <>
             <button
               onClick={handleExpandAll}
-              className="p-1.5 hover:bg-neutral-700 rounded-md"
+              className="p-1.5 hover:bg-bg-tertiary rounded-md"
               data-tooltip-id="context-files-tooltip"
               data-tooltip-content={t('contextFiles.expandAll') || 'Expand all'}
               data-tooltip-delay-show={500}
@@ -233,7 +233,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
             </button>
             <button
               onClick={handleCollapseAll}
-              className="p-1.5 hover:bg-neutral-700 rounded-md"
+              className="p-1.5 hover:bg-bg-tertiary rounded-md"
               data-tooltip-id="context-files-tooltip"
               data-tooltip-content={t('contextFiles.collapseAll') || 'Collapse all'}
               data-tooltip-delay-show={500}
@@ -244,16 +244,16 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
         )}
         <button
           onClick={() => setShowAllFiles(!showAllFiles)}
-          className="p-1.5 hover:bg-neutral-700 rounded-md group"
+          className="p-1.5 hover:bg-bg-tertiary rounded-md group"
           data-tooltip-id="context-files-tooltip"
           data-tooltip-content={showAllFiles ? t('contextFiles.hideAllFiles') : t('contextFiles.showAllFiles')}
           data-tooltip-delay-show={500}
         >
-          <LuFolderTree className={`w-4 h-4 ${showAllFiles ? 'text-neutral-100' : 'text-neutral-700 group-hover:text-neutral-500'}`} />
+          <LuFolderTree className={`w-4 h-4 ${showAllFiles ? 'text-text-primary' : 'text-text-dark group-hover:text-text-muted'}`} />
         </button>
         <button
           onClick={showFileDialog}
-          className="p-1 hover:bg-neutral-700 rounded-md"
+          className="p-1 hover:bg-bg-tertiary rounded-md"
           data-tooltip-id="context-files-tooltip"
           data-tooltip-content={t('contextFiles.add')}
           data-tooltip-delay-show={500}
@@ -261,7 +261,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
           <HiPlus className="w-5 h-5" />
         </button>
       </div>
-      <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900 scrollbar-rounded px-1">
+      <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primaryLight scrollbar-rounded px-1">
         <ControlledTreeEnvironment
           key={treeKey}
           items={treeData}
@@ -293,13 +293,17 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                 <div className="flex items-center flex-grow min-w-0">
                   {item.isFolder ? (
                     <span className="flex items-center justify-center" {...context.arrowProps}>
-                      {context.isExpanded ? <HiChevronDown className="w-3 h-3 text-neutral-600" /> : <HiChevronRight className="w-3 h-3 text-neutral-600" />}
+                      {context.isExpanded ? (
+                        <HiChevronDown className="w-3 h-3 text-text-mutedDark" />
+                      ) : (
+                        <HiChevronRight className="w-3 h-3 text-text-mutedDark" />
+                      )}
                     </span>
                   ) : (
                     <span className="w-3 h-3 inline-block" />
                   )}
                   <span
-                    className={`select-none text-2xs overflow-hidden ${item.isFolder ? 'context-dimmed' : 'text-neutral-100 font-semibold'}`}
+                    className={`select-none text-2xs overflow-hidden ${item.isFolder ? 'context-dimmed' : 'text-text-primary font-semibold'}`}
                     {...(item.isFolder ? { onClick: context.arrowProps.onClick } : {})}
                   >
                     {title}
@@ -309,12 +313,12 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                   <>
                     {showAllFiles ? (
                       <>
-                        <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-neutral-900 text-neutral-500 hover:text-red-800">
+                        <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-red-800">
                           <HiX className="w-4 h-4" />
                         </button>
                         <button
                           onClick={addFile(item as TreeItem)}
-                          className="px-1 py-1 rounded hover:bg-neutral-900 text-neutral-500 hover:text-neutral-100"
+                          className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-text-primary"
                           data-tooltip-id="context-files-tooltip"
                           data-tooltip-content={os === OS.MacOS ? t('contextFiles.addFileTooltip.cmd') : t('contextFiles.addFileTooltip.ctrl')}
                         >
@@ -334,13 +338,13 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                     )}
                     {showAllFiles ? (
                       files.some((f) => f.path === (item as TreeItem).file?.path) ? (
-                        <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-neutral-900 text-neutral-500 hover:text-red-800">
+                        <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-red-800">
                           <HiX className="w-4 h-4" />
                         </button>
                       ) : (
                         <button
                           onClick={addFile(item as TreeItem)}
-                          className="px-1 py-1 rounded hover:bg-neutral-900 text-neutral-500 hover:text-neutral-100"
+                          className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-text-primary"
                           data-tooltip-id="context-files-tooltip"
                           data-tooltip-content={os === OS.MacOS ? t('contextFiles.addFileTooltip.cmd') : t('contextFiles.addFileTooltip.ctrl')}
                         >
@@ -348,7 +352,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                         </button>
                       )
                     ) : (
-                      <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-neutral-900 text-neutral-500 hover:text-red-800">
+                      <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-red-800">
                         <HiX className="w-4 h-4" />
                       </button>
                     )}

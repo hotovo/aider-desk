@@ -28,6 +28,7 @@ module.exports = {
           tertiary: 'var(--color-text-tertiary)',
           muted: 'var(--color-text-muted)',
           mutedLight: 'var(--color-text-muted-light)',
+          mutedDark: 'var(--color-text-muted-dark)',
           dark: 'var(--color-text-dark)',
           error: 'var(--color-error)',
         },

@@ -858,8 +858,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               <Button
                 variant="text"
                 onClick={toggleTerminal}
-                className={`hover:bg-neutral-800 border-neutral-200 hover:text-neutral-100 ${
-                  terminalVisible ? 'text-neutral-100 bg-neutral-800' : 'text-neutral-200'
+                className={`!hover:bg-bg-secondaryLight !border-border-light !hover:text-text-primary ${
+                  terminalVisible ? '!text-text-primary !bg-bg-secondaryLight' : '!text-text-secondary'
                 }`}
                 size="xs"
               >
@@ -870,7 +870,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             <Button
               variant="text"
               onClick={() => clearMessages()}
-              className="hover:bg-neutral-800 border-neutral-200 text-neutral-200 hover:text-neutral-100"
+              className="hover:!bg-bg-secondaryLight !border-border-light !text-text-secondary !hover:text-text-primary"
               size="xs"
             >
               <MdPlaylistRemove className="w-4 h-4 mr-1" />
