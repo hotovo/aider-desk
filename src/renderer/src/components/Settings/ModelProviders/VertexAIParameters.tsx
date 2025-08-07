@@ -51,20 +51,20 @@ export const VertexAIParameters = ({ settings, onSettingsChange }: LlmProviderCo
   return (
     <div className="flex flex-col gap-2">
       <LabeledInput
-        label={t('Project')}
-        placeholder={t('Enter Project ID')}
+        label={t('settings.vertexAi.project')}
+        placeholder={t('settings.vertexAi.projectPlaceholder')}
         value={provider.project}
         onChange={handleProjectChange}
       />
       <LabeledInput
-        label={t('Location')}
-        placeholder={t('Enter Location')}
+        label={t('settings.vertexAi.location')}
+        placeholder={t('settings.vertexAi.locationPlaceholder')}
         value={provider.location}
         onChange={handleLocationChange}
       />
       <LabeledTextArea
-        label={t('Google Cloud Credentials (optional)')}
-        placeholder={t('Enter Credentials JSON...')}
+        label={t('settings.vertexAi.credentials')}
+        placeholder={t('settings.vertexAi.credentialsPlaceholder')}
         value={provider.googleCloudCredentialsJson || ''}
         onChange={handleCredentialsChange}
       />

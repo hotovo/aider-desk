@@ -222,7 +222,8 @@
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
-    "requesty": "Requesty"
+    "requesty": "Requesty",
+    "vertex-ai": "Vertex AI"
   },
   "select": {
     "placeholder": "选择选项",
@@ -327,6 +328,14 @@
       "agentOnly": "仅代理",
       "showAllProviders": "显示所有提供商",
       "additionalProvidersInfo": "需要更多提供商？您可以在<aiderTab>Aider 设置</aiderTab>中通过设置环境变量来配置更多 LLM 提供商。"
+    },
+    "vertexAi": {
+      "project": "项目",
+      "projectPlaceholder": "输入您的 Google Cloud 项目 ID",
+      "location": "位置",
+      "locationPlaceholder": "输入您的 Google Cloud 位置",
+      "credentials": "Google Cloud 凭据 (可选)",
+      "credentialsPlaceholder": "输入您的 Google Cloud 凭据 JSON"
     },
     "about": {
       "version": "版本",

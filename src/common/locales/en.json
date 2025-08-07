@@ -225,7 +225,8 @@
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
-    "requesty": "Requesty"
+    "requesty": "Requesty",
+    "vertex-ai": "Vertex AI"
   },
   "select": {
     "placeholder": "Select an option",
@@ -332,6 +333,14 @@
       "agentOnly": "Agent only",
       "showAllProviders": "Show All Providers",
       "additionalProvidersInfo": "You can configure additional LLM providers for Aider by setting environment variables in the <aiderTab>Aider settings</aiderTab>."
+    },
+    "vertexAi": {
+      "project": "Project",
+      "projectPlaceholder": "Enter your Google Cloud project ID",
+      "location": "Location",
+      "locationPlaceholder": "Enter your Google Cloud location",
+      "credentials": "Google Cloud Credentials (optional)",
+      "credentialsPlaceholder": "Enter your Google Cloud credentials JSON"
     },
     "about": {
       "version": "Version",
