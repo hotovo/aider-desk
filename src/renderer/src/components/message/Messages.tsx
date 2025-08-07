@@ -79,9 +79,9 @@ export const Messages = forwardRef<MessagesRef, Props>(
         ref={messagesContainerRef}
         className="relative flex flex-col overflow-y-auto max-h-full p-4
       scrollbar-thin
-      scrollbar-track-neutral-900
-      scrollbar-thumb-neutral-700
-      hover:scrollbar-thumb-neutral-600"
+      scrollbar-track-bg-primaryLight
+      scrollbar-thumb-bg-tertiary
+      hover:scrollbar-thumb-bg-fourth"
         onScroll={handleScroll}
       >
         <StyledTooltip id="usage-info-tooltip" />

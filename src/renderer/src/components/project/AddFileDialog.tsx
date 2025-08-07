@@ -126,7 +126,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
           className="w-full" // Changed from flex-1 as it's the only main element now
         />
         {selectedPaths.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1 max-h-40 overflow-y-auto p-0.5 scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 w-full">
+          <div className="mt-1 flex flex-wrap gap-1 max-h-40 overflow-y-auto p-0.5 scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth w-full">
             {selectedPaths.map((path) => (
               <FileChip key={path} path={path} onRemove={handleRemovePath} />
             ))}

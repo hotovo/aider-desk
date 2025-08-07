@@ -191,7 +191,7 @@ export const FileFinder = ({
         icon={<PiKeyReturn className="w-4 h-4" />}
         tooltipId="filePathAutocompletionAddButtonTooltip"
         tooltip={t('fileFinder.addPathTooltip')}
-        className="p-2 rounded-md hover:bg-neutral-700/50 transition-colors"
+        className="p-2 rounded-md hover:bg-bg-tertiary50 transition-colors"
       />
     ) : null;
 
@@ -201,7 +201,7 @@ export const FileFinder = ({
       icon={<FaFile className="w-4 h-4" />}
       tooltipId="browseTooltipId"
       tooltip={t('fileFinder.browseFile')}
-      className="p-2 rounded-md hover:bg-neutral-700/50 transition-colors"
+      className="p-2 rounded-md hover:bg-bg-tertiary50 transition-colors"
     />
   ) : null;
 
@@ -211,7 +211,7 @@ export const FileFinder = ({
       icon={<FaFolder className="w-4 h-4" />}
       tooltipId="browseTooltipId"
       tooltip={t('fileFinder.browseDirectory')}
-      className="p-2 rounded-md hover:bg-neutral-700/50 transition-colors"
+      className="p-2 rounded-md hover:bg-bg-tertiary50 transition-colors"
     />
   ) : null;
 
