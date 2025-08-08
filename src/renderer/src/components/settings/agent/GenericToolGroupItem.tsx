@@ -31,7 +31,7 @@ export const GenericToolGroupItem = ({ name, tools, toolApprovals, onApprovalCha
         </div>
         <div className="flex items-center">
           {tools.length > 0 && (
-            <span className="text-xs mr-3 text-neutral-400">
+            <span className="text-xs mr-3 text-text-mutedLight">
               {t('mcp.serverToolStatus', {
                 count: tools.length,
                 enabledCount,
@@ -44,19 +44,19 @@ export const GenericToolGroupItem = ({ name, tools, toolApprovals, onApprovalCha
   };
 
   return (
-    <div className="border border-neutral-700 rounded mb-1">
+    <div className="border border-border-defaultDark rounded mb-1">
       <Accordion title={renderTitle()} buttonClassName="px-2" chevronPosition="right">
         {tools.length > 0 ? (
           <div>
             <div className="text-xs p-2 pt-1 rounded mt-1 space-y-2">
-              <div className="text-xs text-neutral-400 ml-1">{t('mcp.tools')}</div>
+              <div className="text-xs text-text-mutedLight ml-1">{t('mcp.tools')}</div>
               {tools.map((tool) => (
                 <GenericToolItem key={tool.name} tool={tool} toolApprovals={toolApprovals} onApprovalChange={onApprovalChange} />
               ))}
             </div>
           </div>
         ) : (
-          <div className="text-xs text-neutral-500 p-4">{t('mcp.noToolsFound')}</div>
+          <div className="text-xs text-text-muted p-4">{t('mcp.noToolsFound')}</div>
         )}
       </Accordion>
     </div>
