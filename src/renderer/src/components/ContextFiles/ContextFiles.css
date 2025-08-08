@@ -30,7 +30,7 @@
 }
 
 .context-dimmed {
-  @apply text-neutral-500;
+  @apply text-text-muted;
 }
 
 body.theme-light .context-dimmed {
