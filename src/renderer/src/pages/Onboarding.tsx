@@ -115,32 +115,32 @@ export const Onboarding = () => {
               <LanguageSelector language={settings?.language || 'en'} onChange={handleLanguageChange} hideLabel />
             </div>
 
-            <h1 className="text-xl font-bold text-neutral-100 uppercase">{t('onboarding.title')}</h1>
-            <p className="text-neutral-300 text-sm">{t('onboarding.description')}</p>
-            <ul className="list-disc list-inside text-neutral-300 space-y-2 text-sm">
+            <h1 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.title')}</h1>
+            <p className="text-text-tertiary text-sm">{t('onboarding.description')}</p>
+            <ul className="list-disc list-inside text-text-tertiary space-y-2 text-sm">
               <li>{t('onboarding.features.1')}</li>
               <li>{t('onboarding.features.2')}</li>
               <li>{t('onboarding.features.3')}</li>
               <li>{t('onboarding.features.4')}</li>
               <li>{t('onboarding.features.5')}</li>
             </ul>
-            <p className="text-neutral-300 text-sm">{t('onboarding.getStarted')}</p>
+            <p className="text-text-tertiary text-sm">{t('onboarding.getStarted')}</p>
           </div>
         );
       case 2:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-neutral-100 uppercase">{t('onboarding.providers.connectTitle')}</h2>
-            <p className="text-neutral-300 text-sm">{t('onboarding.providers.connectDescription')}</p>
+            <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.providers.connectTitle')}</h2>
+            <p className="text-text-tertiary text-sm">{t('onboarding.providers.connectDescription')}</p>
             <ModelProvidersSettings settings={settings!} setSettings={saveSettings} showProminentModels={true} />
-            <div className="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-700/30">
-              <p className="text-xs text-blue-300">{t('onboarding.providers.advancedUsersNote')}</p>
+            <div className="mt-4 p-3 bg-info10 rounded-lg border border-infoLight30">
+              <p className="text-xs text-infoLightest">{t('onboarding.providers.advancedUsersNote')}</p>
             </div>
             <div className="flex justify-center mt-4">
               <button
                 onClick={handleNext}
                 disabled={isNavigating || isSaving}
-                className="text-sm text-neutral-400 hover:text-neutral-200 underline transition-colors duration-200"
+                className="text-sm text-text-mutedLight hover:text-text-secondary underline transition-colors duration-200"
               >
                 {t('onboarding.skipForNow')}
               </button>
@@ -150,9 +150,9 @@ export const Onboarding = () => {
       case 3:
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-bold text-neutral-100 uppercase !mb-4">{t('onboarding.aider.fineTuneTitle')}</h2>
-            <div className="p-3 bg-blue-900/20 rounded-lg border border-blue-700/30">
-              <p className="text-xs text-blue-300">{t('onboarding.aider.fineTuneNote')}</p>
+            <h2 className="text-xl font-bold text-text-primary uppercase !mb-4">{t('onboarding.aider.fineTuneTitle')}</h2>
+            <div className="p-3 bg-info10 rounded-lg border border-infoLight30">
+              <p className="text-xs text-infoLightest">{t('onboarding.aider.fineTuneNote')}</p>
             </div>
             <AiderSettings settings={settings!} setSettings={saveSettings} initialShowEnvVars={true} />
           </div>
@@ -161,32 +161,32 @@ export const Onboarding = () => {
         return (
           <div className="space-y-6">
             <div className="">
-              <h2 className="text-xl font-bold text-neutral-100 uppercase">{t('onboarding.agent.title')}</h2>
-              <p className="text-neutral-300 text-sm mt-2">{t('onboarding.agent.description')}</p>
+              <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.agent.title')}</h2>
+              <p className="text-text-tertiary text-sm mt-2">{t('onboarding.agent.description')}</p>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-neutral-100">{t('onboarding.agent.capabilities')}</h3>
+              <h3 className="text-lg font-semibold text-text-primary">{t('onboarding.agent.capabilities')}</h3>
               <ul className="space-y-3">
                 <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-2 h-2 bg-infoLighter rounded-full mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-neutral-100 font-medium">{t('onboarding.agent.autonomousPlanning')}</span>
-                    <p className="text-neutral-300 text-sm">{t('onboarding.agent.autonomousPlanningDesc')}</p>
+                    <span className="text-text-primary font-medium">{t('onboarding.agent.autonomousPlanning')}</span>
+                    <p className="text-text-tertiary text-sm">{t('onboarding.agent.autonomousPlanningDesc')}</p>
                   </div>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-2 h-2 bg-successLight rounded-full mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-neutral-100 font-medium">{t('onboarding.agent.toolUse')}</span>
-                    <p className="text-neutral-300 text-sm">{t('onboarding.agent.toolUseDesc')}</p>
+                    <span className="text-text-primary font-medium">{t('onboarding.agent.toolUse')}</span>
+                    <p className="text-text-tertiary text-sm">{t('onboarding.agent.toolUseDesc')}</p>
                   </div>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-2 h-2 bg-agent-powerTools rounded-full mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-neutral-100 font-medium">{t('onboarding.agent.extensible')}</span>
-                    <p className="text-neutral-300 text-sm">{t('onboarding.agent.extensibleDesc')}</p>
+                    <span className="text-text-primary font-medium">{t('onboarding.agent.extensible')}</span>
+                    <p className="text-text-tertiary text-sm">{t('onboarding.agent.extensibleDesc')}</p>
                   </div>
                 </li>
               </ul>
@@ -203,17 +203,17 @@ export const Onboarding = () => {
       case 5:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-neutral-100 uppercase">{t('onboarding.agent.configureTitle')}</h2>
-            <p className="text-neutral-300 text-sm">{t('onboarding.agent.configureDescription')}</p>
+            <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.agent.configureTitle')}</h2>
+            <p className="text-text-tertiary text-sm">{t('onboarding.agent.configureDescription')}</p>
             <AgentSettings settings={settings!} setSettings={saveSettings} />
           </div>
         );
       case 6:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-neutral-100 uppercase">{t('onboarding.complete.title')}</h2>
-            <p className="text-neutral-300 text-sm">{t('onboarding.complete.description')}</p>
-            <p className="text-neutral-300 text-sm">{t('onboarding.complete.ready')}</p>
+            <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.complete.title')}</h2>
+            <p className="text-text-tertiary text-sm">{t('onboarding.complete.description')}</p>
+            <p className="text-text-tertiary text-sm">{t('onboarding.complete.ready')}</p>
           </div>
         );
       default:
@@ -222,8 +222,8 @@ export const Onboarding = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen p-[4px] bg-neutral-850">
-      <div className="flex flex-col flex-1 border-2 border-neutral-600 relative overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600">
+    <div className="flex flex-col h-screen p-[4px] bg-bg-secondary">
+      <div className="flex flex-col flex-1 border-2 border-border-default relative overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
         <div className="flex-1 flex flex-col justify-center items-center p-4">
           <div className="max-w-3xl w-full">
             {/* Stepper */}

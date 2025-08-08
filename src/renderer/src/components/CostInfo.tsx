@@ -44,16 +44,16 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
   const progressPercentage = maxInputTokens > 0 ? Math.min((totalTokens / maxInputTokens) * 100, 100) : 0;
 
   return (
-    <div className={`border-t border-neutral-800 p-2 pb-1 ${isExpanded ? 'pt-4' : 'pt-3'} relative group`}>
+    <div className={`border-t border-border-darkLight p-2 pb-1 ${isExpanded ? 'pt-4' : 'pt-3'} relative group`}>
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mt-0.5">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-neutral-500 hover:text-neutral-300 transition-colors bg-neutral-800 rounded-full p-0.5"
+          className="text-text-muted hover:text-text-tertiary transition-colors bg-bg-secondaryLight rounded-full p-0.5"
         >
           {isExpanded ? <IoChevronDown /> : <IoChevronUp />}
         </button>
       </div>
-      <div className="text-2xs text-neutral-400">
+      <div className="text-2xs text-text-mutedLight">
         <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-24 mb-2' : 'max-h-0'}`}>
           {renderLabelValue('costInfo.files', `${filesTotalTokens} tokens, $${filesTotalCost.toFixed(5)}`, t)}
           <div className="flex items-center h-[20px]">
@@ -66,7 +66,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
                     setRefreshingAnimation(true);
                     setTimeout(() => setRefreshingAnimation(false), REFRESH_ANIMATION_DURATION);
                   }}
-                  className="p-0.5 hover:bg-neutral-700 rounded-md"
+                  className="p-0.5 hover:bg-bg-tertiary rounded-md"
                   data-tooltip-id="refresh-repo-map-tooltip"
                   data-tooltip-content={t('costInfo.refreshRepoMap')}
                   disabled={refreshingAnimation}
@@ -86,7 +86,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
                 <button
                   onClick={clearMessages}
                   data-tooltip-id="clear-message-history"
-                  className="p-0.5 hover:bg-neutral-700 rounded-md text-neutral-500 hover:text-neutral-300 transition-colors"
+                  className="p-0.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-tertiary transition-colors"
                   data-tooltip-content={t('costInfo.clearMessages')}
                 >
                   <IoClose className="w-4 h-4" />
@@ -105,7 +105,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
               <button
                 onClick={restartProject}
                 data-tooltip-id="restart-project-tooltip"
-                className="p-0.5 hover:bg-neutral-700 rounded-md text-neutral-500 hover:text-neutral-300 transition-colors"
+                className="p-0.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-tertiary transition-colors"
                 data-tooltip-content={t('costInfo.restartSession')}
               >
                 <MdOutlineRefresh className="w-4 h-4" />
@@ -116,10 +116,10 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
         </div>
 
         <div className="mt-[3px] flex items-center gap-2">
-          <div className="h-1 bg-neutral-800 rounded-sm overflow-hidden mb-1 flex-1">
-            <div className="h-full bg-neutral-200 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
+          <div className="h-1 bg-bg-secondaryLight rounded-sm overflow-hidden mb-1 flex-1">
+            <div className="h-full bg-accent-light rounded-full" style={{ width: `${progressPercentage}%` }}></div>
           </div>
-          <div className="text-neutral-400 text-2xs">
+          <div className="text-text-mutedLight text-2xs">
             {tokensEstimated && <span className="font-semibold font-mono mr-0.5">~</span>}
             {maxInputTokens > 0
               ? t('costInfo.tokenUsage', {

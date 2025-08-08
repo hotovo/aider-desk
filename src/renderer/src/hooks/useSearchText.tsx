@@ -136,7 +136,7 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string)
     }
 
     return (
-      <div className={clsx('z-[1] flex items-center bg-neutral-900 p-2 rounded-md shadow-lg', className)}>
+      <div className={clsx('z-[1] flex items-center bg-bg-primaryLight p-2 rounded-md shadow-lg', className)}>
         <Input
           placeholder={t('search.placeholder')}
           value={searchTerm}
@@ -146,7 +146,7 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string)
         />
         <div className="flex items-center gap-1 ml-2">
           <StyledTooltip id="search-tooltip" />
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs text-text-mutedLight">
             {foundElementsRef.current.size > 0 ? `${currentElementIndex + 1}/${foundElementsRef.current.size}` : '0/0'}
           </span>
           <IconButton

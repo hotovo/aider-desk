@@ -115,14 +115,14 @@ export const AutocompletionInput = ({
 
     return createPortal(
       <div
-        className="w-full mt-1 p-0.5 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 scrollbar-thumb-rounded-full"
+        className="w-full mt-1 p-0.5 bg-bg-secondaryLight border border-border-defaultDark rounded-lg shadow-lg max-h-48 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-fourth scrollbar-thumb-rounded-full"
         style={style}
       >
         {suggestions.map((suggestion, index) => (
           <div
             id={`suggestion-${index}`}
             key={suggestion}
-            className={clsx('px-3 py-1 text-sm cursor-pointer hover:bg-neutral-700', index === selectedIndex && 'bg-neutral-850 hover:bg-neutral-850')}
+            className={clsx('px-3 py-1 text-sm cursor-pointer hover:bg-bg-tertiary', index === selectedIndex && 'bg-bg-secondary hover:bg-bg-secondary')}
             onMouseDown={() => {
               onChange(suggestion, true);
               setShowSuggestions(false);
@@ -141,7 +141,7 @@ export const AutocompletionInput = ({
       <input
         ref={inputRef}
         className={clsx(
-          'w-full p-3 rounded-lg bg-neutral-900/50 border border-neutral-700/50 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-500/50 focus:ring-1 focus:ring-neutral-500/50 transition-colors',
+          'w-full p-3 rounded-lg bg-bg-primaryLight50 border border-bg-tertiary50 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-border-default focus:ring-1 focus:ring-border-default transition-colors',
           inputClassName,
         )}
         type="text"
