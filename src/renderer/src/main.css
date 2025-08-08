@@ -37,17 +37,10 @@
 
 body {
   margin: 0;
+  background-color:  var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
-body.theme-dark {
-  background-color: #121212;
-  color: #e0e0e0;
-}
-
-body.theme-light {
-  background-color: #ffffff;
-  color: #222222;
-}
 
 body.theme-light #root {
   filter: invert(1) hue-rotate(180deg);
