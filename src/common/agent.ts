@@ -21,6 +21,7 @@ export type LlmProviderName =
   | 'openai'
   | 'anthropic'
   | 'gemini'
+  | 'vertex-ai'
   | 'lmstudio'
   | 'bedrock'
   | 'deepseek'
@@ -44,6 +45,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'bedrock',
   'deepseek',
   'gemini',
+  'vertex-ai',
   'groq',
   'lmstudio',
   'ollama',
@@ -75,6 +77,15 @@ export interface GeminiProvider extends LlmProviderBase {
 }
 
 export const isGeminiProvider = (provider: LlmProviderBase): provider is GeminiProvider => provider.name === 'gemini';
+
+export interface VertexAiProvider extends LlmProviderBase {
+  name: 'vertex-ai';
+  project: string;
+  location: string;
+  googleCloudCredentialsJson?: string;
+}
+
+export const isVertexAiProvider = (provider: LlmProviderBase): provider is VertexAiProvider => provider.name === 'vertex-ai';
 
 export interface LmStudioProvider extends LlmProviderBase {
   name: 'lmstudio';
@@ -119,6 +130,7 @@ export interface OpenRouterProvider extends LlmProviderBase {
   apiKey: string;
   models: string[];
   // Advanced routing options
+  requireParameters: boolean;
   order: string[];
   only: string[];
   ignore: string[];
@@ -142,6 +154,7 @@ export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
   | GeminiProvider
+  | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
   | DeepseekProvider
@@ -201,7 +214,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   autoApprove: false,
 };
 
-export const INIT_PROJECT_RULES_AGENT_PROFILE: AgentProfile = {
+export const INIT_PROJECT_AGENTS_PROFILE: AgentProfile = {
   ...DEFAULT_AGENT_PROFILE,
   id: 'init',
   maxIterations: 50,
@@ -269,6 +282,14 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
           customBaseUrl: '',
         } satisfies GeminiProvider;
         break;
+      case 'vertex-ai':
+        provider = {
+          name: 'vertex-ai',
+          project: '',
+          location: '',
+          googleCloudCredentialsJson: '',
+        } satisfies VertexAiProvider;
+        break;
       case 'groq':
         provider = {
           name: 'groq',
@@ -316,6 +337,7 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
           ignore: [],
           quantizations: [],
           sort: 'price',
+          requireParameters: true,
         } satisfies OpenRouterProvider;
         break;
       case 'lmstudio':

@@ -50,4 +50,4 @@ AiderDesk provides a set of built-in commands that you can use in the prompt fie
 - **/map**: Prints the current repository map in the chat.
 - **/map-refresh**: Forces a refresh of the repository map.
 - **/commit**: Commits any unstaged changes in your repository.
-- **/init**: Initializes a `PROJECT.md` rule file for your project (only available in Agent Mode).
+- **/init**: Initializes a `AGENTS.md` rule file for your project (only available in Agent Mode).

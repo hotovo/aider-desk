@@ -7,7 +7,8 @@ import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
 import { search, searchSchema } from '@buger/probe';
-import { AgentProfile, ContextFile, FileWriteMode, ToolApprovalState } from '@common/types';
+import { AgentProfile, ContextFile, FileWriteMode, ToolApprovalState, PromptContext } from '@common/types';
+import { v4 as uuidv4 } from 'uuid';
 import {
   POWER_TOOL_AGENT,
   POWER_TOOL_AGENT as TOOL_AGENT,
@@ -25,18 +26,18 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
+import { isBinary } from 'istextorbinary';
 
 import { ApprovalManager } from './approval-manager';
 
 import { Project } from '@/project';
 import logger from '@/logger';
 import { isFileIgnored } from '@/utils';
-import { BINARY_EXTENSIONS } from '@/constants';
 import { getSubAgentSystemPrompt } from '@/agent';
 
 const execAsync = promisify(exec);
 
-export const createPowerToolset = (project: Project, profile: AgentProfile, abortSignal?: AbortSignal): ToolSet => {
+export const createPowerToolset = (project: Project, profile: AgentProfile, abortSignal?: AbortSignal, promptContext?: PromptContext): ToolSet => {
   const approvalManager = new ApprovalManager(project, profile);
 
   const fileEditTool = tool({
@@ -61,7 +62,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     }),
     execute: async (args, { toolCallId }) => {
       const { filePath, searchTerm, replacementText, isRegex, replaceAll } = args;
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_EDIT, args);
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_EDIT, args, undefined, undefined, promptContext);
 
       // Sanitize escape characters from searchTerm and replacementText
       const sanitize = (str: string) => {
@@ -149,9 +150,17 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       filePath: z.string().describe('The path to the file to be read (relative to the project root or absolute if outside of project directory).'),
     }),
     execute: async ({ filePath }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_READ, {
-        filePath,
-      });
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_FILE_READ,
+        {
+          filePath,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_READ}`;
       const questionText = `Approve reading file '${filePath}'?`;
@@ -163,12 +172,12 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       }
 
       const absolutePath = path.resolve(project.baseDir, filePath);
-      const ext = path.extname(absolutePath).toLowerCase();
-      if (BINARY_EXTENSIONS.has(ext)) {
-        return 'Error: Binary files cannot be read.';
-      }
       try {
-        const content = await fs.readFile(absolutePath, 'utf8');
+        const fileContentBuffer = await fs.readFile(absolutePath);
+        if (isBinary(absolutePath, fileContentBuffer)) {
+          return 'Error: Binary files cannot be read.';
+        }
+        const content = fileContentBuffer.toString('utf8');
         return `Here is the most recent content of '${filePath}' (ignore previous versions):\n\n${content}`;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -194,11 +203,19 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         ),
     }),
     execute: async ({ filePath, content, mode }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_WRITE, {
-        filePath,
-        content,
-        mode,
-      });
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_FILE_WRITE,
+        {
+          filePath,
+          content,
+          mode,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_WRITE}`;
       const questionText =
@@ -222,7 +239,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           await project.git.add(absolutePath);
         } catch (gitError) {
           const gitErrorMessage = gitError instanceof Error ? gitError.message : String(gitError);
-          project.addLogMessage('warning', `Failed to add new file ${absolutePath} to git staging area: ${gitErrorMessage}`);
+          project.addLogMessage('warning', `Failed to add new file ${absolutePath} to git staging area: ${gitErrorMessage}`, false, promptContext);
           // Continue even if git add fails, as the file was created successfully
         }
       };
@@ -268,11 +285,19 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       ignore: z.array(z.string()).optional().describe('An array of glob patterns to ignore.'),
     }),
     execute: async ({ pattern, cwd, ignore }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GLOB, {
-        pattern,
-        cwd,
-        ignore,
-      });
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_GLOB,
+        {
+          pattern,
+          cwd,
+          ignore,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GLOB}`;
       const questionText = `Approve glob search with pattern '${pattern}'?`;
@@ -324,12 +349,20 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       caseSensitive: z.boolean().optional().default(false).describe('Whether the search should be case sensitive. Default: false.'),
     }),
     execute: async ({ filePattern, searchTerm, contextLines, caseSensitive }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GREP, {
-        filePattern,
-        searchTerm,
-        contextLines,
-        caseSensitive,
-      });
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_GREP,
+        {
+          filePattern,
+          searchTerm,
+          contextLines,
+          caseSensitive,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`;
       const questionText = `Approve grep search for '${searchTerm}' in files matching '${filePattern}'?`;
@@ -409,11 +442,19 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       timeout: z.number().int().min(0).optional().default(60000).describe('Timeout for the command execution in milliseconds. Default: 60000 ms.'),
     }),
     execute: async ({ command, cwd, timeout }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_BASH, {
-        command,
-        cwd,
-        timeout,
-      });
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_BASH,
+        {
+          command,
+          cwd,
+          timeout,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`;
       const questionText = 'Approve executing bash command?';
@@ -452,7 +493,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     description: POWER_TOOL_DESCRIPTIONS[TOOL_SEMANTIC_SEARCH],
     parameters: searchSchema,
     execute: async ({ query: searchQuery, path, allow_tests, exact, maxTokens: paramMaxTokens, language }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_SEMANTIC_SEARCH, { searchQuery, path });
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_SEMANTIC_SEARCH, { searchQuery, path }, undefined, undefined, promptContext);
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`;
       const questionText = 'Approve running codebase search?';
@@ -511,10 +552,28 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         ),
     }),
     execute: async ({ prompt, files }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_AGENT, {
-        prompt,
-        files,
-      });
+      // Create promptContext with working group
+      const promptContext: PromptContext = {
+        id: uuidv4(),
+        group: {
+          id: uuidv4(),
+          color: '#3368a8',
+          name: 'toolMessage.power.agent.running',
+        },
+      };
+
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_AGENT,
+        {
+          prompt,
+          files,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_AGENT}`;
       const questionText = 'Approve delegating task to sub-agent?';
@@ -524,6 +583,12 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
 
       if (!isApproved) {
+        // Update promptContext to finished state with denied status
+        promptContext.group = {
+          ...promptContext.group!,
+          name: 'toolMessage.denied',
+          finished: true,
+        };
         return `Sub-agent delegation denied by user. Reason: ${userInput}`;
       }
 
@@ -554,149 +619,38 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         }));
 
         // Run the sub-agent with the focused context
-        return await project.runSubAgent(subAgentProfile, prompt, contextFiles, getSubAgentSystemPrompt(), abortSignal);
+        const messages = await project.runSubAgent(subAgentProfile, prompt, contextFiles, getSubAgentSystemPrompt(), abortSignal, promptContext);
+
+        // Update promptContext to finished state with success
+        promptContext.group = {
+          ...promptContext.group!,
+          name: 'toolMessage.power.agent.completed',
+          finished: true,
+        };
+
+        return {
+          messages,
+          promptContext,
+        };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Error running sub-agent:', error);
-        return `Error running sub-agent: ${errorMessage}`;
-      }
-    },
-  });
 
-  /*
-  const lintTool = tool({
-    description:
-      "Executes a linting command for the project. The command should be specific to the project's linter and configuration. Returns raw command output.",
-    parameters: z.object({
-      command: z.string().describe("The linting command to execute (e.g., 'eslint src/ --format stylish', 'pylint my_module')."),
-      cwd: z.string().optional().describe('The working directory for the command (relative to project root). Default: project root.'),
-      timeout: z.number().int().min(0).optional().default(120000).describe('Timeout for the command execution in milliseconds. Default: 120000 ms.'),
-    }),
-    execute: async ({ command, cwd, timeout }) => {
-      const absoluteCwd = cwd ? path.resolve(project.baseDir, cwd) : project.baseDir;
-      try {
-        const { stdout, stderr } = await execAsync(command, {
-          cwd: absoluteCwd,
-          timeout: timeout,
-        });
+        // Update promptContext to finished state with error
+        promptContext.group = {
+          ...promptContext.group!,
+          name: 'toolMessage.error',
+          color: '#bc4141',
+          finished: true,
+        };
+
         return {
-          stdout,
-          stderr,
-          exitCode: 0,
-          note: 'Lint command finished. Review stdout/stderr for results.',
-        };
-      } catch (error: unknown) {
-        const execError = error as {
-          stdout?: string;
-          stderr?: string;
-          message?: string;
-          code?: number;
-        };
-        return {
-          stdout: execError.stdout || '',
-          stderr: execError.stderr || execError.message || String(error),
-          exitCode: typeof execError.code === 'number' ? execError.code : 1,
-          note: 'Lint command failed or returned non-zero exit code. Check output for details.',
+          error: `Error running sub-agent: ${errorMessage}`,
+          promptContext,
         };
       }
     },
   });
-
-  const runTestsTool = tool({
-    description:
-      "Executes a test command for the project. The command should be specific to the project's test runner and configuration. Returns raw command output.",
-    parameters: z.object({
-      command: z.string().describe("The test command to execute (e.g., 'npm test', 'pytest -k my_test_suite')."),
-      cwd: z.string().optional().describe('The working directory for the command (relative to project root). Default: project root.'),
-      timeout: z.number().int().min(0).optional().default(300000).describe('Timeout for the command execution in milliseconds. Default: 300000 ms.'),
-    }),
-    execute: async ({ command, cwd, timeout }) => {
-      const absoluteCwd = cwd ? path.resolve(project.baseDir, cwd) : project.baseDir;
-      try {
-        const { stdout, stderr } = await execAsync(command, {
-          cwd: absoluteCwd,
-          timeout: timeout,
-        });
-        return {
-          stdout,
-          stderr,
-          exitCode: 0,
-          note: 'Test command finished. Review stdout/stderr for results.',
-        };
-      } catch (error: unknown) {
-        const execError = error as {
-          stdout?: string;
-          stderr?: string;
-          message?: string;
-          code?: number;
-        };
-        return {
-          stdout: execError.stdout || '',
-          stderr: execError.stderr || execError.message || String(error),
-          exitCode: typeof execError.code === 'number' ? execError.code : 1,
-          note: 'Test command failed or returned non-zero exit code. Check output for details.',
-        };
-      }
-    },
-  });
-
-  // TaskList tools
-  const prepareTasksTool = tool({
-    description: 'Prepares or re-initializes the task list with a given set of task titles. Clears all existing tasks and creates new ones.',
-    parameters: z.object({
-      titles: z.array(z.string()).describe('An array of titles for the tasks to be created.'),
-    }),
-    execute: async ({ titles }) => {
-      try {
-        return await project.prepareTasks(titles);
-      } catch (error) {
-        return `Error preparing tasks: ${error instanceof Error ? error.message : String(error)}`;
-      }
-    },
-  });
-
-  const getTasksTool = tool({
-    description: 'Retrieves all current tasks from the task list.',
-    parameters: z.object({}), // No parameters
-    execute: async () => {
-      try {
-        return await project.listTasks();
-      } catch (error) {
-        return `Error getting tasks: ${error instanceof Error ? error.message : String(error)}`;
-      }
-    },
-  });
-
-  const updateTaskTool = tool({
-    description: "Updates an existing task's title or completion status. Use 'completed: true' for completed tasks and 'completed: false' for pending tasks.",
-    parameters: z.object({
-      taskId: z.string().describe('The ID of the task to update.'),
-      updates: z.object({
-        title: z.string().optional().describe('The new title for the task.'),
-        completed: z.boolean().optional().describe('The new completion status for the task. True marks as completed, false marks as pending.'),
-      }),
-    }),
-    execute: async ({ taskId, updates }) => {
-      try {
-        const projectUpdatePayload: { title?: string; completed?: boolean } = {};
-        if (updates.title !== undefined) {
-          projectUpdatePayload.title = updates.title;
-        }
-        if (updates.completed !== undefined) {
-          projectUpdatePayload.completed = updates.completed;
-        }
-
-        const updatedTask = await project.updateTask(taskId, projectUpdatePayload);
-        if (!updatedTask) {
-          return `Error: Task with ID '${taskId}' not found or update failed.`;
-        }
-        return updatedTask;
-      } catch (error) {
-        return `Error updating task '${taskId}': ${error instanceof Error ? error.message : String(error)}`;
-      }
-    },
-  });
-   */
 
   const allTools = {
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_EDIT}`]: fileEditTool,
@@ -707,12 +661,6 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`]: searchTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`]: bashTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_AGENT}`]: agentTool,
-    // TODO: disabled for now until better defined
-    // [`power${TOOL_GROUP_NAME_SEPARATOR}lint`]: lintTool,
-    // [`power${TOOL_GROUP_NAME_SEPARATOR}run_tests`]: runTestsTool,
-    // [`power${TOOL_GROUP_NAME_SEPARATOR}prepare_tasks`]: prepareTasksTool,
-    // [`power${TOOL_GROUP_NAME_SEPARATOR}get_tasks`]: getTasksTool,
-    // [`power${TOOL_GROUP_NAME_SEPARATOR}update_task`]: updateTaskTool,
   };
 
   // Filter out tools that are set to Never in toolApprovals

@@ -83,6 +83,7 @@ const api: ApplicationAPI = {
   isProjectPath: (path) => ipcRenderer.invoke('is-project-path', path),
   dropFile: (baseDir, path) => ipcRenderer.send('drop-file', baseDir, path),
   runCommand: (baseDir, command) => ipcRenderer.send('run-command', baseDir, command),
+  pasteImage: (baseDir) => ipcRenderer.send('paste-image', baseDir),
   scrapeWeb: (baseDir, url, filePath) => ipcRenderer.invoke('scrape-web', baseDir, url, filePath),
   initProjectRulesFile: (baseDir) => ipcRenderer.invoke('init-project-rules-file', baseDir),
 

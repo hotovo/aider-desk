@@ -11,7 +11,7 @@ import {
   RequestyProvider,
 } from '@common/agent';
 
-import type { CoreMessage } from 'ai';
+import type { AssistantContent, ToolContent, UserContent } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
 export type Mode = 'code' | 'ask' | 'architect' | 'context' | 'agent';
@@ -30,6 +30,7 @@ export interface ResponseChunkData {
   baseDir: string;
   chunk: string;
   reflectedMessage?: string;
+  promptContext?: PromptContext;
 }
 
 export interface ResponseCompletedData {
@@ -43,6 +44,7 @@ export interface ResponseCompletedData {
   diff?: string;
   usageReport?: UsageReportData;
   sequenceNumber?: number;
+  promptContext?: PromptContext;
 }
 
 export interface CommandOutputData {
@@ -58,6 +60,7 @@ export interface LogData {
   level: LogLevel;
   message?: string;
   finished?: boolean;
+  promptContext?: PromptContext;
 }
 
 export interface ToolData {
@@ -68,6 +71,7 @@ export interface ToolData {
   args?: Record<string, unknown>;
   response?: string;
   usageReport?: UsageReportData;
+  promptContext?: PromptContext;
 }
 
 export interface ContextFilesUpdatedData {
@@ -122,7 +126,38 @@ export enum MessageRole {
   Assistant = 'assistant',
 }
 
-export type ContextMessage = CoreMessage;
+// Base interface for all context messages with usage reporting
+interface BaseContextMessage {
+  id: string;
+  usageReport?: UsageReportData;
+  promptContext?: PromptContext;
+}
+
+// User message with usage report
+export interface ContextUserMessage extends BaseContextMessage {
+  role: 'user';
+  content: UserContent;
+}
+
+// Assistant message with full response metadata
+export interface ContextAssistantMessage extends BaseContextMessage {
+  role: 'assistant';
+  content: AssistantContent;
+  reflectedMessage?: string;
+  editedFiles?: string[];
+  commitHash?: string;
+  commitMessage?: string;
+  diff?: string;
+}
+
+// Tool message with usage report
+export interface ContextToolMessage extends BaseContextMessage {
+  role: 'tool';
+  content: ToolContent;
+}
+
+// Union type for enhanced context messages
+export type ContextMessage = ContextUserMessage | ContextAssistantMessage | ContextToolMessage;
 
 export interface ContextFile {
   path: string;
@@ -270,6 +305,18 @@ export interface SettingsData {
   promptBehavior: PromptBehavior;
 }
 
+export interface Group {
+  id: string;
+  name?: string;
+  color?: string;
+  finished?: boolean;
+}
+
+export interface PromptContext {
+  id: string;
+  group?: Group;
+}
+
 export interface UsageReportData {
   model: string;
   sentTokens: number;
@@ -305,6 +352,7 @@ export interface UserMessageData {
   baseDir: string;
   content: string;
   mode?: Mode;
+  promptContext?: PromptContext;
 }
 
 export interface FileEdit {

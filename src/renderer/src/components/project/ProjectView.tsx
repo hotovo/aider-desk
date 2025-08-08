@@ -142,11 +142,25 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   }, [project.baseDir]);
 
   useEffect(() => {
-    const handleResponseChunk = (_: IpcRendererEvent, { messageId, chunk, reflectedMessage }: ResponseChunkData) => {
+    const handleResponseChunk = (_: IpcRendererEvent, { messageId, chunk, reflectedMessage, promptContext }: ResponseChunkData) => {
       const processingMessage = processingMessageRef.current;
       if (processingMessage && processingMessage.id === messageId) {
-        processingMessage.content += chunk;
-        setMessages((prevMessages) => prevMessages.map((message) => (message.id === messageId ? processingMessage : message)));
+        processingMessageRef.current = {
+          ...processingMessage,
+          content: processingMessage.content + chunk,
+          promptContext,
+        };
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === messageId
+              ? {
+                  ...message,
+                  content: message.content + chunk,
+                  promptContext,
+                }
+              : message,
+          ),
+        );
       } else {
         setMessages((prevMessages) => {
           const existingMessageIndex = prevMessages.findIndex((message) => message.id === messageId);
@@ -158,6 +172,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               type: 'reflected-message',
               content: reflectedMessage,
               responseMessageId: messageId,
+              promptContext,
             };
 
             newMessages.push(reflected);
@@ -169,6 +184,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               type: 'response',
               content: chunk,
               processing: true,
+              promptContext,
             };
             processingMessageRef.current = newResponseMessage;
             newMessages.push(newResponseMessage);
@@ -181,6 +197,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
                 return {
                   ...message,
                   content: message.content + chunk,
+                  promptContext,
                 };
               }
               return message;
@@ -190,7 +207,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleResponseCompleted = (_: IpcRendererEvent, { messageId, usageReport, content, reflectedMessage }: ResponseCompletedData) => {
+    const handleResponseCompleted = (_: IpcRendererEvent, { messageId, usageReport, content, reflectedMessage, promptContext }: ResponseCompletedData) => {
       const processingMessage = processingMessageRef.current;
 
       if (content) {
@@ -205,18 +222,21 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
                     content,
                     processing: false,
                     usageReport,
+                    promptContext,
                   }
                 : message,
             );
           } else {
+            const messages: Message[] = [];
             if (reflectedMessage) {
               const reflected: ReflectedMessage = {
                 id: uuidv4(),
                 type: 'reflected-message',
                 content: reflectedMessage,
                 responseMessageId: messageId,
+                promptContext,
               };
-              return prevMessages.filter((message) => !isLoadingMessage(message)).concat(reflected);
+              messages.push(reflected);
             }
 
             // If no response message exists, create a new one
@@ -226,13 +246,17 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               content,
               processing: false,
               usageReport,
+              promptContext,
             };
-            return prevMessages.filter((message) => !isLoadingMessage(message)).concat(newResponseMessage);
+            messages.push(newResponseMessage);
+
+            return prevMessages.filter((message) => !isLoadingMessage(message)).concat(...messages);
           }
         });
       } else if (processingMessage && processingMessage.id === messageId) {
         processingMessage.processing = false;
         processingMessage.usageReport = usageReport;
+        processingMessage.promptContext = promptContext;
         processingMessage.content = content || processingMessage.content;
         setMessages((prevMessages) => prevMessages.map((message) => (message.id === messageId ? processingMessage : message)));
       } else {
@@ -312,7 +336,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleTool = (_: IpcRendererEvent, { id, serverName, toolName, args, response, usageReport }: ToolData) => {
+    const handleTool = (_: IpcRendererEvent, { id, serverName, toolName, args, response, usageReport, promptContext }: ToolData) => {
       if (serverName === TODO_TOOL_GROUP_NAME) {
         handleTodoTool(toolName, args, response);
 
@@ -331,6 +355,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           args: args || {},
           content: response || '',
           usageReport,
+          promptContext,
         };
         return toolMessage;
       };
@@ -348,6 +373,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             ...toolMessage,
             content: response || '',
             usageReport,
+            promptContext,
           } as ToolMessage;
           return updatedMessages;
         } else {
@@ -360,15 +386,40 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleLog = (_: IpcRendererEvent, { level, message, finished }: LogData) => {
+    const handleLog = (_: IpcRendererEvent, { level, message, finished, promptContext }: LogData) => {
       if (level === 'loading') {
         if (finished) {
+          // Mark all messages in the same group as finished before removing loading messages
+          const currentGroupId = promptContext?.group?.id;
+          if (currentGroupId) {
+            setMessages((prevMessages) =>
+              prevMessages.map((msg) => {
+                const msgGroupId = msg.promptContext?.group?.id;
+                if (msgGroupId && msgGroupId === currentGroupId) {
+                  // Create a new message object with updated promptContext.group.finished
+                  return {
+                    ...msg,
+                    promptContext: msg.promptContext
+                      ? {
+                          ...msg.promptContext,
+                          group: msg.promptContext.group ? { ...msg.promptContext.group, finished: true } : msg.promptContext.group,
+                        }
+                      : msg.promptContext,
+                  };
+                }
+                return msg;
+              }),
+            );
+          }
+
+          // Then remove loading messages
           setMessages((prevMessages) => prevMessages.filter((message) => !isLoadingMessage(message)));
         } else {
           const loadingMessage: LoadingMessage = {
             id: uuidv4(),
             type: 'loading',
             content: message || t('messages.thinking'),
+            promptContext,
           };
 
           setMessages((prevMessages) => {
@@ -379,6 +430,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               updatedMessages[existingLoadingIndex] = {
                 ...updatedMessages[existingLoadingIndex],
                 content: loadingMessage.content,
+                promptContext,
               };
 
               return updatedMessages;
@@ -395,6 +447,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           type: 'log',
           level,
           content: message || '',
+          promptContext,
         };
         setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), logMessage]);
 
@@ -443,6 +496,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
         type: 'user',
         mode: data.mode || projectSettings?.currentMode || 'code', // Use projectSettings.currentMode as fallback
         content: data.content,
+        promptContext: data.promptContext,
       };
 
       setMessages((prevMessages) => {

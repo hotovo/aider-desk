@@ -9,6 +9,7 @@ import {
   MessageRole,
   RawModelInfo,
   EditFormat,
+  PromptContext,
 } from '@common/types';
 
 export type MessageAction =
@@ -42,6 +43,7 @@ export interface LogMessage {
   message: string;
   level: LogLevel;
   finished?: boolean;
+  promptContext?: PromptContext;
 }
 
 export interface InitMessage {
@@ -62,7 +64,7 @@ export interface PromptMessage extends Message {
   prompt: string;
   mode: Mode | null;
   architectModel: string | null;
-  promptId?: string | null;
+  promptContext: PromptContext;
   messages?: { role: MessageRole; content: string }[];
   files?: ContextFile[];
 }
@@ -79,6 +81,7 @@ export interface ResponseMessage extends Message {
   commitMessage?: string;
   diff?: string;
   sequenceNumber?: number;
+  promptContext?: PromptContext;
 }
 
 export const isResponseMessage = (message: Message): message is ResponseMessage => {
@@ -193,6 +196,7 @@ export interface AddMessageMessage extends Message {
   content: string;
   role: MessageRole;
   acknowledge: boolean;
+  usageReport?: UsageReportData;
 }
 
 export const isAddMessageMessage = (message: Message): message is AddMessageMessage => {

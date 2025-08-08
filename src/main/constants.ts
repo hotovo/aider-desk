@@ -33,32 +33,3 @@ export const AIDER_DESK_COMMANDS_DIR = path.join(AIDER_DESK_DIR, 'commands');
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');
 export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
-export const BINARY_EXTENSIONS = new Set([
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.gif',
-  '.bmp',
-  '.tiff',
-  '.ico', // Images
-  '.mp3',
-  '.wav',
-  '.ogg',
-  '.flac', // Audio
-  '.mp4',
-  '.mov',
-  '.avi',
-  '.mkv', // Video
-  '.zip',
-  '.tar',
-  '.gz',
-  '.7z', // Archives
-  '.pdf',
-  '.doc',
-  '.docx',
-  '.xls',
-  '.xlsx', // Documents
-  '.exe',
-  '.dll',
-  '.so', // Binaries
-]);

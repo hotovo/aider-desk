@@ -248,6 +248,7 @@ export class CustomCommandManager {
       const { stdout } = await execAsync(commandPortion, {
         cwd: this.project.baseDir,
         timeout: SHELL_COMMAND_TIMEOUT,
+        maxBuffer: 10 * 1024 * 1024, // 10 MB
       });
 
       logger.info('Shell command executed successfully:', {

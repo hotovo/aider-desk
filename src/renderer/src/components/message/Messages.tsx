@@ -2,9 +2,11 @@ import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } f
 import { toPng } from 'html-to-image';
 
 import { MessageBlock } from './MessageBlock';
+import { GroupMessageBlock } from './GroupMessageBlock';
 
-import { isUserMessage, Message } from '@/types/message';
+import { isGroupMessage, isUserMessage, Message } from '@/types/message';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { groupMessagesByPromptContext } from '@/components/message/utils';
 
 export type MessagesRef = {
   exportToImage: () => void;
@@ -27,11 +29,14 @@ export const Messages = forwardRef<MessagesRef, Props>(
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const [scrollingPaused, setScrollingPaused] = useState(false);
-    const lastUserMessageIndex = messages.findLastIndex(isUserMessage);
+
+    // Group messages by promptContext.group.id
+    const processedMessages = groupMessagesByPromptContext(messages);
+    const lastUserMessageIndex = processedMessages.findLastIndex(isUserMessage);
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
       const element = e.currentTarget;
-      const isAtBottom = element.scrollHeight - element.scrollTop < element.clientHeight + 5;
+      const isAtBottom = element.scrollHeight - element.scrollTop < element.clientHeight + 20;
       setScrollingPaused(!isAtBottom);
     };
 
@@ -39,7 +44,7 @@ export const Messages = forwardRef<MessagesRef, Props>(
       if (!scrollingPaused) {
         messagesEndRef.current?.scrollIntoView();
       }
-    }, [messages, scrollingPaused]);
+    }, [processedMessages, scrollingPaused]);
 
     const exportToImage = async () => {
       const messagesContainer = messagesContainerRef.current;
@@ -85,18 +90,34 @@ export const Messages = forwardRef<MessagesRef, Props>(
         onScroll={handleScroll}
       >
         <StyledTooltip id="usage-info-tooltip" />
-        {messages.map((message, index) => (
-          <MessageBlock
-            key={message.id || index}
-            baseDir={baseDir}
-            message={message}
-            allFiles={allFiles}
-            renderMarkdown={renderMarkdown}
-            remove={index === messages.length - 1 ? () => removeMessage(message) : undefined}
-            redo={index === lastUserMessageIndex ? redoLastUserPrompt : undefined}
-            edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
-          />
-        ))}
+        {processedMessages.map((message, index) => {
+          if (isGroupMessage(message)) {
+            return (
+              <GroupMessageBlock
+                key={message.id || index}
+                baseDir={baseDir}
+                message={message}
+                allFiles={allFiles}
+                renderMarkdown={renderMarkdown}
+                remove={(msg: Message) => removeMessage(msg)}
+                redo={redoLastUserPrompt}
+                edit={editLastUserMessage}
+              />
+            );
+          }
+          return (
+            <MessageBlock
+              key={message.id || index}
+              baseDir={baseDir}
+              message={message}
+              allFiles={allFiles}
+              renderMarkdown={renderMarkdown}
+              remove={index === messages.length - 1 ? () => removeMessage(message) : undefined}
+              redo={index === lastUserMessageIndex ? redoLastUserPrompt : undefined}
+              edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
+            />
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
     );

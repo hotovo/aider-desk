@@ -210,7 +210,7 @@ export class ConnectorManager {
         if (!connector) {
           return;
         }
-        void this.projectManager.getProject(connector.baseDir).addContextMessage(message.role, message.content);
+        void this.projectManager.getProject(connector.baseDir).addContextMessage(message.role, message.content, message.usageReport);
       } else {
         logger.warn('Unknown message type: ', message);
       }
@@ -226,7 +226,7 @@ export class ConnectorManager {
     }
 
     const project = this.projectManager.getProject(connector.baseDir);
-    project.addLogMessage(message.level, message.message, message.finished);
+    project.addLogMessage(message.level, message.message, message.finished, message.promptContext);
   };
 
   private removeConnector = (socket: Socket) => {
