@@ -122,10 +122,17 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           return;
         }
 
-        // Send only the specific update to the backend.
         window.api.updateEditFormats(baseDir, { [targetModel]: format });
+
+        if (modelsData && onModelsChange) {
+          // optimistic update
+          onModelsChange({
+            ...modelsData,
+            editFormat: format,
+          });
+        }
       },
-      [baseDir, modelsData?.mainModel],
+      [baseDir, modelsData, onModelsChange],
     );
 
     const updateMainModel = useCallback(
