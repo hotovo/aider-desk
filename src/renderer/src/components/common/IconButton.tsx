@@ -17,10 +17,10 @@ export const IconButton = ({ icon, onClick, tooltip, className, tooltipId, disab
   const tooltipIdRef = useRef<string>(tooltipId || `icon-button-tooltip-${uuidv4()}`);
 
   const combinedClassName = clsx(
-    'text-neutral-500',
+    'text-text-muted',
     'transition-opacity',
     'focus:outline-none',
-    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:text-neutral-300',
+    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:text-text-tertiary',
     className,
   );
 
