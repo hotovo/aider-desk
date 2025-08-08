@@ -79,9 +79,14 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
             }
             placeholder={t('settings.aider.optionsPlaceholder')}
           />
-          <p className="text-xs text-neutral-200 px-1">
+          <p className="text-xs text-text-secondary px-1">
             {t('settings.aider.optionsDocumentation')}{' '}
-            <a href="https://aider.chat/docs/config/options.html" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+            <a
+              href="https://aider.chat/docs/config/options.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-infoLighter hover:text-infoLightest"
+            >
               https://aider.chat/docs/config/options.html
             </a>
           </p>
@@ -107,16 +112,16 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               placeholder={t('settings.aider.envVarsPlaceholder')}
             />
             {!showEnvVars && (
-              <div className="absolute inset-[3px] bottom-[9px] bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center rounded-sm">
+              <div className="absolute inset-[3px] bottom-[9px] bg-bg-primaryLight50 backdrop-blur-sm flex items-center justify-center rounded-sm">
                 <Button variant="text" color="secondary" onClick={() => setShowEnvVars(true)} className="flex items-center" size="sm">
                   <HiEye className="mr-2" /> {t('settings.common.showSecrets')}
                 </Button>
               </div>
             )}
           </div>
-          <p className="text-xs text-neutral-200 px-1">
+          <p className="text-xs text-text-secondary px-1">
             {t('settings.aider.envVarsDocumentation')}{' '}
-            <a href="https://aider.chat/docs/config/dotenv.html" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+            <a href="https://aider.chat/docs/config/dotenv.html" target="_blank" rel="noopener noreferrer" className="text-infoLighter hover:text-infoLightest">
               https://aider.chat/docs/config/dotenv.html
             </a>
           </p>

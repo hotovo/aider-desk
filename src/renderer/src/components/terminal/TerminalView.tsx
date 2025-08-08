@@ -102,14 +102,16 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, visib
   return (
     <div className={clsx('flex flex-col', visible ? 'block' : 'hidden', className)}>
       {/* Tab bar */}
-      <div className="flex items-center justify-between pl-1 pr-2 bg-neutral-900 border-b border-neutral-800">
+      <div className="flex items-center justify-between pl-1 pr-2 bg-bg-primaryLight border-b border-border-darkLight">
         <div className="flex items-center space-x-1">
           {tabs.map((tab, index) => (
             <div
               key={tab.id}
               className={clsx(
                 'flex items-center px-3 py-1 mt-1 text-sm rounded-t-sm cursor-pointer transition-colors',
-                activeTabId === tab.id ? 'bg-neutral-850 text-neutral-100' : 'bg-neutral-900 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200',
+                activeTabId === tab.id
+                  ? 'bg-bg-secondary text-text-primary'
+                  : 'bg-bg-primaryLight text-text-mutedLight hover:bg-bg-secondaryLight hover:text-text-secondary',
               )}
               onClick={() => setActiveTabId(tab.id)}
             >
@@ -119,7 +121,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, visib
                   e.stopPropagation();
                   closeTerminalTab(tab.id);
                 }}
-                className="text-neutral-500 hover:text-neutral-200 transition-colors"
+                className="text-text-muted hover:text-text-secondary transition-colors"
               >
                 <IoMdClose size={14} />
               </button>

@@ -126,7 +126,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
                   href="https://openrouter.ai/docs/features/provider-routing#ordering-specific-providers"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-infoLight hover:text-infoLighter ml-1"
+                  className="text-infoLighter hover:text-infoLightest ml-1"
                 >
                   {t('settings.common.learnMore')}
                 </a>
@@ -150,7 +150,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
                     href="https://openrouter.ai/docs/features/provider-routing#disabling-fallbacks"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-infoLight hover:text-infoLighter ml-1"
+                    className="text-infoLighter hover:text-infoLightest ml-1"
                   >
                     {t('settings.common.learnMore')}
                   </a>
@@ -173,7 +173,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
                   href="https://openrouter.ai/docs/features/provider-routing#allowing-only-specific-providers"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-infoLight hover:text-infoLighter ml-1"
+                  className="text-infoLighter hover:text-infoLightest ml-1"
                 >
                   {t('settings.common.learnMore')}
                 </a>
@@ -196,7 +196,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
                   href="https://openrouter.ai/docs/features/provider-routing#ignoring-providers"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-infoLight hover:text-infoLighter ml-1"
+                  className="text-infoLighter hover:text-infoLightest ml-1"
                 >
                   {t('settings.common.learnMore')}
                 </a>
@@ -222,7 +222,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
                   href="https://openrouter.ai/docs/features/provider-routing#quantization"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-infoLight hover:text-infoLighter ml-1"
+                  className="text-infoLighter hover:text-infoLightest ml-1"
                 >
                   {t('settings.common.learnMore')}
                 </a>
@@ -247,7 +247,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
                   href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-infoLight hover:text-infoLighter ml-1"
+                  className="text-infoLighter hover:text-infoLightest ml-1"
                 >
                   {t('settings.common.learnMore')}
                 </a>
@@ -272,7 +272,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
                   href="https://openrouter.ai/docs/features/provider-routing#requiring-providers-to-comply-with-data-policies"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-infoLight hover:text-infoLighter ml-1"
+                  className="text-infoLighter hover:text-infoLightest ml-1"
                 >
                   {t('settings.common.learnMore')}
                 </a>

@@ -140,7 +140,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
       <Section title={t('settings.promptBehavior.title')}>
         <div className="px-4 py-5 grid grid-cols-2 gap-x-10 gap-y-6">
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.showSuggestions')}</h4>
+            <h4 className="text-sm font-medium text-text-muted">{t('settings.promptBehavior.showSuggestions')}</h4>
             <div className="space-y-2 ml-0.5">
               <RadioButton
                 id="suggestion-automatically"
@@ -186,7 +186,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.requireCommandConfirmation')}</h4>
+            <h4 className="text-sm font-medium text-text-muted">{t('settings.promptBehavior.requireCommandConfirmation')}</h4>
             <div className="space-y-2 ml-0.5">
               <Checkbox
                 label={t('settings.promptBehavior.addCommand')}
@@ -213,7 +213,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
 
           {/* Vim key bindings */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.keyBindings')}</h4>
+            <h4 className="text-sm font-medium text-text-muted">{t('settings.promptBehavior.keyBindings')}</h4>
             <div className="flex items-center space-x-2 ml-0.5">
               <Checkbox
                 label={t('settings.promptBehavior.useVimBindings')}

@@ -21,6 +21,8 @@ module.exports = {
           tertiary30: 'var(--color-bg-tertiary-30)',
           tertiary50: 'var(--color-bg-tertiary-50)',
           fourth: 'var(--color-bg-fourth)',
+          fourth20: 'var(--color-bg-fourth-20)',
+          fourth30: 'var(--color-bg-fourth-30)',
           fifth: 'var(--color-bg-fifth)',
         },
         text: {
@@ -50,6 +52,8 @@ module.exports = {
         success: 'var(--color-success)',
         successLight: 'var(--color-success-light)',
         success10: 'var(--color-success-10)',
+        success20: 'var(--color-success-20)',
+        success30: 'var(--color-success-30)',
 
         warning: 'var(--color-warning)',
         warningLight: 'var(--color-warning-light)',
@@ -67,7 +71,10 @@ module.exports = {
         info: 'var(--color-info)',
         infoLight: 'var(--color-info-light)',
         infoLighter: 'var(--color-info-lighter)',
+        infoLightest: 'var(--color-info-lightest)',
         info10: 'var(--color-info-10)',
+        infoLight20: 'var(--color-info-light-20)',
+        infoLight30: 'var(--color-info-light-30)',
 
 
         input: {

@@ -99,7 +99,7 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-neutral-100 mb-4">{t('settings.models.description')}</p>
+      <p className="text-xs text-text-primary mb-4">{t('settings.models.description')}</p>
 
       <div className="grid grid-cols-1 gap-2">
         {providersToShow.map((providerName) => {
@@ -140,12 +140,12 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
         </div>
       )}
 
-      <div className="mt-6 p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
-        <p className="text-xs text-neutral-300">
+      <div className="mt-6 p-4 bg-bg-secondaryLight rounded-lg border border-border-defaultDark">
+        <p className="text-xs text-text-tertiary">
           <Trans
             i18nKey="settings.models.additionalProvidersInfo"
             components={{
-              aiderTab: <button onClick={onSwitchToAiderTab} className="text-blue-400 hover:text-blue-300 underline transition-colors duration-200" />,
+              aiderTab: <button onClick={onSwitchToAiderTab} className="text-infoLighter hover:text-infoLightest underline transition-colors duration-200" />,
             }}
           />
         </p>
