@@ -39,7 +39,7 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
     <Accordion
       title={<div className="flex-1 text-left text-sm font-medium px-2">{title}</div>}
       chevronPosition="right"
-      className="mb-2 border rounded-md border-neutral-700"
+      className="mb-2 border rounded-md border-border-defaultDark"
       isOpen={open}
       onOpenChange={setOpen}
     >
@@ -50,7 +50,7 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
   return (
     <div className="space-y-2">
       <div className="!mt-0 !mb-5">
-        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
+        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-sm text-infoLight hover:underline">
           Get OpenRouter API key
         </a>
       </div>

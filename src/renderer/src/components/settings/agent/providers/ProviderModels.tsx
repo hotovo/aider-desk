@@ -57,9 +57,13 @@ export const ProviderModels = ({ models, onChange, placeholder, availableModels 
         <div className="text-sm font-medium mb-1">{t('model.labelMultiple')}</div>
         <div className={clsx('space-y-1', models.length && 'mb-2')}>
           {models.map((model, index) => (
-            <div key={model} className="flex items-center justify-between rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-xs">
+            <div key={model} className="flex items-center justify-between rounded-md border border-border-defaultDark bg-bg-secondaryLight px-2 py-1.5 text-xs">
               <span>{model}</span>
-              <IconButton icon={<IoClose className="h-4 w-4" />} onClick={() => handleRemoveModel(index)} className="text-neutral-400 hover:text-neutral-200" />
+              <IconButton
+                icon={<IoClose className="h-4 w-4" />}
+                onClick={() => handleRemoveModel(index)}
+                className="text-text-mutedLight hover:text-text-secondary"
+              />
             </div>
           ))}
         </div>

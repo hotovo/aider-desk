@@ -65,7 +65,10 @@ module.exports = {
 
         info: 'var(--color-info)',
         infoLight: 'var(--color-info-light)',
+        infoLighter: 'var(--color-info-lighter)',
         info10: 'var(--color-info-10)',
+
+
         input: {
           bg: 'var(--color-input-bg)',
           border: 'var(--color-input-border)',
