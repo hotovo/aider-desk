@@ -1,6 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
+import { createVertex } from '@ai-sdk/google-vertex';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createGroq } from '@ai-sdk/groq';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
@@ -14,6 +15,7 @@ import {
   isBedrockProvider,
   isDeepseekProvider,
   isGeminiProvider,
+  isVertexAiProvider,
   isGroqProvider,
   isLmStudioProvider,
   isOllamaProvider,
@@ -39,14 +41,14 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
   if (isAnthropicProvider(provider)) {
     const apiKey = provider.apiKey || env['ANTHROPIC_API_KEY'];
     if (!apiKey) {
-      throw new Error('Anthropic API key is required in Agent provider settings or Aider environment variables (ANTHROPIC_API_KEY)');
+      throw new Error('Anthropic API key is required in Providers settings or Aider environment variables (ANTHROPIC_API_KEY)');
     }
     const anthropicProvider = createAnthropic({ apiKey });
     return anthropicProvider(model);
   } else if (isOpenAiProvider(provider)) {
     const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
     if (!apiKey) {
-      throw new Error('OpenAI API key is required in Agent provider settings or Aider environment variables (OPENAI_API_KEY)');
+      throw new Error('OpenAI API key is required in Providers settings or Aider environment variables (OPENAI_API_KEY)');
     }
     const openAIProvider = createOpenAI({
       apiKey,
@@ -58,7 +60,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
   } else if (isGeminiProvider(provider)) {
     const apiKey = provider.apiKey || env['GEMINI_API_KEY'];
     if (!apiKey) {
-      throw new Error('Gemini API key is required in Agent provider settings or Aider environment variables (GEMINI_API_KEY)');
+      throw new Error('Gemini API key is required in Providers settings or Aider environment variables (GEMINI_API_KEY)');
     }
     const baseUrl = provider.customBaseUrl || env['GEMINI_API_BASE_URL'];
 
@@ -69,24 +71,42 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     return googleProvider(model, {
       useSearchGrounding: provider.useSearchGrounding,
     });
+  } else if (isVertexAiProvider(provider)) {
+    const project = provider.project || env['VERTEXAI_PROJECT'];
+    const location = provider.location || env['VERTEXAI_LOCATION'] || 'global';
+
+    if (!project) {
+      throw new Error('Vertex AI project is required in Providers settings or Aider environment variables (VERTEXAI_PROJECT)');
+    }
+
+    const vertexProvider = createVertex({
+      project: provider.project,
+      location: provider.location,
+      // using custom base URL to fix the 'global' location
+      baseURL: `https://${location && location !== 'global' ? location + '-' : ''}aiplatform.googleapis.com/v1/projects/${provider.project}/locations/${provider.location}/publishers/google`,
+      ...(provider.googleCloudCredentialsJson && {
+        credentials: JSON.parse(provider.googleCloudCredentialsJson),
+      }),
+    });
+    return vertexProvider(model);
   } else if (isDeepseekProvider(provider)) {
     const apiKey = provider.apiKey || env['DEEPSEEK_API_KEY'];
     if (!apiKey) {
-      throw new Error('Deepseek API key is required in Agent provider settings or Aider environment variables (DEEPSEEK_API_KEY)');
+      throw new Error('Deepseek API key is required in Providers settings or Aider environment variables (DEEPSEEK_API_KEY)');
     }
     const deepseekProvider = createDeepSeek({ apiKey });
     return deepseekProvider(model);
   } else if (isGroqProvider(provider)) {
     const apiKey = provider.apiKey || env['GROQ_API_KEY'];
     if (!apiKey) {
-      throw new Error('Groq API key is required in Agent provider settings or Aider environment variables (GROQ_API_KEY)');
+      throw new Error('Groq API key is required in Providers settings or Aider environment variables (GROQ_API_KEY)');
     }
     const groqProvider = createGroq({ apiKey });
     return groqProvider(model);
   } else if (isLmStudioProvider(provider)) {
     const baseUrl = provider.baseUrl || env['LMSTUDIO_API_BASE'];
     if (!baseUrl) {
-      throw new Error('Base URL is required for LMStudio provider. Set it in Agent provider settings or via the LMSTUDIO_API_BASE environment variable.');
+      throw new Error('Base URL is required for LMStudio provider. Set it in Providers settings or via the LMSTUDIO_API_BASE environment variable.');
     }
     const lmStudioProvider = createOpenAICompatible({
       name: 'lmstudio',
@@ -96,11 +116,11 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
   } else if (isOpenAiCompatibleProvider(provider)) {
     const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
     if (!apiKey) {
-      throw new Error(`API key is required for ${provider.name}. Check Agent provider settings or Aider environment variables (OPENAI_API_KEY).`);
+      throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (OPENAI_API_KEY).`);
     }
     const baseUrl = provider.baseUrl || env['OPENAI_API_BASE'];
     if (!baseUrl) {
-      throw new Error(`Base URL is required for ${provider.name} provider. Set it in Agent provider settings or via the OPENAI_API_BASE environment variable.`);
+      throw new Error(`Base URL is required for ${provider.name} provider. Set it in Providers settings or via the OPENAI_API_BASE environment variable.`);
     }
     // Use createOpenAICompatible to get a provider instance, then get the model
     const compatibleProvider = createOpenAICompatible({
@@ -121,7 +141,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     // Check if we have explicit keys or if AWS_PROFILE is set in the main process env
     if (!accessKeyId && !secretAccessKey && !process.env.AWS_PROFILE) {
       throw new Error(
-        'AWS credentials (accessKeyId/secretAccessKey) or AWS_PROFILE must be provided for Bedrock in Agent provider settings or Aider environment variables.',
+        'AWS credentials (accessKeyId/secretAccessKey) or AWS_PROFILE must be provided for Bedrock in Providers settings or Aider environment variables.',
       );
     }
 
@@ -143,7 +163,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
   } else if (isOllamaProvider(provider)) {
     const baseUrl = provider.baseUrl || env['OLLAMA_API_BASE'];
     if (!baseUrl) {
-      throw new Error('Base URL is required for Ollama provider. Set it in Agent provider settings or via the OLLAMA_API_BASE environment variable.');
+      throw new Error('Base URL is required for Ollama provider. Set it in Providers settings or via the OLLAMA_API_BASE environment variable.');
     }
     const ollamaInstance = createOllama({ baseURL: baseUrl });
     return ollamaInstance(model, {
@@ -152,7 +172,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
   } else if (isOpenRouterProvider(provider)) {
     const apiKey = provider.apiKey || env['OPENROUTER_API_KEY'];
     if (!apiKey) {
-      throw new Error('OpenRouter API key is required in Agent provider settings or Aider environment variables (OPENROUTER_API_KEY)');
+      throw new Error('OpenRouter API key is required in Providers settings or Aider environment variables (OPENROUTER_API_KEY)');
     }
     const openRouter = createOpenRouter({
       apiKey,
@@ -163,7 +183,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
       },
       extraBody: {
         provider: {
-          require_parameters: true,
+          require_parameters: provider.requireParameters,
           order: provider.order?.length ? provider.order : undefined,
           only: provider.only?.length ? provider.only : undefined,
           ignore: provider.ignore?.length ? provider.ignore : undefined,
@@ -182,7 +202,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
   } else if (isRequestyProvider(provider)) {
     const apiKey = provider.apiKey || env['REQUESTY_API_KEY'];
     if (!apiKey) {
-      throw new Error('Requesty API key is required in Agent provider settings or Aider environment variables (REQUESTY_API_KEY)');
+      throw new Error('Requesty API key is required in Providers settings or Aider environment variables (REQUESTY_API_KEY)');
     }
 
     const requestyProvider = createRequesty({
@@ -282,7 +302,7 @@ export const calculateCost = (
 
     inputCost = (sentTokens - cachedPromptTokens) * modelInfo.inputCostPerToken;
     cacheCost = cachedPromptTokens * (modelInfo.cacheReadInputTokenCost ?? modelInfo.inputCostPerToken);
-  } else if (profile.provider === 'gemini') {
+  } else if (profile.provider === 'gemini' || profile.provider === 'vertex-ai') {
     const { google } = providerMetadata as GoogleMetadata;
     const cachedPromptTokens = google.cachedContentTokenCount ?? 0;
 
@@ -330,7 +350,7 @@ export const getUsageReport = (
     const { openrouter } = providerMetadata as OpenRouterMetadata;
     usageReportData.cacheReadTokens = openrouter.usage.promptTokensDetails?.cachedTokens;
     usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;
-  } else if (profile.provider === 'gemini') {
+  } else if (profile.provider === 'gemini' || profile.provider === 'vertex-ai') {
     const { google } = providerMetadata as GoogleMetadata;
     usageReportData.cacheReadTokens = google.cachedContentTokenCount;
     usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;

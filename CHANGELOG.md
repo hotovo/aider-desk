@@ -1,8 +1,21 @@
 # Changelog
 
 ## [UNRELEASED]
-- aider-desk now remembers editFormat per model per project and reuses it
 
+- pasting image processed in AiderDesk instead of using Aider to handle it
+- added image file processing support for Agent context
+- using relative path for web scrapped content files
+- properly adding files recursively when directory is added to context
+- AGENTS.md instead of PROJECT.md when using /init
+- using "diff" mode as default for models in Aider
+- added configurable require_parameters for OpenRouter
+- updated prompt field placeholders with real like examples
+- added support for arm64 macOS builds
+- message groups for Aider and Sub-agent prompts
+- added support for Vertex AI provider
+- increase stdout buffer size for shell commands in custom commands
+- added keyboard navigation to select component
+- remember last editFormat per model and per project
 
 ## [0.25.0]
 

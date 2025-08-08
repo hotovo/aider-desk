@@ -264,7 +264,7 @@ const getRuleFilesContent = (projectDir: string) => {
 
 export const getInitProjectPrompt = () => {
   return `# Role and Objective
-You are a specialized AI coding assistant. Your primary objective is to perform an exhaustive analysis of a new codebase and create a single, comprehensive \`PROJECT.md\` file located at \`.aider-desk/rules/PROJECT.md\`.
+You are a specialized AI coding assistant. Your primary objective is to perform an exhaustive analysis of a new codebase and create a single, comprehensive \`AGENTS.md\` file located at the root of the project.
 
 This file is a critical set of rules and context that will be provided to all future instances of your agent to ensure they can work effectively and accurately within this specific repository. A high-quality, thorough initialization is paramount, as it will dramatically improve all future interactions. A rushed or incomplete analysis will permanently limit your effectiveness.
 
@@ -282,28 +282,28 @@ You must be extremely thorough. Use all available tools (e.g., semantic search, 
 - **Documentation:** The \`README.md\` and any other existing documentation.
 - **Existing Rules:** Critically, you must find and incorporate key information from any existing rule files, such as \`.cursorrules\`, \`.aider-desk/rules/\`, \`.windsurfrules\`, \`.clinerules\`, or \`.github/copilot-instructions.md\`.
 
-**2. \`PROJECT.md\` Generation:**
-Based on your complete analysis, generate the \`PROJECT.md\` file. You must strictly adhere to all the requirements outlined in the "Output Requirements for PROJECT.md" section below.
+**2. \`AGENTS.md\` Generation:**
+Based on your complete analysis, generate the \`AGENTS.md\` file. You must strictly adhere to all the requirements outlined in the "Output Requirements for AGENTS.md" section below.
 
 **3. User Verification and Refinement:**
 After generating the file, you must:
-a.  Present the complete \`PROJECT.md\` to the user.
+a.  Present the complete \`AGENTS.md\` to the user.
 b.  Provide a concise summary of what you've understood about the project (e.g., "I see this is a Next.js project using TypeScript and Tailwind CSS for e-commerce...").
-c.  Explicitly ask the user to read through the \`PROJECT.md\` file and verify its accuracy. Encourage them to correct any misunderstandings or add missing information, stating that their feedback will significantly improve your future performance.
+c.  Explicitly ask the user to read through the \`AGENTS.md\` file and verify its accuracy. Encourage them to correct any misunderstandings or add missing information, stating that their feedback will significantly improve your future performance.
 
 ---
 
-# Output Requirements for PROJECT.md
+# Output Requirements for AGENTS.md
 
 **A. Mandatory Header:**
 The file MUST begin with the following text, exactly as written:
 \`\`\`
-# PROJECT.md
+# AGENTS.md
 This file provides guidance to AiderDesk when working with code in this repository.
 \`\`\`
 
 **B. Content to Include:**
-If the \`PROJECT.md\` file does not already exist, you must create it with these sections. If it does exist, suggest improvements and integrate them.
+If the \`AGENTS.md\` file does not already exist, you must create it with these sections. If it does exist, suggest improvements and integrate them.
 - **Common Commands:** Detail the specific commands necessary to build, lint, and run tests in this codebase. Include commands for common development tasks, such as running a single test file if applicable.
 - **High-Level Architecture:** Describe the "big picture" architecture and code structure that requires reading multiple files to understand. Explain the core directories and their purposes.
 

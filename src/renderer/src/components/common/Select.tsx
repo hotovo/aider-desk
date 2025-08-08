@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { HiChevronUpDown, HiCheck } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,7 @@ type Props = {
 
 export const Select = ({ label, className = '', options = [], value, onChange, size = 'md' }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null); // Ref for the dropdown itself
@@ -39,8 +40,49 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
         left: rect.left + window.scrollX,
         width: rect.width,
       });
+      setHighlightedIndex(options.findIndex((opt) => opt.value === value));
     }
     setIsOpen(!isOpen);
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setHighlightedIndex(-1);
+    }
+  }, [isOpen]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleToggleDropdown();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        setIsOpen(false);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev >= options.length - 1 ? 0 : prev + 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev <= 0 ? options.length - 1 : prev - 1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < options.length) {
+          handleOptionSelect(options[highlightedIndex]);
+        }
+        break;
+      case 'Tab':
+        setIsOpen(false);
+        break;
+    }
   };
 
   const handleOptionSelect = (option: Option) => {
@@ -62,6 +104,9 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
         <button
           type="button"
           onClick={handleToggleDropdown}
+          onKeyDown={handleKeyDown}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
           className={`flex w-full min-w-[8rem] bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 placeholder-neutral-500 pl-2 pr-1 ${sizeClasses[size]} ${className}`}
         >
           <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
@@ -85,12 +130,14 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
             }}
             role="listbox"
           >
-            {options.map((opt) => (
+            {options.map((opt, index) => (
               <li
                 key={opt.value}
                 onClick={() => handleOptionSelect(opt)}
                 className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]}
-                ${selectedOption?.value === opt.value ? 'bg-neutral-700' : 'hover:bg-neutral-700'}`}
+                ${selectedOption?.value === opt.value ? 'bg-neutral-700' : ''}
+                ${highlightedIndex === index ? 'bg-neutral-700' : 'hover:bg-neutral-700'}`}
+                aria-selected={selectedOption?.value === opt.value}
                 role="option"
               >
                 <div className="flex items-center">

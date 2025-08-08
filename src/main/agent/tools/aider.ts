@@ -3,6 +3,7 @@ import path from 'path';
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import {
   TOOL_GROUP_NAME_SEPARATOR,
   AIDER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
@@ -12,7 +13,7 @@ import {
   AIDER_TOOL_RUN_PROMPT as TOOL_RUN_PROMPT,
   AIDER_TOOL_DESCRIPTIONS,
 } from '@common/tools';
-import { AgentProfile, ToolApprovalState } from '@common/types';
+import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
 
 import { ApprovalManager } from './approval-manager';
 
@@ -20,7 +21,7 @@ import type { ToolSet } from 'ai';
 
 import { Project } from '@/project';
 
-export const createAiderToolset = (project: Project, profile: AgentProfile): ToolSet => {
+export const createAiderToolset = (project: Project, profile: AgentProfile, promptContext?: PromptContext): ToolSet => {
   const approvalManager = new ApprovalManager(project, profile);
 
   const getContextFilesTool = tool({
@@ -29,9 +30,17 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
       projectDir: z.string().describe("The project directory. Can be '.' for current project."),
     }),
     execute: async ({ projectDir }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GET_CONTEXT_FILES, {
-        projectDir,
-      });
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_GET_CONTEXT_FILES,
+        {
+          projectDir,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GET_CONTEXT_FILES}`;
       const questionText = 'Approve getting context files?';
@@ -58,10 +67,18 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
       readOnly: z.boolean().optional().describe('Whether the file(s) are read-only. Applies to all paths if true.'),
     }),
     execute: async ({ paths, readOnly = false }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_ADD_CONTEXT_FILES, {
-        paths,
-        readOnly,
-      });
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_ADD_CONTEXT_FILES,
+        {
+          paths,
+          readOnly,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const results: string[] = [];
       for (const filePath of paths) {
@@ -140,7 +157,7 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
       paths: z.array(z.string()).describe('One or more file paths to remove from context.'),
     }),
     execute: async ({ paths }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_DROP_CONTEXT_FILES, { paths });
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_DROP_CONTEXT_FILES, { paths }, undefined, undefined, promptContext);
 
       const results: string[] = [];
       for (const filePath of paths) {
@@ -167,7 +184,16 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
       prompt: z.string().describe('The prompt to run in natural language.'),
     }),
     execute: async ({ prompt }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, 'aider', 'run_prompt', { prompt });
+      const aiderPromptContext: PromptContext = promptContext ?? {
+        id: uuidv4(),
+        group: {
+          id: uuidv4(),
+          color: '#b5723b',
+          name: 'toolMessage.aider.working',
+        },
+      };
+
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_RUN_PROMPT, { prompt }, undefined, undefined, aiderPromptContext);
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_RUN_PROMPT}`;
       const questionText = 'Approve prompt to run in Aider?';
@@ -184,18 +210,25 @@ export const createAiderToolset = (project: Project, profile: AgentProfile): Too
         };
       }
 
-      const responses = await project.sendPrompt(prompt, 'code', []);
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_RUN_PROMPT, { prompt }, undefined, undefined, aiderPromptContext);
+
+      const responses = await project.sendPrompt(prompt, aiderPromptContext, 'code', []);
 
       // Notify that we are still processing after aider finishes
       project.addLogMessage('loading');
 
+      const updatedFiles = responses.flatMap((response) => response.editedFiles || []).filter((value, index, self) => self.indexOf(value) === index);
       return {
-        responses: responses.map((response) => ({
-          messageId: response.messageId,
-          content: response.content.trim(),
-          reflectedMessage: response.reflectedMessage,
-        })),
-        updatedFiles: responses.flatMap((response) => response.editedFiles || []).filter((value, index, self) => self.indexOf(value) === index), // Unique files
+        responses,
+        updatedFiles,
+        promptContext: {
+          ...aiderPromptContext,
+          group: {
+            ...aiderPromptContext.group!,
+            name: updatedFiles.length ? 'toolMessage.aider.finishedTask' : 'toolMessage.aider.noChanges',
+            finished: true,
+          },
+        } satisfies PromptContext,
       };
     },
   });

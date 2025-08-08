@@ -9,3 +9,4 @@ export * from './OpenAiCompatibleParameters';
 export * from './OllamaParameters';
 export * from './OpenRouterParameters';
 export * from './RequestyParameters';
+export * from './VertexAIParameters';

@@ -59,6 +59,7 @@ const COMMANDS = [
 const ANSWERS = ['y', 'n', 'a', 'd'];
 
 const HISTORY_MENU_CHUNK_SIZE = 20;
+const PLACEHOLDER_COUNT = 20;
 
 const isPathLike = (input: string): boolean => {
   const firstWord = input.split(' ')[0];
@@ -143,7 +144,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     const { t } = useTranslation();
     const [text, setText] = useState('');
     const [debouncedText, setDebouncedText] = useState('');
-    const [placeholderIndex] = useState(Math.floor(Math.random() * 16));
+    const [placeholderIndex, setPlaceholderIndex] = useState(Math.floor(Math.random() * PLACEHOLDER_COUNT));
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
     const [historyLimit, setHistoryLimit] = useState(HISTORY_MENU_CHUNK_SIZE);
@@ -510,6 +511,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           if (customCommand) {
             window.api.runCustomCommand(baseDir, cmd, args, mode);
             prepareForNextPrompt();
+            setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
             return;
           }
 
@@ -526,6 +528,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           runPrompt(text);
           prepareForNextPrompt();
         }
+        setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
       }
     };
 
@@ -792,7 +795,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     if (items) {
                       for (let i = 0; i < items.length; i++) {
                         if (items[i].type.indexOf('image') !== -1) {
-                          window.api.runCommand(baseDir, 'paste');
+                          window.api.pasteImage(baseDir);
                           break;
                         }
                       }
