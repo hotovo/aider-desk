@@ -1087,14 +1087,14 @@ export class Project {
     this.mainWindow.webContents.send('update-aider-models', this.aiderModels);
   }
 
-  public updateModels(mainModel: string, weakModel: string | null, modelEditFormats: Record<string, EditFormat>) {
+  public updateModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff') {
     logger.info('Updating models:', {
       mainModel,
       weakModel,
-      modelEditFormats,
+      editFormat,
     });
 
-    this.findMessageConnectors('set-models').forEach((connector) => connector.sendSetModelsMessage(mainModel, weakModel, modelEditFormats));
+    this.findMessageConnectors('set-models').forEach((connector) => connector.sendSetModelsMessage(mainModel, weakModel, editFormat));
   }
 
   public setArchitectModel(architectModel: string) {

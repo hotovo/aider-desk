@@ -73,7 +73,7 @@ const api: ApplicationAPI = {
   updateMainModel: (baseDir, model) => ipcRenderer.send('update-main-model', baseDir, model),
   updateWeakModel: (baseDir, model) => ipcRenderer.send('update-weak-model', baseDir, model),
   updateArchitectModel: (baseDir, model) => ipcRenderer.send('update-architect-model', baseDir, model),
-  updateEditFormat: (baseDir, format) => ipcRenderer.send('update-edit-format', baseDir, format),
+  updateEditFormats: (baseDir, editFormats) => ipcRenderer.send('update-edit-formats', baseDir, editFormats),
   getProjectSettings: (baseDir) => ipcRenderer.invoke('get-project-settings', baseDir),
   patchProjectSettings: (baseDir, settings) => ipcRenderer.invoke('patch-project-settings', baseDir, settings),
   getFilePathSuggestions: (currentPath, directoriesOnly = false) => ipcRenderer.invoke('get-file-path-suggestions', currentPath, directoriesOnly),

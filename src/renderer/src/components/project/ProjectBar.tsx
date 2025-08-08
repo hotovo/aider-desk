@@ -29,7 +29,6 @@ type Props = {
   baseDir: string;
   allModels?: string[];
   modelsData: ModelsData | null;
-  modelEditFormats: Record<string, EditFormat>;
   mode: Mode;
   renderMarkdown: boolean;
   onModelsChange?: (modelsData: ModelsData | null) => void;
@@ -39,21 +38,7 @@ type Props = {
 };
 
 export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
-  (
-    {
-      baseDir,
-      allModels = [],
-      modelsData,
-      modelEditFormats,
-      mode,
-      renderMarkdown,
-      onModelsChange,
-      onRenderMarkdownChanged,
-      onExportSessionToImage,
-      runCommand,
-    },
-    ref,
-  ) => {
+  ({ baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelsChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand }, ref) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
     const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
@@ -62,7 +47,6 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     const [sessions, setSessions] = useState<SessionData[]>([]);
     const [sessionPopupVisible, showSessionPopup, hideSessionPopup] = useBooleanState(false);
     const sessionPopupRef = useRef<HTMLDivElement>(null);
-    const [currentEditFormat, setCurrentEditFormat] = useState<EditFormat | null>(null);
 
     useImperativeHandle(ref, () => ({
       openMainModelSelector: (model) => {
@@ -139,8 +123,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         }
 
         // Send only the specific update to the backend.
-        window.api.updateEditFormat(baseDir, { [targetModel]: format });
-        setCurrentEditFormat(format);
+        window.api.updateEditFormats(baseDir, { [targetModel]: format });
       },
       [baseDir, modelsData?.mainModel],
     );
@@ -153,13 +136,8 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         if (modelsData && onModelsChange) {
           onModelsChange(null);
         }
-        if (!(mainModel in modelEditFormats)) {
-          void updateEditFormat('whole', mainModel);
-        } else {
-          setCurrentEditFormat(modelEditFormats[mainModel]);
-        }
       },
-      [baseDir, modelEditFormats, modelsData, onModelsChange, updateEditFormat, updatePreferredModels],
+      [baseDir, modelsData, onModelsChange, updatePreferredModels],
     );
 
     const updateWeakModel = useCallback(
@@ -347,13 +325,13 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 removePreferredModel={handleRemovePreferredModel}
               />
             </div>
-            {currentEditFormat && (
+            {modelsData?.editFormat && (
               <>
                 <div className="h-3 w-px bg-neutral-600/50"></div>
                 <div className="flex items-center space-x-1">
                   <BsCodeSlash className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="edit-format-tooltip" />
                   <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
-                  <EditFormatSelector currentFormat={currentEditFormat} onFormatChange={updateEditFormat} />
+                  <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
                 </div>
               </>
             )}

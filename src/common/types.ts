@@ -207,6 +207,7 @@ export interface ModelsData {
   architectModel?: string | null;
   reasoningEffort?: string;
   thinkingTokens?: string;
+  editFormat?: EditFormat;
   info?: RawModelInfo;
   error?: string;
 }

@@ -192,7 +192,7 @@ export const setupIpcHandlers = (
     }
 
     store.saveProjectSettings(baseDir, projectSettings);
-    projectManager.getProject(baseDir).updateModels(mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats);
+    projectManager.getProject(baseDir).updateModels(mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats[mainModel]);
   });
 
   ipcMain.on('update-weak-model', (_, baseDir: string, weakModel: string) => {
@@ -201,7 +201,7 @@ export const setupIpcHandlers = (
     store.saveProjectSettings(baseDir, projectSettings);
 
     const project = projectManager.getProject(baseDir);
-    project.updateModels(projectSettings.mainModel, weakModel, projectSettings.modelEditFormats);
+    project.updateModels(projectSettings.mainModel, weakModel, projectSettings.modelEditFormats[projectSettings.mainModel]);
   });
 
   ipcMain.on('update-architect-model', (_, baseDir: string, architectModel: string) => {
@@ -213,7 +213,7 @@ export const setupIpcHandlers = (
     project.setArchitectModel(architectModel);
   });
 
-  ipcMain.on('update-edit-format', (_, baseDir: string, updatedFormats: Record<string, EditFormat>) => {
+  ipcMain.on('update-edit-formats', (_, baseDir: string, updatedFormats: Record<string, EditFormat>) => {
     const projectSettings = store.getProjectSettings(baseDir);
     // Update just the current model's edit format while preserving others
     projectSettings.modelEditFormats = {
@@ -221,14 +221,14 @@ export const setupIpcHandlers = (
       ...updatedFormats,
     };
     store.saveProjectSettings(baseDir, projectSettings);
-    projectManager.getProject(baseDir).updateModels(projectSettings.mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats);
+    projectManager
+      .getProject(baseDir)
+      .updateModels(projectSettings.mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats[projectSettings.mainModel]);
   });
 
   ipcMain.on('run-command', (_, baseDir: string, command: string) => {
     const project = projectManager.getProject(baseDir);
     project.runCommand(command);
-    // Ensure UI updates and scrolls to bottom
-    mainWindow.webContents.send('ensure-scroll', baseDir);
   });
 
   ipcMain.on('paste-image', async (_, baseDir: string) => {
