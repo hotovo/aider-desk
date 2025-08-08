@@ -87,7 +87,7 @@ export const ModeSelector = ({ mode, onModeChange }: Props) => {
                 key={value}
                 onClick={() => handleModeChange(value)}
                 className={`w-full px-3 py-1.5 text-left hover:bg-bg-tertiary transition-colors duration-200 text-xs flex items-center gap-2
-                ${value === mode ? 'text-text-primary font-semibold bg-neutral-750' : 'text-text-tertiary'}`}
+                ${value === mode ? 'text-text-primary font-semibold bg-bg-tertiary' : 'text-text-tertiary'}`}
               >
                 <Icon className="w-4 h-4" />
                 {t(labelKey)}

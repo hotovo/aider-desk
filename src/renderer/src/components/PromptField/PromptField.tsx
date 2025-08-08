@@ -708,10 +708,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     return (
       <div className="w-full relative">
         {question && (
-          <div className="mb-2 p-3 bg-gradient-to-b fromF-neutral-950 to-neutral-900 rounded-md border border-neutral-700 text-sm">
-            <div className="text-white text-sm mb-2 whitespace-pre-wrap">{question.text}</div>
+          <div className="mb-2 p-3 bg-gradient-to-b from-bg-primary to-bg-primaryLight rounded-md border border-border-defaultDark text-sm">
+            <div className="text-text-primary text-sm mb-2 whitespace-pre-wrap">{question.text}</div>
             {question.subject && (
-              <div className="text-neutral-400 text-xs mb-3 whitespace-pre-wrap max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900 scrollbar-rounded">
+              <div className="text-text-mutedLight text-xs mb-3 whitespace-pre-wrap max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primaryLight scrollbar-rounded">
                 {question.subject}
               </div>
             )}
@@ -721,7 +721,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                   <button
                     key={index}
                     onClick={() => answerQuestion(answer.shortkey)}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === answer.shortkey ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className={`px-2 py-0.5 text-xs rounded hover:bg-bg-tertiary border border-border-default ${selectedAnswer === answer.shortkey ? 'bg-bg-tertiary border-border-light' : 'bg-bg-secondary'}`}
                   >
                     {answer.text}
                   </button>
@@ -730,28 +730,28 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 <>
                   <button
                     onClick={() => answerQuestion('y')}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'y' ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className={`px-2 py-0.5 text-xs rounded hover:bg-bg-tertiary border border-border-default ${selectedAnswer === 'y' ? 'bg-bg-tertiary border-accent-secondary' : 'bg-bg-secondary'}`}
                     title="Yes (Y)"
                   >
                     {t('promptField.answers.yes')}
                   </button>
                   <button
                     onClick={() => answerQuestion('n')}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'n' ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className={`px-2 py-0.5 text-xs rounded hover:bg-bg-tertiary border border-border-default ${selectedAnswer === 'n' ? 'bg-bg-tertiary border-border-light' : 'bg-bg-secondary'}`}
                     title={t('promptField.answers.no')}
                   >
                     {t('promptField.answers.no')}
                   </button>
                   <button
                     onClick={() => answerQuestion('a')}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'a' ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className={`px-2 py-0.5 text-xs rounded hover:bg-bg-tertiary border border-border-default ${selectedAnswer === 'a' ? 'bg-bg-tertiary border-border-light' : 'bg-bg-secondary'}`}
                     title={t('promptField.answers.always')}
                   >
                     {t('promptField.answers.always')}
                   </button>
                   <button
                     onClick={() => answerQuestion('d')}
-                    className={`px-2 py-0.5 text-xs rounded hover:bg-neutral-700 border border-neutral-600 ${selectedAnswer === 'd' ? 'bg-neutral-700 border-neutral-400' : 'bg-neutral-850'}`}
+                    className={`px-2 py-0.5 text-xs rounded hover:bg-bg-tertiary border border-border-default ${selectedAnswer === 'd' ? 'bg-bg-tertiary border-border-light' : 'bg-bg-secondary'}`}
                     title={t('promptField.answers.dontAsk')}
                   >
                     {t('promptField.answers.dontAsk')}
@@ -770,7 +770,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
               editable={!disabled}
               spellCheck={false}
-              className="w-full px-2 py-1 pr-8 border-2 border-neutral-700 rounded-md focus:outline-none focus:border-neutral-500 text-sm bg-neutral-850 text-white placeholder-neutral-600 resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-600"
+              className="w-full px-2 py-1 pr-8 border-2 border-border-defaultDark rounded-md focus:outline-none focus:border-border-accent text-sm bg-bg-secondary text-text-primary placeholder-text-mutedDark resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fourth"
               theme={theme}
               basicSetup={{
                 highlightSelectionMatches: false,
@@ -828,10 +828,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               ]}
             />
             {processing ? (
-              <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-2 text-neutral-400">
+              <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-2 text-text-mutedLight">
                 <button
                   onClick={interruptResponse}
-                  className="hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-colors duration-200"
+                  className="hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-colors duration-200"
                   title={t('promptField.stopResponse')}
                 >
                   <MdStop className="w-4 h-4" />
@@ -842,7 +842,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               <button
                 onClick={handleSubmit}
                 disabled={!text.trim() || disabled}
-                className={`absolute right-2 top-1/2 -translate-y-[12px] text-neutral-400 hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-all duration-200
+                className={`absolute right-2 top-1/2 -translate-y-[12px] text-text-mutedLight hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200
                 ${!text.trim() ? 'opacity-0' : 'opacity-100'}`}
                 title={t('promptField.sendMessage')}
               >
