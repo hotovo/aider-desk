@@ -51,7 +51,13 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Configuration',
       collapsed: true,
-      items: ['configuration/settings', 'configuration/aider-configuration', 'configuration/project-specific-rules', 'configuration/prompt-behavior'],
+      items: [
+        'configuration/settings',
+        'configuration/aider-configuration',
+        'configuration/project-specific-rules',
+        'configuration/prompt-behavior',
+        'configuration/automatic-updates',
+      ],
     },
     {
       type: 'category',
@@ -67,9 +73,9 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Customization & Extensions',
+      label: 'Advanced Settings',
       collapsed: true,
-      items: ['customization/custom-aider-version', 'customization/extra-python-packages', 'customization/automatic-updates', 'customization/telemetry'],
+      items: ['customization/custom-aider-version', 'customization/extra-python-packages', 'customization/telemetry'],
     },
   ],
   // But you can create a sidebar manually

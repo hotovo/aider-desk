@@ -140,9 +140,3 @@ includeContext: false
 ```
 
 To use it, type `/list-root` in the prompt field and press Enter. The agent will only receive the `!ls -la ./` instruction and no prior conversation.
----
-sidebar_position: 3
-title: "Custom Commands"
-sidebar_label: "Custom Commands"
-slug: "/core-features/custom-commands"
----

@@ -6,9 +6,9 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'My Site',
+  title: 'AiderDesk',
   //themes: ['@docusaurus/theme-search-algolia'],
-  tagline: 'Dinosaurs are cool',
+  tagline: 'AI-Powered Coding',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -17,15 +17,39 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://hotovo.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/aider-desk/',
 
-  // GitHub pages deployment config.
-  // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'hotovo', // Usually your GitHub org/user name.
-  projectName: 'aider-desk', // Usually your repo name.
+  // Add Google Fonts for Nunito
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'preconnect',
+        href: 'https://fonts.googleapis.com',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'preconnect',
+        href: 'https://fonts.gstatic.com',
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Sono:wght@200..800&display=swap',
+      },
+    },
+  ],
+
+  organizationName: 'hotovo',
+  projectName: 'aider-desk',
+  trailingSlash: false,
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -100,6 +124,7 @@ const config: Config = {
     //   //... other Algolia params
     // },
     navbar: {
+      title: 'AiderDesk',
       logo: {
         alt: 'AiderDesk Logo',
         src: '/img/icon.png',
@@ -122,7 +147,7 @@ const config: Config = {
     },
     footer: {
       style: 'dark',
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} AiderDesk contributors. Happy coding!`,
     },
     prism: {
       theme: prismThemes.github,

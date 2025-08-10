@@ -41,9 +41,3 @@ You have granular control over which changes to accept. If you disagree with a s
 3.  Click the icon.
 
 AiderDesk will immediately apply the revert, replacing the AI's new code with the original code in the actual file on your disk. This action is instant and allows you to selectively accept or reject parts of the AI's work.
----
-sidebar_position: 4
-title: "Reviewing Code Changes"
-sidebar_label: "Code Review"
-slug: "/core-features/code-review"
----

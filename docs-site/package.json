@@ -1,6 +1,6 @@
 {
-  "name": "docs-site",
-  "version": "0.0.0",
+  "name": "aider-desk-docs",
+  "version": "0.26.0",
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",

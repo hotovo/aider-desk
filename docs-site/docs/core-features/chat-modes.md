@@ -1,6 +1,6 @@
 ---
 sidebar_position: 4
-title: "Chat Modes" 
+title: "Chat Modes"
 sidebar_label: "Chat Modes"
 ---
 
@@ -30,9 +30,3 @@ AiderDesk offers several chat modes to tailor the AI's behavior to your specific
 ### Context
 - **Command**: `/context`
 - **Purpose**: In this mode, Aider will automatically analyze your prompt and try to identify and add the most relevant files to the context before proceeding. This is useful when you're not sure which files are needed for a task.
----
-sidebar_position: 1
-title: "Chat Modes"
-sidebar_label: "Chat Modes"
-slug: "/core-features/chat-modes"
----

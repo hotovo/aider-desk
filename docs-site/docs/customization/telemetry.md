@@ -52,7 +52,7 @@ We believe in transparency. You can review the exact telemetry collection code i
 
 Beyond the anonymous usage data, AiderDesk also supports collecting detailed telemetry for Agent and Aider messages. This allows users to gain deeper insights into their AI interactions, including token usage, costs, and model responses, by integrating with OpenTelemetry-compatible tracing systems.
 
-For detailed setup instructions and information on supported providers, please refer to the [OpenTelemetry Integration Guide](open-telemetry.md).
+For detailed setup instructions and information on supported providers, please refer to the [OpenTelemetry Integration Guide](open-telemetry).
 
 ---
 

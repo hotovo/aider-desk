@@ -8,7 +8,7 @@ const Home: React.FC = () => {
     <Layout>
       <div className={styles.heroBanner}>
         <div className={styles.heroContent}>
-          <img src="/img/icon.png" alt="AiderDesk Logo" className={styles.heroIcon} />
+          <img src="img/icon.png" alt="AiderDesk Logo" className={styles.heroIcon} />
           <div className={styles.heroText}>
             <h1>Supercharge Your Coding with AI</h1>
             <p>The most powerful way to integrate AI into your development workflow</p>
@@ -22,7 +22,7 @@ const Home: React.FC = () => {
       </section>
 
       <div className={styles.container}>
-        <img src="./img/screenshot.png" alt="AiderDesk Interface" />
+        <img src="img/screenshot.png" alt="AiderDesk Interface" />
       </div>
 
       <section className={styles.container}>
@@ -31,7 +31,7 @@ const Home: React.FC = () => {
           <a href="https://github.com/hotovo/aider-desk/releases" className="button button--primary button--lg">
             Download Now
           </a>
-          <a href="/docs" className={`button button--lg ${styles.docButton}`}>
+          <a href="docs" className={`button button--lg ${styles.docButton}`}>
             Documentation
           </a>
         </div>
