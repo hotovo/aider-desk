@@ -22,16 +22,21 @@ type Props = {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   noneSelectedLabel?: string;
+  filterInput?: boolean;
 };
 
-export const MultiSelect = ({ options, selected, onChange, label, className, size = 'md', noneSelectedLabel }: Props) => {
+export const MultiSelect = ({ options, selected, onChange, label, className, size = 'md', noneSelectedLabel, filterInput = false }: Props) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const [filterTerm, setFilterTerm] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
 
-  useClickOutside([containerRef, dropdownRef], () => setIsOpen(false));
+  useClickOutside([containerRef, dropdownRef], () => {
+    setIsOpen(false);
+    setFilterTerm('');
+  });
 
   const handleToggle = () => {
     if (!isOpen && containerRef.current) {
@@ -43,7 +48,14 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
       });
     }
     setIsOpen(!isOpen);
+    if (!isOpen) {
+      setFilterTerm('');
+    }
   };
+
+  const filteredOptions = filterInput
+    ? options.filter((option) => option.label.toLowerCase().includes(filterTerm.toLowerCase()) || option.value.toLowerCase().includes(filterTerm.toLowerCase()))
+    : options;
 
   const handleCheckboxChange = (value: string) => {
     const newSelected = selected.includes(value) ? selected.filter((item) => item !== value) : [...selected, value];
@@ -51,10 +63,11 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
   };
 
   const handleSelectAll = () => {
-    if (selected.length === options.length) {
+    const relevantOptions = filterInput ? filteredOptions : options;
+    if (selected.length === relevantOptions.length) {
       onChange([]);
     } else {
-      onChange(options.map((option) => option.value));
+      onChange(relevantOptions.map((option) => option.value));
     }
   };
 
@@ -67,22 +80,45 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{label}</label>}
-      <button
-        type="button"
-        className={`flex w-full min-w-[8rem] bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 placeholder-neutral-500 pl-2 pr-1 ${sizeClasses[size]} ${className}`}
-        onClick={handleToggle}
-      >
-        <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
-          <span className="block truncate">
-            {selected.length === 0 && options.length > 0
+      {filterInput ? (
+        <input
+          type="text"
+          className={`flex w-full min-w-[8rem] bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 placeholder-neutral-500 pl-2 pr-8 ${sizeClasses[size]} ${className}`}
+          placeholder={
+            selected.length === 0 && options.length > 0
               ? noneSelectedLabel || t('multiselect.noneSelected')
               : selected.length === options.length
                 ? t('multiselect.allSelected')
-                : t('multiselect.someSelected', { count: selected.length })}
+                : t('multiselect.someSelected', { count: selected.length })
+          }
+          value={filterTerm}
+          onChange={(e) => setFilterTerm(e.target.value)}
+          onFocus={handleToggle}
+        />
+      ) : (
+        <button
+          type="button"
+          className={`flex w-full min-w-[8rem] bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 placeholder-neutral-500 pl-2 pr-1 ${sizeClasses[size]} ${className}`}
+          onClick={handleToggle}
+        >
+          <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
+            <span className="block truncate">
+              {selected.length === 0 && options.length > 0
+                ? noneSelectedLabel || t('multiselect.noneSelected')
+                : selected.length === options.length
+                  ? t('multiselect.allSelected')
+                  : t('multiselect.someSelected', { count: selected.length })}
+            </span>
           </span>
-        </span>
-        <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-neutral-500" />
-      </button>
+          <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-neutral-500" />
+        </button>
+      )}
+      {filterInput && (
+        <HiChevronUpDown
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 size-5 text-neutral-500 pointer-events-none"
+          style={{ top: label ? 'calc(50% + 0.625rem)' : '50%' }}
+        />
+      )}
 
       {isOpen &&
         dropdownPosition &&
@@ -101,9 +137,9 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
               className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]} hover:bg-neutral-700`}
               onClick={handleSelectAll}
             >
-              <Checkbox label={t('multiselect.selectAll')} checked={selected.length === options.length} onChange={() => {}} />
+              <Checkbox label={t('multiselect.selectAll')} checked={selected.length === filteredOptions.length} onChange={() => {}} />
             </li>
-            {options.map((option) => (
+            {filteredOptions.map((option) => (
               <li
                 key={option.value}
                 className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]} hover:bg-neutral-700`}

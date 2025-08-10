@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
+import { ContextMenuProvider, useContextMenu } from '@/context/ContextMenuContext';
 import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
@@ -28,6 +29,7 @@ const AnimatedRoutes = () => {
   const { i18n } = useTranslation();
   const location = useLocation();
   const { settings } = useSettings();
+  useContextMenu();
 
   useEffect(() => {
     if (settings?.language) {
@@ -72,9 +74,11 @@ const App = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
       <Router>
         <SettingsProvider>
-          <ThemeManager />
-          <AnimatedRoutes />
-          <ToastContainer />
+          <ContextMenuProvider>
+            <ThemeManager />
+            <AnimatedRoutes />
+            <ToastContainer />
+          </ContextMenuProvider>
         </SettingsProvider>
       </Router>
     </motion.div>

@@ -20,6 +20,7 @@ import {
   isUseCommandOutputMessage,
   LogMessage,
   Message,
+  isAddMessageMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
@@ -86,7 +87,7 @@ export class ConnectorManager {
           baseDir: message.baseDir,
           listenTo: message.listenTo,
         });
-        const connector = new Connector(socket, message.baseDir, message.listenTo, message.inputHistoryFile);
+        const connector = new Connector(socket, message.baseDir, message.source, message.listenTo, message.inputHistoryFile);
         this.connectors.push(connector);
 
         const project = this.projectManager.getProject(message.baseDir);
@@ -145,7 +146,7 @@ export class ConnectorManager {
           defaultAnswer: message.defaultAnswer,
           isGroupQuestion: message.isGroupQuestion,
         };
-        this.projectManager.getProject(connector.baseDir).askQuestion(questionData);
+        void this.projectManager.getProject(connector.baseDir).askQuestion(questionData, false);
       } else if (isSetModelsMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
@@ -172,7 +173,7 @@ export class ConnectorManager {
         }
         const project = this.projectManager.getProject(connector.baseDir);
         if (message.finished) {
-          project.closeCommandOutput();
+          project.closeCommandOutput(message.addToContext);
         } else {
           project.openCommandOutput(message.command);
         }
@@ -196,7 +197,7 @@ export class ConnectorManager {
           baseDir: connector.baseDir,
           promptId: message.promptId,
         });
-        this.projectManager.getProject(connector.baseDir).promptFinished();
+        this.projectManager.getProject(connector.baseDir).promptFinished(message.promptId);
       } else if (isUpdateRepoMapMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
@@ -204,6 +205,12 @@ export class ConnectorManager {
         }
         logger.debug('Updating repo map', { baseDir: connector.baseDir });
         this.projectManager.getProject(connector.baseDir).updateRepoMapFromConnector(message.repoMap);
+      } else if (isAddMessageMessage(message)) {
+        const connector = this.findConnectorBySocket(socket);
+        if (!connector) {
+          return;
+        }
+        void this.projectManager.getProject(connector.baseDir).addContextMessage(message.role, message.content, message.usageReport);
       } else {
         logger.warn('Unknown message type: ', message);
       }
@@ -219,7 +226,7 @@ export class ConnectorManager {
     }
 
     const project = this.projectManager.getProject(connector.baseDir);
-    project.addLogMessage(message.level, message.message, message.finished);
+    project.addLogMessage(message.level, message.message, message.finished, message.promptContext);
   };
 
   private removeConnector = (socket: Socket) => {

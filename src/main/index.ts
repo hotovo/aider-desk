@@ -21,6 +21,7 @@ import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
+import { TerminalManager } from '@/terminal/terminal-manager';
 
 const initStore = async (): Promise<Store> => {
   const store = new Store();
@@ -80,6 +81,10 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
     return { action: 'deny' };
   });
 
+  mainWindow.webContents.on('context-menu', (_event, params) => {
+    mainWindow.webContents.send('context-menu', params);
+  });
+
   const saveWindowState = (): void => {
     const [width, height] = mainWindow.getSize();
     const [x, y] = mainWindow.getPosition();
@@ -121,6 +126,9 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   // Initialize project manager
   const projectManager = new ProjectManager(mainWindow, store, agent, telemetryManager, dataManager);
 
+  // Initialize terminal manager
+  const terminalManager = new TerminalManager(mainWindow);
+
   // Create HTTP server
   const httpServer = createServer();
 
@@ -134,9 +142,10 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const versionsManager = new VersionsManager(mainWindow, store);
 
   // Initialize IPC handlers
-  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager, dataManager);
+  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager, dataManager, terminalManager);
 
   const beforeQuit = async () => {
+    terminalManager.close();
     await mcpManager.close();
     await restApiController.close();
     await connectorManager.close();

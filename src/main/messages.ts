@@ -9,6 +9,7 @@ import {
   MessageRole,
   RawModelInfo,
   EditFormat,
+  PromptContext,
 } from '@common/types';
 
 export type MessageAction =
@@ -31,7 +32,8 @@ export type MessageAction =
   | 'apply-edits'
   | 'compact-conversation'
   | 'update-repo-map'
-  | 'update-env-vars';
+  | 'update-env-vars'
+  | 'request-context-info';
 
 export interface Message {
   action: MessageAction;
@@ -41,11 +43,13 @@ export interface LogMessage {
   message: string;
   level: LogLevel;
   finished?: boolean;
+  promptContext?: PromptContext;
 }
 
 export interface InitMessage {
   action: 'init';
   baseDir: string;
+  source?: string;
   contextFiles?: ContextFile[];
   listenTo?: MessageAction[];
   inputHistoryFile?: string;
@@ -60,13 +64,13 @@ export interface PromptMessage extends Message {
   prompt: string;
   mode: Mode | null;
   architectModel: string | null;
-  promptId?: string | null;
-  clearContext?: boolean;
-  clearFiles?: boolean;
+  promptContext: PromptContext;
+  messages?: { role: MessageRole; content: string }[];
+  files?: ContextFile[];
 }
 
 export interface ResponseMessage extends Message {
-  id?: string | null;
+  id: string;
   action: 'response';
   content: string;
   reflectedMessage?: string;
@@ -76,6 +80,8 @@ export interface ResponseMessage extends Message {
   commitHash?: string;
   commitMessage?: string;
   diff?: string;
+  sequenceNumber?: number;
+  promptContext?: PromptContext;
 }
 
 export const isResponseMessage = (message: Message): message is ResponseMessage => {
@@ -163,6 +169,7 @@ export const isUpdateContextFilesMessage = (message: Message): message is Update
 export interface UseCommandOutputMessage extends Message {
   action: 'use-command-output';
   command: string;
+  addToContext?: boolean;
   finished: boolean;
 }
 
@@ -189,7 +196,12 @@ export interface AddMessageMessage extends Message {
   content: string;
   role: MessageRole;
   acknowledge: boolean;
+  usageReport?: UsageReportData;
 }
+
+export const isAddMessageMessage = (message: Message): message is AddMessageMessage => {
+  return message.action === 'add-message';
+};
 
 export interface InterruptResponseMessage extends Message {
   action: 'interrupt-response';
@@ -230,4 +242,14 @@ export interface UpdateEnvVarsMessage extends Message {
 
 export const isUpdateEnvVarsMessage = (message: Message): message is UpdateEnvVarsMessage => {
   return message.action === 'update-env-vars';
+};
+
+export interface RequestContextInfoMessage extends Message {
+  action: 'request-context-info';
+  messages?: { role: MessageRole; content: string }[];
+  files?: ContextFile[];
+}
+
+export const isRequestContextInfoMessage = (message: Message): message is RequestContextInfoMessage => {
+  return message.action === 'request-context-info';
 };

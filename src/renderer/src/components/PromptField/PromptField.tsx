@@ -13,9 +13,11 @@ import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/type
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useDebounce } from 'react-use';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdPlaylistRemove, MdStop } from 'react-icons/md';
+import { VscTerminal } from 'react-icons/vsc';
 
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
@@ -57,6 +59,7 @@ const COMMANDS = [
 const ANSWERS = ['y', 'n', 'a', 'd'];
 
 const HISTORY_MENU_CHUNK_SIZE = 20;
+const PLACEHOLDER_COUNT = 20;
 
 const isPathLike = (input: string): boolean => {
   const firstWord = input.split(' ')[0];
@@ -72,6 +75,7 @@ const theme = githubDarkInit({
 export interface PromptFieldRef {
   focus: () => void;
   setText: (text: string) => void;
+  appendText: (text: string) => void;
 }
 
 type Props = {
@@ -99,6 +103,9 @@ type Props = {
   disabled?: boolean;
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
+  toggleTerminal?: () => void;
+  terminalVisible?: boolean;
+  scrollToBottom?: () => void;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -128,12 +135,16 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       disabled = false,
       promptBehavior,
       clearLogMessages,
+      toggleTerminal,
+      terminalVisible = false,
+      scrollToBottom,
     }: Props,
     ref,
   ) => {
     const { t } = useTranslation();
     const [text, setText] = useState('');
-    const [placeholderIndex] = useState(Math.floor(Math.random() * 16));
+    const [debouncedText, setDebouncedText] = useState('');
+    const [placeholderIndex, setPlaceholderIndex] = useState(Math.floor(Math.random() * PLACEHOLDER_COUNT));
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
     const [historyLimit, setHistoryLimit] = useState(HISTORY_MENU_CHUNK_SIZE);
@@ -205,16 +216,30 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       };
     };
 
-    const historyItems = inputHistory.slice(0, historyLimit).reverse();
+    useDebounce(
+      () => {
+        setDebouncedText(text);
+        setHighlightedHistoryItemIndex(0);
+      },
+      30,
+      [text],
+    );
+
+    const allHistoryItems =
+      historyMenuVisible && debouncedText.trim().length > 0
+        ? inputHistory.filter((item) => item.toLowerCase().includes(debouncedText.trim().toLowerCase()))
+        : inputHistory;
+
+    const historyItems = allHistoryItems.slice(0, historyLimit);
 
     const loadMoreHistory = useCallback(() => {
-      if (historyLimit < inputHistory.length) {
-        const additional = Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length - historyLimit);
+      if (historyLimit < allHistoryItems.length) {
+        const additional = Math.min(HISTORY_MENU_CHUNK_SIZE, allHistoryItems.length - historyLimit);
         setHistoryLimit((prev) => prev + additional);
-        setHighlightedHistoryItemIndex((prev) => prev + additional);
+        setHighlightedHistoryItemIndex((prev) => prev + 1);
         setKeepHistoryHighlightTop(true);
       }
-    }, [historyLimit, inputHistory.length]);
+    }, [historyLimit, allHistoryItems.length]);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
@@ -223,6 +248,21 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       setText: (newText: string) => {
         setText(newText);
         // Ensure cursor is at the end after setting text
+        setTimeout(() => {
+          if (editorRef.current?.view) {
+            const end = editorRef.current.view.state.doc.length;
+            editorRef.current.view.dispatch({
+              selection: { anchor: end, head: end },
+            });
+            editorRef.current.view.focus();
+          }
+        }, 0);
+      },
+      appendText: (textToAppend: string) => {
+        const currentText = text;
+        const newText = currentText ? `${currentText}\n${textToAppend}` : textToAppend;
+        setText(newText);
+        // Ensure cursor is at the end after appending text
         setTimeout(() => {
           if (editorRef.current?.view) {
             const end = editorRef.current.view.state.doc.length;
@@ -421,8 +461,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     }, [text, invokeCommand]);
 
     useEffect(() => {
-      setHistoryLimit(Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length));
-    }, [inputHistory]);
+      setHistoryLimit(Math.min(HISTORY_MENU_CHUNK_SIZE, allHistoryItems.length));
+    }, [allHistoryItems.length]);
 
     useEffect(() => {
       if (keepHistoryHighlightTop) {
@@ -461,6 +501,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     };
 
     const handleSubmit = () => {
+      scrollToBottom?.();
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
           // Check if it's a custom command
@@ -470,6 +511,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           if (customCommand) {
             window.api.runCustomCommand(baseDir, cmd, args, mode);
             prepareForNextPrompt();
+            setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
             return;
           }
 
@@ -486,6 +528,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           runPrompt(text);
           prepareForNextPrompt();
         }
+        setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
       }
     };
 
@@ -522,13 +565,15 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             }
           } else if (historyMenuVisible) {
             setHistoryMenuVisible(false);
+            const newText = historyItems[historyItems.length - 1 - highlightedHistoryItemIndex];
             view.dispatch({
               changes: {
                 from: 0,
-                insert: historyItems[highlightedHistoryItemIndex],
+                to: view.state.doc.length,
+                insert: newText,
               },
               selection: {
-                anchor: historyItems[highlightedHistoryItemIndex].length,
+                anchor: newText.length,
               },
             });
           } else if (!processing || question) {
@@ -635,19 +680,20 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       {
         key: 'ArrowUp',
         run: () => {
-          if (!text && historyItems.length > 0) {
+          if (historyItems.length > 0) {
             if (historyMenuVisible) {
-              if (highlightedHistoryItemIndex === 0) {
+              if (highlightedHistoryItemIndex === historyItems.length - 1) {
                 loadMoreHistory();
               } else {
-                setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
+                setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
               }
-            } else {
+              return true;
+            } else if (!text) {
               setHistoryLimit(HISTORY_MENU_CHUNK_SIZE);
               setHistoryMenuVisible(true);
-              setHighlightedHistoryItemIndex(historyItems.length - 1);
+              setHighlightedHistoryItemIndex(0);
+              return true;
             }
-            return true;
           }
           return false;
         },
@@ -656,7 +702,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         key: 'ArrowDown',
         run: () => {
           if (historyMenuVisible) {
-            setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
+            setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
             return true;
           }
           return false;
@@ -751,7 +797,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     if (items) {
                       for (let i = 0; i < items.length; i++) {
                         if (items[i].type.indexOf('image') !== -1) {
-                          window.api.runCommand(baseDir, 'paste');
+                          window.api.pasteImage(baseDir);
                           break;
                         }
                       }
@@ -759,7 +805,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                   },
                 }),
                 autocompletion({
-                  override: question ? [] : [completionSource],
+                  override: question || historyMenuVisible ? [] : [completionSource],
                   activateOnTyping:
                     promptBehavior.suggestionMode === SuggestionMode.Automatically || promptBehavior.suggestionMode === SuggestionMode.MentionAtSign,
                   activateOnTypingDelay: promptBehavior.suggestionDelay,
@@ -800,7 +846,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={!text.trim()}
+                disabled={!text.trim() || disabled}
                 className={`absolute right-2 top-1/2 -translate-y-[12px] text-neutral-400 hover:text-neutral-300 hover:bg-neutral-700 rounded p-1 transition-all duration-200
                 ${!text.trim() ? 'opacity-0' : 'opacity-100'}`}
                 title={t('promptField.sendMessage')}
@@ -813,6 +859,19 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             <ModeSelector mode={mode} onModeChange={onModeChanged} />
             {mode === 'agent' && <AgentSelector />}
             <div className="flex-grow" />
+            {toggleTerminal && (
+              <Button
+                variant="text"
+                onClick={toggleTerminal}
+                className={`hover:bg-neutral-800 border-neutral-200 hover:text-neutral-100 ${
+                  terminalVisible ? 'text-neutral-100 bg-neutral-800' : 'text-neutral-200'
+                }`}
+                size="xs"
+              >
+                <VscTerminal className="w-4 h-4 mr-1" />
+                Terminal
+              </Button>
+            )}
             <Button
               variant="text"
               onClick={() => clearMessages()}

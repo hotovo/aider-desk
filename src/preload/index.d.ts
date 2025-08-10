@@ -12,6 +12,8 @@ import type {
   ResponseCompletedData,
   SessionData,
   SettingsData,
+  TerminalData,
+  TerminalExitData,
   TokensInfoData,
   UserMessageData,
   McpServerConfig,
@@ -52,7 +54,7 @@ export interface ApplicationAPI {
   updateMainModel: (baseDir: string, model: string) => void;
   updateWeakModel: (baseDir: string, model: string) => void;
   updateArchitectModel: (baseDir: string, model: string) => void;
-  updateEditFormat: (baseDir: string, format: EditFormat) => void;
+  updateEditFormats: (baseDir: string, editFormats: Record<string, EditFormat>) => void;
   getProjectSettings: (baseDir: string) => Promise<ProjectSettings>;
   patchProjectSettings: (baseDir: string, settings: Partial<ProjectSettings>) => Promise<ProjectSettings>;
   getFilePathSuggestions: (currentPath: string, directoriesOnly?: boolean) => Promise<string[]>;
@@ -62,6 +64,7 @@ export interface ApplicationAPI {
   isProjectPath: (path: string) => Promise<boolean>;
   dropFile: (baseDir: string, path: string) => void;
   runCommand: (baseDir: string, command: string) => void;
+  pasteImage: (baseDir: string) => void;
   scrapeWeb: (baseDir: string, url: string, filePath?: string) => Promise<string>;
   initProjectRulesFile: (baseDir: string) => Promise<void>;
 
@@ -70,6 +73,7 @@ export interface ApplicationAPI {
   addTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
   updateTodo: (baseDir: string, name: string, updates: Partial<TodoItem>) => Promise<TodoItem[]>;
   deleteTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
+  clearAllTodos: (baseDir: string) => Promise<TodoItem[]>;
 
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force = false) => Promise<void>;
@@ -144,11 +148,30 @@ export interface ApplicationAPI {
   addClearProjectListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, clearMessages: boolean, clearSession: boolean) => void) => string;
   removeClearProjectListener: (listenerId: string) => void;
 
+  addProjectStartedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, baseDir: string) => void) => string;
+  removeProjectStartedListener: (listenerId: string) => void;
+
   addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => string;
   removeVersionsInfoUpdatedListener: (listenerId: string) => void;
 
+  addTerminalDataListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalData) => void) => string;
+  removeTerminalDataListener: (listenerId: string) => void;
+
+  addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => string;
+  removeTerminalExitListener: (listenerId: string) => void;
+
+  addContextMenuListener: (callback: (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => void) => () => void;
+
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
   runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
+
+  // Terminal operations
+  createTerminal: (baseDir: string, cols?: number, rows?: number) => Promise<string>;
+  writeToTerminal: (terminalId: string, data: string) => Promise<boolean>;
+  resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;
+  closeTerminal: (terminalId: string) => Promise<boolean>;
+  getTerminalForProject: (baseDir: string) => Promise<string | null>;
+  getAllTerminalsForProject: (baseDir: string) => Promise<Array<{ id: string; baseDir: string; cols: number; rows: number }>>;
 }
 
 declare global {

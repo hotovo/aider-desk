@@ -13,6 +13,8 @@ import {
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
+  TerminalData,
+  TerminalExitData,
   TokensInfoData,
   ToolData,
   UserMessageData,
@@ -43,9 +45,19 @@ const toolListeners: Record<string, (event: Electron.IpcRendererEvent, data: Too
 const inputHistoryUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: InputHistoryData) => void> = {};
 const userMessageListeners: Record<string, (event: Electron.IpcRendererEvent, data: UserMessageData) => void> = {};
 const clearProjectListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string, clearMessages: boolean, clearSession: boolean) => void> = {};
+const projectStartedListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string) => void> = {};
 const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
+const terminalDataListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalData) => void> = {};
+const terminalExitListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalExitData) => void> = {};
 
 const api: ApplicationAPI = {
+  addContextMenuListener: (callback) => {
+    const listener = (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(event, params);
+    ipcRenderer.on('context-menu', listener);
+    return () => {
+      ipcRenderer.removeListener('context-menu', listener);
+    };
+  },
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
@@ -68,7 +80,7 @@ const api: ApplicationAPI = {
   updateMainModel: (baseDir, model) => ipcRenderer.send('update-main-model', baseDir, model),
   updateWeakModel: (baseDir, model) => ipcRenderer.send('update-weak-model', baseDir, model),
   updateArchitectModel: (baseDir, model) => ipcRenderer.send('update-architect-model', baseDir, model),
-  updateEditFormat: (baseDir, format) => ipcRenderer.send('update-edit-format', baseDir, format),
+  updateEditFormats: (baseDir, editFormats) => ipcRenderer.send('update-edit-formats', baseDir, editFormats),
   getProjectSettings: (baseDir) => ipcRenderer.invoke('get-project-settings', baseDir),
   patchProjectSettings: (baseDir, settings) => ipcRenderer.invoke('patch-project-settings', baseDir, settings),
   getFilePathSuggestions: (currentPath, directoriesOnly = false) => ipcRenderer.invoke('get-file-path-suggestions', currentPath, directoriesOnly),
@@ -78,6 +90,7 @@ const api: ApplicationAPI = {
   isProjectPath: (path) => ipcRenderer.invoke('is-project-path', path),
   dropFile: (baseDir, path) => ipcRenderer.send('drop-file', baseDir, path),
   runCommand: (baseDir, command) => ipcRenderer.send('run-command', baseDir, command),
+  pasteImage: (baseDir) => ipcRenderer.send('paste-image', baseDir),
   scrapeWeb: (baseDir, url, filePath) => ipcRenderer.invoke('scrape-web', baseDir, url, filePath),
   initProjectRulesFile: (baseDir) => ipcRenderer.invoke('init-project-rules-file', baseDir),
 
@@ -85,6 +98,7 @@ const api: ApplicationAPI = {
   addTodo: (baseDir, name) => ipcRenderer.invoke('add-todo', baseDir, name),
   updateTodo: (baseDir, name, updates) => ipcRenderer.invoke('update-todo', baseDir, name, updates),
   deleteTodo: (baseDir, name) => ipcRenderer.invoke('delete-todo', baseDir, name),
+  clearAllTodos: (baseDir) => ipcRenderer.invoke('clear-all-todos', baseDir),
 
   loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),
@@ -381,6 +395,25 @@ const api: ApplicationAPI = {
     }
   },
 
+  addProjectStartedListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    projectStartedListeners[listenerId] = (event: Electron.IpcRendererEvent, receivedBaseDir: string) => {
+      if (!compareBaseDirs(receivedBaseDir, baseDir)) {
+        return;
+      }
+      callback(event, receivedBaseDir);
+    };
+    ipcRenderer.on('project-started', projectStartedListeners[listenerId]);
+    return listenerId;
+  },
+  removeProjectStartedListener: (listenerId) => {
+    const callback = projectStartedListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('project-started', callback);
+      delete projectStartedListeners[listenerId];
+    }
+  },
+
   addVersionsInfoUpdatedListener: (callback) => {
     const listenerId = uuidv4();
     versionsInfoUpdatedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: VersionsInfo) => {
@@ -397,8 +430,54 @@ const api: ApplicationAPI = {
     }
   },
 
+  addTerminalDataListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    terminalDataListeners[listenerId] = (event: Electron.IpcRendererEvent, data: TerminalData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
+        return;
+      }
+      callback(event, data);
+    };
+    ipcRenderer.on('terminal-data', terminalDataListeners[listenerId]);
+    return listenerId;
+  },
+  removeTerminalDataListener: (listenerId) => {
+    const callback = terminalDataListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('terminal-data', callback);
+      delete terminalDataListeners[listenerId];
+    }
+  },
+
+  addTerminalExitListener: (baseDir, callback) => {
+    const listenerId = uuidv4();
+    terminalExitListeners[listenerId] = (event: Electron.IpcRendererEvent, data: TerminalExitData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
+        return;
+      }
+      callback(event, data);
+    };
+    ipcRenderer.on('terminal-exit', terminalExitListeners[listenerId]);
+    return listenerId;
+  },
+  removeTerminalExitListener: (listenerId) => {
+    const callback = terminalExitListeners[listenerId];
+    if (callback) {
+      ipcRenderer.removeListener('terminal-exit', callback);
+      delete terminalExitListeners[listenerId];
+    }
+  },
+
   getCustomCommands: (baseDir) => ipcRenderer.invoke('get-custom-commands', baseDir),
   runCustomCommand: (baseDir, commandName, args, mode) => ipcRenderer.invoke('run-custom-command', baseDir, commandName, args, mode),
+
+  // Terminal operations
+  createTerminal: (baseDir, cols, rows) => ipcRenderer.invoke('terminal-create', baseDir, cols, rows),
+  writeToTerminal: (terminalId, data) => ipcRenderer.invoke('terminal-write', terminalId, data),
+  resizeTerminal: (terminalId, cols, rows) => ipcRenderer.invoke('terminal-resize', terminalId, cols, rows),
+  closeTerminal: (terminalId) => ipcRenderer.invoke('terminal-close', terminalId),
+  getTerminalForProject: (baseDir) => ipcRenderer.invoke('terminal-get-for-project', baseDir),
+  getAllTerminalsForProject: (baseDir) => ipcRenderer.invoke('terminal-get-all-for-project', baseDir),
 };
 
 if (process.contextIsolated) {

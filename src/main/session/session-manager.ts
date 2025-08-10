@@ -1,20 +1,23 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 
+import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
-import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData } from '@common/types';
+import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData, UsageReportData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
-import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, POWER_TOOL_GROUP_NAME, POWER_TOOL_AGENT } from '@common/tools';
+import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, POWER_TOOL_AGENT, POWER_TOOL_GROUP_NAME } from '@common/tools';
 
+import { extractPromptContextFromToolResult } from '@/agent/utils';
 import logger from '@/logger';
 import { Project } from '@/project';
-import { isFileIgnored } from '@/utils';
+import { isDirectory, isFileIgnored } from '@/utils';
 
 const AUTOSAVED_SESSION_NAME = '.autosaved';
 
 export class SessionManager {
   private contextMessages: ContextMessage[];
   private contextFiles: ContextFile[];
+  private autosaveEnabled = false;
 
   constructor(
     private readonly project: Project,
@@ -25,9 +28,17 @@ export class SessionManager {
     this.contextFiles = initialFiles;
   }
 
-  addContextMessage(role: MessageRole, content: string): void;
+  public enableAutosave() {
+    this.autosaveEnabled = true;
+  }
+
+  public disableAutosave() {
+    this.autosaveEnabled = false;
+  }
+
+  addContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData): void;
   addContextMessage(message: ContextMessage): void;
-  addContextMessage(roleOrMessage: MessageRole | ContextMessage, content?: string) {
+  addContextMessage(roleOrMessage: MessageRole | ContextMessage, content?: string, usageReport?: UsageReportData) {
     let message: ContextMessage;
 
     if (typeof roleOrMessage === 'string') {
@@ -39,7 +50,8 @@ export class SessionManager {
       message = {
         role: roleOrMessage,
         content: content || '',
-      };
+        usageReport,
+      } as ContextMessage;
     } else {
       message = roleOrMessage;
 
@@ -64,48 +76,88 @@ export class SessionManager {
     return isFileIgnored(this.project.baseDir, contextFile.path);
   }
 
-  async addContextFile(contextFile: ContextFile) {
-    const alreadyAdded = this.contextFiles.find((file) => file.path === contextFile.path);
+  async addContextFile(contextFile: ContextFile): Promise<ContextFile[]> {
+    const absolutePath = path.resolve(this.project.baseDir, contextFile.path);
+    const isDir = await isDirectory(absolutePath);
+    const alreadyAdded = this.contextFiles.find((file) => path.resolve(this.project.baseDir, file.path) === absolutePath);
     if (alreadyAdded) {
-      return false;
+      return [];
     }
 
-    // skip ignore check for folders
-    const isFolder = contextFile.path.endsWith('/') || contextFile.path.endsWith(path.sep);
-    if (!isFolder) {
+    // For directories, recursively add all files and subdirectories
+    if (isDir) {
+      logger.debug('Recursively adding files in directory to context:', {
+        path: contextFile.path,
+        absolutePath,
+      });
+
+      const addedFiles: ContextFile[] = [];
+
+      try {
+        const entries = await fs.readdir(absolutePath, { withFileTypes: true });
+        for (const entry of entries) {
+          const entryPath = path.join(contextFile.path, entry.name);
+          const entryContextFile: ContextFile = {
+            path: entryPath,
+            readOnly: contextFile.readOnly ?? false,
+          };
+
+          // Recursively add files and directories
+          const newAddedFiles = await this.addContextFile(entryContextFile);
+          addedFiles.push(...newAddedFiles);
+        }
+      } catch (error) {
+        logger.error('Failed to read directory:', {
+          path: contextFile.path,
+          error,
+        });
+      }
+
+      return addedFiles;
+    } else {
+      // For files, check if ignored and add if not
       if (await this.isFileIgnored(contextFile)) {
         logger.debug('Skipping ignored file:', { path: contextFile.path });
-        return false;
+        return [];
       }
+
+      const newContextFile = {
+        ...contextFile,
+        readOnly: contextFile.readOnly ?? false,
+      };
+      this.contextFiles.push(newContextFile);
+      this.saveAsAutosaved();
+      return [newContextFile];
     }
-
-    this.contextFiles.push({
-      ...contextFile,
-      readOnly: contextFile.readOnly ?? false,
-    });
-
-    this.saveAsAutosaved();
-    return true;
   }
 
-  dropContextFile(filePath: string) {
+  dropContextFile(filePath: string): ContextFile[] {
     const absolutePath = path.resolve(this.project.baseDir, filePath);
+    const droppedFiles: ContextFile[] = [];
 
-    const file = this.contextFiles.find((f) => {
+    // Filter out files that match the path or are within the directory path
+    this.contextFiles = this.contextFiles.filter((f) => {
       const contextFileAbsolutePath = path.resolve(this.project.baseDir, f.path);
-      return (
+
+      // Check if file matches exactly or is within the directory path
+      const isMatch =
         f.path === filePath || // Exact match
-        contextFileAbsolutePath === filePath || // Absolute path matches
-        contextFileAbsolutePath === absolutePath // Relative path matches when converted to absolute
-      );
+        contextFileAbsolutePath === absolutePath || // Absolute path matches
+        !path.relative(absolutePath, contextFileAbsolutePath).startsWith('..'); // File is within the directory
+
+      if (isMatch) {
+        droppedFiles.push(f);
+        return false; // Remove from contextFiles
+      }
+
+      return true; // Keep in contextFiles
     });
 
-    if (file) {
-      this.contextFiles = this.contextFiles.filter((f) => f !== file);
+    if (droppedFiles.length > 0) {
       this.saveAsAutosaved();
     }
 
-    return file;
+    return droppedFiles;
   }
 
   setContextFiles(contextFiles: ContextFile[], save = true) {
@@ -146,7 +198,9 @@ export class SessionManager {
     const lastMessage = this.contextMessages[this.contextMessages.length - 1];
 
     if (lastMessage.role === 'tool' && Array.isArray(lastMessage.content) && lastMessage.content.length > 0 && lastMessage.content[0].type === 'tool-result') {
-      const toolMessage = this.contextMessages.pop() as ContextMessage & { role: 'tool' }; // Remove the tool message
+      const toolMessage = this.contextMessages.pop() as ContextMessage & {
+        role: 'tool';
+      }; // Remove the tool message
       const toolCallIdToRemove = toolMessage.content[0].toolCallId;
       logger.debug(`Session: Removed last tool message (ID: ${toolCallIdToRemove}). Total messages: ${this.contextMessages.length}`);
 
@@ -358,11 +412,14 @@ export class SessionManager {
       if (message.role === 'assistant') {
         if (Array.isArray(message.content)) {
           for (const part of message.content) {
-            if (part.type === 'text' && part.text) {
+            if (part.type === 'text' && part.text?.trim()) {
               this.project.processResponseMessage({
+                id: uuidv4(),
                 action: 'response',
                 content: part.text,
                 finished: true,
+                reflectedMessage: message.reflectedMessage,
+                usageReport: message.usageReport,
               });
             } else if (part.type === 'tool-call') {
               const toolCall = part;
@@ -372,15 +429,22 @@ export class SessionManager {
               }
 
               const [serverName, toolName] = extractServerNameToolName(toolCall.toolName);
-              this.project.addToolMessage(toolCall.toolCallId, serverName, toolName, toolCall.args as Record<string, unknown>);
+              this.project.addToolMessage(toolCall.toolCallId, serverName, toolName, toolCall.args as Record<string, unknown>, undefined, message.usageReport);
             }
           }
         } else if (isTextContent(message.content)) {
           const content = extractTextContent(message.content);
+          if (!content.trim()) {
+            continue;
+          }
+
           this.project.processResponseMessage({
+            id: uuidv4(),
             action: 'response',
             content: content,
             finished: true,
+            usageReport: message.usageReport,
+            reflectedMessage: message.reflectedMessage,
           });
         }
       } else if (message.role === 'user') {
@@ -390,16 +454,16 @@ export class SessionManager {
         for (const part of message.content) {
           if (part.type === 'tool-result') {
             const [serverName, toolName] = extractServerNameToolName(part.toolName);
-            this.project.addToolMessage(part.toolCallId, serverName, toolName, undefined, JSON.stringify(part.result));
+            const promptContext = extractPromptContextFromToolResult(part.result);
+            this.project.addToolMessage(part.toolCallId, serverName, toolName, undefined, JSON.stringify(part.result), message.usageReport, promptContext);
 
             if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT) {
               // @ts-expect-error part.result.responses is expected to be in the result
               const responses = part.result?.responses;
               if (responses) {
-                responses.forEach((response: Pick<ResponseCompletedData, 'messageId' | 'content' | 'reflectedMessage'>) => {
-                  this.project.addResponseCompletedMessage({
+                responses.forEach((response: ResponseCompletedData) => {
+                  this.project.sendResponseCompleted({
                     ...response,
-                    baseDir: this.project.baseDir,
                   });
                 });
               }
@@ -407,7 +471,8 @@ export class SessionManager {
 
             // Handle agent tool results - process all messages from sub-agent
             if (serverName === POWER_TOOL_GROUP_NAME && toolName === POWER_TOOL_AGENT) {
-              const messages = part.result;
+              // @ts-expect-error part.result.messages is expected to be in the result
+              const messages = part.result?.messages ?? part.result;
               if (Array.isArray(messages)) {
                 messages.forEach((subMessage: ContextMessage) => {
                   if (subMessage.role === 'assistant') {
@@ -415,28 +480,51 @@ export class SessionManager {
                       for (const subPart of subMessage.content) {
                         if (subPart.type === 'text' && subPart.text) {
                           this.project.processResponseMessage({
+                            id: uuidv4(),
                             action: 'response',
                             content: subPart.text,
                             finished: true,
+                            usageReport: subMessage.usageReport,
+                            promptContext: subMessage.promptContext,
                           });
                         } else if (subPart.type === 'tool-call' && subPart.toolCallId) {
                           const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
-                          this.project.addToolMessage(subPart.toolCallId, subServerName, subToolName, subPart.args as Record<string, unknown>);
+                          this.project.addToolMessage(
+                            subPart.toolCallId,
+                            subServerName,
+                            subToolName,
+                            subPart.args as Record<string, unknown>,
+                            undefined,
+                            undefined,
+                            subMessage.promptContext,
+                          );
                         }
                       }
                     } else if (isTextContent(subMessage.content)) {
                       const content = extractTextContent(subMessage.content);
                       this.project.processResponseMessage({
+                        id: uuidv4(),
                         action: 'response',
                         content: content,
                         finished: true,
+                        usageReport: subMessage.usageReport,
+                        promptContext: subMessage.promptContext,
                       });
                     }
                   } else if (subMessage.role === 'tool') {
                     for (const subPart of subMessage.content) {
                       if (subPart.type === 'tool-result') {
                         const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
-                        this.project.addToolMessage(subPart.toolCallId, subServerName, subToolName, undefined, JSON.stringify(subPart.result));
+                        const promptContext = extractPromptContextFromToolResult(subPart.result) ?? subMessage.promptContext;
+                        this.project.addToolMessage(
+                          subPart.toolCallId,
+                          subServerName,
+                          subToolName,
+                          undefined,
+                          JSON.stringify(subPart.result),
+                          subMessage.usageReport,
+                          promptContext,
+                        );
                       }
                     }
                   }
@@ -488,12 +576,25 @@ export class SessionManager {
   }
 
   private debouncedSaveAsAutosaved = debounce(async () => {
-    logger.info('Saving session as autosaved', { projectDir: this.project.baseDir });
+    logger.info('Saving session as autosaved', {
+      projectDir: this.project.baseDir,
+      messages: this.contextMessages.length,
+      files: this.contextFiles.length,
+    });
     await this.save('.autosaved');
-  }, 3000);
+  }, 1000);
 
   private saveAsAutosaved() {
-    this.debouncedSaveAsAutosaved();
+    logger.debug('Saving autosaved session', {
+      projectDir: this.project.baseDir,
+      messages: this.contextMessages.length,
+      files: this.contextFiles.length,
+      enabled: this.autosaveEnabled,
+    });
+
+    if (this.autosaveEnabled) {
+      void this.debouncedSaveAsAutosaved();
+    }
   }
 
   async loadAutosaved(): Promise<void> {
@@ -555,7 +656,23 @@ export class SessionManager {
       }
 
       const content = await fs.readFile(sessionPath, 'utf8');
-      return content ? JSON.parse(content) : null;
+      const sessionData = content ? JSON.parse(content) : null;
+
+      if (sessionData && sessionData.contextMessages) {
+        // Migrate old format messages to new format if needed
+        sessionData.contextMessages = sessionData.contextMessages.map((message: ContextMessage & Record<string, unknown>) => {
+          // If message doesn't have usageReport property, it's old format
+          if (message.usageReport === undefined) {
+            return {
+              ...message,
+              usageReport: undefined,
+            } as ContextMessage;
+          }
+          return message as ContextMessage;
+        });
+      }
+
+      return sessionData;
     } catch (error) {
       logger.error('Failed to get session data:', { name, error });
       return null;

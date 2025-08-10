@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { ContextFile, EditFormat, FileEdit, MessageRole, Mode } from '@common/types';
+import { ContextFile, EditFormat, FileEdit, MessageRole, Mode, PromptContext } from '@common/types';
 import { Socket } from 'socket.io';
 
 import logger from '@/logger';
@@ -9,29 +9,26 @@ import {
   AddMessageMessage,
   AnswerQuestionMessage,
   ApplyEditsMessage,
+  CompactConversationMessage,
   DropFileMessage,
   InterruptResponseMessage,
   Message,
   MessageAction,
   PromptMessage,
+  RequestContextInfoMessage,
   RunCommandMessage,
   SetModelsMessage,
-  CompactConversationMessage,
   UpdateEnvVarsMessage,
 } from '@/messages';
 
 export class Connector {
-  socket: Socket;
-  baseDir: string;
-  listenTo: MessageAction[];
-  inputHistoryFile?: string;
-
-  constructor(socket: Socket, baseDir: string, listenTo: MessageAction[] = [], inputHistoryFile?: string) {
-    this.socket = socket;
-    this.baseDir = baseDir;
-    this.listenTo = listenTo;
-    this.inputHistoryFile = inputHistoryFile;
-  }
+  constructor(
+    readonly socket: Socket,
+    readonly baseDir: string,
+    readonly source: string | undefined,
+    readonly listenTo: MessageAction[] = [],
+    readonly inputHistoryFile?: string,
+  ) {}
 
   private sendMessage = (message: Message) => {
     if (!this.socket.connected) {
@@ -47,20 +44,20 @@ export class Connector {
 
   public sendPromptMessage(
     prompt: string,
+    promptContext: PromptContext,
     mode: Mode | null = null,
     architectModel: string | null = null,
-    promptId: string | null = null,
-    clearContext = false,
-    clearFiles = false,
+    messages: { role: MessageRole; content: string }[] = [],
+    files: ContextFile[] = [],
   ): void {
     const message: PromptMessage = {
       action: 'prompt',
       prompt,
+      promptContext,
       mode,
       architectModel,
-      promptId,
-      clearContext,
-      clearFiles,
+      messages,
+      files,
     };
     this.sendMessage(message);
   }
@@ -94,7 +91,7 @@ export class Connector {
     this.sendMessage(message);
   };
 
-  public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat?: EditFormat): void {
+  public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat: EditFormat): void {
     const message: SetModelsMessage = {
       action: 'set-models',
       mainModel,
@@ -149,6 +146,15 @@ export class Connector {
     const message: UpdateEnvVarsMessage = {
       action: 'update-env-vars',
       environmentVariables,
+    };
+    this.sendMessage(message);
+  }
+
+  public sendRequestTokensInfoMessage(messages: { role: MessageRole; content: string }[], files: ContextFile[]) {
+    const message: RequestContextInfoMessage = {
+      action: 'request-context-info',
+      messages,
+      files,
     };
     this.sendMessage(message);
   }

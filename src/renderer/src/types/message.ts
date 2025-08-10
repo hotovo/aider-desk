@@ -1,9 +1,11 @@
-import { Mode, TokensInfoData, UsageReportData } from '@common/types';
+import { Group, Mode, PromptContext, TokensInfoData, UsageReportData } from '@common/types';
 
 export interface Message {
   id: string;
-  type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool';
+  type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool' | 'group';
   content: string;
+  promptContext?: PromptContext;
+  children?: Message[];
 }
 
 export interface UserMessage extends Message {
@@ -80,4 +82,14 @@ export const isTokensInfoMessage = (message: Message): message is TokensInfoMess
 
 export const isToolMessage = (message: Message): message is ToolMessage => {
   return message.type === 'tool';
+};
+
+export interface GroupMessage extends Message {
+  type: 'group';
+  group: Group;
+  children: Message[];
+}
+
+export const isGroupMessage = (message: Message): message is GroupMessage => {
+  return message.type === 'group';
 };

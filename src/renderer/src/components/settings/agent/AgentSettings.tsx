@@ -1,5 +1,5 @@
 import { AgentProfile, GenericTool, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
-import { ReactNode, useRef, useState } from 'react';
+import React, { ReactNode, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
@@ -30,6 +30,8 @@ import {
   TODO_TOOL_UPDATE_ITEM_COMPLETION,
 } from '@common/tools';
 import { useTranslation } from 'react-i18next';
+import { MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdRepeat, MdThermostat } from 'react-icons/md';
+import { FaArrowRightFromBracket } from 'react-icons/fa6';
 
 import { McpServer, McpServerForm } from './McpServerForm';
 import { McpServerItem } from './McpServerItem';
@@ -132,6 +134,75 @@ const tools: Record<string, GenericTool[]> = {
       description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_CLEAR_ITEMS],
     },
   ],
+};
+
+// Helper functions for accordion summaries
+const getRunSettingsSummary = (profile: AgentProfile) => {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        <MdThermostat className="w-3 h-3 text-neutral-200" />
+        <span>{profile.temperature}</span>
+      </div>
+      <span>|</span>
+      <div className="flex items-center gap-1">
+        <MdRepeat className="w-3 h-3 text-neutral-200" />
+        <span>{profile.maxIterations}</span>
+      </div>
+      <span>|</span>
+      <div className="flex items-center gap-1">
+        <FaArrowRightFromBracket className="w-2.5 h-2.5 -rotate-90 text-neutral-200" />
+        <span>{profile.maxTokens}</span>
+      </div>
+    </div>
+  );
+};
+
+const getContextSummary = (profile: AgentProfile) => {
+  const enabled: ReactNode[] = [];
+  if (profile.includeContextFiles) {
+    enabled.push(<MdOutlineFileCopy key="files" className="w-3 h-3 text-neutral-200" />);
+  }
+  if (profile.includeRepoMap) {
+    enabled.push(<MdOutlineMap key="map" className="w-3 h-3 text-neutral-200" />);
+  }
+  return enabled.length > 0 ? (
+    <div className="flex items-center gap-2">
+      {enabled.map((icon, index) => (
+        <React.Fragment key={index}>{icon}</React.Fragment>
+      ))}
+    </div>
+  ) : (
+    <span className="text-xs text-neutral-400">None</span>
+  );
+};
+
+const getGenericToolsSummary = (profile: AgentProfile) => {
+  const enabled: ReactNode[] = [];
+  if (profile.useAiderTools) {
+    enabled.push(<MdOutlineHdrAuto key="aider" className="w-3 h-3 text-neutral-200" />);
+  }
+  if (profile.usePowerTools) {
+    enabled.push(<MdFlashOn key="power" className="w-3 h-3 text-neutral-200" />);
+  }
+  if (profile.useTodoTools) {
+    enabled.push(<MdOutlineChecklist key="todo" className="w-3 h-3 text-neutral-200" />);
+  }
+  return enabled.length > 0 ? (
+    <div className="flex items-center gap-2">
+      {enabled.map((icon, index) => (
+        <React.Fragment key={index}>{icon}</React.Fragment>
+      ))}
+    </div>
+  ) : (
+    <span className="text-xs text-neutral-400">None</span>
+  );
+};
+
+const getMcpServersSummary = (profile: AgentProfile, mcpServers: Record<string, McpServerConfig>) => {
+  const enabledCount = (profile.enabledServers || []).filter((serverName) => mcpServers[serverName]).length;
+  const totalCount = Object.keys(mcpServers).length;
+  return `${enabledCount}/${totalCount}`;
 };
 
 type Props = {
@@ -293,9 +364,14 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
     }
   };
 
-  const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) => (
+  const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void, summary?: ReactNode) => (
     <Accordion
-      title={<div className="flex-1 text-left text-sm font-medium px-2">{title}</div>}
+      title={
+        <div className="flex-1 text-left text-sm font-medium px-2 flex items-center justify-between">
+          <div>{title}</div>
+          {summary && <div className="text-xs text-neutral-400 ml-2">{summary}</div>}
+        </div>
+      }
       chevronPosition="right"
       className="mb-2 border rounded-md border-neutral-700"
       isOpen={open}
@@ -425,6 +501,9 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                   onChange={(e) => handleProfileSettingChange('minTimeBetweenToolCalls', Number(e.target.value))}
                 />
               </div>,
+              undefined,
+              undefined,
+              <span className="text-xs text-neutral-400">{getRunSettingsSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -456,6 +535,9 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                   onChange={(checked) => handleProfileSettingChange('includeRepoMap', checked)}
                 />
               </div>,
+              undefined,
+              undefined,
+              <span className="text-xs text-neutral-400">{getContextSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -493,6 +575,9 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                   <div className="text-xs text-neutral-400 my-4 text-center">{t('settings.agent.noGenericToolsConfigured')}</div>
                 )}
               </div>,
+              undefined,
+              undefined,
+              <span className="text-xs text-neutral-400">{getGenericToolsSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -544,6 +629,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               </div>,
               mcpServersExpanded,
               setMcpServersExpanded,
+              <span className="text-xs text-neutral-400">{getMcpServersSummary(selectedProfile, mcpServers)}</span>,
             )}
 
             <div className="mt-4 pt-2 flex justify-end items-center">

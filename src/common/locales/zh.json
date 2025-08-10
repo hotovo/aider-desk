@@ -83,7 +83,24 @@
       "configureLater": "如果您愿意，可以稍后在设置中配置这些。",
       "connectTitle": "连接您的AI模型",
       "connectDescription": "Aider Desk 支持多个AI提供商，包括OpenAI、Anthropic、Google Gemini等。您的API密钥安全存储在本地机器上，绝不会被共享。",
-      "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。"
+      "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。",
+      "advancedSettings": "高级设置",
+      "order": "排序",
+      "orderDescription": "按顺序尝试的提供商列表（例如 [\"anthropic\", \"openai\"]）",
+      "allowFallbacks": "允许备用选项",
+      "allowFallbacksDescription": "当主提供商不可用时是否允许使用备用提供商",
+      "dataCollection": "数据收集",
+      "dataCollectionDescription": "控制是否使用可能存储数据的提供商",
+      "only": "仅限",
+      "onlyDescription": "仅允许用于此请求的提供商列表",
+      "ignore": "忽略",
+      "ignoreDescription": "为此请求跳过的提供商列表",
+      "quantizations": "量化",
+      "quantizationsDescription": "按量化级别过滤的列表（例如 [\"int4\", \"int8\"]）",
+      "sort": "排序",
+      "sortDescription": "按价格或吞吐量对提供商进行排序",
+      "requireParameters": "要求参数",
+      "requireParametersDescription": "是否要求提供商支持模型参数。"
     },
     "agent": {
       "title": "认识您的AI代理",
@@ -139,13 +156,18 @@
   "model": {
     "label": "模型",
     "selectLabel": "模型",
-    "placeholder": "输入模型名称"
+    "placeholder": "输入模型名称",
+    "chooseModelsToAdd": "选择要添加的模型..."
   },
   "openai": {
     "apiKey": "API 密钥",
     "baseUrl": "基础 URL",
     "modelName": "模型",
-    "baseUrlPlaceholder": "例如 http://localhost:8080/v1"
+    "baseUrlPlaceholder": "例如 http://localhost:8080/v1",
+    "reasoningEffort": "推理努力",
+    "reasoningEffortLow": "低",
+    "reasoningEffortMedium": "中",
+    "reasoningEffortHigh": "高"
   },
   "ollama": {
     "baseUrl": "基础 URL",
@@ -204,7 +226,8 @@
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
-    "requesty": "Requesty"
+    "requesty": "Requesty",
+    "vertex-ai": "Vertex AI"
   },
   "select": {
     "placeholder": "选择选项",
@@ -285,7 +308,8 @@
       "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。"
     },
     "common": {
-      "showSecrets": "显示密钥"
+      "showSecrets": "显示密钥",
+      "learnMore": "了解更多"
     },
     "notificationsEnabled": "通知已启用",
     "zoom": "缩放级别",
@@ -308,6 +332,14 @@
       "agentOnly": "仅代理",
       "showAllProviders": "显示所有提供商",
       "additionalProvidersInfo": "需要更多提供商？您可以在<aiderTab>Aider 设置</aiderTab>中通过设置环境变量来配置更多 LLM 提供商。"
+    },
+    "vertexAi": {
+      "project": "项目",
+      "projectPlaceholder": "输入您的 Google Cloud 项目 ID",
+      "location": "位置",
+      "locationPlaceholder": "输入您的 Google Cloud 位置",
+      "credentials": "Google Cloud 凭据 (可选)",
+      "credentialsPlaceholder": "输入您的 Google Cloud 凭据 JSON"
     },
     "about": {
       "version": "版本",
@@ -334,7 +366,8 @@
     "redo": "重做",
     "edit": "编辑",
     "editingLastMessage": "正在编辑最后一条消息",
-    "cancelEdit": "取消编辑"
+    "cancelEdit": "取消编辑",
+    "group": "分组"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
@@ -454,7 +487,8 @@
     "saveTodo": "保存",
     "cancelTodo": "取消",
     "noTodos": "没有待办事项",
-    "confirmDelete": "确定要删除这个待办事项吗？"
+    "confirmDelete": "确定要删除这个待办事项吗？",
+    "clearAllTodos": "清除所有任务"
   },
   "tool": {
     "noDescription": "无描述",
@@ -524,22 +558,25 @@
   "toolMessage": {
     "toolLabel": "工具: {{server}}/{{tool}}",
     "arguments": "参数:",
-    "executing": "工具执行中...",
+    "executing": "执行工具...",
     "result": "结果:",
     "error": "执行工具时出错:",
     "denied": "拒绝访问",
     "deniedByReason": "用户拒绝: {{reason}}",
     "aider": {
-      "addContextFiles": "添加文件到 Aider 上下文: {{paths}}",
-      "dropContextFiles": "从 Aider 上下文移除文件: {{paths}}",
-      "runPrompt": "运行 Aider 提示: "
+      "addContextFiles": "添加文件到Aider上下文:\n{{paths}}",
+      "dropContextFiles": "从Aider上下文删除文件:\n{{paths}}",
+      "runPrompt": "在Aider中运行提示",
+      "working": "Aider 正在工作中...",
+      "finishedTask": "Aider 完成了任务。",
+      "noChanges": "Aider 未进行任何更改。"
     },
     "power": {
       "fileRead": "读取文件",
       "fileWrite": {
-        "overwrite": "重写文件",
+        "overwrite": "覆盖文件",
         "append": "追加到文件",
-        "createOnly": "创建文件"
+        "createOnly": "仅创建文件"
       },
       "fileEdit": {
         "title": "编辑文件",
@@ -549,9 +586,9 @@
         "replaceAll": "替换所有"
       },
       "glob": "查找匹配模式的文件: {{pattern}}",
-      "grep": "在匹配 {{filePattern}} 的文件中搜索 {{searchTerm}}",
-      "bash": "执行 bash 命令",
-      "semanticSearch": "执行语义搜索: {{query}} {{path}}",
+      "grep": "在“{{filePattern}}”中搜索“{{searchTerm}}”",
+      "bash": "运行命令",
+      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”",
       "agent": {
         "running": "正在运行子代理...",
         "completed": "子代理执行了以下查询:",
@@ -571,22 +608,26 @@
   },
   "promptField": {
     "placeholders": {
-      "0": "今天我能帮您什么?",
-      "1": "有什么任务需要我协助?",
-      "2": "您想让我编写什么代码?",
-      "3": "让我帮您解决问题",
-      "4": "需要我帮您改进什么吗?",
-      "5": "想重构一些代码吗?",
-      "6": "需要我帮您优化算法吗?",
-      "7": "让我帮您设计新功能",
-      "8": "需要我帮您调试问题吗?",
-      "9": "让我帮您创建测试套件",
-      "10": "让我帮您实现设计模式",
-      "11": "需要我解释一些代码吗?",
-      "12": "让我帮您现代化遗留代码",
-      "13": "需要我帮您编写文档吗?",
-      "14": "让我帮您提高性能",
-      "15": "给我一些任务吧!"
+      "0": "更新 UserValidator 类以添加邮箱格式验证...",
+      "1": "修复 DataProcessor.processBatch() 中的内存泄漏，通过关闭...",
+      "2": "为 PaymentService.chargeCard() 添加错误处理，使用适当的...",
+      "3": "创建 React 组件 UserProfileCard，包含 props 接口...",
+      "4": "通过添加索引来优化 UserRepository.findByEmail() 中的 SQL 查询...",
+      "5": "使用 Jest 和模拟为 AuthController.login() 添加单元测试...",
+      "6": "在 ChartComponent 中实现缺失的 handleResize() 方法...",
+      "7": "更新 package.json 添加 TypeScript 依赖并配置...",
+      "8": "为 ContactForm 的 handleSubmit 函数添加输入验证...",
+      "9": "修复 calculateTotal() 中小数值被错误处理的 bug...",
+      "10": "使用 Winston 为 API 中间件添加请求日志记录...",
+      "11": "为 Node.js 应用创建多阶段构建的 Dockerfile...",
+      "12": "使用 express-rate-limit 为 /api/users 端点添加限流中间件...",
+      "13": "在 TodoService 中实现缺失的 deleteTodo() 函数...",
+      "14": "为 API 响应对象添加 TypeScript 接口...",
+      "15": "修复移动端菜单显示不正确的 CSS 问题...",
+      "16": "使用 dotenv 和 zod 添加环境变量验证...",
+      "17": "创建数据库迁移，为 users 表添加 'last_login' 列...",
+      "18": "为 React 应用添加错误边界以捕获组件错误...",
+      "19": "在 ProductList 的 fetchProducts 方法中实现分页逻辑..."
     },
     "questionPlaceholder": "...或建议其他内容",
     "answers": {
@@ -640,7 +681,7 @@
     "copy-context": "将当前聊天上下文复制为 Markdown 格式，适合粘贴到 Web UI 中。",
     "drop": "从上下文中删除文件以释放上下文空间。",
     "edit-last": "编辑最后一条用户消息",
-    "init": "使用项目信息初始化 PROJECT.md 规则文件",
+    "init": "使用项目信息初始化 AGENTS.md 规则文件",
     "agentModeOnly": "仅在代理模式下可用",
     "map": "打印当前仓库地图",
     "map-refresh": "强制刷新仓库地图",
@@ -691,14 +732,21 @@
     "thisMonth": "本月",
     "today": "今天",
     "all": "全部",
+    "groupBy": "分组方式",
+    "periods": {
+      "hour": "小时",
+      "day": "天",
+      "month": "月",
+      "year": "年"
+    },
     "tabs": {
       "table": "表格视图",
       "charts": "图表视图"
     },
     "charts": {
       "tokenUsageTrend": "令牌使用趋势",
-      "dailyCostBreakdown": "每日成本分解",
-      "dailyMessageBreakdown": "每日消息分解",
+      "costBreakdown": "成本明细",
+      "MessageBreakdown": "消息明细",
       "modelUsageDistribution": "模型使用分布",
       "inputTokens": "输入令牌",
       "outputTokens": "输出令牌",
@@ -722,5 +770,14 @@
       "totalTokens": "总令牌数",
       "cost": "成本"
     }
+  },
+  "terminal": {
+    "copyOutput": "复制终端输出到提示",
+    "minimize": "最小化终端",
+    "addTerminal": "添加新终端"
+  },
+  "contextMenu": {
+    "copy": "复制",
+    "paste": "粘贴"
   }
 }

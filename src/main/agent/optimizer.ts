@@ -30,7 +30,7 @@ export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex:
   optimizedMessages = optimizeAiderMessages(optimizedMessages);
   optimizedMessages = optimizeAgentMessages(optimizedMessages);
 
-  logger.info('Optimized messages:', {
+  logger.debug('Optimized messages:', {
     before: {
       count: messages.length,
       roles: messages.map((m) => m.role),
@@ -102,6 +102,7 @@ const optimizeAiderMessages = (messages: CoreMessage[]): CoreMessage[] => {
               toolResultPart.result = {
                 ...result,
                 responses: undefined,
+                promptContext: undefined,
               };
             }
           } catch {
@@ -127,11 +128,13 @@ const optimizeAgentMessages = (messages: CoreMessage[]): CoreMessage[] => {
       for (const toolResultPart of toolContent) {
         if (toolResultPart.toolName === `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}` && toolResultPart.result) {
           try {
-            const result = toolResultPart.result;
+            const result = toolResultPart.result as Record<string, unknown>;
             // Check if result is an array of messages
-            if (Array.isArray(result) && result.length > 0) {
+            if (Array.isArray(result.messages) && result.messages.length > 0) {
               // Replace the array with only the last message for LLM processing
-              toolResultPart.result = result[result.length - 1];
+              toolResultPart.result = {
+                messages: [result.messages[result.messages.length - 1]],
+              };
             }
           } catch {
             // ignore

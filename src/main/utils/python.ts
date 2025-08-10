@@ -37,7 +37,7 @@ export const getCurrentPythonLibVersion = async (library: string): Promise<strin
     return null;
   } catch (error) {
     // Log error but return null as expected for 'not found' or other issues
-    logger.error(`Failed to get current version for library '${library}'`, {
+    logger.warn(`Failed to get current version for library '${library}'`, {
       error,
     });
     return null;

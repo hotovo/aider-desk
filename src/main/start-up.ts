@@ -67,7 +67,7 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
   const pythonBinPath = getPythonVenvBinPath();
   let aiderVersionSpecifier = 'aider-chat';
   if (process.env.AIDER_DESK_AIDER_VERSION) {
-    if (process.env.AIDER_DESK_AIDER_VERSION.startsWith('git+')) {
+    if (process.env.AIDER_DESK_AIDER_VERSION.startsWith('git+') || path.isAbsolute(process.env.AIDER_DESK_AIDER_VERSION)) {
       aiderVersionSpecifier = process.env.AIDER_DESK_AIDER_VERSION;
     } else {
       aiderVersionSpecifier = `aider-chat==${process.env.AIDER_DESK_AIDER_VERSION}`;
@@ -85,6 +85,8 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
     'websocket-client==1.8.0',
     'nest-asyncio==1.6.0',
     'boto3==1.38.25',
+    'opentelemetry-api==1.35.0',
+    'opentelemetry-sdk==1.35.0',
     ...extraPackages,
   ];
 

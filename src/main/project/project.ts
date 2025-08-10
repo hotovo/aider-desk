@@ -11,6 +11,7 @@ import {
   AgentProfile,
   ContextFile,
   ContextMessage,
+  ContextAssistantMessage,
   CustomCommand,
   EditFormat,
   FileEdit,
@@ -21,6 +22,7 @@ import {
   Mode,
   ModelsData,
   ProjectSettings,
+  PromptContext,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -36,27 +38,27 @@ import {
 } from '@common/types';
 import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
 import {
-  INIT_PROJECT_RULES_AGENT_PROFILE,
-  COMPACT_CONVERSATION_AGENT_PROFILE,
-  getLlmProviderConfig,
-  isOpenAiProvider,
-  isOllamaProvider,
-  isOpenAiCompatibleProvider,
-  isAnthropicProvider,
-  isGeminiProvider,
-  isDeepseekProvider,
-  isOpenRouterProvider,
-  isBedrockProvider,
-  isLmStudioProvider,
-  OpenAiCompatibleProvider,
   AnthropicProvider,
   BedrockProvider,
-  OpenRouterProvider,
+  COMPACT_CONVERSATION_AGENT_PROFILE,
   DeepseekProvider,
   GeminiProvider,
-  OpenAiProvider,
-  OllamaProvider,
+  getLlmProviderConfig,
+  INIT_PROJECT_AGENTS_PROFILE,
+  isAnthropicProvider,
+  isBedrockProvider,
+  isDeepseekProvider,
+  isGeminiProvider,
+  isLmStudioProvider,
+  isOllamaProvider,
+  isOpenAiCompatibleProvider,
+  isOpenAiProvider,
+  isOpenRouterProvider,
   LmStudioProvider,
+  OllamaProvider,
+  OpenAiCompatibleProvider,
+  OpenAiProvider,
+  OpenRouterProvider,
 } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
@@ -64,7 +66,7 @@ import { parse } from '@dotenvx/dotenvx';
 
 import type { SimpleGit } from 'simple-git';
 
-import { getInitProjectPrompt, getCompactConversationPrompt, getSystemPrompt } from '@/agent/prompts';
+import { getCompactConversationPrompt, getInitProjectPrompt, getSystemPrompt } from '@/agent/prompts';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
 import { TaskManager } from '@/tasks';
 import { SessionManager } from '@/session';
@@ -76,7 +78,7 @@ import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
-import { TelemetryManager } from '@/telemetry';
+import { getLangfuseEnvironmentVariables, TelemetryManager } from '@/telemetry';
 
 export class Project {
   private process: ChildProcessWithoutNullStreams | null = null;
@@ -87,17 +89,18 @@ export class Project {
   private questionAnswers: Map<string, 'y' | 'n'> = new Map();
   private allTrackedFiles: string[] = [];
   private currentResponseMessageId: string | null = null;
-  private currentPromptId: string | null = null;
+  private currentPromptContext: PromptContext | null = null;
   private inputHistoryFile = '.aider.input.history';
   private aiderModels: ModelsData | null = null;
   private tokensInfo: TokensInfoData;
   private currentPromptResponses: ResponseCompletedData[] = [];
   private runPromptResolves: ((value: ResponseCompletedData[]) => void)[] = [];
-  private sessionManager: SessionManager = new SessionManager(this);
+  public sessionManager: SessionManager = new SessionManager(this);
   private customCommandManager: CustomCommandManager;
   private taskManager: TaskManager = new TaskManager();
   private commandOutputs: Map<string, string> = new Map();
   private repoMap: string = '';
+  private aiderStarting: boolean = false;
 
   aiderTotalCost: number = 0;
   agentTotalCost: number = 0;
@@ -146,6 +149,8 @@ export class Project {
       logger.error('Error loading session:', { error });
     }
 
+    this.sessionManager.enableAutosave();
+
     this.sessionManager.getContextFiles().forEach((contextFile) => {
       this.mainWindow.webContents.send('file-added', {
         baseDir: this.baseDir,
@@ -153,25 +158,32 @@ export class Project {
       });
     });
 
-    void this.runAider();
-    void this.sendInputHistoryUpdatedEvent();
-
     this.agentTotalCost = 0;
     this.aiderTotalCost = 0;
-    this.currentPromptId = null;
+    this.currentPromptContext = null;
     this.currentResponseMessageId = null;
     this.currentCommand = null;
     this.currentQuestion = null;
     this.currentQuestionResolves = [];
     this.questionAnswers.clear();
 
-    void this.updateAgentEstimatedTokens();
+    await Promise.all([this.startAider(), this.sendInputHistoryUpdatedEvent(), this.updateContextInfo()]);
+
+    this.sendContextFilesUpdated();
+    this.mainWindow.webContents.send('project-started', this.baseDir);
   }
 
   public addConnector(connector: Connector) {
     logger.info('Adding connector for base directory:', {
       baseDir: this.baseDir,
+      source: connector.source,
     });
+
+    // Set aiderStarting to false when a connector with source==='aider' is added
+    if (connector.source === 'aider') {
+      this.aiderStarting = false;
+    }
+
     this.connectors.push(connector);
     if (connector.listenTo.includes('add-file')) {
       const contextFiles = this.sessionManager.getContextFiles();
@@ -187,6 +199,9 @@ export class Project {
     }
     if (connector.listenTo.includes('update-env-vars')) {
       this.sendUpdateEnvVars(this.store.getSettings());
+    }
+    if (connector.listenTo.includes('request-context-info')) {
+      connector.sendRequestTokensInfoMessage(this.sessionManager.toConnectorMessages(), this.getContextFiles());
     }
 
     // Set input history file if provided by the connector
@@ -259,18 +274,21 @@ export class Project {
     }
   }
 
-  private async runAider(): Promise<void> {
+  private async startAider(): Promise<void> {
     if (this.process) {
       await this.killAider();
     }
 
     await this.checkAndCleanupPidFile();
 
+    // Set aiderStarting to true when starting aider
+    this.aiderStarting = true;
+
     const settings = this.store.getSettings();
     const projectSettings = this.store.getProjectSettings(this.baseDir);
     const mainModel = projectSettings.mainModel || DEFAULT_MAIN_MODEL;
     const weakModel = projectSettings.weakModel;
-    const editFormat = projectSettings.editFormat;
+    const modelEditFormats = projectSettings.modelEditFormats;
     const reasoningEffort = projectSettings.reasoningEffort;
     const environmentVariables = this.getEnvironmentVariablesForAider(settings);
     const thinkingTokens = projectSettings.thinkingTokens;
@@ -307,8 +325,8 @@ export class Project {
       args.push('--weak-model', weakModel);
     }
 
-    if (editFormat) {
-      args.push('--edit-format', editFormat);
+    if (modelEditFormats[mainModel]) {
+      args.push('--edit-format', modelEditFormats[mainModel]);
     }
 
     if (reasoningEffort !== undefined && !optionsArgsSet.has('--reasoning-effort')) {
@@ -376,6 +394,11 @@ export class Project {
       }
 
       logger.error('Aider stderr:', { baseDir: this.baseDir, error: output });
+
+      // Send stderr errors as log messages while aider is starting
+      if (this.aiderStarting) {
+        this.addLogMessage('error', output);
+      }
     });
 
     this.process.on('close', (code) => {
@@ -419,6 +442,13 @@ export class Project {
       AWS_SECRET_ACCESS_KEY: (isBedrockProvider(bedrockProvider) && bedrockProvider.secretAccessKey) || undefined,
       OLLAMA_API_BASE: (ollamaBaseUrl && (ollamaBaseUrl.endsWith('/api') ? ollamaBaseUrl.slice(0, -4) : ollamaBaseUrl)) || undefined,
       ...parse(settings.aider.environmentVariables),
+      ...this.getTelemetryEnvironmentVariablesForAider(settings),
+    };
+  }
+
+  private getTelemetryEnvironmentVariablesForAider(settings: SettingsData): Record<string, unknown> {
+    return {
+      ...getLangfuseEnvironmentVariables(this.baseDir, settings),
     };
   }
 
@@ -433,6 +463,7 @@ export class Project {
     }
     await this.killAider();
     this.customCommandManager.dispose();
+    this.sessionManager.disableAutosave();
   }
 
   public async saveSession(name: string): Promise<void> {
@@ -450,7 +481,7 @@ export class Project {
     }
 
     await this.sessionManager.loadMessages(session.contextMessages || []);
-    await this.updateAgentEstimatedTokens();
+    await this.updateContextInfo();
   }
 
   public async loadSessionFiles(name: string) {
@@ -460,7 +491,7 @@ export class Project {
     }
 
     await this.sessionManager.loadFiles(session.contextFiles || []);
-    await this.updateAgentEstimatedTokens();
+    await this.updateContextInfo();
   }
 
   public async deleteSession(name: string): Promise<void> {
@@ -491,7 +522,7 @@ export class Project {
         this.currentCommand = null;
         this.currentQuestion = null;
         this.currentResponseMessageId = null;
-        this.currentPromptId = null;
+        this.currentPromptContext = null;
         this.currentPromptResponses = [];
 
         this.runPromptResolves.forEach((resolve) => resolve([]));
@@ -511,21 +542,24 @@ export class Project {
     return this.connectors.filter((connector) => connector.listenTo.includes(action));
   }
 
-  public async runPrompt(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
-    if (this.currentQuestion) {
-      if (this.answerQuestion('n', prompt)) {
-        // processed by the answerQuestion function
-        return [];
-      }
-    }
-
-    // If a prompt is already running, wait for it to finish
-    if (this.currentPromptId) {
+  private async waitForCurrentPromptToFinish() {
+    if (this.currentPromptContext) {
       logger.info('Waiting for prompt to finish...');
       await new Promise<void>((resolve) => {
         this.runPromptResolves.push(() => resolve());
       });
     }
+  }
+
+  public async runPrompt(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
+    if (this.currentQuestion) {
+      if (this.answerQuestion('n', prompt)) {
+        logger.debug('Processed by the answerQuestion function.');
+        return [];
+      }
+    }
+
+    await this.waitForCurrentPromptToFinish();
 
     logger.info('Running prompt:', {
       baseDir: this.baseDir,
@@ -540,6 +574,11 @@ export class Project {
 
     this.telemetryManager.captureRunPrompt(mode);
 
+    // Generate promptContext for this run
+    const promptContext: PromptContext = {
+      id: uuidv4(),
+    };
+
     if (mode === 'agent') {
       const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
       logger.debug('AgentProfile:', profile);
@@ -548,23 +587,42 @@ export class Project {
         throw new Error('No active Agent profile found');
       }
 
-      return this.runPromptInAgent(profile, prompt);
+      return this.runPromptInAgent(profile, prompt, promptContext);
     } else {
-      return this.runPromptInAider(prompt, mode);
+      return this.runPromptInAider(prompt, promptContext, mode);
     }
   }
 
-  public async runPromptInAider(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
-    const responses = await this.sendPrompt(prompt, mode);
+  public async runPromptInAider(prompt: string, promptContext: PromptContext, mode?: Mode): Promise<ResponseCompletedData[]> {
+    const responses = await this.sendPrompt(prompt, promptContext, mode);
+    logger.debug('Responses:', { responses });
 
     // add messages to session
-    this.sessionManager.addContextMessage(MessageRole.User, prompt);
+    this.sessionManager.addContextMessage({
+      id: promptContext.id,
+      role: MessageRole.User,
+      content: prompt,
+      promptContext,
+    });
     for (const response of responses) {
-      if (response.reflectedMessage) {
-        this.sessionManager.addContextMessage(MessageRole.User, response.reflectedMessage);
-      }
-      if (response.content) {
-        this.sessionManager.addContextMessage(MessageRole.Assistant, response.content);
+      // if (response.reflectedMessage) {
+      //   this.sessionManager.addContextMessage(MessageRole.User, response.reflectedMessage);
+      // }
+      if (response.content || response.reflectedMessage) {
+        // Create enhanced assistant message with full metadata
+        const assistantMessage: ContextAssistantMessage = {
+          id: response.messageId,
+          role: MessageRole.Assistant,
+          content: response.content,
+          usageReport: response.usageReport,
+          reflectedMessage: response.reflectedMessage,
+          editedFiles: response.editedFiles,
+          commitHash: response.commitHash,
+          commitMessage: response.commitMessage,
+          diff: response.diff,
+          promptContext,
+        };
+        this.sessionManager.addContextMessage(assistantMessage);
       }
     }
 
@@ -576,21 +634,24 @@ export class Project {
   public async runPromptInAgent(
     profile: AgentProfile,
     prompt: string,
+    promptContext: PromptContext = { id: uuidv4() },
     contextMessages?: ContextMessage[],
     contextFiles?: ContextFile[],
     systemPrompt?: string,
   ): Promise<ResponseCompletedData[]> {
-    const agentMessages = await this.agent.runAgent(this, profile, prompt, contextMessages, contextFiles, systemPrompt);
+    const agentMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt);
     if (agentMessages.length > 0) {
       agentMessages.forEach((message) => this.sessionManager.addContextMessage(message));
 
-      // send messages to connectors (aider)
+      // send messages to connectors
       this.sessionManager.toConnectorMessages(agentMessages).forEach((message) => {
         this.sendAddMessage(message.role, message.content, false);
       });
     }
 
     this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
+    this.sendRequestContextInfo();
+
     return [];
   }
 
@@ -600,18 +661,28 @@ export class Project {
     contextFiles: ContextFile[],
     systemPrompt?: string,
     abortSignal?: AbortSignal,
+    promptContext?: PromptContext,
   ): Promise<ContextMessage[]> {
-    return await this.agent.runAgent(this, profile, prompt, [], contextFiles, systemPrompt, abortSignal);
+    return await this.agent.runAgent(this, profile, prompt, promptContext, [], contextFiles, systemPrompt, abortSignal);
   }
 
-  public sendPrompt(prompt: string, mode?: Mode, clearContext = false, clearFiles = false): Promise<ResponseCompletedData[]> {
+  public sendPrompt(
+    prompt: string,
+    promptContext: PromptContext = { id: uuidv4() },
+    mode?: Mode,
+    messages?: { role: MessageRole; content: string }[],
+    files?: ContextFile[],
+  ): Promise<ResponseCompletedData[]> {
     this.currentPromptResponses = [];
     this.currentResponseMessageId = null;
-    this.currentPromptId = uuidv4();
+    this.currentPromptContext = promptContext;
 
-    this.findMessageConnectors('prompt').forEach((connector) =>
-      connector.sendPromptMessage(prompt, mode, this.getArchitectModel(), this.currentPromptId, clearContext, clearFiles),
-    );
+    const connectorMessages = messages || this.sessionManager.toConnectorMessages();
+    const contextFiles = files || this.sessionManager.getContextFiles();
+
+    this.findMessageConnectors('prompt').forEach((connector) => {
+      connector.sendPromptMessage(prompt, promptContext, mode, this.getArchitectModel(), connectorMessages, contextFiles);
+    });
 
     // Wait for prompt to finish and return collected responses
     return new Promise((resolve) => {
@@ -623,7 +694,16 @@ export class Project {
     return this.store.getProjectSettings(this.baseDir).architectModel || null;
   }
 
-  public promptFinished() {
+  public promptFinished(promptId?: string) {
+    if (promptId && promptId !== this.currentPromptContext?.id) {
+      logger.debug('Received prompt finished for different prompt id', {
+        baseDir: this.baseDir,
+        expectedPromptId: this.currentPromptContext?.id,
+        receivedPromptId: promptId,
+      });
+      return;
+    }
+
     if (this.currentResponseMessageId) {
       this.mainWindow.webContents.send('response-completed', {
         messageId: this.currentResponseMessageId,
@@ -636,7 +716,7 @@ export class Project {
     // Notify waiting prompts with collected responses
     const responses = [...this.currentPromptResponses];
     this.currentPromptResponses = [];
-    this.currentPromptId = null;
+    this.currentPromptContext = null;
     this.closeCommandOutput();
 
     while (this.runPromptResolves.length) {
@@ -647,18 +727,15 @@ export class Project {
     }
   }
 
-  public processResponseMessage(message: ResponseMessage, forceNewId = false) {
-    if (!this.currentResponseMessageId || forceNewId) {
-      this.currentResponseMessageId = uuidv4();
-    }
-
+  public processResponseMessage(message: ResponseMessage) {
     if (!message.finished) {
       logger.debug(`Sending response chunk to ${this.baseDir}`);
       const data: ResponseChunkData = {
-        messageId: message.id || this.currentResponseMessageId,
+        messageId: message.id,
         baseDir: this.baseDir,
         chunk: message.content,
         reflectedMessage: message.reflectedMessage,
+        promptContext: message.promptContext,
       };
       this.mainWindow.webContents.send('response-chunk', data);
     } else {
@@ -672,7 +749,7 @@ export class Project {
         : undefined;
 
       if (usageReport) {
-        this.dataManager.saveMessage(message.id || this.currentResponseMessageId, 'assistant', this.baseDir, usageReport.model, usageReport, message.content);
+        this.dataManager.saveMessage(message.id, 'assistant', this.baseDir, usageReport.model, usageReport, message.content);
       }
 
       if (usageReport) {
@@ -680,7 +757,7 @@ export class Project {
         this.updateTotalCosts(usageReport);
       }
       const data: ResponseCompletedData = {
-        messageId: message.id || this.currentResponseMessageId,
+        messageId: message.id,
         content: message.content,
         reflectedMessage: message.reflectedMessage,
         baseDir: this.baseDir,
@@ -689,20 +766,22 @@ export class Project {
         commitMessage: message.commitMessage,
         diff: message.diff,
         usageReport,
+        sequenceNumber: message.sequenceNumber,
+        promptContext: message.promptContext,
       };
 
-      this.addResponseCompletedMessage(data);
+      this.sendResponseCompleted(data);
       this.currentResponseMessageId = null;
       this.closeCommandOutput();
 
       // Collect the completed response
       this.currentPromptResponses.push(data);
+      // Sort by sequence number when adding
+      this.currentPromptResponses.sort((a, b) => (a.sequenceNumber || 0) - (b.sequenceNumber || 0));
     }
-
-    return this.currentResponseMessageId;
   }
 
-  addResponseCompletedMessage(data: ResponseCompletedData) {
+  sendResponseCompleted(data: ResponseCompletedData) {
     this.mainWindow.webContents.send('response-completed', data);
   }
 
@@ -788,10 +867,19 @@ export class Project {
       readOnly: contextFile.readOnly,
     });
     const fileToAdd = { ...contextFile, path: normalizedPath };
-    if (!(await this.sessionManager.addContextFile(fileToAdd))) {
+    const addedFiles = await this.sessionManager.addContextFile(fileToAdd);
+    if (addedFiles.length === 0) {
       return false;
     }
-    this.sendAddFile(fileToAdd);
+
+    // Send add file message for each added file
+    for (const addedFile of addedFiles) {
+      this.sendAddFile(addedFile);
+    }
+
+    this.sendContextFilesUpdated();
+    await this.updateContextInfo(true, true);
+
     return true;
   }
 
@@ -802,13 +890,15 @@ export class Project {
   public dropFile(filePath: string) {
     const normalizedPath = this.normalizeFilePath(filePath);
     logger.info('Dropping file or folder:', { path: normalizedPath });
-    const file = this.sessionManager.dropContextFile(normalizedPath);
-    if (file) {
-      this.sendDropFile(file.path, file.readOnly);
-    } else {
-      // send the path as it might be a folder
-      this.sendDropFile(normalizedPath);
+    const droppedFiles = this.sessionManager.dropContextFile(normalizedPath);
+
+    // Send drop file message for each dropped file
+    for (const droppedFile of droppedFiles) {
+      this.sendDropFile(droppedFile.path, droppedFile.readOnly);
     }
+
+    this.sendContextFilesUpdated();
+    void this.updateContextInfo(true, true);
   }
 
   public sendDropFile(filePath: string, readOnly?: boolean, noUpdate?: boolean): void {
@@ -819,6 +909,13 @@ export class Project {
     this.findMessageConnectors('drop-file').forEach((connector) => connector.sendDropFileMessage(pathToSend, noUpdate));
   }
 
+  private sendContextFilesUpdated() {
+    this.mainWindow.webContents.send('context-files-updated', {
+      baseDir: this.baseDir,
+      files: this.sessionManager.getContextFiles(),
+    });
+  }
+
   public runCommand(command: string, addToHistory = true) {
     if (this.currentQuestion) {
       this.answerQuestion('n');
@@ -826,24 +923,22 @@ export class Project {
 
     logger.info('Running command:', { command });
 
-    if (command.trim() === 'reset') {
-      this.sessionManager.clearMessages();
-      this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
-    }
-
     if (addToHistory) {
       void this.addToInputHistory(`/${command}`);
     }
     this.findMessageConnectors('run-command').forEach((connector) => connector.sendRunCommandMessage(command));
+
+    if (command.trim() === 'reset') {
+      this.sessionManager.clearMessages();
+      this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
+      void this.updateContextInfo(true, true);
+    }
   }
 
   public updateContextFiles(contextFiles: ContextFile[]) {
     this.sessionManager.setContextFiles(contextFiles);
-
-    this.mainWindow.webContents.send('context-files-updated', {
-      baseDir: this.baseDir,
-      files: contextFiles,
-    });
+    this.sendContextFilesUpdated();
+    void this.updateContextInfo(true, true);
   }
 
   public async loadInputHistory(): Promise<string[]> {
@@ -915,7 +1010,7 @@ export class Project {
     this.mainWindow.webContents.send('input-history-updated', inputHistoryData);
   }
 
-  public async askQuestion(questionData: QuestionData): Promise<[string, string | undefined]> {
+  public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promise<[string, string | undefined]> {
     if (this.currentQuestion) {
       // Wait if another question is already pending
       await new Promise((resolve) => {
@@ -965,8 +1060,13 @@ export class Project {
 
     // Store the resolve function for the promise
     return new Promise<[string, string | undefined]>((resolve) => {
-      this.currentQuestionResolves.push(resolve);
+      if (awaitAnswer) {
+        this.currentQuestionResolves.push(resolve);
+      }
       this.mainWindow.webContents.send('ask-question', questionData);
+      if (!awaitAnswer) {
+        resolve(['', undefined]);
+      }
     });
   }
 
@@ -990,12 +1090,13 @@ export class Project {
     this.mainWindow.webContents.send('update-aider-models', this.aiderModels);
   }
 
-  public updateModels(mainModel: string, weakModel: string | null, editFormat?: EditFormat) {
+  public updateModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff') {
     logger.info('Updating models:', {
       mainModel,
       weakModel,
       editFormat,
     });
+
     this.findMessageConnectors('set-models').forEach((connector) => connector.sendSetModelsMessage(mainModel, weakModel, editFormat));
   }
 
@@ -1050,20 +1151,6 @@ export class Project {
     this.addCommandOutput(command, '');
   }
 
-  public closeCommandOutput() {
-    if (!this.currentCommand) {
-      return;
-    }
-    const command = this.currentCommand;
-    const output = this.commandOutputs.get(command);
-    if (output && output.trim()) {
-      // Add the command output to the session manager as an assistant message, prepending the command
-      this.sessionManager.addContextMessage(MessageRole.Assistant, `${command}\n\n${output}`);
-    }
-    this.commandOutputs.delete(command);
-    this.currentCommand = null;
-  }
-
   private addCommandOutput(command: string, output: string) {
     // Append output to the commandOutputs map
     const prev = this.commandOutputs.get(command) || '';
@@ -1076,12 +1163,30 @@ export class Project {
     });
   }
 
-  public addLogMessage(level: LogLevel, message?: string, finished = false) {
+  public closeCommandOutput(addToContext = true) {
+    if (!this.currentCommand) {
+      return;
+    }
+    const command = this.currentCommand;
+    const output = this.commandOutputs.get(command);
+    if (output && output.trim() && addToContext) {
+      // Add the command output to the session manager as an assistant message, prepending the command
+      this.sessionManager.addContextMessage(MessageRole.User, `Output from \`${command}\`\n\n\`\`\`${output}\`\`\``);
+      this.sessionManager.addContextMessage(MessageRole.Assistant, 'Ok.');
+
+      void this.updateContextInfo(true, false);
+    }
+    this.commandOutputs.delete(command);
+    this.currentCommand = null;
+  }
+
+  public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext) {
     const data: LogData = {
       baseDir: this.baseDir,
       level,
       message,
       finished,
+      promptContext,
     };
 
     this.mainWindow.webContents.send('log', data);
@@ -1089,6 +1194,17 @@ export class Project {
 
   public getContextMessages() {
     return this.sessionManager.getContextMessages();
+  }
+
+  public async addContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData) {
+    logger.debug('Adding context message to session:', {
+      baseDir: this.baseDir,
+      role,
+      content: content.substring(0, 30),
+    });
+
+    this.sessionManager.addContextMessage(role, content, usageReport);
+    await this.updateContextInfo();
   }
 
   public sendAddMessage(role: MessageRole = MessageRole.User, content: string, acknowledge = true) {
@@ -1101,18 +1217,24 @@ export class Project {
     this.findMessageConnectors('add-message').forEach((connector) => connector.sendAddMessageMessage(role, content, acknowledge));
   }
 
-  public clearContext(addToHistory = false, updateEstimatedTokens = true) {
+  public clearContext(addToHistory = false, updateContextInfo = true) {
+    logger.debug('Clearing context:', {
+      baseDir: this.baseDir,
+      addToHistory,
+      updateContextInfo,
+    });
+
     this.sessionManager.clearMessages();
     this.runCommand('clear', addToHistory);
     this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
 
-    if (updateEstimatedTokens) {
-      void this.updateAgentEstimatedTokens();
+    if (updateContextInfo) {
+      void this.updateContextInfo();
     }
   }
 
   public interruptResponse() {
-    logger.info('Interrupting response:', { baseDir: this.baseDir });
+    logger.debug('Interrupting response:', { baseDir: this.baseDir });
 
     if (this.currentQuestion) {
       this.answerQuestion('n', 'Cancelled');
@@ -1120,6 +1242,7 @@ export class Project {
 
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
     this.agent.interrupt();
+    this.promptFinished();
   }
 
   public applyEdits(edits: FileEdit[]) {
@@ -1127,7 +1250,15 @@ export class Project {
     this.findMessageConnectors('apply-edits').forEach((connector) => connector.sendApplyEditsMessage(edits));
   }
 
-  public addToolMessage(id: string, serverName: string, toolName: string, args?: Record<string, unknown>, response?: string, usageReport?: UsageReportData) {
+  public addToolMessage(
+    id: string,
+    serverName: string,
+    toolName: string,
+    args?: Record<string, unknown>,
+    response?: string,
+    usageReport?: UsageReportData,
+    promptContext?: PromptContext,
+  ) {
     logger.debug('Sending tool message:', {
       id,
       baseDir: this.baseDir,
@@ -1136,6 +1267,7 @@ export class Project {
       args,
       response,
       usageReport,
+      promptContext,
     });
     const data: ToolData = {
       baseDir: this.baseDir,
@@ -1145,6 +1277,7 @@ export class Project {
       args,
       response,
       usageReport,
+      promptContext,
     };
 
     if (response && usageReport) {
@@ -1179,7 +1312,7 @@ export class Project {
     }
   }
 
-  public addUserMessage(content: string, mode?: Mode) {
+  public addUserMessage(content: string, mode?: Mode, promptContext?: PromptContext) {
     logger.info('Adding user message:', {
       baseDir: this.baseDir,
       content: content.substring(0, 100),
@@ -1190,6 +1323,7 @@ export class Project {
       baseDir: this.baseDir,
       content,
       mode,
+      promptContext,
     };
 
     this.mainWindow.webContents.send('user-message', data);
@@ -1199,7 +1333,7 @@ export class Project {
     this.sessionManager.removeLastMessage();
     this.reloadConnectorMessages();
 
-    await this.updateAgentEstimatedTokens();
+    await this.updateContextInfo();
   }
 
   public async redoLastUserPrompt(mode: Mode, updatedPrompt?: string) {
@@ -1215,7 +1349,7 @@ export class Project {
     if (promptToRun) {
       logger.info('Found message content to run, reloading and re-running prompt.');
       this.reloadConnectorMessages(); // This sends 'clear-project' which truncates UI messages
-      await this.updateAgentEstimatedTokens();
+      await this.updateContextInfo();
 
       // No need to await runPrompt here, let it run in the background
       void this.runPrompt(promptToRun, mode);
@@ -1273,11 +1407,8 @@ export class Project {
 
         await this.sessionManager.loadMessages(this.sessionManager.getContextMessages());
       }
-
-      // After compaction, update estimated tokens
-      await this.updateAgentEstimatedTokens();
     } else {
-      const responses = await this.sendPrompt(getCompactConversationPrompt(customInstructions), 'ask', false, true);
+      const responses = await this.sendPrompt(getCompactConversationPrompt(customInstructions), undefined, 'ask', undefined, []);
 
       // add messages to session
       this.sessionManager.setContextMessages([userMessage], false);
@@ -1289,6 +1420,7 @@ export class Project {
       await this.sessionManager.loadMessages(this.sessionManager.getContextMessages());
     }
 
+    await this.updateContextInfo();
     this.addLogMessage('info', 'Conversation compacted.');
   }
 
@@ -1327,19 +1459,23 @@ export class Project {
   }
 
   updateTokensInfo(data: Partial<TokensInfoData>) {
-    const filesTokensChanged = data.files ? Object.keys(data.files).length !== Object.keys(this.tokensInfo.files).length : false;
-    const repoMapChanged = data.repoMap ? data.repoMap.tokens !== this.tokensInfo.repoMap.tokens : false;
-
     this.tokensInfo = {
       ...this.tokensInfo,
       ...data,
     };
 
     this.mainWindow.webContents.send('update-tokens-info', this.tokensInfo);
+  }
 
-    if (filesTokensChanged || repoMapChanged) {
-      void this.updateAgentEstimatedTokens(true, true);
-    }
+  async updateContextInfo(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {
+    this.sendRequestContextInfo();
+    await this.updateAgentEstimatedTokens(checkContextFilesIncluded, checkRepoMapIncluded);
+  }
+
+  private sendRequestContextInfo() {
+    this.findMessageConnectors('request-context-info').forEach((connector) =>
+      connector.sendRequestTokensInfoMessage(this.sessionManager.toConnectorMessages(), this.getContextFiles()),
+    );
   }
 
   async updateAgentEstimatedTokens(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {
@@ -1389,7 +1525,7 @@ export class Project {
 
     if (agentSettingsAffectingTokensChanged) {
       logger.info('Agent settings affecting token count changed, updating estimated tokens.');
-      void this.updateAgentEstimatedTokens();
+      void this.updateContextInfo();
     }
 
     // Check for changes in environment variables or LLM providers
@@ -1500,12 +1636,25 @@ export class Project {
     return updatedItems;
   }
 
-  async initProjectRulesFile(): Promise<void> {
-    logger.info('Initializing PROJECT.md rules file', {
+  public async clearAllTodos(): Promise<TodoItem[]> {
+    const data = await this.readTodoFile();
+    if (!data) {
+      throw new Error('No todo items found to clear');
+    }
+
+    await this.writeTodoFile({
+      initialUserPrompt: data.initialUserPrompt,
+      items: [],
+    });
+    return [];
+  }
+
+  async initProjectAgentsFile(): Promise<void> {
+    logger.info('Initializing AGENTS.md file', {
       baseDir: this.baseDir,
     });
 
-    this.addLogMessage('loading', 'Analyzing project to create PROJECT.md rules file...');
+    this.addLogMessage('loading', 'Analyzing project to create AGENTS.md...');
 
     const messages = this.sessionManager.getContextMessages();
     const files = this.sessionManager.getContextFiles();
@@ -1520,9 +1669,8 @@ export class Project {
         throw new Error('No active agent profile found');
       }
 
-      // Create a modified INIT_PROJECT_RULES_AGENT_PROFILE with active profile's provider and model
       const initProjectRulesAgentProfile: AgentProfile = {
-        ...INIT_PROJECT_RULES_AGENT_PROFILE,
+        ...INIT_PROJECT_AGENTS_PROFILE,
         provider: activeProfile.provider,
         model: activeProfile.model,
       };
@@ -1530,34 +1678,34 @@ export class Project {
       // Run the agent with the modified profile
       await this.runPromptInAgent(initProjectRulesAgentProfile, getInitProjectPrompt());
 
-      // Check if the PROJECT.md file was created
-      const projectRulesPath = path.join(this.baseDir, '.aider-desk', 'rules', 'PROJECT.md');
-      const projectRulesExists = await fileExists(projectRulesPath);
+      // Check if the AGENTS.md file was created
+      const projectAgentsPath = path.join(this.baseDir, 'AGENTS.md');
+      const projectAgentsFileExists = await fileExists(projectAgentsPath);
 
-      if (projectRulesExists) {
-        logger.info('PROJECT.md file created successfully', {
-          path: projectRulesPath,
+      if (projectAgentsFileExists) {
+        logger.info('AGENTS.md file created successfully', {
+          path: projectAgentsPath,
         });
-        this.addLogMessage('info', 'PROJECT.md has been successfully initialized.');
+        this.addLogMessage('info', 'AGENTS.md has been successfully initialized.');
 
         // Ask the user if they want to add this file to .aider.conf.yml
         const [answer] = await this.askQuestion({
           baseDir: this.baseDir,
-          text: 'Do you want to add this file as read-only file for Aider (in .aider.conf.yml)?',
+          text: 'Do you want to add AGENTS.md as read-only file for Aider (in .aider.conf.yml)?',
           defaultAnswer: 'y',
           internal: false,
         });
 
         if (answer === 'y') {
-          await this.addProjectRulesToAiderConfig();
+          await this.addProjectAgentsToAiderConfig();
         }
       } else {
-        logger.warn('PROJECT.md file was not created');
-        this.addLogMessage('warning', 'PROJECT.md file was not created.');
+        logger.warn('AGENTS.md file was not created');
+        this.addLogMessage('warning', 'AGENTS.md file was not created.');
       }
     } catch (error) {
-      logger.error('Error initializing PROJECT.md rules file:', error);
-      this.addLogMessage('error', `Failed to initialize PROJECT.md rules file: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error('Error initializing AGENTS.md file:', error);
+      this.addLogMessage('error', `Failed to initialize AGENTS.md file: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     } finally {
       this.sessionManager.setContextFiles(files, false);
@@ -1565,9 +1713,9 @@ export class Project {
     }
   }
 
-  private async addProjectRulesToAiderConfig(): Promise<void> {
+  private async addProjectAgentsToAiderConfig(): Promise<void> {
     const aiderConfigPath = path.join(this.baseDir, '.aider.conf.yml');
-    const projectRulesRelativePath = '.aider-desk/rules/PROJECT.md';
+    const projectAgentsRelativePath = 'AGENTS.md';
 
     try {
       let config: { read?: string | string[] } = {};
@@ -1586,19 +1734,19 @@ export class Project {
       }
 
       // Add PROJECT.md to read section if not already present
-      if (!config.read.includes(projectRulesRelativePath)) {
-        config.read.push(projectRulesRelativePath);
+      if (!config.read.includes(projectAgentsRelativePath)) {
+        config.read.push(projectAgentsRelativePath);
 
         // Write the updated config
         const yamlContent = YAML.stringify(config);
         await fs.writeFile(aiderConfigPath, yamlContent, 'utf8');
 
-        logger.info('Added PROJECT.md to .aider.conf.yml', {
+        logger.info('Added AGENTS.md to .aider.conf.yml', {
           path: aiderConfigPath,
         });
-        this.addLogMessage('info', `Added ${projectRulesRelativePath} to .aider.conf.yml`);
+        this.addLogMessage('info', `Added ${projectAgentsRelativePath} to .aider.conf.yml`);
       } else {
-        logger.info('PROJECT.md already exists in .aider.conf.yml');
+        logger.info('AGENTS.md already exists in .aider.conf.yml');
       }
     } catch (error) {
       logger.error('Error updating .aider.conf.yml:', error);
@@ -1681,10 +1829,13 @@ ${error.stderr}`,
 
         const messages = command.includeContext === false ? [] : undefined;
         const contextFiles = command.includeContext === false ? [] : undefined;
-        await this.runPromptInAgent(profile, prompt, messages, contextFiles, systemPrompt);
+        await this.runPromptInAgent(profile, prompt, undefined, messages, contextFiles, systemPrompt);
       } else {
         // All other modes (code, ask, architect)
-        await this.runPromptInAider(prompt, mode);
+        const promptContext: PromptContext = {
+          id: uuidv4(),
+        };
+        await this.runPromptInAider(prompt, promptContext, mode);
       }
     } finally {
       // Clear loading message after execution completes (success or failure)

@@ -41,7 +41,6 @@ import {
   ToolMessage,
   UserMessage,
 } from '@/types/message';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { ContextFiles } from '@/components/ContextFiles';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { useSettings } from '@/context/SettingsContext';
@@ -52,6 +51,7 @@ import { PromptField, PromptFieldRef } from '@/components/PromptField';
 import { CostInfo } from '@/components/CostInfo';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
+import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
 import 'react-resizable/css/styles.css';
 import { useSearchText } from '@/hooks/useSearchText';
 
@@ -82,15 +82,15 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [aiderTotalCost, setAiderTotalCost] = useState(0);
   const [tokensInfo, setTokensInfo] = useState<TokensInfoData | null>(null);
   const [question, setQuestion] = useState<QuestionData | null>(null);
-  const [showFrozenDialog, setShowFrozenDialog] = useState(false);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
+  const [terminalVisible, setTerminalVisible] = useState(false);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
   const projectTopBarRef = useRef<ProjectTopBarRef>(null);
   const messagesRef = useRef<MessagesRef>(null);
-  const frozenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const terminalViewRef = useRef<TerminalViewRef | null>(null);
 
   const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
 
@@ -116,7 +116,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   }, [projectSettings, settings]);
 
   useEffect(() => {
-    window.api.startProject(project.baseDir);
+    const handleProjectStarted = () => {
+      setLoading(false);
+    };
+    const projectStartedListenerId = window.api.addProjectStartedListener(project.baseDir, handleProjectStarted);
 
     // Load existing todos
     const loadTodos = async () => {
@@ -129,26 +132,35 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
+    window.api.startProject(project.baseDir);
     void loadTodos();
 
     return () => {
+      window.api.removeProjectStartedListener(projectStartedListenerId);
       window.api.stopProject(project.baseDir);
     };
   }, [project.baseDir]);
 
   useEffect(() => {
-    if (!processing && frozenTimeoutRef.current) {
-      clearTimeout(frozenTimeoutRef.current);
-      frozenTimeoutRef.current = null;
-    }
-  }, [processing]);
-
-  useEffect(() => {
-    const handleResponseChunk = (_: IpcRendererEvent, { messageId, chunk, reflectedMessage }: ResponseChunkData) => {
+    const handleResponseChunk = (_: IpcRendererEvent, { messageId, chunk, reflectedMessage, promptContext }: ResponseChunkData) => {
       const processingMessage = processingMessageRef.current;
       if (processingMessage && processingMessage.id === messageId) {
-        processingMessage.content += chunk;
-        setMessages((prevMessages) => prevMessages.map((message) => (message.id === messageId ? processingMessage : message)));
+        processingMessageRef.current = {
+          ...processingMessage,
+          content: processingMessage.content + chunk,
+          promptContext,
+        };
+        setMessages((prevMessages) =>
+          prevMessages.map((message) =>
+            message.id === messageId
+              ? {
+                  ...message,
+                  content: message.content + chunk,
+                  promptContext,
+                }
+              : message,
+          ),
+        );
       } else {
         setMessages((prevMessages) => {
           const existingMessageIndex = prevMessages.findIndex((message) => message.id === messageId);
@@ -160,6 +172,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               type: 'reflected-message',
               content: reflectedMessage,
               responseMessageId: messageId,
+              promptContext,
             };
 
             newMessages.push(reflected);
@@ -171,6 +184,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               type: 'response',
               content: chunk,
               processing: true,
+              promptContext,
             };
             processingMessageRef.current = newResponseMessage;
             newMessages.push(newResponseMessage);
@@ -183,6 +197,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
                 return {
                   ...message,
                   content: message.content + chunk,
+                  promptContext,
                 };
               }
               return message;
@@ -192,7 +207,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleResponseCompleted = (_: IpcRendererEvent, { messageId, usageReport, content, reflectedMessage }: ResponseCompletedData) => {
+    const handleResponseCompleted = (_: IpcRendererEvent, { messageId, usageReport, content, reflectedMessage, promptContext }: ResponseCompletedData) => {
       const processingMessage = processingMessageRef.current;
 
       if (content) {
@@ -207,18 +222,21 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
                     content,
                     processing: false,
                     usageReport,
+                    promptContext,
                   }
                 : message,
             );
           } else {
+            const messages: Message[] = [];
             if (reflectedMessage) {
               const reflected: ReflectedMessage = {
                 id: uuidv4(),
                 type: 'reflected-message',
                 content: reflectedMessage,
                 responseMessageId: messageId,
+                promptContext,
               };
-              return prevMessages.filter((message) => !isLoadingMessage(message)).concat(reflected);
+              messages.push(reflected);
             }
 
             // If no response message exists, create a new one
@@ -228,13 +246,17 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               content,
               processing: false,
               usageReport,
+              promptContext,
             };
-            return prevMessages.filter((message) => !isLoadingMessage(message)).concat(newResponseMessage);
+            messages.push(newResponseMessage);
+
+            return prevMessages.filter((message) => !isLoadingMessage(message)).concat(...messages);
           }
         });
       } else if (processingMessage && processingMessage.id === messageId) {
         processingMessage.processing = false;
         processingMessage.usageReport = usageReport;
+        processingMessage.promptContext = promptContext;
         processingMessage.content = content || processingMessage.content;
         setMessages((prevMessages) => prevMessages.map((message) => (message.id === messageId ? processingMessage : message)));
       } else {
@@ -314,7 +336,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleTool = (_: IpcRendererEvent, { id, serverName, toolName, args, response, usageReport }: ToolData) => {
+    const handleTool = (_: IpcRendererEvent, { id, serverName, toolName, args, response, usageReport, promptContext }: ToolData) => {
       if (serverName === TODO_TOOL_GROUP_NAME) {
         handleTodoTool(toolName, args, response);
 
@@ -333,6 +355,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           args: args || {},
           content: response || '',
           usageReport,
+          promptContext,
         };
         return toolMessage;
       };
@@ -350,6 +373,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             ...toolMessage,
             content: response || '',
             usageReport,
+            promptContext,
           } as ToolMessage;
           return updatedMessages;
         } else {
@@ -362,15 +386,40 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleLog = (_: IpcRendererEvent, { level, message, finished }: LogData) => {
+    const handleLog = (_: IpcRendererEvent, { level, message, finished, promptContext }: LogData) => {
       if (level === 'loading') {
         if (finished) {
+          // Mark all messages in the same group as finished before removing loading messages
+          const currentGroupId = promptContext?.group?.id;
+          if (currentGroupId) {
+            setMessages((prevMessages) =>
+              prevMessages.map((msg) => {
+                const msgGroupId = msg.promptContext?.group?.id;
+                if (msgGroupId && msgGroupId === currentGroupId) {
+                  // Create a new message object with updated promptContext.group.finished
+                  return {
+                    ...msg,
+                    promptContext: msg.promptContext
+                      ? {
+                          ...msg.promptContext,
+                          group: msg.promptContext.group ? { ...msg.promptContext.group, finished: true } : msg.promptContext.group,
+                        }
+                      : msg.promptContext,
+                  };
+                }
+                return msg;
+              }),
+            );
+          }
+
+          // Then remove loading messages
           setMessages((prevMessages) => prevMessages.filter((message) => !isLoadingMessage(message)));
         } else {
           const loadingMessage: LoadingMessage = {
             id: uuidv4(),
             type: 'loading',
             content: message || t('messages.thinking'),
+            promptContext,
           };
 
           setMessages((prevMessages) => {
@@ -381,6 +430,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               updatedMessages[existingLoadingIndex] = {
                 ...updatedMessages[existingLoadingIndex],
                 content: loadingMessage.content,
+                promptContext,
               };
 
               return updatedMessages;
@@ -397,6 +447,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           type: 'log',
           level,
           content: message || '',
+          promptContext,
         };
         setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), logMessage]);
 
@@ -445,6 +496,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
         type: 'user',
         mode: data.mode || projectSettings?.currentMode || 'code', // Use projectSettings.currentMode as fallback
         content: data.content,
+        promptContext: data.promptContext,
       };
 
       setMessages((prevMessages) => {
@@ -507,8 +559,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const clearSession = () => {
-    setShowFrozenDialog(false);
-    setLoading(true);
     setMessages([]);
     setAiderTotalCost(0);
     setProcessing(false);
@@ -527,6 +577,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     if (clearContext) {
       window.api.clearContext(project.baseDir);
     }
+  };
+
+  const toggleTerminal = () => {
+    setTerminalVisible(!terminalVisible);
   };
 
   const clearLogMessages = () => {
@@ -595,23 +649,12 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     };
     setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), interruptMessage]);
     setQuestion(null);
-
-    if (projectSettings?.currentMode === 'agent') {
-      // using interrupt in agent mode will cancel immediately
-      setProcessing(false);
-    } else {
-      frozenTimeoutRef.current = setTimeout(() => {
-        if (processing) {
-          setShowFrozenDialog(true);
-        }
-        frozenTimeoutRef.current = null;
-      }, 10000);
-    }
+    setProcessing(false);
   };
 
-  const handleModelChange = () => {
+  const handleModelChange = (modelsData: ModelsData | null) => {
+    setAiderModelsData(modelsData);
     promptFieldRef.current?.focus();
-    setAiderModelsData(null);
   };
 
   const handleModeChange = (mode: Mode) => {
@@ -670,6 +713,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const restartProject = () => {
+    setLoading(true);
     void window.api.restartProject(project.baseDir);
     clearSession();
   };
@@ -715,7 +759,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleToggleTodo = async (name: string, completed: boolean) => {
     try {
-      const updatedTodos = await window.api.updateTodo(project.baseDir, name, { completed });
+      const updatedTodos = await window.api.updateTodo(project.baseDir, name, {
+        completed,
+      });
       setTodoItems(updatedTodos);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -743,6 +789,24 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   };
 
+  const handleClearAllTodos = async () => {
+    try {
+      const updatedTodos = await window.api.clearAllTodos(project.baseDir);
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error clearing all todos:', error);
+    }
+  };
+
+  const handleTerminalViewResize = () => {
+    terminalViewRef.current?.resize();
+  };
+
+  const handleCopyTerminalOutput = (output: string) => {
+    promptFieldRef.current?.appendText(output);
+  };
+
   if (!projectSettings || !settings) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
@@ -768,23 +832,13 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           allModels={availableModels}
           mode={projectSettings.currentMode}
           renderMarkdown={projectSettings.renderMarkdown}
-          onModelChange={handleModelChange}
+          onModelsChange={handleModelChange}
           onRenderMarkdownChanged={handleRenderMarkdownChanged}
           onExportSessionToImage={exportMessagesToImage}
           runCommand={runCommand}
         />
-        <div className="flex-grow overflow-y-auto relative">
+        <div className="flex-grow overflow-y-hidden relative flex flex-col">
           {renderSearchInput()}
-          <Messages
-            ref={messagesRef}
-            baseDir={project.baseDir}
-            messages={messages}
-            allFiles={allFiles}
-            renderMarkdown={projectSettings.renderMarkdown}
-            removeMessage={handleRemoveMessage}
-            redoLastUserPrompt={handleRedoLastUserPrompt}
-            editLastUserMessage={handleEditLastUserMessage}
-          />
           {!loading && todoItems.length > 0 && todoListVisible && (
             <TodoWindow
               todos={todoItems}
@@ -792,54 +846,89 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               onAddTodo={handleAddTodo}
               onUpdateTodo={handleUpdateTodo}
               onDeleteTodo={handleDeleteTodo}
+              onClearAllTodos={handleClearAllTodos}
             />
           )}
+          <div className="overflow-hidden flex-grow">
+            <Messages
+              ref={messagesRef}
+              baseDir={project.baseDir}
+              messages={messages}
+              allFiles={allFiles}
+              renderMarkdown={projectSettings.renderMarkdown}
+              removeMessage={handleRemoveMessage}
+              redoLastUserPrompt={handleRedoLastUserPrompt}
+              editLastUserMessage={handleEditLastUserMessage}
+            />
+          </div>
+          <ResizableBox
+            className="flex flex-col flex-shrink-0"
+            height={terminalVisible ? 200 : 0}
+            width={Infinity}
+            axis="y"
+            resizeHandles={terminalVisible ? ['n'] : []}
+            minConstraints={[Infinity, 100]}
+            maxConstraints={[Infinity, window.innerHeight / 2]}
+            onResize={handleTerminalViewResize}
+          >
+            <TerminalView
+              ref={terminalViewRef}
+              baseDir={project.baseDir}
+              visible={terminalVisible}
+              className="border-t border-neutral-800 flex-grow"
+              onVisibilityChange={setTerminalVisible}
+              onCopyOutput={handleCopyTerminalOutput}
+            />
+          </ResizableBox>
         </div>
-        <div
-          className={clsx('relative bottom-0 w-full p-4 pb-2 flex-shrink-0 flex flex-col border-t border-neutral-800', editingMessageIndex !== null && 'pt-1')}
-        >
-          {editingMessageIndex !== null && (
-            <div className="flex items-center justify-between px-2 py-1 text-xs text-neutral-400 border-b border-neutral-700 mb-2">
-              <span>{t('messages.editingLastMessage')}</span>
-              <Button
-                size="xs"
-                variant="text"
-                onClick={() => {
-                  setEditingMessageIndex(null);
-                  promptFieldRef.current?.setText('');
-                }}
-              >
-                {t('messages.cancelEdit')}
-              </Button>
-            </div>
-          )}
-          <PromptField
-            ref={promptFieldRef}
-            baseDir={project.baseDir}
-            inputHistory={inputHistory}
-            processing={processing}
-            mode={projectSettings.currentMode}
-            onModeChanged={handleModeChange}
-            runPrompt={runPrompt}
-            editLastUserMessage={handleEditLastUserMessage}
-            isActive={isActive}
-            words={autocompletionWords}
-            clearMessages={clearMessages}
-            scrapeWeb={scrapeWeb}
-            showFileDialog={showFileDialog}
-            addFiles={handleAddFiles}
-            question={question}
-            answerQuestion={answerQuestion}
-            interruptResponse={handleInterruptResponse}
-            runCommand={runCommand}
-            runTests={runTests}
-            redoLastUserPrompt={handleRedoLastUserPrompt}
-            openModelSelector={projectTopBarRef.current?.openMainModelSelector}
-            openAgentModelSelector={projectTopBarRef.current?.openAgentModelSelector}
-            disabled={!aiderModelsData}
-            promptBehavior={settings.promptBehavior}
-            clearLogMessages={clearLogMessages}
-          />
+        <div className={clsx('relative w-full flex-shrink-0 flex flex-col border-t border-neutral-800', editingMessageIndex !== null && 'pt-1')}>
+          <div className={clsx('p-4 pb-2', editingMessageIndex !== null && 'pt-1')}>
+            {editingMessageIndex !== null && (
+              <div className="flex items-center justify-between px-2 py-1 text-xs text-neutral-400 border-b border-neutral-700 mb-2">
+                <span>{t('messages.editingLastMessage')}</span>
+                <Button
+                  size="xs"
+                  variant="text"
+                  onClick={() => {
+                    setEditingMessageIndex(null);
+                    promptFieldRef.current?.setText('');
+                  }}
+                >
+                  {t('messages.cancelEdit')}
+                </Button>
+              </div>
+            )}
+            <PromptField
+              ref={promptFieldRef}
+              baseDir={project.baseDir}
+              inputHistory={inputHistory}
+              processing={processing}
+              mode={projectSettings.currentMode}
+              onModeChanged={handleModeChange}
+              runPrompt={runPrompt}
+              editLastUserMessage={handleEditLastUserMessage}
+              isActive={isActive}
+              words={autocompletionWords}
+              clearMessages={clearMessages}
+              scrapeWeb={scrapeWeb}
+              showFileDialog={showFileDialog}
+              addFiles={handleAddFiles}
+              question={question}
+              answerQuestion={answerQuestion}
+              interruptResponse={handleInterruptResponse}
+              runCommand={runCommand}
+              runTests={runTests}
+              redoLastUserPrompt={handleRedoLastUserPrompt}
+              openModelSelector={projectTopBarRef.current?.openMainModelSelector}
+              openAgentModelSelector={projectTopBarRef.current?.openAgentModelSelector}
+              disabled={!aiderModelsData}
+              promptBehavior={settings.promptBehavior}
+              clearLogMessages={clearLogMessages}
+              toggleTerminal={toggleTerminal}
+              terminalVisible={terminalVisible}
+              scrollToBottom={messagesRef.current?.scrollToBottom}
+            />
+          </div>
         </div>
       </div>
       <ResizableBox
@@ -874,18 +963,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           />
         </div>
       </ResizableBox>
-      {showFrozenDialog && (
-        <ConfirmDialog
-          title={t('errors.frozenTitle')}
-          onConfirm={restartProject}
-          onCancel={() => setShowFrozenDialog(false)}
-          confirmButtonText="Restart"
-          cancelButtonText="Wait"
-          closeOnEscape={false}
-        >
-          {t('errors.frozenMessage')}
-        </ConfirmDialog>
-      )}
       {addFileDialogOptions && (
         <AddFileDialog
           baseDir={project.baseDir}

@@ -26,3 +26,31 @@ export const generateColorPalette = (count: number): string[] => {
 
   return colors;
 };
+
+export enum GroupBy {
+  Year = 'year',
+  Month = 'month',
+  Day = 'day',
+  Hour = 'hour',
+}
+
+export const formatDateByGroup = (timestamp: string, groupBy: GroupBy): string => {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const hour = date.getHours().toString().padStart(2, '0');
+
+  switch (groupBy) {
+    case GroupBy.Year:
+      return year.toString();
+    case GroupBy.Month:
+      return `${year}-${month}`;
+    case GroupBy.Day:
+      return `${year}-${month}-${day}`;
+    case GroupBy.Hour:
+      return `${year}-${month}-${day} ${hour}:00`;
+    default:
+      return `${year}-${month}-${day}`;
+  }
+};

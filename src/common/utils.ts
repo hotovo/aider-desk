@@ -37,9 +37,11 @@ export const delay = (ms: number): Promise<void> => new Promise((resolve) => set
 
 export const parseUsageReport = (model: string, report: string): UsageReportData => {
   const sentMatch = report.match(/Tokens: ([\d.]+k?) sent/);
+  const cacheWriteMatch = report.match(/([\d.]+k?) cache write/);
+  const cacheReadMatch = report.match(/([\d.]+k?) cache hit/);
   const receivedMatch = report.match(/([\d.]+k?) received/);
   const messageCostMatch = report.match(/Cost: \$(\d+\.\d+) message/);
-  const totalCostMatch = report.match(/\$(\d+\.\d+) session/);
+  const totalCostMatch = report.match(/Total cost: \$(\d+\.\d+) session/);
 
   const parseTokens = (tokenStr: string): number => {
     if (tokenStr.includes('k')) {
@@ -49,6 +51,8 @@ export const parseUsageReport = (model: string, report: string): UsageReportData
   };
 
   const sentTokens = sentMatch ? parseTokens(sentMatch[1]) : 0;
+  const cacheWriteTokens = cacheWriteMatch ? parseTokens(cacheWriteMatch[1]) : 0;
+  const cacheReadTokens = cacheReadMatch ? parseTokens(cacheReadMatch[1]) : 0;
   const receivedTokens = receivedMatch ? parseTokens(receivedMatch[1]) : 0;
 
   const messageCost = messageCostMatch ? parseFloat(messageCostMatch[1]) : 0;
@@ -60,6 +64,8 @@ export const parseUsageReport = (model: string, report: string): UsageReportData
     receivedTokens,
     messageCost,
     aiderTotalCost,
+    cacheWriteTokens,
+    cacheReadTokens,
   };
 };
 

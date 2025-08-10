@@ -46,8 +46,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: npm run build && npx electron-builder --win -p always
 
-  release-macos:
-    name: Release macOS packages
+  release-macos-x64:
+    name: Release macOS x64 packages
     runs-on: macos-latest
 
     steps:
@@ -64,7 +64,7 @@ jobs:
         env:
           encoded_p12: ${{ secrets.CSC_BASE64 }}
 
-      - name: Release macOS
+      - name: Release macOS x64
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
@@ -73,4 +73,33 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
-        run: npm run build:mac -- -p always
+        run: npm run build:mac -- --x64 -p always
+
+  release-macos-arm64:
+    name: Release macOS arm64 packages
+    runs-on: macos-14
+
+    steps:
+      - uses: "actions/checkout@v1"
+
+      - uses: "actions/setup-node@v4"
+        with:
+          node-version: '22.17.0'
+
+      - run: npm install --arch=arm64
+
+      - name: Create certificate.p12
+        run: echo "$encoded_p12" | base64 --decode > certificate.p12
+        env:
+          encoded_p12: ${{ secrets.CSC_BASE64 }}
+
+      - name: Release macOS arm64
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: "./certificate.p12"
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+        run: npm run build:mac -- --arm64 -p always

@@ -21,6 +21,7 @@ export type LlmProviderName =
   | 'openai'
   | 'anthropic'
   | 'gemini'
+  | 'vertex-ai'
   | 'lmstudio'
   | 'bedrock'
   | 'deepseek'
@@ -44,6 +45,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'bedrock',
   'deepseek',
   'gemini',
+  'vertex-ai',
   'groq',
   'lmstudio',
   'ollama',
@@ -56,6 +58,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
 export interface OpenAiProvider extends LlmProviderBase {
   name: 'openai';
   apiKey: string;
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 export const isOpenAiProvider = (provider: LlmProviderBase): provider is OpenAiProvider => provider.name === 'openai';
 
@@ -75,6 +78,17 @@ export interface GeminiProvider extends LlmProviderBase {
 }
 
 export const isGeminiProvider = (provider: LlmProviderBase): provider is GeminiProvider => provider.name === 'gemini';
+
+export interface VertexAiProvider extends LlmProviderBase {
+  name: 'vertex-ai';
+  project: string;
+  location: string;
+  googleCloudCredentialsJson?: string;
+  includeThoughts: boolean;
+  thinkingBudget: number;
+}
+
+export const isVertexAiProvider = (provider: LlmProviderBase): provider is VertexAiProvider => provider.name === 'vertex-ai';
 
 export interface LmStudioProvider extends LlmProviderBase {
   name: 'lmstudio';
@@ -118,6 +132,15 @@ export interface OpenRouterProvider extends LlmProviderBase {
   name: 'openrouter';
   apiKey: string;
   models: string[];
+  // Advanced routing options
+  requireParameters: boolean;
+  order: string[];
+  only: string[];
+  ignore: string[];
+  allowFallbacks: boolean;
+  dataCollection: 'allow' | 'deny';
+  quantizations: string[];
+  sort: 'price' | 'throughput' | null;
 }
 export const isOpenRouterProvider = (provider: LlmProviderBase): provider is OpenRouterProvider => provider.name === 'openrouter';
 
@@ -134,6 +157,7 @@ export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
   | GeminiProvider
+  | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
   | DeepseekProvider
@@ -193,7 +217,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   autoApprove: false,
 };
 
-export const INIT_PROJECT_RULES_AGENT_PROFILE: AgentProfile = {
+export const INIT_PROJECT_AGENTS_PROFILE: AgentProfile = {
   ...DEFAULT_AGENT_PROFILE,
   id: 'init',
   maxIterations: 50,
@@ -230,7 +254,7 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   },
 };
 
-export const getLlmProviderConfig = (providerName: LlmProviderName, settings: SettingsData | null): LlmProvider => {
+export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: SettingsData | null): LlmProvider => {
   let provider = settings?.llmProviders[providerName] || null;
 
   if (!provider) {
@@ -243,6 +267,7 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
         provider = {
           name: 'openai',
           apiKey: '',
+          reasoningEffort: 'medium',
         } satisfies OpenAiProvider;
         break;
       case 'anthropic':
@@ -260,6 +285,16 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           thinkingBudget: 0,
           customBaseUrl: '',
         } satisfies GeminiProvider;
+        break;
+      case 'vertex-ai':
+        provider = {
+          name: 'vertex-ai',
+          project: '',
+          location: '',
+          googleCloudCredentialsJson: '',
+          includeThoughts: false,
+          thinkingBudget: 0,
+        } satisfies VertexAiProvider;
         break;
       case 'groq':
         provider = {
@@ -301,6 +336,14 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           name: 'openrouter',
           apiKey: '',
           models: [],
+          order: [],
+          allowFallbacks: true,
+          dataCollection: 'allow',
+          only: [],
+          ignore: [],
+          quantizations: [],
+          sort: 'price',
+          requireParameters: true,
         } satisfies OpenRouterProvider;
         break;
       case 'lmstudio':
