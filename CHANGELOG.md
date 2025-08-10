@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.26.0]
 
 - pasting image processed in AiderDesk instead of using Aider to handle it
 - added image file processing support for Agent context
