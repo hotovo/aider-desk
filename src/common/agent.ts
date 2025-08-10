@@ -83,6 +83,8 @@ export interface VertexAiProvider extends LlmProviderBase {
   project: string;
   location: string;
   googleCloudCredentialsJson?: string;
+  includeThoughts: boolean;
+  thinkingBudget: number;
 }
 
 export const isVertexAiProvider = (provider: LlmProviderBase): provider is VertexAiProvider => provider.name === 'vertex-ai';
@@ -288,6 +290,8 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
           project: '',
           location: '',
           googleCloudCredentialsJson: '',
+          includeThoughts: false,
+          thinkingBudget: 0,
         } satisfies VertexAiProvider;
         break;
       case 'groq':

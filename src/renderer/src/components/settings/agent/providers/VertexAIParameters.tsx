@@ -4,6 +4,9 @@ import { ChangeEvent } from 'react';
 
 import { Input } from '@/components/common/Input';
 import { TextArea } from '@/components/common/TextArea';
+import { Slider } from '@/components/common/Slider';
+import { Checkbox } from '@/components/common/Checkbox';
+import { InfoIcon } from '@/components/common/InfoIcon';
 
 type Props = {
   provider: VertexAiProvider;
@@ -34,6 +37,14 @@ export const VertexAIParameters = ({ provider, onChange }: Props) => {
     });
   };
 
+  const handleThinkingBudgetChange = (value: number) => {
+    onChange({ ...provider, thinkingBudget: value });
+  };
+
+  const handleIncludeThoughtsChange = (checked: boolean) => {
+    onChange({ ...provider, includeThoughts: checked });
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <Input
@@ -54,6 +65,22 @@ export const VertexAIParameters = ({ provider, onChange }: Props) => {
         value={provider.googleCloudCredentialsJson || ''}
         onChange={handleCredentialsChange}
       />
+      <Slider
+        label={t('gemini.thinkingBudget')}
+        value={provider.thinkingBudget ?? 0}
+        min={0}
+        max={24576}
+        onChange={handleThinkingBudgetChange}
+        className="max-w-[360px]"
+      />
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          label={<span className="text-sm">{t('gemini.includeThoughts')}</span>}
+          checked={provider.includeThoughts ?? false}
+          onChange={handleIncludeThoughtsChange}
+        />
+        <InfoIcon tooltip={t('gemini.includeThoughtsTooltip')} />
+      </div>
     </div>
   );
 };
