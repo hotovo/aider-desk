@@ -4,7 +4,6 @@ import { HiChevronUpDown, HiCheck } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
-import './Select.css';
 
 export type Option = {
   label: ReactNode;

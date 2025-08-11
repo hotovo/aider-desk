@@ -7,8 +7,6 @@ import { Checkbox } from './Checkbox';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
-import './MultiSelect.css';
-
 type Option = {
   value: string;
   label: string;

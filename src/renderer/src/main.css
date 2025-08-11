@@ -19,7 +19,7 @@
   transform: translate(-0%, -0%) rotate(45deg);
   width: 0;
   height: 0;
-  border-left: 6px solid theme('colors.neutral.800');
+  border-left: 6px solid var(--color-bg-secondary-light);
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
 }
@@ -41,48 +41,6 @@ body {
   color: var(--color-text-primary);
 }
 
-
-body.theme-light #root {
-  filter: invert(1) hue-rotate(180deg);
-}
-
-body.theme-light #root img {
-  filter: invert(1) hue-rotate(180deg);
-}
-
-/* Improve text contrast in light mode */
-body.theme-light {
-  color: #dddddd;
-}
-
-body.theme-light .text-neutral-100,
-body.theme-light .text-neutral-200,
-body.theme-light .text-neutral-300,
-body.theme-light .text-neutral-400 {
-  color: #dddddd !important;
-}
-
-body.theme-light .text-neutral-500,
-body.theme-light .text-neutral-600,
-body.theme-light .text-neutral-700,
-body.theme-light .text-neutral-800,
-body.theme-light .text-neutral-900,
-body.theme-light .text-neutral-950 {
-  color: #eeeeee !important;
-}
-
-body.theme-light .text-white {
-  color: #ffffff !important;
-}
-
-body.theme-light .text-gray-100 {
-  color: #dddddd !important;
-}
-
-body.theme-light .text-gray-500 {
-  color: #eeeeee !important;
-}
-
 * {
   font-family: "Sono", monospace;
   font-optical-sizing: auto;
@@ -102,26 +60,26 @@ code {
 @tailwind utilities;
 
 .cm-fat-cursor {
-  background-color: #f1f3f5 !important;
+  background-color: var(--color-text-primary) !important;
   outline: none !important;
 }
 
 .cm-placeholder {
-  color: #3d4166 !important;
+  color: var(--color-text-muted-dark) !important;
 }
 
 .cm-line {
-  color: white;
+  color: var(--color-text-primary);
 }
 
 .cm-tooltip-autocomplete {
-  background-color: #191a22 !important;
-  border: 1px solid #333652 !important;
+  background-color: var(--color-bg-primary-light) !important;
+  border: 1px solid var(--color-bg-tertiary) !important;
   border-radius: 0.375rem !important;
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
   font-size: 0.8rem !important;
-  color: #f1f3f5 !important;
+  color: var(--color-text-primary) !important;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   z-index: 10;
 }
@@ -130,7 +88,7 @@ code {
   max-height: 200px !important;
   max-width: 100% !important;
   scrollbar-width: thin;
-  scrollbar-color: #2a2c3f #191a22;
+  scrollbar-color: var(--color-bg-secondary-light) var(--color-bg-primary-light);
 }
 
 .cm-tooltip-autocomplete > ul > li {
@@ -142,26 +100,26 @@ code {
 }
 
 .cm-tooltip-autocomplete-detail {
-  color: #7b7d86;
+  color: var(--color-text-muted-light);
   font-size: 0.675rem;
   margin-left: 40px;
 }
 
 .cm-tooltip-autocomplete-chip {
-  color: #7b7d86;
+  color: var(--color-text-muted-light);
   font-size: 0.675rem;
   margin-left: 40px;
-  background-color: #2a2c3f;
+  background-color: var(--color-bg-secondary-light);
   padding: 0.1rem 0.5rem;
   border-radius: 0.25rem;
 }
 
 .cm-tooltip-autocomplete > ul > li:hover {
-  background-color: #222431;
+  background-color: var(--color-bg-secondary-light);
 }
 
 .cm-tooltip-autocomplete > ul > li[aria-selected] {
-  background-color: #333652 !important;
+  background-color: var(--color-bg-tertiary) !important;
 }
 
 /* Scrollbar styles for Webkit browsers */
@@ -170,15 +128,15 @@ code {
 }
 
 .cm-tooltip-autocomplete::-webkit-scrollbar-track {
-  background: #191a22;
+  background: var(--color-bg-primary-light);
 }
 
 .cm-tooltip-autocomplete::-webkit-scrollbar-thumb {
-  background-color: #2a2c3f;
+  background-color: var(--color-bg-secondary-light);
   border-radius: 4px;
-  border: 2px solid #191a22;
+  border: 2px solid var(--color-bg-primary-light);
 }
 
 .cm-tooltip-autocomplete::-webkit-scrollbar-thumb:hover {
-  background-color: #3d4166;
+  background-color: var(--color-bg-fourth);
 }
