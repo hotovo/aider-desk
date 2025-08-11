@@ -9,15 +9,17 @@ import AdmZip from 'adm-zip';
 
 const streamPipeline = promisify(pipeline);
 
-const UV_VERSION = '0.7.13';
+const UV_VERSION = '0.7.22';
 const BASE_URL = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
 const RESOURCES_DIR = './resources';
 
 const TARGET_PLATFORMS = [
-    { platform: 'linux', arch: 'x64', filename: 'uv-x86_64-unknown-linux-gnu.tar.gz', extractSubdir: 'linux', uvExeName: 'uv' },
+    { platform: 'linux', arch: 'x64', filename: 'uv-x86_64-unknown-linux-gnu.tar.gz', extractSubdir: 'linux-x64', uvExeName: 'uv' },
+    { platform: 'linux', arch: 'arm64', filename: 'uv-aarch64-unknown-linux-gnu.tar.gz', extractSubdir: 'linux-arm64', uvExeName: 'uv' },
     { platform: 'darwin', arch: 'x64', filename: 'uv-x86_64-apple-darwin.tar.gz', extractSubdir: 'macos-x64', uvExeName: 'uv' },
     { platform: 'darwin', arch: 'arm64', filename: 'uv-aarch64-apple-darwin.tar.gz', extractSubdir: 'macos-arm64', uvExeName: 'uv' },
-    { platform: 'win32', arch: 'x64', filename: 'uv-x86_64-pc-windows-msvc.zip', extractSubdir: 'win', uvExeName: 'uv.exe' }
+    { platform: 'win32', arch: 'x64', filename: 'uv-x86_64-pc-windows-msvc.zip', extractSubdir: 'win-x64', uvExeName: 'uv.exe' },
+    { platform: 'win32', arch: 'arm64', filename: 'uv-aarch64-pc-windows-msvc.zip', extractSubdir: 'win-arm64', uvExeName: 'uv.exe' }
 ];
 
 async function downloadAndExtractUVForPlatform(target) {
@@ -110,7 +112,7 @@ async function downloadAllUVs() {
     }
     console.log("All necessary uv executables processed.");
 
-    // After downloading all, copy the correct one for the current platform if it's macOS
+    // After downloading all, copy the correct one for the current platform
     if (process.platform === 'darwin') {
         const arch = process.arch;
         const sourceDir = join(RESOURCES_DIR, `macos-${arch}`);
@@ -128,6 +130,24 @@ async function downloadAllUVs() {
             console.log('uv copied successfully for local development.');
         } else {
             console.error(`uv binary for macOS ${arch} not found at ${sourceFile}, skipping copy for local development.`);
+        }
+    } else if (process.platform === 'win32') {
+        const arch = process.arch; // 'x64' or 'arm64'
+        const sourceDir = join(RESOURCES_DIR, `win-${arch}`);
+        const targetDir = join(RESOURCES_DIR, 'win');
+        const sourceFile = join(sourceDir, 'uv.exe');
+        const targetFile = join(targetDir, 'uv.exe');
+
+        if (!existsSync(targetDir)) {
+            mkdirSync(targetDir, { recursive: true });
+        }
+
+        if (existsSync(sourceFile)) {
+            console.log(`Copying uv.exe for local development on Windows ${arch}...`);
+            fs.copyFileSync(sourceFile, targetFile);
+            console.log('uv.exe copied successfully for local development.');
+        } else {
+            console.error(`uv.exe binary for Windows ${arch} not found at ${sourceFile}, skipping copy for local development.`);
         }
     }
 }

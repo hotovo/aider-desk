@@ -24,6 +24,11 @@ beforePack: scripts/before-pack.js
 win:
   executableName: aider-desk
   icon: resources/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - arm64
   extraResources:
     - from: ./resources/win
       to: win
@@ -61,6 +66,9 @@ linux:
     - rpm
   maintainer: Hotovo
   category: Utility
+  arch:
+    - x64
+    - arm64
   extraResources:
     - from: ./resources/linux
       to: linux
