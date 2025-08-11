@@ -62,6 +62,7 @@ module.exports = {
 
         error: 'var(--color-error)',
         errorLight: 'var(--color-error-light)',
+        errorLighter: 'var(--color-error-lighter)',
         errorDark: 'var(--color-error-dark)',
         error10: 'var(--color-error-10)',
         error15: 'var(--color-error-15)',
@@ -90,23 +91,11 @@ module.exports = {
           contextFiles: 'var(--color-agent-contextfiles)',
           repoMap: 'var(--color-agent-repomap)',
         },
-        diffViewerBgPrimary: 'var(--color-diffviewer-bg-primary)',
-        diffViewerTextPrimary: 'var(--color-diffviewer-text-primary)',
-        // Keep existing neutral/gray colors for backward compatibility
-        // neutral: {
-        //   50: '#f8f9fa',
-        //   100: '#f1f3f5',
-        //   200: '#999ba3',
-        //   300: '#8c8e95',
-        //   400: '#7b7d86',
-        //   500: '#585c75',
-        //   600: '#3d4166',
-        //   700: '#333652',
-        //   800: '#2a2c3f',
-        //   850: '#222431',
-        //   900: '#191a22',
-        //   950: '#141417',
-        // },
+        diffViewerBgOldPrimary: 'var(--color-diffviewer-bg-old-primary)',
+        diffViewerBgOldSecondary: 'var(--color-diffviewer-bg-old-secondary)',
+        diffViewerBgNewPrimary: 'var(--color-diffviewer-bg-new-primary)',
+        diffViewerBgNewSecondary: 'var(--color-diffviewer-bg-new-secondary)',
+
       },
       borderRadius: {
         'xl': '0.75rem',

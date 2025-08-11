@@ -141,6 +141,7 @@
   --color-error-30: #ef44444c;
   --color-error-50: #ef444480;
   --color-error-light: #f87171;
+  --color-error-lighter: #fca5a5;
 
   --color-info: #2563eb; /* blue-600 */
   --color-info-light: #3b82f6; /* blue-500 */
@@ -162,8 +163,10 @@
   --color-agent-contextfiles: #facc15; /* yellow-400 */
   --color-agent-repomap: #60a5fa; /* blue-400 */
 
-  --color-diffviewer-bg-primary: #7f1d1d80; /* red-900 opacity 0,5*/
-  --color-diffviewer-text-primary: #fca5a5; /* red-300 */
+  --color-diffviewer-bg-old-primary: #3f1d25;
+  --color-diffviewer-bg-old-secondary: #2c141a;
+  --color-diffviewer-bg-new-primary: #022c22;
+  --color-diffviewer-bg-new-secondary: #011f19;
 }
 
 .theme-blue {
@@ -224,6 +227,7 @@
   --color-error-30: #ef44444c;
   --color-error-50: #ef444480;
   --color-error-light: #f87171;
+  --color-error-lightest: #fca5a5;
 
   --color-info: #2563eb;
   --color-info-light: #3b82f6;

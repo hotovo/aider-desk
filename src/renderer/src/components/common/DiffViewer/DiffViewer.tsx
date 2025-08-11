@@ -53,7 +53,7 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
           </div>
         </div>
         {diffError.message && (
-          <div className="w-full px-4 py-2 bg-info text-diffViewerTextPrimary text-xs text-center">
+          <div className="w-full px-4 py-2 bg-info text-errorLighter text-xs text-center">
             Error: {diffError.message}
             <br />
             Please report an issue in https://github.com/hotovo/aider-desk/issues.
