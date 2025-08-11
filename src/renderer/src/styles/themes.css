@@ -56,6 +56,8 @@
   --color-error-30: #dc35454c;
   --color-error-50: #dc354580;
   --color-error-light: #ff6b6b;
+  --color-error-lighter: #ff8787;
+  --color-error-lightest: #ffc9c9;
 
   --color-info: #0d6efd;
   --color-info-light: #339af0;
@@ -79,8 +81,10 @@
   --color-agent-repomap: #74c0fc;
 
   /* Diff Viewer Colors */
-  --color-diffviewer-bg-primary: #dc354580;
-  --color-diffviewer-text-primary: #ff8787;
+  --color-diffviewer-bg-old-primary: #fff5f5;
+  --color-diffviewer-bg-old-secondary: #ffe3e3;
+  --color-diffviewer-bg-new-primary: #ebfbee;
+  --color-diffviewer-bg-new-secondary: #d3f9d8;
 }
 
 .theme-dark {
@@ -142,6 +146,7 @@
   --color-error-50: #ef444480;
   --color-error-light: #f87171;
   --color-error-lighter: #fca5a5;
+  --color-error-lightest: #fecaca;
 
   --color-info: #2563eb; /* blue-600 */
   --color-info-light: #3b82f6; /* blue-500 */
@@ -227,7 +232,8 @@
   --color-error-30: #ef44444c;
   --color-error-50: #ef444480;
   --color-error-light: #f87171;
-  --color-error-lightest: #fca5a5;
+  --color-error-lighter: #fca5a5;
+  --color-error-lightest: #fecaca;
 
   --color-info: #2563eb;
   --color-info-light: #3b82f6;
@@ -251,8 +257,10 @@
   --color-agent-repomap: #60a5fa;
 
   /* Diff Viewer Colors */
-  --color-diffviewer-bg-primary: #7f1d1d80;
-  --color-diffviewer-text-primary: #fca5a5;
+  --color-diffviewer-bg-old-primary: #3f1d25;
+  --color-diffviewer-bg-old-secondary: #2c141a;
+  --color-diffviewer-bg-new-primary: #022c22;
+  --color-diffviewer-bg-new-secondary: #011f19;
 }
 
 .theme-green {
@@ -313,6 +321,8 @@
   --color-error-30: #ef44444c;
   --color-error-50: #ef444480;
   --color-error-light: #f87171;
+  --color-error-lighter: #fca5a5;
+  --color-error-lightest: #fecaca;
 
   --color-info: #22c55e;
   --color-info-light: #4ade80;
@@ -336,8 +346,10 @@
   --color-agent-repomap: #a5f3fc;
 
   /* Diff Viewer Colors */
-  --color-diffviewer-bg-primary: #7f1d1d80;
-  --color-diffviewer-text-primary: #fca5a5;
+  --color-diffviewer-bg-old-primary: #3f1d25;
+  --color-diffviewer-bg-old-secondary: #2c141a;
+  --color-diffviewer-bg-new-primary: #022c22;
+  --color-diffviewer-bg-new-secondary: #011f19;
 }
 
 .theme-purple {
@@ -398,6 +410,8 @@
   --color-error-30: #ef44444c;
   --color-error-50: #ef444480;
   --color-error-light: #f87171;
+  --color-error-lighter: #fca5a5;
+  --color-error-lightest: #fecaca;
 
   --color-info: #9333ea;
   --color-info-light: #a855f7;
@@ -421,6 +435,8 @@
   --color-agent-repomap: #a5f3fc;
 
   /* Diff Viewer Colors */
-  --color-diffviewer-bg-primary: #7f1d1d80;
-  --color-diffviewer-text-primary: #fca5a5;
+  --color-diffviewer-bg-old-primary: #3f1d25;
+  --color-diffviewer-bg-old-secondary: #2c141a;
+  --color-diffviewer-bg-new-primary: #022c22;
+  --color-diffviewer-bg-new-secondary: #011f19;
 }
