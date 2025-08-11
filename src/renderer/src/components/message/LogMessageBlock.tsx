@@ -18,17 +18,17 @@ export const LogMessageBlock = ({ message, onRemove }: Props) => {
 
   const levelConfig = {
     info: {
-      levelClasses: 'bg-bg-secondary border-bg-tertiary50 text-text-primary',
+      levelClasses: 'bg-bg-secondary border-bg-tertiaryStrong text-text-primary',
       tooltipClass: 'text-text-muted hover:text-text-mutedLight',
       Icon: FaInfoCircle,
     },
     warning: {
-      levelClasses: 'bg-warning10 border-warning30 text-agent-contextFiles',
+      levelClasses: 'bg-warningSubtle border-warningEmphasis text-agent-contextFiles',
       tooltipClass: 'text-warning hover:text-warningLight',
       Icon: FaExclamationTriangle,
     },
     error: {
-      levelClasses: 'bg-error15 border-error30 text-diffViewerTextPrimary',
+      levelClasses: 'bg-errorMuted border-errorEmphasis text-diffViewerTextPrimary',
       tooltipClass: 'text-errorLight hover:text-diffViewerTextPrimary',
       Icon: FaExclamationCircle,
     },

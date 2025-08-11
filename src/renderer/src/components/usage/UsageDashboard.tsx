@@ -134,7 +134,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
           icon={<IoMdClose className="h-5 w-5 text-text-secondary" />}
           onClick={onClose}
           tooltip={t('common.close')}
-          className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiary30 transition-colors duration-200"
+          className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiaryEmphasis transition-colors duration-200"
         />
       </div>
 

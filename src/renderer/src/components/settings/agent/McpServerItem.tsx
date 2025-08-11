@@ -98,7 +98,7 @@ export const McpServerItem = ({
           )}
           {onRemove && (
             <IconButton
-              icon={<FaTrash className="text-error50 hover:text-error w-3.5 h-3.5" />}
+              icon={<FaTrash className="text-errorStrong hover:text-error w-3.5 h-3.5" />}
               onClick={onRemove}
               tooltip={t('common.remove')}
               className="ml-3"

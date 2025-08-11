@@ -89,7 +89,10 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
 
   return (
     <div className="border border-border-defaultDark rounded-md overflow-hidden">
-      <div className="p-3 py-2 cursor-pointer hover:bg-bg-secondaryLight80 transition-colors flex items-center justify-between" onClick={handleCardClick}>
+      <div
+        className="p-3 py-2 cursor-pointer hover:bg-bg-secondaryLightStrongest transition-colors flex items-center justify-between"
+        onClick={handleCardClick}
+      >
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             {isExpanded ? <FaChevronDown className="w-3 h-3 text-text-mutedLight" /> : <FaChevronRight className="w-3 h-3 text-text-mutedLight" />}
@@ -98,14 +101,16 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
         </div>
         <div className="flex items-center space-x-2">
           {agentOnly && (
-            <span className="px-2 py-1 text-xs rounded-full font-medium bg-infoLight30 text-infoLighter border border-infoLight30">
+            <span className="px-2 py-1 text-xs rounded-full font-medium bg-infoLightEmphasis text-infoLighter border border-infoLightEmphasis">
               {t('settings.models.agentOnly')}
             </span>
           )}
           <span
             className={clsx(
               'px-2 py-1 text-xs rounded-full font-medium',
-              isConfigured ? 'bg-success20 text-successLight border border-success30' : 'bg-bg-fourth20 text-text-mutedLight border border-bg-fourth30',
+              isConfigured
+                ? 'bg-successMuted text-successLight border border-successEmphasis'
+                : 'bg-bg-fourthMuted text-text-mutedLight border border-bg-fourthEmphasis',
             )}
           >
             {isConfigured ? t('settings.models.configured') : t('settings.models.notConfigured')}

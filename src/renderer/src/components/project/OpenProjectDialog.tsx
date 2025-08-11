@@ -101,7 +101,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
         rightElement={
           <IconButton
             onClick={handleSelectProject}
-            className="p-1.5 rounded-md hover:bg-bg-tertiary50 transition-colors"
+            className="p-1.5 rounded-md hover:bg-bg-tertiaryStrong transition-colors"
             tooltip={t('dialogs.browseFoldersTooltip')}
             tooltipId="browseTooltipId"
             icon={<FaFolder className="w-4 h-4" />}
@@ -114,7 +114,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
 
       {recentProjects.length > 0 && (
         <Accordion className="mt-2" title={<div className="flex items-center gap-2 text-sm">{t('dialogs.recentProjects')}</div>}>
-          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-bg-fourth scrollbar-track-bg-secondaryLight80">
+          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-bg-fourth scrollbar-track-bg-secondaryLightStrongest">
             {recentProjects.map((path) => (
               <button
                 key={path}
@@ -122,7 +122,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
                   onAddProject(path);
                   onClose();
                 }}
-                className="text-left p-1.5 rounded hover:bg-bg-tertiary50 transition-colors truncate text-xs ml-2 flex-shrink-0"
+                className="text-left p-1.5 rounded hover:bg-bg-tertiaryStrong transition-colors truncate text-xs ml-2 flex-shrink-0"
                 title={path}
               >
                 {path}

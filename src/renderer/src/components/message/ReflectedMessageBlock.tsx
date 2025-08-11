@@ -19,7 +19,7 @@ export const ReflectedMessageBlock = ({ baseDir, message, allFiles }: Props) => 
   const parsedContent = useParsedContent(baseDir, message.content, allFiles);
 
   return (
-    <div className="rounded-md p-3 mb-2 max-w-full text-xs bg-bg-primaryLight50 border border-border-darkLight50 text-text-mutedLight  relative group break-words whitespace-pre-wrap">
+    <div className="rounded-md p-3 mb-2 max-w-full text-xs bg-bg-primaryLightStrong border border-border-darkLightStrong text-text-mutedLight  relative group break-words whitespace-pre-wrap">
       <div className="flex items-center cursor-pointer select-none" onClick={() => setIsExpanded(!isExpanded)}>
         {isExpanded ? <MdKeyboardArrowDown className="mr-2" /> : <MdKeyboardArrowRight className="mr-2" />}
         <span className="opacity-70 text-xs">{t('reflectedMessage.title')}</span>

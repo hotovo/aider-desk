@@ -112,7 +112,7 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               placeholder={t('settings.aider.envVarsPlaceholder')}
             />
             {!showEnvVars && (
-              <div className="absolute inset-[3px] bottom-[9px] bg-bg-primaryLight50 backdrop-blur-sm flex items-center justify-center rounded-sm">
+              <div className="absolute inset-[3px] bottom-[9px] bg-bg-primaryLightStrong backdrop-blur-sm flex items-center justify-center rounded-sm">
                 <Button variant="text" color="secondary" onClick={() => setShowEnvVars(true)} className="flex items-center" size="sm">
                   <HiEye className="mr-2" /> {t('settings.common.showSecrets')}
                 </Button>

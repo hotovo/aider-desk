@@ -173,7 +173,7 @@ const SortableTabItem = ({ project, activeProject, onCloseProject }: SortableTab
             'text-sm pl-3 py-2 pr-1 border-r border-border-darkLight transition-all duration-200 ease-in-out flex items-center gap-3 relative whitespace-nowrap',
             selected
               ? 'bg-gradient-to-b from-bg-secondaryLight to-bg-secondaryLight text-text-primary font-medium'
-              : 'bg-gradient-to-b from-bg-primary to-bg-primaryLight text-text-muted hover:bg-bg-secondaryLight80 hover:text-text-tertiary',
+              : 'bg-gradient-to-b from-bg-primary to-bg-primaryLight text-text-muted hover:bg-bg-secondaryLightStrongest hover:text-text-tertiary',
           )
         }
       >
@@ -181,7 +181,7 @@ const SortableTabItem = ({ project, activeProject, onCloseProject }: SortableTab
         <div
           className={clsx(
             'flex items-center justify-center rounded-full p-1 transition-colors duration-200 z-10',
-            activeProject?.baseDir === project.baseDir ? 'hover:bg-bg-fourth' : 'hover:bg-bg-tertiary50',
+            activeProject?.baseDir === project.baseDir ? 'hover:bg-bg-fourth' : 'hover:bg-bg-tertiaryStrong',
           )}
           onClick={(e) => {
             e.preventDefault();

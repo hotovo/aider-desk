@@ -133,7 +133,7 @@ export const Onboarding = () => {
             <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.providers.connectTitle')}</h2>
             <p className="text-text-tertiary text-sm">{t('onboarding.providers.connectDescription')}</p>
             <ModelProvidersSettings settings={settings!} setSettings={saveSettings} showProminentModels={true} />
-            <div className="mt-4 p-3 bg-info10 rounded-lg border border-infoLight30">
+            <div className="mt-4 p-3 bg-infoSubtle rounded-lg border border-infoLightEmphasis">
               <p className="text-xs text-infoLightest">{t('onboarding.providers.advancedUsersNote')}</p>
             </div>
             <div className="flex justify-center mt-4">
@@ -151,7 +151,7 @@ export const Onboarding = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-text-primary uppercase !mb-4">{t('onboarding.aider.fineTuneTitle')}</h2>
-            <div className="p-3 bg-info10 rounded-lg border border-infoLight30">
+            <div className="p-3 bg-infoSubtle rounded-lg border border-infoLightEmphasis">
               <p className="text-xs text-infoLightest">{t('onboarding.aider.fineTuneNote')}</p>
             </div>
             <AiderSettings settings={settings!} setSettings={saveSettings} initialShowEnvVars={true} />

@@ -18,18 +18,18 @@ type Props = {
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
   primary: {
     contained: 'bg-warning hover:bg-warningLight text-text-primary',
-    text: 'text-warning hover:bg-warning10',
-    outline: 'border-warning text-warning hover:bg-warning10',
+    text: 'text-warning hover:bg-warningSubtle',
+    outline: 'border-warning text-warning hover:bg-warningSubtle',
   },
   secondary: {
     contained: 'bg-info hover:bg-infoLight text-text-primary',
-    text: 'text-info hover:bg-info10',
-    outline: 'border-info text-info hover:bg-info10',
+    text: 'text-info hover:bg-infoSubtle',
+    outline: 'border-info text-info hover:bg-infoSubtle',
   },
   danger: {
     contained: 'bg-error hover:bg-error text-text-primary',
-    text: 'text-error hover:bg-error10',
-    outline: 'border-error text-error hover:bg-error10',
+    text: 'text-error hover:bg-errorSubtle',
+    outline: 'border-error text-error hover:bg-errorSubtle',
   },
 };
 
@@ -50,7 +50,7 @@ export const Button = ({
   size = 'md',
 }: Props) => {
   const baseColorClasses = disabled
-    ? 'bg-bg-tertiary50 text-text-muted cursor-not-allowed hover:bg-bg-tertiary50 hover:text-text-muted'
+    ? 'bg-bg-tertiaryStrong text-text-muted cursor-not-allowed hover:bg-bg-tertiaryStrong hover:text-text-muted'
     : colorClasses[color][variant];
 
   const baseSizeClasses = sizeClasses[size];

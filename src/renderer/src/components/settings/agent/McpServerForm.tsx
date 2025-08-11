@@ -161,7 +161,7 @@ export const McpServerForm = ({ onSave, onCancel, servers }: Props) => {
           })}
           value={configJSON}
           onChange={handleChange}
-          className={`w-full h-96 p-2 resize-none ${configJSON && !isValidJson ? 'border-error30 focus:border-error30' : ''}`}
+          className={`w-full h-96 p-2 resize-none ${configJSON && !isValidJson ? 'border-errorEmphasis focus:border-errorEmphasis' : ''}`}
         />
       </div>
       <div className="flex justify-between items-center gap-2">

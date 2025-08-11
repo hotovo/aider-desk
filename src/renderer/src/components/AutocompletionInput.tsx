@@ -141,7 +141,7 @@ export const AutocompletionInput = ({
       <input
         ref={inputRef}
         className={clsx(
-          'w-full p-3 rounded-lg bg-bg-primaryLight50 border border-bg-tertiary50 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-border-default focus:ring-1 focus:ring-border-default transition-colors',
+          'w-full p-3 rounded-lg bg-bg-primaryLightStrong border border-bg-tertiaryStrong text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-border-default focus:ring-1 focus:ring-border-default transition-colors',
           inputClassName,
         )}
         type="text"

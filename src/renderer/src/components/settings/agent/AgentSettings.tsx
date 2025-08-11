@@ -327,7 +327,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
   ) : (
     <div className="flex h-[600px] max-h-[100%] overflow-hidden -m-6">
       {/* Left sidebar with profiles and providers */}
-      <div className="w-[260px] border-r border-bg-tertiary50 p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary">
+      <div className="w-[260px] border-r border-bg-tertiaryStrong p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary">
         <h4 className="text-sm uppercase font-medium">{t('agentProfiles.profiles')}</h4>
         <div className="py-2">
           {agentProfiles.map((profile) => (

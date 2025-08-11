@@ -42,7 +42,7 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomCha
 
   const renderTabPanel = (content: ReactNode) => (
     <TabPanel className="flex flex-col flex-1 min-h-0 bg-bg-secondary backdrop-blur-sm border border-border-defaultDark rounded-b-lg shadow-xl">
-      <div className="p-8 flex flex-col flex-1 max-h-[100%] overflow-y-auto scrollbar-thin scrollbar-track-bg-secondaryLight80 scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fifth">
+      <div className="p-8 flex flex-col flex-1 max-h-[100%] overflow-y-auto scrollbar-thin scrollbar-track-bg-secondaryLightStrongest scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fifth">
         {content}
       </div>
     </TabPanel>

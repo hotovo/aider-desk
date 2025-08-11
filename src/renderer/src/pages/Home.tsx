@@ -206,14 +206,14 @@ export const Home = () => {
                 onClick={() => {
                   setShowSettingsTab(3);
                 }}
-                className="px-4 py-2 hover:bg-bg-tertiary30 transition-colors duration-200"
+                className="px-4 py-2 hover:bg-bg-tertiaryEmphasis transition-colors duration-200"
               />
             )}
             <IconButton
               icon={<MdBarChart className="h-5 w-5 text-text-secondary" />}
               tooltip={t('usageDashboard.title')}
               onClick={() => setIsUsageDashboardVisible(true)}
-              className="px-4 py-2 hover:bg-bg-tertiary30 transition-colors duration-200"
+              className="px-4 py-2 hover:bg-bg-tertiaryEmphasis transition-colors duration-200"
             />
             <IconButton
               icon={<MdSettings className="h-5 w-5 text-text-secondary" />}
@@ -221,7 +221,7 @@ export const Home = () => {
               onClick={() => {
                 setShowSettingsTab(0);
               }}
-              className="px-4 py-2 hover:bg-bg-tertiary30 transition-colors duration-200"
+              className="px-4 py-2 hover:bg-bg-tertiaryEmphasis transition-colors duration-200"
             />
           </div>
         </div>
