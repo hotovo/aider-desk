@@ -85,6 +85,273 @@
   --color-diffviewer-bg-new-secondary: #011f19;
 }
 
+.theme-bw {
+  /* Background Colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-primary-light: #f8f8f8;
+  --color-bg-primary-light-strong: #f8f8f880;
+  --color-bg-secondary: #e0e0e0;
+  --color-bg-secondary-light: #d0d0d0;
+  --color-bg-secondary-light-strongest: #d0d0d0f2;
+  --color-bg-tertiary: #b0b0b0;
+  --color-bg-tertiary-emphasis: #b0b0b04c;
+  --color-bg-tertiary-strong: #b0b0b07f;
+  --color-bg-fourth: #808080;
+  --color-bg-fourth-muted: #80808033;
+  --color-bg-fourth-emphasis: #8080804c;
+  --color-bg-fifth: #404040;
+
+  /* Text Colors */
+  --color-text-primary: #000000;
+  --color-text-secondary: #202020;
+  --color-text-tertiary: #404040;
+  --color-text-muted-light: #606060;
+  --color-text-muted: #808080;
+  --color-text-muted-dark: #a0a0a0;
+  --color-text-dark: #000000;
+
+  /* Border Colors */
+  --color-border-dark: #e0e0e0;
+  --color-border-dark-light: #d0d0d0;
+  --color-border-dark-light-strong: #d0d0d080;
+  --color-border-default-dark: #b0b0b0;
+  --color-border-default: #808080;
+  --color-border-accent: #404040;
+  --color-border-light: #000000;
+
+  /* Accent Colors */
+  --color-accent-primary: #404040;
+  --color-accent-secondary: #808080;
+  --color-accent-light: #000000;
+
+  /* Status Colors - Grayscale versions */
+  --color-success: #808080;
+  --color-success-light: #a0a0a0;
+  --color-success-subtle: #8080801a;
+  --color-success-muted: #80808033;
+  --color-success-emphasis: #8080804c;
+
+  --color-warning: #606060;
+  --color-warning-subtle: #60606019;
+  --color-warning-emphasis: #6060604c;
+  --color-warning-light: #707070;
+
+  --color-error: #000000;
+  --color-error-dark: #000000;
+  --color-error-subtle: #0000001a;
+  --color-error-muted: #00000026;
+  --color-error-emphasis: #0000004c;
+  --color-error-strong: #00000080;
+  --color-error-light: #202020;
+  --color-error-lighter: #404040;
+  --color-error-lightest: #606060;
+
+  --color-info: #404040;
+  --color-info-light: #606060;
+  --color-info-lighter: #808080;
+  --color-info-lightest: #a0a0a0;
+  --color-info-subtle: #4040401a;
+  --color-info-light-muted: #40404033;
+  --color-info-light-emphasis: #4040404c;
+
+  /* Input Colors */
+  --color-input-bg: #f8f8f8;
+  --color-input-border: #808080;
+  --color-input-text: #000000;
+
+  /* Agent colors - grayscale */
+  --color-agent-autoapprove: #a0a0a0;
+  --color-agent-aidertools: #808080;
+  --color-agent-powertools: #606060;
+  --color-agent-todotools: #404040;
+  --color-agent-contextfiles: #202020;
+  --color-agent-repomap: #000000;
+
+  /* Diff viewer - grayscale */
+  --color-diffviewer-bg-old-primary: #e0e0e0;
+  --color-diffviewer-bg-old-secondary: #d0d0d0;
+  --color-diffviewer-bg-new-primary: #f0f0f0;
+  --color-diffviewer-bg-new-secondary: #e8e8e8;
+}
+
+.theme-black {
+  /* Background Colors */
+  --color-bg-primary: #000000;
+  --color-bg-primary-light: #080808;
+  --color-bg-primary-light-strong: #08080880;
+  --color-bg-secondary: #101010;
+  --color-bg-secondary-light: #181818;
+  --color-bg-secondary-light-strongest: #181818f2;
+  --color-bg-tertiary: #202020;
+  --color-bg-tertiary-emphasis: #2020204c;
+  --color-bg-tertiary-strong: #2020207f;
+  --color-bg-fourth: #282828;
+  --color-bg-fourth-muted: #28282833;
+  --color-bg-fourth-emphasis: #2828284c;
+  --color-bg-fifth: #303030;
+
+  /* Text Colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e0e0e0;
+  --color-text-tertiary: #c0c0c0;
+  --color-text-muted-light: #a0a0a0;
+  --color-text-muted: #808080;
+  --color-text-muted-dark: #606060;
+  --color-text-dark: #404040;
+
+  /* Border Colors */
+  --color-border-dark: #101010;
+  --color-border-dark-light: #181818;
+  --color-border-dark-light-strong: #18181880;
+  --color-border-default-dark: #202020;
+  --color-border-default: #282828;
+  --color-border-accent: #303030;
+  --color-border-light: #404040;
+
+  /* Accent Colors */
+  --color-accent-primary: #303030;
+  --color-accent-secondary: #282828;
+  --color-accent-light: #404040;
+
+  /* Status Colors - Dark versions */
+  --color-success: #00ff00;
+  --color-success-light: #40ff40;
+  --color-success-subtle: #00ff001a;
+  --color-success-muted: #00ff0033;
+  --color-success-emphasis: #00ff004c;
+
+  --color-warning: #ffff00;
+  --color-warning-subtle: #ffff0019;
+  --color-warning-emphasis: #ffff004c;
+  --color-warning-light: #ffff40;
+
+  --color-error: #ff0000;
+  --color-error-dark: #800000;
+  --color-error-subtle: #ff00001a;
+  --color-error-muted: #ff000026;
+  --color-error-emphasis: #ff00004c;
+  --color-error-strong: #ff000080;
+  --color-error-light: #ff4040;
+  --color-error-lighter: #ff8080;
+  --color-error-lightest: #ffc0c0;
+
+  --color-info: #0000ff;
+  --color-info-light: #4040ff;
+  --color-info-lighter: #8080ff;
+  --color-info-lightest: #c0c0ff;
+  --color-info-subtle: #0000ff1a;
+  --color-info-light-muted: #0000ff33;
+  --color-info-light-emphasis: #0000ff4c;
+
+  /* Input Colors */
+  --color-input-bg: #080808;
+  --color-input-border: #282828;
+  --color-input-text: #ffffff;
+
+  /* Agent colors - bright */
+  --color-agent-autoapprove: #00ff00;
+  --color-agent-aidertools: #ff8000;
+  --color-agent-powertools: #ff00ff;
+  --color-agent-todotools: #00ffff;
+  --color-agent-contextfiles: #ffff00;
+  --color-agent-repomap: #0080ff;
+
+  /* Diff viewer - dark */
+  --color-diffviewer-bg-old-primary: #200000;
+  --color-diffviewer-bg-old-secondary: #100000;
+  --color-diffviewer-bg-new-primary: #002000;
+  --color-diffviewer-bg-new-secondary: #001000;
+}
+
+.theme-neon {
+  /* Background Colors */
+  --color-bg-primary: #1a1a2e;
+  --color-bg-primary-light: #16213e;
+  --color-bg-primary-light-strong: #16213e80;
+  --color-bg-secondary: #0f3460;
+  --color-bg-secondary-light: #533483;
+  --color-bg-secondary-light-strongest: #533483f2;
+  --color-bg-tertiary: #e94560;
+  --color-bg-tertiary-emphasis: #e945604c;
+  --color-bg-tertiary-strong: #e945607f;
+  --color-bg-fourth: #f9a828;
+  --color-bg-fourth-muted: #f9a82833;
+  --color-bg-fourth-emphasis: #f9a8284c;
+  --color-bg-fifth: #26ff93;
+
+  /* Text Colors */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e2f3f5;
+  --color-text-tertiary: #22d1ee;
+  --color-text-muted-light: #3d5af1;
+  --color-text-muted: #0e153a;
+  --color-text-muted-dark: #16213e;
+  --color-text-dark: #1a1a2e;
+
+  /* Border Colors */
+  --color-border-dark: #0f3460;
+  --color-border-dark-light: #533483;
+  --color-border-dark-light-strong: #53348380;
+  --color-border-default-dark: #e94560;
+  --color-border-default: #f9a828;
+  --color-border-accent: #26ff93;
+  --color-border-light: #e2f3f5;
+
+  /* Accent Colors */
+  --color-accent-primary: #26ff93;
+  --color-accent-secondary: #f9a828;
+  --color-accent-light: #e2f3f5;
+
+  /* Status Colors - Vibrant */
+  --color-success: #00ff88;
+  --color-success-light: #40ffa0;
+  --color-success-subtle: #00ff881a;
+  --color-success-muted: #00ff8833;
+  --color-success-emphasis: #00ff884c;
+
+  --color-warning: #ffcc00;
+  --color-warning-subtle: #ffcc0019;
+  --color-warning-emphasis: #ffcc004c;
+  --color-warning-light: #ffdd40;
+
+  --color-error: #ff3366;
+  --color-error-dark: #cc0044;
+  --color-error-subtle: #ff33661a;
+  --color-error-muted: #ff336626;
+  --color-error-emphasis: #ff33664c;
+  --color-error-strong: #ff336680;
+  --color-error-light: #ff6699;
+  --color-error-lighter: #ff99bb;
+  --color-error-lightest: #ffccdd;
+
+  --color-info: #3366ff;
+  --color-info-light: #6699ff;
+  --color-info-lighter: #99ccff;
+  --color-info-lightest: #cce0ff;
+  --color-info-subtle: #3366ff1a;
+  --color-info-light-muted: #3366ff33;
+  --color-info-light-emphasis: #3366ff4c;
+
+  /* Input Colors */
+  --color-input-bg: #16213e;
+  --color-input-border: #f9a828;
+  --color-input-text: #ffffff;
+
+  /* Agent colors - vibrant */
+  --color-agent-autoapprove: #00ff88;
+  --color-agent-aidertools: #ff9933;
+  --color-agent-powertools: #cc66ff;
+  --color-agent-todotools: #66ccff;
+  --color-agent-contextfiles: #ffcc00;
+  --color-agent-repomap: #6699ff;
+
+  /* Diff viewer - colorful */
+  --color-diffviewer-bg-old-primary: #3f1d25;
+  --color-diffviewer-bg-old-secondary: #2c141a;
+  --color-diffviewer-bg-new-primary: #022c22;
+  --color-diffviewer-bg-new-secondary: #011f19;
+}
+
 .theme-light {
   /* Background Colors */
   --color-bg-primary: #ffffff;

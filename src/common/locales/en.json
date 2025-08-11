@@ -317,7 +317,10 @@
       "light": "Light",
       "blue": "Blue",
       "green": "Green",
-      "purple": "Purple"
+      "purple": "Purple",
+      "bw": "Black & White",
+      "black": "Black",
+      "neon": "Neon"
     },
     "aiderRestartConfirm": {
       "title": "Restart Required",
