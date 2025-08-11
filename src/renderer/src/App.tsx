@@ -19,7 +19,7 @@ const ThemeManager = () => {
 
   useEffect(() => {
     // Remove all theme classes first
-    const themeClasses = ['theme-light', 'theme-dark', 'theme-blue', 'theme-green', 'theme-purple'];
+    const themeClasses = ['theme-light', 'theme-dark', 'theme-blue', 'theme-green', 'theme-purple', 'theme-bw', 'theme-black', 'theme-neon'];
     document.body.classList.remove(...themeClasses);
 
     // Add the current theme class, default to dark
