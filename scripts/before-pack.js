@@ -25,5 +25,24 @@ exports.default = async function(context) {
         console.error(`uv binary for macOS ${arch} not found at ${sourceFile}`);
       }
     }
+  } else if (platform === 'win') {
+    console.log(`Preparing uv binary for Windows ${arch}...`);
+    if (arch === 'x64' || arch === 'arm64') {
+      const sourceDir = path.join(__dirname, '..', 'resources', `win-${arch}`);
+      const targetDir = path.join(__dirname, '..', 'resources', 'win');
+      const sourceFile = path.join(sourceDir, 'uv.exe');
+      const targetFile = path.join(targetDir, 'uv.exe');
+
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+
+      if (fs.existsSync(sourceFile)) {
+        fs.copyFileSync(sourceFile, targetFile);
+        console.log(`uv binary for Windows ${arch} copied successfully.`);
+      } else {
+        console.error(`uv binary for Windows ${arch} not found at ${sourceFile}`);
+      }
+    }
   }
 };

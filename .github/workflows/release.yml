@@ -25,8 +25,8 @@ jobs:
       - name: Release Linux
         run: npm run build:linux -- -p always
 
-  release-win:
-    name: Release Windows packages
+  release-win-x64:
+    name: Release Windows x64 packages
     runs-on: windows-latest
 
     steps:
@@ -41,10 +41,43 @@ jobs:
 
       - run: npm install
 
-      - name: Release Windows
+      - name: Release Windows x64
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build && npx electron-builder --win -p always
+        run: npm run build && npx electron-builder --win --x64 -p always
+
+      - name: Upload latest.yml artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-win-x64-yml
+          path: dist/latest.yml
+
+  release-win-arm64:
+    name: Release Windows arm64 packages
+    runs-on: windows-latest
+
+    steps:
+      - name: Preserve $HOME set in the container
+        run: echo HOME=/root >> "$GITHUB_ENV"
+
+      - uses: "actions/checkout@v1"
+
+      - uses: "actions/setup-node@v4"
+        with:
+          node-version: '22.17.0'
+
+      - run: npm install
+
+      - name: Release Windows arm64
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run build && npx electron-builder --win --arm64 -p always
+
+      - name: Upload latest.yml artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-win-arm64-yml
+          path: dist/latest.yml
 
   release-macos-x64:
     name: Release macOS x64 packages
