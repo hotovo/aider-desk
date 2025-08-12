@@ -789,6 +789,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               }}
               indentWithTab={false}
               extensions={[
+                EditorView.theme({
+                  '&.cm-focused': {
+                    outline: 'none',
+                  },
+                }),
                 promptBehavior.useVimBindings ? vim() : keymap.of([]),
                 EditorView.lineWrapping,
                 EditorView.domEventHandlers({
