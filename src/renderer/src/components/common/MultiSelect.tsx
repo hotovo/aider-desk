@@ -133,19 +133,15 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
             }}
             role="listbox"
           >
-            <li
-              className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]} hover:bg-neutral-700`}
-              onClick={handleSelectAll}
-            >
-              <Checkbox label={t('multiselect.selectAll')} checked={selected.length === filteredOptions.length} onChange={() => {}} />
+            <li className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]} hover:bg-neutral-700`}>
+              <Checkbox label={t('multiselect.selectAll')} checked={selected.length === filteredOptions.length} onChange={handleSelectAll} />
             </li>
             {filteredOptions.map((option) => (
               <li
                 key={option.value}
                 className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]} hover:bg-neutral-700`}
-                onClick={() => handleCheckboxChange(option.value)}
               >
-                <Checkbox label={option.label} checked={selected.includes(option.value)} onChange={() => {}} />
+                <Checkbox label={option.label} checked={selected.includes(option.value)} onChange={() => handleCheckboxChange(option.value)} />
               </li>
             ))}
           </ul>,

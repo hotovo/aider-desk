@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - parsing <think> tags as reasoning part of the response
+- fixed multiselect checkboxes
 
 ## [0.26.0]
 
