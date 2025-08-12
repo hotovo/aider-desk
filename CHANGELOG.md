@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - parsing <think> tags as reasoning part of the response
+- added more color themes
 
 ## [0.26.0]
 

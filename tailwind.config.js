@@ -51,7 +51,7 @@ module.exports = {
         },
         success: 'var(--color-success)',
         successLight: 'var(--color-success-light)',
-        successSubtle: 'var(--color-success-subtle',
+        successSubtle: 'var(--color-success-subtle)',
         successMuted: 'var(--color-success-muted)',
         successEmphasis: 'var(--color-success-emphasis)',
 
