@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 
 import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
+import { BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron';
 
 import { Agent, McpManager } from '@/agent';
 import { getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
@@ -45,7 +45,7 @@ export const setupIpcHandlers = (
     return store.getSettings();
   });
 
-  ipcMain.on('run-prompt', (_, baseDir: string, prompt: string, mode?: Mode) => {
+  ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {
     void projectManager.getProject(baseDir).runPrompt(prompt, mode);
   });
 
@@ -190,10 +190,9 @@ export const setupIpcHandlers = (
     if (clearWeakModel) {
       projectSettings.weakModel = null;
     }
-    projectSettings.editFormat = null;
 
     store.saveProjectSettings(baseDir, projectSettings);
-    projectManager.getProject(baseDir).updateModels(mainModel, projectSettings?.weakModel || null);
+    projectManager.getProject(baseDir).updateModels(mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats[mainModel]);
   });
 
   ipcMain.on('update-weak-model', (_, baseDir: string, weakModel: string) => {
@@ -202,7 +201,7 @@ export const setupIpcHandlers = (
     store.saveProjectSettings(baseDir, projectSettings);
 
     const project = projectManager.getProject(baseDir);
-    project.updateModels(projectSettings.mainModel, weakModel);
+    project.updateModels(projectSettings.mainModel, weakModel, projectSettings.modelEditFormats[projectSettings.mainModel]);
   });
 
   ipcMain.on('update-architect-model', (_, baseDir: string, architectModel: string) => {
@@ -214,15 +213,62 @@ export const setupIpcHandlers = (
     project.setArchitectModel(architectModel);
   });
 
-  ipcMain.on('update-edit-format', (_, baseDir: string, format: EditFormat) => {
+  ipcMain.on('update-edit-formats', (_, baseDir: string, updatedFormats: Record<string, EditFormat>) => {
     const projectSettings = store.getProjectSettings(baseDir);
-    projectSettings.editFormat = format;
+    // Update just the current model's edit format while preserving others
+    projectSettings.modelEditFormats = {
+      ...projectSettings.modelEditFormats,
+      ...updatedFormats,
+    };
     store.saveProjectSettings(baseDir, projectSettings);
-    projectManager.getProject(baseDir).updateModels(projectSettings.mainModel, projectSettings?.weakModel || null, format);
+    projectManager
+      .getProject(baseDir)
+      .updateModels(projectSettings.mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats[projectSettings.mainModel]);
   });
 
   ipcMain.on('run-command', (_, baseDir: string, command: string) => {
-    projectManager.getProject(baseDir).runCommand(command);
+    const project = projectManager.getProject(baseDir);
+    project.runCommand(command);
+  });
+
+  ipcMain.on('paste-image', async (_, baseDir: string) => {
+    const project = projectManager.getProject(baseDir);
+    try {
+      const image = clipboard.readImage();
+      if (image.isEmpty()) {
+        project.addLogMessage('info', 'No image found in clipboard.');
+        return;
+      }
+
+      const imagesDir = path.join(AIDER_DESK_TMP_DIR, 'images');
+      const absoluteImagesDir = path.join(baseDir, imagesDir);
+      await fs.mkdir(absoluteImagesDir, { recursive: true });
+
+      const files = await fs.readdir(absoluteImagesDir);
+      const imageFiles = files.filter((file) => file.startsWith('image-') && file.endsWith('.png'));
+      let maxNumber = 0;
+      for (const file of imageFiles) {
+        const match = file.match(/^image-(\d+)\.png$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
+        }
+      }
+      const nextImageNumber = maxNumber + 1;
+      const imageName = `image-${nextImageNumber.toString().padStart(3, '0')}`;
+      const imageBuffer = image.toPNG();
+      const imagePath = path.join(imagesDir, `${imageName}.png`);
+      const absoluteImagePath = path.join(baseDir, imagePath);
+
+      await fs.writeFile(absoluteImagePath, imageBuffer);
+
+      await project.addFile({ path: imagePath, readOnly: true });
+    } catch (error) {
+      logger.error('Error pasting image:', error);
+      project.addLogMessage('error', `Failed to paste image: ${error instanceof Error ? error.message : String(error)}`);
+    }
   });
 
   ipcMain.on('interrupt-response', (_, baseDir: string) => {
@@ -266,7 +312,7 @@ export const setupIpcHandlers = (
 
       let targetFilePath: string;
       if (!filePath) {
-        targetFilePath = path.join(baseDir, AIDER_DESK_TMP_DIR, `${normalizedUrl}.md`);
+        targetFilePath = path.join(baseDir, AIDER_DESK_TMP_DIR, 'web-sites', `${normalizedUrl}.md`);
         await fs.mkdir(path.dirname(targetFilePath), { recursive: true });
       } else {
         if (path.isAbsolute(filePath)) {
@@ -292,7 +338,7 @@ export const setupIpcHandlers = (
       }
 
       await fs.writeFile(targetFilePath, `Scraped content of ${url}:\n\n${content}`);
-      await project.addFile({ path: targetFilePath, readOnly: true });
+      await project.addFile({ path: path.relative(baseDir, targetFilePath), readOnly: true });
       if (filePath) {
         await project.addToInputHistory(`/web ${url} ${filePath}`);
       } else {
@@ -386,7 +432,7 @@ export const setupIpcHandlers = (
   });
 
   ipcMain.handle('init-project-rules-file', async (_, baseDir: string) => {
-    return await projectManager.getProject(baseDir).initProjectRulesFile();
+    return await projectManager.getProject(baseDir).initProjectAgentsFile();
   });
 
   ipcMain.handle('get-todos', async (_, baseDir: string) => {

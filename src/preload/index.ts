@@ -51,6 +51,13 @@ const terminalDataListeners: Record<string, (event: Electron.IpcRendererEvent, d
 const terminalExitListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalExitData) => void> = {};
 
 const api: ApplicationAPI = {
+  addContextMenuListener: (callback) => {
+    const listener = (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(event, params);
+    ipcRenderer.on('context-menu', listener);
+    return () => {
+      ipcRenderer.removeListener('context-menu', listener);
+    };
+  },
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
@@ -73,7 +80,7 @@ const api: ApplicationAPI = {
   updateMainModel: (baseDir, model) => ipcRenderer.send('update-main-model', baseDir, model),
   updateWeakModel: (baseDir, model) => ipcRenderer.send('update-weak-model', baseDir, model),
   updateArchitectModel: (baseDir, model) => ipcRenderer.send('update-architect-model', baseDir, model),
-  updateEditFormat: (baseDir, format) => ipcRenderer.send('update-edit-format', baseDir, format),
+  updateEditFormats: (baseDir, editFormats) => ipcRenderer.send('update-edit-formats', baseDir, editFormats),
   getProjectSettings: (baseDir) => ipcRenderer.invoke('get-project-settings', baseDir),
   patchProjectSettings: (baseDir, settings) => ipcRenderer.invoke('patch-project-settings', baseDir, settings),
   getFilePathSuggestions: (currentPath, directoriesOnly = false) => ipcRenderer.invoke('get-file-path-suggestions', currentPath, directoriesOnly),
@@ -83,6 +90,7 @@ const api: ApplicationAPI = {
   isProjectPath: (path) => ipcRenderer.invoke('is-project-path', path),
   dropFile: (baseDir, path) => ipcRenderer.send('drop-file', baseDir, path),
   runCommand: (baseDir, command) => ipcRenderer.send('run-command', baseDir, command),
+  pasteImage: (baseDir) => ipcRenderer.send('paste-image', baseDir),
   scrapeWeb: (baseDir, url, filePath) => ipcRenderer.invoke('scrape-web', baseDir, url, filePath),
   initProjectRulesFile: (baseDir) => ipcRenderer.invoke('init-project-rules-file', baseDir),
 

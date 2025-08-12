@@ -115,6 +115,26 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       [saveSettings, settings],
     );
 
+    const updateEditFormat = useCallback(
+      (format: EditFormat, modelToUpdate?: string) => {
+        const targetModel = modelToUpdate || modelsData?.mainModel;
+        if (!targetModel) {
+          return;
+        }
+
+        window.api.updateEditFormats(baseDir, { [targetModel]: format });
+
+        if (modelsData && onModelsChange) {
+          // optimistic update
+          onModelsChange({
+            ...modelsData,
+            editFormat: format,
+          });
+        }
+      },
+      [baseDir, modelsData, onModelsChange],
+    );
+
     const updateMainModel = useCallback(
       (mainModel: string) => {
         window.api.updateMainModel(baseDir, mainModel);
@@ -153,19 +173,6 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         }
       },
       [baseDir, modelsData, onModelsChange, updatePreferredModels],
-    );
-
-    const updateEditFormat = useCallback(
-      (format: EditFormat) => {
-        window.api.updateEditFormat(baseDir, format);
-        if (modelsData && onModelsChange) {
-          onModelsChange({
-            ...modelsData,
-            editFormat: format,
-          });
-        }
-      },
-      [baseDir, modelsData, onModelsChange],
     );
 
     const loadSessions = useCallback(async () => {
@@ -331,7 +338,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 <div className="flex items-center space-x-1">
                   <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="edit-format-tooltip" />
                   <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
-                  <EditFormatSelector currentFormat={modelsData.editFormat || 'diff'} onFormatChange={updateEditFormat} />
+                  <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
                 </div>
               </>
             )}

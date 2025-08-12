@@ -10,6 +10,7 @@ import {
   isOpenAiProvider,
   isOpenRouterProvider,
   isRequestyProvider,
+  isVertexAiProvider,
   LlmProvider,
   LlmProviderName,
 } from '@common/agent';
@@ -30,6 +31,7 @@ import {
   OpenAiParameters,
   OpenRouterParameters,
   RequestyParameters,
+  VertexAIParameters,
 } from './agent/providers';
 
 type Props = {
@@ -83,6 +85,9 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
     }
     if (isRequestyProvider(provider)) {
       return <RequestyParameters provider={provider} onChange={onProviderChange} />;
+    }
+    if (isVertexAiProvider(provider)) {
+      return <VertexAIParameters provider={provider} onChange={onProviderChange} />;
     }
     return null;
   };

@@ -74,7 +74,9 @@ export class RestApiController {
     // Add context file
     this.app.post('/api/add-context-file', async (req, res) => {
       try {
-        logger.debug('REST API: Add context file request received', { body: req.body });
+        logger.debug('REST API: Add context file request received', {
+          body: req.body,
+        });
         const result = ContextFileSchema.safeParse(req.body);
         if (!result.success) {
           res.status(400).json({
@@ -109,7 +111,9 @@ export class RestApiController {
     // Drop context file
     this.app.post('/api/drop-context-file', async (req, res) => {
       try {
-        logger.debug('REST API: Drop context file request received', { body: req.body });
+        logger.debug('REST API: Drop context file request received', {
+          body: req.body,
+        });
         const result = ContextFileSchema.safeParse(req.body);
         if (!result.success) {
           res.status(400).json({
@@ -144,7 +148,9 @@ export class RestApiController {
     // Get context files
     this.app.post('/api/get-context-files', async (req, res) => {
       try {
-        logger.debug('REST API: Get context files request received', { body: req.body });
+        logger.debug('REST API: Get context files request received', {
+          body: req.body,
+        });
         const result = GetContextFilesSchema.safeParse(req.body);
         if (!result.success) {
           res.status(400).json({
@@ -176,7 +182,9 @@ export class RestApiController {
     // Get addable files
     this.app.post('/api/get-addable-files', async (req, res) => {
       try {
-        logger.debug('REST API: Get addable files request received', { body: req.body });
+        logger.debug('REST API: Get addable files request received', {
+          body: req.body,
+        });
         const result = GetAddableFilesSchema.safeParse(req.body);
         if (!result.success) {
           res.status(400).json({
@@ -206,7 +214,9 @@ export class RestApiController {
 
     this.app.post('/api/run-prompt', async (req, res) => {
       try {
-        logger.debug('REST API: Run prompt request received', { body: req.body });
+        logger.debug('REST API: Run prompt request received', {
+          body: req.body,
+        });
         // Validate request body
         const result = RunPromptSchema.safeParse(req.body);
         if (!result.success) {
@@ -238,7 +248,7 @@ export class RestApiController {
         try {
           this.isPromptRunning = true;
 
-          const responses = await project.sendPrompt(prompt, editFormat);
+          const responses = await project.sendPrompt(prompt, undefined, editFormat);
 
           res.status(200).json(responses);
         } finally {

@@ -81,6 +81,10 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
     return { action: 'deny' };
   });
 
+  mainWindow.webContents.on('context-menu', (_event, params) => {
+    mainWindow.webContents.send('context-menu', params);
+  });
+
   const saveWindowState = (): void => {
     const [width, height] = mainWindow.getSize();
     const [x, y] = mainWindow.getPosition();

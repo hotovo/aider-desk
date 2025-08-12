@@ -98,7 +98,9 @@
       "quantizations": "Quantizations",
       "quantizationsDescription": "List of quantization levels to filter by (e.g. [\"int4\", \"int8\"]).",
       "sort": "Sort",
-      "sortDescription": "Sort providers by price or throughput."
+      "sortDescription": "Sort providers by price or throughput.",
+      "requireParameters": "Require Parameters",
+      "requireParametersDescription": "Only use providers that support all parameters in your request."
     },
     "agent": {
       "title": "Meet Your AI Agent",
@@ -162,7 +164,11 @@
     "apiKey": "API Key",
     "baseUrl": "Base URL",
     "modelName": "Model Name",
-    "baseUrlPlaceholder": "e.g. http://localhost:8080/v1"
+    "baseUrlPlaceholder": "e.g. http://localhost:8080/v1",
+    "reasoningEffort": "Reasoning Effort",
+    "reasoningEffortLow": "Low",
+    "reasoningEffortMedium": "Medium",
+    "reasoningEffortHigh": "High"
   },
   "ollama": {
     "baseUrl": "Base URL",
@@ -223,7 +229,8 @@
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
-    "requesty": "Requesty"
+    "requesty": "Requesty",
+    "vertex-ai": "Vertex AI"
   },
   "select": {
     "placeholder": "Select an option",
@@ -337,6 +344,14 @@
       "showAllProviders": "Show All Providers",
       "additionalProvidersInfo": "You can configure additional LLM providers for Aider by setting environment variables in the <aiderTab>Aider settings</aiderTab>."
     },
+    "vertexAi": {
+      "project": "Project",
+      "projectPlaceholder": "Enter your Google Cloud project ID",
+      "location": "Location",
+      "locationPlaceholder": "Enter your Google Cloud location",
+      "credentials": "Google Cloud Credentials (optional)",
+      "credentialsPlaceholder": "Enter your Google Cloud credentials JSON"
+    },
     "about": {
       "version": "Version",
       "notAvailable": "N/A",
@@ -381,7 +396,8 @@
     "redo": "Redo",
     "edit": "Edit",
     "editingLastMessage": "Editing last message",
-    "cancelEdit": "Cancel"
+    "cancelEdit": "Cancel",
+    "group": "Group"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
@@ -554,37 +570,40 @@
   "toolMessage": {
     "toolLabel": "{{server}}: {{tool}}",
     "arguments": "Arguments:",
-    "executing": "Tool is executing...",
+    "executing": "Executing tool...",
     "result": "Result:",
     "error": "Error while executing tool:",
     "denied": "Denied by user.",
     "deniedByReason": "Denied by user:\n{{reason}}",
     "aider": {
-      "addContextFiles": "Adding file(s) to Aider's context:\n{{paths}}",
-      "dropContextFiles": "Dropping file(s) from Aider's context:\n{{paths}}",
-      "runPrompt": "Running prompt in Aider: "
+      "addContextFiles": "Add file(s) to Aider's context:\n{{paths}}",
+      "dropContextFiles": "Drop file(s) from Aider's context:\n{{paths}}",
+      "runPrompt": "Run prompt in Aider",
+      "working": "Aider is working...",
+      "finishedTask": "Aider finished the task.",
+      "noChanges": "Aider did not make any changes."
     },
     "power": {
-      "fileRead": "Reading",
+      "fileRead": "Read",
       "fileWrite": {
-        "overwrite": "Rewriting",
-        "append": "Appending to",
-        "createOnly": "Creating"
+        "overwrite": "Rewrite",
+        "append": "Append to",
+        "createOnly": "Create"
       },
       "fileEdit": {
-        "title": "Editing",
+        "title": "Edit",
         "searchTerm": "Search Term",
         "regex": "Regex",
         "replacementText": "Replacement Text",
         "replaceAll": "Replace All"
       },
-      "glob": "Finding files matching pattern: {{pattern}}",
-      "grep": "Searching files matching '{{filePattern}}' for '{{searchTerm}}'",
-      "bash": "Running",
-      "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'",
+      "glob": "Find files matching pattern: {{pattern}}",
+      "grep": "Search files matching '{{filePattern}}' for '{{searchTerm}}'",
+      "bash": "Run command",
+      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'",
       "agent": {
-        "running": "Running sub-agent...",
-        "completed": "Sub-agent finished.",
+        "running": "Sub-agent is working...",
+        "completed": "Sub-agent finished the task.",
         "prompt": "Prompt"
       }
     },
@@ -601,22 +620,26 @@
   },
   "promptField": {
     "placeholders": {
-      "0": "How can I help you today?",
-      "1": "What task can I assist you with?",
-      "2": "What would you like me to code?",
-      "3": "Let me help you solve a problem",
-      "4": "Can I help you with an improvement?",
-      "5": "Wanna refactor some code?",
-      "6": "Can I help you optimize some algorithm?",
-      "7": "Let me help you design a new feature",
-      "8": "Can I help you debug an issue?",
-      "9": "Let me help you create a test suite",
-      "10": "Let me help you implement a design pattern",
-      "11": "Can I explain some code to you?",
-      "12": "Let me help you modernize some legacy code",
-      "13": "Can I help you write documentation?",
-      "14": "Let me help you improve performance",
-      "15": "Give me some task!"
+      "0": "Update the UserValidator class to add email format validation...",
+      "1": "Fix the memory leak in DataProcessor.processBatch() by closing...",
+      "2": "Add error handling to PaymentService.chargeCard() with proper...",
+      "3": "Create a React component UserProfileCard with props interface...",
+      "4": "Optimize the SQL query in UserRepository.findByEmail() by adding...",
+      "5": "Add unit tests for AuthController.login() using Jest and...",
+      "6": "Implement the missing handleResize() method in ChartComponent...",
+      "7": "Update package.json to add TypeScript dependency and configure...",
+      "8": "Add input validation to ContactForm's handleSubmit function...",
+      "9": "Fix the bug in calculateTotal() where decimal values are being...",
+      "10": "Add logging to API middleware using Winston for request...",
+      "11": "Create a Dockerfile for Node.js application with multi-stage...",
+      "12": "Add rate limiting middleware to /api/users endpoint using...",
+      "13": "Implement the missing deleteTodo() function in TodoService...",
+      "14": "Add TypeScript interfaces for API response objects in...",
+      "15": "Fix the CSS issue where mobile menu is not displaying...",
+      "16": "Add environment variable validation using dotenv and...",
+      "17": "Create database migration to add 'last_login' column to...",
+      "18": "Add error boundaries to React app to catch component...",
+      "19": "Implement pagination logic in ProductList's fetchProducts..."
     },
     "questionPlaceholder": "...or suggest something else",
     "answers": {
@@ -670,7 +693,7 @@
     "copy-context": "Copy the current chat context as markdown, suitable to paste into a web UI",
     "drop": "Remove files from the context to free up context space",
     "edit-last": "Edits the last user message",
-    "init": "Initializes PROJECT.md rule file with project information",
+    "init": "Initializes AGENTS.md rule file with project information",
     "agentModeOnly": "Agent mode only",
     "map": "Print out the current repository map",
     "map-refresh": "Force a refresh of the repository map",
@@ -751,5 +774,9 @@
     "copyOutput": "Copy terminal output to prompt",
     "minimize": "Minimize terminal",
     "addTerminal": "Add new terminal"
+  },
+  "contextMenu": {
+    "copy": "Copy",
+    "paste": "Paste"
   }
 }

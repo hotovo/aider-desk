@@ -113,6 +113,13 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
     });
   };
 
+  const handleRequireParametersChange = (checked: boolean) => {
+    onChange({
+      ...provider,
+      requireParameters: checked,
+    });
+  };
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-2">
@@ -233,6 +240,26 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
           value={quantizationsValue}
           onChange={handleQuantizationsChange}
           onBlur={handleQuantizationsBlur}
+        />
+        <Checkbox
+          label={
+            <div className="flex items-center text-xs">
+              {t('onboarding.providers.requireParameters')}
+              <div className="flex items-center gap-2">
+                <InfoIcon className="ml-1" tooltip={t('onboarding.providers.requireParametersDescription')} />
+                <a
+                  href="https://openrouter.ai/docs/features/provider-routing#requiring-providers-to-support-all-parameters-beta"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 ml-1"
+                >
+                  {t('settings.common.learnMore')}
+                </a>
+              </div>
+            </div>
+          }
+          onChange={handleRequireParametersChange}
+          checked={provider.requireParameters}
         />
       </div>
 

@@ -64,6 +64,7 @@ export class ProjectManager {
   }
 
   public async restartProject(baseDir: string, startupMode?: StartupMode): Promise<void> {
+    logger.info('Restarting project', { baseDir });
     await this.closeProject(baseDir);
     this.startProject(baseDir, startupMode);
   }

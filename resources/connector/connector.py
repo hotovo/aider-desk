@@ -20,6 +20,12 @@ from concurrent.futures import ThreadPoolExecutor, Future
 import nest_asyncio
 import litellm
 import types
+
+class PromptContext:
+  def __init__(self, id: str, group=None):
+    self.id = id
+    self.group = group
+
 nest_asyncio.apply()
 
 confirmation_result = None
@@ -56,38 +62,38 @@ class PromptExecutor:
       self.executor = ThreadPoolExecutor(max_workers=100)
     return self.executor
 
-  async def run_prompt(self, prompt_id: str, prompt: str, mode=None, architect_model=None, messages=None, files=None, coder=None):
-    prompt_coro = self._run_prompt_task(prompt_id, prompt, mode, architect_model, messages, files, coder)
+  async def run_prompt(self, prompt: str, prompt_context: PromptContext, mode=None, architect_model=None, messages=None, files=None, coder=None):
+    prompt_coro = self._run_prompt_task(prompt, prompt_context, mode, architect_model, messages, files, coder)
 
     # Submit the coroutine to the executor, which turns it into a background Task.
     # If a prompt with the same ID is already running, cancel it first.
-    if prompt_id in self.active_prompts:
-      await self.cancel_prompt(prompt_id)
+    if prompt_context.id in self.active_prompts:
+      await self.cancel_prompt(prompt_context)
 
     # Wrap the coroutine in a task that will handle its own cleanup.
-    task = self.connector.loop.create_task(self._execute_prompt_wrapper(prompt_id, prompt_coro))
-    self.active_prompts[prompt_id] = task
+    task = self.connector.loop.create_task(self._execute_prompt_wrapper(prompt_context, prompt_coro))
+    self.active_prompts[prompt_context.id] = task
 
-    return prompt_id
+    return prompt_context.id
 
   # This new method contains the logic that used to be in _run_prompt_sync and _run_prompt_async
-  async def _run_prompt_task(self, prompt_id: str, prompt: str, mode=None, architect_model=None, messages=None, files=None, coder=None):
+  async def _run_prompt_task(self, prompt: str, prompt_context: PromptContext, mode=None, architect_model=None, messages=None, files=None, coder=None):
     """The actual prompt execution logic, designed to be run as a task."""
     try:
       # The core async logic from your old `_run_prompt_async`
       # Now you can directly await async functions without any special handling.
-      await self._run_prompt_async(prompt_id, prompt, mode, architect_model, messages, files, coder)
+      await self._run_prompt_async(prompt, prompt_context, mode, architect_model, messages, files, coder)
 
     except asyncio.CancelledError:
       # This is important! The task must be allowed to handle its own cancellation.
-      self.connector.coder.io.tool_output(f"Prompt logic for {prompt_id} gracefully cancelled.")
+      self.connector.coder.io.tool_output(f"Prompt logic for {prompt_context.id} gracefully cancelled.")
       # Propagate the cancellation to ensure the wrapper knows about it.
       raise
     except Exception as e:
-      self.connector.coder.io.tool_error(f"Error in prompt logic {prompt_id}: {str(e)}")
+      self.connector.coder.io.tool_error(f"Error in prompt logic {prompt_context.id}: {str(e)}")
       raise
 
-  async def _stream_and_send_responses(self, coder, prompt_id, prompt_to_run, log_context, extra_response_data=None):
+  async def _stream_and_send_responses(self, coder, prompt_context, prompt_to_run, log_context, extra_response_data=None):
     if extra_response_data is None:
       extra_response_data = {}
 
@@ -100,7 +106,7 @@ class PromptExecutor:
     def _sync_worker():
       try:
         for chunk in coder.run_stream(prompt_to_run):
-          if self.is_prompt_interrupted(prompt_id):
+          if self.is_prompt_interrupted(prompt_context.id):
             break
           # Put chunk into queue, handling potential queue full
           fut = asyncio.run_coroutine_threadsafe(queue.put(chunk), self.connector.loop)
@@ -110,7 +116,7 @@ class PromptExecutor:
         self.connector.coder.io.tool_error(f"Error in run_stream for {log_context}: {str(e)}")
 
     future = self.connector.loop.run_in_executor(executor, _sync_worker)
-    self.active_futures[prompt_id] = future
+    self.active_futures[prompt_context.id] = future
 
     while True:
       chunk = await queue.get()
@@ -123,6 +129,7 @@ class PromptExecutor:
         "action": "response",
         "finished": False,
         "content": chunk,
+        "promptContext": {"id": prompt_context.id, "group": prompt_context.group if hasattr(prompt_context, 'group') else None},
       }
       if extra_response_data:
         response_payload.update(extra_response_data)
@@ -131,7 +138,7 @@ class PromptExecutor:
 
     return whole_content, response_id
 
-  async def _run_prompt_async(self, prompt_id: str, prompt: str, mode=None, architect_model=None, messages=None, files=None, coder=None):
+  async def _run_prompt_async(self, prompt: str, prompt_context: PromptContext, mode=None, architect_model=None, messages=None, files=None, coder=None):
     coder_provided = coder is not None
     sequence_number = 0
 
@@ -146,7 +153,7 @@ class PromptExecutor:
       coder = clone_coder(
         self.connector,
         self.connector.coder,
-        prompt_id,
+        prompt_context,
         edit_format=mode,
         main_model=running_model,
       )
@@ -154,7 +161,7 @@ class PromptExecutor:
     # we are sending all the additional messages after the prompt finishes
     coder.io.add_command_to_context = False
 
-    self.active_coders[prompt_id] = coder
+    self.active_coders[prompt_context.id] = coder
 
     if messages is not None:
       # Set messages from the provided data
@@ -182,9 +189,9 @@ class PromptExecutor:
     # setting usage report to None to avoid no attribute error
     coder.usage_report = None
 
-    whole_content, response_id = await self._stream_and_send_responses(coder, prompt_id, prompt, prompt_id)
+    whole_content, response_id = await self._stream_and_send_responses(coder, prompt_context, prompt, prompt_context.id)
 
-    if not whole_content and not self.is_prompt_interrupted(prompt_id):
+    if not whole_content and not self.is_prompt_interrupted(prompt_context.id):
       # if there was no content, use the partial_response_content value (case for non streaming models)
       whole_content = coder.partial_response_content
 
@@ -200,6 +207,7 @@ class PromptExecutor:
       "editedFiles": list(coder.aider_edited_files),
       "usageReport": get_usage_report(),
       "sequenceNumber": sequence_number,
+      "promptContext": {"id": prompt_context.id, "group": prompt_context.group if hasattr(prompt_context, 'group') else None},
     }
 
     # Add commit info if there was one
@@ -217,7 +225,7 @@ class PromptExecutor:
       )
       response_data["diff"] = diff
 
-    if whole_content or not self.is_prompt_interrupted(prompt_id):
+    if whole_content or not self.is_prompt_interrupted(prompt_context.id):
       await self.connector.send_action(response_data)
 
     # Check for reflections
@@ -226,17 +234,17 @@ class PromptExecutor:
       await self.connector.send_add_context_files(coder)
 
       current_reflection = 0
-      while coder.reflected_message and not self.is_prompt_interrupted(prompt_id):
+      while coder.reflected_message and not self.is_prompt_interrupted(prompt_context.id):
         if current_reflection >= self.connector.coder.max_reflections:
           coder.io.tool_warning(f"Only {str(self.connector.coder.max_reflections)} reflections allowed, stopping.")
           break
 
         reflection_prompt = coder.reflected_message
-        await self.connector.send_log_message("loading", "Reflecting message...")
+        await self.connector.send_log_message("loading", "Reflecting message...", False, prompt_context)
 
         whole_content, response_id = await self._stream_and_send_responses(
-          coder, prompt_id, reflection_prompt,
-          f"reflection in {prompt_id}",
+          coder, prompt_context, reflection_prompt,
+          f"reflection in {prompt_context.id}",
           {"reflectedMessage": reflection_prompt}
         )
 
@@ -250,9 +258,10 @@ class PromptExecutor:
           "editedFiles": list(coder.aider_edited_files),
           "usageReport": get_usage_report(),
           "sequenceNumber": sequence_number,
+          "promptContext": {"id": prompt_context.id, "group": prompt_context.group if hasattr(prompt_context, 'group') else None},
         }
 
-        if whole_content or not self.is_prompt_interrupted(prompt_id):
+        if whole_content or not self.is_prompt_interrupted(prompt_context.id):
           await self.connector.send_action(response_data)
 
         # await self.connector.send_update_context_files()
@@ -265,7 +274,7 @@ class PromptExecutor:
     # Send prompt-finished message
     await self.connector.send_action({
       "action": "prompt-finished",
-      "promptId": prompt_id
+      "promptId": prompt_context.id
     })
 
     # Send command outputs as context messages
@@ -274,10 +283,12 @@ class PromptExecutor:
         await self.connector.send_add_context_message("user", output)
         await self.connector.send_add_context_message("assistant", "Ok.")
 
-  async def _execute_prompt_wrapper(self, prompt_id: str, prompt_coro: Coroutine[Any, Any, Any]):
+  async def _execute_prompt_wrapper(self, prompt_context: PromptContext, prompt_coro: Coroutine[Any, Any, Any]):
     """
     Wrapper that executes the prompt coroutine and handles completion or cancellation.
     """
+    prompt_id = prompt_context.id
+
     try:
       # The main logic is now simply awaiting the coroutine
       await prompt_coro
@@ -353,16 +364,16 @@ class PromptExecutor:
     """Shutdown the executor by cancelling all active tasks."""
     await self.interrupt_all_prompts()
 
-async def run_editor_coder_stream(architect_coder, connector, prompt_id):
+async def run_editor_coder_stream(architect_coder, connector, prompt_context):
   # Use the editor_model from the main_model if it exists, otherwise use the main_model itself
   editor_model = architect_coder.main_model.editor_model or architect_coder.main_model
-  # Generate a unique prompt ID for the editor coder
-  editor_prompt_id = str(uuid.uuid4())
+  # Generate a prompt info for the editor coder
+  editor_prompt_context = PromptContext(str(uuid.uuid4()), prompt_context.group)
 
   editor_coder = clone_coder(
     connector,
     architect_coder,
-    editor_prompt_id,
+    editor_prompt_context,
     main_model=editor_model,
     edit_format=architect_coder.main_model.editor_edit_format,
     suggest_shell_commands=False,
@@ -375,16 +386,12 @@ async def run_editor_coder_stream(architect_coder, connector, prompt_id):
   editor_coder.done_messages = []
 
   # Start the prompt execution (non-blocking)
-  await connector.prompt_executor.run_prompt(
-    prompt_id=editor_prompt_id,
-    prompt=architect_coder.partial_response_content,
-    mode="code",
-    coder=editor_coder
-  )
+
+  await connector.prompt_executor.run_prompt(architect_coder.partial_response_content, editor_prompt_context, "code", coder=editor_coder)
 
   # Wait for completion by awaiting the task
-  if editor_prompt_id in connector.prompt_executor.active_prompts:
-    task = connector.prompt_executor.active_prompts[editor_prompt_id]
+  if editor_prompt_context.id in connector.prompt_executor.active_prompts:
+    task = connector.prompt_executor.active_prompts[editor_prompt_context.id]
     try:
       await task
       architect_coder.aider_edited_files = editor_coder.aider_edited_files
@@ -394,10 +401,10 @@ async def run_editor_coder_stream(architect_coder, connector, prompt_id):
       pass # The task was cancelled, which is an expected way for it to end.
 
 class ConnectorInputOutput(InputOutput):
-  def __init__(self, connector=None, prompt_id=None, **kwargs):
+  def __init__(self, connector=None, prompt_context=None, **kwargs):
     super().__init__(**kwargs)
     self.connector = connector
-    self.prompt_id = prompt_id
+    self.prompt_context = prompt_context
     self.running_shell_command = False
     self.processing_loading_message = False
     self.current_command = None
@@ -427,7 +434,7 @@ class ConnectorInputOutput(InputOutput):
     else:
       for message in messages:
         if message.startswith("Commit "):
-          wait_for_async(self.connector, self.connector.send_log_message("info", message, True))
+          wait_for_async(self.connector, self.connector.send_log_message("info", message, True, self.prompt_context))
 
   def is_warning_ignored(self, message):
     if message == "Warning: it's best to only add files that need changes to the chat.":
@@ -441,7 +448,7 @@ class ConnectorInputOutput(InputOutput):
       return
     super().tool_warning(message, strip)
     if self.connector and not self.is_warning_ignored(message):
-      wait_for_async(self.connector, self.connector.send_log_message("warning", message, self.processing_loading_message))
+      wait_for_async(self.connector, self.connector.send_log_message("warning", message, self.processing_loading_message, self.prompt_context))
 
   def is_error_ignored(self, message):
     if message.endswith("is already in the chat as a read-only file"):
@@ -457,7 +464,7 @@ class ConnectorInputOutput(InputOutput):
     super().tool_error(message, strip)
     if self.connector and not self.is_error_ignored(message):
       sys.stderr.write(f"ERROR: {message}\n")
-      wait_for_async(self.connector, self.connector.send_log_message("error", message))
+      wait_for_async(self.connector, self.connector.send_log_message("error", message, False, self.prompt_context))
 
   def confirm_ask(
     self,
@@ -498,11 +505,11 @@ class ConnectorInputOutput(InputOutput):
 
     if result == "y" and question == "Edit the files?":
       # Get the specific coder for this prompt
-      coder_for_prompt = self.connector.prompt_executor.get_coder(self.prompt_id) if self.prompt_id else None
+      coder_for_prompt = self.connector.prompt_executor.get_coder(self.prompt_context.id) if self.prompt_context else None
       if coder_for_prompt: # Ensure we have a valid coder
         # Process architect coder
-        wait_for_async(self.connector, self.connector.send_log_message("loading", "Editing files..."))
-        wait_for_async(self.connector, run_editor_coder_stream(coder_for_prompt, self.connector, self.prompt_id))
+        wait_for_async(self.connector, self.connector.send_log_message("loading", "Editing files...", False, self.prompt_context))
+        wait_for_async(self.connector, run_editor_coder_stream(coder_for_prompt, self.connector, self.prompt_context))
       return False
 
     if result == "y" and question.startswith("Run shell command"):
@@ -533,25 +540,41 @@ class ConnectorInputOutput(InputOutput):
   def interrupt_input(self):
     async def process_changes():
       # Generate a new prompt ID for file watcher changes
-      prompt_id = str(uuid.uuid4())
-      await self.connector.prompt_executor.run_prompt(prompt_id=prompt_id, prompt=prompt, mode="code")
-      await self.connector.send_add_context_files()
-      self.connector.file_watcher.start()
+      await self.connector.prompt_executor.run_prompt(prompt, prompt_context, "code", files=[{"path": file_path, "readOnly": False} for file_path in sorted(self.connector.file_watcher.changed_files)])
+
+      # Wait for completion by awaiting the task
+      if prompt_context.id in self.connector.prompt_executor.active_prompts:
+        task = self.connector.prompt_executor.active_prompts[prompt_context.id]
+        try:
+          await task
+          await self.connector.send_add_context_files()
+        except asyncio.CancelledError:
+          pass # The task was cancelled, which is an expected way for it to end.
+        finally:
+          prompt_context.group["finished"] = True
+          await self.connector.send_log_message("loading", "", True, prompt_context)
+          self.connector.file_watcher.start()
 
     if self.connector.file_watcher:
       prompt = self.connector.file_watcher.process_changes()
       if prompt:
         changed_files = ", ".join(sorted(self.connector.file_watcher.changed_files))
-        wait_for_async(self.connector, self.connector.send_log_message("info", f"Detected AI request in files: {changed_files}."))
-        wait_for_async(self.connector, self.connector.send_log_message("loading", "Processing request..."))
+        group = {
+          "id": str(uuid.uuid4()),
+          "name": f"AI request detected in files: {changed_files}",
+          "color": "#884239"
+        }
+        prompt_context = PromptContext(str(uuid.uuid4()), group)
+
+        wait_for_async(self.connector, self.connector.send_log_message("loading", "Processing request...", False, prompt_context))
         self.connector.loop.create_task(process_changes())
 
-def clone_coder(connector, coder, prompt_id=None, **kwargs):
+def clone_coder(connector, coder, prompt_context=None, **kwargs):
   kwargs["from_coder"] = coder
   kwargs["summarize_from_coder"] = False
 
   coder = Coder.create(**kwargs)
-  create_io(connector, coder, prompt_id)
+  create_io(connector, coder, prompt_context)
   connector.monkey_patch_coder_functions(coder)
 
   return coder
@@ -560,15 +583,13 @@ def create_base_coder(connector):
   coder = cli_main(return_coder=True)
   if not isinstance(coder, Coder):
     raise ValueError(coder)
-  # if not coder.repo:
-  #   raise ValueError("WebsocketConnector can currently only be used inside a git repo")
 
   return coder
 
-def create_io(connector, coder, prompt_id=None):
+def create_io(connector, coder, prompt_context=None):
   io = ConnectorInputOutput(
     connector=connector,
-    prompt_id=prompt_id,
+    prompt_context=prompt_context,
     pretty=False,
     yes=None,
     chat_history_file=coder.io.chat_history_file,
@@ -648,11 +669,11 @@ class Connector:
     original_lint_edited = coder.lint_edited
     def _patched_lint_edited(coder_instance, fnames):
       # Add loading message before linting
-      wait_for_async(self, self.send_log_message("loading", "Linting..."))
+      wait_for_async(self, self.send_log_message("loading", "Linting...", False, coder.io.prompt_context))
       # Call the original Coder.lint_edited logic
       result = original_lint_edited(fnames)
       # Finish the loading message after linting
-      wait_for_async(self, self.send_log_message("loading", "Linting...", True))
+      wait_for_async(self, self.send_log_message("loading", "Linting...", True, coder.io.prompt_context))
       return result
 
     # Replace the original lint_edited method with the patched version
@@ -790,12 +811,20 @@ class Connector:
     if with_delay:
       await asyncio.sleep(0.01)
 
-  async def send_log_message(self, level, message, finished=False):
-    await self.sio.emit("log", {
+  async def send_log_message(self, level, message, finished=False, prompt_context=None):
+    payload = {
       "level": level,
       "message": message,
       "finished": finished
-    })
+    }
+
+    if prompt_context:
+      payload["promptContext"] = {
+        "id": prompt_context.id,
+        "group": prompt_context.group if hasattr(prompt_context, 'group') else None
+      }
+
+    await self.sio.emit("log", payload)
     await asyncio.sleep(0.01)
 
   async def process_message(self, message):
@@ -810,18 +839,15 @@ class Connector:
         prompt = message.get('prompt')
         mode = message.get('mode')
         architect_model = message.get('architectModel')
-        prompt_id = message.get('promptId')
+        prompt_context_data = message.get('promptContext')
         messages = message.get('messages', [])
         files = message.get('files', [])
 
         if not prompt:
           return
 
-        # Generate prompt ID if not provided
-        if not prompt_id:
-          prompt_id = str(uuid.uuid4())
-
-        await self.prompt_executor.run_prompt(prompt_id, prompt, mode, architect_model, messages, files)
+        prompt_context = PromptContext(prompt_context_data.get('id'), prompt_context_data.get('group'))
+        await self.prompt_executor.run_prompt(prompt, prompt_context, mode, architect_model, messages, files)
 
       elif action == "answer-question":
         global confirmation_result
@@ -838,7 +864,7 @@ class Connector:
           model = models.Model(main_model, weak_model=weak_model)
 
           if not edit_format:
-            edit_format = model.edit_format
+            edit_format = "diff"
 
           model.set_reasoning_effort(self.coder.main_model.get_reasoning_effort())
           model.set_thinking_tokens(self.coder.main_model.get_thinking_tokens())
@@ -940,29 +966,14 @@ class Connector:
       self.coder.io.processing_loading_message = True
       await self.send_log_message("loading", "Committing changes...")
 
-    if command.startswith("/paste"):
-      original_mkdtemp = tempfile.mkdtemp
-      tmp_dir = os.path.join(self.base_dir, '.aider-desk', 'tmp')
-      os.makedirs(tmp_dir, exist_ok=True)
+    # run the command
+    self.coder.commands.run(command)
 
-      def patched_mkdtemp(*args, **kwargs):
-        kwargs['dir'] = tmp_dir
-        return original_mkdtemp(*args, **kwargs)
-
-      tempfile.mkdtemp = patched_mkdtemp
-
-      try:
-        self.coder.commands.run(command)
-      finally:
-        tempfile.mkdtemp = original_mkdtemp
-    else:
-      self.coder.commands.run(command)
-
+    # reset flags
     self.coder.io.running_shell_command = False
     self.coder.io.processing_loading_message = False
-    if command.startswith("/paste"):
-      await self.send_add_context_files()
-    elif command.startswith("/map-refresh"):
+
+    if command.startswith("/map-refresh"):
       await self.send_log_message("info", "The repo map has been refreshed.")
       await self.send_repo_map()
     elif command.startswith("/reasoning-effort"):

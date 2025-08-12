@@ -28,7 +28,7 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
   };
 
   return (
-    <div className="flex flex-col w-full gap-3 pt-5">
+    <div className="flex flex-col w-full gap-3 pt-0">
       {/* Thinking section */}
       <div className="border border-defaultDark rounded-md overflow-hidden">
         <div className="flex items-center justify-between gap-2 p-2 bg-bg-secondaryLight cursor-pointer hover:bg-bg-tertiary" onClick={handleToggleThinking}>

@@ -1,5 +1,37 @@
 # Changelog
 
+## [UNRELEASED]
+
+- parsing <think> tags as reasoning part of the response
+
+## [0.26.0]
+
+- pasting image processed in AiderDesk instead of using Aider to handle it
+- added image file processing support for Agent context
+- using relative path for web scrapped content files
+- AGENTS.md instead of PROJECT.md when using /init
+- using "diff" mode as default for models in Aider
+- added configurable require_parameters for OpenRouter
+- updated prompt field placeholders with real like examples
+- added support for arm64 macOS builds
+- message groups for Aider and Sub-agent prompts
+- added support for Vertex AI provider
+- increase stdout buffer size for shell commands in custom commands
+- added keyboard navigation to select component
+- remember last editFormat per model and per project
+- fixed issue with GPT-5 model in Agent mode
+- added summaries to Agent profile sections accordions
+- updated Electron libraries to the latest versions
+- properly set history item when search query is used
+- tool message names to use neutral tense
+- added context menu with Copy and Paste actions
+- properly loading last session on start when IDE plugin is connected
+- added reasoning effort to OpenAI provider in Agent mode
+
+## [0.25.1]
+
+- properly adding files recursively when directory is added to context
+
 ## [0.25.0]
 
 - improved connection and communication with Aider

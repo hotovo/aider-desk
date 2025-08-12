@@ -9,13 +9,13 @@ import {
   TODO_TOOL_UPDATE_ITEM_COMPLETION,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, ToolApprovalState } from '@common/types';
+import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
 
 import { ApprovalManager } from './approval-manager';
 
 import { Project } from '@/project';
 
-export const createTodoToolset = (project: Project, profile: AgentProfile): ToolSet => {
+export const createTodoToolset = (project: Project, profile: AgentProfile, promptContext?: PromptContext): ToolSet => {
   const approvalManager = new ApprovalManager(project, profile);
 
   const setTodoItemsTool = tool({
@@ -32,7 +32,7 @@ export const createTodoToolset = (project: Project, profile: AgentProfile): Tool
       initialUserPrompt: z.string().describe('The original user prompt that initiated the task.'),
     }),
     execute: async (args, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, args);
+      project.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, args, undefined, undefined, promptContext);
 
       const questionKey = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_SET_ITEMS}`;
       const questionText = 'Approve setting todo items? This will overwrite any existing todo list.';
@@ -59,7 +59,7 @@ Items: ${JSON.stringify(args.items)}`;
     description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_GET_ITEMS],
     parameters: z.object({}),
     execute: async (_, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_GET_ITEMS, {});
+      project.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_GET_ITEMS, {}, undefined, undefined, promptContext);
 
       const questionKey = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_GET_ITEMS}`;
       const questionText = 'Approve getting todo items?';
@@ -90,7 +90,7 @@ Items: ${JSON.stringify(args.items)}`;
       completed: z.boolean().describe('The new completion status for the todo item.'),
     }),
     execute: async (args, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_UPDATE_ITEM_COMPLETION, args);
+      project.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_UPDATE_ITEM_COMPLETION, args, undefined, undefined, promptContext);
 
       const questionKey = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_UPDATE_ITEM_COMPLETION}`;
       const questionText = `Approve updating completion status for todo item "${args.name}" to ${args.completed}?`;
@@ -119,7 +119,7 @@ Items: ${JSON.stringify(args.items)}`;
     description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_CLEAR_ITEMS],
     parameters: z.object({}),
     execute: async (_, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_CLEAR_ITEMS, {});
+      project.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_CLEAR_ITEMS, {}, undefined, undefined, promptContext);
 
       const questionKey = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_CLEAR_ITEMS}`;
       const questionText = 'Approve clearing all todo items? This action cannot be undone.';

@@ -11,6 +11,7 @@ type Props = {
   chevronPosition?: 'left' | 'right';
   isOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
+  noMaxHeight?: boolean;
 };
 
 export const Accordion = ({
@@ -22,6 +23,7 @@ export const Accordion = ({
   chevronPosition = 'left',
   isOpen: controlledIsOpen,
   onOpenChange,
+  noMaxHeight = false,
 }: Props) => {
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(defaultOpen);
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : uncontrolledIsOpen;
@@ -51,7 +53,12 @@ export const Accordion = ({
       <div
         className={clsx(
           'overflow-hidden transition-all duration-200',
-          isOpen ? 'max-h-screen opacity-100 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary' : 'max-h-0 opacity-0',
+          isOpen
+            ? clsx(
+                noMaxHeight ? '' : 'max-h-screen',
+                'opacity-100 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth',
+              )
+            : 'max-h-0 opacity-0',
         )}
       >
         {children}

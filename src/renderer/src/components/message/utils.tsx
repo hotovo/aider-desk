@@ -1,11 +1,13 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Group } from '@common/types';
 
 import { CustomCommandBashBlock } from './CustomCommandBashBlock';
 import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
 
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
+import { GroupMessage, Message } from '@/types/message';
 
 const ALL_FENCES = [
   ['````', '````'],
@@ -410,6 +412,52 @@ export const parseToolContent = (rawContent: string): ToolContentResult => {
     // eslint-disable-next-line no-console
     console.debug('Raw tool content is not valid JSON:', outerError);
   }
+
+  return result;
+};
+
+export const groupMessagesByPromptContext = (messages: Message[]): Message[] => {
+  const result: Message[] = [];
+  const groups: Record<string, Message[]> = {};
+  const latestGroupInfo: Record<string, Group> = {};
+
+  // First pass: collect messages with groups
+  messages.forEach((message) => {
+    const groupId = message.promptContext?.group?.id;
+    if (groupId) {
+      if (!groups[groupId]) {
+        groups[groupId] = [];
+      }
+      groups[groupId].push(message);
+      // Track the latest group information for this group ID, but only update if current group isn't finished
+      if (message.promptContext?.group && !latestGroupInfo[groupId]?.finished) {
+        latestGroupInfo[groupId] = message.promptContext.group;
+      }
+    }
+  });
+
+  messages.forEach((message) => {
+    const groupId = message.promptContext?.group?.id;
+    if (groupId && groups[groupId].length > 0) {
+      // Create GroupMessage for the first message in the group
+      const groupMessages = groups[groupId];
+      const firstMessage = groupMessages[0];
+
+      // Only create the group once
+      if (firstMessage === message) {
+        const groupMessage: GroupMessage = {
+          id: groupId,
+          type: 'group',
+          content: '',
+          group: latestGroupInfo[groupId],
+          children: groupMessages,
+        };
+        result.push(groupMessage);
+      }
+    } else if (!groupId) {
+      result.push(message);
+    }
+  });
 
   return result;
 };

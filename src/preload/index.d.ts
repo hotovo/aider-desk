@@ -54,7 +54,7 @@ export interface ApplicationAPI {
   updateMainModel: (baseDir: string, model: string) => void;
   updateWeakModel: (baseDir: string, model: string) => void;
   updateArchitectModel: (baseDir: string, model: string) => void;
-  updateEditFormat: (baseDir: string, format: EditFormat) => void;
+  updateEditFormats: (baseDir: string, editFormats: Record<string, EditFormat>) => void;
   getProjectSettings: (baseDir: string) => Promise<ProjectSettings>;
   patchProjectSettings: (baseDir: string, settings: Partial<ProjectSettings>) => Promise<ProjectSettings>;
   getFilePathSuggestions: (currentPath: string, directoriesOnly?: boolean) => Promise<string[]>;
@@ -64,6 +64,7 @@ export interface ApplicationAPI {
   isProjectPath: (path: string) => Promise<boolean>;
   dropFile: (baseDir: string, path: string) => void;
   runCommand: (baseDir: string, command: string) => void;
+  pasteImage: (baseDir: string) => void;
   scrapeWeb: (baseDir: string, url: string, filePath?: string) => Promise<string>;
   initProjectRulesFile: (baseDir: string) => Promise<void>;
 
@@ -158,6 +159,8 @@ export interface ApplicationAPI {
 
   addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => string;
   removeTerminalExitListener: (listenerId: string) => void;
+
+  addContextMenuListener: (callback: (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => void) => () => void;
 
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
   runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;

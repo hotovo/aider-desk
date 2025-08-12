@@ -37,12 +37,13 @@ export const useRequestyModels = (apiKey: string) => {
         modelIds.sort();
         setModels(modelIds);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error('Error fetching Requesty models:', err);
         setModels([]);
       }
     };
 
-    fetchModels();
+    void fetchModels();
   }, [apiKey]);
 
   return models;
