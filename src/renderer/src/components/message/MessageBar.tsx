@@ -76,7 +76,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
           <IconButton
             icon={<FaEllipsisVertical className="w-4 h-4" />}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="transition-colors text-text-dak hover:text-text-primary"
+            className="transition-colors text-text-dark hover:text-text-primary"
           />
         </div>
       )}
