@@ -17,7 +17,7 @@ const config: Config = {
   },
 
   url: 'https://aiderdesk.hotovo.com',
-  baseUrl: '/docs',
+  baseUrl: '/',
 
   // Add Google Fonts for Nunito
   headTags: [
