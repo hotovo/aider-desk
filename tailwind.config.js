@@ -59,6 +59,7 @@ module.exports = {
         warningLight: 'var(--color-warning-light)',
         warningSubtle: 'var(--color-warning-subtle)',
         warningEmphasis: 'var(--color-warning-emphasis)',
+        warningText: 'var(--color-warning-text)',
 
         error: 'var(--color-error)',
         errorLight: 'var(--color-error-light)',

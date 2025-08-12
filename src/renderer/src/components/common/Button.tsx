@@ -17,7 +17,7 @@ type Props = {
 
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
   primary: {
-    contained: 'bg-warning hover:bg-warningLight text-text-primary',
+    contained: 'bg-warning hover:bg-warningLight text-warningText',
     text: 'text-warning hover:bg-warningSubtle',
     outline: 'border-warning text-warning hover:bg-warningSubtle',
   },
