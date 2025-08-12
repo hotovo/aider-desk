@@ -172,7 +172,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
             <div
               className={`transition-all duration-200 ${isExpanded ? 'max-h-[5000px] opacity-100 overflow-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondaryLight' : 'max-h-0 opacity-0 overflow-hidden'}`}
             >
-              <hr className="border-border-default my-2" />
+              <hr className="border-border-darkLightStrong my-2" />
               {content}
             </div>
           </>
