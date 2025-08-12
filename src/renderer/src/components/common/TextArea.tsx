@@ -11,7 +11,7 @@ export const TextArea = ({ label, className = '', ...props }: Props) => {
       <textarea
         spellCheck={false}
         {...props}
-        className={`w-full p-2 bg-bg-primaryLight border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary text-sm placeholder-text-muted
+        className={`w-full p-2 bg-bg-secondaryLight border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary text-sm placeholder-text-muted
         scrollbar-thin
         scrollbar-track-bg-secondaryLight
         scrollbar-thumb-bg-fourth
