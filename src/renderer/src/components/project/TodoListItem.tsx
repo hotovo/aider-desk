@@ -71,13 +71,13 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
           <IconButton
             icon={<MdCheck className="w-3 h-3" />}
             onClick={handleSaveEdit}
-            className="!text-success hover:!text-successLight hover:!bg-successSubtle rounded p-1"
+            className="text-success hover:text-successLight hover:bg-successSubtle rounded p-1"
             disabled={!editName.trim()}
           />
           <IconButton
             icon={<MdClose className="w-3 h-3" />}
             onClick={handleCancelEdit}
-            className="!text-error hover:!text-errorLight hover:!bg-errorSubtle rounded p-1"
+            className="text-error hover:text-errorLight hover:bg-errorSubtle rounded p-1"
           />
         </div>
       ) : (
@@ -90,13 +90,13 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
               icon={<MdEdit className="w-3 h-3" />}
               onClick={handleEdit}
               tooltip={t('tasks.editTodo')}
-              className="!text-text-mutedLight hover:!text-text-secondary hover:!bg-bg-tertiary rounded p-1"
+              className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-tertiary rounded p-1"
             />
             <IconButton
               icon={<MdDelete className="w-3 h-3" />}
               onClick={handleDelete}
               tooltip={t('tasks.deleteTodo')}
-              className="!text-text-mutedLight hover:!text-errorLight hover:!bg-errorSubtle rounded p-1"
+              className="text-text-mutedLight hover:text-errorLight hover:bg-errorSubtle rounded p-1"
             />
           </div>
         </>

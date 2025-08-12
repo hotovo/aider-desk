@@ -1,6 +1,6 @@
 import { MouseEvent, ReactNode, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import clsx from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 import { StyledTooltip } from './StyledTooltip';
 
@@ -16,7 +16,7 @@ type Props = {
 export const IconButton = ({ icon, onClick, tooltip, className, tooltipId, disabled }: Props) => {
   const tooltipIdRef = useRef<string>(tooltipId || `icon-button-tooltip-${uuidv4()}`);
 
-  const combinedClassName = clsx(
+  const combinedClassName = twMerge(
     'text-text-muted',
     'transition-opacity',
     'focus:outline-none',
