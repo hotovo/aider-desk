@@ -24,6 +24,8 @@ module.exports = {
           fourthMuted: 'var(--color-bg-fourth-muted)',
           fourthEmphasis: 'var(--color-bg-fourth-emphasis)',
           fifth: 'var(--color-bg-fifth)',
+          selection: 'var(--color-bg-selection)',
+          codeBlock: 'var(--color-bg-code-block)',
         },
         text: {
           primary: 'var(--color-text-primary)',

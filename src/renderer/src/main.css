@@ -140,3 +140,7 @@ code {
 .cm-tooltip-autocomplete::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-bg-fourth);
 }
+
+::selection {
+  background-color: var(--color-bg-selection);
+}
