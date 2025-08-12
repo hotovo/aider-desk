@@ -268,55 +268,55 @@
 
 .theme-neon {
   /* Background Colors */
-  --color-bg-primary: #1a1a2e;
-  --color-bg-primary-light: #16213e;
-  --color-bg-primary-light-strong: #16213e80;
-  --color-bg-secondary: #0f3460;
-  --color-bg-secondary-light: #533483;
-  --color-bg-secondary-light-strongest: #533483f2;
-  --color-bg-tertiary: #e94560;
-  --color-bg-tertiary-emphasis: #e945604c;
-  --color-bg-tertiary-strong: #e945607f;
-  --color-bg-fourth: #f9a828;
-  --color-bg-fourth-muted: #f9a82833;
-  --color-bg-fourth-emphasis: #f9a8284c;
-  --color-bg-fifth: #26ff93;
+  --color-bg-primary: #0d1117;
+  --color-bg-primary-light: #161b22;
+  --color-bg-primary-light-strong: #161b2280;
+  --color-bg-secondary: #21262d;
+  --color-bg-secondary-light: #30363d;
+  --color-bg-secondary-light-strongest: #30363df2;
+  --color-bg-tertiary: #484f58;
+  --color-bg-tertiary-emphasis: #ff006680;
+  --color-bg-tertiary-strong: #ff006640;
+  --color-bg-fourth: #6e7681;
+  --color-bg-fourth-muted: #00ffff33;
+  --color-bg-fourth-emphasis: #00ffff4c;
+  --color-bg-fifth: #8b949e;
 
   /* Text Colors */
   --color-text-primary: #ffffff;
-  --color-text-secondary: #e2f3f5;
-  --color-text-tertiary: #22d1ee;
-  --color-text-muted-light: #3d5af1;
-  --color-text-muted: #0e153a;
-  --color-text-muted-dark: #16213e;
-  --color-text-dark: #1a1a2e;
+  --color-text-secondary: #00ffff;
+  --color-text-tertiary: #ff6600;
+  --color-text-muted-light: #ff0099;
+  --color-text-muted: #484f58;
+  --color-text-muted-dark: #30363d;
+  --color-text-dark: #21262d;
 
   /* Border Colors */
-  --color-border-dark: #0f3460;
-  --color-border-dark-light: #533483;
-  --color-border-dark-light-strong: #53348380;
-  --color-border-default-dark: #e94560;
-  --color-border-default: #f9a828;
-  --color-border-accent: #26ff93;
-  --color-border-light: #e2f3f5;
+  --color-border-dark: #21262d;
+  --color-border-dark-light: #30363d;
+  --color-border-dark-light-strong: #30363d80;
+  --color-border-default-dark: #484f58;
+  --color-border-default: #00ffff;
+  --color-border-accent: #ff0066;
+  --color-border-light: #ffff00;
 
   /* Accent Colors */
-  --color-accent-primary: #26ff93;
-  --color-accent-secondary: #f9a828;
-  --color-accent-light: #e2f3f5;
+  --color-accent-primary: #00ffff;
+  --color-accent-secondary: #ff0066;
+  --color-accent-light: #ffff00;
 
-  /* Status Colors - Vibrant */
+  /* Status Colors */
   --color-success: #00ff88;
-  --color-success-light: #40ffa0;
+  --color-success-light: #44ff99;
   --color-success-subtle: #00ff881a;
   --color-success-muted: #00ff8833;
   --color-success-emphasis: #00ff884c;
 
-  --color-warning: #ffcc00;
-  --color-warning-subtle: #ffcc0019;
-  --color-warning-emphasis: #ffcc004c;
-  --color-warning-light: #ffdd40;
-  --color-warning-text: #1a1a2e;
+  --color-warning: #ffaa00;
+  --color-warning-subtle: #ffaa0019;
+  --color-warning-emphasis: #ffaa004c;
+  --color-warning-light: #ffcc33;
+  --color-warning-text: #0d1117;
 
   --color-error: #ff3366;
   --color-error-dark: #cc0044;
@@ -331,29 +331,29 @@
   --color-info: #3366ff;
   --color-info-light: #6699ff;
   --color-info-lighter: #99ccff;
-  --color-info-lightest: #cce0ff;
+  --color-info-lightest: #cce6ff;
   --color-info-subtle: #3366ff1a;
   --color-info-light-muted: #3366ff33;
   --color-info-light-emphasis: #3366ff4c;
 
   /* Input Colors */
-  --color-input-bg: #16213e;
-  --color-input-border: #f9a828;
+  --color-input-bg: #161b22;
+  --color-input-border: #00ffff;
   --color-input-text: #ffffff;
 
-  /* Agent colors - vibrant */
+  /* Agent colors */
   --color-agent-autoapprove: #00ff88;
-  --color-agent-aidertools: #ff9933;
+  --color-agent-aidertools: #ff9900;
   --color-agent-powertools: #cc66ff;
-  --color-agent-todotools: #66ccff;
+  --color-agent-todotools: #3366ff;
   --color-agent-contextfiles: #ffcc00;
-  --color-agent-repomap: #6699ff;
+  --color-agent-repomap: #00ccff;
 
-  /* Diff viewer - colorful */
-  --color-diffviewer-bg-old-primary: #3f1d25;
-  --color-diffviewer-bg-old-secondary: #2c141a;
-  --color-diffviewer-bg-new-primary: #022c22;
-  --color-diffviewer-bg-new-secondary: #011f19;
+  /* Diff viewer */
+  --color-diffviewer-bg-old-primary: #67060c;
+  --color-diffviewer-bg-old-secondary: #490202;
+  --color-diffviewer-bg-new-primary: #033a16;
+  --color-diffviewer-bg-new-secondary: #0f2419;
 }
 
 .theme-light {
