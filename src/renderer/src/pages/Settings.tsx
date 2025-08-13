@@ -1,4 +1,4 @@
-import { SettingsData } from '@common/types';
+import { SettingsData, ThemeName } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,12 +15,13 @@ type Props = {
   updateSettings: (settings: SettingsData) => void;
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
+  onThemeChange: (theme: ThemeName) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;
 };
 
-export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomChange, initialTab = 0, initialAgentProfileId }: Props) => {
+export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomChange, onThemeChange, initialTab = 0, initialAgentProfileId }: Props) => {
   const { t } = useTranslation();
   const [selectedTabIndex, setSelectedTabIndex] = useState(initialTab);
 
@@ -58,7 +59,15 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomCha
         {renderTab(t('settings.tabs.about'))}
       </TabList>
       <TabPanels className="flex flex-col flex-1 overflow-hidden">
-        {renderTabPanel(<GeneralSettings settings={settings} setSettings={updateSettings} onLanguageChange={onLanguageChange} onZoomChange={onZoomChange} />)}
+        {renderTabPanel(
+          <GeneralSettings
+            settings={settings}
+            setSettings={updateSettings}
+            onLanguageChange={onLanguageChange}
+            onZoomChange={onZoomChange}
+            onThemeChange={onThemeChange}
+          />,
+        )}
         {renderTabPanel(<ModelProvidersSettings settings={settings} setSettings={updateSettings} onSwitchToAiderTab={handleSwitchToAiderTab} />)}
         {renderTabPanel(<AiderSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<AgentSettings settings={settings} setSettings={updateSettings} initialProfileId={initialAgentProfileId} />)}

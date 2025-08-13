@@ -26,9 +26,10 @@ type Props = {
   setSettings: (settings: SettingsData) => void;
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
+  onThemeChange: (themeName: ThemeName) => void;
 };
 
-export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange }: Props) => {
+export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange }: Props) => {
   const { t } = useTranslation();
 
   const themeOptions: Option[] = THEME_NAMES.map((theme) => ({
@@ -66,6 +67,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
       ...settings,
       theme: value as ThemeName,
     });
+    onThemeChange(value as ThemeName);
   };
 
   const handleSuggestionModeChange = (mode: SuggestionMode) => {

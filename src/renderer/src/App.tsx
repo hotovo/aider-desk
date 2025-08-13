@@ -16,7 +16,7 @@ import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 const ThemeManager = () => {
-  const { settings } = useSettings();
+  const { theme } = useSettings();
 
   useEffect(() => {
     // Remove all theme classes first
@@ -24,9 +24,9 @@ const ThemeManager = () => {
     document.body.classList.remove(...themeClasses);
 
     // Add the current theme class, default to dark
-    const theme = settings?.theme && THEME_NAMES.includes(settings.theme) ? settings.theme : 'dark';
-    document.body.classList.add(`theme-${theme}`);
-  }, [settings?.theme]);
+    const newTheme = theme && THEME_NAMES.includes(theme) ? theme : 'dark';
+    document.body.classList.add(`theme-${newTheme}`);
+  }, [theme]);
 
   return null;
 };

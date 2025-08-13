@@ -282,7 +282,7 @@ export interface SettingsData {
   startupMode?: StartupMode;
   zoomLevel?: number;
   notificationsEnabled?: boolean;
-  theme?: ThemeName;
+  theme: ThemeName | undefined;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

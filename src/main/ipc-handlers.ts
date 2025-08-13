@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs/promises';
 
-import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, ThemeName, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron';
 
@@ -43,6 +43,13 @@ export const setupIpcHandlers = (
     telemetryManager.settingsChanged(oldSettings, newSettings);
 
     return store.getSettings();
+  });
+
+  ipcMain.handle('save-theme', (_, theme: ThemeName) => {
+    const oldSettings = store.getSettings();
+    store.saveSettings({ ...oldSettings, theme });
+
+    return store.getSettings().theme;
   });
 
   ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {
