@@ -112,7 +112,7 @@ export const CostBreakdownChart = ({ data, groupBy }: Props) => {
                 <span className="mr-2 text-xs">
                   {value}
                   {value === displayProjects[displayProjects.length - 1] && remainingCount > 0 && (
-                    <span className="text-neutral-400 ml-1">(+{remainingCount} more)</span>
+                    <span className="text-text-mutedLight ml-1">(+{remainingCount} more)</span>
                   )}
                 </span>
               )}
