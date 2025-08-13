@@ -143,12 +143,12 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
         </div>
       )}
 
-      <div className="mt-6 p-4 bg-bg-secondaryLight rounded-lg border border-border-defaultDark">
+      <div className="mt-6 p-4 bg-bg-secondary-light rounded-lg border border-border-default-dark">
         <p className="text-xs text-text-tertiary">
           <Trans
             i18nKey="settings.models.additionalProvidersInfo"
             components={{
-              aiderTab: <button onClick={onSwitchToAiderTab} className="text-infoLighter hover:text-infoLightest underline transition-colors duration-200" />,
+              aiderTab: <button onClick={onSwitchToAiderTab} className="text-info-lighter hover:text-info-lightest underline transition-colors duration-200" />,
             }}
           />
         </p>

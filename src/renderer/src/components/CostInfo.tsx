@@ -48,7 +48,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mt-0.5">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-text-muted hover:text-text-tertiary transition-colors bg-bg-secondaryLight rounded-full p-0.5"
+          className="text-text-muted hover:text-text-tertiary transition-colors bg-bg-secondary-light rounded-full p-0.5"
         >
           {isExpanded ? <IoChevronDown /> : <IoChevronUp />}
         </button>
@@ -116,7 +116,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
         </div>
 
         <div className="mt-[3px] flex items-center gap-2">
-          <div className="h-1 bg-bg-secondaryLight rounded-sm overflow-hidden mb-1 flex-1">
+          <div className="h-1 bg-bg-secondary-light rounded-sm overflow-hidden mb-1 flex-1">
             <div className="h-full bg-accent-light rounded-full" style={{ width: `${progressPercentage}%` }}></div>
           </div>
           <div className="text-text-mutedLight text-2xs">

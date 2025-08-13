@@ -261,7 +261,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
           <HiPlus className="w-5 h-5" />
         </button>
       </div>
-      <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primaryLight scrollbar-rounded px-1">
+      <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded px-1">
         <ControlledTreeEnvironment
           key={treeKey}
           items={treeData}
@@ -315,13 +315,13 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                       <>
                         <button
                           onClick={dropFile(item as TreeItem)}
-                          className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-errorDark"
+                          className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-error-dark"
                         >
                           <HiX className="w-4 h-4" />
                         </button>
                         <button
                           onClick={addFile(item as TreeItem)}
-                          className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-text-primary"
+                          className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary"
                           data-tooltip-id="context-files-tooltip"
                           data-tooltip-content={os === OS.MacOS ? t('contextFiles.addFileTooltip.cmd') : t('contextFiles.addFileTooltip.ctrl')}
                         >
@@ -343,14 +343,14 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                       files.some((f) => f.path === (item as TreeItem).file?.path) ? (
                         <button
                           onClick={dropFile(item as TreeItem)}
-                          className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-errorDark"
+                          className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-error-dark"
                         >
                           <HiX className="w-4 h-4" />
                         </button>
                       ) : (
                         <button
                           onClick={addFile(item as TreeItem)}
-                          className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-text-primary"
+                          className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary"
                           data-tooltip-id="context-files-tooltip"
                           data-tooltip-content={os === OS.MacOS ? t('contextFiles.addFileTooltip.cmd') : t('contextFiles.addFileTooltip.ctrl')}
                         >
@@ -358,7 +358,10 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                         </button>
                       )
                     ) : (
-                      <button onClick={dropFile(item as TreeItem)} className="px-1 py-1 rounded hover:bg-bg-primaryLight text-text-muted hover:text-errorDark">
+                      <button
+                        onClick={dropFile(item as TreeItem)}
+                        className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-error-dark"
+                      >
                         <HiX className="w-4 h-4" />
                       </button>
                     )}

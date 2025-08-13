@@ -161,11 +161,11 @@ export const McpServerForm = ({ onSave, onCancel, servers }: Props) => {
           })}
           value={configJSON}
           onChange={handleChange}
-          className={`w-full h-96 p-2 resize-none ${configJSON && !isValidJson ? 'border-errorEmphasis focus:border-errorEmphasis' : ''}`}
+          className={`w-full h-96 p-2 resize-none ${configJSON && !isValidJson ? 'border-error-emphasis focus:border-error-emphasis' : ''}`}
         />
       </div>
       <div className="flex justify-between items-center gap-2">
-        <a href="https://modelcontextprotocol.io/examples" target="_blank" rel="noopener noreferrer" className="text-xs text-infoLight hover:underline">
+        <a href="https://modelcontextprotocol.io/examples" target="_blank" rel="noopener noreferrer" className="text-xs text-info-light hover:underline">
           {t('mcpServer.viewExamples')}
         </a>
         <div className="flex gap-2">

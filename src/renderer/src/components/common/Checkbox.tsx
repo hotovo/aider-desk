@@ -39,7 +39,7 @@ export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm'
         <div
           className={clsx(
             'rounded border flex items-center justify-center transition-colors duration-200 w-4 h-4',
-            checked ? 'bg-bg-fourth border-border-accent' : 'bg-bg-secondaryLight border-border-default',
+            checked ? 'bg-bg-fourth border-border-accent' : 'bg-bg-secondary-light border-border-default',
           )}
         >
           {checked && (

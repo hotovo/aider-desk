@@ -155,13 +155,13 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
         <MdKeyboardArrowUp className={`w-3 h-3 ml-1 transform rotate-180 ${!selectedModel ? 'text-text-muted' : ''}`} />
       </button>
       {visible && (
-        <div className="absolute top-full left-0 mt-1 bg-bg-primaryLight border border-border-defaultDark rounded-md shadow-lg z-10 flex flex-col w-[600px]">
-          <div className="sticky top-0 p-2 border-b border-border-defaultDark bg-bg-primaryLight rounded-md z-10 flex items-center space-x-2">
+        <div className="absolute top-full left-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-10 flex flex-col w-[600px]">
+          <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
             <input
               type="text"
               autoFocus={true}
               placeholder={t('modelSelector.searchPlaceholder')}
-              className="flex-grow px-2 py-1 text-xs bg-bg-secondaryLight text-text-primary rounded border border-border-default focus:outline-none focus:border-border-accent"
+              className="flex-grow px-2 py-1 text-xs bg-bg-secondary-light text-text-primary rounded border border-border-default focus:outline-none focus:border-border-accent"
               value={modelSearchTerm}
               onChange={(e) => setModelSearchTerm(e.target.value)}
               onKeyDown={onModelSelectorSearchInputKeyDown}
@@ -172,11 +172,11 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
               </div>
             )}
           </div>
-          <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
+          <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
             {!debouncedSearchTerm && (
               <>
                 {preferredModels.map(renderModelItem)}
-                <div key="divider" className="border-t border-border-defaultDark my-1" />
+                <div key="divider" className="border-t border-border-default-dark my-1" />
               </>
             )}
             {filteredModels.map(renderModelItem)}

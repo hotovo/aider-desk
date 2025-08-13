@@ -1,10 +1,10 @@
 
 .react-datepicker {
-  @apply border-2 border-border-default bg-bg-secondaryLight;
+  @apply border-2 border-border-default bg-bg-secondary-light;
 }
 
 .react-datepicker__header {
-  @apply border-b-2 border-border-default bg-bg-primaryLight;
+  @apply border-b-2 border-border-default bg-bg-primary-light;
 }
 
 .react-datepicker__triangle {
@@ -30,7 +30,7 @@
 .react-datepicker__day--selected,
 .react-datepicker__day--in-selecting-range,
 .react-datepicker__day--in-range {
-  @apply bg-infoLight;
+  @apply bg-info-light;
 }
 
 .react-datepicker__day--keyboard-selected {

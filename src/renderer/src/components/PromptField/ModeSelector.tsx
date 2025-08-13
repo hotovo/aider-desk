@@ -71,7 +71,7 @@ export const ModeSelector = ({ mode, onModeChange }: Props) => {
     <div className="relative flex items-center gap-1.5" ref={modeSelectorRef}>
       <button
         onClick={toggleModeSelectorVisible}
-        className="flex items-center gap-1 px-2 py-1 bg-bg-secondary text-text-tertiary hover:bg-bg-secondaryLight hover:text-text-primary focus:outline-none transition-colors duration-200 text-xs border-border-default border rounded-md"
+        className="flex items-center gap-1 px-2 py-1 bg-bg-secondary text-text-tertiary hover:bg-bg-secondary-light hover:text-text-primary focus:outline-none transition-colors duration-200 text-xs border-border-default border rounded-md"
       >
         <CurrentModeIcon className="w-4 h-4" />
         <span className="mb-[-2px] ml-1 text-2xs">{t(currentModeLabelKey)}</span>
@@ -79,7 +79,7 @@ export const ModeSelector = ({ mode, onModeChange }: Props) => {
       </button>
 
       {modeSelectorVisible && (
-        <div className="absolute bottom-full mb-1 bg-bg-primaryLight border border-border-defaultDark rounded-md shadow-lg z-10 min-w-[150px]">
+        <div className="absolute bottom-full mb-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-10 min-w-[150px]">
           {MODES_ORDER.map((value) => {
             const { icon: Icon, labelKey } = MODE_CONFIG[value];
             return (

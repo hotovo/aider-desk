@@ -54,13 +54,13 @@ export const SessionsPopup = ({
   };
 
   return (
-    <div className="absolute right-0 top-full mt-1 bg-bg-primaryLight border border-border-defaultDark rounded-md shadow-lg z-50 w-[320px]">
+    <div className="absolute right-0 top-full mt-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 w-[320px]">
       <div>
-        <div className="p-2 text-xs font-semibold border-b border-border-defaultDark">{t('sessions.title')}</div>
+        <div className="p-2 text-xs font-semibold border-b border-border-default-dark">{t('sessions.title')}</div>
         {sessions.length === 0 ? (
           <div className="text-xs text-text-mutedLight p-2">{t('sessions.empty')}</div>
         ) : (
-          <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
+          <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
             {sessions.map((session) => (
               <div key={session.name} className="flex items-center justify-between text-xs px-2 py-0.5">
                 <span className="truncate text-text-tertiary">{session.name}</span>
@@ -105,7 +105,7 @@ export const SessionsPopup = ({
             ))}
           </div>
         )}
-        <div className="px-2 py-2 border-t border-border-defaultDark flex flex-col space-y-2">
+        <div className="px-2 py-2 border-t border-border-default-dark flex flex-col space-y-2">
           {showNewSessionInput ? (
             <div className="flex items-center space-x-2">
               <input
@@ -114,7 +114,7 @@ export const SessionsPopup = ({
                 onChange={(e) => setNewSessionName(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={t('sessions.newSessionPlaceholder')}
-                className="flex-grow text-xs px-2 py-1 rounded bg-bg-secondaryLight border border-border-default text-text-primary focus:outline-none"
+                className="flex-grow text-xs px-2 py-1 rounded bg-bg-secondary-light border border-border-default text-text-primary focus:outline-none"
                 autoFocus
               />
               <button className="p-1 hover:bg-bg-fourth rounded-md" onClick={handleSaveNewSession}>

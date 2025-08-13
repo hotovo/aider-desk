@@ -17,19 +17,19 @@ type Props = {
 
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
   primary: {
-    contained: 'bg-warning hover:bg-warningLight text-warningText',
-    text: 'text-warning hover:bg-warningSubtle',
-    outline: 'border-warning text-warning hover:bg-warningSubtle',
+    contained: 'bg-warning hover:bg-warning-light text-warning-text',
+    text: 'text-warning hover:bg-warning-subtle',
+    outline: 'border-warning text-warning hover:bg-warning-subtle',
   },
   secondary: {
-    contained: 'bg-info hover:bg-infoLight text-text-primary',
-    text: 'text-info hover:bg-infoSubtle',
-    outline: 'border-info text-info hover:bg-infoSubtle',
+    contained: 'bg-info hover:bg-info-light text-text-primary',
+    text: 'text-info hover:bg-info-subtle',
+    outline: 'border-info text-info hover:bg-info-subtle',
   },
   danger: {
     contained: 'bg-error hover:bg-error text-text-primary',
-    text: 'text-error hover:bg-errorSubtle',
-    outline: 'border-error text-error hover:bg-errorSubtle',
+    text: 'text-error hover:bg-error-subtle',
+    outline: 'border-error text-error hover:bg-error-subtle',
   },
 };
 
@@ -50,7 +50,7 @@ export const Button = ({
   size = 'md',
 }: Props) => {
   const baseColorClasses = disabled
-    ? 'bg-bg-tertiaryStrong text-text-muted cursor-not-allowed hover:bg-bg-tertiaryStrong hover:text-text-muted'
+    ? 'bg-bg-tertiary-strong text-text-muted cursor-not-allowed hover:bg-bg-tertiary-strong hover:text-text-muted'
     : colorClasses[color][variant];
 
   const baseSizeClasses = sizeClasses[size];

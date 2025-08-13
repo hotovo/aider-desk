@@ -32,8 +32,8 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomCha
     <Tab
       className={({ selected }) =>
         `relative px-6 py-3 text-sm font-medium transition-all duration-200 uppercase tracking-wide ${
-          selected ? 'text-text-primary' : 'text-text-muted  hover:text-text-secondary hover:bg-bg-secondaryLight'
-        } first:rounded-tl-lg border-r border-border-defaultDark last:border-r-0`
+          selected ? 'text-text-primary' : 'text-text-muted  hover:text-text-secondary hover:bg-bg-secondary-light'
+        } first:rounded-tl-lg border-r border-border-default-dark last:border-r-0`
       }
     >
       {label}
@@ -41,8 +41,8 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomCha
   );
 
   const renderTabPanel = (content: ReactNode) => (
-    <TabPanel className="flex flex-col flex-1 min-h-0 bg-bg-secondary backdrop-blur-sm border border-border-defaultDark rounded-b-lg shadow-xl">
-      <div className="p-8 flex flex-col flex-1 max-h-[100%] overflow-y-auto scrollbar-thin scrollbar-track-bg-secondaryLightStrongest scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fifth">
+    <TabPanel className="flex flex-col flex-1 min-h-0 bg-bg-secondary backdrop-blur-sm border border-border-default-dark rounded-b-lg shadow-xl">
+      <div className="p-8 flex flex-col flex-1 max-h-[100%] overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light-strongest scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fifth">
         {content}
       </div>
     </TabPanel>
@@ -50,7 +50,7 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomCha
 
   return (
     <TabGroup className="flex flex-col flex-1 min-h-0" selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
-      <TabList className="flex bg-bg-secondary backdrop-blur-sm border border-border-defaultDark rounded-t-lg shadow-lg">
+      <TabList className="flex bg-bg-secondary backdrop-blur-sm border border-border-default-dark rounded-t-lg shadow-lg">
         {renderTab(t('settings.tabs.general'))}
         {renderTab(t('settings.tabs.providers'))}
         {renderTab(t('settings.tabs.aider'))}

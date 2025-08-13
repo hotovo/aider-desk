@@ -36,8 +36,8 @@ export const OnboardingStepper = ({ steps, currentStep }: Props) => {
               {/* Step Title */}
               <span
                 className={clsx('mt-2 text-xs font-medium text-center max-w-20', {
-                  'text-infoLighter': isCurrent,
-                  'text-successLight': isCompleted,
+                  'text-info-lighter': isCurrent,
+                  'text-success-light': isCompleted,
                   'text-text-muted': isFuture,
                 })}
               >

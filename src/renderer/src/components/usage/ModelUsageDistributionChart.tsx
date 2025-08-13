@@ -97,7 +97,7 @@ export const ModelUsageDistributionChart = ({ data }: Props) => {
 
   return (
     <div className="flex-grow p-2">
-      <div className="bg-bg-primaryLight border border-border-darkLight p-4">
+      <div className="bg-bg-primary-light border border-border-darkLight p-4">
         <h3 className="text-sm font-medium text-text-primary mb-4">{t('usageDashboard.charts.modelUsageDistribution')}</h3>
         <ResponsiveContainer width="100%" height={400}>
           <PieChart>
@@ -112,7 +112,7 @@ export const ModelUsageDistributionChart = ({ data }: Props) => {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload as ModelDistributionDataPoint;
                   return (
-                    <div className="bg-bg-secondaryLight border border-border-defaultDark rounded-md p-3 text-xs text-text-primary">
+                    <div className="bg-bg-secondary-light border border-border-default-dark rounded-md p-3 text-xs text-text-primary">
                       <div className="font-medium mb-2">{data.model}</div>
                       <div className="space-y-1">
                         <div>

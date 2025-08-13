@@ -81,7 +81,7 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
       {filterInput ? (
         <input
           type="text"
-          className={`flex w-full min-w-[8rem] bg-bg-secondaryLight border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-8 ${sizeClasses[size]} ${className}`}
+          className={`flex w-full min-w-[8rem] bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-8 ${sizeClasses[size]} ${className}`}
           placeholder={
             selected.length === 0 && options.length > 0
               ? noneSelectedLabel || t('multiselect.noneSelected')
@@ -96,7 +96,7 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
       ) : (
         <button
           type="button"
-          className={`flex w-full min-w-[8rem] bg-bg-secondaryLight border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-1 ${sizeClasses[size]} ${className}`}
+          className={`flex w-full min-w-[8rem] bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-1 ${sizeClasses[size]} ${className}`}
           onClick={handleToggle}
         >
           <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
@@ -123,7 +123,7 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
         createPortal(
           <ul
             ref={dropdownRef}
-            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-bg-secondaryLight py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-fourth"
+            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-bg-secondary-light py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,

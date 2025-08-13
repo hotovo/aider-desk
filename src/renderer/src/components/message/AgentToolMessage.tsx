@@ -39,7 +39,7 @@ export const AgentToolMessage = ({ message, onRemove }: Props) => {
       <div className="text-xs text-text-tertiary">
         <div className="mb-2">
           <div className="font-semibold mb-1 text-text-secondary">{t('toolMessage.power.agent.prompt')}</div>
-          <pre className="whitespace-pre-wrap bg-bg-primaryLight p-2 rounded text-text-tertiary text-2xs max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-secondaryLight hover:scrollbar-thumb-bg-fourth">
+          <pre className="whitespace-pre-wrap bg-bg-primary-light p-2 rounded text-text-tertiary text-2xs max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
             {promptText}
           </pre>
         </div>

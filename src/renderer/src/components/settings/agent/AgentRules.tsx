@@ -30,7 +30,7 @@ export const AgentRules = ({ profile, handleProfileSettingChange }: AgentRulesPr
                 href="https://github.com/hotovo/aider-desk/tree/main/.aider-desk/rules"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-infoLighter hover:underline"
+                className="text-info-lighter hover:underline"
               />
             ),
           }}

@@ -809,7 +809,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   if (!projectSettings || !settings) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-bg-primary to-bg-primaryLight z-10">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-bg-primary to-bg-primary-light z-10">
         <CgSpinner className="animate-spin w-10 h-10" />
         <div className="mt-2 text-sm text-center text-text-primary">{t('common.loadingProjectSettings')}</div>
       </div>
@@ -817,9 +817,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   }
 
   return (
-    <div className="flex h-full bg-gradient-to-b from-bg-primary to-bg-primaryLight relative">
+    <div className="flex h-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative">
       {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-bg-primary to-bg-primaryLight z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-bg-primary to-bg-primary-light z-10">
           <CgSpinner className="animate-spin w-10 h-10" />
           <div className="mt-2 text-sm text-center text-text-primary">{t('common.startingUp')}</div>
         </div>
@@ -884,7 +884,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
         <div className={clsx('relative w-full flex-shrink-0 flex flex-col border-t border-border-darkLight', editingMessageIndex !== null && 'pt-1')}>
           <div className={clsx('p-4 pb-2', editingMessageIndex !== null && 'pt-1')}>
             {editingMessageIndex !== null && (
-              <div className="flex items-center justify-between px-2 py-1 text-xs text-text-mutedLight border-b border-border-defaultDark mb-2">
+              <div className="flex items-center justify-between px-2 py-1 text-xs text-text-mutedLight border-b border-border-default-dark mb-2">
                 <span>{t('messages.editingLastMessage')}</span>
                 <Button
                   size="xs"

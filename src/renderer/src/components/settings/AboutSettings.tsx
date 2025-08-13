@@ -70,7 +70,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
           {isDownloading && (
             <div className="pt-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-warningLight whitespace-nowrap">
+                <span className="text-xs text-warning-light whitespace-nowrap">
                   {t('settings.about.downloadingUpdate')}: {versions?.aiderDeskDownloadProgress?.toFixed(0)}%
                 </span>
               </div>
@@ -78,13 +78,13 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
           )}
           {versions?.aiderDeskNewVersionReady ? (
             <div className="pt-2">
-              <p className="text-xs text-warningLight">{t('settings.about.newAiderDeskVersionReady')}</p>
+              <p className="text-xs text-warning-light">{t('settings.about.newAiderDeskVersionReady')}</p>
             </div>
           ) : (
             isAiderDeskUpdateAvailable &&
             !isDownloading && (
               <div className="flex justify-between items-center pt-2">
-                <span className="text-xs text-warningLight">
+                <span className="text-xs text-warning-light">
                   {t('settings.about.updateAvailable')} ({versions?.aiderDeskAvailableVersion})
                 </span>
                 <Button onClick={handleDownloadUpdate} size="sm" variant="outline">
@@ -104,7 +104,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
           </div>
           {isAiderUpdateAvailable && (
             <div className="pt-2">
-              <p className="text-xs text-warningLight">{t('settings.about.newAiderVersionAvailable', { version: versions.aiderAvailableVersion })}</p>
+              <p className="text-xs text-warning-light">{t('settings.about.newAiderVersionAvailable', { version: versions.aiderAvailableVersion })}</p>
             </div>
           )}
         </div>

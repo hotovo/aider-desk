@@ -65,13 +65,13 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
   }, [completedCount, totalCount]);
 
   return (
-    <div className="absolute top-3 right-3 z-20 bg-bg-primaryLight border border-border-defaultDark rounded-md shadow-lg max-w-[360px]">
+    <div className="absolute top-3 right-3 z-20 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg max-w-[360px]">
       {isExpanded ? (
         <div>
           {/* Header */}
-          <div className="flex items-center justify-between p-0.5 pl-2 border-b border-border-defaultDark">
+          <div className="flex items-center justify-between p-0.5 pl-2 border-b border-border-default-dark">
             <div className="flex items-center gap-2 rounded-md transition-colors flex-1">
-              <MdOutlineChecklist className="w-4 h-4 text-agent-todoTools" />
+              <MdOutlineChecklist className="w-4 h-4 text-agent-todo-tools" />
               <span className="text-xs font-medium text-text-secondary">
                 {t('tasks.title')} ({completedCount}/{totalCount})
               </span>
@@ -81,28 +81,28 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
                 icon={<MdPlaylistRemove className="w-4 h-4" />}
                 onClick={onClearAllTodos}
                 tooltip={t('tasks.clearAllTodos')}
-                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondaryLight rounded-md p-2 transition-colors"
+                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
               />
               <IconButton
                 icon={<MdAdd className="w-4 h-4" />}
                 onClick={handleAddTodo}
                 tooltip={t('tasks.addTodo')}
-                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondaryLight rounded-md p-2 transition-colors"
+                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
               />
               <IconButton
                 icon={<MdExpandLess className="w-4 h-4" />}
                 onClick={handleToggleExpand}
-                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondaryLight rounded-md p-2 transition-colors"
+                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
               />
             </div>
           </div>
 
           {/* Content */}
           <div className="overflow-hidden">
-            <div className="p-3 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-secondaryLight hover:scrollbar-thumb-bg-fourth">
+            <div className="p-3 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
               {/* Add Todo Input */}
               {isAddingTodo && (
-                <div className="mb-3 p-2 bg-bg-secondaryLight rounded border border-border-default">
+                <div className="mb-3 p-2 bg-bg-secondary-light rounded border border-border-default">
                   <Input
                     type="text"
                     value={newTodoName}
@@ -140,10 +140,10 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
         /* Collapsed state */
         <div className="p-0.5">
           <IconButton
-            icon={<MdOutlineChecklist className="w-4 h-4 text-agent-todoTools" />}
+            icon={<MdOutlineChecklist className="w-4 h-4 text-agent-todo-tools" />}
             onClick={handleToggleExpand}
             tooltip={`${t('tasks.title')} (${completedCount}/${totalCount})`}
-            className="hover:bg-bg-secondaryLight rounded-md p-2 transition-colors"
+            className="hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
           />
         </div>
       )}

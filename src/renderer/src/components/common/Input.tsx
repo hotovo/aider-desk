@@ -13,7 +13,7 @@ export const Input = forwardRef<HTMLInputElement, Props>(({ wrapperClassName, la
         ref={ref}
         spellCheck={false}
         {...props}
-        className={`w-full p-2 bg-bg-secondaryLight border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary text-sm placeholder-text-muted ${className}`}
+        className={`w-full p-2 bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary text-sm placeholder-text-muted ${className}`}
       />
     </div>
   );

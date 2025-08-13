@@ -143,7 +143,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
 
   return (
     <div className="mt-1 max-w-full">
-      <div className="bg-bg-codeBlock border border-border-darkLight text-text-primary rounded-md px-3 py-2 mb-4 overflow-x-auto text-xs scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-secondaryLight hover:scrollbar-thumb-bg-tertiary">
+      <div className="bg-bg-codeBlock border border-border-darkLight text-text-primary rounded-md px-3 py-2 mb-4 overflow-x-auto text-xs scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary">
         {file ? (
           <>
             <div className="text-text-primary text-xs py-1 w-full cursor-pointer flex items-center justify-between" onClick={() => setIsExpanded(!isExpanded)}>
@@ -170,9 +170,9 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
               </span>
             </div>
             <div
-              className={`transition-all duration-200 ${isExpanded ? 'max-h-[5000px] opacity-100 overflow-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondaryLight' : 'max-h-0 opacity-0 overflow-hidden'}`}
+              className={`transition-all duration-200 ${isExpanded ? 'max-h-[5000px] opacity-100 overflow-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light' : 'max-h-0 opacity-0 overflow-hidden'}`}
             >
-              <hr className="border-border-darkLightStrong my-2" />
+              <hr className="border-border-dark-light-strong my-2" />
               {content}
             </div>
           </>

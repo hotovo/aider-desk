@@ -268,7 +268,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     };
 
     return (
-      <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-border-darkLight bg-bg-primaryLight">
+      <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-border-darkLight bg-bg-primary-light">
         <div className="flex items-center h-full">
           <div className="flex-grow flex items-center space-x-3">
             {mode === 'agent' ? (

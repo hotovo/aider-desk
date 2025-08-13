@@ -149,7 +149,7 @@ export const AgentSelector = () => {
         className={clsx(
           'flex items-center gap-1.5 px-2',
           'bg-bg-secondary text-text-tertiary',
-          'hover:bg-bg-secondaryLight hover:text-text-primary',
+          'hover:bg-bg-secondary-light hover:text-text-primary',
           'focus:outline-none transition-colors duration-200',
           'text-xs border-border-default border rounded-md min-h-[26px]',
         )}
@@ -157,18 +157,18 @@ export const AgentSelector = () => {
         <RiToolsFill className="w-3.5 h-3.5" />
         <span className="text-2xs truncate max-w-[250px] -mb-0.5">{activeProfile.name}</span>
         <span className="text-2xs font-mono text-text-muted">({enabledToolsCount ?? '...'})</span>
-        {activeProfile.autoApprove && <MdDoneAll className="w-3.5 h-3.5 text-agent-autoApprove opacity-70" />}
-        {activeProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-agent-aiderTools opacity-90" />}
-        {activeProfile.usePowerTools && <MdFlashOn className="w-3.5 h-3.5 text-agent-powerTools opacity-70" />}
-        {activeProfile.useTodoTools && <MdOutlineChecklist className="w-3.5 h-3.5 text-agent-todoTools opacity-70" />}
-        {activeProfile.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-agent-contextFiles opacity-70" />}
-        {activeProfile.includeRepoMap && <MdOutlineMap className="w-3 h-3 text-agent-repoMap opacity-70" />}
+        {activeProfile.autoApprove && <MdDoneAll className="w-3.5 h-3.5 text-agent-auto-approve opacity-70" />}
+        {activeProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-agent-aider-tools opacity-90" />}
+        {activeProfile.usePowerTools && <MdFlashOn className="w-3.5 h-3.5 text-agent-power-tools opacity-70" />}
+        {activeProfile.useTodoTools && <MdOutlineChecklist className="w-3.5 h-3.5 text-agent-todo-tools opacity-70" />}
+        {activeProfile.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-agent-context-files opacity-70" />}
+        {activeProfile.includeRepoMap && <MdOutlineMap className="w-3 h-3 text-agent-repo-map opacity-70" />}
       </button>
 
       {selectorVisible && (
-        <div className="absolute bottom-full left-0 mb-1 bg-bg-primaryLight border border-border-defaultDark rounded-md shadow-lg z-10 min-w-[290px] max-w-[380px]">
+        <div className="absolute bottom-full left-0 mb-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-10 min-w-[290px] max-w-[380px]">
           {/* Profiles List */}
-          <div className="py-2 border-b border-border-defaultDark">
+          <div className="py-2 border-b border-border-default-dark">
             <div className="flex items-center justify-between mb-2 pl-3 pr-2">
               <span className="text-xs font-medium text-text-secondary uppercase">{t('agentProfiles.profiles')}</span>
               <IconButton
@@ -185,12 +185,12 @@ export const AgentSelector = () => {
                   key={profile.id}
                   className={clsx(
                     'pl-6 pr-2 py-1 cursor-pointer transition-colors text-2xs relative',
-                    profile.id === activeProfile.id ? 'bg-bg-secondaryLight text-text-primary' : 'hover:bg-bg-secondaryLight text-text-tertiary ',
+                    profile.id === activeProfile.id ? 'bg-bg-secondary-light text-text-primary' : 'hover:bg-bg-secondary-light text-text-tertiary ',
                   )}
                   onClick={() => handleSwitchProfile(profile.id)}
                 >
                   {profile.id === activeProfile.id && (
-                    <MdCheck className="w-3 h-3 absolute left-1.5 top-1/2 transform -translate-y-1/2 text-agent-autoApprove" />
+                    <MdCheck className="w-3 h-3 absolute left-1.5 top-1/2 transform -translate-y-1/2 text-agent-auto-approve" />
                   )}
                   <span className="truncate block">{profile.name}&nbsp;</span>
                 </div>
@@ -199,19 +199,19 @@ export const AgentSelector = () => {
           </div>
 
           {/* MCP Servers */}
-          <div className="border-b border-border-defaultDark">
+          <div className="border-b border-border-default-dark">
             <Accordion
               title={
                 <div className="flex items-center w-full">
                   <span className="text-xs flex-1 font-medium text-text-secondary text-left px-1 uppercase">{t('mcp.servers')}</span>
-                  <span className="text-2xs text-text-tertiary bg-secondaryLight px-1.5 py-0.5 rounded">
+                  <span className="text-2xs text-text-tertiary bg-secondary-light px-1.5 py-0.5 rounded">
                     {enabledServers.filter((serverName) => mcpServers[serverName]).length}/{Object.keys(mcpServers).length}
                   </span>
                 </div>
               }
               chevronPosition="right"
             >
-              <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-secondaryLight scrollbar-track-bg-primaryLight pb-2">
+              <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-secondary-light scrollbar-track-bg-primary-light pb-2">
                 {Object.keys(mcpServers).length === 0 ? (
                   <div className="py-2 text-xs text-text-muted italic">{t('settings.agent.noServersConfiguredGlobal')}</div>
                 ) : (
@@ -241,7 +241,7 @@ export const AgentSelector = () => {
               <div className="flex items-center">
                 <IconButton
                   icon={
-                    <MdOutlineHdrAuto className={clsx('w-3.5 h-3.5', activeProfile.useAiderTools ? 'text-agent-aiderTools' : 'text-text-muted opacity-50')} />
+                    <MdOutlineHdrAuto className={clsx('w-3.5 h-3.5', activeProfile.useAiderTools ? 'text-agent-aider-tools' : 'text-text-muted opacity-50')} />
                   }
                   onClick={() => handleToggleProfileSetting('useAiderTools', !activeProfile.useAiderTools)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
@@ -249,7 +249,7 @@ export const AgentSelector = () => {
                   tooltipId="agent-selector-tooltip"
                 />
                 <IconButton
-                  icon={<MdFlashOn className={clsx('w-3.5 h-3.5', activeProfile.usePowerTools ? 'text-agent-powerTools' : 'text-text-muted opacity-50')} />}
+                  icon={<MdFlashOn className={clsx('w-3.5 h-3.5', activeProfile.usePowerTools ? 'text-agent-power-tools' : 'text-text-muted opacity-50')} />}
                   onClick={() => handleToggleProfileSetting('usePowerTools', !activeProfile.usePowerTools)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
                   tooltip={t('settings.agent.usePowerTools')}
@@ -257,7 +257,7 @@ export const AgentSelector = () => {
                 />
                 <IconButton
                   icon={
-                    <MdOutlineChecklist className={clsx('w-3.5 h-3.5', activeProfile.useTodoTools ? 'text-agent-todoTools' : 'text-text-muted opacity-50')} />
+                    <MdOutlineChecklist className={clsx('w-3.5 h-3.5', activeProfile.useTodoTools ? 'text-agent-todo-tools' : 'text-text-muted opacity-50')} />
                   }
                   onClick={() => handleToggleProfileSetting('useTodoTools', !activeProfile.useTodoTools)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
@@ -267,7 +267,7 @@ export const AgentSelector = () => {
                 <IconButton
                   icon={
                     <MdOutlineFileCopy
-                      className={clsx('w-3.5 h-3.5', activeProfile.includeContextFiles ? 'text-agent-contextFiles' : 'text-text-muted opacity-50')}
+                      className={clsx('w-3.5 h-3.5', activeProfile.includeContextFiles ? 'text-agent-context-files' : 'text-text-muted opacity-50')}
                     />
                   }
                   onClick={() => handleToggleProfileSetting('includeContextFiles', !activeProfile.includeContextFiles)}
@@ -276,7 +276,7 @@ export const AgentSelector = () => {
                   tooltipId="agent-selector-tooltip"
                 />
                 <IconButton
-                  icon={<MdOutlineMap className={clsx('w-3.5 h-3.5', activeProfile.includeRepoMap ? 'text-agent-repoMap' : 'text-text-muted opacity-50')} />}
+                  icon={<MdOutlineMap className={clsx('w-3.5 h-3.5', activeProfile.includeRepoMap ? 'text-agent-repo-map' : 'text-text-muted opacity-50')} />}
                   onClick={() => handleToggleProfileSetting('includeRepoMap', !activeProfile.includeRepoMap)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
                   tooltip={t('settings.agent.includeRepoMap')}

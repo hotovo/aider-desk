@@ -55,7 +55,7 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
   return (
     <div className="space-y-4">
       <div className="!mt-0 !mb-5">
-        <a href="https://app.requesty.ai/api-keys" target="_blank" rel="noopener noreferrer" className="text-sm text-infoLight hover:underline">
+        <a href="https://app.requesty.ai/api-keys" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
           Get Requesty API key
         </a>
       </div>

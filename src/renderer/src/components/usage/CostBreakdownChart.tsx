@@ -89,7 +89,7 @@ export const CostBreakdownChart = ({ data, groupBy }: Props) => {
 
   return (
     <div className="flex-grow p-2">
-      <div className="bg-bg-primaryLight border border-border-darkLight p-4">
+      <div className="bg-bg-primary-light border border-border-darkLight p-4">
         <h3 className="text-sm font-medium text-text-primary mb-4">{t('usageDashboard.charts.costBreakdown')}</h3>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={chartData} margin={{ top: 5, right: 5, left: 20, bottom: 0 }}>

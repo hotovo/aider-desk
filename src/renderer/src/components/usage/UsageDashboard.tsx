@@ -125,8 +125,8 @@ export const UsageDashboard = ({ onClose }: Props) => {
   };
 
   return (
-    <div className="absolute inset-0 bg-bg-primaryLight z-50 flex flex-col">
-      <div className="flex items-center border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primaryLight min-h-[40px] pl-4">
+    <div className="absolute inset-0 bg-bg-primary-light z-50 flex flex-col">
+      <div className="flex items-center border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light min-h-[40px] pl-4">
         <div className="flex items-center space-x-4">
           <h2 className="text-md uppercase font-medium text-text-primary">{t('usageDashboard.title')}</h2>
         </div>
@@ -134,7 +134,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
           icon={<IoMdClose className="h-5 w-5 text-text-secondary" />}
           onClick={onClose}
           tooltip={t('common.close')}
-          className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiaryEmphasis transition-colors duration-200"
+          className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiary-emphasis transition-colors duration-200"
         />
       </div>
 
@@ -148,7 +148,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
             endDate={dateRange[1]}
             onChange={handleDateRangeChange}
           />
-          <div className="flex bg-bg-secondaryLight rounded-md p-1">
+          <div className="flex bg-bg-secondary-light rounded-md p-1">
             {[
               { value: DatePeriod.Today, label: t('usageDashboard.today') },
               { value: DatePeriod.ThisMonth, label: t('usageDashboard.thisMonth') },
@@ -203,14 +203,14 @@ export const UsageDashboard = ({ onClose }: Props) => {
             onClick={handleRefresh}
             disabled={loading}
             tooltip={loading ? t('common.loading') : t('usageDashboard.refresh')}
-            className="p-2 hover:bg-bg-secondaryLight rounded-md mb-1"
+            className="p-2 hover:bg-bg-secondary-light rounded-md mb-1"
           />
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center border-b-2 border-border-darkLight bg-bg-primaryLight">
-        <div className="flex bg-bg-secondaryLight rounded-md p-1 m-4">
+      <div className="flex items-center border-b-2 border-border-darkLight bg-bg-primary-light">
+        <div className="flex bg-bg-secondary-light rounded-md p-1 m-4">
           <button
             onClick={() => setActiveTab(ViewTab.Table)}
             className={clsx(
@@ -244,7 +244,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
         <>
           {activeTab === ViewTab.Table && <UsageTable data={filteredData} groupBy={selectedGroupBy} />}
           {activeTab === ViewTab.Charts && (
-            <div className="flex-grow p-2 overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-secondaryLight hover:scrollbar-thumb-bg-tertiary">
+            <div className="flex-grow p-2 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary">
               <div className="grid grid-cols-1 xl:grid-cols-2">
                 <TokenUsageTrendChart data={filteredData} groupBy={selectedGroupBy} />
                 <ModelUsageDistributionChart data={filteredData} />

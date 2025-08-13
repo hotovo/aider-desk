@@ -133,8 +133,8 @@ export const Onboarding = () => {
             <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.providers.connectTitle')}</h2>
             <p className="text-text-tertiary text-sm">{t('onboarding.providers.connectDescription')}</p>
             <ModelProvidersSettings settings={settings!} setSettings={saveSettings} showProminentModels={true} />
-            <div className="mt-4 p-3 bg-infoSubtle rounded-lg border border-infoLightEmphasis">
-              <p className="text-xs text-infoLightest">{t('onboarding.providers.advancedUsersNote')}</p>
+            <div className="mt-4 p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
+              <p className="text-xs text-info-lightest">{t('onboarding.providers.advancedUsersNote')}</p>
             </div>
             <div className="flex justify-center mt-4">
               <button
@@ -151,8 +151,8 @@ export const Onboarding = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-text-primary uppercase !mb-4">{t('onboarding.aider.fineTuneTitle')}</h2>
-            <div className="p-3 bg-infoSubtle rounded-lg border border-infoLightEmphasis">
-              <p className="text-xs text-infoLightest">{t('onboarding.aider.fineTuneNote')}</p>
+            <div className="p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
+              <p className="text-xs text-info-lightest">{t('onboarding.aider.fineTuneNote')}</p>
             </div>
             <AiderSettings settings={settings!} setSettings={saveSettings} initialShowEnvVars={true} />
           </div>
@@ -169,21 +169,21 @@ export const Onboarding = () => {
               <h3 className="text-lg font-semibold text-text-primary">{t('onboarding.agent.capabilities')}</h3>
               <ul className="space-y-3">
                 <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-infoLighter rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-2 h-2 bg-info-lighter rounded-full mt-2 flex-shrink-0"></div>
                   <div>
                     <span className="text-text-primary font-medium">{t('onboarding.agent.autonomousPlanning')}</span>
                     <p className="text-text-tertiary text-sm">{t('onboarding.agent.autonomousPlanningDesc')}</p>
                   </div>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-successLight rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-2 h-2 bg-success-light rounded-full mt-2 flex-shrink-0"></div>
                   <div>
                     <span className="text-text-primary font-medium">{t('onboarding.agent.toolUse')}</span>
                     <p className="text-text-tertiary text-sm">{t('onboarding.agent.toolUseDesc')}</p>
                   </div>
                 </li>
                 <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-agent-powerTools rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-2 h-2 bg-agent-power-tools rounded-full mt-2 flex-shrink-0"></div>
                   <div>
                     <span className="text-text-primary font-medium">{t('onboarding.agent.extensible')}</span>
                     <p className="text-text-tertiary text-sm">{t('onboarding.agent.extensibleDesc')}</p>

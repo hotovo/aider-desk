@@ -40,14 +40,14 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
         <div className="text-xs text-text-primary flex flex-wrap gap-1">
           <span>{getToolName()}</span>
           <span>
-            <CodeInline className="bg-bg-primaryLight">{filePath.split(/[/\\]/).pop()}</CodeInline>
+            <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
           </span>
         </div>
       </div>
 
       <div className="text-xs text-text-tertiary bg-bg-secondary">
         {isRegex ? (
-          <div className="p-2 bg-bg-primaryLight rounded-md space-y-2">
+          <div className="p-2 bg-bg-primary-light rounded-md space-y-2">
             <p>
               <strong>
                 {t('toolMessage.power.fileEdit.searchTerm')} ({t('toolMessage.power.fileEdit.regex')}):

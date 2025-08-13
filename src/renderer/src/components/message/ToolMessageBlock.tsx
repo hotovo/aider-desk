@@ -102,7 +102,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.fileRead')}</span>
                 <span>
-                  <CodeInline className="bg-bg-primaryLight">{(message.args.filePath as string).split(/[/\\]/).pop()}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{(message.args.filePath as string).split(/[/\\]/).pop()}</CodeInline>
                 </span>
               </div>
             );
@@ -115,7 +115,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.bash')}</span>
                 <span>
-                  <CodeInline className="bg-bg-primaryLight">{message.args.command as string}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{message.args.command as string}</CodeInline>
                 </span>
               </div>
             );
@@ -135,7 +135,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
 
       return (
         <div className="text-xs text-text-tertiary pt-2 px-3">
-          <pre className="whitespace-pre-wrap bg-bg-primaryLight p-2 rounded text-text-tertiary text-2xs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-secondaryLight hover:scrollbar-thumb-bg-fourth">
+          <pre className="whitespace-pre-wrap bg-bg-primary-light p-2 rounded text-text-tertiary text-2xs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
             {promptText}
           </pre>
           {parsedResult?.json && 'deniedReason' in parsedResult.json && typeof parsedResult.json.deniedReason === 'string' && (
@@ -199,8 +199,8 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           <CopyMessageButton content={rawContentToCopy} className="text-text-mutedDark hover:text-text-tertiary" />
         </div>
         <pre
-          className={`whitespace-pre-wrap max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-secondaryLight hover:scrollbar-thumb-bg-fourth bg-bg-primaryLight p-2 rounded text-[11px] ${
-            parsedResult.isError ? 'text-errorLight' : 'text-text-secondary'
+          className={`whitespace-pre-wrap max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-[11px] ${
+            parsedResult.isError ? 'text-error-light' : 'text-text-secondary'
           }`}
         >
           {displayContent}
@@ -244,7 +244,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           {Object.keys(message.args).length > 0 && (
             <div className="mb-3">
               <div className="font-semibold mb-1 text-text-secondary">{t('toolMessage.arguments')}</div>
-              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth bg-bg-primaryLight p-2 rounded text-text-secondary text-2xs">
+              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-text-secondary text-2xs">
                 {JSON.stringify(message.args, null, 2)}
               </pre>
             </div>

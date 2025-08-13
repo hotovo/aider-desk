@@ -30,8 +30,8 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
   return (
     <div className="flex flex-col w-full gap-3 pt-0">
       {/* Thinking section */}
-      <div className="border border-border-defaultDark rounded-md overflow-hidden">
-        <div className="flex items-center justify-between gap-2 p-2 bg-bg-secondaryLight cursor-pointer hover:bg-bg-tertiary" onClick={handleToggleThinking}>
+      <div className="border border-border-default-dark rounded-md overflow-hidden">
+        <div className="flex items-center justify-between gap-2 p-2 bg-bg-secondary-light cursor-pointer hover:bg-bg-tertiary" onClick={handleToggleThinking}>
           <div className="flex items-center gap-2">
             <div className="text-text-secondary">{isThinkingExpanded ? <FaChevronDown size={14} /> : <FaChevronRight size={14} />}</div>
             <div className={`text-text-secondary ${!answer ? 'animate-pulse' : ''}`}>
@@ -49,8 +49,8 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
 
       {/* Answer section - only show if we have an answer or we're streaming */}
       {answer && parsedAnswer && (
-        <div className="border border-border-defaultDark rounded-md overflow-hidden">
-          <div className="flex items-center justify-between gap-2 p-2 bg-bg-secondaryLight">
+        <div className="border border-border-default-dark rounded-md overflow-hidden">
+          <div className="flex items-center justify-between gap-2 p-2 bg-bg-secondary-light">
             <div className="flex items-center gap-2">
               <div className="text-text-secondary">
                 <MdOutlineLightbulb size={18} />

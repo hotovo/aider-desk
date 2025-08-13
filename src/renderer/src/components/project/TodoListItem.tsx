@@ -65,19 +65,19 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             onKeyDown={handleKeyPress}
-            className="flex-1 bg-bg-tertiary text-2xs text-text-secondary px-1 py-0.5 rounded border border-border-default outline-none focus:border-infoLight"
+            className="flex-1 bg-bg-tertiary text-2xs text-text-secondary px-1 py-0.5 rounded border border-border-default outline-none focus:border-info-light"
             autoFocus
           />
           <IconButton
             icon={<MdCheck className="w-3 h-3" />}
             onClick={handleSaveEdit}
-            className="text-success hover:text-successLight hover:bg-successSubtle rounded p-1"
+            className="text-success hover:text-success-light hover:bg-success-subtle rounded p-1"
             disabled={!editName.trim()}
           />
           <IconButton
             icon={<MdClose className="w-3 h-3" />}
             onClick={handleCancelEdit}
-            className="text-error hover:text-errorLight hover:bg-errorSubtle rounded p-1"
+            className="text-error hover:text-error-light hover:bg-error-subtle rounded p-1"
           />
         </div>
       ) : (
@@ -96,7 +96,7 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
               icon={<MdDelete className="w-3 h-3" />}
               onClick={handleDelete}
               tooltip={t('tasks.deleteTodo')}
-              className="text-text-mutedLight hover:text-errorLight hover:bg-errorSubtle rounded p-1"
+              className="text-text-mutedLight hover:text-error-light hover:bg-error-subtle rounded p-1"
             />
           </div>
         </>

@@ -10,7 +10,7 @@ export const CodeInline = ({ className, children }: Props) => {
   return (
     <span
       className={clsx(
-        'bg-bg-primaryLight border border-border-darkLight text-text-primary rounded-sm px-1 py-0.5 text-2xs font-semibold whitespace-pre-wrap',
+        'bg-bg-primary-light border border-border-darkLight text-text-primary rounded-sm px-1 py-0.5 text-2xs font-semibold whitespace-pre-wrap',
         className,
       )}
     >

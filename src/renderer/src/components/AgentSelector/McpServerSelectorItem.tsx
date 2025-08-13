@@ -39,7 +39,7 @@ export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onT
   }, [toolApprovals, serverName]);
 
   return (
-    <div className="flex items-center justify-between px-3 py-1 hover:bg-bg-secondaryLight cursor-pointer text-xs" onClick={() => onToggle(serverName)}>
+    <div className="flex items-center justify-between px-3 py-1 hover:bg-bg-secondary-light cursor-pointer text-xs" onClick={() => onToggle(serverName)}>
       <Checkbox checked={!disabled} onChange={() => onToggle(serverName)} className="mr-1" label={serverName} />
       {toolsCount === null ? (
         <CgSpinner className="animate-spin text-xs text-text-dark ml-2" />

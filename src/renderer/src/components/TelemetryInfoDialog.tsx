@@ -46,7 +46,7 @@ export const TelemetryInfoDialog = () => {
                   href="https://github.com/hotovo/aider-desk/blob/main/docs/telemetry.md"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-infoLighter hover:underline"
+                  className="text-info-lighter hover:underline"
                 />
               ),
             }}

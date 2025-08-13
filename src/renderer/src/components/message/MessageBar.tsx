@@ -81,7 +81,10 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
         </div>
       )}
       {isMenuOpen && (remove || redo || edit) && (
-        <div ref={menuRef} className="absolute right-0 bottom-full mb-1 w-[120px] bg-bg-secondaryLight border border-border-defaultDark rounded shadow-lg z-10">
+        <div
+          ref={menuRef}
+          className="absolute right-0 bottom-full mb-1 w-[120px] bg-bg-secondary-light border border-border-default-dark rounded shadow-lg z-10"
+        >
           <ul>
             {edit && (
               <li

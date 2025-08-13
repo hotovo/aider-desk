@@ -136,7 +136,7 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string)
     }
 
     return (
-      <div className={clsx('z-[1] flex items-center bg-bg-primaryLight p-2 rounded-md shadow-lg', className)}>
+      <div className={clsx('z-[1] flex items-center bg-bg-primary-light p-2 rounded-md shadow-lg', className)}>
         <Input
           placeholder={t('search.placeholder')}
           value={searchTerm}

@@ -70,7 +70,7 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
 
   return (
     <div className="flex-grow p-2">
-      <div className="bg-bg-primaryLight border border-border-darkLight p-4">
+      <div className="bg-bg-primary-light border border-border-darkLight p-4">
         <h3 className="text-sm font-medium text-text-primary mb-4">{t('usageDashboard.charts.tokenUsageTrend')}</h3>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>

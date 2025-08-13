@@ -115,7 +115,7 @@ export const AutocompletionInput = ({
 
     return createPortal(
       <div
-        className="w-full mt-1 p-0.5 bg-bg-secondaryLight border border-border-defaultDark rounded-lg shadow-lg max-h-48 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-fourth scrollbar-thumb-rounded-full"
+        className="w-full mt-1 p-0.5 bg-bg-secondary-light border border-border-default-dark rounded-lg shadow-lg max-h-48 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth scrollbar-thumb-rounded-full"
         style={style}
       >
         {suggestions.map((suggestion, index) => (
@@ -141,7 +141,7 @@ export const AutocompletionInput = ({
       <input
         ref={inputRef}
         className={clsx(
-          'w-full p-3 rounded-lg bg-bg-primaryLightStrong border border-bg-tertiaryStrong text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-border-default focus:ring-1 focus:ring-border-default transition-colors',
+          'w-full p-3 rounded-lg bg-bg-primary-light-strong border border-bg-tertiary-strong text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-border-default focus:ring-1 focus:ring-border-default transition-colors',
           inputClassName,
         )}
         type="text"

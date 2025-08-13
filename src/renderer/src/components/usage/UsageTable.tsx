@@ -69,10 +69,10 @@ export const UsageTable = ({ data, groupBy }: Props) => {
   }, [aggregatedData]);
 
   return (
-    <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-bg-primaryLight scrollbar-thumb-bg-secondaryLight hover:scrollbar-thumb-bg-tertiary m-2">
+    <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary m-2">
       <div className="border border-border-darkLight">
         <table className="w-full text-sm text-left text-text-primary">
-          <thead className="text-xs text-text-primary uppercase bg-bg-secondaryLight sticky top-0">
+          <thead className="text-xs text-text-primary uppercase bg-bg-secondary-light sticky top-0">
             <tr>
               <th className="px-4 py-2">{t('usageDashboard.table.date')}</th>
               <th className="px-4 py-2">{t('usageDashboard.table.project')}</th>
@@ -87,7 +87,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
           </thead>
           <tbody>
             {aggregatedData.map((row, index) => (
-              <tr key={index} className="bg-bg-primaryLight border-b border-border-darkLight hover:bg-bg-secondary text-sm">
+              <tr key={index} className="bg-bg-primary-light border-b border-border-darkLight hover:bg-bg-secondary text-sm">
                 <td className="px-4 py-2 text-xs">{formatDateByGroup(row.timestamp, groupBy)}</td>
                 <td className="px-4 py-2">
                   <div className="whitespace-pre-line text-xs">{row.project}</div>
@@ -104,7 +104,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
               </tr>
             ))}
           </tbody>
-          <tfoot className="sticky bottom-0 bg-bg-secondaryLight text-xs uppercase text-text-primary">
+          <tfoot className="sticky bottom-0 bg-bg-secondary-light text-xs uppercase text-text-primary">
             <tr>
               <th colSpan={3} className="px-4 py-2 text-left font-medium">
                 {t('usageDashboard.total')}

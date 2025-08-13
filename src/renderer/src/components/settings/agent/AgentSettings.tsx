@@ -373,7 +373,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
         </div>
       }
       chevronPosition="right"
-      className="mb-2 border rounded-md border-border-defaultDark"
+      className="mb-2 border rounded-md border-border-default-dark"
       isOpen={open}
       onOpenChange={setOpen}
     >
@@ -403,7 +403,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
   ) : (
     <div className="flex h-[600px] max-h-[100%] overflow-hidden -m-6">
       {/* Left sidebar with profiles and providers */}
-      <div className="w-[260px] border-r border-bg-tertiaryStrong p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary">
+      <div className="w-[260px] border-r border-bg-tertiary-strong p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary">
         <h4 className="text-sm uppercase font-medium">{t('agentProfiles.profiles')}</h4>
         <div className="py-2">
           {agentProfiles.map((profile) => (
@@ -419,7 +419,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
           ))}
           <button
             onClick={handleCreateNewProfile}
-            className="w-full text-left px-2 py-1 mt-2 rounded-sm text-sm transition-colors text-text-primary hover:bg-bg-secondaryLight flex items-center"
+            className="w-full text-left px-2 py-1 mt-2 rounded-sm text-sm transition-colors text-text-primary hover:bg-bg-secondary-light flex items-center"
           >
             <FaPlus className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.createNewProfile')}
           </button>
@@ -427,7 +427,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
       </div>
 
       {/* Center content area for profile settings */}
-      <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-tertiary scrollbar-thumb-rounded-full">
+      <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary scrollbar-thumb-rounded-full">
         {selectedProfile ? (
           <div className="space-y-2">
             <Input

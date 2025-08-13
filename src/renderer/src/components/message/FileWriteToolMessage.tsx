@@ -53,7 +53,7 @@ export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
         <div className="text-xs text-text-primary flex flex-wrap gap-1">
           <span>{getToolName()}</span>
           <span>
-            <CodeInline className="bg-bg-primaryLight">{filePath.split(/[/\\]/).pop()}</CodeInline>
+            <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
           </span>
         </div>
       </div>

@@ -20,7 +20,7 @@ export const CustomCommandBashBlock = ({ baseDir, command, output }: Props) => {
   return (
     <div className="my-2 border border-border-dark rounded-md bg-bg-primary">
       <button
-        className="w-full flex items-center justify-between p-2 bg-bg-tertiary hover:bg-bg-primaryLight transition-colors duration-200 rounded-t-md"
+        className="w-full flex items-center justify-between p-2 bg-bg-tertiary hover:bg-bg-primary-light transition-colors duration-200 rounded-t-md"
         onClick={toggleAccordion}
       >
         <div className="flex items-center gap-2">

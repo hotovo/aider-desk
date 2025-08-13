@@ -12,10 +12,10 @@ type Props = {
 export const CommandOutputMessageBlock = ({ message }: Props) => {
   const { t } = useTranslation();
   const baseClasses =
-    'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-primaryLight border border-border-darkLight text-text-primary';
+    'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-primary-light border border-border-darkLight text-text-primary';
 
   return (
-    <div className={`${baseClasses} bg-bg-primaryLight border-border-darkLight text-text-tertiary relative group`}>
+    <div className={`${baseClasses} bg-bg-primary-light border-border-darkLight text-text-tertiary relative group`}>
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-2">
           <BiTerminal className="text-text-muted h-4 w-4" />
@@ -25,7 +25,7 @@ export const CommandOutputMessageBlock = ({ message }: Props) => {
           </div>
         </div>
       </div>
-      {message.content && <div className="mt-2 p-2 bg-bg-primaryLight border border-border-darkLight text-xs whitespace-pre-wrap">{message.content}</div>}
+      {message.content && <div className="mt-2 p-2 bg-bg-primary-light border border-border-darkLight text-xs whitespace-pre-wrap">{message.content}</div>}
       <div className="absolute top-2 right-2">
         <CopyMessageButton content={message.content} className="text-text-mutedDark hover:text-text-tertiary" />
       </div>

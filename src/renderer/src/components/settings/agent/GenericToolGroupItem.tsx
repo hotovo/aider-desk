@@ -44,7 +44,7 @@ export const GenericToolGroupItem = ({ name, tools, toolApprovals, onApprovalCha
   };
 
   return (
-    <div className="border border-border-defaultDark rounded mb-1">
+    <div className="border border-border-default-dark rounded mb-1">
       <Accordion title={renderTitle()} buttonClassName="px-2" chevronPosition="right">
         {tools.length > 0 ? (
           <div>

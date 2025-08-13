@@ -714,10 +714,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     return (
       <div className="w-full relative">
         {question && (
-          <div className="mb-2 p-3 bg-gradient-to-b from-bg-primary to-bg-primaryLight rounded-md border border-border-defaultDark text-sm">
+          <div className="mb-2 p-3 bg-gradient-to-b from-bg-primary to-bg-primary-light rounded-md border border-border-default-dark text-sm">
             <div className="text-text-primary text-sm mb-2 whitespace-pre-wrap">{question.text}</div>
             {question.subject && (
-              <div className="text-text-mutedLight text-xs mb-3 whitespace-pre-wrap max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primaryLight scrollbar-rounded">
+              <div className="text-text-mutedLight text-xs mb-3 whitespace-pre-wrap max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded">
                 {question.subject}
               </div>
             )}
@@ -776,7 +776,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
               editable={!disabled}
               spellCheck={false}
-              className="w-full px-2 py-1 pr-8 border-2 border-border-defaultDark rounded-md focus:outline-none focus:border-border-accent text-sm bg-bg-secondary text-text-primary placeholder-text-mutedDark resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-bg-secondaryLight scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fourth"
+              className="w-full px-2 py-1 pr-8 border-2 border-border-default-dark rounded-md focus:outline-none focus:border-border-accent text-sm bg-bg-secondary text-text-primary placeholder-text-mutedDark resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fourth"
               theme={theme}
               basicSetup={{
                 highlightSelectionMatches: false,
@@ -869,8 +869,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               <Button
                 variant="text"
                 onClick={toggleTerminal}
-                className={`hover:!bg-bg-secondaryLight !border-border-light hover:!text-text-primary ${
-                  terminalVisible ? '!text-text-primary !bg-bg-secondaryLight' : '!text-text-secondary'
+                className={`hover:!bg-bg-secondary-light !border-border-light hover:!text-text-primary ${
+                  terminalVisible ? '!text-text-primary !bg-bg-secondary-light' : '!text-text-secondary'
                 }`}
                 size="xs"
               >
@@ -881,7 +881,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             <Button
               variant="text"
               onClick={() => clearMessages()}
-              className="hover:!bg-bg-secondaryLight !border-border-light !text-text-secondary hover:!text-text-primary"
+              className="hover:!bg-bg-secondary-light !border-border-light !text-text-secondary hover:!text-text-primary"
               size="xs"
             >
               <MdPlaylistRemove className="w-4 h-4 mr-1" />

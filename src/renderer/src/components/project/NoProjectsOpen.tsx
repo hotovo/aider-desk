@@ -21,7 +21,7 @@ export const NoProjectsOpen = ({ onOpenProject }: Props) => {
         <p className="text-text-mutedLight mb-6 text-sm">{t('noProjectsOpen.description')}</p>
         <div className="space-y-4">
           <button
-            className="px-6 py-3 border border-border-default rounded hover:bg-bg-tertiaryEmphasis hover:text-text-secondary transition-colors duration-200 text-md font-medium mb-4 text-text-secondary"
+            className="px-6 py-3 border border-border-default rounded hover:bg-bg-tertiary-emphasis hover:text-text-secondary transition-colors duration-200 text-md font-medium mb-4 text-text-secondary"
             onClick={onOpenProject}
           >
             {t('common.openProject')}

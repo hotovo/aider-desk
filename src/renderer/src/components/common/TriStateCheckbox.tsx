@@ -37,7 +37,7 @@ export const TriStateCheckbox = ({ label, state, onChange, className = '', ...pr
               ? 'bg-bg-fourth border-border-accent'
               : state === 'indeterminate'
                 ? 'bg-bg-tertiary border-border-accent'
-                : 'bg-bg-secondaryLight border-border-default'
+                : 'bg-bg-secondary-light border-border-default'
           } transition-colors duration-200`}
         >
           {state === 'checked' && (

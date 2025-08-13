@@ -53,7 +53,7 @@ export const ContextMenuProvider = ({ children }: Props) => {
       {menuState.isVisible && (
         <div
           ref={menuRef}
-          className="fixed bg-bg-secondaryLight pb-0.5 shadow-2xl rounded-sm border border-border-defaultDark z-50 min-w-[100px]"
+          className="fixed bg-bg-secondary-light pb-0.5 shadow-2xl rounded-sm border border-border-default-dark z-50 min-w-[100px]"
           style={{
             top: menuState.y,
             left: menuState.x,

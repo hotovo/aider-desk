@@ -36,7 +36,7 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
       ></div>
       {/* Content */}
       <Accordion title={header} chevronPosition="right" noMaxHeight={true}>
-        <div className="p-2 pl-3 pb-0.5 bg-bg-primaryLight rounded-b-md">
+        <div className="p-2 pl-3 pb-0.5 bg-bg-primary-light rounded-b-md">
           {message.children.map((child, index) => (
             <MessageBlock
               key={child.id || index}

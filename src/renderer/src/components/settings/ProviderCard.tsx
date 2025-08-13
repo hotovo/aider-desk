@@ -93,9 +93,9 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
   };
 
   return (
-    <div className="border border-border-defaultDark rounded-md overflow-hidden">
+    <div className="border border-border-default-dark rounded-md overflow-hidden">
       <div
-        className="p-3 py-2 cursor-pointer hover:bg-bg-secondaryLightStrongest transition-colors flex items-center justify-between"
+        className="p-3 py-2 cursor-pointer hover:bg-bg-secondary-light-strongest transition-colors flex items-center justify-between"
         onClick={handleCardClick}
       >
         <div className="flex items-center space-x-3">
@@ -106,7 +106,7 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
         </div>
         <div className="flex items-center space-x-2">
           {agentOnly && (
-            <span className="px-2 py-1 text-xs rounded-full font-medium bg-infoLightEmphasis text-infoLighter border border-infoLightEmphasis">
+            <span className="px-2 py-1 text-xs rounded-full font-medium bg-info-light-emphasis text-info-lighter border border-info-light-emphasis">
               {t('settings.models.agentOnly')}
             </span>
           )}
@@ -114,8 +114,8 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
             className={clsx(
               'px-2 py-1 text-xs rounded-full font-medium',
               isConfigured
-                ? 'bg-successMuted text-successLight border border-successEmphasis'
-                : 'bg-bg-fourthMuted text-text-mutedLight border border-bg-fourthEmphasis',
+                ? 'bg-success-muted text-success-light border border-success-emphasis'
+                : 'bg-bg-fourth-muted text-text-mutedLight border border-bg-fourth-emphasis',
             )}
           >
             {isConfigured ? t('settings.models.configured') : t('settings.models.notConfigured')}
@@ -123,7 +123,7 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
         </div>
       </div>
 
-      {isExpanded && <div className="border-t border-border-defaultDark p-4 bg-bg-secondary">{renderProviderParameters()}</div>}
+      {isExpanded && <div className="border-t border-border-default-dark p-4 bg-bg-secondary">{renderProviderParameters()}</div>}
     </div>
   );
 };

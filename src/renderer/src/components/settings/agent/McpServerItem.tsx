@@ -98,7 +98,7 @@ export const McpServerItem = ({
           )}
           {onRemove && (
             <IconButton
-              icon={<FaTrash className="text-errorStrong hover:text-error w-3.5 h-3.5" />}
+              icon={<FaTrash className="text-error-strong hover:text-error w-3.5 h-3.5" />}
               onClick={onRemove}
               tooltip={t('common.remove')}
               className="ml-3"
@@ -111,12 +111,12 @@ export const McpServerItem = ({
   };
 
   return (
-    <div className="border border-border-defaultDark rounded mb-1">
+    <div className="border border-border-default-dark rounded mb-1">
       <Accordion title={renderTitle()} buttonClassName="px-2" chevronPosition="right">
         {loading ? (
           <div className="text-xs text-text-muted p-2">{t('common.loading')}</div>
         ) : error ? (
-          <div className="text-xs text-errorLight p-4">{error}</div>
+          <div className="text-xs text-error-light p-4">{error}</div>
         ) : tools && tools.length > 0 ? (
           <div>
             <div className="text-xs p-2 pt-1 rounded mt-1 space-y-2">

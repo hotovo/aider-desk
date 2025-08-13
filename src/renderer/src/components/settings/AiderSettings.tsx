@@ -85,7 +85,7 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               href="https://aider.chat/docs/config/options.html"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-infoLighter hover:text-infoLightest"
+              className="text-info-lighter hover:text-info-lightest"
             >
               https://aider.chat/docs/config/options.html
             </a>
@@ -112,7 +112,7 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               placeholder={t('settings.aider.envVarsPlaceholder')}
             />
             {!showEnvVars && (
-              <div className="absolute inset-[3px] bottom-[9px] bg-bg-primaryLightStrong backdrop-blur-sm flex items-center justify-center rounded-sm">
+              <div className="absolute inset-[3px] bottom-[9px] bg-bg-primary-light-strong backdrop-blur-sm flex items-center justify-center rounded-sm">
                 <Button variant="text" color="secondary" onClick={() => setShowEnvVars(true)} className="flex items-center" size="sm">
                   <HiEye className="mr-2" /> {t('settings.common.showSecrets')}
                 </Button>
@@ -121,7 +121,12 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
           </div>
           <p className="text-xs text-text-secondary px-1">
             {t('settings.aider.envVarsDocumentation')}{' '}
-            <a href="https://aider.chat/docs/config/dotenv.html" target="_blank" rel="noopener noreferrer" className="text-infoLighter hover:text-infoLightest">
+            <a
+              href="https://aider.chat/docs/config/dotenv.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-info-lighter hover:text-info-lightest"
+            >
               https://aider.chat/docs/config/dotenv.html
             </a>
           </p>
