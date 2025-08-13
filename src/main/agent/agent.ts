@@ -28,6 +28,7 @@ import {
   type Tool,
   type ToolExecutionOptions,
   type ToolSet,
+  wrapLanguageModel,
 } from 'ai';
 import { delay, extractServerNameToolName } from '@common/utils';
 import { getLlmProviderConfig, LlmProviderName } from '@common/agent';
@@ -48,7 +49,8 @@ import { createHelpersToolset } from './tools/helpers';
 import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-providers';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { extractPromptContextFromToolResult } from './utils';
+import { extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG, ANSWER_RESPONSE_START_TAG } from './utils';
+import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
@@ -674,7 +676,12 @@ export class Agent {
 
         const result = streamText({
           providerOptions,
-          model,
+          model: wrapLanguageModel({
+            model,
+            middleware: extractReasoningMiddleware({
+              tagName: 'think',
+            }),
+          }),
           system: systemPrompt,
           messages: optimizeMessages(profile, initialUserRequestMessageIndex, messages, cacheControl),
           toolCallStreaming: true,
@@ -710,7 +717,7 @@ export class Agent {
                 project.processResponseMessage({
                   id: currentResponseId,
                   action: 'response',
-                  content: '---\n► **ANSWER**\n',
+                  content: ANSWER_RESPONSE_START_TAG,
                   finished: false,
                   promptContext,
                 });
@@ -732,7 +739,7 @@ export class Agent {
                 project.processResponseMessage({
                   id: currentResponseId,
                   action: 'response',
-                  content: '---\n► **THINKING**\n',
+                  content: THINKING_RESPONSE_STAR_TAG,
                   finished: false,
                   promptContext,
                 });
@@ -998,15 +1005,7 @@ export class Agent {
       const message: ResponseMessage = {
         id: currentResponseId,
         action: 'response',
-        content:
-          reasoning && text
-            ? `---
-► **THINKING**
-${reasoning.trim()}
----
-► **ANSWER**
-${text.trim()}`
-            : reasoning || text,
+        content: reasoning && text ? `${THINKING_RESPONSE_STAR_TAG}${reasoning.trim()}${ANSWER_RESPONSE_START_TAG}${text.trim()}` : reasoning || text,
         finished: true,
         // only send usage report if there are no tool results
         usageReport: toolResults?.length ? undefined : usageReport,

@@ -45,20 +45,20 @@ export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
   };
 
   return (
-    <div className="border border-neutral-800 rounded-md mb-2 group p-3 bg-neutral-850">
+    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
       <div className="flex items-center gap-2 mb-2">
-        <div className="text-neutral-500">
+        <div className="text-text-muted">
           <RiToolsFill className="w-4 h-4" />
         </div>
-        <div className="text-xs text-neutral-100 flex flex-wrap gap-1">
+        <div className="text-xs text-text-primary flex flex-wrap gap-1">
           <span>{getToolName()}</span>
           <span>
-            <CodeInline className="bg-neutral-900">{filePath.split(/[/\\]/).pop()}</CodeInline>
+            <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
           </span>
         </div>
       </div>
 
-      <div className="text-xs text-neutral-300 bg-neutral-850">
+      <div className="text-xs text-text-tertiary bg-bg-secondary">
         <CodeBlock baseDir="" language={language} file={filePath} isComplete={true}>
           {contentToWrite}
         </CodeBlock>

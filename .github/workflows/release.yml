@@ -75,6 +75,12 @@ jobs:
 
         run: npm run build:mac -- --x64 -p always
 
+      - name: Upload latest-mac.yml artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-mac-x64-yml
+          path: dist/latest-mac.yml
+
   release-macos-arm64:
     name: Release macOS arm64 packages
     runs-on: macos-14
@@ -103,3 +109,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
         run: npm run build:mac -- --arm64 -p always
+
+      - name: Upload latest-mac.yml artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-mac-arm64-yml
+          path: dist/latest-mac.yml

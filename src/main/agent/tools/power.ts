@@ -557,7 +557,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         id: uuidv4(),
         group: {
           id: uuidv4(),
-          color: '#3368a8',
+          color: 'var(--color-agent-sub-agent)',
           name: 'toolMessage.power.agent.running',
         },
       };
@@ -640,7 +640,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         promptContext.group = {
           ...promptContext.group!,
           name: 'toolMessage.error',
-          color: '#bc4141',
+          color: 'var(--color-error-muted)',
           finished: true,
         };
 

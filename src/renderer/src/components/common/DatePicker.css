@@ -1,10 +1,10 @@
 
 .react-datepicker {
-  @apply border-2 border-neutral-600 bg-neutral-800;
+  @apply border-2 border-border-default bg-bg-secondary-light;
 }
 
 .react-datepicker__header {
-  @apply border-b-2 border-neutral-600 bg-neutral-900;
+  @apply border-b-2 border-border-default bg-bg-primary-light;
 }
 
 .react-datepicker__triangle {
@@ -14,25 +14,25 @@
 .react-datepicker__current-month,
 .react-datepicker-time__header,
 .react-datepicker-year-header {
-  @apply text-neutral-100;
+  @apply text-text-primary;
 }
 
 .react-datepicker__day-name,
 .react-datepicker__day,
 .react-datepicker__time-name {
-  @apply text-neutral-100;
+  @apply text-text-primary;
 }
 
 .react-datepicker__day:hover {
-  @apply bg-neutral-700;
+  @apply bg-bg-tertiary;
 }
 
 .react-datepicker__day--selected,
 .react-datepicker__day--in-selecting-range,
 .react-datepicker__day--in-range {
-  @apply bg-blue-500;
+  @apply bg-info-light;
 }
 
 .react-datepicker__day--keyboard-selected {
-  @apply bg-neutral-700;
+  @apply bg-bg-tertiary;
 }

@@ -21,7 +21,7 @@ export const AgentProfileItem = ({ profile, isSelected, onClick, isDefault }: Pr
       className={clsx(
         'w-full rounded-sm justify-start truncate text-left h-auto py-1 px-2 text-sm cursor-pointer',
         'transition-colors duration-200 ease-in-out',
-        isSelected ? 'bg-neutral-800 text-white' : 'hover:bg-neutral-700/50 text-neutral-300',
+        isSelected ? 'bg-bg-secondary-light text-text-primary' : 'hover:bg-bg-tertiary-strong text-text-tertiary',
       )}
       onClick={handleClick}
       role="button"
@@ -33,7 +33,7 @@ export const AgentProfileItem = ({ profile, isSelected, onClick, isDefault }: Pr
       }}
     >
       {profile.name}&nbsp;
-      {isDefault && <span className="ml-1.5 text-xs text-neutral-400">({t('common.default')})</span>}
+      {isDefault && <span className="ml-1.5 text-xs text-text-muted-light">({t('common.default')})</span>}
     </div>
   );
 };

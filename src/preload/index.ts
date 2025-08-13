@@ -61,6 +61,7 @@ const api: ApplicationAPI = {
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
+  saveTheme: (theme) => ipcRenderer.invoke('save-theme', theme),
   startProject: (baseDir) => ipcRenderer.send('start-project', baseDir),
   stopProject: (baseDir) => ipcRenderer.send('stop-project', baseDir),
   restartProject: (baseDir, startupMode) => ipcRenderer.send('restart-project', baseDir, startupMode),

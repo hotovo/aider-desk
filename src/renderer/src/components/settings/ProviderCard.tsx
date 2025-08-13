@@ -93,24 +93,29 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
   };
 
   return (
-    <div className="border border-neutral-700 rounded-md overflow-hidden">
-      <div className="p-3 py-2 cursor-pointer hover:bg-neutral-800/50 transition-colors flex items-center justify-between" onClick={handleCardClick}>
+    <div className="border border-border-default-dark rounded-md overflow-hidden">
+      <div
+        className="p-3 py-2 cursor-pointer hover:bg-bg-secondary-light-strongest transition-colors flex items-center justify-between"
+        onClick={handleCardClick}
+      >
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
-            {isExpanded ? <FaChevronDown className="w-3 h-3 text-neutral-400" /> : <FaChevronRight className="w-3 h-3 text-neutral-400" />}
-            <div className="font-medium text-sm uppercase text-white">{t(`providers.${providerName}`)}</div>
+            {isExpanded ? <FaChevronDown className="w-3 h-3 text-text-muted-light" /> : <FaChevronRight className="w-3 h-3 text-text-muted-light" />}
+            <div className="font-medium text-sm uppercase text-text-primary">{t(`providers.${providerName}`)}</div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           {agentOnly && (
-            <span className="px-2 py-1 text-xs rounded-full font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+            <span className="px-2 py-1 text-xs rounded-full font-medium bg-info-light-emphasis text-info-lighter border border-info-light-emphasis">
               {t('settings.models.agentOnly')}
             </span>
           )}
           <span
             className={clsx(
               'px-2 py-1 text-xs rounded-full font-medium',
-              isConfigured ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-neutral-600/20 text-neutral-400 border border-neutral-600/30',
+              isConfigured
+                ? 'bg-success-muted text-success-light border border-success-emphasis'
+                : 'bg-bg-fourth-muted text-text-muted-light border border-bg-fourth-emphasis',
             )}
           >
             {isConfigured ? t('settings.models.configured') : t('settings.models.notConfigured')}
@@ -118,7 +123,7 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
         </div>
       </div>
 
-      {isExpanded && <div className="border-t border-neutral-700 p-4 bg-neutral-850/50">{renderProviderParameters()}</div>}
+      {isExpanded && <div className="border-t border-border-default-dark p-4 bg-bg-secondary">{renderProviderParameters()}</div>}
     </div>
   );
 };

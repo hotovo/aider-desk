@@ -26,7 +26,7 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
   );
 
   return (
-    <div className={clsx('bg-neutral-850 border border-neutral-800 rounded-md mb-2 relative')}>
+    <div className={clsx('bg-bg-secondary border border-border-dark-light rounded-md mb-2 relative')}>
       {/* Color Bar */}
       <div
         className={clsx('absolute left-0 top-0 h-full w-1 rounded-tl-md rounded-bl-md z-10', !message.group.finished && 'animate-pulse')}
@@ -36,7 +36,7 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
       ></div>
       {/* Content */}
       <Accordion title={header} chevronPosition="right" noMaxHeight={true}>
-        <div className="p-2 pl-3 pb-0.5 bg-neutral-900 rounded-b-md">
+        <div className="p-2 pl-3 pb-0.5 bg-bg-primary-light rounded-b-md">
           {message.children.map((child, index) => (
             <MessageBlock
               key={child.id || index}

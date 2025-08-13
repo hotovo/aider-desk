@@ -44,9 +44,9 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
   };
 
   return (
-    <div className="mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-neutral-800 px-1 relative">
+    <div className="mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative">
       {usageReport && (
-        <div className="mt-[4px] flex items-center gap-3 px-2 text-2xs text-neutral-500 group-hover:text-neutral-200 transition-colors">
+        <div className="mt-[4px] flex items-center gap-3 px-2 text-2xs text-text-muted group-hover:text-text-secondary transition-colors">
           {usageReport.cacheWriteTokens && usageReport.cacheWriteTokens > 0 ? (
             <span className="flex items-center gap-1" data-tooltip-id="usage-info-tooltip" data-tooltip-content={t('responseMessage.cacheWriteTokens')}>
               <FaDownload className="w-2.5 h-2.5 mb-[3px] mr-0.5" /> {usageReport.cacheWriteTokens}
@@ -70,22 +70,25 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
           )}
         </div>
       )}
-      <CopyMessageButton content={content} className="transition-colors text-neutral-700 hover:text-neutral-100" alwaysShow={true} />
+      <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />
       {(remove || redo || edit) && (
         <div ref={buttonRef}>
           <IconButton
             icon={<FaEllipsisVertical className="w-4 h-4" />}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="transition-colors text-neutral-700 hover:text-neutral-100"
+            className="transition-colors text-text-dark hover:text-text-primary"
           />
         </div>
       )}
       {isMenuOpen && (remove || redo || edit) && (
-        <div ref={menuRef} className="absolute right-0 bottom-full mb-1 w-[120px] bg-neutral-800 border border-neutral-700 rounded shadow-lg z-10">
+        <div
+          ref={menuRef}
+          className="absolute right-0 bottom-full mb-1 w-[120px] bg-bg-secondary-light border border-border-default-dark rounded shadow-lg z-10"
+        >
           <ul>
             {edit && (
               <li
-                className="flex items-center gap-1 px-2 py-1 text-2xs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
                 onClick={handleEditClick}
               >
                 <MdEdit className="w-4 h-4" />
@@ -94,7 +97,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
             )}
             {redo && (
               <li
-                className="flex items-center gap-1 px-2 py-1 text-2xs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
                 onClick={handleRedoClick}
               >
                 <MdRedo className="w-4 h-4" />
@@ -103,7 +106,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
             )}
             {remove && (
               <li
-                className="flex items-center gap-1 px-2 py-1 text-2xs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
                 onClick={handleRemoveClick}
               >
                 <MdDeleteForever className="w-4 h-4" />

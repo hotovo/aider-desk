@@ -7,7 +7,7 @@ import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, Sessio
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, POWER_TOOL_AGENT, POWER_TOOL_GROUP_NAME } from '@common/tools';
 
-import { extractPromptContextFromToolResult } from '@/agent/utils';
+import { extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG, ANSWER_RESPONSE_START_TAG } from '@/agent/utils';
 import logger from '@/logger';
 import { Project } from '@/project';
 import { isDirectory, isFileIgnored } from '@/utils';
@@ -411,17 +411,44 @@ export class SessionManager {
       const message = this.contextMessages[i];
       if (message.role === 'assistant') {
         if (Array.isArray(message.content)) {
+          // Collect reasoning and text parts to combine them if both exist
+          let reasoningContent = '';
+          let textContent = '';
+          let hasReasoning = false;
+          let hasText = false;
+
           for (const part of message.content) {
-            if (part.type === 'text' && part.text?.trim()) {
-              this.project.processResponseMessage({
-                id: uuidv4(),
-                action: 'response',
-                content: part.text,
-                finished: true,
-                reflectedMessage: message.reflectedMessage,
-                usageReport: message.usageReport,
-              });
-            } else if (part.type === 'tool-call') {
+            if (part.type === 'reasoning' && part.text?.trim()) {
+              reasoningContent = part.text.trim();
+              hasReasoning = true;
+            } else if (part.type === 'text' && part.text) {
+              textContent = part.text.trim();
+              hasText = true;
+            }
+          }
+
+          // Process combined reasoning and text content
+          if (hasReasoning || hasText) {
+            let finalContent = '';
+            if (hasReasoning && hasText) {
+              finalContent = `${THINKING_RESPONSE_STAR_TAG}${reasoningContent}${ANSWER_RESPONSE_START_TAG}${textContent}`;
+            } else {
+              finalContent = reasoningContent || textContent;
+            }
+
+            this.project.processResponseMessage({
+              id: uuidv4(),
+              action: 'response',
+              content: finalContent,
+              finished: true,
+              reflectedMessage: message.reflectedMessage,
+              usageReport: message.usageReport,
+            });
+          }
+
+          // Process tool-call parts
+          for (const part of message.content) {
+            if (part.type === 'tool-call') {
               const toolCall = part;
               // Ensure toolCall.toolCallId exists before proceeding
               if (!toolCall.toolCallId) {
@@ -477,17 +504,44 @@ export class SessionManager {
                 messages.forEach((subMessage: ContextMessage) => {
                   if (subMessage.role === 'assistant') {
                     if (Array.isArray(subMessage.content)) {
+                      // Collect reasoning and text parts to combine them if both exist
+                      let subReasoningContent = '';
+                      let subTextContent = '';
+                      let subHasReasoning = false;
+                      let subHasText = false;
+
                       for (const subPart of subMessage.content) {
-                        if (subPart.type === 'text' && subPart.text) {
-                          this.project.processResponseMessage({
-                            id: uuidv4(),
-                            action: 'response',
-                            content: subPart.text,
-                            finished: true,
-                            usageReport: subMessage.usageReport,
-                            promptContext: subMessage.promptContext,
-                          });
-                        } else if (subPart.type === 'tool-call' && subPart.toolCallId) {
+                        if (subPart.type === 'reasoning' && subPart.text?.trim()) {
+                          subReasoningContent = subPart.text.trim();
+                          subHasReasoning = true;
+                        } else if (subPart.type === 'text' && subPart.text) {
+                          subTextContent = subPart.text.trim();
+                          subHasText = true;
+                        }
+                      }
+
+                      // Process combined reasoning and text content
+                      if (subHasReasoning || subHasText) {
+                        let subFinalContent = '';
+                        if (subHasReasoning && subHasText) {
+                          subFinalContent = `${THINKING_RESPONSE_STAR_TAG}${subReasoningContent}${ANSWER_RESPONSE_START_TAG}${subTextContent}`;
+                        } else {
+                          subFinalContent = subReasoningContent || subTextContent;
+                        }
+
+                        this.project.processResponseMessage({
+                          id: uuidv4(),
+                          action: 'response',
+                          content: subFinalContent,
+                          finished: true,
+                          usageReport: subMessage.usageReport,
+                          promptContext: subMessage.promptContext,
+                        });
+                      }
+
+                      // Process tool-call parts
+                      for (const subPart of subMessage.content) {
+                        if (subPart.type === 'tool-call' && subPart.toolCallId) {
                           const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
                           this.project.addToolMessage(
                             subPart.toolCallId,

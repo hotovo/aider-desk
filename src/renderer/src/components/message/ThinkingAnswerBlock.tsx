@@ -28,38 +28,38 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
   };
 
   return (
-    <div className="flex flex-col w-full gap-3 pt-5">
+    <div className="flex flex-col w-full gap-3 pt-0">
       {/* Thinking section */}
-      <div className="border border-neutral-700 rounded-md overflow-hidden">
-        <div className="flex items-center justify-between gap-2 p-2 bg-neutral-800 cursor-pointer hover:bg-neutral-750" onClick={handleToggleThinking}>
+      <div className="border border-border-default-dark rounded-md overflow-hidden">
+        <div className="flex items-center justify-between gap-2 p-2 bg-bg-secondary-light cursor-pointer hover:bg-bg-tertiary" onClick={handleToggleThinking}>
           <div className="flex items-center gap-2">
-            <div className="text-neutral-200">{isThinkingExpanded ? <FaChevronDown size={14} /> : <FaChevronRight size={14} />}</div>
-            <div className={`text-neutral-200 ${!answer ? 'animate-pulse' : ''}`}>
+            <div className="text-text-secondary">{isThinkingExpanded ? <FaChevronDown size={14} /> : <FaChevronRight size={14} />}</div>
+            <div className={`text-text-secondary ${!answer ? 'animate-pulse' : ''}`}>
               <FaBrain size={16} />
             </div>
-            <div className={`font-medium text-neutral-100 ${!answer ? 'animate-pulse' : ''}`}>{t('thinkingAnswer.thinking')}</div>
+            <div className={`font-medium text-text-primary ${!answer ? 'animate-pulse' : ''}`}>{t('thinkingAnswer.thinking')}</div>
           </div>
-          {thinking && <CopyMessageButton content={thinking} className="text-neutral-600 hover:text-neutral-300" />}
+          {thinking && <CopyMessageButton content={thinking} className="text-text-muted-dark hover:text-text-tertiary" />}
         </div>
 
         {isThinkingExpanded && (
-          <div className={clsx('p-3 text-xs text-neutral-300 bg-neutral-850', !renderMarkdown && 'whitespace-pre-wrap break-words')}>{parsedThinking}</div>
+          <div className={clsx('p-3 text-xs text-text-tertiary bg-bg-secondary', !renderMarkdown && 'whitespace-pre-wrap break-words')}>{parsedThinking}</div>
         )}
       </div>
 
       {/* Answer section - only show if we have an answer or we're streaming */}
       {answer && parsedAnswer && (
-        <div className="border border-neutral-700 rounded-md overflow-hidden">
-          <div className="flex items-center justify-between gap-2 p-2 bg-neutral-800">
+        <div className="border border-border-default-dark rounded-md overflow-hidden">
+          <div className="flex items-center justify-between gap-2 p-2 bg-bg-secondary-light">
             <div className="flex items-center gap-2">
-              <div className="text-neutral-200">
+              <div className="text-text-secondary">
                 <MdOutlineLightbulb size={18} />
               </div>
-              <div className="font-medium text-neutral-100">{t('thinkingAnswer.answer')}</div>
+              <div className="font-medium text-text-primary">{t('thinkingAnswer.answer')}</div>
             </div>
-            <CopyMessageButton content={answer} className="text-neutral-600 hover:text-neutral-300" />
+            <CopyMessageButton content={answer} className="text-text-muted-dark hover:text-text-tertiary" />
           </div>
-          <div className={clsx('p-3 text-xs text-neutral-100 bg-neutral-850', !renderMarkdown && 'whitespace-pre-wrap break-words')}>{parsedAnswer}</div>
+          <div className={clsx('p-3 text-xs text-text-primary bg-bg-secondary', !renderMarkdown && 'whitespace-pre-wrap break-words')}>{parsedAnswer}</div>
         </div>
       )}
     </div>

@@ -25,7 +25,7 @@ export const ConfirmDialog = ({
   cancelButtonText,
   children,
   disabled = false,
-  confirmButtonClass = 'bg-amber-600 hover:bg-amber-500',
+  confirmButtonClass,
   width,
   closeOnEscape = false,
 }: Props) => {

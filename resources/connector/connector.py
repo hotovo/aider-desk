@@ -562,7 +562,7 @@ class ConnectorInputOutput(InputOutput):
         group = {
           "id": str(uuid.uuid4()),
           "name": f"AI request detected in files: {changed_files}",
-          "color": "#884239"
+          "color": "var(--color-agent-ai-request)"
         }
         prompt_context = PromptContext(str(uuid.uuid4()), group)
 

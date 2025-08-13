@@ -18,13 +18,13 @@ export const CustomCommandBashBlock = ({ baseDir, command, output }: Props) => {
   };
 
   return (
-    <div className="my-2 border border-neutral-850 rounded-md bg-neutral-950">
+    <div className="my-2 border border-border-dark rounded-md bg-bg-primary">
       <button
-        className="w-full flex items-center justify-between p-2 bg-neutral-750 hover:bg-neutral-900 transition-colors duration-200 rounded-t-md"
+        className="w-full flex items-center justify-between p-2 bg-bg-tertiary hover:bg-bg-primary-light transition-colors duration-200 rounded-t-md"
         onClick={toggleAccordion}
       >
         <div className="flex items-center gap-2">
-          <BiTerminal className="text-neutral-200 h-4 w-4" />
+          <BiTerminal className="text-text-secondary h-4 w-4" />
           <span className="text-xs">{command}</span>
         </div>
         {isOpen ? <FaChevronDown className="w-3 h-3" /> : <FaChevronRight className="w-3 h-3" />}

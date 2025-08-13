@@ -137,7 +137,7 @@ export const McpServerForm = ({ onSave, onCancel, servers }: Props) => {
 
   return (
     <div>
-      <div className="flex items-center space-between mb-3 text-neutral-100 w-full">
+      <div className="flex items-center space-between mb-3 text-text-primary w-full">
         <div className="text-md font-medium uppercase flex-1">
           {servers && servers.length === 1
             ? t('mcpServer.editServer', { name: servers[0].name })
@@ -147,7 +147,7 @@ export const McpServerForm = ({ onSave, onCancel, servers }: Props) => {
         </div>
         {!servers && (
           <div className="mr-1">
-            <MdInfoOutline className="h-5 w-5 text-neutral-200 hover:text-neutral-100 cursor-pointer" data-tooltip-id={tooltipId} />
+            <MdInfoOutline className="h-5 w-5 text-text-secondary hover:text-text-primary cursor-pointer" data-tooltip-id={tooltipId} />
             <StyledTooltip id={tooltipId} content={t('mcpServer.configHint')} />
           </div>
         )}
@@ -161,11 +161,11 @@ export const McpServerForm = ({ onSave, onCancel, servers }: Props) => {
           })}
           value={configJSON}
           onChange={handleChange}
-          className={`w-full h-96 p-2 resize-none ${configJSON && !isValidJson ? 'border-red-800/50 focus:border-red-800/50' : ''}`}
+          className={`w-full h-96 p-2 resize-none ${configJSON && !isValidJson ? 'border-error-emphasis focus:border-error-emphasis' : ''}`}
         />
       </div>
       <div className="flex justify-between items-center gap-2">
-        <a href="https://modelcontextprotocol.io/examples" target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
+        <a href="https://modelcontextprotocol.io/examples" target="_blank" rel="noopener noreferrer" className="text-xs text-info-light hover:underline">
           {t('mcpServer.viewExamples')}
         </a>
         <div className="flex gap-2">

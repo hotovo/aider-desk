@@ -15,7 +15,7 @@ type Props = {
 };
 
 export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, onRemove }: Props) => {
-  const baseClasses = 'rounded-md p-3 mb-2 max-w-full text-xs bg-neutral-850 border border-neutral-800 text-gray-100';
+  const baseClasses = 'rounded-md p-3 mb-2 max-w-full text-xs bg-bg-secondary border border-border-dark-light text-text-primary';
 
   const parsedContent = useParsedContent(baseDir, message.content, allFiles, renderMarkdown);
 
@@ -27,7 +27,7 @@ export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdow
     <div className={clsx(baseClasses, 'relative flex flex-col group', !renderMarkdown && 'break-words whitespace-pre-wrap')}>
       <div className="flex items-start gap-2">
         <div className="mt-[1px]">
-          <RiRobot2Line className="text-neutral-500 w-4 h-4" />
+          <RiRobot2Line className="text-text-muted w-4 h-4" />
         </div>
         <div className="flex-grow-1 w-full overflow-hidden">{parsedContent}</div>
       </div>

@@ -169,7 +169,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
   );
 
   if (!activeAgentProfile) {
-    return <div className="text-xs text-neutral-400">{t('modelSelector.noActiveAgentProvider')}</div>;
+    return <div className="text-xs text-text-muted-light">{t('modelSelector.noActiveAgentProvider')}</div>;
   }
 
   return (
@@ -183,7 +183,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
           preferredModels={settings?.models.agentPreferred || []}
           removePreferredModel={removePreferredModel}
         />
-        <IconButton icon={<BiCog className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-neutral-700 rounded-md" />
+        <IconButton icon={<BiCog className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-bg-tertiary rounded-md" />
       </div>
       {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={1} initialAgentProvider={activeAgentProfile?.provider} />}
     </>

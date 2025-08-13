@@ -1,5 +1,5 @@
 .xterm-viewport {
-  @apply scrollbar-thin scrollbar-track-neutral-950 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700;
+  @apply scrollbar-thin scrollbar-track-bg-primary scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary;
 }
 
 .xterm-screen {

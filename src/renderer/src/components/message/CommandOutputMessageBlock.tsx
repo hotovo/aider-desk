@@ -11,22 +11,23 @@ type Props = {
 
 export const CommandOutputMessageBlock = ({ message }: Props) => {
   const { t } = useTranslation();
-  const baseClasses = 'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-neutral-900 border border-neutral-800 text-gray-100';
+  const baseClasses =
+    'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-primary-light border border-border-dark-light text-text-primary';
 
   return (
-    <div className={`${baseClasses} bg-neutral-900 border-neutral-800 text-neutral-300 relative group`}>
+    <div className={`${baseClasses} bg-bg-primary-light border-border-dark-light text-text-tertiary relative group`}>
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-2">
-          <BiTerminal className="text-neutral-500 h-4 w-4" />
+          <BiTerminal className="text-text-muted h-4 w-4" />
           <div className="flex items-center space-x-1">
             <span className="opacity-60 text-xs">{t('commandOutput.command')}:</span>
-            <span className="text-neutral-400">{message.command}</span>
+            <span className="text-text-muted-light">{message.command}</span>
           </div>
         </div>
       </div>
-      {message.content && <div className="mt-2 p-2 bg-gray-950 border border-neutral-800 text-xs whitespace-pre-wrap">{message.content}</div>}
+      {message.content && <div className="mt-2 p-2 bg-bg-primary-light border border-border-dark-light text-xs whitespace-pre-wrap">{message.content}</div>}
       <div className="absolute top-2 right-2">
-        <CopyMessageButton content={message.content} className="text-neutral-600 hover:text-neutral-300" />
+        <CopyMessageButton content={message.content} className="text-text-muted-dark hover:text-text-tertiary" />
       </div>
     </div>
   );

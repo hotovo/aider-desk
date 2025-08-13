@@ -4,7 +4,6 @@ import { HiChevronUpDown, HiCheck } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
-import './Select.css';
 
 export type Option = {
   label: ReactNode;
@@ -98,7 +97,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
 
   return (
     <div ref={containerRef} className="relative">
-      {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-text-primary mb-1">{label}</label>}
       {/* Button container */}
       <div ref={containerRef} className="relative">
         <button
@@ -107,12 +106,12 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
           onKeyDown={handleKeyDown}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          className={`flex w-full min-w-[8rem] bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 placeholder-neutral-500 pl-2 pr-1 ${sizeClasses[size]} ${className}`}
+          className={`flex w-full min-w-[8rem] bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-1 ${sizeClasses[size]} ${className}`}
         >
           <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
             <span className="block truncate">{selectedOption?.label || t('select.placeholder')}</span>
           </span>
-          <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-neutral-500" />
+          <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-text-muted" />
         </button>
       </div>
 
@@ -122,7 +121,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
         createPortal(
           <ul
             ref={dropdownRef}
-            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-neutral-800 py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-200"
+            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-bg-secondary-light py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,
@@ -134,9 +133,9 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
               <li
                 key={opt.value}
                 onClick={() => handleOptionSelect(opt)}
-                className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]}
-                ${selectedOption?.value === opt.value ? 'bg-neutral-700' : ''}
-                ${highlightedIndex === index ? 'bg-neutral-700' : 'hover:bg-neutral-700'}`}
+                className={`relative cursor-default py-2 pr-9 pl-3 text-text-primary select-none text-sm ${sizeClasses[size]}
+                ${selectedOption?.value === opt.value ? 'bg-bg-tertiary' : ''}
+                ${highlightedIndex === index ? 'bg-bg-tertiary' : 'hover:bg-bg-tertiary'}`}
                 aria-selected={selectedOption?.value === opt.value}
                 role="option"
               >
@@ -144,7 +143,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
                   <span className="block truncate">{opt.label}</span>
                 </div>
                 {selectedOption?.value === opt.value && (
-                  <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-neutral-300">
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-text-tertiary">
                     <HiCheck className="size-4" />
                   </span>
                 )}

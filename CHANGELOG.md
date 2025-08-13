@@ -2,10 +2,14 @@
 
 ## [UNRELEASED]
 
+- parsing <think> tags as reasoning part of the response
+- implemented better support for themes + new themes added
+
+## [0.26.0]
+
 - pasting image processed in AiderDesk instead of using Aider to handle it
 - added image file processing support for Agent context
 - using relative path for web scrapped content files
-- properly adding files recursively when directory is added to context
 - AGENTS.md instead of PROJECT.md when using /init
 - using "diff" mode as default for models in Aider
 - added configurable require_parameters for OpenRouter
@@ -24,6 +28,10 @@
 - added context menu with Copy and Paste actions
 - properly loading last session on start when IDE plugin is connected
 - added reasoning effort to OpenAI provider in Agent mode
+
+## [0.25.1]
+
+- properly adding files recursively when directory is added to context
 
 ## [0.25.0]
 

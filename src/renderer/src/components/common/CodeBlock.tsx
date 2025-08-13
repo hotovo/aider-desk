@@ -143,12 +143,12 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
 
   return (
     <div className="mt-1 max-w-full">
-      <div className="bg-gray-950 border border-neutral-800 text-white rounded-md px-3 py-2 mb-4 overflow-x-auto text-xs scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
+      <div className="bg-bg-code-block border border-border-dark-light text-text-primary rounded-md px-3 py-2 mb-4 overflow-x-auto text-xs scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary">
         {file ? (
           <>
-            <div className="text-neutral-100 text-xs py-1 w-full cursor-pointer flex items-center justify-between" onClick={() => setIsExpanded(!isExpanded)}>
+            <div className="text-text-primary text-xs py-1 w-full cursor-pointer flex items-center justify-between" onClick={() => setIsExpanded(!isExpanded)}>
               <span className="flex items-center gap-2">
-                <VscCode className="text-neutral-500" size={14} />
+                <VscCode className="text-text-muted" size={14} />
                 {file}
               </span>
               <span className="flex items-center gap-2">
@@ -163,16 +163,16 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
                   </div>
                 )}
                 <CopyMessageButton content={stringToCopy} className="opacity-0 group-hover:opacity-100" />
-                {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-neutral-500" size={14} />}
-                <span className="text-neutral-100 transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
+                {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-text-muted" size={14} />}
+                <span className="text-text-primary transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
                   <MdKeyboardArrowDown size={16} />
                 </span>
               </span>
             </div>
             <div
-              className={`transition-all duration-200 ${isExpanded ? 'max-h-[5000px] opacity-100 overflow-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-600' : 'max-h-0 opacity-0 overflow-hidden'}`}
+              className={`transition-all duration-200 ${isExpanded ? 'max-h-[5000px] opacity-100 overflow-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light' : 'max-h-0 opacity-0 overflow-hidden'}`}
             >
-              <hr className="border-gray-700 my-2" />
+              <hr className="border-border-dark-light-strong my-2" />
               {content}
             </div>
           </>
@@ -180,7 +180,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
           <div className="relative">
             <div className="absolute right-0 top-1 flex items-center gap-2">
               <CopyMessageButton content={stringToCopy} />
-              {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-neutral-500" size={14} />}
+              {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-text-muted" size={14} />}
             </div>
             {content}
           </div>

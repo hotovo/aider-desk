@@ -69,10 +69,10 @@ export const UsageTable = ({ data, groupBy }: Props) => {
   }, [aggregatedData]);
 
   return (
-    <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700 m-2">
-      <div className="border border-neutral-800">
-        <table className="w-full text-sm text-left text-neutral-100">
-          <thead className="text-xs text-neutral-100 uppercase bg-neutral-800 sticky top-0">
+    <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary m-2">
+      <div className="border border-border-dark-light">
+        <table className="w-full text-sm text-left text-text-primary">
+          <thead className="text-xs text-text-primary uppercase bg-bg-secondary-light sticky top-0">
             <tr>
               <th className="px-4 py-2">{t('usageDashboard.table.date')}</th>
               <th className="px-4 py-2">{t('usageDashboard.table.project')}</th>
@@ -87,7 +87,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
           </thead>
           <tbody>
             {aggregatedData.map((row, index) => (
-              <tr key={index} className="bg-neutral-900 border-b border-neutral-800 hover:bg-neutral-800/50 text-sm">
+              <tr key={index} className="bg-bg-primary-light border-b border-border-dark-light hover:bg-bg-secondary text-sm">
                 <td className="px-4 py-2 text-xs">{formatDateByGroup(row.timestamp, groupBy)}</td>
                 <td className="px-4 py-2">
                   <div className="whitespace-pre-line text-xs">{row.project}</div>
@@ -104,7 +104,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
               </tr>
             ))}
           </tbody>
-          <tfoot className="sticky bottom-0 bg-neutral-800 text-xs uppercase text-neutral-100">
+          <tfoot className="sticky bottom-0 bg-bg-secondary-light text-xs uppercase text-text-primary">
             <tr>
               <th colSpan={3} className="px-4 py-2 text-left font-medium">
                 {t('usageDashboard.total')}

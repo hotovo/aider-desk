@@ -8,12 +8,12 @@ export type Props = InputHTMLAttributes<HTMLInputElement> & {
 export const Input = forwardRef<HTMLInputElement, Props>(({ wrapperClassName, label, className = '', ...props }, ref) => {
   return (
     <div className={wrapperClassName}>
-      {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-text-primary mb-1">{label}</label>}
       <input
         ref={ref}
         spellCheck={false}
         {...props}
-        className={`w-full p-2 bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 text-sm placeholder-neutral-500 ${className}`}
+        className={`w-full p-2 bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary text-sm placeholder-text-muted ${className}`}
       />
     </div>
   );

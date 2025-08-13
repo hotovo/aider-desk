@@ -22,12 +22,12 @@ type Props = DatePickerProps & {
 export const DatePicker = ({ label, className, ...props }: Props) => {
   return (
     <div className="relative">
-      {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-text-primary mb-1">{label}</label>}
       <ReactDatePicker
         className={clsx('min-h-[40px]', className)}
         {...props}
         showIcon
-        icon={<FaCalendarAlt className="absolute top-1/2 -translate-y-1/2 left-0 text-neutral-200" />}
+        icon={<FaCalendarAlt className="absolute top-1/2 -translate-y-1/2 left-0 text-text-secondary" />}
         customInput={<CustomInput />}
       />
     </div>
