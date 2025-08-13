@@ -46,8 +46,9 @@ export const setupIpcHandlers = (
   });
 
   ipcMain.on('set-theme', async (_, theme: ThemeName) => {
-    const currentSettings = store.getSettings();
-    store.saveSettings({ ...currentSettings, theme });
+    const oldSettings = store.getSettings();
+    oldSettings.theme = theme;
+    store.saveSettings(oldSettings);
   });
 
   ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {
