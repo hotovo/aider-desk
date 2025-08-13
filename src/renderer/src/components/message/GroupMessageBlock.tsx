@@ -31,7 +31,7 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
       <div
         className={clsx('absolute left-0 top-0 h-full w-1 rounded-tl-md rounded-bl-md z-10', !message.group.finished && 'animate-pulse')}
         style={{
-          backgroundColor: 'message.group.color',
+          backgroundColor: message.group.color,
         }}
       ></div>
       {/* Content */}
