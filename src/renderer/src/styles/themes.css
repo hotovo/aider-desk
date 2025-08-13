@@ -812,3 +812,94 @@
   --color-agent-context-files: #facc15;
   --color-agent-repo-map: #60a5fa;
 }
+
+.theme-neopunk {
+  /* Background Colors - Dark cyberpunk base with neon undertones */
+  --color-bg-primary: #0a0a0f; /* Near-black with blue hint */
+  --color-bg-primary-light: #14141e; /* Slightly lighter dark blue */
+  --color-bg-primary-light-strong: #14141e80;
+  --color-bg-secondary: #1a1a2e; /* Deep space blue */
+  --color-bg-secondary-light: #16213e; /* Midnight blue */
+  --color-bg-secondary-light-strongest: #16213ef2;
+  --color-bg-tertiary: #0f3460; /* Electric blue dark */
+  --color-bg-tertiary-emphasis: #ff00ff4c; /* Magenta glow emphasis */
+  --color-bg-tertiary-strong: #ff00ff7f; /* Magenta glow strong */
+  --color-bg-fourth: #16213e; /* Consistent with secondary-light */
+  --color-bg-fourth-muted: #00ffff33; /* Cyan glow muted */
+  --color-bg-fourth-emphasis: #00ffff4c; /* Cyan glow emphasis */
+  --color-bg-fifth: #e94560; /* Neon red accent */
+  --color-bg-selection: #ff00ff40; /* Magenta selection glow */
+  --color-bg-code-block: #050508; /* Ultra-dark for code */
+
+  --color-bg-diff-viewer-old-primary: #4a0e0e; /* Dark red for old code */
+  --color-bg-diff-viewer-old-secondary: #2a0808; /* Very dark red */
+  --color-bg-diff-viewer-new-primary: #0a4a2a; /* Dark green for new code */
+  --color-bg-diff-viewer-new-secondary: #062a18; /* Very dark green */
+
+  /* Text Colors - High contrast neon on dark */
+  --color-text-primary: #ffffff; /* Pure white for max contrast */
+  --color-text-secondary: #00ffff; /* Electric cyan */
+  --color-text-tertiary: #ff00ff; /* Electric magenta */
+  --color-text-muted-light: #00ff88; /* Neon green */
+  --color-text-muted: #0f3460; /* Subtle blue-gray */
+  --color-text-muted-dark: #16213e; /* Darker blue-gray */
+  --color-text-dark: #1a1a2e; /* Deepest blue-gray */
+
+  /* Border Colors - Neon glow effects */
+  --color-border-dark: #1a1a2e;
+  --color-border-dark-light: #16213e;
+  --color-border-dark-light-strong: #16213e80;
+  --color-border-default-dark: #0f3460;
+  --color-border-default: #00ffff; /* Cyan border glow */
+  --color-border-accent: #ff00ff; /* Magenta accent glow */
+  --color-border-light: #00ff88; /* Green light border */
+
+  /* Accent Colors - Primary neon palette */
+  --color-accent-primary: #00ffff; /* Electric cyan */
+  --color-accent-secondary: #ff00ff; /* Electric magenta */
+  --color-accent-light: #00ff88; /* Neon green */
+
+  /* Status Colors - Cyberpunk neon variants */
+  --color-success: #00ff88; /* Neon green success */
+  --color-success-light: #44ff99;
+  --color-success-subtle: #00ff881a;
+  --color-success-muted: #00ff8833;
+  --color-success-emphasis: #00ff884c;
+
+  --color-warning: #ffaa00; /* Neon orange warning */
+  --color-warning-subtle: #ffaa0019;
+  --color-warning-emphasis: #ffaa004c;
+  --color-warning-light: #ffcc33;
+  --color-warning-text: #0a0a0f;
+
+  --color-error: #ff3366; /* Neon pink error */
+  --color-error-dark: #cc0044;
+  --color-error-subtle: #ff33661a;
+  --color-error-muted: #ff336626;
+  --color-error-emphasis: #ff33664c;
+  --color-error-strong: #ff336680;
+  --color-error-light: #ff6699;
+  --color-error-lighter: #ff99bb;
+  --color-error-lightest: #ffccdd;
+
+  --color-info: #3366ff; /* Electric blue info */
+  --color-info-light: #6699ff;
+  --color-info-lighter: #99ccff;
+  --color-info-lightest: #cce6ff;
+  --color-info-subtle: #3366ff1a;
+  --color-info-light-muted: #3366ff33;
+  --color-info-light-emphasis: #3366ff4c;
+
+  /* Input Colors - Dark with neon borders */
+  --color-input-bg: #14141e;
+  --color-input-border: #00ffff;
+  --color-input-text: #ffffff;
+
+  /* Agent Colors - Distinct neon variants for cyberpunk agents */
+  --color-agent-auto-approve: #00ff88; /* Neon green - auto systems */
+  --color-agent-aider-tools: #ff6600; /* Neon orange - assistance */
+  --color-agent-power-tools: #ff00ff; /* Electric magenta - power */
+  --color-agent-todo-tools: #00ccff; /* Bright cyan - tasks */
+  --color-agent-context-files: #ffff00; /* Electric yellow - files */
+  --color-agent-repo-map: #ff0099; /* Hot pink - mapping */
+}
