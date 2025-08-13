@@ -58,7 +58,7 @@ export const SessionsPopup = ({
       <div>
         <div className="p-2 text-xs font-semibold border-b border-border-default-dark">{t('sessions.title')}</div>
         {sessions.length === 0 ? (
-          <div className="text-xs text-text-mutedLight p-2">{t('sessions.empty')}</div>
+          <div className="text-xs text-text-muted-light p-2">{t('sessions.empty')}</div>
         ) : (
           <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
             {sessions.map((session) => (
@@ -170,7 +170,7 @@ export const SessionsPopup = ({
           confirmButtonText={t('common.delete')}
         >
           <p>{t('sessions.deleteConfirm', { name: sessionToDelete })}</p>
-          <p className="text-sm text-text-mutedLight mt-1">{t('sessions.deleteWarning')}</p>
+          <p className="text-sm text-text-muted-light mt-1">{t('sessions.deleteWarning')}</p>
         </ConfirmDialog>
       )}
       <StyledTooltip id="session-tooltip" />

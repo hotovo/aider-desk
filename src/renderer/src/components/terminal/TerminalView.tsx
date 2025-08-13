@@ -102,7 +102,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, visib
   return (
     <div className={clsx('flex flex-col', visible ? 'block' : 'hidden', className)}>
       {/* Tab bar */}
-      <div className="flex items-center justify-between pl-1 pr-2 bg-bg-primary-light border-b border-border-darkLight">
+      <div className="flex items-center justify-between pl-1 pr-2 bg-bg-primary-light border-b border-border-dark-light">
         <div className="flex items-center space-x-1">
           {tabs.map((tab, index) => (
             <div
@@ -111,7 +111,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, visib
                 'flex items-center px-3 py-1 mt-1 text-sm rounded-t-sm cursor-pointer transition-colors',
                 activeTabId === tab.id
                   ? 'bg-bg-secondary text-text-primary'
-                  : 'bg-bg-primary-light text-text-mutedLight hover:bg-bg-secondary-light hover:text-text-secondary',
+                  : 'bg-bg-primary-light text-text-muted-light hover:bg-bg-secondary-light hover:text-text-secondary',
               )}
               onClick={() => setActiveTabId(tab.id)}
             >

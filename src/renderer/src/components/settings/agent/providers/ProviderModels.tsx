@@ -65,7 +65,7 @@ export const ProviderModels = ({ models, onChange, placeholder, availableModels 
               <IconButton
                 icon={<IoClose className="h-4 w-4" />}
                 onClick={() => handleRemoveModel(index)}
-                className="text-text-mutedLight hover:text-text-secondary"
+                className="text-text-muted-light hover:text-text-secondary"
               />
             </div>
           ))}

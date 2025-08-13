@@ -44,7 +44,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
   const progressPercentage = maxInputTokens > 0 ? Math.min((totalTokens / maxInputTokens) * 100, 100) : 0;
 
   return (
-    <div className={`border-t border-border-darkLight p-2 pb-1 ${isExpanded ? 'pt-4' : 'pt-3'} relative group`}>
+    <div className={`border-t border-border-dark-light p-2 pb-1 ${isExpanded ? 'pt-4' : 'pt-3'} relative group`}>
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mt-0.5">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -53,7 +53,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
           {isExpanded ? <IoChevronDown /> : <IoChevronUp />}
         </button>
       </div>
-      <div className="text-2xs text-text-mutedLight">
+      <div className="text-2xs text-text-muted-light">
         <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-24 mb-2' : 'max-h-0'}`}>
           {renderLabelValue('costInfo.files', `${filesTotalTokens} tokens, $${filesTotalCost.toFixed(5)}`, t)}
           <div className="flex items-center h-[20px]">
@@ -119,7 +119,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
           <div className="h-1 bg-bg-secondary-light rounded-sm overflow-hidden mb-1 flex-1">
             <div className="h-full bg-accent-light rounded-full" style={{ width: `${progressPercentage}%` }}></div>
           </div>
-          <div className="text-text-mutedLight text-2xs">
+          <div className="text-text-muted-light text-2xs">
             {tokensEstimated && <span className="font-semibold font-mono mr-0.5">~</span>}
             {maxInputTokens > 0
               ? t('costInfo.tokenUsage', {

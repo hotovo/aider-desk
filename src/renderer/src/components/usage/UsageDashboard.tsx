@@ -138,7 +138,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
         />
       </div>
 
-      <div className="flex items-center space-x-4 p-4 border-b-2 border-border-darkLight">
+      <div className="flex items-center space-x-4 p-4 border-b-2 border-border-dark-light">
         <div className="flex items-end space-x-2">
           <DatePicker
             label={t('usageDashboard.dateRange')}
@@ -159,7 +159,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
                 onClick={() => handlePeriodChange(period.value)}
                 className={clsx(
                   'px-3 py-1 text-sm rounded transition-colors duration-200',
-                  selectedPeriod === period.value ? 'bg-bg-fourth text-text-primary' : 'text-text-mutedLight hover:text-text-secondary hover:bg-bg-tertiary',
+                  selectedPeriod === period.value ? 'bg-bg-fourth text-text-primary' : 'text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary',
                 )}
               >
                 {period.label}
@@ -209,13 +209,13 @@ export const UsageDashboard = ({ onClose }: Props) => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center border-b-2 border-border-darkLight bg-bg-primary-light">
+      <div className="flex items-center border-b-2 border-border-dark-light bg-bg-primary-light">
         <div className="flex bg-bg-secondary-light rounded-md p-1 m-4">
           <button
             onClick={() => setActiveTab(ViewTab.Table)}
             className={clsx(
               'px-4 py-2 text-sm rounded transition-colors duration-200 flex items-center space-x-2',
-              activeTab === ViewTab.Table ? 'bg-bg-fourth text-text-primary' : 'text-text-mutedLight hover:text-text-secondary hover:bg-bg-tertiary',
+              activeTab === ViewTab.Table ? 'bg-bg-fourth text-text-primary' : 'text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary',
             )}
           >
             <FaTable className="w-4 h-4" />
@@ -225,7 +225,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
             onClick={() => setActiveTab(ViewTab.Charts)}
             className={clsx(
               'px-4 py-2 text-sm rounded transition-colors duration-200 flex items-center space-x-2',
-              activeTab === ViewTab.Charts ? 'bg-bg-fourth text-text-primary' : 'text-text-mutedLight hover:text-text-secondary hover:bg-bg-tertiary',
+              activeTab === ViewTab.Charts ? 'bg-bg-fourth text-text-primary' : 'text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary',
             )}
           >
             <FaChartBar className="w-4 h-4" />

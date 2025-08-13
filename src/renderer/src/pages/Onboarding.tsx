@@ -140,7 +140,7 @@ export const Onboarding = () => {
               <button
                 onClick={handleNext}
                 disabled={isNavigating || isSaving}
-                className="text-sm text-text-mutedLight hover:text-text-secondary underline transition-colors duration-200"
+                className="text-sm text-text-muted-light hover:text-text-secondary underline transition-colors duration-200"
               >
                 {t('onboarding.skipForNow')}
               </button>

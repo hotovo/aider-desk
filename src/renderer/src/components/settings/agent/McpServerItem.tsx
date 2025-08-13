@@ -70,11 +70,11 @@ export const McpServerItem = ({
         </div>
         <div className="flex items-center">
           {loading ? (
-            <span className="text-xs text-text-mutedLight">{t('common.loading')}</span>
+            <span className="text-xs text-text-muted-light">{t('common.loading')}</span>
           ) : (
             tools &&
             tools?.length > 0 && (
-              <span className="text-xs mr-3 text-text-mutedLight">
+              <span className="text-xs mr-3 text-text-muted-light">
                 {t('mcp.serverToolStatus', {
                   count: tools.length,
                   enabledCount,
@@ -120,7 +120,7 @@ export const McpServerItem = ({
         ) : tools && tools.length > 0 ? (
           <div>
             <div className="text-xs p-2 pt-1 rounded mt-1 space-y-2">
-              <div className="text-xs text-text-mutedLight ml-1">{t('mcp.tools')}</div>
+              <div className="text-xs text-text-muted-light ml-1">{t('mcp.tools')}</div>
               {tools.map((tool) => (
                 <McpToolItem key={tool.name} tool={tool} toolApprovals={toolApprovals} onApprovalChange={onApprovalChange} serverName={serverName} />
               ))}

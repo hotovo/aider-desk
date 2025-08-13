@@ -100,7 +100,7 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
       >
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
-            {isExpanded ? <FaChevronDown className="w-3 h-3 text-text-mutedLight" /> : <FaChevronRight className="w-3 h-3 text-text-mutedLight" />}
+            {isExpanded ? <FaChevronDown className="w-3 h-3 text-text-muted-light" /> : <FaChevronRight className="w-3 h-3 text-text-muted-light" />}
             <div className="font-medium text-sm uppercase text-text-primary">{t(`providers.${providerName}`)}</div>
           </div>
         </div>
@@ -115,7 +115,7 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
               'px-2 py-1 text-xs rounded-full font-medium',
               isConfigured
                 ? 'bg-success-muted text-success-light border border-success-emphasis'
-                : 'bg-bg-fourth-muted text-text-mutedLight border border-bg-fourth-emphasis',
+                : 'bg-bg-fourth-muted text-text-muted-light border border-bg-fourth-emphasis',
             )}
           >
             {isConfigured ? t('settings.models.configured') : t('settings.models.notConfigured')}

@@ -87,7 +87,7 @@ export const ModelUsageDistributionChart = ({ data }: Props) => {
 
   if (chartData.length === 0) {
     return (
-      <div className="flex-grow flex items-center justify-center text-text-mutedLight">
+      <div className="flex-grow flex items-center justify-center text-text-muted-light">
         <div className="text-center">
           <div className="text-lg mb-2">{t('usageDashboard.charts.noData')}</div>
         </div>
@@ -97,7 +97,7 @@ export const ModelUsageDistributionChart = ({ data }: Props) => {
 
   return (
     <div className="flex-grow p-2">
-      <div className="bg-bg-primary-light border border-border-darkLight p-4">
+      <div className="bg-bg-primary-light border border-border-dark-light p-4">
         <h3 className="text-sm font-medium text-text-primary mb-4">{t('usageDashboard.charts.modelUsageDistribution')}</h3>
         <ResponsiveContainer width="100%" height={400}>
           <PieChart>
@@ -152,7 +152,7 @@ export const ModelUsageDistributionChart = ({ data }: Props) => {
                         <span className="text-text-tertiary">{entry.payload.model}</span>
                       </div>
                     ))}
-                    {remainingCount > 0 && <div className="text-text-mutedLight">{t('usageDashboard.charts.moreItems', { count: remainingCount })}</div>}
+                    {remainingCount > 0 && <div className="text-text-muted-light">{t('usageDashboard.charts.moreItems', { count: remainingCount })}</div>}
                   </div>
                 );
               }}

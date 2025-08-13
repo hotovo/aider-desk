@@ -90,13 +90,13 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
               icon={<MdEdit className="w-3 h-3" />}
               onClick={handleEdit}
               tooltip={t('tasks.editTodo')}
-              className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-tertiary rounded p-1"
+              className="text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary rounded p-1"
             />
             <IconButton
               icon={<MdDelete className="w-3 h-3" />}
               onClick={handleDelete}
               tooltip={t('tasks.deleteTodo')}
-              className="text-text-mutedLight hover:text-error-light hover:bg-error-subtle rounded p-1"
+              className="text-text-muted-light hover:text-error-light hover:bg-error-subtle rounded p-1"
             />
           </div>
         </>

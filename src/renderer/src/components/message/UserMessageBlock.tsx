@@ -17,7 +17,7 @@ type Props = {
 };
 
 export const UserMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, onRemove, onRedo, onEdit }: Props) => {
-  const baseClasses = 'rounded-md p-3 mb-2 max-w-full text-xs bg-bg-secondary border border-border-darkLight text-text-primary';
+  const baseClasses = 'rounded-md p-3 mb-2 max-w-full text-xs bg-bg-secondary border border-border-dark-light text-text-primary';
 
   const parsedContent = useParsedContent(baseDir, message.content, allFiles, renderMarkdown);
 

@@ -20,7 +20,7 @@ export const FileChip = ({ path, onRemove }: Props) => {
         onClick={() => onRemove(path)}
         tooltipId="removeFileTooltipId"
         tooltip={t('fileChip.removeFileTooltip')}
-        className="p-0.5 rounded-full text-text-mutedLight hover:text-text-primary hover:bg-bg-fourth"
+        className="p-0.5 rounded-full text-text-muted-light hover:text-text-primary hover:bg-bg-fourth"
       />
       <StyledTooltip id="removeFileTooltipId" />
     </div>

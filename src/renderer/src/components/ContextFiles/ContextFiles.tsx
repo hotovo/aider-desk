@@ -212,7 +212,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
         <h3 className="text-md font-semibold uppercase pl-1 flex-grow">{t('contextFiles.title')}</h3>
         <button
           onClick={handleDropAllFiles}
-          className="p-1.5 hover:bg-bg-tertiary rounded-md disabled:text-text-mutedDark disabled:hover:bg-transparent"
+          className="p-1.5 hover:bg-bg-tertiary rounded-md disabled:text-text-muted-dark disabled:hover:bg-transparent"
           data-tooltip-id="context-files-tooltip"
           data-tooltip-content={t('contextFiles.dropAll')}
           data-tooltip-delay-show={500}
@@ -294,9 +294,9 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                   {item.isFolder ? (
                     <span className="flex items-center justify-center" {...context.arrowProps}>
                       {context.isExpanded ? (
-                        <HiChevronDown className="w-3 h-3 text-text-mutedDark" />
+                        <HiChevronDown className="w-3 h-3 text-text-muted-dark" />
                       ) : (
-                        <HiChevronRight className="w-3 h-3 text-text-mutedDark" />
+                        <HiChevronRight className="w-3 h-3 text-text-muted-dark" />
                       )}
                     </span>
                   ) : (
@@ -334,7 +334,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {(item as TreeItem).file?.readOnly && (
                       <TbPencilOff
-                        className="w-4 h-4 text-text-mutedLight"
+                        className="w-4 h-4 text-text-muted-light"
                         data-tooltip-id="context-files-tooltip"
                         data-tooltip-content={t('contextFiles.readOnly')}
                       />

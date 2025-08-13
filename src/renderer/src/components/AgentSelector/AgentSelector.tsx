@@ -78,7 +78,7 @@ export const AgentSelector = () => {
   }, [enabledServers, mcpServers, toolApprovals]);
 
   if (!activeProfile) {
-    return <div className="text-xs text-text-mutedLight">{t('common.loading')}</div>;
+    return <div className="text-xs text-text-muted-light">{t('common.loading')}</div>;
   }
 
   const toggleSelectorVisible = () => {

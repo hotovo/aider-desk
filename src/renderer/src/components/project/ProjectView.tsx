@@ -875,16 +875,16 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               ref={terminalViewRef}
               baseDir={project.baseDir}
               visible={terminalVisible}
-              className="border-t border-border-darkLight flex-grow"
+              className="border-t border-border-dark-light flex-grow"
               onVisibilityChange={setTerminalVisible}
               onCopyOutput={handleCopyTerminalOutput}
             />
           </ResizableBox>
         </div>
-        <div className={clsx('relative w-full flex-shrink-0 flex flex-col border-t border-border-darkLight', editingMessageIndex !== null && 'pt-1')}>
+        <div className={clsx('relative w-full flex-shrink-0 flex flex-col border-t border-border-dark-light', editingMessageIndex !== null && 'pt-1')}>
           <div className={clsx('p-4 pb-2', editingMessageIndex !== null && 'pt-1')}>
             {editingMessageIndex !== null && (
-              <div className="flex items-center justify-between px-2 py-1 text-xs text-text-mutedLight border-b border-border-default-dark mb-2">
+              <div className="flex items-center justify-between px-2 py-1 text-xs text-text-muted-light border-b border-border-default-dark mb-2">
                 <span>{t('messages.editingLastMessage')}</span>
                 <Button
                   size="xs"
@@ -938,7 +938,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
         maxConstraints={[window.innerWidth - 300, Infinity]}
         axis="x"
         resizeHandles={['w']}
-        className="border-l border-border-darkLight flex flex-col flex-shrink-0"
+        className="border-l border-border-dark-light flex flex-col flex-shrink-0"
       >
         <div className="flex flex-col h-full">
           <div className="flex-grow flex flex-col overflow-y-hidden">

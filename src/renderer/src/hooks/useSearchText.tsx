@@ -146,7 +146,7 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string)
         />
         <div className="flex items-center gap-1 ml-2">
           <StyledTooltip id="search-tooltip" />
-          <span className="text-xs text-text-mutedLight">
+          <span className="text-xs text-text-muted-light">
             {foundElementsRef.current.size > 0 ? `${currentElementIndex + 1}/${foundElementsRef.current.size}` : '0/0'}
           </span>
           <IconButton

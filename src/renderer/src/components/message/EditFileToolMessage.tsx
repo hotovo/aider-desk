@@ -32,7 +32,7 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
   const language = getLanguageFromPath(filePath);
 
   return (
-    <div className="border border-border-darkLight rounded-md mb-2 group p-3 bg-bg-secondary">
+    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
       <div className="flex items-center gap-2 mb-2">
         <div className="text-text-muted">
           <RiToolsFill className="w-4 h-4" />
@@ -53,12 +53,12 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
                 {t('toolMessage.power.fileEdit.searchTerm')} ({t('toolMessage.power.fileEdit.regex')}):
               </strong>
               <br />
-              <div className="mt-2 p-1 rounded-sm border border-border-darkLight whitespace-pre-wrap text-2xs text-text-secondary">{searchTerm}</div>
+              <div className="mt-2 p-1 rounded-sm border border-border-dark-light whitespace-pre-wrap text-2xs text-text-secondary">{searchTerm}</div>
             </p>
             <p>
               <strong>{t('toolMessage.power.fileEdit.replacementText')}:</strong>
               <br />
-              <div className="mt-2 p-1 rounded-sm border border-border-darkLight whitespace-pre-wrap text-2xs text-text-secondary">{replacementText}</div>
+              <div className="mt-2 p-1 rounded-sm border border-border-dark-light whitespace-pre-wrap text-2xs text-text-secondary">{replacementText}</div>
             </p>
             <p>
               <strong>{t('toolMessage.power.fileEdit.replaceAll')}:</strong> {replaceAll ? t('common.yes') : t('common.no')}

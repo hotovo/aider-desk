@@ -53,7 +53,7 @@ export const parseMessageContent = (baseDir: string, content: string, allFiles: 
               ul: (props) => <ul className="list-disc list-inside ml-2 my-1 first:mt-0 last:mb-0" {...props} />,
               ol: (props) => <ol className="list-decimal list-inside ml-2 my-1 first:mt-0 last:mb-0" {...props} />,
               li: (props) => <li className="my-0.5" {...props} />,
-              blockquote: (props) => <blockquote className="border-l-4 border-border-default pl-4 italic my-0 text-text-mutedLight" {...props} />,
+              blockquote: (props) => <blockquote className="border-l-4 border-border-default pl-4 italic my-0 text-text-muted-light" {...props} />,
               strong: (props) => <strong className="font-bold" {...props} />,
               em: (props) => <em className="italic" {...props} />,
               a: (props) => <a className="text-info-light hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,

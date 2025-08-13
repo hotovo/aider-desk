@@ -717,7 +717,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           <div className="mb-2 p-3 bg-gradient-to-b from-bg-primary to-bg-primary-light rounded-md border border-border-default-dark text-sm">
             <div className="text-text-primary text-sm mb-2 whitespace-pre-wrap">{question.text}</div>
             {question.subject && (
-              <div className="text-text-mutedLight text-xs mb-3 whitespace-pre-wrap max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded">
+              <div className="text-text-muted-light text-xs mb-3 whitespace-pre-wrap max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded">
                 {question.subject}
               </div>
             )}
@@ -776,7 +776,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
               editable={!disabled}
               spellCheck={false}
-              className="w-full px-2 py-1 pr-8 border-2 border-border-default-dark rounded-md focus:outline-none focus:border-border-accent text-sm bg-bg-secondary text-text-primary placeholder-text-mutedDark resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fourth"
+              className="w-full px-2 py-1 pr-8 border-2 border-border-default-dark rounded-md focus:outline-none focus:border-border-accent text-sm bg-bg-secondary text-text-primary placeholder-text-muted-dark resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fourth"
               theme={theme}
               basicSetup={{
                 highlightSelectionMatches: false,
@@ -839,7 +839,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               ]}
             />
             {processing ? (
-              <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-2 text-text-mutedLight">
+              <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-2 text-text-muted-light">
                 <button
                   onClick={interruptResponse}
                   className="hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-colors duration-200"
@@ -853,7 +853,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               <button
                 onClick={handleSubmit}
                 disabled={!text.trim() || disabled}
-                className={`absolute right-2 top-1/2 -translate-y-[12px] text-text-mutedLight hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200
+                className={`absolute right-2 top-1/2 -translate-y-[12px] text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200
                 ${!text.trim() ? 'opacity-0' : 'opacity-100'}`}
                 title={t('promptField.sendMessage')}
               >

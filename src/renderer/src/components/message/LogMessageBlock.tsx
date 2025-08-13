@@ -19,7 +19,7 @@ export const LogMessageBlock = ({ message, onRemove }: Props) => {
   const levelConfig = {
     info: {
       levelClasses: 'bg-bg-secondary border-bg-tertiary-strong text-text-primary',
-      tooltipClass: 'text-text-muted hover:text-text-mutedLight',
+      tooltipClass: 'text-text-muted hover:text-text-muted-light',
       Icon: FaInfoCircle,
     },
     warning: {

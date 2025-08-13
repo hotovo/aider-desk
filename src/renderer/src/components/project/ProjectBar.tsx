@@ -268,7 +268,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     };
 
     return (
-      <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-border-darkLight bg-bg-primary-light">
+      <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-border-dark-light bg-bg-primary-light">
         <div className="flex items-center h-full">
           <div className="flex-grow flex items-center space-x-3">
             {mode === 'agent' ? (
@@ -346,7 +346,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
               <>
                 <div className="h-3 w-px bg-bg-fourth"></div>
                 <div className="flex items-center space-x-1 group/reasoning">
-                  <span className="text-xs text-text-mutedLight">{t('modelSelector.reasoning')}:</span>
+                  <span className="text-xs text-text-muted-light">{t('modelSelector.reasoning')}:</span>
                   <span className="text-text-primary text-xs">{modelsData.reasoningEffort}</span>
                   <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('reasoning-effort none')} className="ml-0.5" />
                 </div>
@@ -356,7 +356,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
               <>
                 <div className="h-3 w-px bg-bg-fourth"></div>
                 <div className="flex items-center space-x-1 group/thinking">
-                  <span className="text-xs text-text-mutedLight">{t('modelSelector.thinkingTokens')}:</span>
+                  <span className="text-xs text-text-muted-light">{t('modelSelector.thinkingTokens')}:</span>
                   <span className="text-text-primary text-xs">{modelsData.thinkingTokens}</span>
                   <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('think-tokens 0')} className="ml-0.5" />
                 </div>
@@ -365,7 +365,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           </div>
           <div className="flex items-center space-x-1 mr-2">
             <IconButton
-              icon={<IoLogoMarkdown className={`w-4 h-4 ${renderMarkdown ? 'text-text-secondary' : 'text-text-mutedDark'}`} />}
+              icon={<IoLogoMarkdown className={`w-4 h-4 ${renderMarkdown ? 'text-text-secondary' : 'text-text-muted-dark'}`} />}
               onClick={() => onRenderMarkdownChanged(!renderMarkdown)}
               tooltip={t('projectBar.toggleMarkdown')}
               className="p-1 hover:bg-bg-tertiary rounded-md"

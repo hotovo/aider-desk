@@ -65,7 +65,7 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
 
   if (!diffFile || !diffFile.hunks || diffFile.hunks.length === 0) {
     // No error, but no diff file (e.g., identical content)
-    return <div className="flex w-full justify-center items-center py-4 text-text-mutedLight text-xs">{t('diffViewer.noChanges')}</div>;
+    return <div className="flex w-full justify-center items-center py-4 text-text-muted-light text-xs">{t('diffViewer.noChanges')}</div>;
   }
 
   return (

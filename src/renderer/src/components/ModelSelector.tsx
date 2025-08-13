@@ -132,7 +132,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
         {isPreferred && (
           <button
             onClick={handleRemovePreferredModel}
-            className="px-2 py-1 text-text-muted hover:text-text-mutedLight transition-colors duration-200"
+            className="px-2 py-1 text-text-muted hover:text-text-muted-light transition-colors duration-200"
             title={t('modelSelector.removePreferred')}
           >
             <MdClose className="w-4 h-4" />
@@ -167,7 +167,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
               onKeyDown={onModelSelectorSearchInputKeyDown}
             />
             {showCustomModelHint && (
-              <div className="flex items-center text-text-mutedLight" title="Press Enter to use this custom model name">
+              <div className="flex items-center text-text-muted-light" title="Press Enter to use this custom model name">
                 <MdKeyboardReturn className="w-4 h-4" />
               </div>
             )}

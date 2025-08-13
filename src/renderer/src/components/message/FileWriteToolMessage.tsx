@@ -45,7 +45,7 @@ export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
   };
 
   return (
-    <div className="border border-border-darkLight rounded-md mb-2 group p-3 bg-bg-secondary">
+    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
       <div className="flex items-center gap-2 mb-2">
         <div className="text-text-muted">
           <RiToolsFill className="w-4 h-4" />

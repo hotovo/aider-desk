@@ -81,18 +81,18 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
                 icon={<MdPlaylistRemove className="w-4 h-4" />}
                 onClick={onClearAllTodos}
                 tooltip={t('tasks.clearAllTodos')}
-                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
+                className="text-text-muted-light hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
               />
               <IconButton
                 icon={<MdAdd className="w-4 h-4" />}
                 onClick={handleAddTodo}
                 tooltip={t('tasks.addTodo')}
-                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
+                className="text-text-muted-light hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
               />
               <IconButton
                 icon={<MdExpandLess className="w-4 h-4" />}
                 onClick={handleToggleExpand}
-                className="text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
+                className="text-text-muted-light hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
               />
             </div>
           </div>

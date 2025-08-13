@@ -70,7 +70,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
 
   return (
     <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary m-2">
-      <div className="border border-border-darkLight">
+      <div className="border border-border-dark-light">
         <table className="w-full text-sm text-left text-text-primary">
           <thead className="text-xs text-text-primary uppercase bg-bg-secondary-light sticky top-0">
             <tr>
@@ -87,7 +87,7 @@ export const UsageTable = ({ data, groupBy }: Props) => {
           </thead>
           <tbody>
             {aggregatedData.map((row, index) => (
-              <tr key={index} className="bg-bg-primary-light border-b border-border-darkLight hover:bg-bg-secondary text-sm">
+              <tr key={index} className="bg-bg-primary-light border-b border-border-dark-light hover:bg-bg-secondary text-sm">
                 <td className="px-4 py-2 text-xs">{formatDateByGroup(row.timestamp, groupBy)}</td>
                 <td className="px-4 py-2">
                   <div className="whitespace-pre-line text-xs">{row.project}</div>

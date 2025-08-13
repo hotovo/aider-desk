@@ -10,7 +10,8 @@ export const LoadingMessageBlock = ({ message }: Props) => {
   const [displayedText, setDisplayedText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const baseClasses = 'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-secondary border border-border-darkLight text-text-primary';
+  const baseClasses =
+    'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-secondary border border-border-dark-light text-text-primary';
 
   useEffect(() => {
     // Reset animation when message content changes

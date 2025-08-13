@@ -26,7 +26,7 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
   );
 
   return (
-    <div className={clsx('bg-bg-secondary border border-border-darkLight rounded-md mb-2 relative')}>
+    <div className={clsx('bg-bg-secondary border border-border-dark-light rounded-md mb-2 relative')}>
       {/* Color Bar */}
       <div
         className={clsx('absolute left-0 top-0 h-full w-1 rounded-tl-md rounded-bl-md z-10', !message.group.finished && 'animate-pulse')}

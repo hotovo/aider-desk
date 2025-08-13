@@ -73,7 +73,7 @@ export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
 
   if (chartData.length === 0) {
     return (
-      <div className="flex-grow flex items-center justify-center text-text-mutedLight">
+      <div className="flex-grow flex items-center justify-center text-text-muted-light">
         <div className="text-center">
           <div className="text-lg mb-2">{t('usageDashboard.charts.noData')}</div>
         </div>
@@ -83,7 +83,7 @@ export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
 
   return (
     <div className="flex-grow p-2">
-      <div className="bg-bg-primary-light border border-border-darkLight p-4">
+      <div className="bg-bg-primary-light border border-border-dark-light p-4">
         <h3 className="text-sm font-medium text-text-primary mb-4">{t('usageDashboard.charts.messageBreakdown')}</h3>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={chartData} margin={{ top: 5, right: 5, left: 20, bottom: 0 }}>
@@ -106,7 +106,7 @@ export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
                 <span className="mr-2 text-xs">
                   {value}
                   {value === displayProjects[displayProjects.length - 1] && remainingCount > 0 && (
-                    <span className="text-text-mutedLight ml-1">(+{remainingCount} more)</span>
+                    <span className="text-text-muted-light ml-1">(+{remainingCount} more)</span>
                   )}
                 </span>
               )}

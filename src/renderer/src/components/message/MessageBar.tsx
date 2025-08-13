@@ -44,7 +44,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
   };
 
   return (
-    <div className="mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-darkLight px-1 relative">
+    <div className="mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative">
       {usageReport && (
         <div className="mt-[4px] flex items-center gap-3 px-2 text-2xs text-text-muted group-hover:text-text-secondary transition-colors">
           {usageReport.cacheWriteTokens && usageReport.cacheWriteTokens > 0 ? (

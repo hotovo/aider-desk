@@ -169,7 +169,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
   );
 
   if (!activeAgentProfile) {
-    return <div className="text-xs text-text-mutedLight">{t('modelSelector.noActiveAgentProvider')}</div>;
+    return <div className="text-xs text-text-muted-light">{t('modelSelector.noActiveAgentProvider')}</div>;
   }
 
   return (

@@ -33,7 +33,7 @@ export const AgentProfileItem = ({ profile, isSelected, onClick, isDefault }: Pr
       }}
     >
       {profile.name}&nbsp;
-      {isDefault && <span className="ml-1.5 text-xs text-text-mutedLight">({t('common.default')})</span>}
+      {isDefault && <span className="ml-1.5 text-xs text-text-muted-light">({t('common.default')})</span>}
     </div>
   );
 };

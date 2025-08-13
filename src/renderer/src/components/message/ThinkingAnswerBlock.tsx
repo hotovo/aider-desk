@@ -39,7 +39,7 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
             </div>
             <div className={`font-medium text-text-primary ${!answer ? 'animate-pulse' : ''}`}>{t('thinkingAnswer.thinking')}</div>
           </div>
-          {thinking && <CopyMessageButton content={thinking} className="text-text-mutedDark hover:text-text-tertiary" />}
+          {thinking && <CopyMessageButton content={thinking} className="text-text-muted-dark hover:text-text-tertiary" />}
         </div>
 
         {isThinkingExpanded && (
@@ -57,7 +57,7 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
               </div>
               <div className="font-medium text-text-primary">{t('thinkingAnswer.answer')}</div>
             </div>
-            <CopyMessageButton content={answer} className="text-text-mutedDark hover:text-text-tertiary" />
+            <CopyMessageButton content={answer} className="text-text-muted-dark hover:text-text-tertiary" />
           </div>
           <div className={clsx('p-3 text-xs text-text-primary bg-bg-secondary', !renderMarkdown && 'whitespace-pre-wrap break-words')}>{parsedAnswer}</div>
         </div>

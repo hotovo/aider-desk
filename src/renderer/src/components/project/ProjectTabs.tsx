@@ -114,7 +114,7 @@ export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetAc
             className="absolute left-0 z-10 h-full flex items-center px-2 bg-bg-primary-light hover:bg-bg-secondary transition-colors duration-200"
             onClick={handleScrollLeft}
           >
-            <MdChevronLeft className="h-5 w-5 text-text-mutedLight" />
+            <MdChevronLeft className="h-5 w-5 text-text-muted-light" />
           </button>
         )}
         <div ref={tabsContainerRef} className="flex items-center overflow-x-hidden overflox-y-hidden scroll-smooth scrollbar-none" onScroll={handleScroll}>
@@ -131,11 +131,11 @@ export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetAc
             className="absolute right-[52px] z-10 h-full flex items-center px-2 bg-bg-primary-light hover:bg-bg-secondary transition-colors duration-200"
             onClick={handleScrollRight}
           >
-            <MdChevronRight className="h-5 w-5 text-text-mutedLight" />
+            <MdChevronRight className="h-5 w-5 text-text-muted-light" />
           </button>
         )}
         <button
-          className="px-4 py-2 text-text-mutedLight hover:text-text-secondary hover:bg-bg-secondary transition-colors duration-200 flex items-center justify-center"
+          className="px-4 py-2 text-text-muted-light hover:text-text-secondary hover:bg-bg-secondary transition-colors duration-200 flex items-center justify-center"
           onClick={onAddProject}
         >
           <MdAdd className="h-5 w-5" />
@@ -170,7 +170,7 @@ const SortableTabItem = ({ project, activeProject, onCloseProject }: SortableTab
       <Tab
         className={({ selected }) =>
           clsx(
-            'text-sm pl-3 py-2 pr-1 border-r border-border-darkLight transition-all duration-200 ease-in-out flex items-center gap-3 relative whitespace-nowrap',
+            'text-sm pl-3 py-2 pr-1 border-r border-border-dark-light transition-all duration-200 ease-in-out flex items-center gap-3 relative whitespace-nowrap',
             selected
               ? 'bg-gradient-to-b from-bg-secondary-light to-bg-secondary-light text-text-primary font-medium'
               : 'bg-gradient-to-b from-bg-primary to-bg-primary-light text-text-muted hover:bg-bg-secondary-light-strongest hover:text-text-tertiary',

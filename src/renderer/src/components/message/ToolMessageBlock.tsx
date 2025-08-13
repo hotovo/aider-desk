@@ -196,7 +196,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
               </span>
             )}
           </div>
-          <CopyMessageButton content={rawContentToCopy} className="text-text-mutedDark hover:text-text-tertiary" />
+          <CopyMessageButton content={rawContentToCopy} className="text-text-muted-dark hover:text-text-tertiary" />
         </div>
         <pre
           className={`whitespace-pre-wrap max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-[11px] ${
@@ -210,7 +210,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
   };
 
   return (
-    <div className="border border-border-darkLight rounded-md mb-2 group p-3 bg-bg-secondary">
+    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 cursor-pointer select-none rounded-t-md" onClick={handleHeaderClick}>
         <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           <div className={`text-xs text-text-primary whitespace-pre ${isExecuting ? 'animate-pulse' : ''} flex items-center gap-1`}>
             {getToolLabel(message)}
           </div>
-          {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-mutedLight" />}
+          {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />}
           {!isExecuting && parsedResult?.isError === true && <VscError className="text-error" />}
         </div>
         <div className="flex items-center gap-2">
@@ -250,7 +250,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
             </div>
           )}
           {isExecuting ? (
-            <div className="text-xs italic text-text-mutedLight">{t('toolMessage.executing')}</div>
+            <div className="text-xs italic text-text-muted-light">{t('toolMessage.executing')}</div>
           ) : isExpanded && !isInitialAutoExpand ? (
             getResultContent()
           ) : null}

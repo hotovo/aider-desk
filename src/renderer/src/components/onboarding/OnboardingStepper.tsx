@@ -27,7 +27,7 @@ export const OnboardingStepper = ({ steps, currentStep }: Props) => {
                 className={clsx('w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors', {
                   'bg-info text-text-primary': isCurrent,
                   'bg-success text-text-primary': isCompleted,
-                  'bg-bg-tertiary text-text-mutedLight': isFuture,
+                  'bg-bg-tertiary text-text-muted-light': isFuture,
                 })}
               >
                 {isCompleted ? <HiCheck className="w-4 h-4" /> : <span>{stepNumber}</span>}

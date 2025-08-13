@@ -173,7 +173,7 @@ const getContextSummary = (profile: AgentProfile) => {
       ))}
     </div>
   ) : (
-    <span className="text-xs text-text-mutedLight">None</span>
+    <span className="text-xs text-text-muted-light">None</span>
   );
 };
 
@@ -195,7 +195,7 @@ const getGenericToolsSummary = (profile: AgentProfile) => {
       ))}
     </div>
   ) : (
-    <span className="text-xs text-text-mutedLight">None</span>
+    <span className="text-xs text-text-muted-light">None</span>
   );
 };
 
@@ -369,7 +369,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
       title={
         <div className="flex-1 text-left text-sm font-medium px-2 flex items-center justify-between">
           <div>{title}</div>
-          {summary && <div className="text-xs text-text-mutedLight ml-2">{summary}</div>}
+          {summary && <div className="text-xs text-text-muted-light ml-2">{summary}</div>}
         </div>
       }
       chevronPosition="right"
@@ -503,7 +503,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               </div>,
               undefined,
               undefined,
-              <span className="text-xs text-text-mutedLight">{getRunSettingsSummary(selectedProfile)}</span>,
+              <span className="text-xs text-text-muted-light">{getRunSettingsSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -537,7 +537,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               </div>,
               undefined,
               undefined,
-              <span className="text-xs text-text-mutedLight">{getContextSummary(selectedProfile)}</span>,
+              <span className="text-xs text-text-muted-light">{getContextSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -572,12 +572,12 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                   })}
                 </div>
                 {Object.keys(tools).length === 0 && (
-                  <div className="text-xs text-text-mutedLight my-4 text-center">{t('settings.agent.noGenericToolsConfigured')}</div>
+                  <div className="text-xs text-text-muted-light my-4 text-center">{t('settings.agent.noGenericToolsConfigured')}</div>
                 )}
               </div>,
               undefined,
               undefined,
-              <span className="text-xs text-text-mutedLight">{getGenericToolsSummary(selectedProfile)}</span>,
+              <span className="text-xs text-text-muted-light">{getGenericToolsSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -609,7 +609,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                   })}
                 </div>
                 {Object.keys(mcpServers).length === 0 && (
-                  <div className="text-xs text-text-mutedLight my-4 text-center">{t('settings.agent.noServersConfigured')}</div>
+                  <div className="text-xs text-text-muted-light my-4 text-center">{t('settings.agent.noServersConfigured')}</div>
                 )}
                 <div className={clsx('flex flex-1 items-center justify-end mt-4', Object.keys(mcpServers).length === 0 && 'justify-center')}>
                   {Object.keys(mcpServers).length > 0 && (
@@ -629,7 +629,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               </div>,
               mcpServersExpanded,
               setMcpServersExpanded,
-              <span className="text-xs text-text-mutedLight">{getMcpServersSummary(selectedProfile, mcpServers)}</span>,
+              <span className="text-xs text-text-muted-light">{getMcpServersSummary(selectedProfile, mcpServers)}</span>,
             )}
 
             <div className="mt-4 pt-2 flex justify-end items-center">
