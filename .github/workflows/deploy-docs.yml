@@ -31,9 +31,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: docs-site/package-lock.json
       - name: Install dependencies
-        run: npm install --prefix docs-site
+        run: npm ci
       - name: Build
-        run: npm run build --prefix docs-site
+        run: npm run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
