@@ -1,5 +1,5 @@
-import { SettingsData, StartupMode, ThemeName } from '@common/types';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { SettingsData, StartupMode } from '@common/types';
+import { useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { LlmProviderName } from '@common/agent';
@@ -20,24 +20,12 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
 
   const { settings: originalSettings, saveSettings } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
-  const originalThemeRef = useRef<ThemeName | undefined>(undefined);
 
   useEffect(() => {
     if (originalSettings) {
       setLocalSettings(originalSettings);
-      // Store the original theme when dialog opens
-      if (originalThemeRef.current === undefined) {
-        originalThemeRef.current = originalSettings.theme;
-      }
     }
   }, [originalSettings]);
-
-  // Apply theme changes immediately for preview
-  useEffect(() => {
-    if (localSettings?.theme && localSettings.theme !== originalSettings?.theme) {
-      void window.api.setTheme(localSettings.theme);
-    }
-  }, [localSettings?.theme, originalSettings?.theme]);
 
   const hasChanges = useMemo(() => {
     return localSettings && originalSettings && !isEqual(localSettings, originalSettings);
@@ -49,10 +37,6 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
     if (originalSettings && localSettings?.zoomLevel !== originalSettings.zoomLevel) {
       void window.api.setZoomLevel(originalSettings.zoomLevel ?? 1);
-    }
-    // Revert theme to original if it was changed
-    if (originalThemeRef.current && localSettings?.theme !== originalThemeRef.current) {
-      void window.api.setTheme(originalThemeRef.current);
     }
     // Updated to use settings.mcpServers directly
     if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
