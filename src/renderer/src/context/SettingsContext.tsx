@@ -18,6 +18,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const loadSettings = async () => {
       const loadedSettings = await window.api.loadSettings();
       setSettings(loadedSettings);
+      setTheme(loadedSettings.theme || null);
     };
     void loadSettings();
   }, []);
