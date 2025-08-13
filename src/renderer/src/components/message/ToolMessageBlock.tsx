@@ -212,7 +212,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
   return (
     <div className="border border-border-darkLight rounded-md mb-2 group p-3 bg-bg-secondary">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 p-1 cursor-pointer hover:bg-bg-tertiary select-none rounded-md" onClick={handleHeaderClick}>
+      <div className="flex items-center justify-between gap-2 cursor-pointer select-none rounded-t-md" onClick={handleHeaderClick}>
         <div className="flex items-center gap-2">
           <div className={`text-text-muted ${isExecuting ? 'animate-pulse' : ''}`}>
             <RiToolsFill className="w-4 h-4" />
