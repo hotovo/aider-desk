@@ -16,30 +16,30 @@
   }
 
   .diff-code-insert {
-    background-color: var(--color-diffviewer-bg-new-primary);
+    background-color: var(--color-bg-diffviewer-new-primary);
 
     .diff-code-edit {
-      background-color: var(--color-diffviewer-bg-new-secondary);
+      background-color: var(--color-bg-diffviewer-new-secondary);
     }
   }
 
   .diff-code-delete {
-    background-color: var(--color-diffviewer-bg-old-primary);
+    background-color: var(--color-bg-diffviewer-old-primary);
 
     .diff-code-edit {
-      background-color: var(--color-diffviewer-bg-old-secondary);
+      background-color: var(--color-bg-diffviewer-old-secondary);
     }
   }
 
   .diff-gutter-insert {
-    background-color: var(--color-diffviewer-bg-new-primary);
+    background-color: var(--color-bg-diffviewer-new-primary);
     width: 16px;
     min-width: 16px;
     max-width: 16px;
   }
 
   .diff-gutter-delete {
-    background-color: var(--color-diffviewer-bg-old-primary);
+    background-color: var(--color-bg-diffviewer-old-primary);
   }
 
   ::selection {

@@ -26,6 +26,11 @@ module.exports = {
           fifth: 'var(--color-bg-fifth)',
           selection: 'var(--color-bg-selection)',
           codeBlock: 'var(--color-bg-code-block)',
+          diffViewerOldPrimary: 'var(--color-bg-diffviewer-old-primary)',
+          diffViewerOldSecondary: 'var(--color-bg-diffviewer-old-secondary)',
+          diffViewerNewPrimary: 'var(--color-bg-diffviewer-new-primary)',
+          diffViewerNewSecondary: 'var(--color-bg-diffviewer-new-secondary)',
+
         },
         text: {
           primary: 'var(--color-text-primary)',
@@ -94,10 +99,6 @@ module.exports = {
           contextFiles: 'var(--color-agent-contextfiles)',
           repoMap: 'var(--color-agent-repomap)',
         },
-        diffViewerBgOldPrimary: 'var(--color-diffviewer-bg-old-primary)',
-        diffViewerBgOldSecondary: 'var(--color-diffviewer-bg-old-secondary)',
-        diffViewerBgNewPrimary: 'var(--color-diffviewer-bg-new-primary)',
-        diffViewerBgNewSecondary: 'var(--color-diffviewer-bg-new-secondary)',
       },
       borderRadius: {
         'xl': '0.75rem',

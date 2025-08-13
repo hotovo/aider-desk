@@ -16,6 +16,12 @@
   --color-bg-selection: #5d5f6e;
   --color-bg-code-block: #171718;
 
+  --color-bg-diffviewer-old-primary: #3f1d25;
+  --color-bg-diffviewer-old-secondary: #2c141a;
+  --color-bg-diffviewer-new-primary: #022c22;
+  --color-bg-diffviewer-new-secondary: #011f19;
+
+
   /* Text Colors */
   --color-text-primary: #f1f3f5; /* neutral-100 */
   --color-text-secondary: #999ba3; /* neutral-200 */
@@ -81,11 +87,6 @@
   --color-agent-todotools: #38bdf8; /* sky-400 */
   --color-agent-contextfiles: #facc15; /* yellow-400 */
   --color-agent-repomap: #60a5fa; /* blue-400 */
-
-  --color-diffviewer-bg-old-primary: #3f1d25;
-  --color-diffviewer-bg-old-secondary: #2c141a;
-  --color-diffviewer-bg-new-primary: #022c22;
-  --color-diffviewer-bg-new-secondary: #011f19;
 }
 
 .theme-bw {
