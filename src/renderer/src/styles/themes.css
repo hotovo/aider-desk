@@ -107,10 +107,10 @@
   --color-bg-selection: #ced4da;
   --color-bg-code-block: #f8f9fa;
 
-  --color-bg-diffviewer-old-primary: #fee2e2;
-  --color-bg-diffviewer-old-secondary: #fecaca;
-  --color-bg-diffviewer-new-primary: #dcfce7;
-  --color-bg-diffviewer-new-secondary: #bbf7d0;
+  --color-bg-diff-viewer-old-primary: #fee2e2;
+  --color-bg-diff-viewer-old-secondary: #fecaca;
+  --color-bg-diff-viewer-new-primary: #dcfce7;
+  --color-bg-diff-viewer-new-secondary: #bbf7d0;
 
   /* Text Colors */
   --color-text-primary: #212529;
@@ -197,10 +197,10 @@
   --color-bg-selection: #b0b0b0;
   --color-bg-code-block: #f0f0f0;
 
-  --color-bg-diffviewer-old-primary: #e0e0e0;
-  --color-bg-diffviewer-old-secondary: #d0d0d0;
-  --color-bg-diffviewer-new-primary: #f0f0f0;
-  --color-bg-diffviewer-new-secondary: #e8e8e8;
+  --color-bg-diff-viewer-old-primary: #e0e0e0;
+  --color-bg-diff-viewer-old-secondary: #d0d0d0;
+  --color-bg-diff-viewer-new-primary: #f0f0f0;
+  --color-bg-diff-viewer-new-secondary: #e8e8e8;
 
   /* Text Colors */
   --color-text-primary: #000000;
@@ -288,10 +288,10 @@
   --color-bg-selection: #303030;
   --color-bg-code-block: #000000;
 
-  --color-bg-diffviewer-old-primary: #200000;
-  --color-bg-diffviewer-old-secondary: #100000;
-  --color-bg-diffviewer-new-primary: #002000;
-  --color-bg-diffviewer-new-secondary: #001000;
+  --color-bg-diff-viewer-old-primary: #200000;
+  --color-bg-diff-viewer-old-secondary: #100000;
+  --color-bg-diff-viewer-new-primary: #002000;
+  --color-bg-diff-viewer-new-secondary: #001000;
 
   /* Text Colors */
   --color-text-primary: #ffffff;
@@ -379,10 +379,10 @@
   --color-bg-selection: #ff006640;
   --color-bg-code-block: #0a0e14;
 
-  --color-bg-diffviewer-old-primary: #67060c;
-  --color-bg-diffviewer-old-secondary: #490202;
-  --color-bg-diffviewer-new-primary: #033a16;
-  --color-bg-diffviewer-new-secondary: #0f2419;
+  --color-bg-diff-viewer-old-primary: #67060c;
+  --color-bg-diff-viewer-old-secondary: #490202;
+  --color-bg-diff-viewer-new-primary: #033a16;
+  --color-bg-diff-viewer-new-secondary: #0f2419;
 
   /* Text Colors */
   --color-text-primary: #ffffff;
@@ -470,10 +470,10 @@
   --color-bg-selection: #0ea5e9;
   --color-bg-code-block: #082f49;
 
-  --color-bg-diffviewer-old-primary: #3f1d25;
-  --color-bg-diffviewer-old-secondary: #2c141a;
-  --color-bg-diffviewer-new-primary: #022c22;
-  --color-bg-diffviewer-new-secondary: #011f19;
+  --color-bg-diff-viewer-old-primary: #3f1d25;
+  --color-bg-diff-viewer-old-secondary: #2c141a;
+  --color-bg-diff-viewer-new-primary: #022c22;
+  --color-bg-diff-viewer-new-secondary: #011f19;
 
   /* Text Colors */
   --color-text-primary: #f0f9ff;
@@ -560,10 +560,10 @@
   --color-bg-selection: #22c55e;
   --color-bg-code-block: #0f1419;
 
-  --color-bg-diffviewer-old-primary: #3f1d25;
-  --color-bg-diffviewer-old-secondary: #2c141a;
-  --color-bg-diffviewer-new-primary: #022c22;
-  --color-bg-diffviewer-new-secondary: #011f19;
+  --color-bg-diff-viewer-old-primary: #3f1d25;
+  --color-bg-diff-viewer-old-secondary: #2c141a;
+  --color-bg-diff-viewer-new-primary: #022c22;
+  --color-bg-diff-viewer-new-secondary: #011f19;
 
   /* Text Colors */
   --color-text-primary: #f0fdf4;
@@ -650,10 +650,10 @@
   --color-bg-selection: #a855f7;
   --color-bg-code-block: #1e0a37;
 
-  --color-bg-diffviewer-old-primary: #3f1d25;
-  --color-bg-diffviewer-old-secondary: #2c141a;
-  --color-bg-diffviewer-new-primary: #022c22;
-  --color-bg-diffviewer-new-secondary: #011f19;
+  --color-bg-diff-viewer-old-primary: #3f1d25;
+  --color-bg-diff-viewer-old-secondary: #2c141a;
+  --color-bg-diff-viewer-new-primary: #022c22;
+  --color-bg-diff-viewer-new-secondary: #011f19;
 
   /* Text Colors */
   --color-text-primary: #faf5ff;
