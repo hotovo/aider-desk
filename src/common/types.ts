@@ -267,8 +267,8 @@ export interface EnvironmentVariable {
   source: string;
 }
 
-export type ThemeName = 'light' | 'dark' | 'blue' | 'green' | 'purple' | 'bw' | 'black' | 'neon';
-export const THEME_NAMES: ThemeName[] = ['light', 'dark', 'blue', 'green', 'purple', 'bw', 'black', 'neon'];
+export const THEME_NAMES = ['dark', 'light', 'charcoal', 'neon', 'blue', 'green', 'purple', 'bw', 'black'] as const;
+export type ThemeName = (typeof THEME_NAMES)[number];
 
 export interface Theme {
   name: ThemeName;

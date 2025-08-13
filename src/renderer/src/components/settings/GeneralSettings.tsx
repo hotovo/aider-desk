@@ -33,7 +33,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const { t } = useTranslation();
 
   const themeOptions: Option[] = THEME_NAMES.map((theme) => ({
-    label: t(`settings.themeOptions.${theme}`),
+    label: t(`settings.themeOptions.${theme}`, theme),
     value: theme,
   }));
 

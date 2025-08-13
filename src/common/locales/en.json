@@ -327,7 +327,8 @@
       "purple": "Purple",
       "bw": "Black & White",
       "black": "Black",
-      "neon": "Neon"
+      "neon": "Neon",
+      "charcoal": "Charcoal"
     },
     "aiderRestartConfirm": {
       "title": "Restart Required",
