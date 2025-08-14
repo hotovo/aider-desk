@@ -1,18 +1,18 @@
-import { SettingsData, ThemeName } from '@common/types';
+import { SettingsData, Theme } from '@common/types';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type SettingsContextType = {
   settings: SettingsData | null;
   saveSettings: (settings: SettingsData) => Promise<void>;
-  theme: ThemeName | null;
-  saveTheme: (theme: ThemeName) => void;
+  theme: Theme | null;
+  saveTheme: (theme: Theme) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<SettingsData | null>(null);
-  const [theme, setTheme] = useState<ThemeName | null>(null);
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -34,7 +34,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const saveTheme = async (theme: ThemeName) => {
+  const saveTheme = async (theme: Theme) => {
     try {
       setTheme(theme);
       const updatedTheme = await window.api.saveTheme(theme);

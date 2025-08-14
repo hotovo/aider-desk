@@ -320,16 +320,19 @@
     "zoom": "Zoom level",
     "theme": "Theme",
     "themeOptions": {
-      "dark": "Dark",
-      "light": "Light",
-      "blue": "Blue",
-      "green": "Green",
-      "purple": "Purple",
+      "dark": "Default (Dark)",
+      "light": "Default (Light)",
+      "ocean": "Ocean",
+      "forest": "Forest",
+      "lavender": "Lavender",
       "bw": "Black & White",
-      "black": "Black",
+      "midnight": "Midnight",
       "neon": "Neon",
       "neopunk": "Neopunk",
-      "charcoal": "Charcoal"
+      "charcoal": "Charcoal",
+      "aurora": "Aurora",
+      "serenity": "Serenity",
+      "cappuccino": "Cappuccino"
     },
     "aiderRestartConfirm": {
       "title": "Restart Required",

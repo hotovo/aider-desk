@@ -17,19 +17,19 @@ type Props = {
 
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
   primary: {
-    contained: 'bg-warning hover:bg-warning-light text-warning-text',
-    text: 'text-warning hover:bg-warning-subtle',
-    outline: 'border-warning text-warning hover:bg-warning-subtle',
+    contained: 'bg-button-primary hover:bg-button-primary-light text-button-primary-text',
+    text: 'text-button-primary hover:bg-button-primary-subtle',
+    outline: 'border-button-primary text-button-primary hover:bg-button-primary-subtle',
   },
   secondary: {
-    contained: 'bg-info hover:bg-info-light text-text-primary',
-    text: 'text-info hover:bg-info-subtle',
-    outline: 'border-info text-info hover:bg-info-subtle',
+    contained: 'bg-button-secondary hover:bg-button-secondary-light text-button-secondary-text',
+    text: 'text-button-secondary hover:bg-button-secondary-subtle',
+    outline: 'border-button-secondary text-button-secondary hover:bg-button-secondary-subtle',
   },
   danger: {
-    contained: 'bg-error hover:bg-error text-text-primary',
-    text: 'text-error hover:bg-error-subtle',
-    outline: 'border-error text-error hover:bg-error-subtle',
+    contained: 'bg-button-danger hover:bg-button-danger-light text-button-danger-text',
+    text: 'text-button-danger hover:bg-button-danger-subtle',
+    outline: 'border-button-danger text-button-danger hover:bg-button-danger-subtle',
   },
 };
 

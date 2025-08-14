@@ -70,6 +70,7 @@ const theme = githubDarkInit({
   settings: {
     background: 'transparent',
     selection: 'var(--color-bg-selection)',
+    caret: 'var(--color-text-muted)',
   },
 });
 
