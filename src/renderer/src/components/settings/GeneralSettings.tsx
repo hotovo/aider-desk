@@ -33,15 +33,15 @@ type Props = {
 export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange, onFontChange }: Props) => {
   const { t } = useTranslation();
 
-  const fontOptions: Option[] = [
-    { label: t('settings.sono'), value: 'Sono' },
-    { label: t('settings.roboto'), value: 'Roboto' },
-    { label: t('settings.openSans'), value: 'Open Sans' },
-    { label: t('settings.lato'), value: 'Lato' },
-    { label: t('settings.sourceSansPro'), value: 'Source Sans Pro' },
-    { label: t('settings.nunito'), value: 'Nunito' },
-    { label: t('settings.poppint'), value: 'Poppins' },
-    { label: t('settings.montserrat'), value: 'Montserrat' },
+  const fontOptions = [
+    { label: t('settings.fontOptions.sono'), value: 'Sono' },
+    { label: t('settings.fontOptions.roboto'), value: 'Roboto' },
+    { label: t('settings.fontOptions.openSans'), value: 'Open Sans' },
+    { label: t('settings.fontOptions.lato'), value: 'Lato' },
+    { label: t('settings.fontOptions.sourceSansPro'), value: 'Source Sans Pro' },
+    { label: t('settings.fontOptions.nunito'), value: 'Nunito' },
+    { label: t('settings.fontOptions.poppins'), value: 'Poppins' },
+    { label: t('settings.fontOptions.montserrat'), value: 'Montserrat' },
   ];
 
   const themeOptions: Option[] = THEMES.map((theme) => ({

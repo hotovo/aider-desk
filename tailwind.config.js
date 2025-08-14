@@ -6,7 +6,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        font: ['Sono', ...defaultTheme.fontFamily.sans],
+        sans: ['Sono', 'Lato', 'Montserrat', 'Nunito', 'Open Sans', 'Poppins', 'Roboto', 'Source Sans Pro', ...defaultTheme.fontFamily.sans],
       },
       colors: {
         // Theme-based colors

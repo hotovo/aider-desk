@@ -27,7 +27,7 @@
 
 @layer base {
   html {
-    font-family: "Sono", monospace;
+    font-family: var(--font-family, "Sono"), monospace;
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
@@ -36,7 +36,7 @@
 }
 
 :root {
-  --font-family: "Sono", monospace;
+  --font-family: "Sono";
 }
 
 body {
