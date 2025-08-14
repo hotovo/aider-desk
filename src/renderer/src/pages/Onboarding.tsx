@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { HiArrowRight, HiArrowLeft } from 'react-icons/hi2';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -17,11 +17,17 @@ import { showErrorNotification, showInfoNotification } from '@/utils/notificatio
 export const Onboarding = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { saveSettings } = useSettings();
-  const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
+  const { settings: originalSettings, saveSettings } = useSettings();
+  const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
   const [step, setStep] = useState(1);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (originalSettings) {
+      setLocalSettings(originalSettings);
+    }
+  }, [originalSettings]);
 
   const steps = [
     { title: t('onboarding.steps.welcome') },
