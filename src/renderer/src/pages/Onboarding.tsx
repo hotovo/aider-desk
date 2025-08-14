@@ -17,8 +17,8 @@ import { showErrorNotification, showInfoNotification } from '@/utils/notificatio
 export const Onboarding = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { settings, saveSettings } = useSettings();
-  const [localSettings, setLocalSettings] = useState<SettingsData | null>(settings);
+  const { saveSettings } = useSettings();
+  const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
   const [step, setStep] = useState(1);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -99,10 +99,9 @@ export const Onboarding = () => {
 
   const handleLanguageChange = useCallback(
     async (language: string) => {
-      await saveSettings({
-        ...localSettings!,
-        language,
-      });
+      const newSettings = { ...localSettings!, language };
+      setLocalSettings(newSettings);
+      await saveSettings(newSettings);
     },
     [saveSettings, localSettings],
   );
