@@ -7,8 +7,6 @@ import { Checkbox } from './Checkbox';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
-import './MultiSelect.css';
-
 type Option = {
   value: string;
   label: string;
@@ -79,11 +77,11 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
 
   return (
     <div className={`relative ${className}`} ref={containerRef}>
-      {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-text-primary mb-1">{label}</label>}
       {filterInput ? (
         <input
           type="text"
-          className={`flex w-full min-w-[8rem] bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 placeholder-neutral-500 pl-2 pr-8 ${sizeClasses[size]} ${className}`}
+          className={`flex w-full min-w-[8rem] bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-8 ${sizeClasses[size]} ${className}`}
           placeholder={
             selected.length === 0 && options.length > 0
               ? noneSelectedLabel || t('multiselect.noneSelected')
@@ -98,7 +96,7 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
       ) : (
         <button
           type="button"
-          className={`flex w-full min-w-[8rem] bg-neutral-800 border-2 border-neutral-600 rounded focus:outline-none focus:border-neutral-200 text-neutral-100 placeholder-neutral-500 pl-2 pr-1 ${sizeClasses[size]} ${className}`}
+          className={`flex w-full min-w-[8rem] bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-1 ${sizeClasses[size]} ${className}`}
           onClick={handleToggle}
         >
           <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
@@ -110,12 +108,12 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
                   : t('multiselect.someSelected', { count: selected.length })}
             </span>
           </span>
-          <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-neutral-500" />
+          <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-text-muted" />
         </button>
       )}
       {filterInput && (
         <HiChevronUpDown
-          className="absolute right-2 top-1/2 transform -translate-y-1/2 size-5 text-neutral-500 pointer-events-none"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 size-5 text-text-muted pointer-events-none"
           style={{ top: label ? 'calc(50% + 0.625rem)' : '50%' }}
         />
       )}
@@ -125,7 +123,7 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
         createPortal(
           <ul
             ref={dropdownRef}
-            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-neutral-800 py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-600 hover:scrollbar-thumb-neutral-200"
+            className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-bg-secondary-light py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth"
             style={{
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,
@@ -133,13 +131,13 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
             }}
             role="listbox"
           >
-            <li className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]} hover:bg-neutral-700`}>
+            <li className={`relative cursor-default py-2 pr-9 pl-3 text-text-primary select-none text-sm ${sizeClasses[size]} hover:bg-bg-tertiary`}>
               <Checkbox label={t('multiselect.selectAll')} checked={selected.length === filteredOptions.length} onChange={handleSelectAll} />
             </li>
             {filteredOptions.map((option) => (
               <li
                 key={option.value}
-                className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]} hover:bg-neutral-700`}
+                className={`relative cursor-default py-2 pr-9 pl-3 text-text-primary select-none text-sm ${sizeClasses[size]} hover:bg-bg-tertiary`}
               >
                 <Checkbox label={option.label} checked={selected.includes(option.value)} onChange={() => handleCheckboxChange(option.value)} />
               </li>

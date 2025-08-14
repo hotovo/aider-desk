@@ -320,8 +320,19 @@
     "zoom": "Zoom level",
     "theme": "Theme",
     "themeOptions": {
-      "dark": "Dark",
-      "light": "Light"
+      "dark": "Default (Dark)",
+      "light": "Default (Light)",
+      "ocean": "Ocean",
+      "forest": "Forest",
+      "lavender": "Lavender",
+      "bw": "Black & White",
+      "midnight": "Midnight",
+      "neon": "Neon",
+      "neopunk": "Neopunk",
+      "charcoal": "Charcoal",
+      "aurora": "Aurora",
+      "serenity": "Serenity",
+      "cappuccino": "Cappuccino"
     },
     "aiderRestartConfirm": {
       "title": "Restart Required",

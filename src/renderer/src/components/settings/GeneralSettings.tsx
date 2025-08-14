@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { SettingsData, StartupMode, SuggestionMode } from '@common/types';
+import { SettingsData, StartupMode, SuggestionMode, Theme, THEMES } from '@common/types';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -26,15 +26,16 @@ type Props = {
   setSettings: (settings: SettingsData) => void;
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
+  onThemeChange: (themeName: Theme) => void;
 };
 
-export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange }: Props) => {
+export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange }: Props) => {
   const { t } = useTranslation();
 
-  const themeOptions: Option[] = [
-    { label: t('settings.themeOptions.dark'), value: 'dark' },
-    { label: t('settings.themeOptions.light'), value: 'light' },
-  ];
+  const themeOptions: Option[] = THEMES.map((theme) => ({
+    label: t(`settings.themeOptions.${theme}`, theme),
+    value: theme,
+  })).sort((a, b) => a.label.localeCompare(b.label));
 
   const handleStartupModeChange = (mode: StartupMode) => {
     setSettings({
@@ -64,8 +65,9 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const handleThemeChange = (value: string) => {
     setSettings({
       ...settings,
-      theme: value === 'light' ? 'light' : 'dark',
+      theme: value as Theme,
     });
+    onThemeChange(value as Theme);
   };
 
   const handleSuggestionModeChange = (mode: SuggestionMode) => {
@@ -140,7 +142,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
       <Section title={t('settings.promptBehavior.title')}>
         <div className="px-4 py-5 grid grid-cols-2 gap-x-10 gap-y-6">
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.showSuggestions')}</h4>
+            <h4 className="text-sm font-medium text-text-muted">{t('settings.promptBehavior.showSuggestions')}</h4>
             <div className="space-y-2 ml-0.5">
               <RadioButton
                 id="suggestion-automatically"
@@ -186,7 +188,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.requireCommandConfirmation')}</h4>
+            <h4 className="text-sm font-medium text-text-muted">{t('settings.promptBehavior.requireCommandConfirmation')}</h4>
             <div className="space-y-2 ml-0.5">
               <Checkbox
                 label={t('settings.promptBehavior.addCommand')}
@@ -213,7 +215,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
 
           {/* Vim key bindings */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.promptBehavior.keyBindings')}</h4>
+            <h4 className="text-sm font-medium text-text-muted">{t('settings.promptBehavior.keyBindings')}</h4>
             <div className="flex items-center space-x-2 ml-0.5">
               <Checkbox
                 label={t('settings.promptBehavior.useVimBindings')}

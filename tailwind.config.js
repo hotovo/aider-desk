@@ -9,36 +9,113 @@ module.exports = {
         sans: ['Inter', ...defaultTheme.fontFamily.sans],
       },
       colors: {
+        // Theme-based colors
+        bg: {
+          primary: 'var(--color-bg-primary)',
+          'primary-light': 'var(--color-bg-primary-light)',
+          'primary-light-strong': 'var(--color-bg-primary-light-strong)',
+          secondary: 'var(--color-bg-secondary)',
+          'secondary-light': 'var(--color-bg-secondary-light)',
+          'secondary-light-strongest': 'var(--color-bg-secondary-light-strongest)',
+          tertiary: 'var(--color-bg-tertiary)',
+          'tertiary-emphasis': 'var(--color-bg-tertiary-emphasis)',
+          'tertiary-strong': 'var(--color-bg-tertiary-strong)',
+          fourth: 'var(--color-bg-fourth)',
+          'fourth-muted': 'var(--color-bg-fourth-muted)',
+          'fourth-emphasis': 'var(--color-bg-fourth-emphasis)',
+          fifth: 'var(--color-bg-fifth)',
+          selection: 'var(--color-bg-selection)',
+          'code-block': 'var(--color-bg-code-block)',
+          'diff-viewer-old-primary': 'var(--color-bg-diff-viewer-old-primary)',
+          'diff-viewer-old-secondary': 'var(--color-bg-diff-viewer-old-secondary)',
+          'diff-viewer-new-primary': 'var(--color-bg-diff-viewer-new-primary)',
+          'diff-viewer-new-secondary': 'var(--color-bg-diff-viewer-new-secondary)',
+
+        },
         text: {
-          error: '#e16b6b',
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          tertiary: 'var(--color-text-tertiary)',
+          muted: 'var(--color-text-muted)',
+          'muted-light': 'var(--color-text-muted-light)',
+          'muted-dark': 'var(--color-text-muted-dark)',
+          dark: 'var(--color-text-dark)',
+          error: 'var(--color-error)',
         },
-        neutral: {
-          50: '#f8f9fa',
-          100: '#f1f3f5',
-          200: '#999ba3',
-          300: '#8c8e95',
-          400: '#7b7d86',
-          500: '#585c75',
-          600: '#3d4166',
-          700: '#333652',
-          800: '#2a2c3f',
-          850: '#222431',
-          900: '#191a22',
-          950: '#141417',
+        border: {
+          dark: 'var(--color-border-dark)',
+          'dark-light': 'var(--color-border-dark-light)',
+          'dark-light-strong': 'var(--color-border-dark-light-strong)',
+          default: 'var(--color-border-default)',
+          'default-dark': 'var(--color-border-default-dark)',
+          accent: 'var(--color-border-accent)',
+          light: 'var(--color-border-light)',
         },
-        gray: {
-          50: '#f8f9fa',    // Lightest, almost white
-          100: '#f1f3f5',   // Very light gray
-          200: '#e9ecef',   // Light gray
-          300: '#dee2e6',   // Soft gray
-          400: '#ced4da',   // Medium light gray
-          500: '#adb5bd',   // Medium gray
-          600: '#6c757d',   // Muted gray
-          700: '#495057',   // Dark muted gray
-          800: '#343a40',   // Very dark gray
-          900: '#252a30',   // Darkest gray, almost black
-          950: '#18181b',   // Ultra dark, near black
-        }
+        accent: {
+          primary: 'var(--color-accent-primary)',
+          secondary: 'var(--color-accent-secondary)',
+          light: 'var(--color-accent-light)',
+        },
+        success: 'var(--color-success)',
+        'success-light': 'var(--color-success-light)',
+        'success-subtle': 'var(--color-success-subtle)',
+        'success-muted': 'var(--color-success-muted)',
+        'success-emphasis': 'var(--color-success-emphasis)',
+
+        warning: 'var(--color-warning)',
+        'warning-light': 'var(--color-warning-light)',
+        'warning-subtle': 'var(--color-warning-subtle)',
+        'warning-emphasis': 'var(--color-warning-emphasis)',
+        'warning-text': 'var(--color-warning-text)',
+
+        error: 'var(--color-error)',
+        'error-light': 'var(--color-error-light)',
+        'error-lighter': 'var(--color-error-lighter)',
+        'error-dark': 'var(--color-error-dark)',
+        'error-subtle': 'var(--color-error-subtle)',
+        'error-muted': 'var(--color-error-muted)',
+        'error-emphasis': 'var(--color-error-emphasis)',
+        'error-strong': 'var(--color-error-strong)',
+
+        info: 'var(--color-info)',
+        'info-light': 'var(--color-info-light)',
+        'info-lighter': 'var(--color-info-lighter)',
+        'info-lightest': 'var(--color-info-lightest)',
+        'info-subtle': 'var(--color-info-subtle)',
+        'info-light-muted': 'var(--color-info-light-muted)',
+        'info-light-emphasis': 'var(--color-info-light-emphasis)',
+
+
+        input: {
+          bg: 'var(--color-input-bg)',
+          border: 'var(--color-input-border)',
+          text: 'var(--color-input-text)',
+        },
+        agent: {
+          'auto-approve': 'var(--color-agent-auto-approve)',
+          'aider-tools': 'var(--color-agent-aider-tools)',
+          'power-tools': 'var(--color-agent-power-tools)',
+          'todo-tools': 'var(--color-agent-todo-tools)',
+          'context-files': 'var(--color-agent-context-files)',
+          'repo-map': 'var(--color-agent-repo-map)',
+        },
+        button: {
+          primary: 'var(--color-button-primary)',
+          'primary-light': 'var(--color-button-primary-light)',
+          'primary-subtle': 'var(--color-button-primary-subtle)',
+          'primary-emphasis': 'var(--color-button-primary-emphasis)',
+          'primary-text': 'var(--color-button-primary-text)',
+          secondary: 'var(--color-button-secondary)',
+          'secondary-light': 'var(--color-button-secondary-light)',
+          'secondary-subtle': 'var(--color-button-secondary-subtle)',
+          'secondary-emphasis': 'var(--color-button-secondary-emphasis)',
+          'secondary-text': 'var(--color-button-secondary-text)',
+          danger: 'var(--color-button-danger)',
+          'danger-light': 'var(--color-button-danger-light)',
+          'danger-subtle': 'var(--color-button-danger-subtle)',
+          'danger-emphasis': 'var(--color-button-danger-emphasis)',
+          'danger-text': 'var(--color-button-danger-text)',
+        },
       },
       borderRadius: {
         'xl': '0.75rem',

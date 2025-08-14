@@ -227,7 +227,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
       <div ref={terminalRef} className="absolute top-2 left-0 right-0 bottom-2" />
       {!isConnected && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-neutral-400 text-xs">Connecting to terminal...</div>
+          <div className="text-text-muted-light text-xs">Connecting to terminal...</div>
         </div>
       )}
     </div>

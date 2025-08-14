@@ -29,12 +29,14 @@ import type {
   UsageDataRow,
   EnvironmentVariable,
   CustomCommand,
+  ThemeName,
 } from '@common/types';
 
 export interface ApplicationAPI {
   openLogsDirectory: () => Promise<boolean>;
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
+  saveTheme: (theme: ThemeName) => Promise<ThemeName>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;

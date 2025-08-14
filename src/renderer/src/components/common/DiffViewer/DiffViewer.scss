@@ -1,11 +1,11 @@
 .diff-viewer {
   .diff-gutter {
-    color: #4c4c4c;
+    color: var(--color-text-muted);
     text-align: center; // Better alignment for line numbers
 
     &.diff-gutter-omit {
       &:before {
-        background-color: #1e1e2f;
+        background-color: var(--color-bg-tertiary);
       }
     }
   }
@@ -16,34 +16,34 @@
   }
 
   .diff-code-insert {
-    background-color: #022c22;
+    background-color: var(--color-bg-diff-viewer-new-primary);
 
     .diff-code-edit {
-      background-color: #011f19;
+      background-color: var(--color-bg-diff-viewer-new-secondary);
     }
   }
 
   .diff-code-delete {
-    background-color: #3f1d25;
+    background-color: var(--color-bg-diff-viewer-old-primary);
 
     .diff-code-edit {
-      background-color: #2c141a;
+      background-color: var(--color-bg-diff-viewer-old-secondary);
     }
   }
 
   .diff-gutter-insert {
-    background-color: #022c22;
+    background-color: var(--color-bg-diff-viewer-new-primary);
     width: 16px;
     min-width: 16px;
     max-width: 16px;
   }
 
   .diff-gutter-delete {
-    background-color: #3f1d25;
+    background-color: var(--color-bg-diff-viewer-old-primary);
   }
 
   ::selection {
-    background-color: #333652;
-    color: #f1f3f5;
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
   }
 }

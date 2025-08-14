@@ -38,13 +38,13 @@ export const InputHistoryMenu = ({ items, highlightedIndex, onSelect, onClose, o
     <div
       ref={menuRef}
       onScroll={handleScroll}
-      className="absolute bottom-full mb-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700 w-full"
+      className="absolute bottom-full mb-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-10 max-h-48 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary w-full"
     >
       {items.reverse().map((item, index) => (
         <div
           key={index}
           ref={index === items.length - 1 - highlightedIndex ? (el) => el?.scrollIntoView({ block: keepHighlightAtTop ? 'start' : 'nearest' }) : null}
-          className={`px-3 py-1 text-left text-xs cursor-pointer hover:bg-neutral-850 truncate ${index === items.length - 1 - highlightedIndex ? 'bg-neutral-800' : ''}`}
+          className={`px-3 py-1 text-left text-xs cursor-pointer hover:bg-bg-secondary truncate ${index === items.length - 1 - highlightedIndex ? 'bg-bg-secondary-light' : ''}`}
           onClick={() => onSelect(item)}
         >
           {item}

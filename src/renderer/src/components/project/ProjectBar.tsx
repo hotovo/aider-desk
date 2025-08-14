@@ -74,12 +74,12 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     const renderModelInfo = useCallback(
       (modelName: string, info: RawModelInfo | undefined): ReactNode => {
         if (!info) {
-          return <div className="text-xs text-neutral-100">{modelName}</div>;
+          return <div className="text-xs text-text-primary">{modelName}</div>;
         }
 
         return (
-          <div className="text-2xs text-neutral-200">
-            <div className="flex items-center font-semibold text-xs text-neutral-100 mb-0.5">{modelName}</div>
+          <div className="text-2xs text-text-secondary">
+            <div className="flex items-center font-semibold text-xs text-text-primary mb-0.5">{modelName}</div>
             <div className="flex items-center">
               <span className="flex-1 mr-2">{t('modelInfo.maxInputTokens')}:</span> {info.max_input_tokens}
             </div>
@@ -268,17 +268,17 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     };
 
     return (
-      <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-neutral-800 bg-neutral-900">
+      <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-border-dark-light bg-bg-primary-light">
         <div className="flex items-center h-full">
           <div className="flex-grow flex items-center space-x-3">
             {mode === 'agent' ? (
               <>
                 <div className="flex items-center space-x-1">
-                  <RiRobot2Line className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="agent-tooltip" />
+                  <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
                   <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
                   <AgentModelSelector ref={agentModelSelectorRef} />
                 </div>
-                <div className="h-3 w-px bg-neutral-600/50"></div>
+                <div className="h-3 w-px bg-bg-fourth"></div>
               </>
             ) : (
               <>
@@ -286,7 +286,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                   <>
                     <div className="flex items-center space-x-1">
                       <GoProjectRoadmap
-                        className="w-4 h-4 text-neutral-100 mr-1"
+                        className="w-4 h-4 text-text-primary mr-1"
                         data-tooltip-id="architect-model-tooltip"
                         data-tooltip-content={t('modelSelector.architectModel')}
                       />
@@ -300,13 +300,13 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                         removePreferredModel={handleRemovePreferredModel}
                       />
                     </div>
-                    <div className="h-3 w-px bg-neutral-600/50"></div>
+                    <div className="h-3 w-px bg-bg-fourth"></div>
                   </>
                 )}
               </>
             )}
             <div className="flex items-center space-x-1">
-              <CgTerminal className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="main-model-tooltip" />
+              <CgTerminal className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="main-model-tooltip" />
               <StyledTooltip
                 id="main-model-tooltip"
                 content={renderModelInfo(t(mode === 'architect' ? 'modelSelector.editorModel' : 'modelSelector.mainModel'), modelsData?.info)}
@@ -320,9 +320,9 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 removePreferredModel={handleRemovePreferredModel}
               />
             </div>
-            <div className="h-3 w-px bg-neutral-600/50"></div>
+            <div className="h-3 w-px bg-bg-fourth"></div>
             <div className="flex items-center space-x-1">
-              <BsFilter className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
+              <BsFilter className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
               <StyledTooltip id="weak-model-tooltip" />
               <ModelSelector
                 models={allModels}
@@ -334,9 +334,9 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
             </div>
             {modelsData?.editFormat && (
               <>
-                <div className="h-3 w-px bg-neutral-600/50"></div>
+                <div className="h-3 w-px bg-bg-fourth"></div>
                 <div className="flex items-center space-x-1">
-                  <BsCodeSlash className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="edit-format-tooltip" />
+                  <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="edit-format-tooltip" />
                   <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
                   <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
                 </div>
@@ -344,20 +344,20 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
             )}
             {modelsData?.reasoningEffort && modelsData.reasoningEffort !== 'none' && (
               <>
-                <div className="h-3 w-px bg-neutral-600/50"></div>
+                <div className="h-3 w-px bg-bg-fourth"></div>
                 <div className="flex items-center space-x-1 group/reasoning">
-                  <span className="text-xs text-neutral-400">{t('modelSelector.reasoning')}:</span>
-                  <span className="text-neutral-100 text-xs">{modelsData.reasoningEffort}</span>
+                  <span className="text-xs text-text-muted-light">{t('modelSelector.reasoning')}:</span>
+                  <span className="text-text-primary text-xs">{modelsData.reasoningEffort}</span>
                   <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('reasoning-effort none')} className="ml-0.5" />
                 </div>
               </>
             )}
             {modelsData?.thinkingTokens && modelsData?.thinkingTokens !== '0' && (
               <>
-                <div className="h-3 w-px bg-neutral-600/50"></div>
+                <div className="h-3 w-px bg-bg-fourth"></div>
                 <div className="flex items-center space-x-1 group/thinking">
-                  <span className="text-xs text-neutral-400">{t('modelSelector.thinkingTokens')}:</span>
-                  <span className="text-neutral-100 text-xs">{modelsData.thinkingTokens}</span>
+                  <span className="text-xs text-text-muted-light">{t('modelSelector.thinkingTokens')}:</span>
+                  <span className="text-text-primary text-xs">{modelsData.thinkingTokens}</span>
                   <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('think-tokens 0')} className="ml-0.5" />
                 </div>
               </>
@@ -365,16 +365,16 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           </div>
           <div className="flex items-center space-x-1 mr-2">
             <IconButton
-              icon={<IoLogoMarkdown className={`w-4 h-4 ${renderMarkdown ? 'text-neutral-200' : 'text-neutral-600'}`} />}
+              icon={<IoLogoMarkdown className={`w-4 h-4 ${renderMarkdown ? 'text-text-secondary' : 'text-text-muted-dark'}`} />}
               onClick={() => onRenderMarkdownChanged(!renderMarkdown)}
               tooltip={t('projectBar.toggleMarkdown')}
-              className="p-1 hover:bg-neutral-700 rounded-md"
+              className="p-1 hover:bg-bg-tertiary rounded-md"
             />
             <div className="relative" ref={sessionPopupRef}>
               <IconButton
                 icon={<MdHistory className="w-4 h-4" />}
                 onClick={toggleSessionPopupVisible}
-                className="p-1 hover:bg-neutral-700 rounded-md"
+                className="p-1 hover:bg-bg-tertiary rounded-md"
                 tooltip={t('sessions.title')}
               />
               {sessionPopupVisible && (

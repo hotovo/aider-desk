@@ -44,7 +44,7 @@ export const Accordion = ({
     <div className={className}>
       <button
         onClick={handleOpenChange}
-        className={clsx('w-full flex items-center gap-2 p-2 rounded hover:bg-neutral-700/50 transition-colors', buttonClassName)}
+        className={clsx('w-full flex items-center gap-2 p-2 rounded hover:bg-bg-tertiary-strong transition-colors', buttonClassName)}
       >
         {chevronPosition === 'left' && chevron}
         {title}
@@ -56,7 +56,7 @@ export const Accordion = ({
           isOpen
             ? clsx(
                 noMaxHeight ? '' : 'max-h-screen',
-                'opacity-100 overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600',
+                'opacity-100 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth',
               )
             : 'max-h-0 opacity-0',
         )}

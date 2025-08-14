@@ -53,7 +53,7 @@ export const ContextMenuProvider = ({ children }: Props) => {
       {menuState.isVisible && (
         <div
           ref={menuRef}
-          className="fixed bg-neutral-800 pb-0.5 shadow-2xl rounded-sm border border-neutral-700 z-50 min-w-[100px]"
+          className="fixed bg-bg-secondary-light pb-0.5 shadow-2xl rounded-sm border border-border-default-dark z-50 min-w-[100px]"
           style={{
             top: menuState.y,
             left: menuState.x,
@@ -66,7 +66,7 @@ export const ContextMenuProvider = ({ children }: Props) => {
                 <button
                   onClick={option.action}
                   disabled={option.disabled}
-                  className="w-full text-left px-4 py-0.5 text-xs text-neutral-100 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-left px-4 py-0.5 text-xs text-text-primary hover:bg-bg-tertiary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {option.label}
                 </button>

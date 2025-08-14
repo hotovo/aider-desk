@@ -39,7 +39,7 @@ Add EditFormatSelector to ProjectBar after Weak model selector:
 ```tsx
 // src/renderer/src/components/project/ProjectBar.tsx
 <div className="flex items-center space-x-1">
-  <BsFilter className="w-4 h-4 text-neutral-100 mr-1" />
+  <BsFilter className="w-4 h-4 text-text-primary mr-1" />
   <EditFormatSelector
     currentFormat={modelsData.editFormat || 'diff'}
     onFormatChange={(format) => runCommand(`set-edit-format ${format}`)}

@@ -141,17 +141,17 @@ const getRunSettingsSummary = (profile: AgentProfile) => {
   return (
     <div className="flex items-center gap-2">
       <div className="flex items-center gap-1">
-        <MdThermostat className="w-3 h-3 text-neutral-200" />
+        <MdThermostat className="w-3 h-3 text-text-secondary" />
         <span>{profile.temperature}</span>
       </div>
       <span>|</span>
       <div className="flex items-center gap-1">
-        <MdRepeat className="w-3 h-3 text-neutral-200" />
+        <MdRepeat className="w-3 h-3 text-text-secondary" />
         <span>{profile.maxIterations}</span>
       </div>
       <span>|</span>
       <div className="flex items-center gap-1">
-        <FaArrowRightFromBracket className="w-2.5 h-2.5 -rotate-90 text-neutral-200" />
+        <FaArrowRightFromBracket className="w-2.5 h-2.5 -rotate-90 text-text-secondary" />
         <span>{profile.maxTokens}</span>
       </div>
     </div>
@@ -161,10 +161,10 @@ const getRunSettingsSummary = (profile: AgentProfile) => {
 const getContextSummary = (profile: AgentProfile) => {
   const enabled: ReactNode[] = [];
   if (profile.includeContextFiles) {
-    enabled.push(<MdOutlineFileCopy key="files" className="w-3 h-3 text-neutral-200" />);
+    enabled.push(<MdOutlineFileCopy key="files" className="w-3 h-3 text-text-secondary" />);
   }
   if (profile.includeRepoMap) {
-    enabled.push(<MdOutlineMap key="map" className="w-3 h-3 text-neutral-200" />);
+    enabled.push(<MdOutlineMap key="map" className="w-3 h-3 text-text-secondary" />);
   }
   return enabled.length > 0 ? (
     <div className="flex items-center gap-2">
@@ -173,20 +173,20 @@ const getContextSummary = (profile: AgentProfile) => {
       ))}
     </div>
   ) : (
-    <span className="text-xs text-neutral-400">None</span>
+    <span className="text-xs text-text-muted-light">None</span>
   );
 };
 
 const getGenericToolsSummary = (profile: AgentProfile) => {
   const enabled: ReactNode[] = [];
   if (profile.useAiderTools) {
-    enabled.push(<MdOutlineHdrAuto key="aider" className="w-3 h-3 text-neutral-200" />);
+    enabled.push(<MdOutlineHdrAuto key="aider" className="w-3 h-3 text-text-secondary" />);
   }
   if (profile.usePowerTools) {
-    enabled.push(<MdFlashOn key="power" className="w-3 h-3 text-neutral-200" />);
+    enabled.push(<MdFlashOn key="power" className="w-3 h-3 text-text-secondary" />);
   }
   if (profile.useTodoTools) {
-    enabled.push(<MdOutlineChecklist key="todo" className="w-3 h-3 text-neutral-200" />);
+    enabled.push(<MdOutlineChecklist key="todo" className="w-3 h-3 text-text-secondary" />);
   }
   return enabled.length > 0 ? (
     <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ const getGenericToolsSummary = (profile: AgentProfile) => {
       ))}
     </div>
   ) : (
-    <span className="text-xs text-neutral-400">None</span>
+    <span className="text-xs text-text-muted-light">None</span>
   );
 };
 
@@ -369,11 +369,11 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
       title={
         <div className="flex-1 text-left text-sm font-medium px-2 flex items-center justify-between">
           <div>{title}</div>
-          {summary && <div className="text-xs text-neutral-400 ml-2">{summary}</div>}
+          {summary && <div className="text-xs text-text-muted-light ml-2">{summary}</div>}
         </div>
       }
       chevronPosition="right"
-      className="mb-2 border rounded-md border-neutral-700"
+      className="mb-2 border rounded-md border-border-default-dark"
       isOpen={open}
       onOpenChange={setOpen}
     >
@@ -403,7 +403,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
   ) : (
     <div className="flex h-[600px] max-h-[100%] overflow-hidden -m-6">
       {/* Left sidebar with profiles and providers */}
-      <div className="w-[260px] border-r border-neutral-700/50 p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700">
+      <div className="w-[260px] border-r border-bg-tertiary-strong p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary">
         <h4 className="text-sm uppercase font-medium">{t('agentProfiles.profiles')}</h4>
         <div className="py-2">
           {agentProfiles.map((profile) => (
@@ -419,7 +419,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
           ))}
           <button
             onClick={handleCreateNewProfile}
-            className="w-full text-left px-2 py-1 mt-2 rounded-sm text-sm transition-colors text-neutral-100 hover:bg-neutral-800 flex items-center"
+            className="w-full text-left px-2 py-1 mt-2 rounded-sm text-sm transition-colors text-text-primary hover:bg-bg-secondary-light flex items-center"
           >
             <FaPlus className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.createNewProfile')}
           </button>
@@ -427,7 +427,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
       </div>
 
       {/* Center content area for profile settings */}
-      <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 scrollbar-thumb-rounded-full">
+      <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary scrollbar-thumb-rounded-full">
         {selectedProfile ? (
           <div className="space-y-2">
             <Input
@@ -503,7 +503,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               </div>,
               undefined,
               undefined,
-              <span className="text-xs text-neutral-400">{getRunSettingsSummary(selectedProfile)}</span>,
+              <span className="text-xs text-text-muted-light">{getRunSettingsSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -537,7 +537,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               </div>,
               undefined,
               undefined,
-              <span className="text-xs text-neutral-400">{getContextSummary(selectedProfile)}</span>,
+              <span className="text-xs text-text-muted-light">{getContextSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -572,12 +572,12 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                   })}
                 </div>
                 {Object.keys(tools).length === 0 && (
-                  <div className="text-xs text-neutral-400 my-4 text-center">{t('settings.agent.noGenericToolsConfigured')}</div>
+                  <div className="text-xs text-text-muted-light my-4 text-center">{t('settings.agent.noGenericToolsConfigured')}</div>
                 )}
               </div>,
               undefined,
               undefined,
-              <span className="text-xs text-neutral-400">{getGenericToolsSummary(selectedProfile)}</span>,
+              <span className="text-xs text-text-muted-light">{getGenericToolsSummary(selectedProfile)}</span>,
             )}
 
             {renderSectionAccordion(
@@ -609,7 +609,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                   })}
                 </div>
                 {Object.keys(mcpServers).length === 0 && (
-                  <div className="text-xs text-neutral-400 my-4 text-center">{t('settings.agent.noServersConfigured')}</div>
+                  <div className="text-xs text-text-muted-light my-4 text-center">{t('settings.agent.noServersConfigured')}</div>
                 )}
                 <div className={clsx('flex flex-1 items-center justify-end mt-4', Object.keys(mcpServers).length === 0 && 'justify-center')}>
                   {Object.keys(mcpServers).length > 0 && (
@@ -629,7 +629,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               </div>,
               mcpServersExpanded,
               setMcpServersExpanded,
-              <span className="text-xs text-neutral-400">{getMcpServersSummary(selectedProfile, mcpServers)}</span>,
+              <span className="text-xs text-text-muted-light">{getMcpServersSummary(selectedProfile, mcpServers)}</span>,
             )}
 
             <div className="mt-4 pt-2 flex justify-end items-center">
@@ -647,7 +647,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
           </div>
         ) : (
           <div className="flex items-center justify-center h-full">
-            <p className="text-neutral-500">{t('settings.agent.selectOrCreateProfile')}</p>
+            <p className="text-text-muted">{t('settings.agent.selectOrCreateProfile')}</p>
           </div>
         )}
       </div>

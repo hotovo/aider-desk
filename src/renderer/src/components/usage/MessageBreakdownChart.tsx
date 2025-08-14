@@ -73,7 +73,7 @@ export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
 
   if (chartData.length === 0) {
     return (
-      <div className="flex-grow flex items-center justify-center text-neutral-400">
+      <div className="flex-grow flex items-center justify-center text-text-muted-light">
         <div className="text-center">
           <div className="text-lg mb-2">{t('usageDashboard.charts.noData')}</div>
         </div>
@@ -83,8 +83,8 @@ export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
 
   return (
     <div className="flex-grow p-2">
-      <div className="bg-neutral-900 border border-neutral-800 p-4">
-        <h3 className="text-sm font-medium text-neutral-100 mb-4">{t('usageDashboard.charts.messageBreakdown')}</h3>
+      <div className="bg-bg-primary-light border border-border-dark-light p-4">
+        <h3 className="text-sm font-medium text-text-primary mb-4">{t('usageDashboard.charts.messageBreakdown')}</h3>
         <ResponsiveContainer width="100%" height={400}>
           <BarChart data={chartData} margin={{ top: 5, right: 5, left: 20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#3d4166" />
@@ -92,10 +92,10 @@ export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
             <YAxis tickFormatter={formatCount} stroke="#8c8e95" fontSize={12} />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#222431',
+                backgroundColor: 'var(--color-bg-secondary)',
                 border: '1px solid #2a2c3f',
                 borderRadius: '6px',
-                color: '#f1f3f5',
+                color: 'var(--color-text-primary)',
               }}
               wrapperClassName="text-xs"
               formatter={(value: number, name: string) => [formatCount(value), name]}
@@ -106,7 +106,7 @@ export const MessageBreakdownChart = ({ data, groupBy }: Props) => {
                 <span className="mr-2 text-xs">
                   {value}
                   {value === displayProjects[displayProjects.length - 1] && remainingCount > 0 && (
-                    <span className="text-neutral-400 ml-1">(+{remainingCount} more)</span>
+                    <span className="text-text-muted-light ml-1">(+{remainingCount} more)</span>
                   )}
                 </span>
               )}

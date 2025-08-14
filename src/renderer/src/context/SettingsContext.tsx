@@ -1,20 +1,24 @@
-import { SettingsData } from '@common/types';
+import { SettingsData, Theme } from '@common/types';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type SettingsContextType = {
   settings: SettingsData | null;
   saveSettings: (settings: SettingsData) => Promise<void>;
+  theme: Theme | null;
+  saveTheme: (theme: Theme) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<SettingsData | null>(null);
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
     const loadSettings = async () => {
       const loadedSettings = await window.api.loadSettings();
       setSettings(loadedSettings);
+      setTheme(loadedSettings.theme || null);
     };
     void loadSettings();
   }, []);
@@ -30,7 +34,18 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  return <SettingsContext.Provider value={{ settings, saveSettings }}>{children}</SettingsContext.Provider>;
+  const saveTheme = async (theme: Theme) => {
+    try {
+      setTheme(theme);
+      const updatedTheme = await window.api.saveTheme(theme);
+      setTheme(updatedTheme);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to save theme:', error);
+    }
+  };
+
+  return <SettingsContext.Provider value={{ settings, saveSettings, theme, saveTheme }}>{children}</SettingsContext.Provider>;
 };
 
 export const useSettings = () => {

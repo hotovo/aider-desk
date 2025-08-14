@@ -102,7 +102,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.fileRead')}</span>
                 <span>
-                  <CodeInline className="bg-neutral-900">{(message.args.filePath as string).split(/[/\\]/).pop()}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{(message.args.filePath as string).split(/[/\\]/).pop()}</CodeInline>
                 </span>
               </div>
             );
@@ -115,7 +115,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.bash')}</span>
                 <span>
-                  <CodeInline className="bg-neutral-900">{message.args.command as string}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{message.args.command as string}</CodeInline>
                 </span>
               </div>
             );
@@ -134,12 +134,12 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
       const promptText = message.args.prompt as string;
 
       return (
-        <div className="text-xs text-neutral-300 pt-2 px-3">
-          <pre className="whitespace-pre-wrap bg-neutral-900 p-2 rounded text-neutral-300 text-2xs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-600">
+        <div className="text-xs text-text-tertiary pt-2 px-3">
+          <pre className="whitespace-pre-wrap bg-bg-primary-light p-2 rounded text-text-tertiary text-2xs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
             {promptText}
           </pre>
           {parsedResult?.json && 'deniedReason' in parsedResult.json && typeof parsedResult.json.deniedReason === 'string' && (
-            <div className="flex items-start gap-1 text-neutral-100 text-2xs font-normal mt-2 whitespace-pre-wrap px-1">
+            <div className="flex items-start gap-1 text-text-primary text-2xs font-normal mt-2 whitespace-pre-wrap px-1">
               {t('toolMessage.deniedByReason', { reason: parsedResult.json.deniedReason })}
             </div>
           )}
@@ -188,19 +188,19 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
     return (
       <>
         <div className="flex justify-between items-center mb-1">
-          <div className="flex items-center gap-2 font-semibold text-neutral-200">
+          <div className="flex items-center gap-2 font-semibold text-text-secondary">
             {t('toolMessage.result')}
             {parsedResult.isError === true && (
-              <span className="flex items-center gap-1 text-red-500 text-xs font-normal">
+              <span className="flex items-center gap-1 text-error text-xs font-normal">
                 <VscError /> {t('toolMessage.error')}
               </span>
             )}
           </div>
-          <CopyMessageButton content={rawContentToCopy} className="text-neutral-600 hover:text-neutral-300" />
+          <CopyMessageButton content={rawContentToCopy} className="text-text-muted-dark hover:text-text-tertiary" />
         </div>
         <pre
-          className={`whitespace-pre-wrap max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-600 bg-neutral-900 p-2 rounded text-[11px] ${
-            parsedResult.isError ? 'text-red-400' : 'text-neutral-200'
+          className={`whitespace-pre-wrap max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-[11px] ${
+            parsedResult.isError ? 'text-error-light' : 'text-text-secondary'
           }`}
         >
           {displayContent}
@@ -210,19 +210,21 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
   };
 
   return (
-    <div className="border border-neutral-800 rounded-md mb-2 group p-3 bg-neutral-850">
+    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2  cursor-pointer hover:bg-neutral-750 select-none rounded-t-md" onClick={handleHeaderClick}>
+      <div className="flex items-center justify-between gap-2 cursor-pointer select-none rounded-t-md" onClick={handleHeaderClick}>
         <div className="flex items-center gap-2">
-          <div className={`text-neutral-500 ${isExecuting ? 'animate-pulse' : ''}`}>
+          <div className={`text-text-muted ${isExecuting ? 'animate-pulse' : ''}`}>
             <RiToolsFill className="w-4 h-4" />
           </div>
-          <div className={`text-xs text-neutral-100 whitespace-pre ${isExecuting ? 'animate-pulse' : ''} flex items-center gap-1`}>{getToolLabel(message)}</div>
-          {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-neutral-400" />}
-          {!isExecuting && parsedResult?.isError === true && <VscError className="text-red-500" />}
+          <div className={`text-xs text-text-primary whitespace-pre ${isExecuting ? 'animate-pulse' : ''} flex items-center gap-1`}>
+            {getToolLabel(message)}
+          </div>
+          {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />}
+          {!isExecuting && parsedResult?.isError === true && <VscError className="text-error" />}
         </div>
         <div className="flex items-center gap-2">
-          <div className="text-neutral-300">{isExpanded ? <MdKeyboardArrowDown size={16} /> : <MdKeyboardArrowRight size={16} />}</div>
+          <div className="text-text-tertiary">{isExpanded ? <MdKeyboardArrowDown size={16} /> : <MdKeyboardArrowRight size={16} />}</div>
         </div>
       </div>
 
@@ -238,23 +240,23 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
         })}
       >
         {/* Add relative positioning for the gradient overlay */}
-        <div className={clsx('p-3 text-xs whitespace-pre-wrap text-neutral-300 bg-neutral-850')}>
+        <div className={clsx('p-3 text-xs whitespace-pre-wrap text-text-tertiary bg-bg-secondary')}>
           {Object.keys(message.args).length > 0 && (
             <div className="mb-3">
-              <div className="font-semibold mb-1 text-neutral-200">{t('toolMessage.arguments')}</div>
-              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 bg-neutral-900 p-2 rounded text-neutral-200 text-2xs">
+              <div className="font-semibold mb-1 text-text-secondary">{t('toolMessage.arguments')}</div>
+              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-text-secondary text-2xs">
                 {JSON.stringify(message.args, null, 2)}
               </pre>
             </div>
           )}
           {isExecuting ? (
-            <div className="text-xs italic text-neutral-400">{t('toolMessage.executing')}</div>
+            <div className="text-xs italic text-text-muted-light">{t('toolMessage.executing')}</div>
           ) : isExpanded && !isInitialAutoExpand ? (
             getResultContent()
           ) : null}
           {/* Gradient overlay for initial auto-expand */}
           {isExpanded && isInitialAutoExpand && (
-            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-neutral-850 via-neutral-850 to-transparent pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-bg-secondary via-bg-secondary to-transparent pointer-events-none"></div>
           )}
         </div>
       </div>

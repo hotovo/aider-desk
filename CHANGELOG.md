@@ -4,6 +4,7 @@
 
 - parsing <think> tags as reasoning part of the response
 - fixed multiselect checkboxes
+- implemented better support for themes + new themes added
 
 ## [0.26.0]
 

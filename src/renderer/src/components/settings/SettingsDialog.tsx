@@ -18,7 +18,7 @@ type Props = {
 export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t, i18n } = useTranslation();
 
-  const { settings: originalSettings, saveSettings } = useSettings();
+  const { settings: originalSettings, saveSettings, saveTheme } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
 
   useEffect(() => {
@@ -37,6 +37,9 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
     if (originalSettings && localSettings?.zoomLevel !== originalSettings.zoomLevel) {
       void window.api.setZoomLevel(originalSettings.zoomLevel ?? 1);
+    }
+    if (originalSettings && originalSettings.theme && localSettings?.theme !== originalSettings.theme) {
+      saveTheme(originalSettings.theme);
     }
     // Updated to use settings.mcpServers directly
     if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
@@ -100,6 +103,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
           updateSettings={setLocalSettings}
           onLanguageChange={handleLanguageChange}
           onZoomChange={handleZoomChange}
+          onThemeChange={saveTheme}
           initialTab={initialTab}
           initialAgentProfileId={initialAgentProfileId}
           initialAgentProvider={initialAgentProvider}

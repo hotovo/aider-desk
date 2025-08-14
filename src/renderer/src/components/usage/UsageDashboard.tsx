@@ -125,20 +125,20 @@ export const UsageDashboard = ({ onClose }: Props) => {
   };
 
   return (
-    <div className="absolute inset-0 bg-neutral-900 z-50 flex flex-col">
-      <div className="flex items-center border-b-2 border-neutral-600 justify-between bg-gradient-to-b from-neutral-950 to-neutral-900 min-h-[40px] pl-4">
+    <div className="absolute inset-0 bg-bg-primary-light z-50 flex flex-col">
+      <div className="flex items-center border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light min-h-[40px] pl-4">
         <div className="flex items-center space-x-4">
-          <h2 className="text-md uppercase font-medium text-neutral-100">{t('usageDashboard.title')}</h2>
+          <h2 className="text-md uppercase font-medium text-text-primary">{t('usageDashboard.title')}</h2>
         </div>
         <IconButton
-          icon={<IoMdClose className="h-5 w-5 text-neutral-200" />}
+          icon={<IoMdClose className="h-5 w-5 text-text-secondary" />}
           onClick={onClose}
           tooltip={t('common.close')}
-          className="px-4 py-2 hover:text-neutral-200 hover:bg-neutral-700/30 transition-colors duration-200"
+          className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiary-emphasis transition-colors duration-200"
         />
       </div>
 
-      <div className="flex items-center space-x-4 p-4 border-b-2 border-neutral-800">
+      <div className="flex items-center space-x-4 p-4 border-b-2 border-border-dark-light">
         <div className="flex items-end space-x-2">
           <DatePicker
             label={t('usageDashboard.dateRange')}
@@ -148,7 +148,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
             endDate={dateRange[1]}
             onChange={handleDateRangeChange}
           />
-          <div className="flex bg-neutral-800 rounded-md p-1">
+          <div className="flex bg-bg-secondary-light rounded-md p-1">
             {[
               { value: DatePeriod.Today, label: t('usageDashboard.today') },
               { value: DatePeriod.ThisMonth, label: t('usageDashboard.thisMonth') },
@@ -159,7 +159,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
                 onClick={() => handlePeriodChange(period.value)}
                 className={clsx(
                   'px-3 py-1 text-sm rounded transition-colors duration-200',
-                  selectedPeriod === period.value ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+                  selectedPeriod === period.value ? 'bg-bg-fourth text-text-primary' : 'text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary',
                 )}
               >
                 {period.label}
@@ -203,19 +203,19 @@ export const UsageDashboard = ({ onClose }: Props) => {
             onClick={handleRefresh}
             disabled={loading}
             tooltip={loading ? t('common.loading') : t('usageDashboard.refresh')}
-            className="p-2 hover:bg-neutral-800 rounded-md mb-1"
+            className="p-2 hover:bg-bg-secondary-light rounded-md mb-1"
           />
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center border-b-2 border-neutral-800 bg-neutral-900">
-        <div className="flex bg-neutral-800 rounded-md p-1 m-4">
+      <div className="flex items-center border-b-2 border-border-dark-light bg-bg-primary-light">
+        <div className="flex bg-bg-secondary-light rounded-md p-1 m-4">
           <button
             onClick={() => setActiveTab(ViewTab.Table)}
             className={clsx(
               'px-4 py-2 text-sm rounded transition-colors duration-200 flex items-center space-x-2',
-              activeTab === ViewTab.Table ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+              activeTab === ViewTab.Table ? 'bg-bg-fourth text-text-primary' : 'text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary',
             )}
           >
             <FaTable className="w-4 h-4" />
@@ -225,7 +225,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
             onClick={() => setActiveTab(ViewTab.Charts)}
             className={clsx(
               'px-4 py-2 text-sm rounded transition-colors duration-200 flex items-center space-x-2',
-              activeTab === ViewTab.Charts ? 'bg-neutral-600 text-neutral-100' : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700',
+              activeTab === ViewTab.Charts ? 'bg-bg-fourth text-text-primary' : 'text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary',
             )}
           >
             <FaChartBar className="w-4 h-4" />
@@ -234,17 +234,17 @@ export const UsageDashboard = ({ onClose }: Props) => {
         </div>
       </div>
 
-      {error && <div className="text-red-500 mb-4 mx-4">{error}</div>}
+      {error && <div className="text-error mb-4 mx-4">{error}</div>}
 
       {loading ? (
         <div className="flex-grow flex items-center justify-center">
-          <CgSpinner className="animate-spin w-10 h-10 text-neutral-100" />
+          <CgSpinner className="animate-spin w-10 h-10 text-text-primary" />
         </div>
       ) : (
         <>
           {activeTab === ViewTab.Table && <UsageTable data={filteredData} groupBy={selectedGroupBy} />}
           {activeTab === ViewTab.Charts && (
-            <div className="flex-grow p-2 overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
+            <div className="flex-grow p-2 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary">
               <div className="grid grid-cols-1 xl:grid-cols-2">
                 <TokenUsageTrendChart data={filteredData} groupBy={selectedGroupBy} />
                 <ModelUsageDistributionChart data={filteredData} />

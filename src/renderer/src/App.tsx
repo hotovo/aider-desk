@@ -1,8 +1,10 @@
+import '@/themes/themes.scss';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
+import { THEMES } from '@common/types';
 
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
@@ -14,13 +16,17 @@ import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 const ThemeManager = () => {
-  const { settings } = useSettings();
+  const { theme } = useSettings();
 
   useEffect(() => {
-    const className = settings?.theme === 'light' ? 'theme-light' : 'theme-dark';
-    document.body.classList.remove('theme-light', 'theme-dark');
-    document.body.classList.add(className);
-  }, [settings?.theme]);
+    // Remove all theme classes first
+    const themeClasses = THEMES.map((name) => `theme-${name}`);
+    document.body.classList.remove(...themeClasses);
+
+    // Add the current theme class, default to dark
+    const newTheme = theme && THEMES.includes(theme) ? theme : 'dark';
+    document.body.classList.add(`theme-${newTheme}`);
+  }, [theme]);
 
   return null;
 };

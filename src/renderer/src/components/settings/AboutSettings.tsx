@@ -56,7 +56,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
     <div className="space-y-6">
       <Section title="AiderDesk">
         <div className="p-6 space-y-2">
-          <div className="flex  text-sm text-neutral-100 gap-2">
+          <div className="flex  text-sm text-text-primary gap-2">
             <span>{t('settings.about.version')}:</span>
             <span>{versions ? (versions.aiderDeskCurrentVersion ?? t('settings.about.notAvailable')) : t('common.loading')}</span>
           </div>
@@ -70,7 +70,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
           {isDownloading && (
             <div className="pt-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-amber-500 whitespace-nowrap">
+                <span className="text-xs text-warning-light whitespace-nowrap">
                   {t('settings.about.downloadingUpdate')}: {versions?.aiderDeskDownloadProgress?.toFixed(0)}%
                 </span>
               </div>
@@ -78,13 +78,13 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
           )}
           {versions?.aiderDeskNewVersionReady ? (
             <div className="pt-2">
-              <p className="text-xs text-amber-500">{t('settings.about.newAiderDeskVersionReady')}</p>
+              <p className="text-xs text-warning-light">{t('settings.about.newAiderDeskVersionReady')}</p>
             </div>
           ) : (
             isAiderDeskUpdateAvailable &&
             !isDownloading && (
               <div className="flex justify-between items-center pt-2">
-                <span className="text-xs text-amber-500">
+                <span className="text-xs text-warning-light">
                   {t('settings.about.updateAvailable')} ({versions?.aiderDeskAvailableVersion})
                 </span>
                 <Button onClick={handleDownloadUpdate} size="sm" variant="outline">
@@ -98,13 +98,13 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
 
       <Section title="Aider">
         <div className="p-6 space-y-2">
-          <div className="flex text-sm text-neutral-100 gap-2">
+          <div className="flex text-sm text-text-primary gap-2">
             <span>{t('settings.about.version')}:</span>
             <span>{versions ? (versions.aiderCurrentVersion ?? t('settings.about.notAvailable')) : t('common.loading')}</span>
           </div>
           {isAiderUpdateAvailable && (
             <div className="pt-2">
-              <p className="text-xs text-amber-500">{t('settings.about.newAiderVersionAvailable', { version: versions.aiderAvailableVersion })}</p>
+              <p className="text-xs text-warning-light">{t('settings.about.newAiderVersionAvailable', { version: versions.aiderAvailableVersion })}</p>
             </div>
           )}
         </div>

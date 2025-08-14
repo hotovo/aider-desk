@@ -18,7 +18,7 @@ export const AgentRules = ({ profile, handleProfileSettingChange }: AgentRulesPr
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-2 text-2xs text-neutral-100">
+    <div className="space-y-2 text-2xs text-text-primary">
       <div>{t('settings.agent.rulesInfo')}</div>
       <div>
         <Trans
@@ -30,7 +30,7 @@ export const AgentRules = ({ profile, handleProfileSettingChange }: AgentRulesPr
                 href="https://github.com/hotovo/aider-desk/tree/main/.aider-desk/rules"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:underline"
+                className="text-info-lighter hover:underline"
               />
             ),
           }}
