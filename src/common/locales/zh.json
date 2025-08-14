@@ -314,6 +314,17 @@
     "notificationsEnabled": "通知已启用",
     "zoom": "缩放级别",
     "theme": "主题",
+    "font": "字体",
+    "fontOptions": {
+      "inter": "Inter",
+      "lato": "Lato",
+      "montserrat": "Montserrat",
+      "nunito": "Nunito",
+      "open-sans": "Open Sans",
+      "poppins": "Poppins",
+      "roboto": "Roboto",
+      "source-sans-pro": "Source Sans Pro"
+    },
     "themeOptions": {
       "dark": "深色",
       "light": "浅色",

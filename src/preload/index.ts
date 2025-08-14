@@ -62,6 +62,7 @@ const api: ApplicationAPI = {
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   saveTheme: (theme) => ipcRenderer.invoke('save-theme', theme),
+  saveFont: (font) => ipcRenderer.invoke('save-font', font),
   startProject: (baseDir) => ipcRenderer.send('start-project', baseDir),
   stopProject: (baseDir) => ipcRenderer.send('stop-project', baseDir),
   restartProject: (baseDir, startupMode) => ipcRenderer.send('restart-project', baseDir, startupMode),

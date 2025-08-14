@@ -291,6 +291,7 @@ export interface SettingsData {
   zoomLevel?: number;
   notificationsEnabled?: boolean;
   theme?: Theme;
+  font?: string;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

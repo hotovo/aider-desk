@@ -319,6 +319,17 @@
     "notificationsEnabled": "Notifications enabled",
     "zoom": "Zoom level",
     "theme": "Theme",
+    "font": "Font",
+    "fontOptions": {
+      "inter": "Inter",
+      "lato": "Lato",
+      "montserrat": "Montserrat",
+      "nunito": "Nunito",
+      "open-sans": "Open Sans",
+      "poppins": "Poppins",
+      "roboto": "Roboto",
+      "source-sans-pro": "Source Sans Pro"
+    },
     "themeOptions": {
       "dark": "Default (Dark)",
       "light": "Default (Light)",

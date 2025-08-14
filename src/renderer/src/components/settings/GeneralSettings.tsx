@@ -27,10 +27,22 @@ type Props = {
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (themeName: Theme) => void;
+  onFontChange: (fontName: string) => void;
 };
 
-export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange }: Props) => {
+export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange, onFontChange }: Props) => {
   const { t } = useTranslation();
+
+  const fontOptions: Option[] = [
+    { label: 'Inter (Default)', value: 'Inter' },
+    { label: 'Roboto', value: 'Roboto' },
+    { label: 'Open Sans', value: 'Open Sans' },
+    { label: 'Lato', value: 'Lato' },
+    { label: 'Source Sans Pro', value: 'Source Sans Pro' },
+    { label: 'Nunito', value: 'Nunito' },
+    { label: 'Poppins', value: 'Poppins' },
+    { label: 'Montserrat', value: 'Montserrat' },
+  ];
 
   const themeOptions: Option[] = THEMES.map((theme) => ({
     label: t(`settings.themeOptions.${theme}`, theme),
@@ -68,6 +80,14 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
       theme: value as Theme,
     });
     onThemeChange(value as Theme);
+  };
+
+  const handleFontChange = (value: string) => {
+    setSettings({
+      ...settings,
+      font: value,
+    });
+    onFontChange(value);
   };
 
   const handleSuggestionModeChange = (mode: SuggestionMode) => {
@@ -114,6 +134,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
           <LanguageSelector language={settings.language} onChange={onLanguageChange} />
           <Select label={t('settings.zoom')} options={ZOOM_OPTIONS} value={String(settings.zoomLevel ?? 1)} onChange={handleZoomChange} />
           <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-2" />
+          <Select label={t('settings.font')} options={fontOptions} value={settings.font ?? ''} onChange={handleFontChange} className="col-span-2" />
         </div>
       </Section>
 
