@@ -34,14 +34,14 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const { t } = useTranslation();
 
   const fontOptions: Option[] = [
-    { label: 'Inter (Default)', value: 'Inter' },
-    { label: 'Roboto', value: 'Roboto' },
-    { label: 'Open Sans', value: 'Open Sans' },
-    { label: 'Lato', value: 'Lato' },
-    { label: 'Source Sans Pro', value: 'Source Sans Pro' },
-    { label: 'Nunito', value: 'Nunito' },
-    { label: 'Poppins', value: 'Poppins' },
-    { label: 'Montserrat', value: 'Montserrat' },
+    { label: t('settings.sono'), value: 'Sono' },
+    { label: t('settings.roboto'), value: 'Roboto' },
+    { label: t('settings.openSans'), value: 'Open Sans' },
+    { label: t('settings.lato'), value: 'Lato' },
+    { label: t('settings.sourceSansPro'), value: 'Source Sans Pro' },
+    { label: t('settings.nunito'), value: 'Nunito' },
+    { label: t('settings.poppint'), value: 'Poppins' },
+    { label: t('settings.montserrat'), value: 'Montserrat' },
   ];
 
   const themeOptions: Option[] = THEMES.map((theme) => ({

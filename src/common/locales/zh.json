@@ -316,14 +316,14 @@
     "theme": "主题",
     "font": "字体",
     "fontOptions": {
-      "inter": "Inter",
+      "sono": "Sono (Default)",
       "lato": "Lato",
       "montserrat": "Montserrat",
       "nunito": "Nunito",
-      "open-sans": "Open Sans",
+      "openSans": "Open Sans",
       "poppins": "Poppins",
       "roboto": "Roboto",
-      "source-sans-pro": "Source Sans Pro"
+      "sourceSansPro": "Source Sans Pro"
     },
     "themeOptions": {
       "dark": "深色",

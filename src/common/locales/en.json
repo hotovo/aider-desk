@@ -321,14 +321,14 @@
     "theme": "Theme",
     "font": "Font",
     "fontOptions": {
-      "inter": "Inter",
+      "sono": "Sono (Default)",
       "lato": "Lato",
       "montserrat": "Montserrat",
       "nunito": "Nunito",
-      "open-sans": "Open Sans",
+      "openSans": "Open Sans",
       "poppins": "Poppins",
       "roboto": "Roboto",
-      "source-sans-pro": "Source Sans Pro"
+      "sourceSansPro": "Source Sans Pro"
     },
     "themeOptions": {
       "dark": "Default (Dark)",
