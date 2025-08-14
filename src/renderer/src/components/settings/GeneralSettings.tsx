@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { SettingsData, StartupMode, SuggestionMode, ThemeName, THEME_NAMES } from '@common/types';
+import { SettingsData, StartupMode, SuggestionMode, Theme, THEMES } from '@common/types';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -26,16 +26,16 @@ type Props = {
   setSettings: (settings: SettingsData) => void;
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
-  onThemeChange: (themeName: ThemeName) => void;
+  onThemeChange: (themeName: Theme) => void;
 };
 
 export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange }: Props) => {
   const { t } = useTranslation();
 
-  const themeOptions: Option[] = THEME_NAMES.map((theme) => ({
+  const themeOptions: Option[] = THEMES.map((theme) => ({
     label: t(`settings.themeOptions.${theme}`, theme),
     value: theme,
-  }));
+  })).sort((a, b) => a.label.localeCompare(b.label));
 
   const handleStartupModeChange = (mode: StartupMode) => {
     setSettings({
@@ -65,9 +65,9 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const handleThemeChange = (value: string) => {
     setSettings({
       ...settings,
-      theme: value as ThemeName,
+      theme: value as Theme,
     });
-    onThemeChange(value as ThemeName);
+    onThemeChange(value as Theme);
   };
 
   const handleSuggestionModeChange = (mode: SuggestionMode) => {

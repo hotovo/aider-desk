@@ -267,14 +267,22 @@ export interface EnvironmentVariable {
   source: string;
 }
 
-export const THEME_NAMES = ['dark', 'light', 'charcoal', 'neon', 'neopunk', 'blue', 'green', 'purple', 'bw', 'black'] as const;
-export type ThemeName = (typeof THEME_NAMES)[number];
-
-export interface Theme {
-  name: ThemeName;
-  displayName: string;
-  description: string;
-}
+export const THEMES = [
+  'dark',
+  'light',
+  'charcoal',
+  'neon',
+  'neopunk',
+  'aurora',
+  'ocean',
+  'forest',
+  'lavender',
+  'bw',
+  'midnight',
+  'serenity',
+  'cappuccino',
+] as const;
+export type Theme = (typeof THEMES)[number];
 
 export interface SettingsData {
   onboardingFinished?: boolean;
@@ -282,7 +290,7 @@ export interface SettingsData {
   startupMode?: StartupMode;
   zoomLevel?: number;
   notificationsEnabled?: boolean;
-  theme: ThemeName | undefined;
+  theme?: Theme;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

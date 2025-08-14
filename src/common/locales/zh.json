@@ -317,12 +317,16 @@
     "themeOptions": {
       "dark": "深色",
       "light": "浅色",
-      "blue": "蓝色",
-      "green": "绿色", 
-      "purple": "紫色",
+      "ocean": "海洋",
+      "forest": "森林",
+      "lavender": "薰衣草",
       "bw": "黑白",
-      "black": "黑色",
-      "neon": "霓虹"
+      "midnight": "午夜",
+      "neon": "霓虹",
+      "neopunk": "赛博朋克",
+      "charcoal": "炭灰",
+      "aurora": "极光",
+      "serenity": "宁静"
     },
     "aiderRestartConfirm": {
       "title": "需要重启",

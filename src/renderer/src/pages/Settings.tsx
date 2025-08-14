@@ -1,4 +1,4 @@
-import { SettingsData, ThemeName } from '@common/types';
+import { SettingsData, Theme } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +15,7 @@ type Props = {
   updateSettings: (settings: SettingsData) => void;
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
-  onThemeChange: (theme: ThemeName) => void;
+  onThemeChange: (theme: Theme) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;

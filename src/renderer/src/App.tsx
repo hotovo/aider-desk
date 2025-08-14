@@ -1,10 +1,10 @@
+import '@/themes/themes.scss';
 import { AnimatePresence, motion } from 'framer-motion';
-import '@/styles/themes.css';
 import { useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
-import { THEME_NAMES } from '@common/types';
+import { THEMES } from '@common/types';
 
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
@@ -20,11 +20,11 @@ const ThemeManager = () => {
 
   useEffect(() => {
     // Remove all theme classes first
-    const themeClasses = THEME_NAMES.map((name) => `theme-${name}`);
+    const themeClasses = THEMES.map((name) => `theme-${name}`);
     document.body.classList.remove(...themeClasses);
 
     // Add the current theme class, default to dark
-    const newTheme = theme && THEME_NAMES.includes(theme) ? theme : 'dark';
+    const newTheme = theme && THEMES.includes(theme) ? theme : 'dark';
     document.body.classList.add(`theme-${newTheme}`);
   }, [theme]);
 

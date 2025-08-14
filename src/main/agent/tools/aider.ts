@@ -188,7 +188,7 @@ export const createAiderToolset = (project: Project, profile: AgentProfile, prom
         id: uuidv4(),
         group: {
           id: uuidv4(),
-          color: '#b5723b',
+          color: 'var(--color-agent-aider-tools)',
           name: 'toolMessage.aider.working',
         },
       };
