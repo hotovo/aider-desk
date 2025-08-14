@@ -3,7 +3,6 @@
 ## [UNRELEASED]
 
 - parsing <think> tags as reasoning part of the response
-- added more color themes
 - fixed unnecessary reload of component during onboarding process
 - implemented better support for themes + new themes added
 
