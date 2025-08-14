@@ -19,7 +19,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
   const { t, i18n } = useTranslation();
 
   const { settings: originalSettings, saveSettings, saveTheme } = useSettings();
-  const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
+  const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
 
   useEffect(() => {
     if (originalSettings) {
