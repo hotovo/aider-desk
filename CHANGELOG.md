@@ -4,6 +4,7 @@
 
 - parsing <think> tags as reasoning part of the response
 - added more color themes
+- fixed unnecessary reload of component during onboarding process
 
 ## [0.26.0]
 
