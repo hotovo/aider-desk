@@ -28,7 +28,7 @@ Configure the underlying `aider-chat` engine.
 - **Options**: Pass command-line arguments directly to Aider.
 - **Environment Variables**: Set environment variables for the Aider process.
 - **Context**: Control automatic inclusion of rule files.
-<!-- For more details, see [Configuration](./configuration.md). -->
+For more details, see [Aider Configuration](./aider-configuration.md).
 
 ### Agent
 
