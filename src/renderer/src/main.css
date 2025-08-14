@@ -35,11 +35,15 @@
   }
 }
 
+:root {
+  --font-family: "Sono", monospace;
+}
+
 body {
   margin: 0;
   background-color:  var(--color-bg-primary);
   color: var(--color-text-primary);
-  font-family: "Sono", monospace;
+  font-family: var(--font-family);
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
@@ -47,7 +51,7 @@ body {
 }
 
 * {
-  font-family: "Sono", monospace;
+  font-family: var(--font-family);
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;

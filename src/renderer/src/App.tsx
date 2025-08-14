@@ -15,8 +15,8 @@ import { ROUTES } from '@/utils/routes';
 import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 
-const ThemeManager = () => {
-  const { theme } = useSettings();
+const ThemeAndFontManager = () => {
+  const { theme, font } = useSettings();
 
   useEffect(() => {
     // Remove all theme classes first
@@ -26,7 +26,9 @@ const ThemeManager = () => {
     // Add the current theme class, default to dark
     const newTheme = theme && THEMES.includes(theme) ? theme : 'dark';
     document.body.classList.add(`theme-${newTheme}`);
-  }, [theme]);
+
+    document.documentElement.style.setProperty('--font-family', font === 'Sono' ? '"Sono", monospace' : `${font}, sans-serif`);
+  }, [font, theme]);
 
   return null;
 };
@@ -81,7 +83,7 @@ const App = () => {
       <Router>
         <SettingsProvider>
           <ContextMenuProvider>
-            <ThemeManager />
+            <ThemeAndFontManager />
             <AnimatedRoutes />
             <ToastContainer />
           </ContextMenuProvider>
