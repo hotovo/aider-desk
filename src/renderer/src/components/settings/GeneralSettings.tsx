@@ -36,7 +36,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const fontOptions: Option[] = FONTS.map((font) => ({
     label: t(`settings.fontOptions.${font}`, font),
     value: font,
-    style: { fontFamily: `settings.fontOptions.${font}` },
+    style: { fontFamily: font },
   })).sort((a, b) => a.label.localeCompare(b.label));
 
   const themeOptions: Option[] = THEMES.map((theme) => ({
