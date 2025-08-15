@@ -321,7 +321,7 @@
     "theme": "Theme",
     "font": "Font",
     "fontOptions": {
-      "sono": "Sono",
+      "sono": "Sono (Default)",
       "poppins": "Poppins",
       "nunito": "Nunito",
       "quicksand": "Quicksand",
