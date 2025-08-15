@@ -143,8 +143,9 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
                   <span
                     className="block truncate"
                     style={{
-                      fontFamily: opt.value === 'sono' ? 'var(--font-family)' : opt.value,
-                      fontVariationSettings: opt.value === 'sono' ? '"MONO" 1' : 'normal',
+                      fontFamily: opt.value === 'Sono' ? 'var(--font-family)' : opt.value,
+                      fontVariationSettings: opt.value === 'Sono' ? '"MONO" 1' : 'normal',
+                      fontWeight: 'inherit',
                     }}
                   >
                     {opt.label}

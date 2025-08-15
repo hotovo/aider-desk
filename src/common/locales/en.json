@@ -322,13 +322,14 @@
     "font": "Font",
     "fontOptions": {
       "sono": "Sono (Default)",
-      "lato": "Lato",
-      "montserrat": "Montserrat",
-      "nunito": "Nunito",
-      "openSans": "Open Sans",
-      "poppins": "Poppins",
-      "roboto": "Roboto",
-      "sourceSansPro": "Source Sans Pro"
+      "poppins": "Poppins (Friendly)",
+      "nunito": "Nunito (Soft)",
+      "quicksand": "Quicksand (Light)",
+      "playfair-display": "Playfair Display (Elegant)",
+      "lora": "Lora (Readable)",
+      "merriweather": "Merriweather (Classic)",
+      "space-grotesk": "Space Grotesk (Techy)",
+      "orbitron": "Orbitron (Futuristic)"
     },
     "themeOptions": {
       "dark": "Default (Dark)",

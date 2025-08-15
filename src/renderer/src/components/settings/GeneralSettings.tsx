@@ -35,13 +35,19 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
 
   const fontOptions = [
     { label: t('settings.fontOptions.sono'), value: 'Sono' },
-    { label: t('settings.fontOptions.roboto'), value: 'Roboto' },
-    { label: t('settings.fontOptions.openSans'), value: 'Open Sans' },
-    { label: t('settings.fontOptions.lato'), value: 'Lato' },
-    { label: t('settings.fontOptions.sourceSansPro'), value: 'Source Sans Pro' },
-    { label: t('settings.fontOptions.nunito'), value: 'Nunito' },
+    // Friendly & Modern
     { label: t('settings.fontOptions.poppins'), value: 'Poppins' },
-    { label: t('settings.fontOptions.montserrat'), value: 'Montserrat' },
+    { label: t('settings.fontOptions.nunito'), value: 'Nunito' },
+    { label: t('settings.fontOptions.quicksand'), value: 'Quicksand' },
+
+    // Elegant & Stylish
+    { label: t('settings.fontOptions.playfair-display'), value: 'Playfair Display' },
+    { label: t('settings.fontOptions.lora'), value: 'Lora' },
+    { label: t('settings.fontOptions.merriweather'), value: 'Merriweather' },
+
+    // Techy & Bold
+    { label: t('settings.fontOptions.space-grotesk'), value: 'Space Grotesk' },
+    { label: t('settings.fontOptions.orbitron'), value: 'Orbitron' },
   ];
 
   const themeOptions: Option[] = THEMES.map((theme) => ({
