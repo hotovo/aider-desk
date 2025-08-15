@@ -5,9 +5,6 @@ module.exports = {
   content: ['./src/renderer/index.html', './src/renderer/src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ['Sono', 'Lato', 'Montserrat', 'Nunito', 'Open Sans', 'Poppins', 'Roboto', 'Source Sans Pro', ...defaultTheme.fontFamily.sans],
-      },
       colors: {
         // Theme-based colors
         bg: {
