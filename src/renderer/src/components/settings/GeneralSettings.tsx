@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { SettingsData, StartupMode, SuggestionMode, Theme, THEMES } from '@common/types';
+import { FONTS, SettingsData, StartupMode, SuggestionMode, Theme, THEMES } from '@common/types';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -33,22 +33,11 @@ type Props = {
 export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange, onFontChange }: Props) => {
   const { t } = useTranslation();
 
-  const fontOptions = [
-    { label: t('settings.fontOptions.sono'), value: 'Sono' },
-    // Friendly & Modern
-    { label: t('settings.fontOptions.poppins'), value: 'Poppins' },
-    { label: t('settings.fontOptions.nunito'), value: 'Nunito' },
-    { label: t('settings.fontOptions.quicksand'), value: 'Quicksand' },
-
-    // Elegant & Stylish
-    { label: t('settings.fontOptions.playfair-display'), value: 'Playfair Display' },
-    { label: t('settings.fontOptions.lora'), value: 'Lora' },
-    { label: t('settings.fontOptions.merriweather'), value: 'Merriweather' },
-
-    // Techy & Bold
-    { label: t('settings.fontOptions.space-grotesk'), value: 'Space Grotesk' },
-    { label: t('settings.fontOptions.orbitron'), value: 'Orbitron' },
-  ];
+  const fontOptions: Option[] = FONTS.map((font) => ({
+    label: t(`settings.fontOptions.${font}`, font),
+    value: font,
+    style: { fontFamily: `settings.fontOptions.${font}` },
+  })).sort((a, b) => a.label.localeCompare(b.label));
 
   const themeOptions: Option[] = THEMES.map((theme) => ({
     label: t(`settings.themeOptions.${theme}`, theme),

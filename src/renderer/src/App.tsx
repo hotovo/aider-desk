@@ -27,7 +27,14 @@ const ThemeAndFontManager = () => {
     const newTheme = theme && THEMES.includes(theme) ? theme : 'dark';
     document.body.classList.add(`theme-${newTheme}`);
 
-    document.documentElement.style.setProperty('--font-family', font === 'Sono' ? '"Sono", monospace' : `${font}, sans-serif`);
+    if (font === 'Sono') {
+      document.documentElement.style.setProperty('--font-family', '"Sono", monospace');
+      document.documentElement.style.setProperty('font-variation-settings', '"MONO" 1');
+    } else {
+      // Quote font names with spaces to be safe
+      document.documentElement.style.setProperty('--font-family', `"${font}", sans-serif`);
+      document.documentElement.style.setProperty('font-variation-settings', 'normal');
+    }
   }, [font, theme]);
 
   return null;

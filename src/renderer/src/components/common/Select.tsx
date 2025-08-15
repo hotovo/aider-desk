@@ -8,6 +8,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 export type Option = {
   label: ReactNode;
   value: string;
+  style?: React.CSSProperties;
 };
 
 type Props = {
@@ -140,14 +141,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
                 role="option"
               >
                 <div className="flex items-center">
-                  <span
-                    className="block truncate"
-                    style={{
-                      fontFamily: opt.value === 'Sono' ? 'var(--font-family)' : opt.value,
-                      fontVariationSettings: opt.value === 'Sono' ? '"MONO" 1' : 'normal',
-                      fontWeight: 'inherit',
-                    }}
-                  >
+                  <span className="block truncate" style={opt.style}>
                     {opt.label}
                   </span>
                 </div>

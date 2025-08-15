@@ -316,15 +316,15 @@
     "theme": "主题",
     "font": "字体",
     "fontOptions": {
-      "sono": "Sono (默认)",
-      "poppins": "Poppins (友好)",
-      "nunito": "Nunito (柔和)",
-      "quicksand": "Quicksand (轻盈)",
-      "playfair-display": "Playfair Display (优雅)",
-      "lora": "Lora (易读)",
-      "merriweather": "Merriweather (经典)",
-      "space-grotesk": "Space Grotesk (科技感)",
-      "orbitron": "Orbitron (未来感)"
+      "sono": "Sono",
+      "poppins": "Poppins ",
+      "nunito": "Nunito",
+      "quicksand": "Quicksand",
+      "playfairDisplay": "Playfair Display",
+      "lora": "Lora",
+      "merriweather": "Merriweather",
+      "spaceGrotesk": "Space Grotesk",
+      "orbitron": "Orbitron"
     },
     "themeOptions": {
       "dark": "深色",

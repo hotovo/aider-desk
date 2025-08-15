@@ -321,15 +321,15 @@
     "theme": "Theme",
     "font": "Font",
     "fontOptions": {
-      "sono": "Sono (Default)",
-      "poppins": "Poppins (Friendly)",
-      "nunito": "Nunito (Soft)",
-      "quicksand": "Quicksand (Light)",
-      "playfair-display": "Playfair Display (Elegant)",
-      "lora": "Lora (Readable)",
-      "merriweather": "Merriweather (Classic)",
-      "space-grotesk": "Space Grotesk (Techy)",
-      "orbitron": "Orbitron (Futuristic)"
+      "sono": "Sono",
+      "poppins": "Poppins",
+      "nunito": "Nunito",
+      "quicksand": "Quicksand",
+      "playfairDisplay": "Playfair Display",
+      "lora": "Lora",
+      "merriweather": "Merriweather",
+      "spaceGrotesk": "Space Grotesk",
+      "orbitron": "Orbitron"
     },
     "themeOptions": {
       "dark": "Default (Dark)",
