@@ -140,7 +140,15 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
                 role="option"
               >
                 <div className="flex items-center">
-                  <span className="block truncate">{opt.label}</span>
+                  <span
+                    className="block truncate"
+                    style={{
+                      fontFamily: opt.value === 'sono' ? 'var(--font-family)' : opt.value,
+                      fontVariationSettings: opt.value === 'sono' ? '"MONO" 1' : 'normal',
+                    }}
+                  >
+                    {opt.label}
+                  </span>
                 </div>
                 {selectedOption?.value === opt.value && (
                   <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-text-tertiary">
