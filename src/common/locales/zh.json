@@ -314,6 +314,18 @@
     "notificationsEnabled": "通知已启用",
     "zoom": "缩放级别",
     "theme": "主题",
+    "font": "字体",
+    "fontOptions": {
+      "sono": "Sono (色)",
+      "poppins": "Poppins ",
+      "nunito": "Nunito",
+      "quicksand": "Quicksand",
+      "playfairDisplay": "Playfair Display",
+      "lora": "Lora",
+      "merriweather": "Merriweather",
+      "spaceGrotesk": "Space Grotesk",
+      "orbitron": "Orbitron"
+    },
     "themeOptions": {
       "dark": "深色",
       "light": "浅色",

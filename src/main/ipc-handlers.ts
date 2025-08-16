@@ -52,6 +52,13 @@ export const setupIpcHandlers = (
     return store.getSettings().theme;
   });
 
+  ipcMain.handle('save-font', (_, font: string) => {
+    const oldSettings = store.getSettings();
+    store.saveSettings({ ...oldSettings, font });
+
+    return store.getSettings().font;
+  });
+
   ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {
     void projectManager.getProject(baseDir).runPrompt(prompt, mode);
   });

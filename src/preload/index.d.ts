@@ -37,6 +37,7 @@ export interface ApplicationAPI {
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   saveTheme: (theme: ThemeName) => Promise<ThemeName>;
+  saveFont: (font: string) => Promise<string>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;

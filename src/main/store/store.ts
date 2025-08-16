@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   zoomLevel: 1,
   notificationsEnabled: false,
   theme: 'dark',
+  font: 'Sono',
   aiderDeskAutoUpdate: true,
   aider: {
     options: '',
