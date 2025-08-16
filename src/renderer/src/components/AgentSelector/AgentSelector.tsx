@@ -237,6 +237,8 @@ export const AgentSelector = () => {
                 checked={activeProfile.autoApprove ?? false}
                 onChange={(isChecked) => handleToggleProfileSetting('autoApprove', isChecked)}
                 size="sm"
+                tooltip={`${t('settings.agent.autoApprove')} (Alt + Y)`}
+                tooltipId="agent-selector-tooltip"
               />
               <div className="flex items-center">
                 <IconButton
@@ -245,7 +247,7 @@ export const AgentSelector = () => {
                   }
                   onClick={() => handleToggleProfileSetting('useAiderTools', !activeProfile.useAiderTools)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
-                  tooltip={t('settings.agent.useAiderTools')}
+                  tooltip={`${t('settings.agent.useAiderTools')} (Alt + A)`}
                   tooltipId="agent-selector-tooltip"
                 />
                 <IconButton
@@ -261,7 +263,7 @@ export const AgentSelector = () => {
                   }
                   onClick={() => handleToggleProfileSetting('useTodoTools', !activeProfile.useTodoTools)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
-                  tooltip={t('settings.agent.useTodoTools')}
+                  tooltip={`${t('settings.agent.useTodoTools')} (Alt + T)`}
                   tooltipId="agent-selector-tooltip"
                 />
                 <IconButton
@@ -272,14 +274,14 @@ export const AgentSelector = () => {
                   }
                   onClick={() => handleToggleProfileSetting('includeContextFiles', !activeProfile.includeContextFiles)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
-                  tooltip={t('settings.agent.includeContextFiles')}
+                  tooltip={`${t('settings.agent.includeContextFiles')} (Alt + F)`}
                   tooltipId="agent-selector-tooltip"
                 />
                 <IconButton
                   icon={<MdOutlineMap className={clsx('w-3.5 h-3.5', activeProfile.includeRepoMap ? 'text-agent-repo-map' : 'text-text-muted opacity-50')} />}
                   onClick={() => handleToggleProfileSetting('includeRepoMap', !activeProfile.includeRepoMap)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
-                  tooltip={t('settings.agent.includeRepoMap')}
+                  tooltip={`${t('settings.agent.includeRepoMap')} (Alt + M)`}
                   tooltipId="agent-selector-tooltip"
                 />
               </div>

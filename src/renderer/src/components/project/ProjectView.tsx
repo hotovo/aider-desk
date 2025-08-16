@@ -5,6 +5,7 @@ import {
   LogData,
   Mode,
   ModelInfo,
+  AgentProfile,
   ModelsData,
   ProjectData,
   QuestionData,
@@ -67,7 +68,7 @@ type Props = {
 
 export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
+  const { settings, saveSettings } = useSettings();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -114,6 +115,48 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const todoListVisible = useMemo(() => {
     return projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
   }, [projectSettings, settings]);
+
+  const handleToggleProfileSetting = (setting: keyof AgentProfile, value?: boolean) => {
+    if (projectSettings && settings && saveSettings) {
+      const activeProfile = getActiveAgentProfile(settings, projectSettings);
+      if (activeProfile) {
+        const updatedProfile = { ...activeProfile, [setting]: value ?? !activeProfile[setting] };
+        void saveSettings({
+          ...settings,
+          agentProfiles: settings.agentProfiles.map((profile) => (profile.id === activeProfile.id ? updatedProfile : profile)),
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.altKey) {
+        switch (event.key.toLowerCase()) {
+          case 'y':
+            handleToggleProfileSetting('autoApprove');
+            break;
+          case 'a':
+            handleToggleProfileSetting('useAiderTools');
+            break;
+          case 't':
+            handleToggleProfileSetting('useTodoTools');
+            break;
+          case 'f':
+            handleToggleProfileSetting('includeContextFiles');
+            break;
+          case 'm':
+            handleToggleProfileSetting('includeRepoMap');
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [projectSettings, settings, saveSettings]);
 
   useEffect(() => {
     const handleProjectStarted = () => {

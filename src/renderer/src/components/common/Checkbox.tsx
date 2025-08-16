@@ -7,11 +7,15 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> & 
   onChange: (checked: boolean) => void;
   className?: string;
   size?: 'sm' | 'md';
+  tooltip?: string;
+  tooltipId?: string;
 };
 
-export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm', ...props }: Props) => {
+export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm', tooltip, tooltipId, ...props }: Props) => {
   return (
     <div
+      data-tooltip-id={tooltipId}
+      data-tooltip-content={tooltip}
       className={clsx(
         'flex items-center cursor-pointer',
         {
