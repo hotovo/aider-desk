@@ -1,6 +1,12 @@
 name: Deploy docs site to GitHub Pages
 
 on:
+  push:
+    paths:
+      - 'docs-site/**'
+  pull_request:
+    paths:
+      - 'docs-site/**'
   workflow_dispatch:
 
 permissions:
@@ -46,6 +52,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

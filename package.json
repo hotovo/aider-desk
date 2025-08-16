@@ -4,7 +4,7 @@
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
-  "homepage": "https://www.hotovo.com",
+  "homepage": "https://aiderdesk.hotovo.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/hotovo/aider-desk.git"
