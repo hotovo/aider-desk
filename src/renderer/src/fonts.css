@@ -1,62 +1,132 @@
 @font-face {
   font-family: 'Sono';
-  src: url('./fonts/Sono/Sono-Regular.ttf') format('truetype');
+  src: url('./fonts/Sono.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Poppins';
-  src: url('./fonts/Poppins/Poppins-Regular.ttf') format('truetype');
+  src: url('./fonts/Poppins.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Nunito';
-  src: url('./fonts/Nunito/Nunito-Regular.ttf') format('truetype');
+  src: url('./fonts/Nunito.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Quicksand';
-  src: url('./fonts/Quicksand/Quicksand-Regular.ttf') format('truetype');
+  src: url('./fonts/Quicksand.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Playfair Display';
-  src: url('./fonts/Playfair_Display/PlayfairDisplay-Regular.ttf') format('truetype');
+  src: url('./fonts/PlayfairDisplay.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Lora';
-  src: url('./fonts/Lora/Lora-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Merriweather';
-  src: url('./fonts/Merriweather/Merriweather-Regular.ttf') format('truetype');
+  src: url('./fonts/Lora.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Space Grotesk';
-  src: url('./fonts/Space_Grotesk/SpaceGrotesk-Regular.ttf') format('truetype');
+  src: url('./fonts/SpaceGrotesk.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Orbitron';
-  src: url('./fonts/Orbitron/Orbitron-Regular.ttf') format('truetype');
+  src: url('./fonts/Orbitron.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Enriqueta';
+  src: url('./fonts/Enriqueta.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'FunnelDisplay';
+  src: url('./fonts/FunnelDisplay.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'GoogleSansCode';
+  src: url('./fonts/GoogleSansCode.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('./fonts/Inter.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JetBrainsMono';
+  src: url('./fonts/JetBrainsMono.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'RobotoMono';
+  src: url('./fonts/RobotoMono.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Sansation';
+  src: url('./fonts/Sansation.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Silkscreen';
+  src: url('./fonts/Silkscreen.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SourceCodePro';
+  src: url('./fonts/SourceCodePro.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'SpaceMono';
+  src: url('./fonts/SpaceMono.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'UbuntuMono';
+  src: url('./fonts/UbuntuMono.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
 }

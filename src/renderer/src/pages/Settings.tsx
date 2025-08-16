@@ -1,4 +1,4 @@
-import { SettingsData, Theme } from '@common/types';
+import { Font, SettingsData, Theme } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ type Props = {
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (theme: Theme) => void;
-  onFontChange: (fontName: string) => void;
+  onFontChange: (fontName: Font) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;

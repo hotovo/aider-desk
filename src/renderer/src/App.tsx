@@ -16,7 +16,7 @@ import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 const ThemeAndFontManager = () => {
-  const { theme, font } = useSettings();
+  const { theme, font = 'Sono' } = useSettings();
 
   useEffect(() => {
     // Remove all theme classes first
@@ -27,14 +27,8 @@ const ThemeAndFontManager = () => {
     const newTheme = theme && THEMES.includes(theme) ? theme : 'dark';
     document.body.classList.add(`theme-${newTheme}`);
 
-    if (font === 'Sono') {
-      document.documentElement.style.setProperty('--font-family', '"Sono", monospace');
-      document.documentElement.style.setProperty('font-variation-settings', '"MONO" 1');
-    } else {
-      // Quote font names with spaces to be safe
-      document.documentElement.style.setProperty('--font-family', `"${font}", sans-serif`);
-      document.documentElement.style.setProperty('font-variation-settings', 'normal');
-    }
+    document.documentElement.style.setProperty('--font-family', `"${font}", monospace`);
+    document.documentElement.style.setProperty('font-variation-settings', '"MONO" 1');
   }, [font, theme]);
 
   return null;

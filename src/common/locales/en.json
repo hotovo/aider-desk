@@ -321,15 +321,15 @@
     "theme": "Theme",
     "font": "Font",
     "fontOptions": {
-      "sono": "Sono (Default)",
-      "poppins": "Poppins",
-      "nunito": "Nunito",
-      "quicksand": "Quicksand",
-      "playfairDisplay": "Playfair Display",
-      "lora": "Lora",
-      "merriweather": "Merriweather",
-      "spaceGrotesk": "Space Grotesk",
-      "orbitron": "Orbitron"
+      "Sono": "Sono (Default)",
+      "PlayfairDisplay": "Playfair Display",
+      "SpaceGrotesk": "Space Grotesk",
+      "GoogleSansCode": "Google Sans Code",
+      "JetBrainsMono": "JetBrains Mono",
+      "RobotoMono": "Roboto Mono",
+      "SourceCodePro": "Source Code Pro",
+      "SpaceMono": "Space Mono",
+      "UbuntuMono": "Ubuntu Mono"
     },
     "themeOptions": {
       "dark": "Default (Dark)",

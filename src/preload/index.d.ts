@@ -30,6 +30,7 @@ import type {
   EnvironmentVariable,
   CustomCommand,
   ThemeName,
+  Font,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -37,7 +38,7 @@ export interface ApplicationAPI {
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   saveTheme: (theme: ThemeName) => Promise<ThemeName>;
-  saveFont: (font: string) => Promise<string>;
+  saveFont: (font: string) => Promise<Font>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;

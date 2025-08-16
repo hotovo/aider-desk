@@ -68,6 +68,7 @@ const isPathLike = (input: string): boolean => {
 
 const theme = githubDarkInit({
   settings: {
+    fontFamily: 'var(--font-family)',
     background: 'transparent',
     selection: 'var(--color-bg-selection)',
     caret: 'var(--color-text-muted)',

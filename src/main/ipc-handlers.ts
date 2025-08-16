@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs/promises';
 
-import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, Theme, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, Font, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, Theme, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron';
 
@@ -52,7 +52,7 @@ export const setupIpcHandlers = (
     return store.getSettings().theme;
   });
 
-  ipcMain.handle('save-font', (_, font: string) => {
+  ipcMain.handle('save-font', (_, font: Font) => {
     const oldSettings = store.getSettings();
     store.saveSettings({ ...oldSettings, font });
 

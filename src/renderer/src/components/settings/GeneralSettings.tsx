@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { FONTS, SettingsData, StartupMode, SuggestionMode, Theme, THEMES } from '@common/types';
+import { Font, FONTS, SettingsData, StartupMode, SuggestionMode, Theme, THEMES } from '@common/types';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -27,7 +27,7 @@ type Props = {
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (themeName: Theme) => void;
-  onFontChange: (fontName: string) => void;
+  onFontChange: (fontName: Font) => void;
 };
 
 export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange, onFontChange }: Props) => {
@@ -80,9 +80,9 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const handleFontChange = (value: string) => {
     setSettings({
       ...settings,
-      font: value,
+      font: value as Font,
     });
-    onFontChange(value);
+    onFontChange(value as Font);
   };
 
   const handleSuggestionModeChange = (mode: SuggestionMode) => {
@@ -129,7 +129,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
           <LanguageSelector language={settings.language} onChange={onLanguageChange} />
           <Select label={t('settings.zoom')} options={ZOOM_OPTIONS} value={String(settings.zoomLevel ?? 1)} onChange={handleZoomChange} />
           <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-2" />
-          <Select label={t('settings.font')} options={fontOptions} value={settings.font ?? ''} onChange={handleFontChange} className="col-span-2" />
+          <Select label={t('settings.font')} options={fontOptions} value={settings.font ?? 'sono'} onChange={handleFontChange} className="col-span-2" />
         </div>
       </Section>
 

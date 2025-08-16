@@ -1,4 +1,4 @@
-import { SettingsData, Theme } from '@common/types';
+import { Font, SettingsData, Theme } from '@common/types';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type SettingsContextType = {
@@ -6,8 +6,8 @@ type SettingsContextType = {
   saveSettings: (settings: SettingsData) => Promise<void>;
   theme: Theme | null;
   saveTheme: (theme: Theme) => void;
-  font: string | null;
-  saveFont: (font: string) => void;
+  font: Font | null;
+  saveFont: (font: Font) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -15,7 +15,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [theme, setTheme] = useState<Theme | null>(null);
-  const [font, setFont] = useState<string | null>(null);
+  const [font, setFont] = useState<Font | null>(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -49,7 +49,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const saveFont = async (font: string) => {
+  const saveFont = async (font: Font) => {
     try {
       setFont(font);
       const updatedFont = await window.api.saveFont(font);
