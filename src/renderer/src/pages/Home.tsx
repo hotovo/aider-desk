@@ -70,6 +70,17 @@ export const Home = () => {
   }, []);
 
   useEffect(() => {
+    const handleOpenSettings = (_event: Electron.IpcRendererEvent, tabIndex: number) => {
+      setShowSettingsTab(tabIndex);
+    };
+
+    const removeListener = window.api.addOpenSettingsListener(handleOpenSettings);
+    return () => {
+      removeListener();
+    };
+  }, []);
+
+  useEffect(() => {
     const checkReleaseNotes = async () => {
       const notes = await window.api.getReleaseNotes();
       if (notes) {

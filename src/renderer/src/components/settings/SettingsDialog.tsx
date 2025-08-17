@@ -18,8 +18,8 @@ type Props = {
 export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t, i18n } = useTranslation();
 
-  const { settings: originalSettings, saveSettings, saveTheme } = useSettings();
-  const [localSettings, setLocalSettings] = useState<SettingsData | null>(null);
+  const { settings: originalSettings, saveSettings, saveTheme, saveFont } = useSettings();
+  const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
 
   useEffect(() => {
     if (originalSettings) {
@@ -40,6 +40,10 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
     if (originalSettings && originalSettings.theme && localSettings?.theme !== originalSettings.theme) {
       saveTheme(originalSettings.theme);
+    }
+
+    if (originalSettings && originalSettings.font && localSettings?.font !== originalSettings.font) {
+      saveFont(originalSettings.font);
     }
     // Updated to use settings.mcpServers directly
     if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
@@ -104,6 +108,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
           onLanguageChange={handleLanguageChange}
           onZoomChange={handleZoomChange}
           onThemeChange={saveTheme}
+          onFontChange={saveFont}
           initialTab={initialTab}
           initialAgentProfileId={initialAgentProfileId}
           initialAgentProvider={initialAgentProvider}

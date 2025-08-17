@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { HiArrowRight, HiArrowLeft } from 'react-icons/hi2';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { SettingsData } from '@common/types';
 
 import { useSettings } from '@/context/SettingsContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
@@ -16,10 +17,17 @@ import { showErrorNotification, showInfoNotification } from '@/utils/notificatio
 export const Onboarding = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { settings, saveSettings } = useSettings();
+  const { settings: originalSettings, saveSettings } = useSettings();
+  const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
   const [step, setStep] = useState(1);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (originalSettings) {
+      setLocalSettings(originalSettings);
+    }
+  }, [originalSettings]);
 
   const steps = [
     { title: t('onboarding.steps.welcome') },
@@ -75,12 +83,12 @@ export const Onboarding = () => {
     try {
       setIsSaving(true);
 
-      if (!settings) {
+      if (!localSettings) {
         throw new Error('Settings not available');
       }
 
       await saveSettings({
-        ...settings,
+        ...localSettings,
         onboardingFinished: true,
       });
 
@@ -97,12 +105,11 @@ export const Onboarding = () => {
 
   const handleLanguageChange = useCallback(
     async (language: string) => {
-      await saveSettings({
-        ...settings!,
-        language,
-      });
+      const newSettings = { ...localSettings!, language };
+      setLocalSettings(newSettings);
+      await saveSettings(newSettings);
     },
-    [saveSettings, settings],
+    [saveSettings, localSettings],
   );
 
   const renderStep = () => {
@@ -112,7 +119,7 @@ export const Onboarding = () => {
           <div className="flex flex-col space-y-4 relative">
             {/* Language Selector in top-right corner */}
             <div className="absolute top-0 right-0">
-              <LanguageSelector language={settings?.language || 'en'} onChange={handleLanguageChange} hideLabel />
+              <LanguageSelector language={localSettings?.language || 'en'} onChange={handleLanguageChange} hideLabel />
             </div>
 
             <h1 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.title')}</h1>
@@ -132,7 +139,7 @@ export const Onboarding = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.providers.connectTitle')}</h2>
             <p className="text-text-tertiary text-sm">{t('onboarding.providers.connectDescription')}</p>
-            <ModelProvidersSettings settings={settings!} setSettings={saveSettings} showProminentModels={true} />
+            <ModelProvidersSettings settings={localSettings!} setSettings={setLocalSettings} showProminentModels={true} />
             <div className="mt-4 p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
               <p className="text-xs text-info-lightest">{t('onboarding.providers.advancedUsersNote')}</p>
             </div>
@@ -154,7 +161,7 @@ export const Onboarding = () => {
             <div className="p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
               <p className="text-xs text-info-lightest">{t('onboarding.aider.fineTuneNote')}</p>
             </div>
-            <AiderSettings settings={settings!} setSettings={saveSettings} initialShowEnvVars={true} />
+            <AiderSettings settings={localSettings!} setSettings={setLocalSettings} initialShowEnvVars={true} />
           </div>
         );
       case 4:
@@ -205,7 +212,7 @@ export const Onboarding = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.agent.configureTitle')}</h2>
             <p className="text-text-tertiary text-sm">{t('onboarding.agent.configureDescription')}</p>
-            <AgentSettings settings={settings!} setSettings={saveSettings} />
+            <AgentSettings settings={localSettings!} setSettings={setLocalSettings} />
           </div>
         );
       case 6:

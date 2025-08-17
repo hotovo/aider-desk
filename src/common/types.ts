@@ -284,6 +284,29 @@ export const THEMES = [
 ] as const;
 export type Theme = (typeof THEMES)[number];
 
+export const FONTS = [
+  'Sono',
+  'Poppins',
+  'Nunito',
+  'Quicksand',
+  'PlayfairDisplay',
+  'Lora',
+  'SpaceGrotesk',
+  'Orbitron',
+  'Enriqueta',
+  'FunnelDisplay',
+  'GoogleSansCode',
+  'Inter',
+  'JetBrainsMono',
+  'RobotoMono',
+  'Sansation',
+  'Silkscreen',
+  'SourceCodePro',
+  'SpaceMono',
+  'UbuntuMono',
+] as const;
+export type Font = (typeof FONTS)[number];
+
 export interface SettingsData {
   onboardingFinished?: boolean;
   language: string;
@@ -291,6 +314,7 @@ export interface SettingsData {
   zoomLevel?: number;
   notificationsEnabled?: boolean;
   theme?: Theme;
+  font?: Font;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

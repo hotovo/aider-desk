@@ -1,3 +1,5 @@
+@import './fonts.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -27,22 +29,29 @@
 
 @layer base {
   html {
-    font-family: "Sono", monospace;
+    font-family: var(--font-family, "Sono"), monospace;
     font-optical-sizing: auto;
     font-weight: 400;
     font-style: normal;
-    font-variation-settings:"MONO" 1;
+    font-variation-settings: "MONO" 1;
   }
+}
+
+:root {
+  --font-family: "Sono";
 }
 
 body {
   margin: 0;
   background-color:  var(--color-bg-primary);
   color: var(--color-text-primary);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-variation-settings: "MONO" 1;
 }
 
 * {
-  font-family: "Sono", monospace;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;

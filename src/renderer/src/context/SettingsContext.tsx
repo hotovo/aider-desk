@@ -1,4 +1,4 @@
-import { SettingsData, Theme } from '@common/types';
+import { Font, SettingsData, Theme } from '@common/types';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type SettingsContextType = {
@@ -6,6 +6,8 @@ type SettingsContextType = {
   saveSettings: (settings: SettingsData) => Promise<void>;
   theme: Theme | null;
   saveTheme: (theme: Theme) => void;
+  font: Font | null;
+  saveFont: (font: Font) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -13,12 +15,14 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [theme, setTheme] = useState<Theme | null>(null);
+  const [font, setFont] = useState<Font | null>(null);
 
   useEffect(() => {
     const loadSettings = async () => {
       const loadedSettings = await window.api.loadSettings();
       setSettings(loadedSettings);
       setTheme(loadedSettings.theme || null);
+      setFont(loadedSettings.font || null);
     };
     void loadSettings();
   }, []);
@@ -45,7 +49,18 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  return <SettingsContext.Provider value={{ settings, saveSettings, theme, saveTheme }}>{children}</SettingsContext.Provider>;
+  const saveFont = async (font: Font) => {
+    try {
+      setFont(font);
+      const updatedFont = await window.api.saveFont(font);
+      setFont(updatedFont);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to save font:', error);
+    }
+  };
+
+  return <SettingsContext.Provider value={{ settings, saveSettings, theme, saveTheme, font, saveFont }}>{children}</SettingsContext.Provider>;
 };
 
 export const useSettings = () => {

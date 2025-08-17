@@ -319,6 +319,18 @@
     "notificationsEnabled": "Notifications enabled",
     "zoom": "Zoom level",
     "theme": "Theme",
+    "font": "Font",
+    "fontOptions": {
+      "Sono": "Sono (Default)",
+      "PlayfairDisplay": "Playfair Display",
+      "SpaceGrotesk": "Space Grotesk",
+      "GoogleSansCode": "Google Sans Code",
+      "JetBrainsMono": "JetBrains Mono",
+      "RobotoMono": "Roboto Mono",
+      "SourceCodePro": "Source Code Pro",
+      "SpaceMono": "Space Mono",
+      "UbuntuMono": "Ubuntu Mono"
+    },
     "themeOptions": {
       "dark": "Default (Dark)",
       "light": "Default (Light)",

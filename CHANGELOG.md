@@ -3,8 +3,12 @@
 ## [UNRELEASED]
 
 - parsing <think> tags as reasoning part of the response
-- fixed multiselect checkboxes
+- fixed unnecessary reload of component during onboarding process
 - implemented better support for themes + new themes added
+- implemented support for fonts + new fonts added
+- added keyboard shortcuts to toggle TODO list (Alt+T), Include context files (Alt+F), Include repository map (Alt+R), and Auto-approve (Alt+Y)
+- updated application main menu and included Settings
+- fixed multiselect checkboxes
 
 ## [0.26.0]
 

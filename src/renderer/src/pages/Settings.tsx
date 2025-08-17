@@ -1,4 +1,4 @@
-import { SettingsData, Theme } from '@common/types';
+import { Font, SettingsData, Theme } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,12 +16,22 @@ type Props = {
   onLanguageChange: (language: string) => void;
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (theme: Theme) => void;
+  onFontChange: (fontName: Font) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;
 };
 
-export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomChange, onThemeChange, initialTab = 0, initialAgentProfileId }: Props) => {
+export const Settings = ({
+  settings,
+  updateSettings,
+  onLanguageChange,
+  onZoomChange,
+  onThemeChange,
+  onFontChange,
+  initialTab = 0,
+  initialAgentProfileId,
+}: Props) => {
   const { t } = useTranslation();
   const [selectedTabIndex, setSelectedTabIndex] = useState(initialTab);
 
@@ -66,6 +76,7 @@ export const Settings = ({ settings, updateSettings, onLanguageChange, onZoomCha
             onLanguageChange={onLanguageChange}
             onZoomChange={onZoomChange}
             onThemeChange={onThemeChange}
+            onFontChange={onFontChange}
           />,
         )}
         {renderTabPanel(<ModelProvidersSettings settings={settings} setSettings={updateSettings} onSwitchToAiderTab={handleSwitchToAiderTab} />)}

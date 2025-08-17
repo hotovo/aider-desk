@@ -837,14 +837,9 @@ export class Agent {
 
       logger.error('Error running prompt:', error);
       if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
-        project.addLogMessage(
-          'error',
-          `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> Providers.`,
-          false,
-          promptContext,
-        );
+        project.addLogMessage('error', `${error.message}. Configure credentials in the Settings -> Providers.`, false, promptContext);
       } else {
-        project.addLogMessage('error', `Error running MCP servers: ${error instanceof Error ? error.message : String(error)}`, false, promptContext);
+        project.addLogMessage('error', `${error instanceof Error ? error.message : String(error)}`, false, promptContext);
       }
     } finally {
       // Clean up abort controller only if we created it

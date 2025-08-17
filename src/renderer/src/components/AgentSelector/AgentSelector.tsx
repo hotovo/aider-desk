@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdCheck, MdDoneAll, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap } from 'react-icons/md';
 import { RiToolsFill } from 'react-icons/ri';
@@ -7,6 +7,7 @@ import { AgentProfile, ToolApprovalState } from '@common/types';
 import { getActiveAgentProfile } from '@common/utils';
 import { BiCog } from 'react-icons/bi';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 import { McpServerSelectorItem } from './McpServerSelectorItem';
 
@@ -19,7 +20,11 @@ import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { Checkbox } from '@/components/common/Checkbox';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 
-export const AgentSelector = () => {
+type Props = {
+  isActive: boolean;
+};
+
+export const AgentSelector = ({ isActive }: Props) => {
   const { t } = useTranslation();
   const { settings, saveSettings } = useSettings();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
@@ -32,7 +37,57 @@ export const AgentSelector = () => {
   const { agentProfiles = [], mcpServers = {} } = settings || {};
   const { enabledServers = [], toolApprovals = {} } = activeProfile || {};
 
+  const handleToggleProfileSetting = useCallback(
+    (setting: keyof AgentProfile, value: boolean) => {
+      if (activeProfile && settings) {
+        const updatedProfile = { ...activeProfile, [setting]: value };
+        void saveSettings({
+          ...settings,
+          agentProfiles: settings.agentProfiles.map((profile) => (profile.id === activeProfile.id ? updatedProfile : profile)),
+        });
+      }
+    },
+    [activeProfile, settings, saveSettings],
+  );
+
   useClickOutside(selectorRef, () => setSelectorVisible(false));
+
+  useHotkeys(
+    'alt+y',
+    () => handleToggleProfileSetting('autoApprove', !activeProfile?.autoApprove),
+    {
+      enabled: isActive,
+      enableOnContentEditable: true,
+    },
+    [handleToggleProfileSetting],
+  );
+  useHotkeys(
+    'alt+t',
+    () => handleToggleProfileSetting('useTodoTools', !activeProfile?.useTodoTools),
+    {
+      enabled: isActive,
+      enableOnContentEditable: true,
+    },
+    [handleToggleProfileSetting],
+  );
+  useHotkeys(
+    'alt+f',
+    () => handleToggleProfileSetting('includeContextFiles', !activeProfile?.includeContextFiles),
+    {
+      enabled: isActive,
+      enableOnContentEditable: true,
+    },
+    [handleToggleProfileSetting],
+  );
+  useHotkeys(
+    'alt+r',
+    () => handleToggleProfileSetting('includeRepoMap', !activeProfile?.includeRepoMap),
+    {
+      enabled: isActive,
+      enableOnContentEditable: true,
+    },
+    [handleToggleProfileSetting],
+  );
 
   useEffect(() => {
     const calculateEnabledTools = async () => {
@@ -92,16 +147,6 @@ export const AgentSelector = () => {
         agentProfileId: newActiveProfile.id,
       });
       setSelectorVisible(false);
-    }
-  };
-
-  const handleToggleProfileSetting = (setting: keyof AgentProfile, value: boolean) => {
-    if (activeProfile && settings) {
-      const updatedProfile = { ...activeProfile, [setting]: value };
-      void saveSettings({
-        ...settings,
-        agentProfiles: settings.agentProfiles.map((profile) => (profile.id === activeProfile.id ? updatedProfile : profile)),
-      });
     }
   };
 
@@ -237,6 +282,8 @@ export const AgentSelector = () => {
                 checked={activeProfile.autoApprove ?? false}
                 onChange={(isChecked) => handleToggleProfileSetting('autoApprove', isChecked)}
                 size="sm"
+                tooltip={`${t('settings.agent.autoApprove')} (Alt + Y)`}
+                tooltipId="agent-selector-tooltip"
               />
               <div className="flex items-center">
                 <IconButton
@@ -261,7 +308,7 @@ export const AgentSelector = () => {
                   }
                   onClick={() => handleToggleProfileSetting('useTodoTools', !activeProfile.useTodoTools)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
-                  tooltip={t('settings.agent.useTodoTools')}
+                  tooltip={`${t('settings.agent.useTodoTools')} (Alt + T)`}
                   tooltipId="agent-selector-tooltip"
                 />
                 <IconButton
@@ -272,14 +319,14 @@ export const AgentSelector = () => {
                   }
                   onClick={() => handleToggleProfileSetting('includeContextFiles', !activeProfile.includeContextFiles)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
-                  tooltip={t('settings.agent.includeContextFiles')}
+                  tooltip={`${t('settings.agent.includeContextFiles')} (Alt + F)`}
                   tooltipId="agent-selector-tooltip"
                 />
                 <IconButton
                   icon={<MdOutlineMap className={clsx('w-3.5 h-3.5', activeProfile.includeRepoMap ? 'text-agent-repo-map' : 'text-text-muted opacity-50')} />}
                   onClick={() => handleToggleProfileSetting('includeRepoMap', !activeProfile.includeRepoMap)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
-                  tooltip={t('settings.agent.includeRepoMap')}
+                  tooltip={`${t('settings.agent.includeRepoMap')} (Alt + R)`}
                   tooltipId="agent-selector-tooltip"
                 />
               </div>

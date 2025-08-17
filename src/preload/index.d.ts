@@ -4,6 +4,7 @@ import type {
   ContextFilesUpdatedData,
   CustomCommandsUpdatedData,
   InputHistoryData,
+  LogData,
   ModelsData,
   ProjectData,
   ProjectSettings,
@@ -30,6 +31,7 @@ import type {
   EnvironmentVariable,
   CustomCommand,
   ThemeName,
+  Font,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -37,6 +39,7 @@ export interface ApplicationAPI {
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   saveTheme: (theme: ThemeName) => Promise<ThemeName>;
+  saveFont: (font: string) => Promise<Font>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;
@@ -163,6 +166,7 @@ export interface ApplicationAPI {
   removeTerminalExitListener: (listenerId: string) => void;
 
   addContextMenuListener: (callback: (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => void) => () => void;
+  addOpenSettingsListener: (callback: (event: Electron.IpcRendererEvent, tabIndex: number) => void) => () => void;
 
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
   runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;

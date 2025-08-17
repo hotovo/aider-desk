@@ -4,7 +4,7 @@ import { existsSync, statSync } from 'fs';
 
 import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 
 import icon from '../../resources/icon.png?asset';
 
@@ -22,6 +22,76 @@ import { TelemetryManager } from '@/telemetry';
 import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal/terminal-manager';
+
+const setupCustomMenu = (): void => {
+  const menuTemplate: Electron.MenuItemConstructorOptions[] = [
+    // Edit menu (without Select All)
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo', label: 'Undo' },
+        { role: 'redo', label: 'Redo' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Cut' },
+        { role: 'copy', label: 'Copy' },
+        { role: 'paste', label: 'Paste' },
+      ],
+    },
+    // View menu
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload', label: 'Reload' },
+        { role: 'toggleDevTools', label: 'Toggle Developer Tools' },
+        { type: 'separator' },
+        { role: 'resetZoom', label: 'Reset Zoom' },
+        { role: 'zoomIn', label: 'Zoom In' },
+        { role: 'zoomOut', label: 'Zoom Out' },
+        { type: 'separator' },
+        { role: 'togglefullscreen', label: 'Toggle Full Screen' },
+      ],
+    },
+    // Settings menu
+    {
+      label: 'Settings',
+      submenu: [
+        {
+          label: 'General',
+          click: () => {
+            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 0);
+          },
+        },
+        {
+          label: 'Providers',
+          click: () => {
+            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 1);
+          },
+        },
+        {
+          label: 'Aider',
+          click: () => {
+            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 2);
+          },
+        },
+        {
+          label: 'Agent',
+          click: () => {
+            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 3);
+          },
+        },
+        {
+          label: 'About',
+          click: () => {
+            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 4);
+          },
+        },
+      ],
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(menuTemplate);
+  Menu.setApplicationMenu(menu);
+};
 
 const initStore = async (): Promise<Store> => {
   const store = new Store();
@@ -179,6 +249,9 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
 
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.hotovo.aider-desk');
+
+  // Setup custom menu
+  setupCustomMenu();
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window);
