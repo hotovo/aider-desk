@@ -33,7 +33,7 @@ jobs:
 
   release-linux-arm64:
     name: Release Linux arm64 packages
-    runs-on: ubuntu-latest-arm64
+    runs-on: ubuntu-latest
 
     steps:
       - uses: "actions/checkout@v1"
