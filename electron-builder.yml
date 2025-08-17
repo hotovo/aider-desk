@@ -30,7 +30,7 @@ win:
       filter:
         - '**/*'
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  artifactName: ${name}-${version}-${arch}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
@@ -67,7 +67,7 @@ linux:
       filter:
         - '**/*'
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-${arch}.${ext}
 deb:
   compression: 'gz'
 npmRebuild: true

@@ -17,10 +17,14 @@ tsconfig.*.tsbuildinfo
 
 # uv binaries
 resources/linux/uv*
+resources/linux-x64/uv*
+resources/linux-arm64/uv*
 resources/macos/uv*
 resources/macos-x64/uv*
 resources/macos-arm64/uv*
 resources/win/uv*
+resources/win-x64/uv*
+resources/win-arm64/uv*
 
 dev-app-update.yml
 
