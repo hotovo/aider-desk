@@ -42,6 +42,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
     autoCommits: true,
     cachingEnabled: false,
     watchFiles: false,
+    copyPaste: false,
   },
   models: {
     aiderPreferred: [SONNET_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, DEEPSEEK_MODEL],
