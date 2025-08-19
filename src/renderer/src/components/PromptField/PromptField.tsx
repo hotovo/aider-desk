@@ -54,6 +54,7 @@ const COMMANDS = [
   '/commit',
   '/init',
   '/clear-logs',
+  '/paste',
 ];
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
