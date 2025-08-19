@@ -682,7 +682,8 @@
     "profileName": "Name",
     "profileDescription": "Description",
     "profileDescriptionPlaceholder": "Describe this agent profile (purpose, tools, etc.)",
-    "tools": "Tools"
+    "tools": "Tools",
+    "model": "Model"
   },
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",

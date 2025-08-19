@@ -675,7 +675,8 @@
     "profileName": "名称",
     "profileDescription": "描述",
     "profileDescriptionPlaceholder": "描述此代理配置（用途、工具等）",
-    "tools": "工具"
+    "tools": "工具",
+    "model": "模型"
   },
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",

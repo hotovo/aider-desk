@@ -1,0 +1,41 @@
+name: Update llms.txt
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - "src/**"
+
+jobs:
+  pack-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Pack repository with Repomix
+        uses: yamadashy/repomix/.github/actions/repomix@main
+        with:
+          output: llms.txt
+          style: plain
+          include: "src/**/*,resources/connector/**,scripts/**,electron-builder.yml,electron.vite.config.ts,tailwind.config.js,package.json"
+
+      - name: Upload Repomix output
+        uses: actions/upload-artifact@v4
+        with:
+          name: llms.txt
+          path: llms.txt
+          retention-days: 30
+
+      - name: Commit llms.txt changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          if git diff --quiet llms.txt; then
+            echo "No changes to llms.txt, skipping commit"
+          else
+            git add llms.txt
+            git commit -m "docs: updated llms.txt"
+            git push
+          fi

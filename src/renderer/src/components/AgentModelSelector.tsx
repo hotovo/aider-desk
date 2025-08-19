@@ -19,19 +19,19 @@ import { IconButton } from '@/components/common/IconButton';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { useOllamaModels } from '@/hooks/useOllamaModels';
 import { useLmStudioModels } from '@/hooks/useLmStudioModels';
-import { useSettings } from '@/context/SettingsContext';
-import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { showErrorNotification } from '@/utils/notifications';
 
-export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
-  const { t } = useTranslation();
-  const { settings, saveSettings } = useSettings();
-  const { projectSettings } = useProjectSettings();
-  const [settingsDialogVisible, showSettingsDialog, hideSettingsDialog] = useBooleanState(false);
+type Props = {
+  className?: string;
+  settings: SettingsData | null;
+  agentProfile: AgentProfile | undefined;
+  saveSettings: (settings: SettingsData) => void;
+  showSettingsButton?: boolean;
+};
 
-  const activeAgentProfile = useMemo(() => {
-    return settings?.agentProfiles.find((profile) => profile.id === projectSettings?.agentProfileId);
-  }, [projectSettings?.agentProfileId, settings?.agentProfiles]);
+export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ className, settings, agentProfile, saveSettings, showSettingsButton = true }, ref) => {
+  const { t } = useTranslation();
+  const [settingsDialogVisible, showSettingsDialog, hideSettingsDialog] = useBooleanState(false);
 
   const ollamaBaseUrl = useMemo(() => {
     const ollamaProvider = settings?.llmProviders['ollama'];
@@ -47,6 +47,10 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
   const lmStudioModels = useLmStudioModels(lmStudioBaseUrl);
 
   const agentModels = useMemo(() => {
+    if (!settings) {
+      return [];
+    }
+
     const models: string[] = [];
     AVAILABLE_PROVIDERS.forEach((provider) => {
       switch (provider) {
@@ -59,7 +63,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
         case 'openrouter':
         case 'requesty':
         case 'openai-compatible': {
-          const llmProvider = settings?.llmProviders[provider] as OpenRouterProvider | RequestyProvider | OpenAiCompatibleProvider;
+          const llmProvider = settings.llmProviders[provider] as OpenRouterProvider | RequestyProvider | OpenAiCompatibleProvider;
           if (llmProvider) {
             models.push(...llmProvider.models.sort().map((model) => `${provider}/${model}`));
           }
@@ -76,16 +80,16 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
       }
     });
     // Add the currently selected model if it's not in the known list (custom model)
-    if (activeAgentProfile && !models.some((model) => model === `${activeAgentProfile.provider}/${activeAgentProfile.model}`)) {
-      const currentSelection = `${activeAgentProfile.provider}/${activeAgentProfile.model}`;
+    if (agentProfile && !models.some((model) => model === `${agentProfile.provider}/${agentProfile.model}`)) {
+      const currentSelection = `${agentProfile.provider}/${agentProfile.model}`;
       if (!models.includes(currentSelection)) {
         models.unshift(currentSelection); // Add to the beginning for visibility
       }
     }
     return models;
-  }, [activeAgentProfile, ollamaModels, lmStudioModels, settings?.llmProviders]);
+  }, [settings, agentProfile, ollamaModels, lmStudioModels]);
 
-  const selectedModelDisplay = activeAgentProfile ? `${activeAgentProfile.provider}/${activeAgentProfile.model}` : t('common.notSet');
+  const selectedModelDisplay = agentProfile ? `${agentProfile.provider}/${agentProfile.model}` : t('common.notSet');
 
   const onModelSelected = useCallback(
     (selectedModelString: string) => {
@@ -114,8 +118,8 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
         return;
       }
 
-      const updatedProfiles = settings?.agentProfiles.map((profile) => {
-        if (profile.id === activeAgentProfile?.id) {
+      const updatedProfiles = settings.agentProfiles.map((profile) => {
+        if (profile.id === agentProfile?.id) {
           return {
             ...profile,
             provider: providerName,
@@ -139,16 +143,16 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
 
       const updatedSettings: SettingsData = {
         ...settings,
-        agentProfiles: updatedProfiles || [],
+        agentProfiles: updatedProfiles,
         models: {
           ...settings.models,
           agentPreferred: [...new Set([selectedModelString, ...settings.models.agentPreferred])],
         },
         llmProviders: updatedLlmProviders,
       };
-      void saveSettings(updatedSettings);
+      saveSettings(updatedSettings);
     },
-    [settings, saveSettings, t, activeAgentProfile?.id],
+    [settings, saveSettings, t, agentProfile?.id],
   );
 
   const removePreferredModel = useCallback(
@@ -156,6 +160,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
       if (!settings) {
         return;
       }
+
       const updatedSettings = {
         ...settings,
         models: {
@@ -163,12 +168,12 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
           agentPreferred: (settings.models.agentPreferred || []).filter((m: string) => m !== model),
         },
       };
-      void saveSettings(updatedSettings);
+      saveSettings(updatedSettings);
     },
     [settings, saveSettings],
   );
 
-  if (!activeAgentProfile) {
+  if (!agentProfile) {
     return <div className="text-xs text-text-muted-light">{t('modelSelector.noActiveAgentProvider')}</div>;
   }
 
@@ -177,15 +182,18 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
       <div className="relative flex items-center space-x-1">
         <ModelSelector
           ref={ref}
+          className={className}
           models={agentModels}
           selectedModel={selectedModelDisplay}
           onChange={onModelSelected}
           preferredModels={settings?.models.agentPreferred || []}
           removePreferredModel={removePreferredModel}
         />
-        <IconButton icon={<BiCog className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-bg-tertiary rounded-md" />
+        {showSettingsButton && (
+          <IconButton icon={<BiCog className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-bg-tertiary rounded-md" />
+        )}
       </div>
-      {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={1} initialAgentProvider={activeAgentProfile?.provider} />}
+      {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={1} initialAgentProvider={agentProfile?.provider} />}
     </>
   );
 });

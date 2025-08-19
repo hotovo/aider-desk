@@ -1393,7 +1393,12 @@ export class Project {
         throw new Error('No active Agent profile found');
       }
 
-      const agentMessages = await this.agent.runAgent(this, COMPACT_CONVERSATION_AGENT_PROFILE, getCompactConversationPrompt(customInstructions));
+      const compactConversationAgentProfile: AgentProfile = {
+        ...COMPACT_CONVERSATION_AGENT_PROFILE,
+        provider: profile.provider,
+        model: profile.model,
+      };
+      const agentMessages = await this.agent.runAgent(this, compactConversationAgentProfile, getCompactConversationPrompt(customInstructions));
 
       if (agentMessages.length > 0) {
         // Clear existing context and add the summary

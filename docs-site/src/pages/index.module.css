@@ -698,8 +698,10 @@
 
 /* Community Section */
 .communityLinks {
-  text-align: center;
+  display: flex;
+  justify-content: center;
   margin-top: 2rem;
+  gap: 1rem;
 }
 
 .communityLink {

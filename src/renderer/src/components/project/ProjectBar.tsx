@@ -1,5 +1,5 @@
 import { EditFormat, Mode, ModelsData, RawModelInfo, SessionData } from '@common/types';
-import React, { ReactNode, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
@@ -16,6 +16,7 @@ import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector'
 import { SessionsPopup } from '@/components/SessionsPopup';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { useSettings } from '@/context/SettingsContext';
+import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
@@ -58,10 +59,15 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
   ) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
+    const { projectSettings } = useProjectSettings();
     const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
     const mainModelSelectorRef = useRef<ModelSelectorRef>(null);
     const architectModelSelectorRef = useRef<ModelSelectorRef>(null);
     const [sessions, setSessions] = useState<SessionData[]>([]);
+
+    const activeAgentProfile = useMemo(() => {
+      return settings?.agentProfiles.find((profile) => profile.id === projectSettings?.agentProfileId);
+    }, [projectSettings?.agentProfileId, settings?.agentProfiles]);
     const [sessionPopupVisible, showSessionPopup, hideSessionPopup] = useBooleanState(false);
     const sessionPopupRef = useRef<HTMLDivElement>(null);
 
@@ -293,7 +299,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 <div className="flex items-center space-x-1">
                   <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
                   <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
-                  <AgentModelSelector ref={agentModelSelectorRef} />
+                  <AgentModelSelector ref={agentModelSelectorRef} settings={settings} agentProfile={activeAgentProfile} saveSettings={saveSettings} />
                 </div>
                 <div className="h-3 w-px bg-bg-fourth"></div>
               </>

@@ -224,7 +224,7 @@ export const AgentSelector = ({ isActive }: Props) => {
                 tooltipId="agent-selector-tooltip"
               />
             </div>
-            <div className="max-h-[250px] overflow-y-auto">
+            <div className="max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-secondary-light scrollbar-track-bg-primary-light">
               {agentProfiles.map((profile) => (
                 <div
                   key={profile.id}
