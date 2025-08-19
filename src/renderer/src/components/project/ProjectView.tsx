@@ -17,7 +17,7 @@ import {
 } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { IpcRendererEvent } from 'electron';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
@@ -116,23 +116,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const todoListVisible = useMemo(() => {
     return projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
   }, [projectSettings, settings]);
-
-  useEffect(() => {
-    if (!copyPaste) {
-      setIsListening(false);
-    }
-    if (copyPaste && !isListening) {
-      runCommand('copy-context');
-      const infoMessage: LogMessage = {
-        id: uuidv4(),
-        level: 'info',
-        type: 'log',
-        content: t('messages.copiedCodeContextToClipboard'),
-      };
-      setMessages((prevMessages) => [...prevMessages, infoMessage]);
-      setIsListening(true);
-    }
-  }, [copyPaste]);
 
   useEffect(() => {
     const handleProjectStarted = () => {
@@ -606,9 +589,29 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages((prevMessages) => prevMessages.filter((message) => !isLogMessage(message)));
   };
 
-  const runCommand = (command: string) => {
-    window.api.runCommand(project.baseDir, command);
-  };
+  const runCommand = useCallback(
+    (command: string) => {
+      window.api.runCommand(project.baseDir, command);
+    },
+    [project.baseDir],
+  );
+
+  useEffect(() => {
+    if (!copyPaste) {
+      setIsListening(false);
+    }
+    if (copyPaste && !isListening) {
+      runCommand('copy-context');
+      const infoMessage: LogMessage = {
+        id: uuidv4(),
+        level: 'info',
+        type: 'log',
+        content: t('messages.copiedCodeContextToClipboard'),
+      };
+      setMessages((prevMessages) => [...prevMessages, infoMessage]);
+      setIsListening(true);
+    }
+  }, [copyPaste, isListening, runCommand, t]);
 
   const runTests = (testCmd?: string) => {
     runCommand(`test ${testCmd || ''}`);

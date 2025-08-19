@@ -171,7 +171,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
                 onKeyDown={onModelSelectorSearchInputKeyDown}
               />
               {onCopyPaste && copyPaste !== undefined && (
-                <Checkbox label="Copy/Paste" checked={copyPaste} onChange={(checked) => onCopyPaste(checked)}></Checkbox>
+                <Checkbox label={t('modelSelector.copyPaste')} checked={copyPaste} onChange={(checked) => onCopyPaste(checked)}></Checkbox>
               )}
               {showCustomModelHint && (
                 <div className="flex items-center text-text-muted-light" title="Press Enter to use this custom model name">

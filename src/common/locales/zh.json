@@ -390,7 +390,7 @@
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
     "group": "分组",
-    "copiedCodeContextToClipboard": ""
+    "copiedCodeContextToClipboard": "已将代码上下文复制到剪贴板。"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
@@ -461,7 +461,8 @@
     "thinkingTokens": "思考令牌",
     "loadingModel": "加载模型中...",
     "searchPlaceholder": "搜索模型或输入自定义名称...",
-    "removePreferred": "从首选模型中移除"
+    "removePreferred": "从首选模型中移除",
+    "copyPaste": "复制/粘贴"
   },
   "modelInfo": {
     "noInfo": "无模型信息可用。",
