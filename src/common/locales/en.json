@@ -305,7 +305,6 @@
       "autoCommits": "Auto commit of LLM changes",
       "cachingEnabled": "Enable prompt caching",
       "watchFiles": "Watch files for changes",
-      "copyPaste": "Enable copy paste with web chat",
       "environmentVariables": "Environment Variables",
       "envVarsPlaceholder": "#################\n# LLM parameters:\n#\n# Include xxx_API_KEY parameters and other params needed for your LLMs.\n# See https://aider.chat/docs/llms.html for details.\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
       "optionsDocumentation": "Check the documentation for available options at",

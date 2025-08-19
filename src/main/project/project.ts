@@ -349,10 +349,6 @@ export class Project {
       args.push(settings.aider.watchFiles ? '--watch-files' : '--no-watch-files');
     }
 
-    if (!optionsArgsSet.has('--copy-paste') && !optionsArgsSet.has('--no-copy-paste')) {
-      args.push(settings.aider.copyPaste ? '--copy-paste' : '--no-copy-paste');
-    }
-
     if (!optionsArgsSet.has('--cache-prompts') && !optionsArgsSet.has('--no-cache-prompts')) {
       args.push(settings.aider.cachingEnabled ? '--cache-prompts' : '--no-cache-prompts');
     }

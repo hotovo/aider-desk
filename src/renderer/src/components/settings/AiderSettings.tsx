@@ -63,19 +63,6 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               })
             }
           />
-          <Checkbox
-            label={t('settings.aider.copyPaste')}
-            checked={settings.aider.copyPaste}
-            onChange={(checked) =>
-              setSettings({
-                ...settings,
-                aider: {
-                  ...settings.aider,
-                  copyPaste: checked,
-                },
-              })
-            }
-          />
           <Input
             className="mt-3"
             type="text"
