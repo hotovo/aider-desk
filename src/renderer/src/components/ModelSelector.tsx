@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdKeyboardArrowUp, MdKeyboardReturn } from 'react-icons/md';
 import { useDebounce } from 'react-use';
+import { twMerge } from 'tailwind-merge';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
@@ -12,6 +13,7 @@ export type ModelSelectorRef = {
 };
 
 type Props = {
+  className?: string;
   models: string[];
   selectedModel?: string;
   onChange: (model: string) => void;
@@ -22,7 +24,7 @@ type Props = {
 };
 
 export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
-  ({ models, selectedModel, onChange, preferredModels, removePreferredModel, onCopyPaste, copyPaste }, ref) => {
+  ({ className, models, selectedModel, onChange, preferredModels, removePreferredModel, onCopyPaste, copyPaste }, ref) => {
     const { t } = useTranslation();
     const [modelSearchTerm, setModelSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -147,13 +149,15 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
     };
 
     return (
-      <div className="relative" ref={modelSelectorRef}>
+      <div className="relative w-full" ref={modelSelectorRef}>
         <button
           onClick={selectedModel ? toggleVisible : undefined}
           disabled={!selectedModel}
-          className={`flex items-center focus:outline-none transition-colors duration-200 text-xs ${
-            selectedModel ? 'hover:text-text-tertiary' : 'text-text-muted cursor-not-allowed'
-          }`}
+          className={twMerge(
+            'flex items-center focus:outline-none transition-colors duration-200 text-xs',
+            selectedModel ? 'hover:text-text-tertiary' : 'text-text-muted cursor-not-allowed',
+            className,
+          )}
         >
           <span>{selectedModel || t('common.loading')}</span>
           <MdKeyboardArrowUp className={`w-3 h-3 ml-1 transform rotate-180 ${!selectedModel ? 'text-text-muted' : ''}`} />

@@ -39,6 +39,7 @@ import { GenericToolGroupItem } from './GenericToolGroupItem';
 import { AgentProfileItem } from './AgentProfileItem';
 import { AgentRules } from './AgentRules';
 
+import { AgentModelSelector } from '@/components/AgentModelSelector';
 import { Button } from '@/components/common/Button';
 import { Slider } from '@/components/common/Slider';
 import { InfoIcon } from '@/components/common/InfoIcon';
@@ -429,22 +430,36 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
       {/* Center content area for profile settings */}
       <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary scrollbar-thumb-rounded-full">
         {selectedProfile ? (
-          <div className="space-y-2">
+          <div className="space-y-1">
             <Input
               ref={profileNameInputRef}
               label={t('agentProfiles.profileName')}
               value={selectedProfile.name}
               onChange={(e) => handleProfileSettingChange('name', e.target.value)}
-              className="mb-2"
+              className="mb-1"
             />
             <TextArea
               label={t('agentProfiles.profileDescription')}
               id="agent-profile-description"
-              className="mb-2 min-h-[100px]"
+              className="mb-1 min-h-[100px]"
               value={selectedProfile.description || ''}
               onChange={(e) => handleProfileSettingChange('description', e.target.value)}
               placeholder={t('agentProfiles.profileDescriptionPlaceholder')}
             />
+            {selectedProfile && (
+              <div className="!mb-4">
+                <label className="block text-sm font-medium text-text-primary mb-1">{t('agentProfiles.model')}</label>
+                <div className="w-full p-2 bg-bg-secondary-light border-2 border-border-default rounded focus-within:outline-none focus-within:border-border-light">
+                  <AgentModelSelector
+                    className="w-full justify-between"
+                    settings={settings}
+                    agentProfile={selectedProfile}
+                    saveSettings={setSettings}
+                    showSettingsButton={false}
+                  />
+                </div>
+              </div>
+            )}
 
             {renderSectionAccordion(
               t('settings.agent.runSettings'),

@@ -1,6 +1,10 @@
 # Changelog
 
 ## [UNRELEASED]
+
+- added model selector to Agent profile in Settings
+- correctly using the selected model when compacting the conversation
+- updated scrollbar style in agent selector when there is more profiles than fit
 - added copy code context to clipboard function for using web UI
 
 ## [0.27.0]
