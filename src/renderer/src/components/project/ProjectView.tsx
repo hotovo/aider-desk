@@ -272,6 +272,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
 
       setProcessing(false);
+      setIsListening(false);
     };
 
     const handleCommandOutput = (_: IpcRendererEvent, { command, output }: CommandOutputData) => {
@@ -600,6 +601,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     if (!copyPaste) {
       setIsListening(false);
     }
+  }, [copyPaste, setIsListening]);
+
+  useEffect(() => {
     if (copyPaste && !isListening) {
       runCommand('copy-context');
       const infoMessage: LogMessage = {
@@ -611,7 +615,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       setMessages((prevMessages) => [...prevMessages, infoMessage]);
       setIsListening(true);
     }
-  }, [copyPaste, isListening, runCommand, t]);
+  }, [copyPaste, setIsListening, isListening, runCommand, t]);
 
   const runTests = (testCmd?: string) => {
     runCommand(`test ${testCmd || ''}`);
@@ -662,6 +666,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const handleInterruptResponse = () => {
+    setCopyPaste(false);
+    setIsListening(false);
     window.api.interruptResponse(project.baseDir);
     const interruptMessage: LogMessage = {
       id: uuidv4(),
@@ -952,7 +958,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               terminalVisible={terminalVisible}
               scrollToBottom={messagesRef.current?.scrollToBottom}
               isListening={copyPaste && isListening}
-              setIsListening={setIsListening}
             />
           </div>
         </div>
