@@ -85,6 +85,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
   const [terminalVisible, setTerminalVisible] = useState(false);
+  const [copyPaste, setCopyPaste] = useState(false);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -836,6 +837,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           onRenderMarkdownChanged={handleRenderMarkdownChanged}
           onExportSessionToImage={exportMessagesToImage}
           runCommand={runCommand}
+          onCopyPaste={setCopyPaste}
+          copyPaste={copyPaste}
         />
         <div className="flex-grow overflow-y-hidden relative flex flex-col">
           {renderSearchInput()}

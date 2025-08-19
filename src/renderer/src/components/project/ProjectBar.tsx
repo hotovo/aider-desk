@@ -35,10 +35,27 @@ type Props = {
   onRenderMarkdownChanged: (value: boolean) => void;
   onExportSessionToImage: () => void;
   runCommand: (command: string) => void;
+  onCopyPaste: (checked: boolean) => void;
+  copyPaste: boolean;
 };
 
 export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
-  ({ baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelsChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand }, ref) => {
+  (
+    {
+      baseDir,
+      allModels = [],
+      modelsData,
+      mode,
+      renderMarkdown,
+      onModelsChange,
+      onRenderMarkdownChanged,
+      onExportSessionToImage,
+      runCommand,
+      onCopyPaste,
+      copyPaste,
+    },
+    ref,
+  ) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
     const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
@@ -318,6 +335,8 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 onChange={updateMainModel}
                 preferredModels={settings?.models.aiderPreferred || []}
                 removePreferredModel={handleRemovePreferredModel}
+                onCopyPaste={onCopyPaste}
+                copyPaste={copyPaste}
               />
             </div>
             <div className="h-3 w-px bg-bg-fourth"></div>
