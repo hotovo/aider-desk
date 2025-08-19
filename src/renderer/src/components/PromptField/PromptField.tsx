@@ -109,6 +109,7 @@ type Props = {
   toggleTerminal?: () => void;
   terminalVisible?: boolean;
   scrollToBottom?: () => void;
+  isListening: boolean;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -141,6 +142,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       toggleTerminal,
       terminalVisible = false,
       scrollToBottom,
+      isListening,
     }: Props,
     ref,
   ) => {
@@ -503,7 +505,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       setPendingCommand(null);
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = useCallback(() => {
       scrollToBottom?.();
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
@@ -533,7 +535,15 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         }
         setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
       }
-    };
+    }, [baseDir, customCommands, handleConfirmCommand, mode, pendingCommand, runPrompt, scrollToBottom, t, text]);
+
+    useEffect(() => {
+      if (isListening) {
+        if (text.trim() !== '') {
+          handleSubmit();
+        }
+      }
+    }, [handleSubmit, isListening, text]);
 
     const getAutocompleteDetailLabel = (item: string): [string | null, boolean] => {
       if (item.startsWith('/')) {

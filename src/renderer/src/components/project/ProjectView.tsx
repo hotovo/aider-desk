@@ -118,6 +118,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   }, [projectSettings, settings]);
 
   useEffect(() => {
+    if (!copyPaste) {
+      setIsListening(false);
+    }
     if (copyPaste && !isListening) {
       runCommand('copy-context');
       const infoMessage: LogMessage = {
@@ -945,6 +948,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               toggleTerminal={toggleTerminal}
               terminalVisible={terminalVisible}
               scrollToBottom={messagesRef.current?.scrollToBottom}
+              isListening={copyPaste && isListening}
             />
           </div>
         </div>
