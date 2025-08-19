@@ -110,6 +110,7 @@ type Props = {
   terminalVisible?: boolean;
   scrollToBottom?: () => void;
   isListening: boolean;
+  setIsListening: (isListening: boolean) => void;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -143,6 +144,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       terminalVisible = false,
       scrollToBottom,
       isListening,
+      setIsListening,
     }: Props,
     ref,
   ) => {
@@ -540,10 +542,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     useEffect(() => {
       if (isListening) {
         if (text.trim() !== '') {
+          setIsListening(false);
           handleSubmit();
         }
       }
-    }, [handleSubmit, isListening, text]);
+    }, [handleSubmit, isListening, setIsListening, text]);
 
     const getAutocompleteDetailLabel = (item: string): [string | null, boolean] => {
       if (item.startsWith('/')) {

@@ -952,6 +952,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               terminalVisible={terminalVisible}
               scrollToBottom={messagesRef.current?.scrollToBottom}
               isListening={copyPaste && isListening}
+              setIsListening={setIsListening}
             />
           </div>
         </div>
