@@ -86,6 +86,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
   const [terminalVisible, setTerminalVisible] = useState(false);
   const [copyPaste, setCopyPaste] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -115,6 +116,20 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const todoListVisible = useMemo(() => {
     return projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
   }, [projectSettings, settings]);
+
+  useEffect(() => {
+    if (copyPaste && !isListening) {
+      runCommand('copy-context');
+      const infoMessage: LogMessage = {
+        id: uuidv4(),
+        level: 'info',
+        type: 'log',
+        content: t('messages.copiedCodeContextToClipboard'),
+      };
+      setMessages((prevMessages) => [...prevMessages, infoMessage]);
+      setIsListening(true);
+    }
+  }, [copyPaste]);
 
   useEffect(() => {
     const handleProjectStarted = () => {

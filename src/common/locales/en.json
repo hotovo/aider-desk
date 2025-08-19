@@ -414,7 +414,8 @@
     "edit": "Edit",
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
-    "group": "Group"
+    "group": "Group",
+    "copiedCodeContextToClipboard": "Copied code context to clipboard."
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",

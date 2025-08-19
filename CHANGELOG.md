@@ -1,5 +1,8 @@
 # Changelog
 
+## [UNRELEASED]
+- added copy code context to clipboard function for using web UI
+
 ## [0.27.0]
 
 - parsing <think> tags as reasoning part of the response
