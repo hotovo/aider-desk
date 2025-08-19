@@ -381,6 +381,7 @@ async def run_editor_coder_stream(architect_coder, connector, prompt_context):
     total_cost=architect_coder.total_cost,
     cache_prompts=False,
     num_cache_warming_pings=0,
+    copy_paste=False,
   )
   editor_coder.cur_messages = []
   editor_coder.done_messages = []
