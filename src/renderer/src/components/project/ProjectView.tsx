@@ -86,7 +86,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
   const [terminalVisible, setTerminalVisible] = useState(false);
   const [copyPaste, setCopyPaste] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -272,7 +272,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
 
       setProcessing(false);
-      setIsListening(false);
+      setIsWaiting(false);
     };
 
     const handleCommandOutput = (_: IpcRendererEvent, { command, output }: CommandOutputData) => {
@@ -599,9 +599,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   useEffect(() => {
     if (!copyPaste) {
-      setIsListening(false);
+      setIsWaiting(false);
     }
-  }, [copyPaste, setIsListening]);
+  }, [copyPaste, setIsWaiting]);
 
   const runTests = (testCmd?: string) => {
     runCommand(`test ${testCmd || ''}`);
@@ -652,7 +652,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const handleInterruptResponse = () => {
-    setIsListening(false);
+    setIsWaiting(false);
     window.api.interruptResponse(project.baseDir);
     const interruptMessage: LogMessage = {
       id: uuidv4(),
@@ -696,7 +696,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     } else {
       window.api.runPrompt(project.baseDir, prompt, projectSettings.currentMode);
     }
-    if (copyPaste && !isListening) {
+    if (copyPaste && !isWaiting) {
       runCommand('copy-context');
       const infoMessage: LogMessage = {
         id: uuidv4(),
@@ -705,7 +705,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
         content: t('messages.copiedCodeContextToClipboard'),
       };
       setMessages((prevMessages) => [...prevMessages, infoMessage]);
-      setIsListening(true);
+      setIsWaiting(true);
     }
   };
 
@@ -862,6 +862,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           runCommand={runCommand}
           onCopyPaste={setCopyPaste}
           copyPaste={copyPaste}
+          setIsWaiting={setIsWaiting}
+          isWaiting={isWaiting}
         />
         <div className="flex-grow overflow-y-hidden relative flex flex-col">
           {renderSearchInput()}
@@ -953,7 +955,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               toggleTerminal={toggleTerminal}
               terminalVisible={terminalVisible}
               scrollToBottom={messagesRef.current?.scrollToBottom}
-              isListening={copyPaste && isListening}
+              isWaiting={copyPaste && isWaiting}
             />
           </div>
         </div>

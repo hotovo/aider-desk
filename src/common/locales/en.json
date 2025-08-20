@@ -689,7 +689,8 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
-    "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected."
+    "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
+    "cancelWaiting": "Cancel waiting"
   },
   "reasoningEffort": {
     "label": "Reasoning",

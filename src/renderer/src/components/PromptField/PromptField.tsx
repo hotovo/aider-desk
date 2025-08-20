@@ -109,7 +109,7 @@ type Props = {
   toggleTerminal?: () => void;
   terminalVisible?: boolean;
   scrollToBottom?: () => void;
-  isListening: boolean;
+  isWaiting: boolean;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -142,7 +142,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       toggleTerminal,
       terminalVisible = false,
       scrollToBottom,
-      isListening,
+      isWaiting,
     }: Props,
     ref,
   ) => {
@@ -538,12 +538,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     }, [baseDir, customCommands, handleConfirmCommand, mode, pendingCommand, runPrompt, scrollToBottom, t, text]);
 
     useEffect(() => {
-      if (isListening && !processing) {
+      if (isWaiting && !processing) {
         if (text.trim() !== '') {
           handleSubmit();
         }
       }
-    }, [handleSubmit, isListening, processing, text]);
+    }, [handleSubmit, isWaiting, processing, text]);
 
     const getAutocompleteDetailLabel = (item: string): [string | null, boolean] => {
       if (item.startsWith('/')) {
@@ -589,7 +589,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 anchor: newText.length,
               },
             });
-          } else if ((!processing || question) && !isListening) {
+          } else if ((!processing || question) && !isWaiting) {
             handleSubmit();
           }
           return true;
@@ -628,7 +628,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         preventDefault: true,
         run: (view) => {
           // Prevent tab navigation when in listening mode
-          if (isListening) {
+          if (isWaiting) {
             return true;
           }
 
@@ -793,7 +793,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               placeholder={
                 question
                   ? t('promptField.questionPlaceholder')
-                  : isListening
+                  : isWaiting
                     ? t('promptField.pasteResponsePlaceholder')
                     : t(`promptField.placeholders.${placeholderIndex}`)
               }
@@ -832,7 +832,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                       }
                     }
 
-                    if (isListening) {
+                    if (isWaiting) {
                       setTimeout(() => {
                         handleSubmit();
                       }, 100);
@@ -865,7 +865,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                   ],
                 }),
                 // Prevent typing when in listening mode
-                isListening
+                isWaiting
                   ? EditorView.domEventHandlers({
                       beforeinput(event) {
                         if (event.inputType !== 'insertFromPaste') {

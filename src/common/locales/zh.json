@@ -682,7 +682,8 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
-    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。"
+    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
+    "cancelWaiting": "取消等待"
   },
   "reasoningEffort": {
     "label": "推理",

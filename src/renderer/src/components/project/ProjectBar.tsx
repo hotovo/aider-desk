@@ -5,7 +5,7 @@ import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
 import { MdHistory } from 'react-icons/md';
-import { IoLogoMarkdown } from 'react-icons/io5';
+import { IoLogoMarkdown, IoStopCircleOutline } from 'react-icons/io5';
 import { RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 
@@ -38,6 +38,8 @@ type Props = {
   runCommand: (command: string) => void;
   onCopyPaste: (checked: boolean) => void;
   copyPaste: boolean;
+  setIsWaiting: (listen: boolean) => void;
+  isWaiting: boolean;
 };
 
 export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
@@ -54,6 +56,8 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       runCommand,
       onCopyPaste,
       copyPaste,
+      setIsWaiting,
+      isWaiting,
     },
     ref,
   ) => {
@@ -389,6 +393,15 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
             )}
           </div>
           <div className="flex items-center space-x-1 mr-2">
+            {copyPaste && (
+              <IconButton
+                icon={<IoStopCircleOutline className={`w-4 h-4 ${isWaiting ? 'text-text-secondary' : 'text-text-muted-dark'}`} />}
+                onClick={() => setIsWaiting(false)}
+                tooltip={t('projectBar.cancelWaiting')}
+                className="p-1 hover:bg-bg-tertiary rounded-md"
+                disabled={!isWaiting}
+              />
+            )}
             <IconButton
               icon={<IoLogoMarkdown className={`w-4 h-4 ${renderMarkdown ? 'text-text-secondary' : 'text-text-muted-dark'}`} />}
               onClick={() => onRenderMarkdownChanged(!renderMarkdown)}
