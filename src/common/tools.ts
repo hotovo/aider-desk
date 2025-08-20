@@ -18,7 +18,9 @@ export const POWER_TOOL_GLOB = 'glob';
 export const POWER_TOOL_GREP = 'grep';
 export const POWER_TOOL_SEMANTIC_SEARCH = 'semantic_search';
 export const POWER_TOOL_BASH = 'bash';
-export const POWER_TOOL_AGENT = 'agent';
+
+export const SUBAGENTS_TOOL_GROUP_NAME = 'subagents';
+export const SUBAGENTS_TOOL_RUN_TASK = 'run_task';
 
 export const AIDER_TOOL_DESCRIPTIONS = {
   [AIDER_TOOL_GET_CONTEXT_FILES]: 'Get all files currently in the context for Aider to read or edit',
@@ -68,12 +70,7 @@ const myFunction = () => {
   [POWER_TOOL_SEMANTIC_SEARCH]:
     'Search code in the repository using Elasticsearch-like query syntax. Use this tool first for any code-related questions to find out relationships between files and what files need to be changed.',
   [POWER_TOOL_BASH]: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',
-  [POWER_TOOL_AGENT]: `Delegates a specific task to a sub-agent with focused context. When you are searching for a keyword or file and are not confident that you will find the right match on the first try, use the this tool to perform the search for you. Use this tool for isolated tasks that can be completed with limited context, such as analyzing specific files, implementing focused features, or performing targeted refactoring. The sub-agent has reduced capabilities and context to minimize operational costs while maintaining effectiveness for well-defined tasks. When you have all the information to perform the task, use other tools directly and do not use this tool.
-
-1. When the agent is done, it will return a single message back to you.
-2. Each agent invocation is stateless. You will not be able to send additional messages to the agent, nor will the agent be able to communicate with you outside of its final report. Therefore, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
-
-Agent tool has access to \`${POWER_TOOL_SEMANTIC_SEARCH}\`, \`${POWER_TOOL_FILE_READ}\`, \`${POWER_TOOL_FILE_WRITE}\`, \`${POWER_TOOL_FILE_EDIT}\`, \`${POWER_TOOL_GLOB}\`, \`${POWER_TOOL_GREP}\` tools. Use it to offload complex tasks such as analysis and implementation that can return single message as a result.`,
+  [SUBAGENTS_TOOL_RUN_TASK]: 'Description is generated dynamically based on enabled agent profiles with subagent functionality.',
 } as const;
 
 export const TODO_TOOL_GROUP_NAME = 'todo';

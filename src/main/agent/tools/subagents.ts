@@ -1,0 +1,150 @@
+import { tool, type ToolSet } from 'ai';
+import { z } from 'zod';
+import { AgentProfile, InvocationMode, PromptContext, SettingsData } from '@common/types';
+import { v4 as uuidv4 } from 'uuid';
+import { SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { DEFAULT_AGENT_PROFILE, isSubagentEnabled } from '@common/agent';
+
+import { Project } from '@/project';
+import logger from '@/logger';
+
+export const createSubagentsToolset = (settings: SettingsData, project: Project, profile: AgentProfile, abortSignal?: AbortSignal): ToolSet => {
+  const enabledSubagents = settings.agentProfiles.filter((agentProfile) => isSubagentEnabled(agentProfile, profile.id));
+
+  const generateSubagentsRunTaskDescription = (): string => {
+    const automaticSubagents = enabledSubagents.filter((agentProfile) => agentProfile.subagent.invocationMode === InvocationMode.Automatic);
+    const onDemandSubagents = enabledSubagents.filter((agentProfile) => agentProfile.subagent.invocationMode === InvocationMode.OnDemand);
+
+    let description = 'Delegates a specific task to a subagent. You have access to the following subagents:\n';
+
+    if (automaticSubagents.length > 0) {
+      description += '\nAutomatic subagents, that should be used proactively based on their description or when asked by user to use it:\n';
+      for (const subagent of automaticSubagents) {
+        description += `- id: ${subagent.id}, name: ${subagent.name}, description: ${subagent.subagent.description}\n`;
+      }
+    }
+
+    if (onDemandSubagents.length > 0) {
+      description += '\nThese are on-demand subagents - they can ONLY be used when requested by user, YOU MUST NOT use them automatically.:\n';
+      for (const subagent of onDemandSubagents) {
+        description += `- id: ${subagent.id}, name: ${subagent.name}\n`;
+      }
+    }
+
+    description +=
+      '\nWhen user asks to use subagent by name, find the most fitting one by the name. The subagent is responsible for its own deep context gathering if needed, you are expected to only provide `prompt`.';
+
+    return description;
+  };
+
+  const runTaskTool = tool({
+    description: generateSubagentsRunTaskDescription(),
+    parameters: z.object({
+      subagentId: z.string().describe('The ID of the specific subagent to use.'),
+      prompt: z
+        .string()
+        .describe(
+          'A clear and concise natural language prompt describing the task the subagent needs to perform. This prompt should provide all necessary information for the subagent to complete its task independently within its limited context.',
+        ),
+    }),
+    execute: async ({ prompt, subagentId }, { toolCallId }) => {
+      let targetSubagent: AgentProfile | undefined;
+
+      if (subagentId) {
+        targetSubagent = enabledSubagents.find((agentProfile) => agentProfile.id === subagentId);
+        if (!targetSubagent) {
+          return `Error: Subagent with ID '${subagentId}' not found or not enabled.`;
+        }
+      } else {
+        // Auto-select the first enabled subagent (could be enhanced with smarter selection logic)
+        targetSubagent = enabledSubagents[0];
+        if (!targetSubagent) {
+          return 'Error: No enabled subagents available.';
+        }
+      }
+
+      // Create a subagent profile based on the selected subagent
+      const subagentProfile: AgentProfile = {
+        ...DEFAULT_AGENT_PROFILE,
+        ...targetSubagent,
+        useTodoTools: false, // Disable todo tools for simplicity,
+        useSubagents: false, // Disable nested subagents
+        isSubagent: true,
+      };
+
+      // Create promptContext with working group
+      const promptContext: PromptContext = {
+        id: uuidv4(),
+        group: {
+          id: uuidv4(),
+          color: targetSubagent.subagent.color,
+          name: {
+            key: 'toolMessage.subagents.groupRunning',
+            params: {
+              name: targetSubagent.name,
+            },
+          },
+        },
+      };
+
+      try {
+        project.addToolMessage(
+          toolCallId,
+          SUBAGENTS_TOOL_GROUP_NAME,
+          SUBAGENTS_TOOL_RUN_TASK,
+          {
+            prompt,
+            subagentId,
+          },
+          undefined,
+          undefined,
+          promptContext,
+        );
+
+        // Run the subagent with the focused context
+        const messages = await project.runSubAgent(subagentProfile, prompt, [], targetSubagent.subagent.systemPrompt, abortSignal, promptContext);
+
+        // Update promptContext to finished state with success
+        promptContext.group = {
+          ...promptContext.group!,
+          name: {
+            key: 'toolMessage.subagents.groupCompleted',
+            params: {
+              name: targetSubagent.name,
+            },
+          },
+          finished: true,
+        };
+
+        return {
+          messages,
+          promptContext,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('Error running subagent:', error);
+
+        // Update promptContext to finished state with error
+        promptContext.group = {
+          ...promptContext.group!,
+          name: 'toolMessage.error',
+          color: 'var(--color-error-muted)',
+          finished: true,
+        };
+
+        return {
+          error: `Error running subagent '${targetSubagent.name}': ${errorMessage}`,
+          promptContext,
+        };
+      }
+    },
+  });
+
+  const toolSet: ToolSet = {};
+
+  if (enabledSubagents.length > 0) {
+    toolSet[`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`] = runTaskTool;
+  }
+
+  return toolSet;
+};

@@ -14,6 +14,11 @@ import {
 import type { AssistantContent, ToolContent, UserContent } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
+export type LocalizedString = {
+  key: string;
+  params?: Record<string, unknown>;
+};
+
 export type Mode = 'code' | 'ask' | 'architect' | 'context' | 'agent';
 
 export type EditFormat = 'diff' | 'diff-fenced' | 'whole' | 'udiff' | 'udiff-simple' | 'patch';
@@ -241,10 +246,22 @@ export interface PromptBehavior {
   useVimBindings: boolean;
 }
 
+export enum InvocationMode {
+  OnDemand = 'on-demand',
+  Automatic = 'automatic',
+}
+
+export interface SubagentConfig {
+  enabled: boolean;
+  systemPrompt: string;
+  invocationMode: InvocationMode;
+  color: string;
+  description: string;
+}
+
 export interface AgentProfile {
   id: string;
   name: string;
-  description: string;
   provider: LlmProviderName;
   model: string;
   maxIterations: number;
@@ -258,8 +275,11 @@ export interface AgentProfile {
   usePowerTools: boolean;
   useAiderTools: boolean;
   useTodoTools: boolean;
+  useSubagents: boolean;
   customInstructions: string;
   autoApprove: boolean;
+  subagent: SubagentConfig;
+  isSubagent?: boolean; // flag to indicate if this profile is being used as a subagent
 }
 
 export interface EnvironmentVariable {
@@ -348,7 +368,7 @@ export interface SettingsData {
 
 export interface Group {
   id: string;
-  name?: string;
+  name?: string | LocalizedString;
   color?: string;
   finished?: boolean;
 }

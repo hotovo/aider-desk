@@ -3,10 +3,11 @@ import {
   HELPERS_TOOL_GROUP_NAME,
   HELPERS_TOOL_INVALID_TOOL_ARGUMENTS,
   HELPERS_TOOL_NO_SUCH_TOOL,
-  POWER_TOOL_AGENT,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_WRITE,
   POWER_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
 } from '@common/tools';
 
 import { CommandOutputMessageBlock } from './CommandOutputMessageBlock';
@@ -31,7 +32,7 @@ import {
 import { ToolMessageBlock } from '@/components/message/ToolMessageBlock';
 import { FileWriteToolMessage } from '@/components/message/FileWriteToolMessage';
 import { EditFileToolMessage } from '@/components/message/EditFileToolMessage';
-import { AgentToolMessage } from '@/components/message/AgentToolMessage';
+import { SubagentToolMessage } from '@/components/message/SubagentToolMessage';
 
 type Props = {
   baseDir: string;
@@ -82,8 +83,10 @@ export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remov
       if (toolMessage.toolName === POWER_TOOL_FILE_EDIT) {
         return <EditFileToolMessage message={toolMessage} onRemove={remove} />;
       }
-      if (toolMessage.toolName === POWER_TOOL_AGENT) {
-        return <AgentToolMessage message={toolMessage} onRemove={remove} />;
+    }
+    if (toolMessage.serverName === SUBAGENTS_TOOL_GROUP_NAME) {
+      if (toolMessage.toolName === SUBAGENTS_TOOL_RUN_TASK) {
+        return <SubagentToolMessage message={toolMessage} onRemove={remove} />;
       }
     }
 

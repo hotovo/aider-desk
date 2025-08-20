@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import clsx from 'clsx';
 
@@ -12,6 +12,7 @@ type Props = {
   isOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   noMaxHeight?: boolean;
+  scrollToVisibleWhenExpanded?: boolean;
 };
 
 export const Accordion = ({
@@ -24,15 +25,24 @@ export const Accordion = ({
   isOpen: controlledIsOpen,
   onOpenChange,
   noMaxHeight = false,
+  scrollToVisibleWhenExpanded = false,
 }: Props) => {
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(defaultOpen);
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : uncontrolledIsOpen;
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const handleOpenChange = () => {
     if (onOpenChange) {
       onOpenChange(!isOpen);
     } else {
       setUncontrolledIsOpen(!uncontrolledIsOpen);
+    }
+
+    // Scroll to visible when expanding
+    if (!isOpen && scrollToVisibleWhenExpanded && contentRef.current) {
+      setTimeout(() => {
+        contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
     }
   };
 
@@ -51,6 +61,7 @@ export const Accordion = ({
         {chevronPosition === 'right' && chevron}
       </button>
       <div
+        ref={contentRef}
         className={clsx(
           'overflow-hidden transition-all duration-200',
           isOpen

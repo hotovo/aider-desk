@@ -297,7 +297,27 @@
       "genericTools": "Tools",
       "noGenericToolsConfigured": "No tools configured.",
       "todoTools": "Todo tools",
-      "includeTodoToolsTooltip": "Allows the agent to manage a list of todo items, including setting, getting, updating, and clearing them."
+      "includeTodoToolsTooltip": "Allows the agent to manage a list of todo items, including setting, getting, updating, and clearing them.",
+      "subagent": {
+        "title": "Subagent",
+        "enableAsSubagent": "Enable as Subagent",
+        "enableAsSubagentInformation": "When enabled, this profile is available as a subagent to other agents.",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe this subagent's purpose, capabilities, and specialization and when this subagent should be invoked",
+        "systemPrompt": "System Prompt",
+        "systemPromptPlaceholder": "Your subagent's system prompt goes here. This can be multiple paragraphs and should clearly define the subagent's role, capabilities, and approach to solving problems.",
+        "invocationMode": "Invocation",
+        "invocationModeOnDemand": "On demand",
+        "invocationModeOnDemandInformation": "Subagent is only used when explicitly requested by the user.",
+        "invocationModeAutomatic": "Automatic",
+        "invocationModeAutomaticInformation": "Subagent can be automatically invoked when appropriate by the agent.",
+        "statusDisabled": "Disabled",
+        "statusOnDemand": "On-demand",
+        "statusAutomatic": "Automatic",
+        "descriptionRequiredForAutomatic": "Description needs to be set in order to use this subagent automatically, otherwise the subagent can only be used when explicitly requested by the user.",
+        "on-demand": "Used as subagent on user demand",
+        "automatic": "Used as subagent automatically"
+      }
     },
     "aider": {
       "options": "Options",
@@ -617,12 +637,14 @@
       "glob": "Find files matching pattern: {{pattern}}",
       "grep": "Search files matching '{{filePattern}}' for '{{searchTerm}}'",
       "bash": "Run command",
-      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'",
-      "agent": {
-        "running": "Sub-agent is working...",
-        "completed": "Sub-agent finished the task.",
-        "prompt": "Prompt"
-      }
+      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'"
+    },
+    "subagents": {
+      "groupRunning": "{{name}}: Subagent is working...",
+      "groupCompleted": "{{name}}: Subagent finished the task.",
+      "running": "Subagent is working...",
+      "completed": "Subagent finished the task.",
+      "prompt": "Prompt"
     },
     "errors": {
       "noSuchTool": "Attempted to use unknown tool: {{toolName}}",

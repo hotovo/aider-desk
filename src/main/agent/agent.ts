@@ -63,6 +63,7 @@ import { optimizeMessages } from '@/agent/optimizer';
 import { ModelInfoManager } from '@/models/model-info-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
+import { createSubagentsToolset } from '@/agent/tools/subagents';
 
 export class Agent {
   private abortController: AbortController | null = null;
@@ -327,8 +328,13 @@ export class Agent {
     }
 
     if (profile.usePowerTools) {
-      const powerTools = createPowerToolset(project, profile, abortSignal, promptContext);
+      const powerTools = createPowerToolset(project, profile, promptContext);
       Object.assign(toolSet, powerTools);
+    }
+
+    if (profile.useSubagents) {
+      const subagentsToolset = createSubagentsToolset(this.store.getSettings(), project, profile, abortSignal);
+      Object.assign(toolSet, subagentsToolset);
     }
 
     if (profile.useTodoTools) {
@@ -932,11 +938,11 @@ export class Agent {
 
   async estimateTokens(project: Project, profile: AgentProfile): Promise<number> {
     try {
+      const settings = this.store.getSettings();
       const toolSet = await this.getAvailableTools(project, profile);
       const systemPrompt = await getSystemPrompt(project.baseDir, profile);
       const messages = await this.prepareMessages(project, profile, project.getContextMessages(), project.getContextFiles());
 
-      const settings = this.store.getSettings();
       const llmProvider = getLlmProviderConfig(profile.provider, settings);
       const cacheControl = getCacheControl(profile, llmProvider);
 

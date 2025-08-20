@@ -10,7 +10,7 @@ type Props = {
   onRemove?: () => void;
 };
 
-export const AgentToolMessage = ({ message, onRemove }: Props) => {
+export const SubagentToolMessage = ({ message, onRemove }: Props) => {
   const { t } = useTranslation();
 
   const isExecuting = message.content === '';
@@ -19,9 +19,9 @@ export const AgentToolMessage = ({ message, onRemove }: Props) => {
 
   const getToolName = (): string => {
     if (isExecuting) {
-      return t('toolMessage.power.agent.running');
+      return t('toolMessage.subagents.running');
     }
-    return t('toolMessage.power.agent.completed');
+    return t('toolMessage.subagents.completed');
   };
 
   return (
@@ -38,7 +38,6 @@ export const AgentToolMessage = ({ message, onRemove }: Props) => {
 
       <div className="text-xs text-text-tertiary">
         <div className="mb-2">
-          <div className="font-semibold mb-1 text-text-secondary">{t('toolMessage.power.agent.prompt')}</div>
           <pre className="whitespace-pre-wrap bg-bg-primary-light p-2 rounded text-text-tertiary text-2xs max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
             {promptText}
           </pre>

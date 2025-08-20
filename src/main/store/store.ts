@@ -3,7 +3,6 @@ import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, 
 import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
 import {
-  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
@@ -12,16 +11,17 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 
-import { migrateSettingsV5toV6 } from './migrations/v5-to-v6';
-import { migrateV6ToV7 } from './migrations/v6-to-v7';
-import { migrateV7ToV8 } from './migrations/v7-to-v8';
-import { migrateV8ToV9 } from './migrations/v8-to-v9';
-import { migrateV9ToV10 } from './migrations/v9-to-v10';
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
 import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
 import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v3-to-v4';
 import { migrateSettingsV4toV5 } from './migrations/v4-to-v5';
+import { migrateSettingsV5toV6 } from './migrations/v5-to-v6';
+import { migrateV6ToV7 } from './migrations/v6-to-v7';
+import { migrateV7ToV8 } from './migrations/v7-to-v8';
+import { migrateV8ToV9 } from './migrations/v8-to-v9';
+import { migrateV9ToV10 } from './migrations/v9-to-v10';
+import { migrateV10ToV11 } from './migrations/v10-to-v11';
 
 import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
 import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
@@ -89,7 +89,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 10;
+const CURRENT_SETTINGS_VERSION = 11;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -136,8 +136,13 @@ export class Store {
         ...DEFAULT_AGENT_PROFILE,
         provider,
         model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
-        description:
-          'Direct file manipulation and system operations. Best for codebase analysis, file management, advanced search, data analysis, and tasks requiring precise control over individual files. This agent should be used as the main agent for analysis and coding tasks.',
+        subagent: {
+          ...DEFAULT_AGENT_PROFILE.subagent,
+          description:
+            'Direct file manipulation and system operations. Best for codebase analysis, file management, advanced search, data analysis, and tasks requiring precise control over individual files. This agent should be used as the main agent for analysis and coding tasks.',
+          systemPrompt:
+            'You are a specialized subagent for code analysis and file manipulation. Focus on providing detailed technical insights and precise file operations.',
+        },
       },
       // Aider
       {
@@ -149,11 +154,15 @@ export class Store {
         usePowerTools: false,
         useAiderTools: true,
         includeRepoMap: true,
-        description:
-          "AI-powered code generation and refactoring. Best for implementing features, fixing bugs, and structured development workflows using Aider's intelligent code understanding and modification capabilities.",
+        subagent: {
+          ...DEFAULT_AGENT_PROFILE.subagent,
+          description:
+            "AI-powered code generation and refactoring. Best for implementing features, fixing bugs, and structured development workflows using Aider's intelligent code understanding and modification capabilities.",
+          systemPrompt:
+            'You are a specialized subagent for AI-powered code generation and refactoring. Focus on providing high-quality code modifications based on the given requirements.',
+        },
         toolApprovals: {
           ...DEFAULT_AGENT_PROFILE.toolApprovals,
-          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
           [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
           [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
         },
@@ -168,11 +177,15 @@ export class Store {
         usePowerTools: true,
         useAiderTools: true,
         includeRepoMap: true,
-        description:
-          "Hybrid approach combining Aider's code generation with advanced search capabilities. Best for complex development tasks requiring both intelligent code modification and comprehensive codebase exploration.",
+        subagent: {
+          ...DEFAULT_AGENT_PROFILE.subagent,
+          description:
+            "Hybrid approach combining Aider's code generation with advanced search capabilities. Best for complex development tasks requiring both intelligent code modification and comprehensive codebase exploration.",
+          systemPrompt:
+            'You are a specialized subagent for AI-powered code generation and advanced search. Focus on providing high-quality code modifications based on the given requirements and comprehensive codebase exploration.',
+        },
         toolApprovals: {
           ...DEFAULT_AGENT_PROFILE.toolApprovals,
-          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
           [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`]: ToolApprovalState.Never,
           [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
           [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
@@ -196,6 +209,10 @@ export class Store {
         toolApprovals: {
           ...DEFAULT_AGENT_PROFILE.toolApprovals,
           ...agentProfile.toolApprovals,
+        },
+        subagent: {
+          ...DEFAULT_AGENT_PROFILE.subagent,
+          ...agentProfile.subagent,
         },
       });
 
@@ -288,6 +305,11 @@ export class Store {
       if (settingsVersion === 9) {
         settings = migrateV9ToV10(settings);
         settingsVersion = 10;
+      }
+
+      if (settingsVersion === 10) {
+        settings = migrateV10ToV11(settings);
+        settingsVersion = 11;
       }
 
       this.store.set('settings', settings as SettingsData);

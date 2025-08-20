@@ -727,7 +727,7 @@ export class Project {
     }
   }
 
-  public processResponseMessage(message: ResponseMessage) {
+  public processResponseMessage(message: ResponseMessage, saveToDb = true) {
     if (!message.finished) {
       logger.debug(`Sending response chunk to ${this.baseDir}`);
       const data: ResponseChunkData = {
@@ -748,7 +748,7 @@ export class Project {
           : message.usageReport
         : undefined;
 
-      if (usageReport) {
+      if (usageReport && saveToDb) {
         this.dataManager.saveMessage(message.id, 'assistant', this.baseDir, usageReport.model, usageReport, message.content);
       }
 
@@ -1258,6 +1258,7 @@ export class Project {
     response?: string,
     usageReport?: UsageReportData,
     promptContext?: PromptContext,
+    saveToDb = true,
   ) {
     logger.debug('Sending tool message:', {
       id,
@@ -1280,7 +1281,7 @@ export class Project {
       promptContext,
     };
 
-    if (response && usageReport) {
+    if (response && usageReport && saveToDb) {
       this.dataManager.saveMessage(id, 'tool', this.baseDir, usageReport.model, usageReport, {
         toolName,
         args,

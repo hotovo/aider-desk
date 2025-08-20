@@ -1,11 +1,11 @@
 import { type AgentProfile } from '@common/types';
 import { cloneDeep } from 'lodash';
-import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResultPart } from 'ai';
+import { type CoreMessage, type CoreUserMessage, type ToolContent, type ToolResultPart } from 'ai';
 import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_AGENT,
-  POWER_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
   TODO_TOOL_GET_ITEMS,
   TODO_TOOL_GROUP_NAME,
   TOOL_GROUP_NAME_SEPARATOR,
@@ -28,7 +28,7 @@ export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex:
   optimizedMessages = convertImageToolResults(optimizedMessages);
   optimizedMessages = removeDoubleToolCalls(optimizedMessages);
   optimizedMessages = optimizeAiderMessages(optimizedMessages);
-  optimizedMessages = optimizeAgentMessages(optimizedMessages);
+  optimizedMessages = optimizeSubagentMessages(optimizedMessages);
 
   logger.debug('Optimized messages:', {
     before: {
@@ -63,8 +63,8 @@ const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: n
     );
   }
 
-  if (!profile.autoApprove) {
-    dontForgets.push('Before making any changes, present the plan and wait for my approval.');
+  if (!profile.autoApprove && !profile.isSubagent) {
+    dontForgets.push('Before making any complex changes, present the plan and wait for my approval.');
   }
 
   if (dontForgets.length === 0) {
@@ -116,9 +116,9 @@ const optimizeAiderMessages = (messages: CoreMessage[]): CoreMessage[] => {
 };
 
 /**
- * For agent tool, which now returns an array of messages, we should replace this array with only the last message for LLM processing.
+ * For subagent tool, which now returns an array of messages, we should replace this array with only the last message for LLM processing.
  */
-const optimizeAgentMessages = (messages: CoreMessage[]): CoreMessage[] => {
+const optimizeSubagentMessages = (messages: CoreMessage[]): CoreMessage[] => {
   const newMessages = cloneDeep(messages);
 
   for (const message of newMessages) {
@@ -126,7 +126,7 @@ const optimizeAgentMessages = (messages: CoreMessage[]): CoreMessage[] => {
       const toolContent = message.content as ToolContent;
 
       for (const toolResultPart of toolContent) {
-        if (toolResultPart.toolName === `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}` && toolResultPart.result) {
+        if (toolResultPart.toolName === `${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}` && toolResultPart.result) {
           try {
             const result = toolResultPart.result as Record<string, unknown>;
             // Check if result is an array of messages

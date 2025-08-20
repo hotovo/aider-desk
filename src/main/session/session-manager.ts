@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData, UsageReportData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
-import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, POWER_TOOL_AGENT, POWER_TOOL_GROUP_NAME } from '@common/tools';
+import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
 
 import { extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG, ANSWER_RESPONSE_START_TAG } from '@/agent/utils';
 import logger from '@/logger';
@@ -266,7 +266,7 @@ export class SessionManager {
 
   toConnectorMessages(contextMessages: ContextMessage[] = this.contextMessages): { role: MessageRole; content: string }[] {
     let aiderPrompt = '';
-    let powerToolPrompt = '';
+    let subAgentsPrompt = '';
 
     return contextMessages.flatMap((message) => {
       if (message.role === MessageRole.User || message.role === MessageRole.Assistant) {
@@ -284,8 +284,8 @@ export class SessionManager {
                 break;
               }
               // @ts-expect-error part.args contains the prompt in this case
-              if (serverName === POWER_TOOL_GROUP_NAME && toolName === POWER_TOOL_AGENT && part.args && 'prompt' in part.args) {
-                powerToolPrompt = part.args.prompt as string;
+              if (serverName === SUBAGENTS_TOOL_GROUP_NAME && toolName === SUBAGENTS_TOOL_RUN_TASK && part.args && 'prompt' in part.args) {
+                subAgentsPrompt = part.args.prompt as string;
                 // Found the prompt, no need to check other parts of this message
                 break;
               }
@@ -342,11 +342,11 @@ export class SessionManager {
             }
 
             return messages;
-          } else if (serverName === POWER_TOOL_GROUP_NAME && toolName === POWER_TOOL_AGENT && powerToolPrompt) {
+          } else if (serverName === SUBAGENTS_TOOL_GROUP_NAME && toolName === SUBAGENTS_TOOL_RUN_TASK && subAgentsPrompt) {
             const messages = [
               {
                 role: MessageRole.User,
-                content: powerToolPrompt,
+                content: subAgentsPrompt,
               },
             ];
 
@@ -436,14 +436,17 @@ export class SessionManager {
               finalContent = reasoningContent || textContent;
             }
 
-            this.project.processResponseMessage({
-              id: uuidv4(),
-              action: 'response',
-              content: finalContent,
-              finished: true,
-              reflectedMessage: message.reflectedMessage,
-              usageReport: message.usageReport,
-            });
+            this.project.processResponseMessage(
+              {
+                id: uuidv4(),
+                action: 'response',
+                content: finalContent,
+                finished: true,
+                reflectedMessage: message.reflectedMessage,
+                usageReport: message.usageReport,
+              },
+              false,
+            );
           }
 
           // Process tool-call parts
@@ -456,7 +459,16 @@ export class SessionManager {
               }
 
               const [serverName, toolName] = extractServerNameToolName(toolCall.toolName);
-              this.project.addToolMessage(toolCall.toolCallId, serverName, toolName, toolCall.args as Record<string, unknown>, undefined, message.usageReport);
+              this.project.addToolMessage(
+                toolCall.toolCallId,
+                serverName,
+                toolName,
+                toolCall.args as Record<string, unknown>,
+                undefined,
+                message.usageReport,
+                message.promptContext,
+                false,
+              );
             }
           }
         } else if (isTextContent(message.content)) {
@@ -465,14 +477,17 @@ export class SessionManager {
             continue;
           }
 
-          this.project.processResponseMessage({
-            id: uuidv4(),
-            action: 'response',
-            content: content,
-            finished: true,
-            usageReport: message.usageReport,
-            reflectedMessage: message.reflectedMessage,
-          });
+          this.project.processResponseMessage(
+            {
+              id: uuidv4(),
+              action: 'response',
+              content: content,
+              finished: true,
+              usageReport: message.usageReport,
+              reflectedMessage: message.reflectedMessage,
+            },
+            false,
+          );
         }
       } else if (message.role === 'user') {
         const content = extractTextContent(message.content);
@@ -482,7 +497,16 @@ export class SessionManager {
           if (part.type === 'tool-result') {
             const [serverName, toolName] = extractServerNameToolName(part.toolName);
             const promptContext = extractPromptContextFromToolResult(part.result);
-            this.project.addToolMessage(part.toolCallId, serverName, toolName, undefined, JSON.stringify(part.result), message.usageReport, promptContext);
+            this.project.addToolMessage(
+              part.toolCallId,
+              serverName,
+              toolName,
+              undefined,
+              JSON.stringify(part.result),
+              message.usageReport,
+              promptContext,
+              false,
+            );
 
             if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT) {
               // @ts-expect-error part.result.responses is expected to be in the result
@@ -496,8 +520,8 @@ export class SessionManager {
               }
             }
 
-            // Handle agent tool results - process all messages from sub-agent
-            if (serverName === POWER_TOOL_GROUP_NAME && toolName === POWER_TOOL_AGENT) {
+            // Handle agent tool results - process all messages from subagent
+            if (serverName === SUBAGENTS_TOOL_GROUP_NAME && toolName === SUBAGENTS_TOOL_RUN_TASK) {
               // @ts-expect-error part.result.messages is expected to be in the result
               const messages = part.result?.messages ?? part.result;
               if (Array.isArray(messages)) {
@@ -529,14 +553,17 @@ export class SessionManager {
                           subFinalContent = subReasoningContent || subTextContent;
                         }
 
-                        this.project.processResponseMessage({
-                          id: uuidv4(),
-                          action: 'response',
-                          content: subFinalContent,
-                          finished: true,
-                          usageReport: subMessage.usageReport,
-                          promptContext: subMessage.promptContext,
-                        });
+                        this.project.processResponseMessage(
+                          {
+                            id: uuidv4(),
+                            action: 'response',
+                            content: subFinalContent,
+                            finished: true,
+                            usageReport: subMessage.usageReport,
+                            promptContext: subMessage.promptContext,
+                          },
+                          false,
+                        );
                       }
 
                       // Process tool-call parts
@@ -551,19 +578,23 @@ export class SessionManager {
                             undefined,
                             undefined,
                             subMessage.promptContext,
+                            false,
                           );
                         }
                       }
                     } else if (isTextContent(subMessage.content)) {
                       const content = extractTextContent(subMessage.content);
-                      this.project.processResponseMessage({
-                        id: uuidv4(),
-                        action: 'response',
-                        content: content,
-                        finished: true,
-                        usageReport: subMessage.usageReport,
-                        promptContext: subMessage.promptContext,
-                      });
+                      this.project.processResponseMessage(
+                        {
+                          id: uuidv4(),
+                          action: 'response',
+                          content: content,
+                          finished: true,
+                          usageReport: subMessage.usageReport,
+                          promptContext: subMessage.promptContext,
+                        },
+                        false,
+                      );
                     }
                   } else if (subMessage.role === 'tool') {
                     for (const subPart of subMessage.content) {
@@ -578,6 +609,7 @@ export class SessionManager {
                           JSON.stringify(subPart.result),
                           subMessage.usageReport,
                           promptContext,
+                          false,
                         );
                       }
                     }

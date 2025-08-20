@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { LocalizedString } from '@common/types';
 
 import { MessageBlock } from './MessageBlock';
 
@@ -19,9 +20,22 @@ type Props = {
 export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remove, redo, edit }: Props) => {
   const { t } = useTranslation();
 
+  const getGroupDisplayName = (name?: string | LocalizedString) => {
+    if (!name) {
+      return t('messages.group');
+    }
+
+    if (typeof name === 'string') {
+      return t(name || 'messages.group');
+    }
+
+    // name is LocalizedString
+    return t(name.key, name.params || {});
+  };
+
   const header = (
     <div className={clsx('w-full flex items-center pl-2 py-1', !message.group.finished && 'animate-pulse')}>
-      <span className="text-xs">{t(message.group.name || 'messages.group')}</span>
+      <span className="text-xs">{getGroupDisplayName(message.group.name)}</span>
     </div>
   );
 
@@ -33,7 +47,7 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
         style={{
           backgroundColor: message.group.color,
         }}
-      ></div>
+      />
       {/* Content */}
       <Accordion title={header} chevronPosition="right" noMaxHeight={true}>
         <div className="p-2 pl-3 pb-0.5 bg-bg-primary-light rounded-b-md">

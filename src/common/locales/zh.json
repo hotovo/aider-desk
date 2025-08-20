@@ -293,7 +293,27 @@
       "genericTools": "工具",
       "noGenericToolsConfigured": "未配置工具。",
       "todoTools": "待办工具",
-      "includeTodoToolsTooltip": "允许代理管理待办事项列表，包括设置、获取、更新和清除它们。"
+      "includeTodoToolsTooltip": "允许代理管理待办事项列表，包括设置、获取、更新和清除它们。",
+      "subagent": {
+        "title": "子代理",
+        "enableAsSubagent": "启用为子代理",
+        "enableAsSubagentInformation": "启用后，此配置可被其他代理用作子代理。",
+        "description": "描述",
+        "descriptionPlaceholder": "描述此子代理的目的、能力和专长...",
+        "systemPrompt": "系统提示",
+        "systemPromptPlaceholder": "输入此配置用作子代理时的自定义系统提示指令...",
+        "invocationMode": "调用方式",
+        "invocationModeOnDemand": "按需",
+        "invocationModeOnDemandInformation": "子代理仅在父代理明确请求时才使用。",
+        "invocationModeAutomatic": "自动",
+        "invocationModeAutomaticInformation": "子代理可由父代理在适当时自动调用。",
+        "statusDisabled": "已禁用",
+        "statusOnDemand": "按需",
+        "statusAutomatic": "自动",
+        "descriptionRequiredForAutomatic": "需要设置描述才能自动使用此子代理，否则只能在用户明确请求时使用该子代理。",
+        "on-demand": "仅在明确请求时按需使用",
+        "automatic": "在适当时自动使用"
+      }
     },
     "aider": {
       "options": "选项",
@@ -610,12 +630,14 @@
       "glob": "查找匹配模式的文件: {{pattern}}",
       "grep": "在“{{filePattern}}”中搜索“{{searchTerm}}”",
       "bash": "运行命令",
-      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”",
-      "agent": {
-        "running": "正在运行子代理...",
-        "completed": "子代理执行了以下查询:",
-        "prompt": "提示"
-      }
+      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”"
+    },
+    "subagents": {
+      "groupRunning": "{{name}}: 子代理正在工作...",
+      "groupCompleted": "{{name}}: 子代理已完成任务。",
+      "running": "正在运行子代理...",
+      "completed": "子代理执行了以下查询:",
+      "prompt": "提示"
     },
     "errors": {
       "noSuchTool": "尝试使用未知工具: {{toolName}}",

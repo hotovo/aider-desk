@@ -93,6 +93,7 @@ export class CustomCommandManager {
 
     const watcher = watch(commandsDir, {
       persistent: true,
+      usePolling: true,
       ignoreInitial: true,
     });
 

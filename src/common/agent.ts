@@ -1,11 +1,10 @@
-import { AgentProfile, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, InvocationMode, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
@@ -14,6 +13,8 @@ import {
   POWER_TOOL_GREP,
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 
@@ -184,7 +185,6 @@ const DEFAULT_AGENT_PROFILE_ID = 'default';
 export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   id: DEFAULT_AGENT_PROFILE_ID,
   name: 'Power Tools',
-  description: '',
   provider: 'anthropic',
   model: DEFAULT_AGENT_PROVIDER_MODELS.anthropic![0],
   maxIterations: 100,
@@ -205,16 +205,25 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Ask,
-    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Always,
+    // subagent tools
+    [`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`]: ToolApprovalState.Always,
   },
   includeContextFiles: true,
   includeRepoMap: false,
   usePowerTools: true,
   useAiderTools: false,
   useTodoTools: true,
+  useSubagents: true,
   customInstructions: '',
   enabledServers: [],
   autoApprove: false,
+  subagent: {
+    enabled: false,
+    systemPrompt: '',
+    invocationMode: InvocationMode.OnDemand,
+    color: '#3368a8',
+    description: '',
+  },
 };
 
 export const INIT_PROJECT_AGENTS_PROFILE: AgentProfile = {
@@ -227,13 +236,14 @@ export const INIT_PROJECT_AGENTS_PROFILE: AgentProfile = {
   usePowerTools: true,
   useAiderTools: false,
   useTodoTools: false,
+  useSubagents: false,
   autoApprove: true,
   toolApprovals: {
     ...DEFAULT_AGENT_PROFILE.toolApprovals,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
-    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
+    [`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`]: ToolApprovalState.Never,
   },
 };
 
@@ -247,10 +257,14 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   usePowerTools: false,
   useAiderTools: false,
   useTodoTools: false,
+  useSubagents: false,
   autoApprove: true,
   toolApprovals: {
     ...DEFAULT_AGENT_PROFILE.toolApprovals,
-    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
+    [`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`]: ToolApprovalState.Never,
   },
 };
 
@@ -374,4 +388,8 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
       ...provider,
     };
   }
+};
+
+export const isSubagentEnabled = (agentProfile: AgentProfile, currentProfileId?: string): boolean => {
+  return Boolean(agentProfile.subagent.systemPrompt && agentProfile.subagent.enabled && (!currentProfileId || agentProfile.id !== currentProfileId));
 };
