@@ -87,6 +87,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [terminalVisible, setTerminalVisible] = useState(false);
   const [copyPaste, setCopyPaste] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
+  const [hadFirstInput, setHadFirstInput] = useState(false);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -569,6 +570,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setQuestion(null);
     setAiderModelsData(null);
     setEditingMessageIndex(null);
+    setHadFirstInput(false);
     processingMessageRef.current = null;
   };
 
@@ -600,8 +602,12 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   useEffect(() => {
     if (!copyPaste) {
       setIsWaiting(false);
+      setHadFirstInput(false);
     }
-  }, [copyPaste, setIsWaiting]);
+    if (!isWaiting) {
+      setHadFirstInput(false);
+    }
+  }, [copyPaste, isWaiting, setIsWaiting]);
 
   const runTests = (testCmd?: string) => {
     runCommand(`test ${testCmd || ''}`);
@@ -653,6 +659,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleInterruptResponse = () => {
     setIsWaiting(false);
+    setHadFirstInput(false);
     window.api.interruptResponse(project.baseDir);
     const interruptMessage: LogMessage = {
       id: uuidv4(),
@@ -687,16 +694,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       return;
     } // Should not happen if component is rendered
 
-    if (editingMessageIndex !== null) {
-      // This submission is an edit of a previous message
-      const newMessages = messages.slice(0, editingMessageIndex);
-      setEditingMessageIndex(null); // Clear editing state
-      setMessages(newMessages);
-      window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode, prompt);
-    } else {
-      window.api.runPrompt(project.baseDir, prompt, projectSettings.currentMode);
-    }
-    if (copyPaste && !isWaiting) {
+    // Handle copyPaste logic - only on first prompt when copyPaste is enabled and not yet handled
+    if (copyPaste && !hadFirstInput && !isWaiting) {
       runCommand('copy-context');
       const infoMessage: LogMessage = {
         id: uuidv4(),
@@ -706,6 +705,18 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       };
       setMessages((prevMessages) => [...prevMessages, infoMessage]);
       setIsWaiting(true);
+      setHadFirstInput(true);
+      return;
+    }
+
+    if (editingMessageIndex !== null) {
+      // This submission is an edit of a previous message
+      const newMessages = messages.slice(0, editingMessageIndex);
+      setEditingMessageIndex(null); // Clear editing state
+      setMessages(newMessages);
+      window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode, prompt);
+    } else {
+      window.api.runPrompt(project.baseDir, prompt, projectSettings.currentMode);
     }
   };
 
