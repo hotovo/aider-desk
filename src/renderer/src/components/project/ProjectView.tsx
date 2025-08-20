@@ -1,6 +1,7 @@
 import {
   AutocompletionData,
   CommandOutputData,
+  FileEdit,
   InputHistoryData,
   LogData,
   Mode,
@@ -602,10 +603,14 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const runCommand = useCallback(
-    (command: string) => {
-      window.api.runCommand(project.baseDir, command);
+    (arg: string | FileEdit[]) => {
+      if (copyPaste) {
+        window.api.applyEdits(project.baseDir, arg as FileEdit[]);
+      } else {
+        window.api.runCommand(project.baseDir, arg as string);
+      }
     },
-    [project.baseDir],
+    [copyPaste, project.baseDir],
   );
 
   useEffect(() => {
