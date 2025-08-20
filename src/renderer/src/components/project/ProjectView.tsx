@@ -119,6 +119,14 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   }, [projectSettings, settings]);
 
   useEffect(() => {
+    if (aiderModelsData?.mainModel == 'human-relay') {
+      setCopyPaste(true);
+    } else {
+      setCopyPaste(false);
+    }
+  }, [aiderModelsData?.mainModel]);
+
+  useEffect(() => {
     const handleProjectStarted = () => {
       setLoading(false);
     };
@@ -463,7 +471,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
     const handleUpdateAutocompletion = (_: IpcRendererEvent, { allFiles, models, words }: AutocompletionData) => {
       setAllFiles(allFiles);
-      setAvailableModels(models);
+      const allModels = [...models, 'human-relay'];
+      setAvailableModels(allModels);
       setAutocompletionWords(words);
     };
 
@@ -871,7 +880,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           onRenderMarkdownChanged={handleRenderMarkdownChanged}
           onExportSessionToImage={exportMessagesToImage}
           runCommand={runCommand}
-          onCopyPaste={setCopyPaste}
           copyPaste={copyPaste}
           setIsWaiting={setIsWaiting}
           isWaiting={isWaiting}

@@ -36,7 +36,6 @@ type Props = {
   onRenderMarkdownChanged: (value: boolean) => void;
   onExportSessionToImage: () => void;
   runCommand: (command: string) => void;
-  onCopyPaste: (checked: boolean) => void;
   copyPaste: boolean;
   setIsWaiting: (listen: boolean) => void;
   isWaiting: boolean;
@@ -54,7 +53,6 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       onRenderMarkdownChanged,
       onExportSessionToImage,
       runCommand,
-      onCopyPaste,
       copyPaste,
       setIsWaiting,
       isWaiting,
@@ -345,8 +343,6 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 onChange={updateMainModel}
                 preferredModels={settings?.models.aiderPreferred || []}
                 removePreferredModel={handleRemovePreferredModel}
-                onCopyPaste={onCopyPaste}
-                copyPaste={copyPaste}
               />
             </div>
             <div className="h-3 w-px bg-bg-fourth"></div>

@@ -221,6 +221,7 @@
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
+    "human-relay": "Human Relay",
     "lmstudio": "LM Studio",
     "ollama": "Ollama",
     "openai": "OpenAI",

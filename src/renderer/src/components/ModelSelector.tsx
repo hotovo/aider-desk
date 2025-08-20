@@ -6,7 +6,6 @@ import { twMerge } from 'tailwind-merge';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
-import { Checkbox } from '@/components/common/Checkbox';
 
 export type ModelSelectorRef = {
   open: (model?: string) => void;
@@ -19,12 +18,10 @@ type Props = {
   onChange: (model: string) => void;
   preferredModels: string[];
   removePreferredModel: (model: string) => void;
-  onCopyPaste?: (checked: boolean) => void;
-  copyPaste?: boolean;
 };
 
 export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
-  ({ className, models, selectedModel, onChange, preferredModels, removePreferredModel, onCopyPaste, copyPaste }, ref) => {
+  ({ className, models, selectedModel, onChange, preferredModels, removePreferredModel }, ref) => {
     const { t } = useTranslation();
     const [modelSearchTerm, setModelSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -174,9 +171,6 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
                 onChange={(e) => setModelSearchTerm(e.target.value)}
                 onKeyDown={onModelSelectorSearchInputKeyDown}
               />
-              {onCopyPaste && copyPaste !== undefined && (
-                <Checkbox label={t('modelSelector.copyPaste')} checked={copyPaste} onChange={(checked) => onCopyPaste(checked)}></Checkbox>
-              )}
               {showCustomModelHint && (
                 <div className="flex items-center text-text-muted-light" title="Press Enter to use this custom model name">
                   <MdKeyboardReturn className="w-4 h-4" />
