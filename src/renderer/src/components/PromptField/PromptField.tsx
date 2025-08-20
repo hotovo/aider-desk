@@ -589,7 +589,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 anchor: newText.length,
               },
             });
-          } else if (!processing || question) {
+          } else if ((!processing || question) && !isListening) {
             handleSubmit();
           }
           return true;
@@ -627,6 +627,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         key: 'Tab',
         preventDefault: true,
         run: (view) => {
+          // Prevent tab navigation when in listening mode
+          if (isListening) {
+            return true;
+          }
+
           if (question && selectedAnswer) {
             const answers = question.answers?.map((answer) => answer.shortkey.toLowerCase()) || ANSWERS;
             const currentIndex = answers.indexOf(selectedAnswer.toLowerCase());
@@ -785,7 +790,13 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               ref={editorRef}
               value={text}
               onChange={onChange}
-              placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
+              placeholder={
+                question
+                  ? t('promptField.questionPlaceholder')
+                  : isListening
+                    ? t('promptField.pasteResponsePlaceholder')
+                    : t(`promptField.placeholders.${placeholderIndex}`)
+              }
               editable={!disabled}
               spellCheck={false}
               className="w-full px-2 py-1 pr-8 border-2 border-border-default-dark rounded-md focus:outline-none focus:border-border-accent text-sm bg-bg-secondary text-text-primary placeholder-text-muted-dark resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fourth"
@@ -820,6 +831,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                         }
                       }
                     }
+
+                    if (isListening) {
+                      setTimeout(() => {
+                        handleSubmit();
+                      }, 100);
+                    }
                   },
                 }),
                 autocompletion({
@@ -847,6 +864,18 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     },
                   ],
                 }),
+                // Prevent typing when in listening mode
+                isListening
+                  ? EditorView.domEventHandlers({
+                      beforeinput(event) {
+                        if (event.inputType !== 'insertFromPaste') {
+                          event.preventDefault();
+                          return true;
+                        }
+                        return false;
+                      },
+                    })
+                  : [],
                 Prec.high(keymapExtension),
               ]}
             />

@@ -654,6 +654,7 @@
       "19": "在 ProductList 的 fetchProducts 方法中实现分页逻辑..."
     },
     "questionPlaceholder": "...或建议其他内容",
+    "pasteResponsePlaceholder": "在此粘贴AI的回复...",
     "answers": {
       "yes": "(Y)是",
       "no": "(N)否",

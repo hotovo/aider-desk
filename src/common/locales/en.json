@@ -661,6 +661,7 @@
       "19": "Implement pagination logic in ProductList's fetchProducts..."
     },
     "questionPlaceholder": "...or suggest something else",
+    "pasteResponsePlaceholder": "Paste AI's response here...",
     "answers": {
       "yes": "(Y)es",
       "no": "(N)o",
