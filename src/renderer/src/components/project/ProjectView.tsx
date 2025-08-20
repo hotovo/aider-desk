@@ -603,20 +603,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   }, [copyPaste, setIsListening]);
 
-  useEffect(() => {
-    if (copyPaste && !isListening) {
-      runCommand('copy-context');
-      const infoMessage: LogMessage = {
-        id: uuidv4(),
-        level: 'info',
-        type: 'log',
-        content: t('messages.copiedCodeContextToClipboard'),
-      };
-      setMessages((prevMessages) => [...prevMessages, infoMessage]);
-      setIsListening(true);
-    }
-  }, [copyPaste, setIsListening, isListening, runCommand, t]);
-
   const runTests = (testCmd?: string) => {
     runCommand(`test ${testCmd || ''}`);
   };
@@ -666,7 +652,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const handleInterruptResponse = () => {
-    setCopyPaste(false);
     setIsListening(false);
     window.api.interruptResponse(project.baseDir);
     const interruptMessage: LogMessage = {
@@ -710,6 +695,17 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode, prompt);
     } else {
       window.api.runPrompt(project.baseDir, prompt, projectSettings.currentMode);
+    }
+    if (copyPaste && !isListening) {
+      runCommand('copy-context');
+      const infoMessage: LogMessage = {
+        id: uuidv4(),
+        level: 'info',
+        type: 'log',
+        content: t('messages.copiedCodeContextToClipboard'),
+      };
+      setMessages((prevMessages) => [...prevMessages, infoMessage]);
+      setIsListening(true);
     }
   };
 
