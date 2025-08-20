@@ -9,7 +9,7 @@ import {
 } from '@codemirror/autocomplete';
 import { EditorView, keymap } from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
-import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
+import { FileEdit, Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -91,7 +91,7 @@ type Props = {
   openAgentModelSelector?: (model?: string) => void;
   mode: Mode;
   onModeChanged: (mode: Mode) => void;
-  runPrompt: (prompt: string) => void;
+  runPrompt: (prompt: string | FileEdit[]) => void;
   showFileDialog: (readOnly: boolean) => void;
   addFiles?: (filePaths: string[], readOnly?: boolean) => void;
   clearMessages: () => void;
@@ -589,7 +589,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 anchor: newText.length,
               },
             });
-          } else if ((!processing || question) && !isWaiting) {
+          } else if (!processing || question) {
             handleSubmit();
           }
           return true;

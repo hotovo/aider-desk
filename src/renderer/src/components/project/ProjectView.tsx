@@ -603,12 +603,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const runCommand = useCallback(
-    (arg: string | FileEdit[]) => {
-      if (copyPaste) {
-        window.api.applyEdits(project.baseDir, arg as FileEdit[]);
-      } else {
-        window.api.runCommand(project.baseDir, arg as string);
-      }
+    (arg: string) => {
+      window.api.runCommand(project.baseDir, arg);
     },
     [copyPaste, project.baseDir],
   );
@@ -616,9 +612,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   useEffect(() => {
     if (!copyPaste) {
       setIsWaiting(false);
-      setHadFirstInput(false);
-    }
-    if (!isWaiting) {
       setHadFirstInput(false);
     }
   }, [copyPaste, isWaiting, setIsWaiting]);
@@ -699,7 +692,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     void saveProjectSettings({ renderMarkdown });
   };
 
-  const runPrompt = (prompt: string) => {
+  const runPrompt = (prompt: string | FileEdit[]) => {
     if (question) {
       setQuestion(null);
     }
@@ -708,8 +701,18 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       return;
     } // Should not happen if component is rendered
 
+    if (typeof prompt !== 'string') {
+      if (copyPaste && isWaiting) {
+        window.api.applyEdits(project.baseDir, prompt as FileEdit[]);
+      }
+      return;
+    }
+
+    if (copyPaste) {
+      setHadFirstInput(true);
+    }
     // Handle copyPaste logic - only on first prompt when copyPaste is enabled and not yet handled
-    if (copyPaste && !hadFirstInput && !isWaiting) {
+    if (copyPaste && hadFirstInput && !isWaiting) {
       runCommand('copy-context');
       const infoMessage: LogMessage = {
         id: uuidv4(),
@@ -719,7 +722,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       };
       setMessages((prevMessages) => [...prevMessages, infoMessage]);
       setIsWaiting(true);
-      setHadFirstInput(true);
       return;
     }
 
