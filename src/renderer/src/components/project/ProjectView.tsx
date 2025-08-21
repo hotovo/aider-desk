@@ -688,6 +688,26 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     void saveProjectSettings({ renderMarkdown });
   };
 
+  const appendPromptToClipboard = async (prompt: string) => {
+    try {
+      // 1. Run your command
+      runCommand('copy-context');
+
+      // 2. Read clipboard (await the text)
+      const context = await navigator.clipboard.readText();
+
+      // 3. Append prompt
+      const newText = context + prompt;
+
+      // 4. Write it back
+      await navigator.clipboard.writeText(newText);
+
+      console.log('Clipboard updated:', newText);
+    } catch (err) {
+      console.error('Clipboard operation failed:', err);
+    }
+  };
+
   const runPrompt = (prompt: string | FileEdit[]) => {
     if (question) {
       setQuestion(null);
@@ -697,12 +717,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       return;
     } // Should not happen if component is rendered
 
-    if (typeof prompt !== 'string') {
-      if (!copyPaste) {
-        return;
-      }
-      if (!isWaiting) {
-        runCommand('copy-context');
+    if (copyPaste) {
+      if (!isWaiting && typeof prompt === 'string') {
+        appendPromptToClipboard(prompt);
         const infoMessage: LogMessage = {
           id: uuidv4(),
           level: 'info',
@@ -717,6 +734,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
         window.api.applyEdits(project.baseDir, prompt as FileEdit[]);
         return;
       }
+    }
+
+    if (typeof prompt !== 'string') {
+      return;
     }
 
     if (editingMessageIndex !== null) {
