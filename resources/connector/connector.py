@@ -6,6 +6,7 @@ import sys
 import asyncio
 import json
 import socketio
+import pyperclip
 import tempfile
 import threading
 import uuid
@@ -883,6 +884,12 @@ class Connector:
       elif action == "run-command":
         command = message.get('command')
         if not command:
+          return
+
+        if self.coder.main_model.name == "human-relay":
+          messages = message.get('messages')
+          files = self.get_context_files()
+          pyperclip.copy(str(messages) + str(files) + str(command))
           return
 
         await self.run_command(command)
