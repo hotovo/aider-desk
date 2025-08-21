@@ -897,7 +897,7 @@ class Connector:
                     Do not include files that might contain relevant context—just the ones that need changes.
 
                     Show me how to edit the files to make the changes. Do not return entire files. Only provide the edits I need to make."""
-          files = self.get_context_files()
+          files = self.get_context_files_with_text()
           if command and command.startswith("/"):
             command = command[1:]
           pyperclip.copy(f"{files}\n{ai_message}\n{command}")
@@ -1091,7 +1091,18 @@ class Connector:
 
     inchat_files = coder.get_inchat_relative_files()
     read_only_files = [coder.get_rel_fname(fname) for fname in coder.abs_read_only_fnames]
+    return [
+      {"path": fname, "readOnly": False} for fname in inchat_files
+    ] + [
+      {"path": fname, "readOnly": True} for fname in read_only_files
+    ]
 
+  def get_context_files_with_text(self, coder=None):
+    if not coder:
+      coder = self.coder
+
+    inchat_files = coder.get_inchat_relative_files()
+    read_only_files = [coder.get_rel_fname(fname) for fname in coder.abs_read_only_fnames]
     # Get the actual file contents
     context_files = []
 
