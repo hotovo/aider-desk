@@ -162,6 +162,7 @@ export type ContextMessage = ContextUserMessage | ContextAssistantMessage | Cont
 export interface ContextFile {
   path: string;
   readOnly?: boolean;
+  content?: string;
 }
 
 export interface WindowState {

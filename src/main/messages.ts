@@ -94,6 +94,7 @@ export interface AddFileMessage extends Message {
   sourceType?: ContextFileSourceType;
   readOnly?: boolean;
   noUpdate?: boolean;
+  content?: string;
 }
 
 export const isAddFileMessage = (message: Message): message is AddFileMessage => {

@@ -887,9 +887,20 @@ class Connector:
           return
 
         if self.coder.main_model.name == "human-relay":
-          messages = message.get('messages')
+          ai_message = """Only add comments that are helpful and describe functionality.
+                    Use the `clsx` library for conditional classes.
+
+                    Do not edit any existing code without asking me to add the files to the chat first.
+
+                    Tell me which files in my repo are most likely to **need changes** to address my requests, and then stop so I can add them. Only include files that will actually need to be edited.
+
+                    Do not include files that might contain relevant context—just the ones that need changes.
+
+                    Show me how to edit the files to make the changes. Do not return entire files. Only provide the edits I need to make."""
           files = self.get_context_files()
-          pyperclip.copy(str(messages) + str(files) + str(command))
+          if command and command.startswith("/"):
+            command = command[1:]
+          pyperclip.copy(f"{files}\n{ai_message}\n{command}")
           return
 
         await self.run_command(command)
@@ -1081,11 +1092,48 @@ class Connector:
     inchat_files = coder.get_inchat_relative_files()
     read_only_files = [coder.get_rel_fname(fname) for fname in coder.abs_read_only_fnames]
 
-    return [
-      {"path": fname, "readOnly": False} for fname in inchat_files
-    ] + [
-      {"path": fname, "readOnly": True} for fname in read_only_files
-    ]
+    # Get the actual file contents
+    context_files = []
+
+    # Add editable files
+    for fname in inchat_files:
+      abs_path = os.path.join(self.base_dir, fname) if not os.path.isabs(fname) else fname
+      try:
+        if os.path.isfile(abs_path):
+          content = coder.io.read_text(abs_path)
+          if content is not None:
+            context_files.append({
+              "path": fname,
+              "readOnly": False,
+              "content": content
+            })
+      except Exception:
+        # If we can't read the file, just add it without content
+        context_files.append({
+          "path": fname,
+          "readOnly": False
+        })
+
+    # Add read-only files
+    for fname in read_only_files:
+      abs_path = os.path.join(self.base_dir, fname) if not os.path.isabs(fname) else fname
+      try:
+        if os.path.isfile(abs_path):
+          content = coder.io.read_text(abs_path)
+          if content is not None:
+            context_files.append({
+              "path": fname,
+              "readOnly": True,
+              "content": content
+            })
+      except Exception:
+        # If we can't read the file, just add it without content
+        context_files.append({
+          "path": fname,
+          "readOnly": True
+        })
+
+    return context_files
 
   async def send_add_context_message(self, role, content):
     await self.send_action({
@@ -1097,11 +1145,14 @@ class Connector:
   async def send_add_context_files(self, coder=None):
     context_files = self.get_context_files(coder)
     for file in context_files:
-      await self.send_action({
+      file_data = {
         "action": "add-file",
         "path": file["path"],
         "readOnly": file["readOnly"]
-      })
+      }
+      if "content" in file:
+        file_data["content"] = file["content"]
+      await self.send_action(file_data)
 
   async def send_update_context_files(self, coder=None):
     context_files = self.get_context_files(coder)
