@@ -1331,8 +1331,8 @@ export class Project {
     this.mainWindow.webContents.send('user-message', data);
   }
 
-  public async removeLastMessage() {
-    this.sessionManager.removeLastMessage();
+  public async removeMessage(messageId: string) {
+    this.sessionManager.removeMessage(messageId);
     this.reloadConnectorMessages();
 
     await this.updateContextInfo();

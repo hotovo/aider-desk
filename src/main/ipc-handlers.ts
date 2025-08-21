@@ -297,8 +297,8 @@ export const setupIpcHandlers = (
     projectManager.getProject(baseDir).clearContext(true);
   });
 
-  ipcMain.on('remove-last-message', (_, baseDir: string) => {
-    void projectManager.getProject(baseDir).removeLastMessage();
+  ipcMain.on('remove-message', (_, baseDir: string, messageId: string) => {
+    void projectManager.getProject(baseDir).removeMessage(messageId);
   });
 
   ipcMain.on('redo-last-user-prompt', (_, baseDir: string, mode: Mode, updatedPrompt?: string) => {

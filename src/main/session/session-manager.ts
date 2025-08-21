@@ -48,12 +48,16 @@ export class SessionManager {
       }
 
       message = {
+        id: uuidv4(),
         role: roleOrMessage,
         content: content || '',
         usageReport,
       } as ContextMessage;
     } else {
       message = roleOrMessage;
+      if (!message.id) {
+        message.id = uuidv4();
+      }
 
       if (roleOrMessage.role === 'assistant' && isMessageEmpty(message.content)) {
         logger.debug('Skipping empty assistant message');
@@ -64,6 +68,54 @@ export class SessionManager {
 
     this.contextMessages.push(message);
     logger.debug(`Session: Added ${message.role} message. Total messages: ${this.contextMessages.length}`);
+    this.saveAsAutosaved();
+  }
+
+  removeMessage(messageId: string): void {
+    const messageIndex = this.contextMessages.findIndex((msg) => msg.id === messageId);
+    if (messageIndex === -1) {
+      logger.warn(`Attempted to remove message with id ${messageId}, but it was not found.`);
+      return;
+    }
+
+    const messageToRemove = this.contextMessages[messageIndex];
+
+    if (
+      messageToRemove.role === 'tool' &&
+      Array.isArray(messageToRemove.content) &&
+      messageToRemove.content.length > 0 &&
+      messageToRemove.content[0].type === 'tool-result'
+    ) {
+      const toolMessage = this.contextMessages.splice(messageIndex, 1)[0] as ContextMessage & {
+        role: 'tool';
+      };
+      const toolCallIdToRemove = toolMessage.content[0].toolCallId;
+      logger.debug(`Session: Removed tool message (ID: ${toolCallIdToRemove}). Total messages: ${this.contextMessages.length}`);
+
+      // Iterate backward to find the corresponding assistant message
+      for (let i = this.contextMessages.length - 1; i >= 0; i--) {
+        const potentialAssistantMessage = this.contextMessages[i];
+
+        if (potentialAssistantMessage.role === 'assistant' && Array.isArray(potentialAssistantMessage.content)) {
+          const toolCallIndex = potentialAssistantMessage.content.findIndex((part) => part.type === 'tool-call' && part.toolCallId === toolCallIdToRemove);
+
+          if (toolCallIndex !== -1) {
+            potentialAssistantMessage.content.splice(toolCallIndex, 1);
+            logger.debug(`Session: Removed tool-call part (ID: ${toolCallIdToRemove}) from assistant message at index ${i}.`);
+
+            if (potentialAssistantMessage.content.length === 0) {
+              this.contextMessages.splice(i, 1);
+              logger.debug(`Session: Removed empty assistant message at index ${i}.`);
+            }
+            break;
+          }
+        }
+      }
+    } else {
+      this.contextMessages.splice(messageIndex, 1);
+      logger.debug(`Session: Removed message with id ${messageId}. Total messages: ${this.contextMessages.length}`);
+    }
+
     this.saveAsAutosaved();
   }
 
@@ -187,54 +239,6 @@ export class SessionManager {
     if (save) {
       this.saveAsAutosaved();
     }
-  }
-
-  removeLastMessage(): void {
-    if (this.contextMessages.length === 0) {
-      logger.warn('Attempted to remove last message, but message list is empty.');
-      return;
-    }
-
-    const lastMessage = this.contextMessages[this.contextMessages.length - 1];
-
-    if (lastMessage.role === 'tool' && Array.isArray(lastMessage.content) && lastMessage.content.length > 0 && lastMessage.content[0].type === 'tool-result') {
-      const toolMessage = this.contextMessages.pop() as ContextMessage & {
-        role: 'tool';
-      }; // Remove the tool message
-      const toolCallIdToRemove = toolMessage.content[0].toolCallId;
-      logger.debug(`Session: Removed last tool message (ID: ${toolCallIdToRemove}). Total messages: ${this.contextMessages.length}`);
-
-      // Iterate backward to find the corresponding assistant message
-      for (let i = this.contextMessages.length - 1; i >= 0; i--) {
-        const potentialAssistantMessage = this.contextMessages[i];
-
-        if (potentialAssistantMessage.role === 'assistant' && Array.isArray(potentialAssistantMessage.content)) {
-          const toolCallIndex = potentialAssistantMessage.content.findIndex((part) => part.type === 'tool-call' && part.toolCallId === toolCallIdToRemove);
-
-          if (toolCallIndex !== -1) {
-            // Remove the specific tool-call part
-            potentialAssistantMessage.content.splice(toolCallIndex, 1);
-            logger.debug(`Session: Removed tool-call part (ID: ${toolCallIdToRemove}) from assistant message at index ${i}.`);
-
-            // Check if the assistant message is now empty or only contains empty text parts
-            const isEmpty = potentialAssistantMessage.content.length === 0;
-
-            if (isEmpty) {
-              this.contextMessages.splice(i, 1); // Remove the now empty assistant message
-              logger.debug(`Session: Removed empty assistant message at index ${i} after removing tool-call. Total messages: ${this.contextMessages.length}`);
-            }
-            // Found and processed the corresponding assistant message, stop searching
-            break;
-          }
-        }
-      }
-    } else {
-      // If the last message is not a tool message, just remove it
-      this.contextMessages.pop();
-      logger.debug(`Session: Removed last non-tool message. Total messages: ${this.contextMessages.length}`);
-    }
-
-    this.saveAsAutosaved();
   }
 
   removeLastUserMessage(): string | null {

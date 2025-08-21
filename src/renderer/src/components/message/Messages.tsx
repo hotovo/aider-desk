@@ -112,7 +112,7 @@ export const Messages = forwardRef<MessagesRef, Props>(
               message={message}
               allFiles={allFiles}
               renderMarkdown={renderMarkdown}
-              remove={index === messages.length - 1 ? () => removeMessage(message) : undefined}
+              remove={() => removeMessage(message)}
               redo={index === lastUserMessageIndex ? redoLastUserPrompt : undefined}
               edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
             />
