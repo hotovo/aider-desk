@@ -88,7 +88,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [terminalVisible, setTerminalVisible] = useState(false);
   const [copyPaste, setCopyPaste] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
-  const [hadFirstInput, setHadFirstInput] = useState(false);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -580,7 +579,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setQuestion(null);
     setAiderModelsData(null);
     setEditingMessageIndex(null);
-    setHadFirstInput(false);
     processingMessageRef.current = null;
   };
 
@@ -612,7 +610,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   useEffect(() => {
     if (!copyPaste) {
       setIsWaiting(false);
-      setHadFirstInput(false);
     }
   }, [copyPaste, isWaiting, setIsWaiting]);
 
@@ -666,7 +663,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleInterruptResponse = () => {
     setIsWaiting(false);
-    setHadFirstInput(false);
     window.api.interruptResponse(project.baseDir);
     const interruptMessage: LogMessage = {
       id: uuidv4(),
@@ -702,27 +698,25 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     } // Should not happen if component is rendered
 
     if (typeof prompt !== 'string') {
-      if (copyPaste && isWaiting) {
-        window.api.applyEdits(project.baseDir, prompt as FileEdit[]);
+      if (!copyPaste) {
+        return;
       }
-      return;
-    }
-
-    if (copyPaste) {
-      setHadFirstInput(true);
-    }
-    // Handle copyPaste logic - only on first prompt when copyPaste is enabled and not yet handled
-    if (copyPaste && hadFirstInput && !isWaiting) {
-      runCommand('copy-context');
-      const infoMessage: LogMessage = {
-        id: uuidv4(),
-        level: 'info',
-        type: 'log',
-        content: t('messages.copiedCodeContextToClipboard'),
-      };
-      setMessages((prevMessages) => [...prevMessages, infoMessage]);
-      setIsWaiting(true);
-      return;
+      if (!isWaiting) {
+        runCommand('copy-context');
+        const infoMessage: LogMessage = {
+          id: uuidv4(),
+          level: 'info',
+          type: 'log',
+          content: t('messages.copiedCodeContextToClipboard'),
+        };
+        setMessages((prevMessages) => [...prevMessages, infoMessage]);
+        setIsWaiting(true);
+        return;
+      } else {
+        setIsWaiting(false);
+        window.api.applyEdits(project.baseDir, prompt as FileEdit[]);
+        return;
+      }
     }
 
     if (editingMessageIndex !== null) {
