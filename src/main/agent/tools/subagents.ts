@@ -48,19 +48,9 @@ export const createSubagentsToolset = (settings: SettingsData, project: Project,
         ),
     }),
     execute: async ({ prompt, subagentId }, { toolCallId }) => {
-      let targetSubagent: AgentProfile | undefined;
-
-      if (subagentId) {
-        targetSubagent = enabledSubagents.find((agentProfile) => agentProfile.id === subagentId);
-        if (!targetSubagent) {
-          return `Error: Subagent with ID '${subagentId}' not found or not enabled.`;
-        }
-      } else {
-        // Auto-select the first enabled subagent (could be enhanced with smarter selection logic)
-        targetSubagent = enabledSubagents[0];
-        if (!targetSubagent) {
-          return 'Error: No enabled subagents available.';
-        }
+      const targetSubagent = enabledSubagents.find((agentProfile) => agentProfile.id === subagentId);
+      if (!targetSubagent) {
+        return `Error: Subagent with ID '${subagentId}' not found or not enabled.`;
       }
 
       // Create a subagent profile based on the selected subagent
