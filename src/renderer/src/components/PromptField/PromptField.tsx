@@ -9,7 +9,7 @@ import {
 } from '@codemirror/autocomplete';
 import { EditorView, keymap } from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
-import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
+import { FileEdit, Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -91,7 +91,7 @@ type Props = {
   openAgentModelSelector?: (model?: string) => void;
   mode: Mode;
   onModeChanged: (mode: Mode) => void;
-  runPrompt: (prompt: string) => void;
+  runPrompt: (prompt: string | FileEdit[]) => void;
   showFileDialog: (readOnly: boolean) => void;
   addFiles?: (filePaths: string[], readOnly?: boolean) => void;
   clearMessages: () => void;
@@ -109,6 +109,7 @@ type Props = {
   toggleTerminal?: () => void;
   terminalVisible?: boolean;
   scrollToBottom?: () => void;
+  isWaiting: boolean;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -141,6 +142,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       toggleTerminal,
       terminalVisible = false,
       scrollToBottom,
+      isWaiting,
     }: Props,
     ref,
   ) => {
@@ -503,7 +505,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       setPendingCommand(null);
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = useCallback(() => {
       scrollToBottom?.();
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
@@ -533,7 +535,15 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         }
         setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
       }
-    };
+    }, [baseDir, customCommands, handleConfirmCommand, mode, pendingCommand, runPrompt, scrollToBottom, t, text]);
+
+    useEffect(() => {
+      if (isWaiting && !processing) {
+        if (text.trim() !== '') {
+          handleSubmit();
+        }
+      }
+    }, [handleSubmit, isWaiting, processing, text]);
 
     const getAutocompleteDetailLabel = (item: string): [string | null, boolean] => {
       if (item.startsWith('/')) {
@@ -617,6 +627,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         key: 'Tab',
         preventDefault: true,
         run: (view) => {
+          // Prevent tab navigation when in listening mode
+          if (isWaiting) {
+            return true;
+          }
+
           if (question && selectedAnswer) {
             const answers = question.answers?.map((answer) => answer.shortkey.toLowerCase()) || ANSWERS;
             const currentIndex = answers.indexOf(selectedAnswer.toLowerCase());
@@ -775,7 +790,13 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               ref={editorRef}
               value={text}
               onChange={onChange}
-              placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
+              placeholder={
+                question
+                  ? t('promptField.questionPlaceholder')
+                  : isWaiting
+                    ? t('promptField.pasteResponsePlaceholder')
+                    : t(`promptField.placeholders.${placeholderIndex}`)
+              }
               editable={!disabled}
               spellCheck={false}
               className="w-full px-2 py-1 pr-8 border-2 border-border-default-dark rounded-md focus:outline-none focus:border-border-accent text-sm bg-bg-secondary text-text-primary placeholder-text-muted-dark resize-none overflow-y-auto transition-colors duration-200 max-h-[60vh] scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-fourth"
@@ -810,6 +831,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                         }
                       }
                     }
+
+                    if (isWaiting) {
+                      setTimeout(() => {
+                        handleSubmit();
+                      }, 100);
+                    }
                   },
                 }),
                 autocompletion({
@@ -837,6 +864,18 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     },
                   ],
                 }),
+                // Prevent typing when in listening mode
+                isWaiting
+                  ? EditorView.domEventHandlers({
+                      beforeinput(event) {
+                        if (event.inputType !== 'insertFromPaste') {
+                          event.preventDefault();
+                          return true;
+                        }
+                        return false;
+                      },
+                    })
+                  : [],
                 Prec.high(keymapExtension),
               ]}
             />

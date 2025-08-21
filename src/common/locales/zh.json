@@ -221,6 +221,7 @@
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
+    "human-relay": "Human Relay",
     "lmstudio": "LM Studio",
     "ollama": "Ollama",
     "openai": "OpenAI",
@@ -389,7 +390,8 @@
     "edit": "编辑",
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
-    "group": "分组"
+    "group": "分组",
+    "copiedCodeContextToClipboard": "已将代码上下文复制到剪贴板。"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
@@ -460,7 +462,8 @@
     "thinkingTokens": "思考令牌",
     "loadingModel": "加载模型中...",
     "searchPlaceholder": "搜索模型或输入自定义名称...",
-    "removePreferred": "从首选模型中移除"
+    "removePreferred": "从首选模型中移除",
+    "copyPaste": "复制/粘贴"
   },
   "modelInfo": {
     "noInfo": "无模型信息可用。",
@@ -652,6 +655,7 @@
       "19": "在 ProductList 的 fetchProducts 方法中实现分页逻辑..."
     },
     "questionPlaceholder": "...或建议其他内容",
+    "pasteResponsePlaceholder": "在此粘贴AI的回复...",
     "answers": {
       "yes": "(Y)是",
       "no": "(N)否",
@@ -679,7 +683,8 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
-    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。"
+    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
+    "cancelWaiting": "取消等待"
   },
   "reasoningEffort": {
     "label": "推理",

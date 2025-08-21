@@ -1,6 +1,7 @@
 import {
   AutocompletionData,
   CommandOutputData,
+  FileEdit,
   InputHistoryData,
   LogData,
   Mode,
@@ -17,7 +18,7 @@ import {
 } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { IpcRendererEvent } from 'electron';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
@@ -85,6 +86,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
   const [terminalVisible, setTerminalVisible] = useState(false);
+  const [copyPaste, setCopyPaste] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -114,6 +117,14 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const todoListVisible = useMemo(() => {
     return projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
   }, [projectSettings, settings]);
+
+  useEffect(() => {
+    if (aiderModelsData?.mainModel == 'human-relay') {
+      setCopyPaste(true);
+    } else {
+      setCopyPaste(false);
+    }
+  }, [aiderModelsData?.mainModel]);
 
   useEffect(() => {
     const handleProjectStarted = () => {
@@ -270,6 +281,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
 
       setProcessing(false);
+      setIsWaiting(false);
     };
 
     const handleCommandOutput = (_: IpcRendererEvent, { command, output }: CommandOutputData) => {
@@ -459,7 +471,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
     const handleUpdateAutocompletion = (_: IpcRendererEvent, { allFiles, models, words }: AutocompletionData) => {
       setAllFiles(allFiles);
-      setAvailableModels(models);
+      const allModels = [...models, 'human-relay'];
+      setAvailableModels(allModels);
       setAutocompletionWords(words);
     };
 
@@ -587,9 +600,18 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages((prevMessages) => prevMessages.filter((message) => !isLogMessage(message)));
   };
 
-  const runCommand = (command: string) => {
-    window.api.runCommand(project.baseDir, command);
-  };
+  const runCommand = useCallback(
+    (arg: string) => {
+      window.api.runCommand(project.baseDir, arg);
+    },
+    [copyPaste, project.baseDir],
+  );
+
+  useEffect(() => {
+    if (!copyPaste) {
+      setIsWaiting(false);
+    }
+  }, [copyPaste, isWaiting, setIsWaiting]);
 
   const runTests = (testCmd?: string) => {
     runCommand(`test ${testCmd || ''}`);
@@ -640,6 +662,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const handleInterruptResponse = () => {
+    setIsWaiting(false);
     window.api.interruptResponse(project.baseDir);
     const interruptMessage: LogMessage = {
       id: uuidv4(),
@@ -665,7 +688,27 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     void saveProjectSettings({ renderMarkdown });
   };
 
-  const runPrompt = (prompt: string) => {
+  const appendPromptToClipboard = async (prompt: string) => {
+    try {
+      // 1. Run your command
+      runCommand('copy-context');
+
+      // 2. Read clipboard (await the text)
+      const context = await navigator.clipboard.readText();
+
+      // 3. Append prompt
+      const newText = context + prompt;
+
+      // 4. Write it back
+      await navigator.clipboard.writeText(newText);
+
+      console.log('Clipboard updated:', newText);
+    } catch (err) {
+      console.error('Clipboard operation failed:', err);
+    }
+  };
+
+  const runPrompt = (prompt: string | FileEdit[]) => {
     if (question) {
       setQuestion(null);
     }
@@ -673,6 +716,29 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     if (!projectSettings) {
       return;
     } // Should not happen if component is rendered
+
+    if (copyPaste) {
+      if (!isWaiting && typeof prompt === 'string') {
+        appendPromptToClipboard(prompt);
+        const infoMessage: LogMessage = {
+          id: uuidv4(),
+          level: 'info',
+          type: 'log',
+          content: t('messages.copiedCodeContextToClipboard'),
+        };
+        setMessages((prevMessages) => [...prevMessages, infoMessage]);
+        setIsWaiting(true);
+        return;
+      } else {
+        setIsWaiting(false);
+        window.api.applyEdits(project.baseDir, prompt as FileEdit[]);
+        return;
+      }
+    }
+
+    if (typeof prompt !== 'string') {
+      return;
+    }
 
     if (editingMessageIndex !== null) {
       // This submission is an edit of a previous message
@@ -836,6 +902,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           onRenderMarkdownChanged={handleRenderMarkdownChanged}
           onExportSessionToImage={exportMessagesToImage}
           runCommand={runCommand}
+          copyPaste={copyPaste}
+          setIsWaiting={setIsWaiting}
+          isWaiting={isWaiting}
         />
         <div className="flex-grow overflow-y-hidden relative flex flex-col">
           {renderSearchInput()}
@@ -927,6 +996,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               toggleTerminal={toggleTerminal}
               terminalVisible={terminalVisible}
               scrollToBottom={messagesRef.current?.scrollToBottom}
+              isWaiting={copyPaste && isWaiting}
             />
           </div>
         </div>

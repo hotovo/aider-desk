@@ -224,6 +224,7 @@
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
+    "human-relay": "Human Relay",
     "lmstudio": "LM Studio",
     "ollama": "Ollama",
     "openai": "OpenAI",
@@ -414,7 +415,8 @@
     "edit": "Edit",
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
-    "group": "Group"
+    "group": "Group",
+    "copiedCodeContextToClipboard": "Copied code context to clipboard."
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
@@ -487,7 +489,8 @@
     "searchPlaceholder": "Search models or enter custom name...",
     "removePreferred": "Remove from preferred models",
     "invalidModelSelection": "Invalid format of the model. Expected format is 'provider/model', e.g. 'openai/gpt-4'.",
-    "providerNotSupported": "Provider '{{provider}}' is not supported. Supported providers are: {{providers}}."
+    "providerNotSupported": "Provider '{{provider}}' is not supported. Supported providers are: {{providers}}.",
+    "copyPaste": "Copy/Paste"
   },
   "modelInfo": {
     "noInfo": "No model information available.",
@@ -659,6 +662,7 @@
       "19": "Implement pagination logic in ProductList's fetchProducts..."
     },
     "questionPlaceholder": "...or suggest something else",
+    "pasteResponsePlaceholder": "Paste AI's response here...",
     "answers": {
       "yes": "(Y)es",
       "no": "(N)o",
@@ -686,7 +690,8 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
-    "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected."
+    "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
+    "cancelWaiting": "Cancel waiting"
   },
   "reasoningEffort": {
     "label": "Reasoning",
