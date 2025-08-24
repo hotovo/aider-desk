@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.28.0]
 
 - added model selector to Agent profile in Settings
 - correctly using the selected model when compacting the conversation
