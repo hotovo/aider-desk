@@ -124,7 +124,7 @@ const api: ApplicationAPI = {
   interruptResponse: (baseDir) => ipcRenderer.send('interrupt-response', baseDir),
   applyEdits: (baseDir, edits: FileEdit[]) => ipcRenderer.send('apply-edits', baseDir, edits),
   clearContext: (baseDir) => ipcRenderer.send('clear-context', baseDir),
-  removeLastMessage: (baseDir) => ipcRenderer.send('remove-last-message', baseDir),
+  removeMessage: (baseDir, messageId) => ipcRenderer.send('remove-message', baseDir, messageId),
   compactConversation: (baseDir, mode, customInstructions) => ipcRenderer.invoke('compact-conversation', baseDir, mode, customInstructions),
   setZoomLevel: (level) => ipcRenderer.invoke('set-zoom-level', level),
   getVersions: (forceRefresh = false) => ipcRenderer.invoke('get-versions', forceRefresh),

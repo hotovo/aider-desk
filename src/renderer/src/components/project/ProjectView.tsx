@@ -738,10 +738,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const handleRemoveMessage = (messageToRemove: Message) => {
-    const isLastMessage = messages[messages.length - 1] === messageToRemove;
-
-    if (isLastMessage && (isToolMessage(messageToRemove) || isUserMessage(messageToRemove) || isResponseMessage(messageToRemove))) {
-      window.api.removeLastMessage(project.baseDir);
+    if (!isLogMessage(messageToRemove)) {
+      window.api.removeMessage(project.baseDir, messageToRemove.id);
     }
 
     setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
