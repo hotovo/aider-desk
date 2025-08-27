@@ -1,14 +1,3 @@
-diff --git a/node_modules/@buger/probe/bin/version-info.json b/node_modules/@buger/probe/bin/version-info.json
-index 22d2f1e..02928c5 100644
---- a/node_modules/@buger/probe/bin/version-info.json
-+++ b/node_modules/@buger/probe/bin/version-info.json
-@@ -1,4 +1,4 @@
- {
-   "version": "0.6.0-rc53",
--  "lastUpdated": "2025-08-27T21:53:51.656Z"
-+  "lastUpdated": "2025-08-27T21:52:35.584Z"
- }
-\ No newline at end of file
 diff --git a/node_modules/@buger/probe/src/utils.js b/node_modules/@buger/probe/src/utils.js
 index 2d25bb9..116d7f0 100644
 --- a/node_modules/@buger/probe/src/utils.js
