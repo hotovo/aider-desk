@@ -25,6 +25,8 @@ win:
   executableName: aider-desk
   icon: resources/icon.png
   extraResources:
+    - from: ./node_modules/@buger/probe/bin/probe.exe
+      to: node_modules/@buger/probe/bin/probe.exe
     - from: ./resources/win
       to: win
       filter:
@@ -48,6 +50,8 @@ mac:
   gatekeeperAssess: false
   notarize: true
   extraResources:
+    - from: ./node_modules/@buger/probe/bin/probe
+      to: node_modules/@buger/probe/bin/probe
     - from: ./resources/macos
       to: macos
       filter:
@@ -62,6 +66,8 @@ linux:
   maintainer: Hotovo
   category: Utility
   extraResources:
+    - from: ./node_modules/@buger/probe/bin/probe
+      to: node_modules/@buger/probe/bin/probe
     - from: ./resources/linux
       to: linux
       filter:
