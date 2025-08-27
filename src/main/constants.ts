@@ -33,3 +33,12 @@ export const AIDER_DESK_COMMANDS_DIR = path.join(AIDER_DESK_DIR, 'commands');
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');
 export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
+export const PROBE_BINARY_PATH = path.join(
+  RESOURCES_DIR,
+  'app.asar.unpacked',
+  'node_modules',
+  '@buger',
+  'probe',
+  'bin',
+  process.platform === 'win32' ? 'probe.exe' : 'probe',
+);

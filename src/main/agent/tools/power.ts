@@ -3,10 +3,10 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
+import { is } from '@electron-toolkit/utils';
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
-import { search, searchSchema } from '@buger/probe';
 import { AgentProfile, FileWriteMode, PromptContext, ToolApprovalState } from '@common/types';
 import {
   POWER_TOOL_BASH as TOOL_BASH,
@@ -23,9 +23,11 @@ import {
 } from '@common/tools';
 import { isBinary } from 'istextorbinary';
 import { isURL } from '@common/utils';
+import { search, searchSchema } from '@buger/probe';
 
 import { ApprovalManager } from './approval-manager';
 
+import { PROBE_BINARY_PATH } from '@/constants';
 import { Project } from '@/project';
 import logger from '@/logger';
 import { isFileIgnored, scrapeWeb } from '@/utils';
@@ -565,6 +567,12 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           json: false,
           maxTokens: effectiveMaxTokens,
           language,
+          binaryOptions: !is.dev
+            ? {
+                // we need to set the PROBE_PATH env variable for production asar.unpacked, as the binary is not determined correctly inside the probe package
+                path: PROBE_BINARY_PATH,
+              }
+            : undefined,
         });
 
         logger.debug(`Search results: ${JSON.stringify(results)}`);
