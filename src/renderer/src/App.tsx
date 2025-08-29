@@ -72,6 +72,26 @@ const AnimatedRoutes = () => {
   );
 };
 
+const MainContent = () => {
+  const { settings } = useSettings();
+
+  const getToastTheme = () => {
+    if (!settings?.theme) {
+      return 'dark';
+    }
+    const darkThemes = ['dark', 'charcoal', 'midnight', 'forest', 'aurora', 'neopunk'];
+    return darkThemes.includes(settings.theme) ? 'dark' : 'light';
+  };
+
+  return (
+    <>
+      <ThemeAndFontManager />
+      <AnimatedRoutes />
+      <ToastContainer theme={getToastTheme()} />
+    </>
+  );
+};
+
 const App = () => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -84,9 +104,7 @@ const App = () => {
       <Router>
         <SettingsProvider>
           <ContextMenuProvider>
-            <ThemeAndFontManager />
-            <AnimatedRoutes />
-            <ToastContainer />
+            <MainContent />
           </ContextMenuProvider>
         </SettingsProvider>
       </Router>
