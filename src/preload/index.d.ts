@@ -95,7 +95,7 @@ export interface ApplicationAPI {
   interruptResponse: (baseDir: string) => void;
   applyEdits: (baseDir: string, edits: FileEdit[]) => void;
   clearContext: (baseDir: string) => void;
-  removeLastMessage: (baseDir: string) => void;
+  removeMessage: (baseDir: string, messageId: string) => void;
   compactConversation: (baseDir: string, mode: Mode, customInstructions?: string) => void;
   setZoomLevel: (level: number) => Promise<void>;
 

@@ -1328,8 +1328,8 @@ export class Project {
     this.eventManager.sendUserMessage(data);
   }
 
-  public async removeLastMessage() {
-    this.sessionManager.removeLastMessage();
+  public async removeMessage(messageId: string) {
+    this.sessionManager.removeMessage(messageId);
     this.reloadConnectorMessages();
 
     await this.updateContextInfo();
