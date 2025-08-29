@@ -467,6 +467,17 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         return `Bash command execution denied by user. Reason: ${userInput}`;
       }
 
+      // Pattern validation
+      const deniedPatterns = profile.bashToolDeniedPattern?.split(';').filter(Boolean) || [];
+      if (deniedPatterns.some((pattern) => new RegExp(pattern.replace(/\*/g, '.*')).test(command))) {
+        return `Error: Command "${command}" is denied by settings.`;
+      }
+
+      const allowedPatterns = profile.bashToolAllowedPattern?.split(';').filter(Boolean) || [];
+      if (allowedPatterns.length > 0 && !allowedPatterns.some((pattern) => new RegExp(pattern.replace(/\*/g, '.*')).test(command))) {
+        return `Error: Command "${command}" is not allowed by settings.`;
+      }
+
       const absoluteCwd = cwd ? path.resolve(project.baseDir, cwd) : project.baseDir;
       try {
         const { stdout, stderr } = await execAsync(command, {

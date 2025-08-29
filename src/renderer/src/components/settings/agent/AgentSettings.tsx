@@ -580,8 +580,9 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                         <GenericToolGroupItem
                           name={groupName}
                           tools={tools}
-                          toolApprovals={selectedProfile.toolApprovals || {}}
+                          profile={selectedProfile}
                           onApprovalChange={handleToolApprovalChange}
+                          onProfileChange={handleProfileSettingChange}
                           enabled={isGroupEnabled}
                           onEnabledChange={(enabled) => {
                             if (groupName === POWER_TOOL_GROUP_NAME) {
