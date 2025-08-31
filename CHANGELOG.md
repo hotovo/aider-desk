@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.29.0]
 
 - updating the context info after Aider mode requests
 - showing message when generating commit message after modifications
@@ -9,6 +9,10 @@
 - added headless mode with AIDER_DESK_HEADLESS=true environment variable
 - added full API layer for external clients
 - added context memory option to Subagents to preserve context within the same conversation
+
+## [0.28.1]
+
+- properly using bundled probe binaries
 
 ## [0.28.0]
 
