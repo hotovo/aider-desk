@@ -17,7 +17,10 @@ const AddTodoSchema = z.object({
 const UpdateTodoSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   name: z.string().min(1, 'Todo name is required'),
-  updates: z.any(), // TODO: Refine based on Partial<TodoItem>
+  updates: z.object({
+    name: z.string().optional(),
+    completed: z.boolean().optional(),
+  }),
 });
 
 const DeleteTodoSchema = z.object({

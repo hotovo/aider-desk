@@ -213,8 +213,8 @@ export class EventsHandler {
     return await this.projectManager.getProject(baseDir).loadInputHistory();
   }
 
-  async getAddableFiles(baseDir: string): Promise<string[]> {
-    return this.projectManager.getProject(baseDir).getAddableFiles();
+  async getAddableFiles(baseDir: string, searchRegex?: string): Promise<string[]> {
+    return this.projectManager.getProject(baseDir).getAddableFiles(searchRegex);
   }
 
   async addFile(baseDir: string, filePath: string, readOnly = false): Promise<void> {

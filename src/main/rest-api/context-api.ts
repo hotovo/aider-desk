@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { delay } from '@common/utils';
 
 import { BaseApi } from './base-api';
 
@@ -42,11 +41,6 @@ export class ContextApi extends BaseApi {
 
         const { projectDir, path, readOnly } = parsed;
         await this.eventsHandler.addFile(projectDir, path, readOnly);
-
-        // add delay to allow Aider to verify the added files
-        await delay(1000);
-
-        await this.eventsHandler.addFile(projectDir, path, readOnly);
         res.status(200).json({ message: 'File added to context' });
       }),
     );
@@ -61,11 +55,6 @@ export class ContextApi extends BaseApi {
         }
 
         const { projectDir, path } = parsed;
-        this.eventsHandler.dropFile(projectDir, path);
-
-        // add delay to allow Aider to verify the dropped files
-        await delay(1000);
-
         this.eventsHandler.dropFile(projectDir, path);
         res.status(200).json({ message: 'File dropped from context' });
       }),
@@ -101,8 +90,8 @@ export class ContextApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed; // Removed searchRegex as EventsHandler.getAddableFiles does not support it
-        const addableFiles = await this.eventsHandler.getAddableFiles(projectDir);
+        const { projectDir, searchRegex } = parsed;
+        const addableFiles = await this.eventsHandler.getAddableFiles(projectDir, searchRegex);
         res.status(200).json(addableFiles);
       }),
     );

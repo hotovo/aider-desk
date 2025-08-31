@@ -5,13 +5,21 @@ import { BaseApi } from './base-api';
 
 import { EventsHandler } from '@/events-handler';
 
+const McpServerConfigSchema = z.object({
+  command: z.string().optional(),
+  args: z.array(z.string()).optional(),
+  env: z.record(z.string()).optional(),
+  url: z.string().optional(),
+  headers: z.record(z.string()).optional(),
+});
+
 const LoadMcpServerToolsSchema = z.object({
   serverName: z.string().min(1, 'Server name is required'),
-  config: z.any().optional(), // TODO: Refine based on McpServerConfig type
+  config: McpServerConfigSchema.optional(),
 });
 
 const ReloadMcpServersSchema = z.object({
-  mcpServers: z.record(z.string(), z.any()), // TODO: Refine based on Record<string, McpServerConfig>
+  mcpServers: z.record(z.string(), McpServerConfigSchema),
   force: z.boolean().optional(),
 });
 

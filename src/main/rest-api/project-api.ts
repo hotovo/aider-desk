@@ -84,7 +84,7 @@ const LoadInputHistorySchema = z.object({
 
 const RedoLastUserPromptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
-  mode: z.enum(['code', 'ask', 'architect', 'context']),
+  mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']),
   updatedPrompt: z.string().optional(),
 });
 
@@ -108,7 +108,13 @@ const PasteImageSchema = z.object({
 
 const ApplyEditsSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
-  edits: z.array(z.any()), // TODO: Refine based on FileEdit type
+  edits: z.array(
+    z.object({
+      path: z.string(),
+      original: z.string(),
+      updated: z.string(),
+    }),
+  ),
 });
 
 const RunCommandSchema = z.object({
@@ -154,7 +160,7 @@ const RemoveLastMessageSchema = z.object({
 
 const CompactConversationSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
-  mode: z.enum(['code', 'ask', 'architect', 'context']),
+  mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']),
   customInstructions: z.string().optional(),
 });
 
