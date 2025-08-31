@@ -20,6 +20,7 @@ import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
+import { useApi } from '@/context/ApiContext';
 
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -43,6 +44,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
     const { projectSettings } = useProjectSettings();
+    const api = useApi();
     const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
     const mainModelSelectorRef = useRef<ModelSelectorRef>(null);
     const architectModelSelectorRef = useRef<ModelSelectorRef>(null);
@@ -129,7 +131,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           return;
         }
 
-        window.api.updateEditFormats(baseDir, { [targetModel]: format });
+        api.updateEditFormats(baseDir, { [targetModel]: format });
 
         if (modelsData && onModelsChange) {
           // optimistic update
@@ -139,24 +141,24 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           });
         }
       },
-      [baseDir, modelsData, onModelsChange],
+      [baseDir, modelsData, onModelsChange, api],
     );
 
     const updateMainModel = useCallback(
       (mainModel: string) => {
-        window.api.updateMainModel(baseDir, mainModel);
+        api.updateMainModel(baseDir, mainModel);
         updatePreferredModels(mainModel);
 
         if (modelsData && onModelsChange) {
           onModelsChange(null);
         }
       },
-      [baseDir, modelsData, onModelsChange, updatePreferredModels],
+      [api, baseDir, modelsData, onModelsChange, updatePreferredModels],
     );
 
     const updateWeakModel = useCallback(
       (weakModel: string) => {
-        window.api.updateWeakModel(baseDir, weakModel);
+        api.updateWeakModel(baseDir, weakModel);
         updatePreferredModels(weakModel);
         if (modelsData && onModelsChange) {
           onModelsChange({
@@ -165,12 +167,12 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           });
         }
       },
-      [baseDir, modelsData, onModelsChange, updatePreferredModels],
+      [baseDir, modelsData, onModelsChange, updatePreferredModels, api],
     );
 
     const updateArchitectModel = useCallback(
       (architectModel: string) => {
-        window.api.updateArchitectModel(baseDir, architectModel);
+        api.updateArchitectModel(baseDir, architectModel);
         updatePreferredModels(architectModel);
         if (modelsData && onModelsChange) {
           onModelsChange({
@@ -179,24 +181,24 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           });
         }
       },
-      [baseDir, modelsData, onModelsChange, updatePreferredModels],
+      [api, baseDir, modelsData, onModelsChange, updatePreferredModels],
     );
 
     const loadSessions = useCallback(async () => {
       try {
-        const sessionsList = await window.api.listSessions(baseDir);
+        const sessionsList = await api.listSessions(baseDir);
         setSessions(sessionsList);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to load sessions:', error);
         setSessions([]);
       }
-    }, [baseDir]);
+    }, [baseDir, api]);
 
     const saveSession = useCallback(
       async (name: string) => {
         try {
-          await window.api.saveSession(baseDir, name);
+          await api.saveSession(baseDir, name);
           await loadSessions();
           hideSessionPopup();
           showSuccessNotification(t('sessions.sessionSaved'));
@@ -205,54 +207,54 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           console.error('Failed to save session:', error);
         }
       },
-      [baseDir, hideSessionPopup, loadSessions, t],
+      [api, baseDir, hideSessionPopup, loadSessions, t],
     );
 
     const loadSessionMessages = useCallback(
       async (name: string) => {
         try {
-          await window.api.loadSessionMessages(baseDir, name);
+          await api.loadSessionMessages(baseDir, name);
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error('Failed to load session messages:', error);
         }
       },
-      [baseDir],
+      [api, baseDir],
     );
 
     const loadSessionFiles = useCallback(
       async (name: string) => {
         try {
-          await window.api.loadSessionFiles(baseDir, name);
+          await api.loadSessionFiles(baseDir, name);
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error('Failed to load session files:', error);
         }
       },
-      [baseDir],
+      [api, baseDir],
     );
 
     const deleteSession = useCallback(
       async (name: string) => {
         try {
-          await window.api.deleteSession(baseDir, name);
+          await api.deleteSession(baseDir, name);
           await loadSessions();
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error('Failed to delete session:', error);
         }
       },
-      [baseDir, loadSessions],
+      [api, baseDir, loadSessions],
     );
 
     const exportSessionToMarkdown = useCallback(async () => {
       try {
-        await window.api.exportSessionToMarkdown(baseDir);
+        await api.exportSessionToMarkdown(baseDir);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to export session:', error);
       }
-    }, [baseDir]);
+    }, [api, baseDir]);
 
     useEffect(() => {
       if (sessionPopupVisible) {

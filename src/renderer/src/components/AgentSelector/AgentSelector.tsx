@@ -19,6 +19,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { Checkbox } from '@/components/common/Checkbox';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
+import { useApi } from '@/context/ApiContext';
 
 type Props = {
   isActive: boolean;
@@ -32,6 +33,7 @@ export const AgentSelector = ({ isActive }: Props) => {
   const [showAgentProfilesDialog, setShowAgentProfilesDialog] = useState(false);
   const [enabledToolsCount, setEnabledToolsCount] = useState<number | null>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
+  const api = useApi();
 
   const activeProfile = getActiveAgentProfile(settings, projectSettings);
   const { agentProfiles = [], mcpServers = {} } = settings || {};
@@ -107,7 +109,7 @@ export const AgentSelector = ({ isActive }: Props) => {
               return 0;
             }
             try {
-              const tools = await window.api.loadMcpServerTools(serverName, mcpServers[serverName]);
+              const tools = await api.loadMcpServerTools(serverName, mcpServers[serverName]);
               const serverTotalTools = tools?.length ?? 0;
               const serverDisabledTools =
                 tools?.filter((tool) => toolApprovals[`${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`] === ToolApprovalState.Never).length ?? 0;
@@ -130,7 +132,7 @@ export const AgentSelector = ({ isActive }: Props) => {
     };
 
     void calculateEnabledTools();
-  }, [enabledServers, mcpServers, toolApprovals]);
+  }, [enabledServers, mcpServers, toolApprovals, api]);
 
   if (!activeProfile) {
     return <div className="text-xs text-text-muted-light">{t('common.loading')}</div>;

@@ -8,6 +8,7 @@ import { Accordion } from '@/components/common/Accordion';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { useApi } from '@/context/ApiContext';
 
 type Props = {
   onClose: () => void;
@@ -23,14 +24,15 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
   const [isProjectAlreadyOpen, setIsProjectAlreadyOpen] = useState(false);
+  const api = useApi();
 
   useEffect(() => {
     const loadRecentProjects = async () => {
-      const projects = await window.api.getRecentProjects();
+      const projects = await api.getRecentProjects();
       setRecentProjects(projects.filter((path) => !openProjects.some((project) => project.baseDir === path)));
     };
     void loadRecentProjects();
-  }, [openProjects]);
+  }, [api, openProjects]);
 
   useEffect(() => {
     const updateSuggestions = async () => {
@@ -40,23 +42,23 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
         return;
       }
       if (showSuggestions) {
-        const paths = await window.api.getFilePathSuggestions(projectPath, true);
+        const paths = await api.getFilePathSuggestions(projectPath, true);
         setSuggestions(paths.filter((path) => !openProjects.some((project) => project.baseDir === path)));
       } else {
         setSuggestions([]);
       }
-      const isValid = await window.api.isProjectPath(projectPath);
+      const isValid = await api.isProjectPath(projectPath);
       setIsValidPath(isValid);
     };
 
     setIsProjectAlreadyOpen(openProjects.some((project) => project.baseDir === projectPath));
 
     void updateSuggestions();
-  }, [projectPath, showSuggestions, openProjects]);
+  }, [projectPath, showSuggestions, openProjects, api]);
 
   const handleSelectProject = async () => {
     try {
-      const result = await window.api.dialog.showOpenDialog({
+      const result = await api.showOpenDialog({
         properties: ['openDirectory'],
       });
 
@@ -99,13 +101,15 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
         autoFocus
         inputClassName="pr-10"
         rightElement={
-          <IconButton
-            onClick={handleSelectProject}
-            className="p-1.5 rounded-md hover:bg-bg-tertiary-strong transition-colors"
-            tooltip={t('dialogs.browseFoldersTooltip')}
-            tooltipId="browseTooltipId"
-            icon={<FaFolder className="w-4 h-4" />}
-          />
+          api.isOpenDialogSupported() && (
+            <IconButton
+              onClick={handleSelectProject}
+              className="p-1.5 rounded-md hover:bg-bg-tertiary-strong transition-colors"
+              tooltip={t('dialogs.browseFoldersTooltip')}
+              tooltipId="browseTooltipId"
+              icon={<FaFolder className="w-4 h-4" />}
+            />
+          )
         }
         onSubmit={handleAddProject}
       />

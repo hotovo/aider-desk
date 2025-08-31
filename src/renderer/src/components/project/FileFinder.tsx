@@ -7,6 +7,7 @@ import { PiKeyReturn } from 'react-icons/pi';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { useApi } from '@/context/ApiContext';
 
 type Props = {
   baseDir?: string;
@@ -38,6 +39,7 @@ export const FileFinder = ({
   const [isValidInputValue, setIsValidInputValue] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const api = useApi();
 
   useEffect(() => {
     if (!baseDir) {
@@ -50,10 +52,10 @@ export const FileFinder = ({
         setIsValidInputValue(false);
         return;
       }
-      setIsValidInputValue(await window.api.isValidPath(baseDir, inputValue));
+      setIsValidInputValue(await api.isValidPath(baseDir, inputValue));
     };
     void checkValidPath();
-  }, [inputValue, baseDir]);
+  }, [inputValue, baseDir, api]);
 
   useEffect(() => {
     const updateSuggestions = async () => {
@@ -61,7 +63,7 @@ export const FileFinder = ({
         setSuggestions([]);
         return;
       }
-      const suggestionFiles = isReadOnly || !baseDir ? await window.api.getFilePathSuggestions(inputValue) : await window.api.getAddableFiles(baseDir);
+      const suggestionFiles = isReadOnly || !baseDir ? await api.getFilePathSuggestions(inputValue) : await api.getAddableFiles(baseDir);
 
       const getParentDirectories = () => {
         const parentDirs = new Set<string>();
@@ -117,7 +119,7 @@ export const FileFinder = ({
     };
 
     void updateSuggestions();
-  }, [inputValue, showSuggestions, baseDir, isReadOnly, selectedPaths, allowFiles, allowDirectories]);
+  }, [inputValue, showSuggestions, baseDir, isReadOnly, selectedPaths, allowFiles, allowDirectories, api]);
 
   const handleInputSubmit = () => {
     if (inputValue && isValidInputValue && !selectedPaths.includes(inputValue)) {
@@ -165,7 +167,7 @@ export const FileFinder = ({
 
   const handleBrowse = async (browseType: 'file' | 'directory') => {
     try {
-      const result = await window.api.dialog.showOpenDialog({
+      const result = await api.showOpenDialog({
         properties: [browseType === 'file' ? 'openFile' : 'openDirectory', 'multiSelections'],
         defaultPath: isReadOnly ? undefined : baseDir,
       });
@@ -195,25 +197,27 @@ export const FileFinder = ({
       />
     ) : null;
 
-  const browseFileButton = allowFiles ? (
-    <IconButton
-      onClick={() => handleBrowse('file')}
-      icon={<FaFile className="w-4 h-4" />}
-      tooltipId="browseTooltipId"
-      tooltip={t('fileFinder.browseFile')}
-      className="p-2 rounded-md hover:bg-bg-tertiary-strong transition-colors"
-    />
-  ) : null;
+  const browseFileButton =
+    allowFiles && api.isOpenDialogSupported() ? (
+      <IconButton
+        onClick={() => handleBrowse('file')}
+        icon={<FaFile className="w-4 h-4" />}
+        tooltipId="browseTooltipId"
+        tooltip={t('fileFinder.browseFile')}
+        className="p-2 rounded-md hover:bg-bg-tertiary-strong transition-colors"
+      />
+    ) : null;
 
-  const browseDirectoryButton = allowDirectories ? (
-    <IconButton
-      onClick={() => handleBrowse('directory')}
-      icon={<FaFolder className="w-4 h-4" />}
-      tooltipId="browseTooltipId"
-      tooltip={t('fileFinder.browseDirectory')}
-      className="p-2 rounded-md hover:bg-bg-tertiary-strong transition-colors"
-    />
-  ) : null;
+  const browseDirectoryButton =
+    allowDirectories && api.isOpenDialogSupported() ? (
+      <IconButton
+        onClick={() => handleBrowse('directory')}
+        icon={<FaFolder className="w-4 h-4" />}
+        tooltipId="browseTooltipId"
+        tooltip={t('fileFinder.browseDirectory')}
+        className="p-2 rounded-md hover:bg-bg-tertiary-strong transition-colors"
+      />
+    ) : null;
 
   const internalRightElement =
     addPathButton || browseFileButton || browseDirectoryButton ? (

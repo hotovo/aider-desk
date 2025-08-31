@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { BaseApi } from './base-api';
 
-import { ProjectManager } from '@/project';
+import { EventsHandler } from '@/events-handler';
 
 const GetCustomCommandsSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
@@ -17,7 +17,7 @@ const RunCustomCommandSchema = z.object({
 });
 
 export class CommandsApi extends BaseApi {
-  constructor(private readonly projectManager: ProjectManager) {
+  constructor(private readonly eventsHandler: EventsHandler) {
     super();
   }
 
@@ -26,17 +26,13 @@ export class CommandsApi extends BaseApi {
     router.get(
       '/project/custom-commands',
       this.handleRequest(async (req, res) => {
-        const result = GetCustomCommandsSchema.safeParse(req.query);
-        if (!result.success) {
-          res.status(400).json({
-            error: 'Invalid request',
-            details: result.error.issues,
-          });
+        const parsed = this.validateRequest(GetCustomCommandsSchema, req.query, res);
+        if (!parsed) {
           return;
         }
 
-        const { projectDir } = result.data;
-        const commands = await this.projectManager.getCustomCommands(projectDir);
+        const { projectDir } = parsed;
+        const commands = await this.eventsHandler.getCustomCommands(projectDir);
         res.status(200).json(commands);
       }),
     );
@@ -45,22 +41,14 @@ export class CommandsApi extends BaseApi {
     router.post(
       '/project/custom-commands',
       this.handleRequest(async (req, res) => {
-        const result = RunCustomCommandSchema.safeParse(req.body);
-        if (!result.success) {
-          res.status(400).json({
-            error: 'Invalid request',
-            details: result.error.issues,
-          });
+        const parsed = this.validateRequest(RunCustomCommandSchema, req.body, res);
+        if (!parsed) {
           return;
         }
 
-        const { projectDir, commandName, args, mode } = result.data;
-        const project = this.projectManager.getProject(projectDir);
-        const validatedProject = this.findProject(project, projectDir, res);
-        if (validatedProject) {
-          await validatedProject.runCustomCommand(commandName, args, mode);
-          res.status(200).json({ message: 'Custom command executed' });
-        }
+        const { projectDir, commandName, args, mode } = parsed;
+        await this.eventsHandler.runCustomCommand(projectDir, commandName, args, mode);
+        res.status(200).json({ message: 'Custom command executed' });
       }),
     );
   }

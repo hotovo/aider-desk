@@ -14,6 +14,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
 import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { ApiProvider } from '@/context/ApiContext';
 
 const ThemeAndFontManager = () => {
   const { theme, font = 'Sono' } = useSettings();
@@ -82,13 +83,15 @@ const App = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
       <Router>
-        <SettingsProvider>
-          <ContextMenuProvider>
-            <ThemeAndFontManager />
-            <AnimatedRoutes />
-            <ToastContainer />
-          </ContextMenuProvider>
-        </SettingsProvider>
+        <ApiProvider>
+          <SettingsProvider>
+            <ContextMenuProvider>
+              <ThemeAndFontManager />
+              <AnimatedRoutes />
+              <ToastContainer />
+            </ContextMenuProvider>
+          </SettingsProvider>
+        </ApiProvider>
       </Router>
     </motion.div>
   );

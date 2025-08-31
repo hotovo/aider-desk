@@ -1,5 +1,6 @@
 import {
   AutocompletionData,
+  ClearProjectData,
   CommandOutputData,
   InputHistoryData,
   LogData,
@@ -16,7 +17,6 @@ import {
   UserMessageData,
 } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { IpcRendererEvent } from 'electron';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
@@ -54,6 +54,7 @@ import { TodoWindow } from '@/components/project/TodoWindow';
 import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
 import 'react-resizable/css/styles.css';
 import { useSearchText } from '@/hooks/useSearchText';
+import { useApi } from '@/context/ApiContext';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -69,6 +70,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const { t } = useTranslation();
   const { settings } = useSettings();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
+  const api = useApi();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [processing, setProcessing] = useState(false);
@@ -119,12 +121,12 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     const handleProjectStarted = () => {
       setLoading(false);
     };
-    const removeProjectStartedListener = window.api.addProjectStartedListener(project.baseDir, handleProjectStarted);
+    const removeProjectStartedListener = api.addProjectStartedListener(project.baseDir, handleProjectStarted);
 
     // Load existing todos
     const loadTodos = async () => {
       try {
-        const todos = await window.api.getTodos(project.baseDir);
+        const todos = await api.getTodos(project.baseDir);
         setTodoItems(todos);
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -132,17 +134,17 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    window.api.startProject(project.baseDir);
+    api.startProject(project.baseDir);
     void loadTodos();
 
     return () => {
       removeProjectStartedListener();
-      window.api.stopProject(project.baseDir);
+      api.stopProject(project.baseDir);
     };
-  }, [project.baseDir]);
+  }, [api, project.baseDir]);
 
   useEffect(() => {
-    const handleResponseChunk = (_: IpcRendererEvent, { messageId, chunk, reflectedMessage, promptContext }: ResponseChunkData) => {
+    const handleResponseChunk = ({ messageId, chunk, reflectedMessage, promptContext }: ResponseChunkData) => {
       const processingMessage = processingMessageRef.current;
       if (processingMessage && processingMessage.id === messageId) {
         processingMessageRef.current = {
@@ -207,7 +209,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleResponseCompleted = (_: IpcRendererEvent, { messageId, usageReport, content, reflectedMessage, promptContext }: ResponseCompletedData) => {
+    const handleResponseCompleted = ({ messageId, usageReport, content, reflectedMessage, promptContext }: ResponseCompletedData) => {
       const processingMessage = processingMessageRef.current;
 
       if (content) {
@@ -272,7 +274,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       setProcessing(false);
     };
 
-    const handleCommandOutput = (_: IpcRendererEvent, { command, output }: CommandOutputData) => {
+    const handleCommandOutput = ({ command, output }: CommandOutputData) => {
       setMessages((prevMessages) => {
         const lastMessage = prevMessages[prevMessages.length - 1];
 
@@ -336,7 +338,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleTool = (_: IpcRendererEvent, { id, serverName, toolName, args, response, usageReport, promptContext }: ToolData) => {
+    const handleTool = ({ id, serverName, toolName, args, response, usageReport, promptContext }: ToolData) => {
       if (serverName === TODO_TOOL_GROUP_NAME) {
         handleTodoTool(toolName, args, response);
 
@@ -386,7 +388,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleLog = (_: IpcRendererEvent, { level, message, finished, promptContext }: LogData) => {
+    const handleLog = ({ level, message, finished, promptContext }: LogData) => {
       if (level === 'loading') {
         if (finished) {
           // Mark all messages in the same group as finished before removing loading messages
@@ -457,13 +459,13 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleUpdateAutocompletion = (_: IpcRendererEvent, { allFiles, models, words }: AutocompletionData) => {
+    const handleUpdateAutocompletion = ({ allFiles, models, words }: AutocompletionData) => {
       setAllFiles(allFiles);
       setAvailableModels(models);
       setAutocompletionWords(words);
     };
 
-    const handleUpdateAiderModels = (_: IpcRendererEvent, data: ModelsData) => {
+    const handleUpdateAiderModels = (data: ModelsData) => {
       setAiderModelsData(data);
       setLoading(false);
 
@@ -478,19 +480,19 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleTokensInfo = (_: IpcRendererEvent, data: TokensInfoData) => {
+    const handleTokensInfo = (data: TokensInfoData) => {
       setTokensInfo(data);
     };
 
-    const handleQuestion = (_: IpcRendererEvent, data: QuestionData) => {
+    const handleQuestion = (data: QuestionData) => {
       setQuestion(data);
     };
 
-    const handleInputHistoryUpdate = (_: IpcRendererEvent, data: InputHistoryData) => {
+    const handleInputHistoryUpdate = (data: InputHistoryData) => {
       setInputHistory(data.messages);
     };
 
-    const handleUserMessage = (_: IpcRendererEvent, data: UserMessageData) => {
+    const handleUserMessage = (data: UserMessageData) => {
       const userMessage: UserMessage = {
         id: uuidv4(),
         type: 'user',
@@ -506,7 +508,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       });
     };
 
-    const handleClearProject = (_: IpcRendererEvent, messages: boolean, session: boolean) => {
+    const handleClearProject = ({ clearMessages: messages, clearSession: session }: ClearProjectData) => {
       if (session) {
         clearSession();
       } else if (messages) {
@@ -514,18 +516,18 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const removeAutocompletionListener = window.api.addUpdateAutocompletionListener(project.baseDir, handleUpdateAutocompletion);
-    const removeUpdateAiderModelsListener = window.api.addUpdateAiderModelsListener(project.baseDir, handleUpdateAiderModels);
-    const removeCommandOutputListener = window.api.addCommandOutputListener(project.baseDir, handleCommandOutput);
-    const removeResponseChunkListener = window.api.addResponseChunkListener(project.baseDir, handleResponseChunk);
-    const removeResponseCompletedListener = window.api.addResponseCompletedListener(project.baseDir, handleResponseCompleted);
-    const removeLogListener = window.api.addLogListener(project.baseDir, handleLog);
-    const removeTokensInfoListener = window.api.addTokensInfoListener(project.baseDir, handleTokensInfo);
-    const removeQuestionListener = window.api.addAskQuestionListener(project.baseDir, handleQuestion);
-    const removeToolListener = window.api.addToolListener(project.baseDir, handleTool);
-    const removeInputHistoryListener = window.api.addInputHistoryUpdatedListener(project.baseDir, handleInputHistoryUpdate);
-    const removeUserMessageListener = window.api.addUserMessageListener(project.baseDir, handleUserMessage);
-    const removeClearProjectListener = window.api.addClearProjectListener(project.baseDir, handleClearProject);
+    const removeAutocompletionListener = api.addUpdateAutocompletionListener(project.baseDir, handleUpdateAutocompletion);
+    const removeUpdateAiderModelsListener = api.addUpdateAiderModelsListener(project.baseDir, handleUpdateAiderModels);
+    const removeCommandOutputListener = api.addCommandOutputListener(project.baseDir, handleCommandOutput);
+    const removeResponseChunkListener = api.addResponseChunkListener(project.baseDir, handleResponseChunk);
+    const removeResponseCompletedListener = api.addResponseCompletedListener(project.baseDir, handleResponseCompleted);
+    const removeLogListener = api.addLogListener(project.baseDir, handleLog);
+    const removeTokensInfoListener = api.addTokensInfoListener(project.baseDir, handleTokensInfo);
+    const removeQuestionListener = api.addAskQuestionListener(project.baseDir, handleQuestion);
+    const removeToolListener = api.addToolListener(project.baseDir, handleTool);
+    const removeInputHistoryListener = api.addInputHistoryUpdatedListener(project.baseDir, handleInputHistoryUpdate);
+    const removeUserMessageListener = api.addUserMessageListener(project.baseDir, handleUserMessage);
+    const removeClearProjectListener = api.addClearProjectListener(project.baseDir, handleClearProject);
 
     return () => {
       removeAutocompletionListener();
@@ -542,11 +544,11 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       removeClearProjectListener();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.baseDir]);
+  }, [project.baseDir, api]);
 
   const handleAddFiles = (filePaths: string[], readOnly = false) => {
     for (const filePath of filePaths) {
-      window.api.addFile(project.baseDir, filePath, readOnly);
+      api.addFile(project.baseDir, filePath, readOnly);
     }
     setAddFileDialogOptions(null);
     promptFieldRef.current?.focus();
@@ -575,7 +577,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     processingMessageRef.current = null;
 
     if (clearContext) {
-      window.api.clearContext(project.baseDir);
+      api.clearContext(project.baseDir);
     }
   };
 
@@ -588,7 +590,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const runCommand = (command: string) => {
-    window.api.runCommand(project.baseDir, command);
+    api.runCommand(project.baseDir, command);
   };
 
   const runTests = (testCmd?: string) => {
@@ -597,7 +599,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const answerQuestion = (answer: string) => {
     if (question) {
-      window.api.answerQuestion(project.baseDir, answer);
+      api.answerQuestion(project.baseDir, answer);
       setQuestion(null);
     }
   };
@@ -612,7 +614,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
     setMessages((prevMessages) => [...prevMessages, loadingMessage]);
     try {
-      await window.api.scrapeWeb(project.baseDir, url, filePath);
+      await api.scrapeWeb(project.baseDir, url, filePath);
     } catch (error) {
       if (error instanceof Error) {
         const getMessage = () => {
@@ -640,7 +642,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const handleInterruptResponse = () => {
-    window.api.interruptResponse(project.baseDir);
+    api.interruptResponse(project.baseDir);
     const interruptMessage: LogMessage = {
       id: uuidv4(),
       type: 'log',
@@ -679,9 +681,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       const newMessages = messages.slice(0, editingMessageIndex);
       setEditingMessageIndex(null); // Clear editing state
       setMessages(newMessages);
-      window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode, prompt);
+      api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode, prompt);
     } else {
-      window.api.runPrompt(project.baseDir, prompt, projectSettings.currentMode);
+      api.runPrompt(project.baseDir, prompt, projectSettings.currentMode);
     }
   };
 
@@ -714,7 +716,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const restartProject = () => {
     setLoading(true);
-    void window.api.restartProject(project.baseDir);
+    void api.restartProject(project.baseDir);
     clearSession();
   };
 
@@ -733,7 +735,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages(newMessages);
     if (projectSettings) {
       // Ensure projectSettings is available
-      window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode);
+      api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode);
     }
   };
 
@@ -741,7 +743,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     const isLastMessage = messages[messages.length - 1] === messageToRemove;
 
     if (isLastMessage && (isToolMessage(messageToRemove) || isUserMessage(messageToRemove) || isResponseMessage(messageToRemove))) {
-      window.api.removeLastMessage(project.baseDir);
+      api.removeLastMessage(project.baseDir);
     }
 
     setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
@@ -749,7 +751,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleAddTodo = async (name: string) => {
     try {
-      const updatedTodos = await window.api.addTodo(project.baseDir, name);
+      const updatedTodos = await api.addTodo(project.baseDir, name);
       setTodoItems(updatedTodos);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -759,7 +761,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleToggleTodo = async (name: string, completed: boolean) => {
     try {
-      const updatedTodos = await window.api.updateTodo(project.baseDir, name, {
+      const updatedTodos = await api.updateTodo(project.baseDir, name, {
         completed,
       });
       setTodoItems(updatedTodos);
@@ -771,7 +773,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleUpdateTodo = async (name: string, updates: Partial<TodoItem>) => {
     try {
-      const updatedTodos = await window.api.updateTodo(project.baseDir, name, updates);
+      const updatedTodos = await api.updateTodo(project.baseDir, name, updates);
       setTodoItems(updatedTodos);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -781,7 +783,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleDeleteTodo = async (name: string) => {
     try {
-      const updatedTodos = await window.api.deleteTodo(project.baseDir, name);
+      const updatedTodos = await api.deleteTodo(project.baseDir, name);
       setTodoItems(updatedTodos);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -791,7 +793,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const handleClearAllTodos = async () => {
     try {
-      const updatedTodos = await window.api.clearAllTodos(project.baseDir);
+      const updatedTodos = await api.clearAllTodos(project.baseDir);
       setTodoItems(updatedTodos);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -924,7 +926,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               disabled={!aiderModelsData}
               promptBehavior={settings.promptBehavior}
               clearLogMessages={clearLogMessages}
-              toggleTerminal={toggleTerminal}
+              toggleTerminal={api.isTerminalSupported() ? toggleTerminal : undefined}
               terminalVisible={terminalVisible}
               scrollToBottom={messagesRef.current?.scrollToBottom}
             />

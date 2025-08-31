@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
-import { ProjectSettings, SettingsData, UsageReportData } from './types';
+import { OS, ProjectSettings, SettingsData, UsageReportData } from './types';
 
 type TextContent =
   | string
@@ -69,8 +69,11 @@ export const parseUsageReport = (model: string, report: string): UsageReportData
   };
 };
 
-export const normalizeBaseDir = (baseDir: string): string => {
-  if (process.platform === 'win32') {
+export const normalizeBaseDir = (
+  baseDir: string,
+  os: OS = process.platform === 'win32' ? OS.Windows : process.platform === 'darwin' ? OS.MacOS : OS.Linux,
+): string => {
+  if (os === OS.Windows) {
     // On Windows, paths are case-insensitive so we normalize to lowercase
     return baseDir.toLowerCase();
   } else {
@@ -89,6 +92,10 @@ export const normalizeBaseDir = (baseDir: string): string => {
     // Otherwise, return the path as is
     return baseDir;
   }
+};
+
+export const compareBaseDirs = (baseDir1: string, baseDir2: string, os?: OS): boolean => {
+  return normalizeBaseDir(baseDir1, os) === normalizeBaseDir(baseDir2, os);
 };
 
 export const fileExists = async (fileName: string): Promise<boolean> => {

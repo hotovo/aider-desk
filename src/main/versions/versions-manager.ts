@@ -2,12 +2,13 @@ import path from 'path';
 
 import { VersionsInfo } from '@common/types';
 import { autoUpdater } from 'electron-updater';
-import { app, BrowserWindow } from 'electron';
+import { app } from 'electron';
 import { is } from '@electron-toolkit/utils';
 
 import { getCurrentPythonLibVersion, getLatestPythonLibVersion } from '@/utils';
 import logger from '@/logger';
 import { Store } from '@/store';
+import { EventManager } from '@/events';
 
 export class VersionsManager {
   private readonly checkInterval = 10 * 60 * 1000; // 10 minutes
@@ -15,11 +16,9 @@ export class VersionsManager {
   private versionsInfo: VersionsInfo | null = null;
 
   constructor(
-    private readonly mainWindow: BrowserWindow,
+    private readonly eventManager: EventManager,
     private readonly store: Store,
   ) {
-    this.mainWindow = mainWindow;
-    this.store = store;
     this.init().catch((error) => {
       logger.error('Failed to initialize VersionsManager', { error });
     });
@@ -83,7 +82,7 @@ export class VersionsManager {
       ...this.versionsInfo,
       ...partialInfo,
     };
-    this.mainWindow.webContents.send('versions-info-updated', this.versionsInfo);
+    this.eventManager.sendVersionsInfoUpdated(this.versionsInfo);
   }
 
   private async init(): Promise<void> {
@@ -95,7 +94,9 @@ export class VersionsManager {
     }
 
     autoUpdater.on('download-progress', (progressObj) => {
-      logger.debug('[AutoUpdater] Update download progress', { progress: progressObj.percent });
+      logger.debug('[AutoUpdater] Update download progress', {
+        progress: progressObj.percent,
+      });
 
       this.updateVersionsInfo({
         aiderDeskDownloadProgress: Math.max(0, Math.min(100, progressObj.percent)),

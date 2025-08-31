@@ -10,6 +10,7 @@ import {
   OpenRouterProvider,
   RequestyProvider,
 } from '@common/agent';
+import { z } from 'zod';
 
 import type { AssistantContent, ToolContent, UserContent } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
@@ -178,17 +179,19 @@ export interface WindowState {
   isMaximized: boolean;
 }
 
-export interface ProjectSettings {
-  mainModel: string;
-  weakModel?: string | null;
-  architectModel?: string | null;
-  agentProfileId: string;
-  modelEditFormats: Record<string, EditFormat>;
-  reasoningEffort?: string;
-  thinkingTokens?: string;
-  currentMode: Mode;
-  renderMarkdown: boolean;
-}
+export const ProjectSettingsSchema = z.object({
+  mainModel: z.string(),
+  weakModel: z.string().nullable().optional(),
+  architectModel: z.string().nullable().optional(),
+  agentProfileId: z.string(),
+  modelEditFormats: z.record(z.string(), z.enum(['diff', 'diff-fenced', 'whole', 'udiff', 'udiff-simple', 'patch'])),
+  reasoningEffort: z.string().optional(),
+  thinkingTokens: z.string().optional(),
+  currentMode: z.enum(['code', 'ask', 'architect', 'context', 'agent']),
+  renderMarkdown: z.boolean(),
+});
+
+export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
 
 export interface ProjectData {
   active: boolean;
@@ -378,6 +381,16 @@ export interface Group {
 export interface PromptContext {
   id: string;
   group?: Group;
+}
+
+export interface ProjectStartedData {
+  baseDir: string;
+}
+
+export interface ClearProjectData {
+  baseDir: string;
+  clearMessages: boolean;
+  clearSession: boolean;
 }
 
 export interface UsageReportData {

@@ -2,12 +2,12 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
-import { IpcRendererEvent } from 'electron';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
 
 import '@xterm/xterm/css/xterm.css';
 import './Terminal.scss';
+import { useApi } from '@/context/ApiContext';
 
 export type TerminalRef = {
   focus: () => void;
@@ -28,6 +28,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
   const fitAddonRef = useRef<FitAddon | null>(null);
   const [terminalId, setTerminalId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const api = useApi();
 
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -109,14 +110,14 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
     // Handle terminal input
     xterm.onData((data) => {
       if (terminalId) {
-        void window.api.writeToTerminal(terminalId, data);
+        void api.writeToTerminal(terminalId, data);
       }
     });
 
     // Handle terminal resize
     xterm.onResize(({ cols, rows }) => {
       if (terminalId) {
-        void window.api.resizeTerminal(terminalId, cols, rows);
+        void api.resizeTerminal(terminalId, cols, rows);
       }
     });
 
@@ -128,7 +129,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
       xtermRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [terminalId]);
+  }, [terminalId, api]);
 
   // Create terminal process
   useEffect(() => {
@@ -146,16 +147,16 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
         // Always create a new terminal for each Terminal component instance
         const cols = xtermRef.current?.cols || 160;
         const rows = xtermRef.current?.rows || 10;
-        const id = await window.api.createTerminal(baseDir, cols, rows);
+        const id = await api.createTerminal(baseDir, cols, rows);
 
         // Handle terminal input
         xterm.onData((data) => {
-          void window.api.writeToTerminal(id, data);
+          void api.writeToTerminal(id, data);
         });
 
         // Handle terminal resize
         xterm.onResize(({ cols, rows }) => {
-          void window.api.resizeTerminal(id, cols, rows);
+          void api.resizeTerminal(id, cols, rows);
         });
 
         setTerminalId(id);
@@ -168,7 +169,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
     };
 
     void createTerminal();
-  }, [baseDir, terminalId, visible]);
+  }, [baseDir, terminalId, visible, api]);
 
   // Handle terminal data
   useEffect(() => {
@@ -176,13 +177,13 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
       return;
     }
 
-    const handleTerminalData = (_: IpcRendererEvent, data: TerminalData) => {
+    const handleTerminalData = (data: TerminalData) => {
       if (data.terminalId === terminalId && xtermRef.current) {
         xtermRef.current.write(data.data);
       }
     };
 
-    const handleTerminalExit = (_: IpcRendererEvent, data: TerminalExitData) => {
+    const handleTerminalExit = (data: TerminalExitData) => {
       if (data.terminalId === terminalId) {
         setIsConnected(false);
         if (xtermRef.current) {
@@ -192,14 +193,14 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
       }
     };
 
-    const removeTerminalDataListener = window.api.addTerminalDataListener(baseDir, handleTerminalData);
-    const removeTerminalExitListener = window.api.addTerminalExitListener(baseDir, handleTerminalExit);
+    const removeTerminalDataListener = api.addTerminalDataListener(baseDir, handleTerminalData);
+    const removeTerminalExitListener = api.addTerminalExitListener(baseDir, handleTerminalExit);
 
     return () => {
       removeTerminalDataListener();
       removeTerminalExitListener();
     };
-  }, [terminalId, baseDir]);
+  }, [terminalId, baseDir, api]);
 
   // Handle resize when visibility changes
   useEffect(() => {
@@ -217,10 +218,10 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
   useEffect(() => {
     return () => {
       if (terminalId) {
-        void window.api.closeTerminal(terminalId);
+        void api.closeTerminal(terminalId);
       }
     };
-  }, [terminalId]);
+  }, [terminalId, api]);
 
   return (
     <div key={terminalId} className={clsx('absolute inset-0 overflow-hidden bg-[#0a0a0a]', visible ? 'block' : 'hidden', className)}>

@@ -1,22 +1,25 @@
 import { CustomCommand } from '@common/types';
 import { useEffect, useState } from 'react';
 
+import { useApi } from '@/context/ApiContext';
+
 export const useCustomCommands = (baseDir: string) => {
   const [customCommands, setCustomCommands] = useState<CustomCommand[]>([]);
+  const api = useApi();
 
   useEffect(() => {
     // Load initial commands
-    window.api.getCustomCommands(baseDir).then(setCustomCommands);
+    api.getCustomCommands(baseDir).then(setCustomCommands);
 
     // Listen for commands updates
-    const removeListener = window.api.addCustomCommandsUpdatedListener(baseDir, (_, data) => {
+    const removeListener = api.addCustomCommandsUpdatedListener(baseDir, (data) => {
       setCustomCommands(data.commands);
     });
 
     return () => {
       removeListener();
     };
-  }, [baseDir]);
+  }, [baseDir, api]);
 
   return customCommands;
 };

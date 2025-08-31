@@ -6,6 +6,7 @@ import { Button } from '@/components/common/Button';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Section } from '@/components/common/Section';
 import { useVersions } from '@/hooks/useVersions';
+import { useApi } from '@/context/ApiContext';
 
 type Props = {
   settings: SettingsData;
@@ -15,6 +16,7 @@ type Props = {
 export const AboutSettings = ({ settings, setSettings }: Props) => {
   const { t } = useTranslation();
   const { versions, checkForUpdates } = useVersions();
+  const api = useApi();
 
   const isAiderDeskUpdateAvailable =
     !versions?.aiderDeskDownloadProgress && versions?.aiderDeskAvailableVersion && versions.aiderDeskAvailableVersion !== versions.aiderDeskCurrentVersion;
@@ -23,7 +25,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
 
   const openLogsDirectory = async () => {
     try {
-      const success = await window.api.openLogsDirectory();
+      const success = await api.openLogsDirectory();
       if (!success) {
         toast.error(t('settings.about.openLogsError'));
       }
@@ -37,7 +39,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
 
   const handleDownloadUpdate = async () => {
     try {
-      await window.api.downloadLatestAiderDesk();
+      await api.downloadLatestAiderDesk();
     } catch (error) {
       toast.error(t('settings.about.downloadError'));
       // eslint-disable-next-line no-console
@@ -115,9 +117,13 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
         </div>
       </Section>
       <div className="flex flex-row justify-between items-center space-x-4">
-        <Button onClick={openLogsDirectory} variant="text" size="sm" color="secondary">
-          {t('settings.about.openLogsDirectory')}
-        </Button>
+        {api.isOpenLogsDirectorySupported() ? (
+          <Button onClick={openLogsDirectory} variant="text" size="sm" color="secondary">
+            {t('settings.about.openLogsDirectory')}
+          </Button>
+        ) : (
+          <div />
+        )}
         <Button onClick={checkForUpdates} disabled={!versions} variant="text" size="sm">
           {t('settings.about.checkForUpdates')}
         </Button>

@@ -2,6 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, u
 import { useTranslation } from 'react-i18next';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useApi } from '@/context/ApiContext';
 
 type ContextMenuContextType = {
   showMenu: (x: number, y: number, options: MenuOption[], targetElement?: Element | null) => void;
@@ -82,12 +83,13 @@ export const ContextMenuProvider = ({ children }: Props) => {
 export const useContextMenu = () => {
   const context = useContext(ContextMenuContext);
   const { t } = useTranslation();
+  const api = useApi();
   if (context === undefined) {
     throw new Error('useContextMenu must be used within a ContextMenuProvider');
   }
 
   useEffect(() => {
-    const handleContextMenu = (_event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => {
+    const handleContextMenu = (params: Electron.ContextMenuParams) => {
       const { x, y, selectionText, isEditable } = params;
 
       // Capture the target element when context menu is triggered
@@ -138,8 +140,8 @@ export const useContextMenu = () => {
       }
     };
 
-    return window.api.addContextMenuListener(handleContextMenu);
-  }, [context, t]);
+    return api.addContextMenuListener(handleContextMenu);
+  }, [context, t, api]);
 
   return context;
 };

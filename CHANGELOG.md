@@ -7,6 +7,8 @@
 - added 'Can use subagents' configuration to Agent profile
 - extended Rest API with more endpoints
 - added events manager layer and support for Socket.IO event updates
+- added headless mode with AIDER_DESK_HEADLESS=true environment variable
+- added full API layer for external clients
 
 ## [0.28.0]
 
