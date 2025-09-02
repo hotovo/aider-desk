@@ -354,11 +354,16 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
                     className={`select-none text-2xs overflow-hidden ${item.isFolder ? 'context-dimmed' : 'text-text-primary font-semibold'}`}
                     {...(item.isFolder ? { onClick: context.arrowProps.onClick } : {})}
                     data-tooltip-id="context-files-tooltip"
-                    data-tooltip-content={
-                      tokensInfo?.files && item.index && !item.isFolder
-                        ? `${t('usageDashboard.charts.tokens')}: ${tokensInfo.files[item.index]?.tokens || 0}, ${t('usageDashboard.charts.cost')}: $${(tokensInfo.files[item.index]?.cost || 0).toFixed(5)}`
-                        : ''
-                    }
+                    data-tooltip-content={(() => {
+                      if (!tokensInfo?.files || item.isFolder) {
+                        return '';
+                      }
+                      const fileTokenInfo = tokensInfo.files[item.index as string];
+                      if (!fileTokenInfo) {
+                        return '';
+                      }
+                      return `${t('usageDashboard.charts.tokens')}: ${fileTokenInfo.tokens || 0}, ${t('usageDashboard.charts.cost')}: $${(fileTokenInfo.cost || 0).toFixed(5)}`;
+                    })()}
                   >
                     {title}
                   </span>
