@@ -38,8 +38,8 @@
 }
 
 :root {
-  --font-family: "Sono";
-  --font-size: 14px;
+  --font-family: Sono;
+  --font-size: 16px;
 }
 
 body {
@@ -59,7 +59,6 @@ body {
   font-variation-settings: "MONO" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-size: var(--font-size);
 }
 
 code {

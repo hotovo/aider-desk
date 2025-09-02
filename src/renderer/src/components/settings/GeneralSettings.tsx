@@ -29,6 +29,11 @@ const FONT_SIZE_OPTIONS: Option[] = [
   { label: '16px', value: '16' },
   { label: '17px', value: '17' },
   { label: '18px', value: '18' },
+  { label: '20px', value: '18' },
+  { label: '22px', value: '18' },
+  { label: '24px', value: '18' },
+  { label: '28px', value: '18' },
+  { label: '32px', value: '18' },
 ];
 
 type Props = {

@@ -17,7 +17,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { ApiProvider } from '@/context/ApiContext';
 
 const ThemeAndFontManager = () => {
-  const { theme, font = 'Sono' } = useSettings();
+  const { theme, font = 'Sono', fontSize = 16 } = useSettings();
 
   useEffect(() => {
     // Remove all theme classes first
@@ -29,8 +29,9 @@ const ThemeAndFontManager = () => {
     document.body.classList.add(`theme-${newTheme}`);
 
     document.documentElement.style.setProperty('--font-family', `"${font}", monospace`);
+    document.documentElement.style.setProperty('font-size', `${fontSize}px`);
     document.documentElement.style.setProperty('font-variation-settings', '"MONO" 1');
-  }, [font, theme]);
+  }, [font, theme, fontSize]);
 
   return null;
 };
