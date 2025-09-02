@@ -17,6 +17,7 @@ type Props = {
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (theme: Theme) => void;
   onFontChange: (fontName: Font) => void;
+  onFontSizeChange: (fontSize: number) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;
@@ -29,6 +30,7 @@ export const Settings = ({
   onZoomChange,
   onThemeChange,
   onFontChange,
+  onFontSizeChange,
   initialTab = 0,
   initialAgentProfileId,
 }: Props) => {
@@ -77,6 +79,7 @@ export const Settings = ({
             onZoomChange={onZoomChange}
             onThemeChange={onThemeChange}
             onFontChange={onFontChange}
+            onFontSizeChange={onFontSizeChange}
           />,
         )}
         {renderTabPanel(<ModelProvidersSettings settings={settings} setSettings={updateSettings} onSwitchToAiderTab={handleSwitchToAiderTab} />)}

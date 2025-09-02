@@ -59,6 +59,15 @@ export const setupIpcHandlers = (
     return store.getSettings().font;
   });
 
+  ipcMain.handle('save-font-size', (_, fontSize: number) => {
+    const oldSettings = store.getSettings();
+    store.saveSettings({ ...oldSettings, fontSize });
+
+    mainWindow.webContents.insertCSS(`:root { --font-size: ${fontSize}px !important; }`);
+
+    return store.getSettings().fontSize;
+  });
+
   ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {
     void projectManager.getProject(baseDir).runPrompt(prompt, mode);
   });

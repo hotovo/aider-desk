@@ -248,6 +248,12 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const settings = store.getSettings();
   mainWindow.webContents.setZoomFactor(settings.zoomLevel ?? 1.0);
 
+  if (settings.fontSize) {
+    mainWindow.webContents.on('did-finish-load', () => {
+      mainWindow.webContents.insertCSS(`:root { --font-size: ${settings.fontSize}px !important; }`);
+    });
+  }
+
   return mainWindow;
 };
 

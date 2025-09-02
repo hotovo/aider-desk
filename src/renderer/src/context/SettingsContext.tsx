@@ -8,6 +8,8 @@ type SettingsContextType = {
   saveTheme: (theme: Theme) => void;
   font: Font | null;
   saveFont: (font: Font) => void;
+  fontSize: number | null;
+  saveFontSize: (fontSize: number) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -16,6 +18,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [theme, setTheme] = useState<Theme | null>(null);
   const [font, setFont] = useState<Font | null>(null);
+  const [fontSize, setFontSize] = useState<number | null>(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -23,6 +26,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       setSettings(loadedSettings);
       setTheme(loadedSettings.theme || null);
       setFont(loadedSettings.font || null);
+      setFontSize(loadedSettings.fontSize || null);
     };
     void loadSettings();
   }, []);
@@ -60,7 +64,22 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  return <SettingsContext.Provider value={{ settings, saveSettings, theme, saveTheme, font, saveFont }}>{children}</SettingsContext.Provider>;
+  const saveFontSize = async (size: number) => {
+    try {
+      setFontSize(size);
+      const updatedFontSize = await window.api.saveFontSize(size);
+      setFontSize(updatedFontSize);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to save font size:', error);
+    }
+  };
+
+  return (
+    <SettingsContext.Provider value={{ settings, saveSettings, theme, saveTheme, font, saveFont, fontSize, saveFontSize }}>
+      {children}
+    </SettingsContext.Provider>
+  );
 };
 
 export const useSettings = () => {

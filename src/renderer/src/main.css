@@ -39,6 +39,7 @@
 
 :root {
   --font-family: "Sono";
+  --font-size: 14px;
 }
 
 body {
@@ -49,6 +50,7 @@ body {
   font-weight: 400;
   font-style: normal;
   font-variation-settings: "MONO" 1;
+  font-size: var(--font-size);
 }
 
 * {

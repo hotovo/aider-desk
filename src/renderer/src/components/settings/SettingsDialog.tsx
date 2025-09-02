@@ -18,7 +18,7 @@ type Props = {
 export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t, i18n } = useTranslation();
 
-  const { settings: originalSettings, saveSettings, saveTheme, saveFont } = useSettings();
+  const { settings: originalSettings, saveSettings, saveTheme, saveFont, saveFontSize } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
 
   useEffect(() => {
@@ -45,6 +45,11 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     if (originalSettings && originalSettings.font && localSettings?.font !== originalSettings.font) {
       saveFont(originalSettings.font);
     }
+
+    if (originalSettings && originalSettings.fontSize && localSettings?.fontSize !== originalSettings.fontSize) {
+      saveFontSize(originalSettings.fontSize);
+    }
+
     // Updated to use settings.mcpServers directly
     if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
       void window.api.reloadMcpServers(originalSettings.mcpServers || {});
@@ -100,6 +105,16 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
   };
 
+  const handleFontSizeChange = (fontSize: number) => {
+    if (localSettings) {
+      setLocalSettings({
+        ...localSettings,
+        fontSize,
+      });
+      saveFontSize(fontSize);
+    }
+  };
+
   return (
     <ConfirmDialog
       title={t('settings.title')}
@@ -117,6 +132,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
           onZoomChange={handleZoomChange}
           onThemeChange={saveTheme}
           onFontChange={saveFont}
+          onFontSizeChange={handleFontSizeChange}
           initialTab={initialTab}
           initialAgentProfileId={initialAgentProfileId}
           initialAgentProvider={initialAgentProvider}
