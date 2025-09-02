@@ -98,9 +98,11 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
 
   const handleFontSizeChange = (value: string) => {
     const newFontSize = parseFloat(value);
-    if (!isNaN(newFontSize)) {
-      onFontSizeChange(newFontSize);
-    }
+    setSettings({
+      ...settings,
+      fontSize: newFontSize,
+    });
+    onFontSizeChange(newFontSize);
   };
 
   const handleSuggestionModeChange = (mode: SuggestionMode) => {

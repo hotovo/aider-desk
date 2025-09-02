@@ -348,6 +348,7 @@
     "zoom": "Zoom level",
     "theme": "Theme",
     "font": "Font",
+    "fontSize": "Font size",
     "fontOptions": {
       "Sono": "Sono (Default)",
       "PlayfairDisplay": "Playfair Display",

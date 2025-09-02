@@ -343,6 +343,7 @@
     "zoom": "缩放级别",
     "theme": "主题",
     "font": "字体",
+    "fontSize": "字体大小",
     "fontOptions": {
       "sono": "Sono (色)",
       "poppins": "Poppins ",

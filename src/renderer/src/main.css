@@ -50,7 +50,6 @@ body {
   font-weight: 400;
   font-style: normal;
   font-variation-settings: "MONO" 1;
-  font-size: var(--font-size);
 }
 
 * {
@@ -60,6 +59,7 @@ body {
   font-variation-settings: "MONO" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: var(--font-size);
 }
 
 code {
