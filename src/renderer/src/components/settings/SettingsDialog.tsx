@@ -7,6 +7,7 @@ import { LlmProviderName } from '@common/agent';
 import { Settings } from '@/pages/Settings';
 import { useSettings } from '@/context/SettingsContext';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { useApi } from '@/context/ApiContext';
 
 type Props = {
   onClose: () => void;
@@ -17,6 +18,7 @@ type Props = {
 
 export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t, i18n } = useTranslation();
+  const api = useApi();
 
   const { settings: originalSettings, saveSettings, saveTheme, saveFont, saveFontSize } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
@@ -36,7 +38,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       void i18n.changeLanguage(originalSettings.language);
     }
     if (originalSettings && localSettings?.zoomLevel !== originalSettings.zoomLevel) {
-      void window.api.setZoomLevel(originalSettings.zoomLevel ?? 1);
+      void api.setZoomLevel(originalSettings.zoomLevel ?? 1);
     }
     if (originalSettings && originalSettings.theme && localSettings?.theme !== originalSettings.theme) {
       saveTheme(originalSettings.theme);
@@ -52,7 +54,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
 
     // Updated to use settings.mcpServers directly
     if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
-      void window.api.reloadMcpServers(originalSettings.mcpServers || {});
+      void api.reloadMcpServers(originalSettings.mcpServers || {});
     }
     onClose();
   };
@@ -76,9 +78,9 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
         aiderConfirmBeforeEditChanged ||
         startupModeChanged
       ) {
-        const openProjects = await window.api.getOpenProjects();
+        const openProjects = await api.getOpenProjects();
         openProjects.forEach((project) => {
-          window.api.restartProject(project.baseDir, StartupMode.Last);
+          api.restartProject(project.baseDir, StartupMode.Last);
         });
       }
       onClose();
@@ -101,7 +103,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
         ...localSettings,
         zoomLevel,
       });
-      void window.api.setZoomLevel(zoomLevel);
+      void api.setZoomLevel(zoomLevel);
     }
   };
 

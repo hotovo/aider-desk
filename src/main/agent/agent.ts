@@ -277,7 +277,14 @@ export class Agent {
     return messages;
   }
 
-  private async getAvailableTools(project: Project, profile: AgentProfile, abortSignal?: AbortSignal, promptContext?: PromptContext): Promise<ToolSet> {
+  private async getAvailableTools(
+    project: Project,
+    profile: AgentProfile,
+    messages?: ContextMessage[],
+    resultMessages?: ContextMessage[],
+    abortSignal?: AbortSignal,
+    promptContext?: PromptContext,
+  ): Promise<ToolSet> {
     logger.debug('getAvailableTools', {
       enabledServers: profile.enabledServers,
       promptContext,
@@ -333,7 +340,7 @@ export class Agent {
     }
 
     if (profile.useSubagents) {
-      const subagentsToolset = createSubagentsToolset(this.store.getSettings(), project, profile, abortSignal);
+      const subagentsToolset = createSubagentsToolset(this.store.getSettings(), project, profile, abortSignal, messages, resultMessages);
       Object.assign(toolSet, subagentsToolset);
     }
 
@@ -492,7 +499,7 @@ export class Agent {
     profile: AgentProfile,
     prompt: string,
     promptContext?: PromptContext,
-    contextMessages: CoreMessage[] = project.getContextMessages(),
+    contextMessages: ContextMessage[] = project.getContextMessages(),
     contextFiles: ContextFile[] = project.getContextFiles(),
     systemPrompt?: string,
     abortSignal?: AbortSignal,
@@ -542,7 +549,7 @@ export class Agent {
       project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`, false, promptContext);
     }
 
-    const toolSet = await this.getAvailableTools(project, profile, effectiveAbortSignal, promptContext);
+    const toolSet = await this.getAvailableTools(project, profile, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
     logger.debug('Tools:', {
@@ -939,9 +946,9 @@ export class Agent {
   async estimateTokens(project: Project, profile: AgentProfile): Promise<number> {
     try {
       const settings = this.store.getSettings();
+      const messages = await this.prepareMessages(project, profile, project.getContextMessages(), project.getContextFiles());
       const toolSet = await this.getAvailableTools(project, profile);
       const systemPrompt = await getSystemPrompt(project.baseDir, profile);
-      const messages = await this.prepareMessages(project, profile, project.getContextMessages(), project.getContextFiles());
 
       const llmProvider = getLlmProviderConfig(profile.provider, settings);
       const cacheControl = getCacheControl(profile, llmProvider);

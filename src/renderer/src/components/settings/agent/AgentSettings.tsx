@@ -49,6 +49,7 @@ import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
+import { useApi } from '@/context/ApiContext';
 
 const tools: Record<string, GenericTool[]> = {
   [AIDER_TOOL_GROUP_NAME]: [
@@ -221,6 +222,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
   const [isEditingMcpServersConfig, setIsEditingMcpServersConfig] = useState(false);
   const [mcpServersReloadTrigger, setMcpServersReloadTrigger] = useState(0);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(initialProfileId || DEFAULT_AGENT_PROFILE.id);
+  const api = useApi();
 
   const [mcpServersExpanded, setMcpServersExpanded] = useState(false);
   const profileNameInputRef = useRef<HTMLInputElement>(null);
@@ -311,7 +313,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
 
   const handleMcpServersReload = async () => {
     try {
-      void window.api.reloadMcpServers(mcpServers, true);
+      void api.reloadMcpServers(mcpServers, true);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to reload MCP servers:', error);
@@ -692,6 +694,21 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                     />
                   )}
                 </div>
+
+                {selectedProfile.subagent.enabled && (
+                  <div className="flex items-center justify-between mt-2">
+                    <Checkbox
+                      label={
+                        <div className="flex items-center">
+                          <span>{t('settings.agent.subagent.hasContextMemory')}</span>
+                          <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.hasContextMemoryTooltip')} />
+                        </div>
+                      }
+                      checked={selectedProfile.subagent.hasContextMemory}
+                      onChange={(checked) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, hasContextMemory: checked })}
+                    />
+                  </div>
+                )}
 
                 {selectedProfile.subagent.enabled && (
                   <div className="mt-4 space-y-1">

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { StyledTooltip } from '../common/StyledTooltip';
 
 import { useOS } from '@/hooks/useOS';
+import { useApi } from '@/context/ApiContext';
 
 import './ContextFiles.css';
 
@@ -93,6 +94,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
 
   const { t } = useTranslation();
   const os = useOS();
+  const api = useApi();
 
   const handleFileDrop = useCallback(
     async (event: React.DragEvent<HTMLDivElement>) => {
@@ -101,9 +103,9 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
 
       if (event.dataTransfer?.files) {
         const files = Array.from(event.dataTransfer.files);
-        const droppedFilePaths = files.map((file) => window.api.getPathForFile(file));
+        const droppedFilePaths = files.map((file) => api.getPathForFile(file));
         for (let filePath of droppedFilePaths) {
-          const isValid = await window.api.isValidPath(baseDir, filePath);
+          const isValid = await api.isValidPath(baseDir, filePath);
           if (!isValid) {
             continue;
           }
@@ -112,11 +114,11 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
           if (isInsideProject) {
             filePath = filePath.slice(baseDir.length + 1);
           }
-          window.api.addFile(baseDir, filePath, !isInsideProject);
+          api.addFile(baseDir, filePath, !isInsideProject);
         }
       }
     },
-    [baseDir],
+    [baseDir, api],
   );
 
   const sortedFiles = useMemo(() => {
@@ -128,7 +130,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
   }, [allFiles]);
 
   useEffect(() => {
-    const removeListener = window.api.addContextFilesUpdatedListener(baseDir, (_, { files: updatedFiles }: ContextFilesUpdatedData) => {
+    const removeListener = api.addContextFilesUpdatedListener(baseDir, ({ files: updatedFiles }: ContextFilesUpdatedData) => {
       setFiles(updatedFiles);
 
       // Handle highlighting of new files
@@ -144,7 +146,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
     return () => {
       removeListener();
     };
-  }, [baseDir, files]);
+  }, [baseDir, files, api]);
 
   const treeKey = useMemo(() => {
     if (showAllFiles) {
@@ -202,7 +204,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
   };
 
   const handleDropAllFiles = () => {
-    window.api.runCommand(baseDir, 'drop');
+    api.runCommand(baseDir, 'drop');
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -223,9 +225,9 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
       if (pathToDrop.startsWith(baseDir + '/') || pathToDrop === baseDir) {
         pathToDrop = pathToDrop.slice(baseDir.length + 1);
       }
-      window.api.dropFile(baseDir, pathToDrop);
+      api.dropFile(baseDir, pathToDrop);
     } else if (item.isFolder) {
-      window.api.dropFile(baseDir, item.index as string);
+      api.dropFile(baseDir, item.index as string);
     }
   };
 
@@ -235,9 +237,9 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
     const pathToAdd = item.file ? item.file.path : item.index;
 
     if (shouldBeReadOnly) {
-      window.api.addFile(baseDir, pathToAdd, true);
+      api.addFile(baseDir, pathToAdd, true);
     } else {
-      window.api.addFile(baseDir, pathToAdd);
+      api.addFile(baseDir, pathToAdd);
     }
 
     if (item.isFolder) {

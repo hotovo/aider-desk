@@ -307,6 +307,8 @@
         "enableAsSubagentInformation": "When enabled, this profile is available as a subagent to other agents.",
         "canUseSubagents": "Can use Subagents",
         "canUseSubagentsInformation": "When enabled, this agent can use subagents.",
+        "hasContextMemory": "Has context memory",
+        "hasContextMemoryTooltip": "When enabled, the subagent maintains memory of its previous context within the same conversation session with the main agent, allowing it to reference and build upon past interactions.",
         "description": "Description",
         "descriptionPlaceholder": "Describe this subagent's purpose, capabilities, and specialization and when this subagent should be invoked",
         "systemPrompt": "System Prompt",

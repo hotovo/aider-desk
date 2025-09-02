@@ -225,6 +225,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     invocationMode: InvocationMode.OnDemand,
     color: '#3368a8',
     description: '',
+    hasContextMemory: false,
   },
 };
 

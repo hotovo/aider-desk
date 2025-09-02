@@ -1,7 +1,6 @@
 import { Server as HttpServer } from 'http';
 
 import { ModelsData, QuestionData, TokensInfoData } from '@common/types';
-import { BrowserWindow } from 'electron';
 import { Server, Socket } from 'socket.io';
 
 import logger from '@/logger';
@@ -34,7 +33,6 @@ export class ConnectorManager {
   private connectors: Connector[] = [];
 
   constructor(
-    private readonly mainWindow: BrowserWindow,
     private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
     private readonly eventManager: EventManager,
@@ -64,7 +62,7 @@ export class ConnectorManager {
         logger.info('Socket.IO client disconnected', {
           baseDir: connector?.baseDir,
         });
-        this.eventManager.handleEventUnsubscription(socket);
+        this.eventManager.unsubscribe(socket);
         this.removeConnector(socket);
       });
     });
@@ -167,7 +165,7 @@ export class ConnectorManager {
         logger.info('Use command output', { ...message });
 
         const connector = this.findConnectorBySocket(socket);
-        if (!connector || !this.mainWindow) {
+        if (!connector) {
           return;
         }
         const project = this.projectManager.getProject(connector.baseDir);
@@ -178,7 +176,7 @@ export class ConnectorManager {
         }
       } else if (isTokensInfoMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
-        if (!connector || !this.mainWindow) {
+        if (!connector) {
           return;
         }
 
@@ -211,12 +209,14 @@ export class ConnectorManager {
         }
         void this.projectManager.getProject(connector.baseDir).addContextMessage(message.role, message.content, message.usageReport);
       } else if (isSubscribeEventsMessage(message)) {
-        this.eventManager.handleEventSubscription(socket, {
+        logger.info('Subscribing to events', { eventTypes: message.eventTypes, baseDirs: message.baseDirs });
+        this.eventManager.subscribe(socket, {
           eventTypes: message.eventTypes,
           baseDirs: message.baseDirs,
         });
       } else if (isUnsubscribeEventsMessage(message)) {
-        this.eventManager.handleEventUnsubscription(socket);
+        logger.info('Unsubscribing from events');
+        this.eventManager.unsubscribe(socket);
       } else {
         logger.warn('Unknown message type: ', message);
       }
@@ -227,7 +227,7 @@ export class ConnectorManager {
 
   private processLogMessage = (socket: Socket, message: LogMessage) => {
     const connector = this.findConnectorBySocket(socket);
-    if (!connector || !this.mainWindow) {
+    if (!connector) {
       return;
     }
 

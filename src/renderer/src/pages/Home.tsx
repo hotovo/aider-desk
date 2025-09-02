@@ -15,10 +15,12 @@ import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
+import { useApi } from '@/context/ApiContext';
 
 export const Home = () => {
   const { t } = useTranslation();
   const { versions } = useVersions();
+  const api = useApi();
   const [openProjects, setOpenProjects] = useState<ProjectData[]>([]);
   const [previousProjectBaseDir, setPreviousProjectBaseDir] = useState<string | null>(null);
   const [isOpenProjectDialogVisible, setIsOpenProjectDialogVisible] = useState(false);
@@ -35,9 +37,9 @@ export const Home = () => {
   const handleReorderProjects = async (reorderedProjects: ProjectData[]) => {
     setOpenProjects(reorderedProjects);
     try {
-      setOpenProjects(await window.api.updateOpenProjectsOrder(reorderedProjects.map((project) => project.baseDir)));
+      setOpenProjects(await api.updateOpenProjectsOrder(reorderedProjects.map((project) => project.baseDir)));
     } catch {
-      const currentProjects = await window.api.getOpenProjects();
+      const currentProjects = await api.getOpenProjects();
       setOpenProjects(currentProjects);
     }
   };
@@ -53,12 +55,12 @@ export const Home = () => {
       showInfoNotification(t('settings.about.newAiderDeskVersionReady'));
       setHasShownUpdateNotification(true);
     }
-  }, [versions, t, hasShownUpdateNotification]);
+  }, [versions, t, hasShownUpdateNotification, api]);
 
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        const openProjects = await window.api.getOpenProjects();
+        const openProjects = await api.getOpenProjects();
         setOpenProjects(openProjects);
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -67,22 +69,22 @@ export const Home = () => {
     };
 
     void loadProjects();
-  }, []);
+  }, [api]);
 
   useEffect(() => {
-    const handleOpenSettings = (_event: Electron.IpcRendererEvent, tabIndex: number) => {
+    const handleOpenSettings = (tabIndex: number) => {
       setShowSettingsTab(tabIndex);
     };
 
-    const removeListener = window.api.addOpenSettingsListener(handleOpenSettings);
+    const removeListener = api.addOpenSettingsListener(handleOpenSettings);
     return () => {
       removeListener();
     };
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     const checkReleaseNotes = async () => {
-      const notes = await window.api.getReleaseNotes();
+      const notes = await api.getReleaseNotes();
       if (notes) {
         const cleanedNotes = notes.replace(/<img[^>]*>/g, '');
         setReleaseNotesContent(cleanedNotes);
@@ -90,12 +92,12 @@ export const Home = () => {
     };
 
     void checkReleaseNotes();
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     const loadModels = async () => {
       try {
-        const info = await window.api.loadModelsInfo();
+        const info = await api.loadModelsInfo();
         setModelsInfo(info);
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -104,10 +106,10 @@ export const Home = () => {
     };
 
     void loadModels();
-  }, []);
+  }, [api]);
 
   const setActiveProject = async (baseDir: string) => {
-    const projects = await window.api.setActiveProject(baseDir);
+    const projects = await api.setActiveProject(baseDir);
     setOpenProjects(projects);
   };
 
@@ -133,7 +135,7 @@ export const Home = () => {
         }
       }
     },
-    [isCtrlPressed, activeProject?.baseDir, openProjects, previousProjectBaseDir, isTabbing],
+    [isCtrlPressed, activeProject?.baseDir, openProjects, previousProjectBaseDir, isTabbing, setActiveProject],
   );
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
@@ -153,12 +155,12 @@ export const Home = () => {
   }, [handleKeyDown, handleKeyUp]);
 
   const handleAddProject = async (baseDir: string) => {
-    const projects = await window.api.addOpenProject(baseDir);
+    const projects = await api.addOpenProject(baseDir);
     setOpenProjects(projects);
   };
 
   const handleCloseProject = async (projectBaseDir: string) => {
-    const updatedProjects = await window.api.removeOpenProject(projectBaseDir);
+    const updatedProjects = await api.removeOpenProject(projectBaseDir);
     setOpenProjects(updatedProjects);
   };
 
@@ -193,7 +195,7 @@ export const Home = () => {
   };
 
   const handleCloseReleaseNotes = async () => {
-    await window.api.clearReleaseNotes();
+    await api.clearReleaseNotes();
     setReleaseNotesContent(null);
   };
 

@@ -1,4 +1,5 @@
 import { Request, Response, Router } from 'express';
+import { z } from 'zod';
 
 import { Project } from '@/project';
 
@@ -37,6 +38,7 @@ export abstract class BaseApi {
       try {
         await handler(req, res);
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('REST API: Error processing request', {
           error,
           path: req.path,
@@ -48,6 +50,21 @@ export abstract class BaseApi {
         });
       }
     };
+  }
+
+  /**
+   * Validates request data using a Zod schema and handles invalid requests
+   */
+  protected validateRequest<T>(schema: z.ZodSchema<T>, data: unknown, res: Response): T | null {
+    const result = schema.safeParse(data);
+    if (!result.success) {
+      res.status(400).json({
+        error: 'Invalid request',
+        details: result.error.issues,
+      });
+      return null;
+    }
+    return result.data;
   }
 
   /**

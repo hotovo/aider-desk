@@ -23,6 +23,9 @@ import { EventManager } from '@/events';
 import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
+import { EventsHandler } from '@/events-handler';
+
+const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
 
 const setupCustomMenu = (): void => {
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [
@@ -123,6 +126,91 @@ const initStore = async (): Promise<Store> => {
   return store;
 };
 
+const initManagers = async (
+  mainWindow: BrowserWindow | null,
+  store: Store,
+): Promise<{
+  eventsHandler: EventsHandler;
+}> => {
+  // Initialize telemetry manager
+  const telemetryManager = new TelemetryManager(store);
+  await telemetryManager.init();
+
+  // Initialize MCP manager
+  const mcpManager = new McpManager();
+  const activeProject = store.getOpenProjects().find((project) => project.active);
+
+  void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir);
+
+  // Initialize model info manager
+  const modelInfoManager = new ModelInfoManager();
+  void modelInfoManager.init();
+
+  // Initialize data manager
+  const dataManager = new DataManager();
+  dataManager.init();
+
+  // Initialize agent
+  const agent = new Agent(store, mcpManager, modelInfoManager, telemetryManager);
+
+  // Initialize event manager
+  const eventManager = new EventManager(mainWindow);
+
+  // Initialize project manager
+  const projectManager = new ProjectManager(store, agent, telemetryManager, dataManager, eventManager);
+
+  // Initialize terminal manager
+  const terminalManager = new TerminalManager(eventManager, telemetryManager);
+
+  // Initialize Versions Manager (this also sets up listeners)
+  const versionsManager = new VersionsManager(eventManager, store);
+
+  // Create HTTP server
+  const httpServer = createServer();
+
+  // Initialize events handler
+  const eventsHandler = new EventsHandler(
+    mainWindow,
+    projectManager,
+    store,
+    mcpManager,
+    agent,
+    versionsManager,
+    modelInfoManager,
+    telemetryManager,
+    dataManager,
+    terminalManager,
+  );
+
+  // Create and initialize REST API controller
+  const restApiController = new RestApiController(httpServer, projectManager, eventsHandler);
+
+  // Initialize connector manager with the server
+  const connectorManager = new ConnectorManager(projectManager, httpServer, eventManager);
+
+  const beforeQuit = async () => {
+    terminalManager.close();
+    await mcpManager.close();
+    await restApiController.close();
+    await connectorManager.close();
+    await projectManager.close();
+    versionsManager.destroy();
+    await telemetryManager.destroy();
+  };
+
+  app.on('before-quit', beforeQuit);
+
+  // Handle CTRL+C (SIGINT)
+  process.on('SIGINT', async () => {
+    await beforeQuit();
+    process.exit(0);
+  });
+
+  return {
+    eventsHandler,
+  };
+};
+
 const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const lastWindowState = store.getWindowState();
   const mainWindow = new BrowserWindow({
@@ -173,68 +261,10 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
-  // Initialize telemetry manager
-  const telemetryManager = new TelemetryManager(store);
-  await telemetryManager.init();
-
-  // Initialize MCP manager
-  const mcpManager = new McpManager();
-  const activeProject = store.getOpenProjects().find((project) => project.active);
-
-  void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir);
-
-  // Initialize model info manager
-  const modelInfoManager = new ModelInfoManager();
-  void modelInfoManager.init();
-
-  // Initialize data manager
-  const dataManager = new DataManager();
-  dataManager.init();
-
-  // Initialize agent
-  const agent = new Agent(store, mcpManager, modelInfoManager, telemetryManager);
-
-  // Initialize project manager
-  const projectManager = new ProjectManager(mainWindow, store, agent, telemetryManager, dataManager);
-
-  // Initialize event manager
-  const eventManager = new EventManager(mainWindow);
-
-  // Initialize terminal manager
-  const terminalManager = new TerminalManager(mainWindow, telemetryManager);
-
-  // Initialize Versions Manager (this also sets up listeners)
-  const versionsManager = new VersionsManager(mainWindow, store);
-
-  // Create HTTP server
-  const httpServer = createServer();
-
-  // Create and initialize REST API controller
-  const restApiController = new RestApiController(projectManager, httpServer, store, modelInfoManager, mcpManager);
-
-  // Initialize connector manager with the server
-  const connectorManager = new ConnectorManager(mainWindow, projectManager, httpServer, eventManager);
+  const { eventsHandler } = await initManagers(mainWindow, store);
 
   // Initialize IPC handlers
-  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager, dataManager, terminalManager);
-
-  const beforeQuit = async () => {
-    terminalManager.close();
-    await mcpManager.close();
-    await restApiController.close();
-    await connectorManager.close();
-    await projectManager.close();
-    versionsManager.destroy();
-    await telemetryManager.destroy();
-  };
-
-  app.on('before-quit', beforeQuit);
-
-  // Handle CTRL+C (SIGINT)
-  process.on('SIGINT', async () => {
-    await beforeQuit();
-    process.exit(0);
-  });
+  setupIpcHandlers(eventsHandler);
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
@@ -260,65 +290,87 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
 app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.hotovo.aider-desk');
 
-  // Setup custom menu
-  setupCustomMenu();
+  if (!HEADLESS_MODE) {
+    // Setup custom menu only in GUI mode
+    setupCustomMenu();
 
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window);
-  });
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window);
+    });
+  }
 
   logger.info('------------ Starting AiderDesk... ------------');
   logger.info('Initializing fix-path...');
   (await import('fix-path')).default();
 
-  const progressBar = new ProgressWindow({
-    width: 400,
-    icon,
-  });
-  progressBar.title = 'Starting AiderDesk...';
-  progressBar.setDetail('Initializing core components...');
+  let progressBar: ProgressWindow | null = null;
+  let updateProgress: ((data: UpdateProgressData) => void) | null;
 
-  await new Promise((resolve) => {
-    progressBar.on('ready', () => {
-      resolve(null);
+  if (!HEADLESS_MODE) {
+    progressBar = new ProgressWindow({
+      width: 400,
+      icon,
     });
-  });
-  await delay(1000);
+    progressBar.title = 'Starting AiderDesk...';
+    progressBar.setDetail('Initializing core components...');
 
-  const updateProgress = ({ step, message, info, progress }: UpdateProgressData) => {
-    progressBar.title = step;
-    progressBar.setDetail(message, info);
-    if (progress !== undefined) {
-      progressBar.setProgress(progress);
-    }
-  };
+    await new Promise((resolve) => {
+      progressBar?.on('ready', () => {
+        resolve(null);
+      });
+    });
+    await delay(1000);
+
+    updateProgress = ({ step, message, info, progress }: UpdateProgressData) => {
+      progressBar!.title = step;
+      progressBar!.setDetail(message, info);
+      if (progress !== undefined) {
+        progressBar!.setProgress(progress);
+      }
+    };
+  } else {
+    logger.info('Starting in headless mode...');
+    // In headless mode, use a no-op updateProgress
+    updateProgress = () => {};
+  }
 
   try {
     await performStartUp(updateProgress);
-    progressBar.title = 'Startup complete';
-    progressBar.setDetail('Everything is ready! Have fun coding!', 'Booting up UI...');
-    progressBar.setCompleted();
+    if (progressBar) {
+      progressBar.title = 'Startup complete';
+      progressBar.setDetail('Everything is ready! Have fun coding!', 'Booting up UI...');
+      progressBar.setCompleted();
+    }
   } catch (error) {
-    progressBar.close();
+    if (progressBar) {
+      progressBar?.close();
+    }
     dialog.showErrorBox('Setup Failed', error instanceof Error ? error.message : 'Unknown error occurred during setup');
     app.quit();
     return;
   }
 
   const store = await initStore();
-  await initWindow(store);
 
-  progressBar.close();
+  if (HEADLESS_MODE) {
+    // Initialize managers without window in headless mode
+    await initManagers(null, store);
+  } else {
+    await initWindow(store);
+    progressBar?.close();
 
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0 && store) {
-      void initWindow(store);
-    }
-  });
+    app.on('activate', function () {
+      if (BrowserWindow.getAllWindows().length === 0 && store) {
+        void initWindow(store);
+      }
+    });
+  }
 });
 
 app.on('window-all-closed', () => {
-  app.quit();
+  if (!HEADLESS_MODE) {
+    app.quit();
+  }
 });
 
 process.on('exit', () => {

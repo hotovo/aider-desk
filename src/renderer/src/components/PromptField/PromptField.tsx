@@ -25,6 +25,7 @@ import { ModeSelector } from '@/components/PromptField/ModeSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
 import { useCustomCommands } from '@/hooks/useCustomCommands';
+import { useApi } from '@/context/ApiContext';
 
 const COMMANDS = [
   '/code',
@@ -159,6 +160,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     } | null>(null);
     const editorRef = useRef<ReactCodeMirrorRef>(null);
     const customCommands = useCustomCommands(baseDir);
+    const api = useApi();
 
     const completionSource = async (context: CompletionContext): Promise<CompletionResult | null> => {
       const word = context.matchBefore(/\S*/);
@@ -177,7 +179,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         // Handle @-based file suggestions (exclusive)
         const atPos = text.lastIndexOf('@');
         if (atPos >= 0 && (atPos === 0 || /\s/.test(text[atPos - 1]))) {
-          const files = await window.api.getAddableFiles(baseDir);
+          const files = await api.getAddableFiles(baseDir);
           return {
             from: atPos + 1,
             options: files.map((file) => ({ label: file, type: 'file' })),
@@ -192,7 +194,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           const [command, ...args] = text.split(' ');
           const currentArg = args[args.length - 1];
           if (command === '/add' || command === '/read-only') {
-            const files = await window.api.getAddableFiles(baseDir);
+            const files = await api.getAddableFiles(baseDir);
             return {
               from: state.doc.length - currentArg.length,
               options: files.map((file) => ({ label: file, type: 'file' })),
@@ -354,7 +356,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             break;
           case '/compact':
             prepareForNextPrompt();
-            window.api.compactConversation(baseDir, mode, args);
+            api.compactConversation(baseDir, mode, args);
             break;
           case '/test': {
             runTests(args);
@@ -366,7 +368,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               return;
             }
             prepareForNextPrompt();
-            window.api.initProjectRulesFile(baseDir);
+            api.initProjectRulesFile(baseDir);
             break;
           }
           case '/clear-logs': {
@@ -398,6 +400,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         baseDir,
         t,
         clearLogMessages,
+        api,
       ],
     );
 
@@ -512,7 +515,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           const customCommand = customCommands.find((command) => command.name === cmd);
 
           if (customCommand) {
-            window.api.runCustomCommand(baseDir, cmd, args, mode);
+            api.runCustomCommand(baseDir, cmd, args, mode);
             prepareForNextPrompt();
             setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
             return;
@@ -805,7 +808,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     if (items) {
                       for (let i = 0; i < items.length; i++) {
                         if (items[i].type.indexOf('image') !== -1) {
-                          window.api.pasteImage(baseDir);
+                          api.pasteImage(baseDir);
                           break;
                         }
                       }

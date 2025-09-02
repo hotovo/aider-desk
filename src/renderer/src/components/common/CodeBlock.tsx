@@ -10,6 +10,7 @@ import { CopyMessageButton } from '../message/CopyMessageButton';
 import { IconButton } from './IconButton';
 
 import { DiffViewer, UDiffViewer } from '@/components/common/DiffViewer';
+import { useApi } from '@/context/ApiContext';
 
 const SEARCH_MARKER = /^<{5,9} SEARCH[^\n]*$/m;
 const DIVIDER_MARKER = /^={5,9}\s*$/m;
@@ -67,6 +68,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [changesReverted, setChangesReverted] = useState(false);
+  const api = useApi();
 
   const isExplicitDiff = oldValue !== undefined && newValue !== undefined;
   const isCustomChildrenDiff = !isExplicitDiff && children ? isCustomDiffContent(children) : false;
@@ -128,7 +130,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
 
   const handleRevertChanges = () => {
     if (file && displayAsDiff) {
-      window.api.applyEdits(baseDir, [
+      api.applyEdits(baseDir, [
         {
           path: file!,
           original: diffNewValue,

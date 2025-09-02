@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { delay } from '@common/utils';
 
 import { BaseApi } from './base-api';
 
+import { EventsHandler } from '@/events-handler';
 import { ProjectManager } from '@/project';
 
 const ContextFileSchema = z.object({
@@ -22,7 +22,10 @@ const GetAddableFilesSchema = z.object({
 });
 
 export class ContextApi extends BaseApi {
-  constructor(private readonly projectManager: ProjectManager) {
+  constructor(
+    private readonly projectManager: ProjectManager,
+    private readonly eventsHandler: EventsHandler,
+  ) {
     super();
   }
 
@@ -31,29 +34,14 @@ export class ContextApi extends BaseApi {
     router.post(
       '/add-context-file',
       this.handleRequest(async (req, res) => {
-        const result = ContextFileSchema.safeParse(req.body);
-        if (!result.success) {
-          res.status(400).json({
-            error: 'Invalid request',
-            details: result.error.issues,
-          });
+        const parsed = this.validateRequest(ContextFileSchema, req.body, res);
+        if (!parsed) {
           return;
         }
 
-        const { projectDir, path, readOnly } = result.data;
-        const project = this.projectManager.getProject(projectDir);
-        const validatedProject = this.findProject(project, projectDir, res);
-        if (!validatedProject) {
-          return;
-        }
-
-        await validatedProject.addFile({ path, readOnly });
-
-        // add delay to allow Aider to verify the added files
-        await delay(1000);
-
-        const contextFiles = validatedProject.getContextFiles();
-        res.status(200).json(contextFiles);
+        const { projectDir, path, readOnly } = parsed;
+        await this.eventsHandler.addFile(projectDir, path, readOnly);
+        res.status(200).json({ message: 'File added to context' });
       }),
     );
 
@@ -61,29 +49,14 @@ export class ContextApi extends BaseApi {
     router.post(
       '/drop-context-file',
       this.handleRequest(async (req, res) => {
-        const result = ContextFileSchema.safeParse(req.body);
-        if (!result.success) {
-          res.status(400).json({
-            error: 'Invalid request',
-            details: result.error.issues,
-          });
+        const parsed = this.validateRequest(ContextFileSchema, req.body, res);
+        if (!parsed) {
           return;
         }
 
-        const { projectDir, path } = result.data;
-        const project = this.projectManager.getProject(projectDir);
-        const validatedProject = this.findProject(project, projectDir, res);
-        if (!validatedProject) {
-          return;
-        }
-
-        validatedProject.dropFile(path);
-
-        // add delay to allow Aider to verify the dropped files
-        await delay(1000);
-
-        const contextFiles = validatedProject.getContextFiles();
-        res.status(200).json(contextFiles);
+        const { projectDir, path } = parsed;
+        this.eventsHandler.dropFile(projectDir, path);
+        res.status(200).json({ message: 'File dropped from context' });
       }),
     );
 
@@ -91,16 +64,12 @@ export class ContextApi extends BaseApi {
     router.post(
       '/get-context-files',
       this.handleRequest(async (req, res) => {
-        const result = GetContextFilesSchema.safeParse(req.body);
-        if (!result.success) {
-          res.status(400).json({
-            error: 'Invalid request',
-            details: result.error.issues,
-          });
+        const parsed = this.validateRequest(GetContextFilesSchema, req.body, res);
+        if (!parsed) {
           return;
         }
 
-        const { projectDir } = result.data;
+        const { projectDir } = parsed;
         const project = this.projectManager.getProject(projectDir);
         const validatedProject = this.findProject(project, projectDir, res);
         if (!validatedProject) {
@@ -116,23 +85,13 @@ export class ContextApi extends BaseApi {
     router.post(
       '/get-addable-files',
       this.handleRequest(async (req, res) => {
-        const result = GetAddableFilesSchema.safeParse(req.body);
-        if (!result.success) {
-          res.status(400).json({
-            error: 'Invalid request',
-            details: result.error.issues,
-          });
+        const parsed = this.validateRequest(GetAddableFilesSchema, req.body, res);
+        if (!parsed) {
           return;
         }
 
-        const { projectDir, searchRegex } = result.data;
-        const project = this.projectManager.getProject(projectDir);
-        const validatedProject = this.findProject(project, projectDir, res);
-        if (!validatedProject) {
-          return;
-        }
-
-        const addableFiles = validatedProject.getAddableFiles(searchRegex);
+        const { projectDir, searchRegex } = parsed;
+        const addableFiles = await this.eventsHandler.getAddableFiles(projectDir, searchRegex);
         res.status(200).json(addableFiles);
       }),
     );

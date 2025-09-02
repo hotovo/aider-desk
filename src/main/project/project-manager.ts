@@ -1,5 +1,4 @@
 import { normalizeBaseDir } from '@common/utils';
-import { BrowserWindow } from 'electron';
 import { SettingsData, StartupMode } from '@common/types';
 
 import { TelemetryManager } from '@/telemetry';
@@ -12,20 +11,14 @@ import { EventManager } from '@/events';
 
 export class ProjectManager {
   private projects: Project[] = [];
-  private readonly eventManager: EventManager;
 
   constructor(
-    private readonly mainWindow: BrowserWindow,
     private readonly store: Store,
     private readonly agent: Agent,
     private readonly telemetryManager: TelemetryManager,
     private readonly dataManager: DataManager,
-  ) {
-    this.mainWindow = mainWindow;
-    this.store = store;
-    this.agent = agent;
-    this.eventManager = new EventManager(mainWindow);
-  }
+    private readonly eventManager: EventManager,
+  ) {}
 
   private findProject(baseDir: string): Project | undefined {
     return this.projects.find((project) => normalizeBaseDir(project.baseDir) === normalizeBaseDir(baseDir));
@@ -33,7 +26,7 @@ export class ProjectManager {
 
   private createProject(baseDir: string) {
     logger.info('Creating new project', { baseDir });
-    const project = new Project(this.mainWindow, baseDir, this.store, this.agent, this.telemetryManager, this.dataManager, this.eventManager);
+    const project = new Project(baseDir, this.store, this.agent, this.telemetryManager, this.dataManager, this.eventManager);
     this.projects.push(project);
     return project;
   }

@@ -60,6 +60,7 @@ src/
       en.json
       zh.json
     agent.ts
+    api.ts
     tools.ts
     types.ts
     utils.ts
@@ -107,10 +108,14 @@ src/
       commands-api.ts
       context-api.ts
       index.ts
+      mcp-api.ts
       project-api.ts
       prompt-api.ts
       rest-api-controller.ts
       settings-api.ts
+      system-api.ts
+      todo-api.ts
+      usage-api.ts
     session/
       index.ts
       session-manager.ts
@@ -150,6 +155,7 @@ src/
       index.ts
       versions-manager.ts
     constants.ts
+    events-handler.ts
     index.ts
     ipc-handlers.ts
     logger.ts
@@ -163,6 +169,8 @@ src/
     index.ts
   renderer/
     src/
+      api/
+        browser-api.ts
       assets/
         electron.svg
         wavy-lines.svg
@@ -298,6 +306,7 @@ src/
         SessionsPopup.tsx
         TelemetryInfoDialog.tsx
       context/
+        ApiContext.tsx
         ContextMenuContext.tsx
         ProjectSettingsContext.tsx
         SettingsContext.tsx
@@ -1373,6 +1382,8 @@ File: src/common/locales/en.json
         "enableAsSubagentInformation": "When enabled, this profile is available as a subagent to other agents.",
         "canUseSubagents": "Can use Subagents",
         "canUseSubagentsInformation": "When enabled, this agent can use subagents.",
+        "hasContextMemory": "Has context memory",
+        "hasContextMemoryTooltip": "When enabled, the subagent maintains memory of its previous context within the same conversation session with the main agent, allowing it to reference and build upon past interactions.",
         "description": "Description",
         "descriptionPlaceholder": "Describe this subagent's purpose, capabilities, and specialization and when this subagent should be invoked",
         "systemPrompt": "System Prompt",
@@ -2204,6 +2215,8 @@ File: src/common/locales/zh.json
         "enableAsSubagentInformation": "启用后，此配置可被其他代理用作子代理。",
         "canUseSubagents": "可以使用子代理",
         "canUseSubagentsInformation": "启用后，此代理可以使用其他代理作为子代理。",
+        "hasContextMemory": "具有上下文记忆",
+        "hasContextMemoryTooltip": "启用后，子代理会在与主代理的同一对话会话中保持对其之前上下文的记忆，使其能够引用并基于过去的互动进行构建。",
         "description": "描述",
         "descriptionPlaceholder": "描述此子代理的目的、能力和专长...",
         "systemPrompt": "系统提示",
@@ -2914,6 +2927,161 @@ region: 'us-east-1', // Default region
 export const isSubagentEnabled = (agentProfile: AgentProfile, currentProfileId?: string): boolean =>
 
 ================
+File: src/common/api.ts
+================
+import {
+  AutocompletionData,
+  ContextFilesUpdatedData,
+  CustomCommandsUpdatedData,
+  InputHistoryData,
+  LogData,
+  ModelsData,
+  ProjectData,
+  ProjectSettings,
+  QuestionData,
+  ResponseChunkData,
+  ResponseCompletedData,
+  SessionData,
+  SettingsData,
+  TerminalData,
+  TerminalExitData,
+  TokensInfoData,
+  UserMessageData,
+  McpServerConfig,
+  McpTool,
+  ToolData,
+  CommandOutputData,
+  Mode,
+  VersionsInfo,
+  EditFormat,
+  OS,
+  ModelInfo,
+  TodoItem,
+  UsageDataRow,
+  EnvironmentVariable,
+  CustomCommand,
+  Font,
+  StartupMode,
+  Theme,
+  FileEdit,
+  ClearProjectData,
+  ProjectStartedData,
+} from '@common/types';
+⋮----
+export interface ApplicationAPI {
+  isOpenLogsDirectorySupported: () => boolean;
+  openLogsDirectory: () => Promise<boolean>;
+  loadSettings: () => Promise<SettingsData>;
+  saveSettings: (settings: SettingsData) => Promise<SettingsData>;
+  saveTheme: (theme: Theme) => Promise<Theme>;
+  saveFont: (font: string) => Promise<Font>;
+  startProject: (baseDir: string) => void;
+  stopProject: (baseDir: string) => void;
+  restartProject: (baseDir: string, startupMode?: StartupMode) => void;
+  runPrompt: (baseDir: string, prompt: string, mode?: Mode) => void;
+  redoLastUserPrompt: (baseDir: string, mode: Mode, updatedPrompt?: string) => void;
+  answerQuestion: (baseDir: string, answer: string) => void;
+  loadInputHistory: (baseDir: string) => Promise<string[]>;
+  isOpenDialogSupported: () => boolean;
+  showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
+  getPathForFile: (file: File) => string;
+  getOpenProjects: () => Promise<ProjectData[]>;
+  addOpenProject: (baseDir: string) => Promise<ProjectData[]>;
+  setActiveProject: (baseDir: string) => Promise<ProjectData[]>;
+  removeOpenProject: (baseDir: string) => Promise<ProjectData[]>;
+  updateOpenProjectsOrder: (baseDirs: string[]) => Promise<ProjectData[]>;
+  updateMainModel: (baseDir: string, model: string) => void;
+  updateWeakModel: (baseDir: string, model: string) => void;
+  updateArchitectModel: (baseDir: string, model: string) => void;
+  updateEditFormats: (baseDir: string, editFormats: Record<string, EditFormat>) => void;
+  getProjectSettings: (baseDir: string) => Promise<ProjectSettings>;
+  patchProjectSettings: (baseDir: string, settings: Partial<ProjectSettings>) => Promise<ProjectSettings>;
+  getFilePathSuggestions: (currentPath: string, directoriesOnly?: boolean) => Promise<string[]>;
+  getAddableFiles: (baseDir: string) => Promise<string[]>;
+  addFile: (baseDir: string, filePath: string, readOnly?: boolean) => void;
+  isValidPath: (baseDir: string, path: string) => Promise<boolean>;
+  isProjectPath: (path: string) => Promise<boolean>;
+  dropFile: (baseDir: string, path: string) => void;
+  runCommand: (baseDir: string, command: string) => void;
+  pasteImage: (baseDir: string) => void;
+  scrapeWeb: (baseDir: string, url: string, filePath?: string) => Promise<string>;
+  initProjectRulesFile: (baseDir: string) => Promise<void>;
+
+  // Todo operations
+  getTodos: (baseDir: string) => Promise<TodoItem[]>;
+  addTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
+  updateTodo: (baseDir: string, name: string, updates: Partial<TodoItem>) => Promise<TodoItem[]>;
+  deleteTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
+  clearAllTodos: (baseDir: string) => Promise<TodoItem[]>;
+
+  loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
+  reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
+
+  saveSession: (baseDir: string, name: string) => Promise<boolean>;
+  deleteSession: (baseDir: string, name: string) => Promise<boolean>;
+  loadSessionMessages: (baseDir: string, name: string) => Promise<void>;
+  loadSessionFiles: (baseDir: string, name: string) => Promise<void>;
+  listSessions: (baseDir: string) => Promise<SessionData[]>;
+  exportSessionToMarkdown: (baseDir: string) => Promise<void>;
+  getRecentProjects: () => Promise<string[]>;
+  addRecentProject: (baseDir: string) => Promise<void>;
+  removeRecentProject: (baseDir: string) => Promise<void>;
+  interruptResponse: (baseDir: string) => void;
+  applyEdits: (baseDir: string, edits: FileEdit[]) => void;
+  clearContext: (baseDir: string) => void;
+  removeLastMessage: (baseDir: string) => void;
+  compactConversation: (baseDir: string, mode: Mode, customInstructions?: string) => void;
+  setZoomLevel: (level: number) => Promise<void>;
+
+  getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
+  downloadLatestAiderDesk: () => Promise<void>;
+
+  getReleaseNotes: () => Promise<string | null>;
+  clearReleaseNotes: () => Promise<void>;
+  getOS: () => Promise<OS>;
+  loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
+  queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
+  getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
+
+  addResponseChunkListener: (baseDir: string, callback: (data: ResponseChunkData) => void) => () => void;
+  addResponseCompletedListener: (baseDir: string, callback: (data: ResponseCompletedData) => void) => () => void;
+  addLogListener: (baseDir: string, callback: (data: LogData) => void) => () => void;
+  addContextFilesUpdatedListener: (baseDir: string, callback: (data: ContextFilesUpdatedData) => void) => () => void;
+  addCustomCommandsUpdatedListener: (baseDir: string, callback: (data: CustomCommandsUpdatedData) => void) => () => void;
+  addUpdateAutocompletionListener: (baseDir: string, callback: (data: AutocompletionData) => void) => () => void;
+  addAskQuestionListener: (baseDir: string, callback: (data: QuestionData) => void) => () => void;
+  addUpdateAiderModelsListener: (baseDir: string, callback: (data: ModelsData) => void) => () => void;
+  addCommandOutputListener: (baseDir: string, callback: (data: CommandOutputData) => void) => () => void;
+  addTokensInfoListener: (baseDir: string, callback: (data: TokensInfoData) => void) => () => void;
+  addToolListener: (baseDir: string, callback: (data: ToolData) => void) => () => void;
+  addUserMessageListener: (baseDir: string, callback: (data: UserMessageData) => void) => () => void;
+  addInputHistoryUpdatedListener: (baseDir: string, callback: (data: InputHistoryData) => void) => () => void;
+  addClearProjectListener: (baseDir: string, callback: (data: ClearProjectData) => void) => () => void;
+  addProjectStartedListener: (baseDir: string, callback: (data: ProjectStartedData) => void) => () => void;
+  addVersionsInfoUpdatedListener: (callback: (data: VersionsInfo) => void) => () => void;
+  addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
+  addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
+  addContextMenuListener: (callback: (params: Electron.ContextMenuParams) => void) => () => void;
+  addOpenSettingsListener: (callback: (tabIndex: number) => void) => () => void;
+
+  getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
+  runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
+
+  // Terminal operations
+  isTerminalSupported: () => boolean;
+  createTerminal: (baseDir: string, cols?: number, rows?: number) => Promise<string>;
+  writeToTerminal: (terminalId: string, data: string) => Promise<boolean>;
+  resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;
+  closeTerminal: (terminalId: string) => Promise<boolean>;
+  getTerminalForProject: (baseDir: string) => Promise<string | null>;
+  getAllTerminalsForProject: (baseDir: string) => Promise<Array<{ id: string; baseDir: string; cols: number; rows: number }>>;
+}
+⋮----
+// Todo operations
+⋮----
+// Terminal operations
+
+================
 File: src/common/tools.ts
 ================
 
@@ -2933,6 +3101,7 @@ import {
   OpenRouterProvider,
   RequestyProvider,
 } from '@common/agent';
+import { z } from 'zod';
 ⋮----
 import type { AssistantContent, ToolContent, UserContent } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
@@ -3101,17 +3270,7 @@ export interface WindowState {
   isMaximized: boolean;
 }
 ⋮----
-export interface ProjectSettings {
-  mainModel: string;
-  weakModel?: string | null;
-  architectModel?: string | null;
-  agentProfileId: string;
-  modelEditFormats: Record<string, EditFormat>;
-  reasoningEffort?: string;
-  thinkingTokens?: string;
-  currentMode: Mode;
-  renderMarkdown: boolean;
-}
+export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
 ⋮----
 export interface ProjectData {
   active: boolean;
@@ -3177,6 +3336,7 @@ export enum InvocationMode {
 ⋮----
 export interface SubagentConfig {
   enabled: boolean;
+  hasContextMemory: boolean;
   systemPrompt: string;
   invocationMode: InvocationMode;
   color: string;
@@ -3270,6 +3430,16 @@ export interface Group {
 export interface PromptContext {
   id: string;
   group?: Group;
+}
+⋮----
+export interface ProjectStartedData {
+  baseDir: string;
+}
+⋮----
+export interface ClearProjectData {
+  baseDir: string;
+  clearMessages: boolean;
+  clearSession: boolean;
 }
 ⋮----
 export interface UsageReportData {
@@ -3418,7 +3588,7 @@ import fs from 'fs/promises';
 ⋮----
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 ⋮----
-import { ProjectSettings, SettingsData, UsageReportData } from './types';
+import { OS, ProjectSettings, SettingsData, UsageReportData } from './types';
 ⋮----
 type TextContent =
   | string
@@ -3438,7 +3608,10 @@ export const parseUsageReport = (model: string, report: string): UsageReportData
 ⋮----
 const parseTokens = (tokenStr: string): number =>
 ⋮----
-export const normalizeBaseDir = (baseDir: string): string =>
+export const normalizeBaseDir = (
+  baseDir: string,
+  os: OS = process.platform === 'win32' ? OS.Windows : process.platform === 'darwin' ? OS.MacOS : OS.Linux,
+): string =>
 ⋮----
 // On Windows, paths are case-insensitive so we normalize to lowercase
 ⋮----
@@ -3451,6 +3624,8 @@ export const normalizeBaseDir = (baseDir: string): string =>
 // Replace backslashes with forward slashes
 ⋮----
 // Otherwise, return the path as is
+⋮----
+export const compareBaseDirs = (baseDir1: string, baseDir2: string, os?: OS): boolean =>
 ⋮----
 export const fileExists = async (fileName: string): Promise<boolean> =>
 ⋮----
@@ -3658,15 +3833,23 @@ File: src/main/agent/tools/subagents.ts
 ================
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
-import { AgentProfile, InvocationMode, PromptContext, SettingsData } from '@common/types';
+import { AgentProfile, ContextMessage, InvocationMode, PromptContext, SettingsData } from '@common/types';
 import { v4 as uuidv4 } from 'uuid';
 import { SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { DEFAULT_AGENT_PROFILE, isSubagentEnabled } from '@common/agent';
+import { extractServerNameToolName } from '@common/utils';
 ⋮----
 import { Project } from '@/project';
 import logger from '@/logger';
 ⋮----
-export const createSubagentsToolset = (settings: SettingsData, project: Project, profile: AgentProfile, abortSignal?: AbortSignal): ToolSet =>
+export const createSubagentsToolset = (
+  settings: SettingsData,
+  project: Project,
+  profile: AgentProfile,
+  abortSignal?: AbortSignal,
+  messages: ContextMessage[] = [],
+  resultMessages: ContextMessage[] = [],
+): ToolSet =>
 ⋮----
 const generateSubagentsRunTaskDescription = (): string =>
 ⋮----
@@ -3676,6 +3859,14 @@ useTodoTools: false, // Disable todo tools for simplicity,
 useSubagents: false, // Disable nested subagents
 ⋮----
 // Create promptContext with working group
+⋮----
+const getSubagentContextMessages = () =>
+⋮----
+const findResultMessagesForToolCallId = (toolCallId: string) =>
+⋮----
+// @ts-expect-error subagentId is expected to be in the args
+⋮----
+// @ts-expect-error prompt is expected to be in the args
 ⋮----
 // Run the subagent with the focused context
 ⋮----
@@ -3811,7 +4002,14 @@ private async getContextFilesMessages(project: Project, profile: AgentProfile, c
 ⋮----
 private async getWorkingFilesMessages(contextFiles: ContextFile[]): Promise<CoreMessage[]>
 ⋮----
-private async getAvailableTools(project: Project, profile: AgentProfile, abortSignal?: AbortSignal, promptContext?: PromptContext): Promise<ToolSet>
+private async getAvailableTools(
+    project: Project,
+    profile: AgentProfile,
+    messages?: ContextMessage[],
+    resultMessages?: ContextMessage[],
+    abortSignal?: AbortSignal,
+    promptContext?: PromptContext,
+): Promise<ToolSet>
 ⋮----
 // Build the toolSet directly from enabled clients and tools
 ⋮----
@@ -3870,7 +4068,7 @@ async runAgent(
     profile: AgentProfile,
     prompt: string,
     promptContext?: PromptContext,
-    contextMessages: CoreMessage[] = project.getContextMessages(),
+    contextMessages: ContextMessage[] = project.getContextMessages(),
     contextFiles: ContextFile[] = project.getContextFiles(),
     systemPrompt?: string,
     abortSignal?: AbortSignal,
@@ -4318,7 +4516,6 @@ File: src/main/connector/connector-manager.ts
 import { Server as HttpServer } from 'http';
 ⋮----
 import { ModelsData, QuestionData, TokensInfoData } from '@common/types';
-import { BrowserWindow } from 'electron';
 import { Server, Socket } from 'socket.io';
 ⋮----
 import logger from '@/logger';
@@ -4349,7 +4546,6 @@ import { EventManager } from '@/events';
 export class ConnectorManager
 ⋮----
 constructor(
-    private readonly mainWindow: BrowserWindow,
     private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
     private readonly eventManager: EventManager,
@@ -4599,20 +4795,28 @@ import {
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
+  TerminalData,
+  TerminalExitData,
   ToolData,
   TokensInfoData,
   UserMessageData,
+  VersionsInfo,
 } from '@common/types';
 ⋮----
-export interface EventConnector {
-  socket: Socket;
+import logger from '@/logger';
+⋮----
+export interface EventsConnectorConfig {
   eventTypes?: string[];
   baseDirs?: string[];
 }
 ⋮----
+export interface EventsConnector extends EventsConnectorConfig {
+  socket: Socket;
+}
+⋮----
 export class EventManager
 ⋮----
-constructor(private readonly mainWindow: BrowserWindow)
+constructor(private readonly mainWindow: BrowserWindow | null)
 ⋮----
 // Project lifecycle events
 sendProjectStarted(baseDir: string): void
@@ -4661,9 +4865,19 @@ sendCustomCommandsUpdated(baseDir: string, commands: CustomCommand[]): void
 ⋮----
 sendCustomCommandError(baseDir: string, error: string): void
 ⋮----
-handleEventSubscription(socket: Socket, config:
+// Terminal events
+sendTerminalData(data: TerminalData): void
 ⋮----
-handleEventUnsubscription(socket: Socket): void
+sendTerminalExit(data: TerminalExitData): void
+⋮----
+// Versions events
+sendVersionsInfoUpdated(versionsInfo: VersionsInfo): void
+⋮----
+subscribe(socket: Socket, config: EventsConnectorConfig): void
+⋮----
+unsubscribe(socket: Socket): void
+⋮----
+private sendToMainWindow(eventType: string, data: unknown): void
 ⋮----
 private broadcastToEventConnectors(eventType: string, data: unknown): void
 ⋮----
@@ -4734,7 +4948,6 @@ File: src/main/project/index.ts
 File: src/main/project/project-manager.ts
 ================
 import { normalizeBaseDir } from '@common/utils';
-import { BrowserWindow } from 'electron';
 import { SettingsData, StartupMode } from '@common/types';
 ⋮----
 import { TelemetryManager } from '@/telemetry';
@@ -4748,12 +4961,6 @@ import { EventManager } from '@/events';
 export class ProjectManager
 ⋮----
 constructor(
-    private readonly mainWindow: BrowserWindow,
-    private readonly store: Store,
-    private readonly agent: Agent,
-    private readonly telemetryManager: TelemetryManager,
-    private readonly dataManager: DataManager,
-)
 ⋮----
 private findProject(baseDir: string): Project | undefined
 ⋮----
@@ -4783,13 +4990,13 @@ import fs from 'fs/promises';
 import path from 'path';
 ⋮----
 import { simpleGit } from 'simple-git';
-import { BrowserWindow, dialog, Notification } from 'electron';
+import { Notification } from 'electron';
 import YAML from 'yaml';
 import {
   AgentProfile,
+  ContextAssistantMessage,
   ContextFile,
   ContextMessage,
-  ContextAssistantMessage,
   CustomCommand,
   EditFormat,
   FileEdit,
@@ -4862,7 +5069,6 @@ import { EventManager } from '@/events';
 export class Project
 ⋮----
 constructor(
-    private readonly mainWindow: BrowserWindow,
     public readonly baseDir: string,
     private readonly store: Store,
     private readonly agent: Agent,
@@ -4958,9 +5164,10 @@ public async runPromptInAgent(
 ⋮----
 // send messages to connectors
 ⋮----
-public async runSubAgent(
+public async runSubagent(
     profile: AgentProfile,
     prompt: string,
+    contextMessages: ContextMessage[],
     contextFiles: ContextFile[],
     systemPrompt?: string,
     abortSignal?: AbortSignal,
@@ -5115,7 +5322,7 @@ const extractSummary = (content: string): string =>
 ⋮----
 // add messages to session
 ⋮----
-public async exportSessionToMarkdown(): Promise<void>
+public async generateSessionMarkdown(): Promise<string | null>
 ⋮----
 updateTokensInfo(data: Partial<TokensInfoData>)
 ⋮----
@@ -5199,6 +5406,7 @@ public async runCustomCommand(commandName: string, args: string[], mode: Mode = 
 File: src/main/rest-api/base-api.ts
 ================
 import { Request, Response, Router } from 'express';
+import { z } from 'zod';
 ⋮----
 import { Project } from '@/project';
 ⋮----
@@ -5217,6 +5425,13 @@ protected findProject(project: Project | undefined, projectDir: string, res: Res
    */
 protected handleRequest<T>(handler: (req: Request, res: Response) => Promise<T>)
 ⋮----
+// eslint-disable-next-line no-console
+⋮----
+/**
+   * Validates request data using a Zod schema and handles invalid requests
+   */
+protected validateRequest<T>(schema: z.ZodSchema<T>, data: unknown, res: Response): T | null
+⋮----
 /**
    * Abstract method for registering routes - each API module must implement this
    */
@@ -5230,11 +5445,11 @@ import { z } from 'zod';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
-import { ProjectManager } from '@/project';
+import { EventsHandler } from '@/events-handler';
 ⋮----
 export class CommandsApi extends BaseApi
 ⋮----
-constructor(private readonly projectManager: ProjectManager)
+constructor(private readonly eventsHandler: EventsHandler)
 ⋮----
 registerRoutes(router: Router): void
 ⋮----
@@ -5247,25 +5462,24 @@ File: src/main/rest-api/context-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
-import { delay } from '@common/utils';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
+import { EventsHandler } from '@/events-handler';
 import { ProjectManager } from '@/project';
 ⋮----
 export class ContextApi extends BaseApi
 ⋮----
-constructor(private readonly projectManager: ProjectManager)
+constructor(
+    private readonly projectManager: ProjectManager,
+    private readonly eventsHandler: EventsHandler,
+)
 ⋮----
 registerRoutes(router: Router): void
 ⋮----
 // Add context file
 ⋮----
-// add delay to allow Aider to verify the added files
-⋮----
 // Drop context file
-⋮----
-// add delay to allow Aider to verify the dropped files
 ⋮----
 // Get context files
 ⋮----
@@ -5279,29 +5493,85 @@ File: src/main/rest-api/index.ts
 // Export API modules
 
 ================
+File: src/main/rest-api/mcp-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+export class McpApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Load MCP server tools
+⋮----
+// Reload MCP servers
+
+================
 File: src/main/rest-api/project-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
-import { StartupMode } from '@common/types';
+import { StartupMode, ProjectSettingsSchema } from '@common/types';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
-import { ProjectManager } from '@/project';
-import { Store } from '@/store';
-⋮----
-// Other fields are optional as it's Partial<ProjectSettings>
+import { EventsHandler } from '@/events-handler';
 ⋮----
 export class ProjectApi extends BaseApi
 ⋮----
-constructor(
-    private readonly projectManager: ProjectManager,
-    private readonly store: Store,
-)
+constructor(private readonly eventsHandler: EventsHandler)
 ⋮----
 registerRoutes(router: Router): void
 ⋮----
 // Get projects
+⋮----
+// Get input history
+⋮----
+// Redo last user prompt
+⋮----
+// Validate path
+⋮----
+// Is project path
+⋮----
+// Get file path suggestions
+⋮----
+// Paste image
+⋮----
+// Apply edits
+⋮----
+// Run command
+⋮----
+// Init project rules file
+⋮----
+// Save session
+⋮----
+// Load session messages
+⋮----
+// Load session files
+⋮----
+// List sessions
+⋮----
+// Delete session
+⋮----
+// Export session to markdown
+⋮----
+// Remove last message
+⋮----
+// Compact conversation
+⋮----
+// Scrape web
+⋮----
+// Update open projects order
+⋮----
+// Remove open project
+⋮----
+// Set active project
 ⋮----
 // Restart project
 ⋮----
@@ -5314,6 +5584,20 @@ registerRoutes(router: Router): void
 // Clear project context
 ⋮----
 // Answer project question
+⋮----
+// Update main model
+⋮----
+// Update weak model
+⋮----
+// Update architect model
+⋮----
+// Update edit formats
+⋮----
+// Start project
+⋮----
+// Stop project
+⋮----
+// Add open project
 
 ================
 File: src/main/rest-api/prompt-api.ts
@@ -5323,11 +5607,11 @@ import { z } from 'zod';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
-import { ProjectManager } from '@/project';
+import { EventsHandler } from '@/events-handler';
 ⋮----
 export class PromptApi extends BaseApi
 ⋮----
-constructor(private readonly projectManager: ProjectManager)
+constructor(private readonly eventsHandler: EventsHandler)
 ⋮----
 registerRoutes(router: Router): void
 ⋮----
@@ -5339,42 +5623,42 @@ registerRoutes(router: Router): void
 File: src/main/rest-api/rest-api-controller.ts
 ================
 import { Server } from 'http';
+import { join } from 'path';
 ⋮----
 import express from 'express';
 import cors from 'cors';
+import { is } from '@electron-toolkit/utils';
 ⋮----
 import { ContextApi } from './context-api';
 import { PromptApi } from './prompt-api';
 import { SettingsApi } from './settings-api';
 import { ProjectApi } from './project-api';
 import { CommandsApi } from './commands-api';
+import { UsageApi } from './usage-api';
+import { SystemApi } from './system-api';
+import { TodoApi } from './todo-api';
+import { McpApi } from './mcp-api';
 ⋮----
 import { SERVER_PORT } from '@/constants';
 import logger from '@/logger';
-import { McpManager } from '@/agent';
-import { ModelInfoManager } from '@/models';
 import { ProjectManager } from '@/project';
-import { Store } from '@/store';
-⋮----
-// Import API modules
+import { EventsHandler } from '@/events-handler';
 ⋮----
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 ⋮----
 export class RestApiController
 ⋮----
 constructor(
-    private readonly projectManager: ProjectManager,
     private readonly server: Server,
-    private readonly store: Store,
-    private readonly modelInfoManager: ModelInfoManager,
-    private readonly mcpManager: McpManager,
+    private readonly projectManager: ProjectManager,
+    private readonly eventsHandler: EventsHandler,
 )
 ⋮----
 // Configure Express
 ⋮----
 // Set timeout for all requests
 ⋮----
-private setupRoutes(): void
+private setupApiRoutes(): void
 ⋮----
 // Create API router
 ⋮----
@@ -5383,6 +5667,10 @@ private setupRoutes(): void
 // Mount the API router globally under /api
 ⋮----
 private init()
+⋮----
+// Serve static renderer files in production (for browser access)
+⋮----
+// Handle SPA routing: serve index.html for non-API routes
 ⋮----
 // The server is already listening from the main process,
 // so we just need to attach our Express app to it
@@ -5396,33 +5684,105 @@ File: src/main/rest-api/settings-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
-import { SettingsData } from '@common/types';
+import { Font, Theme } from '@common/types';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
-import { McpManager } from '@/agent';
-import { ModelInfoManager } from '@/models';
-import { Store } from '@/store';
+import { EventsHandler } from '@/events-handler';
 ⋮----
 const SettingsDataSchema = z.any(); // Placeholder - can be refined based on SettingsData type
 ⋮----
 export class SettingsApi extends BaseApi
 ⋮----
-constructor(
-    private readonly store: Store,
-    private readonly modelInfoManager: ModelInfoManager,
-    private readonly mcpManager: McpManager,
-)
+constructor(private readonly eventsHandler: EventsHandler)
 ⋮----
 registerRoutes(router: Router): void
 ⋮----
 // Get settings
 ⋮----
+// Save theme
+⋮----
+// Save font
+⋮----
 // Update settings
 ⋮----
-// Note: agent and telemetryManager are not available here, as per original code
-⋮----
 // Get models
+⋮----
+// Get recent projects
+⋮----
+// Add recent project
+⋮----
+// Remove recent project
+⋮----
+// Set zoom level
+⋮----
+// Get versions
+⋮----
+// Download latest AiderDesk
+⋮----
+// Get release notes
+⋮----
+// Clear release notes
+⋮----
+// Get OS
+
+================
+File: src/main/rest-api/system-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+export class SystemApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+
+================
+File: src/main/rest-api/todo-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+export class TodoApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Get todos
+⋮----
+// Add todo
+⋮----
+// Update todo
+⋮----
+// Delete todo
+⋮----
+// Clear all todos
+
+================
+File: src/main/rest-api/usage-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+export class UsageApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
 
 ================
 File: src/main/session/index.ts
@@ -5937,11 +6297,11 @@ File: src/main/terminal/index.ts
 ================
 File: src/main/terminal/terminal-manager.ts
 ================
-import { BrowserWindow } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 ⋮----
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
+import { EventManager } from '@/events';
 ⋮----
 export interface TerminalInstance {
   id: string;
@@ -5953,7 +6313,7 @@ export interface TerminalInstance {
 ⋮----
 export class TerminalManager
 ⋮----
-constructor(mainWindow: BrowserWindow, telemetryManager?: TelemetryManager)
+constructor(
 ⋮----
 private getShellCommand(): string
 ⋮----
@@ -6175,19 +6535,20 @@ import path from 'path';
 ⋮----
 import { VersionsInfo } from '@common/types';
 import { autoUpdater } from 'electron-updater';
-import { app, BrowserWindow } from 'electron';
+import { app } from 'electron';
 import { is } from '@electron-toolkit/utils';
 ⋮----
 import { getCurrentPythonLibVersion, getLatestPythonLibVersion } from '@/utils';
 import logger from '@/logger';
 import { Store } from '@/store';
+import { EventManager } from '@/events';
 ⋮----
 export class VersionsManager
 ⋮----
 private readonly checkInterval = 10 * 60 * 1000; // 10 minutes
 ⋮----
 constructor(
-    private readonly mainWindow: BrowserWindow,
+    private readonly eventManager: EventManager,
     private readonly store: Store,
 )
 ⋮----
@@ -6234,6 +6595,211 @@ import { is } from '@electron-toolkit/utils';
 import { app } from 'electron';
 
 ================
+File: src/main/events-handler.ts
+================
+import path from 'path';
+import fs from 'fs/promises';
+⋮----
+import { BrowserWindow, clipboard, dialog, shell } from 'electron';
+import {
+  CustomCommand,
+  EditFormat,
+  EnvironmentVariable,
+  FileEdit,
+  Font,
+  McpServerConfig,
+  McpTool,
+  Mode,
+  ModelInfo,
+  OS,
+  ProjectData,
+  ProjectSettings,
+  ResponseCompletedData,
+  SessionData,
+  SettingsData,
+  StartupMode,
+  Theme,
+  TodoItem,
+  UsageDataRow,
+  VersionsInfo,
+} from '@common/types';
+import { normalizeBaseDir } from '@common/utils';
+⋮----
+import { Agent, McpManager } from '@/agent';
+import { ModelInfoManager } from '@/models';
+import { ProjectManager } from '@/project';
+import { getDefaultProjectSettings, Store } from '@/store';
+import { TelemetryManager } from '@/telemetry';
+import { VersionsManager } from '@/versions';
+import { DataManager } from '@/data-manager';
+import { TerminalManager } from '@/terminal/terminal-manager';
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
+import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
+⋮----
+export class EventsHandler
+⋮----
+constructor(
+⋮----
+loadSettings(): SettingsData
+⋮----
+saveSettings(newSettings: SettingsData): SettingsData
+⋮----
+saveTheme(theme: Theme): Theme | undefined
+⋮----
+saveFont(font: Font): Font | undefined
+⋮----
+async loadModelsInfo(): Promise<Record<string, ModelInfo>>
+⋮----
+return {}; // Return empty object or handle error as appropriate
+⋮----
+getProjectSettings(baseDir: string): ProjectSettings
+⋮----
+patchProjectSettings(baseDir: string, settings: Partial<ProjectSettings>): ProjectSettings
+⋮----
+startProject(baseDir: string): void
+⋮----
+async stopProject(baseDir: string): Promise<void>
+⋮----
+async restartProject(baseDir: string, startupMode?: StartupMode): Promise<void>
+⋮----
+getOpenProjects(): ProjectData[]
+⋮----
+addOpenProject(baseDir: string): ProjectData[]
+⋮----
+removeOpenProject(baseDir: string): ProjectData[]
+⋮----
+// Set the last project as active if the current active project was removed
+⋮----
+async setActiveProject(baseDir: string): Promise<ProjectData[]>
+⋮----
+updateOpenProjectsOrder(baseDirs: string[]): ProjectData[]
+⋮----
+getRecentProjects(): string[]
+⋮----
+addRecentProject(baseDir: string): void
+⋮----
+removeRecentProject(baseDir: string): void
+⋮----
+interruptResponse(baseDir: string): void
+⋮----
+clearContext(baseDir: string, includeLastMessage = true): void
+⋮----
+async removeLastMessage(baseDir: string): Promise<void>
+⋮----
+async redoLastUserPrompt(baseDir: string, mode: Mode, updatedPrompt?: string): Promise<void>
+⋮----
+async compactConversation(baseDir: string, mode: Mode, customInstructions?: string): Promise<void>
+⋮----
+async loadInputHistory(baseDir: string): Promise<string[]>
+⋮----
+async getAddableFiles(baseDir: string, searchRegex?: string): Promise<string[]>
+⋮----
+async addFile(baseDir: string, filePath: string, readOnly = false): Promise<void>
+⋮----
+dropFile(baseDir: string, filePath: string): void
+⋮----
+async pasteImage(baseDir: string): Promise<void>
+⋮----
+applyEdits(baseDir: string, edits: FileEdit[]): void
+⋮----
+async runPrompt(baseDir: string, prompt: string, mode?: Mode): Promise<ResponseCompletedData[]>
+⋮----
+answerQuestion(baseDir: string, answer: string): void
+⋮----
+runCommand(baseDir: string, command: string): void
+⋮----
+async getCustomCommands(baseDir: string): Promise<CustomCommand[]>
+⋮----
+async runCustomCommand(baseDir: string, commandName: string, args: string[], mode: Mode): Promise<void>
+⋮----
+updateMainModel(baseDir: string, mainModel: string): void
+⋮----
+updateWeakModel(baseDir: string, weakModel: string): void
+⋮----
+updateArchitectModel(baseDir: string, architectModel: string): void
+⋮----
+updateEditFormats(baseDir: string, updatedFormats: Record<string, EditFormat>): void
+⋮----
+// Update just the current model's edit format while preserving others
+⋮----
+async loadMcpServerTools(serverName: string, config?: McpServerConfig): Promise<McpTool[] | null>
+⋮----
+async reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void>
+⋮----
+// Get the currently active project's base directory
+⋮----
+async createTerminal(baseDir: string, cols?: number, rows?: number): Promise<string>
+⋮----
+writeToTerminal(terminalId: string, data: string): void
+⋮----
+resizeTerminal(terminalId: string, cols: number, rows: number): void
+⋮----
+closeTerminal(terminalId: string): void
+⋮----
+getTerminalForProject(baseDir: string): string | null
+⋮----
+getTerminalsForProject(baseDir: string):
+⋮----
+async scrapeWeb(baseDir: string, url: string, filePath?: string): Promise<void>
+⋮----
+// Normalize URL for filename
+⋮----
+// Truncate if too long
+⋮----
+// Check if path looks like a directory (ends with separator)
+⋮----
+async saveSession(baseDir: string, name: string): Promise<boolean>
+⋮----
+async loadSessionMessages(baseDir: string, name: string): Promise<void>
+⋮----
+async loadSessionFiles(baseDir: string, name: string): Promise<void>
+⋮----
+async deleteSession(baseDir: string, name: string): Promise<boolean>
+⋮----
+async listSessions(baseDir: string): Promise<SessionData[]>
+⋮----
+async exportSessionToMarkdown(baseDir: string): Promise<void>
+⋮----
+setZoomLevel(zoomLevel: number): void
+⋮----
+async getVersions(forceRefresh = false): Promise<VersionsInfo>
+⋮----
+async downloadLatestAiderDesk(): Promise<void>
+⋮----
+getReleaseNotes(): string | null
+⋮----
+clearReleaseNotes(): void
+⋮----
+getOS(): OS
+⋮----
+async queryUsageData(from: Date, to: Date): Promise<UsageDataRow[]>
+⋮----
+getEffectiveEnvironmentVariable(key: string, baseDir?: string): EnvironmentVariable | undefined
+⋮----
+async showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue>
+⋮----
+async openLogsDirectory(): Promise<boolean>
+⋮----
+async isProjectPath(path: string): Promise<boolean>
+⋮----
+async isValidPath(baseDir: string, path: string): Promise<boolean>
+⋮----
+async getFilePathSuggestions(currentPath: string, directoriesOnly = true): Promise<string[]>
+⋮----
+async getTodos(baseDir: string): Promise<TodoItem[]>
+⋮----
+async addTodo(baseDir: string, name: string): Promise<TodoItem[]>
+⋮----
+async updateTodo(baseDir: string, name: string, updates: Partial<TodoItem>): Promise<TodoItem[]>
+⋮----
+async deleteTodo(baseDir: string, name: string): Promise<TodoItem[]>
+⋮----
+async clearAllTodos(baseDir: string): Promise<TodoItem[]>
+⋮----
+async initProjectRulesFile(baseDir: string): Promise<void>
+
+================
 File: src/main/index.ts
 ================
 import { join } from 'path';
@@ -6261,6 +6827,7 @@ import { EventManager } from '@/events';
 import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
+import { EventsHandler } from '@/events-handler';
 ⋮----
 const setupCustomMenu = (): void =>
 ⋮----
@@ -6272,9 +6839,10 @@ const setupCustomMenu = (): void =>
 ⋮----
 const initStore = async (): Promise<Store> =>
 ⋮----
-const initWindow = async (store: Store): Promise<BrowserWindow> =>
-⋮----
-const saveWindowState = (): void =>
+const initManagers = async (
+  mainWindow: BrowserWindow | null,
+  store: Store,
+): Promise<
 ⋮----
 // Initialize telemetry manager
 ⋮----
@@ -6286,9 +6854,9 @@ const saveWindowState = (): void =>
 ⋮----
 // Initialize agent
 ⋮----
-// Initialize project manager
-⋮----
 // Initialize event manager
+⋮----
+// Initialize project manager
 ⋮----
 // Initialize terminal manager
 ⋮----
@@ -6296,73 +6864,45 @@ const saveWindowState = (): void =>
 ⋮----
 // Create HTTP server
 ⋮----
+// Initialize events handler
+⋮----
 // Create and initialize REST API controller
 ⋮----
 // Initialize connector manager with the server
 ⋮----
-// Initialize IPC handlers
-⋮----
 const beforeQuit = async () =>
 ⋮----
 // Handle CTRL+C (SIGINT)
+⋮----
+const initWindow = async (store: Store): Promise<BrowserWindow> =>
+⋮----
+const saveWindowState = (): void =>
+⋮----
+// Initialize IPC handlers
 ⋮----
 // HMR for renderer base on electron-vite cli.
 // Load the remote URL for development or the local html file for production.
 ⋮----
 // Apply saved zoom level
 ⋮----
-// Setup custom menu
+// Setup custom menu only in GUI mode
 ⋮----
-const updateProgress = (
+updateProgress = (
+⋮----
+// In headless mode, use a no-op updateProgress
+updateProgress = () =>
+⋮----
+// Initialize managers without window in headless mode
 
 ================
 File: src/main/ipc-handlers.ts
 ================
-import path from 'path';
-import fs from 'fs/promises';
+import { EditFormat, FileEdit, Font, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, Theme, TodoItem } from '@common/types';
+import { ipcMain } from 'electron';
 ⋮----
-import { EditFormat, FileEdit, Font, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, Theme, TodoItem } from '@common/types';
-import { normalizeBaseDir } from '@common/utils';
-import { BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron';
+import { EventsHandler } from './events-handler';
 ⋮----
-import { Agent, McpManager } from '@/agent';
-import { getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
-import { ModelInfoManager } from '@/models';
-import { ProjectManager } from '@/project';
-import { getDefaultProjectSettings, Store } from '@/store';
-import logger from '@/logger';
-import { VersionsManager } from '@/versions';
-import { TelemetryManager } from '@/telemetry';
-import { DataManager } from '@/data-manager';
-import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
-import { TerminalManager } from '@/terminal/terminal-manager';
-⋮----
-export const setupIpcHandlers = (
-  mainWindow: BrowserWindow,
-  projectManager: ProjectManager,
-  store: Store,
-  mcpManager: McpManager,
-  agent: Agent,
-  versionsManager: VersionsManager,
-  modelInfoManager: ModelInfoManager,
-  telemetryManager: TelemetryManager,
-  dataManager: DataManager,
-  terminalManager: TerminalManager,
-) =>
-⋮----
-// Set the last project as active if the current active project was removed
-⋮----
-// Update just the current model's edit format while preserving others
-⋮----
-// Normalize URL for filename
-⋮----
-// Truncate if too long
-⋮----
-// Check if path looks like a directory (ends with separator)
-⋮----
-// Get the currently active project's base directory
-⋮----
-return {}; // Return empty object or handle error as appropriate
+export const setupIpcHandlers = (eventsHandler: EventsHandler) =>
 ⋮----
 // Terminal handlers
 
@@ -6746,153 +7286,9 @@ async function main()
 ================
 File: src/preload/index.d.ts
 ================
+import { ApplicationAPI } from '@common/api';
+⋮----
 import type { ElectronAPI } from '@electron-toolkit/preload';
-import type {
-  AutocompletionData,
-  ContextFilesUpdatedData,
-  CustomCommandsUpdatedData,
-  InputHistoryData,
-  LogData,
-  ModelsData,
-  ProjectData,
-  ProjectSettings,
-  QuestionData,
-  ResponseChunkData,
-  ResponseCompletedData,
-  SessionData,
-  SettingsData,
-  TerminalData,
-  TerminalExitData,
-  TokensInfoData,
-  UserMessageData,
-  McpServerConfig,
-  McpTool,
-  ToolData,
-  CommandOutputData,
-  Mode,
-  VersionsInfo,
-  EditFormat,
-  OS,
-  ModelInfo,
-  TodoItem,
-  UsageDataRow,
-  EnvironmentVariable,
-  CustomCommand,
-  ThemeName,
-  Font,
-} from '@common/types';
-⋮----
-export interface ApplicationAPI {
-  openLogsDirectory: () => Promise<boolean>;
-  loadSettings: () => Promise<SettingsData>;
-  saveSettings: (settings: SettingsData) => Promise<SettingsData>;
-  saveTheme: (theme: ThemeName) => Promise<ThemeName>;
-  saveFont: (font: string) => Promise<Font>;
-  startProject: (baseDir: string) => void;
-  stopProject: (baseDir: string) => void;
-  restartProject: (baseDir: string, startupMode?: StartupMode) => void;
-  runPrompt: (baseDir: string, prompt: string, mode?: Mode) => void;
-  redoLastUserPrompt: (baseDir: string, mode: Mode, updatedPrompt?: string) => void;
-  answerQuestion: (baseDir: string, answer: string) => void;
-  loadInputHistory: (baseDir: string) => Promise<string[]>;
-  dialog: {
-    showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
-  };
-  getPathForFile: (file: File) => string;
-  getOpenProjects: () => Promise<ProjectData[]>;
-  addOpenProject: (baseDir: string) => Promise<ProjectData[]>;
-  setActiveProject: (baseDir: string) => Promise<ProjectData[]>;
-  removeOpenProject: (baseDir: string) => Promise<ProjectData[]>;
-  updateOpenProjectsOrder: (baseDirs: string[]) => Promise<ProjectData[]>;
-  updateMainModel: (baseDir: string, model: string) => void;
-  updateWeakModel: (baseDir: string, model: string) => void;
-  updateArchitectModel: (baseDir: string, model: string) => void;
-  updateEditFormats: (baseDir: string, editFormats: Record<string, EditFormat>) => void;
-  getProjectSettings: (baseDir: string) => Promise<ProjectSettings>;
-  patchProjectSettings: (baseDir: string, settings: Partial<ProjectSettings>) => Promise<ProjectSettings>;
-  getFilePathSuggestions: (currentPath: string, directoriesOnly?: boolean) => Promise<string[]>;
-  getAddableFiles: (baseDir: string) => Promise<string[]>;
-  addFile: (baseDir: string, filePath: string, readOnly?: boolean) => void;
-  isValidPath: (baseDir: string, path: string) => Promise<boolean>;
-  isProjectPath: (path: string) => Promise<boolean>;
-  dropFile: (baseDir: string, path: string) => void;
-  runCommand: (baseDir: string, command: string) => void;
-  pasteImage: (baseDir: string) => void;
-  scrapeWeb: (baseDir: string, url: string, filePath?: string) => Promise<string>;
-  initProjectRulesFile: (baseDir: string) => Promise<void>;
-
-  // Todo operations
-  getTodos: (baseDir: string) => Promise<TodoItem[]>;
-  addTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
-  updateTodo: (baseDir: string, name: string, updates: Partial<TodoItem>) => Promise<TodoItem[]>;
-  deleteTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
-  clearAllTodos: (baseDir: string) => Promise<TodoItem[]>;
-
-  loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
-  reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force = false) => Promise<void>;
-
-  saveSession: (baseDir: string, name: string) => Promise<boolean>;
-  deleteSession: (baseDir: string, name: string) => Promise<boolean>;
-  loadSessionMessages: (baseDir: string, name: string) => Promise<void>;
-  loadSessionFiles: (baseDir: string, name: string) => Promise<void>;
-  listSessions: (baseDir: string) => Promise<SessionData[]>;
-  exportSessionToMarkdown: (baseDir: string) => Promise<void>;
-  getRecentProjects: () => Promise<string[]>;
-  addRecentProject: (baseDir: string) => Promise<void>;
-  removeRecentProject: (baseDir: string) => Promise<void>;
-  interruptResponse: (baseDir: string) => void;
-  applyEdits: (baseDir: string, edits: FileEdit[]) => void;
-  clearContext: (baseDir: string) => void;
-  removeLastMessage: (baseDir: string) => void;
-  compactConversation: (baseDir: string, mode: Mode, customInstructions?: string) => void;
-  setZoomLevel: (level: number) => Promise<void>;
-
-  getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
-  downloadLatestAiderDesk: () => Promise<void>;
-
-  getReleaseNotes: () => Promise<string | null>;
-  clearReleaseNotes: () => Promise<void>;
-  getOS: () => Promise<OS>;
-  loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
-  queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
-  getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
-
-  addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => () => void;
-  addResponseCompletedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => void) => () => void;
-  addLogListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: LogData) => void) => () => void;
-  addContextFilesUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => void) => () => void;
-  addCustomCommandsUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => void) => () => void;
-  addUpdateAutocompletionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: AutocompletionData) => void) => () => void;
-  addAskQuestionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: QuestionData) => void) => () => void;
-  addUpdateAiderModelsListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ModelsData) => void) => () => void;
-  addCommandOutputListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CommandOutputData) => void) => () => void;
-  addTokensInfoListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TokensInfoData) => void) => () => void;
-  addToolListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ToolData) => void) => () => void;
-  addUserMessageListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: UserMessageData) => void) => () => void;
-  addInputHistoryUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: InputHistoryData) => void) => () => void;
-  addClearProjectListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, clearMessages: boolean, clearSession: boolean) => void) => () => void;
-  addProjectStartedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, baseDir: string) => void) => () => void;
-  addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => () => void;
-  addTerminalDataListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalData) => void) => () => void;
-  addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => () => void;
-  addContextMenuListener: (callback: (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => void) => () => void;
-  addOpenSettingsListener: (callback: (event: Electron.IpcRendererEvent, tabIndex: number) => void) => () => void;
-
-  getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
-  runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
-
-  // Terminal operations
-  createTerminal: (baseDir: string, cols?: number, rows?: number) => Promise<string>;
-  writeToTerminal: (terminalId: string, data: string) => Promise<boolean>;
-  resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;
-  closeTerminal: (terminalId: string) => Promise<boolean>;
-  getTerminalForProject: (baseDir: string) => Promise<string | null>;
-  getAllTerminalsForProject: (baseDir: string) => Promise<Array<{ id: string; baseDir: string; cols: number; rows: number }>>;
-}
-⋮----
-// Todo operations
-⋮----
-// Terminal operations
 ⋮----
 interface Window {
     electron: ElectronAPI;
@@ -6904,6 +7300,7 @@ File: src/preload/index.ts
 ================
 import {
   AutocompletionData,
+  ClearProjectData,
   CommandOutputData,
   ContextFilesUpdatedData,
   CustomCommandsUpdatedData,
@@ -6913,6 +7310,7 @@ import {
   McpServerConfig,
   ModelsData,
   OS,
+  ProjectStartedData,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -6923,19 +7321,211 @@ import {
   UserMessageData,
   VersionsInfo,
 } from '@common/types';
-import { normalizeBaseDir } from '@common/utils';
 import { electronAPI } from '@electron-toolkit/preload';
+⋮----
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import { ApplicationAPI } from '@common/api';
+import { compareBaseDirs } from '@common/utils';
 ⋮----
-import { ApplicationAPI } from './index.d';
-⋮----
-const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean =>
-⋮----
-const listener = (event: Electron.IpcRendererEvent, data: ResponseChunkData) =>
+const listener = (_: Electron.IpcRendererEvent, data: ResponseChunkData) =>
 ⋮----
 // Terminal operations
 ⋮----
 // eslint-disable-next-line no-console
+
+================
+File: src/renderer/src/api/browser-api.ts
+================
+import {
+  AutocompletionData,
+  ClearProjectData,
+  CommandOutputData,
+  ContextFilesUpdatedData,
+  CustomCommand,
+  CustomCommandsUpdatedData,
+  EditFormat,
+  EnvironmentVariable,
+  FileEdit,
+  Font,
+  InputHistoryData,
+  LogData,
+  McpServerConfig,
+  McpTool,
+  Mode,
+  ModelInfo,
+  ModelsData,
+  OS,
+  ProjectData,
+  ProjectSettings,
+  ProjectStartedData,
+  QuestionData,
+  ResponseChunkData,
+  ResponseCompletedData,
+  SessionData,
+  SettingsData,
+  StartupMode,
+  TerminalData,
+  TerminalExitData,
+  Theme,
+  TodoItem,
+  TokensInfoData,
+  ToolData,
+  UsageDataRow,
+  UserMessageData,
+  VersionsInfo,
+} from '@common/types';
+import { ApplicationAPI } from '@common/api';
+import axios, { type AxiosInstance } from 'axios';
+import { io, Socket } from 'socket.io-client';
+import { compareBaseDirs } from '@common/utils';
+import { v4 as uuidv4 } from 'uuid';
+⋮----
+type EventDataMap = {
+  'response-chunk': ResponseChunkData;
+  'response-completed': ResponseCompletedData;
+  log: LogData;
+  'context-files-updated': ContextFilesUpdatedData;
+  'custom-commands-updated': CustomCommandsUpdatedData;
+  'update-autocompletion': AutocompletionData;
+  'ask-question': QuestionData;
+  'update-aider-models': ModelsData;
+  'command-output': CommandOutputData;
+  'update-tokens-info': TokensInfoData;
+  tool: ToolData;
+  'user-message': UserMessageData;
+  'input-history-updated': InputHistoryData;
+  'clear-project': ClearProjectData;
+  'project-started': ProjectStartedData;
+};
+⋮----
+type EventCallback<T> = (data: T) => void;
+⋮----
+interface ListenerEntry<T> {
+  callback: EventCallback<T>;
+  baseDir?: string;
+}
+⋮----
+class UnsupportedError extends Error
+⋮----
+constructor(message: string)
+⋮----
+export class BrowserApi implements ApplicationAPI
+⋮----
+constructor()
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+private ensureSocketConnected(): void
+⋮----
+private addListener<T extends keyof EventDataMap>(eventType: T, baseDir: string | undefined, callback: EventCallback<EventDataMap[T]>): () => void
+⋮----
+private async post<B, R>(endpoint: string, body: B): Promise<R>
+⋮----
+private async get<T>(endpoint: string, params?: Record<string, unknown>): Promise<T>
+⋮----
+private async patch<B, R>(endpoint: string, body: B): Promise<R>
+⋮----
+isOpenLogsDirectorySupported(): boolean
+openLogsDirectory(): Promise<boolean>
+loadSettings(): Promise<SettingsData>
+saveSettings(settings: SettingsData): Promise<SettingsData>
+saveTheme(theme: Theme): Promise<Theme>
+saveFont(font: string): Promise<Font>
+startProject(baseDir: string): void
+stopProject(baseDir: string): void
+restartProject(baseDir: string, startupMode?: StartupMode): void
+runPrompt(baseDir: string, prompt: string, mode?: Mode): void
+redoLastUserPrompt(baseDir: string, mode: Mode, updatedPrompt?: string): void
+answerQuestion(baseDir: string, answer: string): void
+loadInputHistory(baseDir: string): Promise<string[]>
+isOpenDialogSupported(): boolean
+showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue>
+getPathForFile(file: File): string
+getOpenProjects(): Promise<ProjectData[]>
+addOpenProject(baseDir: string): Promise<ProjectData[]>
+setActiveProject(baseDir: string): Promise<ProjectData[]>
+removeOpenProject(baseDir: string): Promise<ProjectData[]>
+updateOpenProjectsOrder(baseDirs: string[]): Promise<ProjectData[]>
+updateMainModel(baseDir: string, model: string): void
+updateWeakModel(baseDir: string, model: string): void
+updateArchitectModel(baseDir: string, model: string): void
+updateEditFormats(baseDir: string, editFormats: Record<string, EditFormat>): void
+getProjectSettings(baseDir: string): Promise<ProjectSettings>
+patchProjectSettings(baseDir: string, settings: Partial<ProjectSettings>): Promise<ProjectSettings>
+getFilePathSuggestions(currentPath: string, directoriesOnly?: boolean): Promise<string[]>
+getAddableFiles(baseDir: string): Promise<string[]>
+addFile(baseDir: string, filePath: string, readOnly?: boolean): void
+async isValidPath(baseDir: string, path: string): Promise<boolean>
+async isProjectPath(path: string): Promise<boolean>
+dropFile(baseDir: string, path: string): void
+runCommand(baseDir: string, command: string): void
+pasteImage(baseDir: string): void
+scrapeWeb(baseDir: string, url: string, filePath?: string): Promise<string>
+initProjectRulesFile(baseDir: string): Promise<void>
+getTodos(baseDir: string): Promise<TodoItem[]>
+addTodo(baseDir: string, name: string): Promise<TodoItem[]>
+updateTodo(baseDir: string, name: string, updates: Partial<TodoItem>): Promise<TodoItem[]>
+deleteTodo(baseDir: string, name: string): Promise<TodoItem[]>
+clearAllTodos(baseDir: string): Promise<TodoItem[]>
+loadMcpServerTools(serverName: string, config?: McpServerConfig): Promise<McpTool[] | null>
+reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void>
+saveSession(baseDir: string, name: string): Promise<boolean>
+deleteSession(baseDir: string, name: string): Promise<boolean>
+loadSessionMessages(baseDir: string, name: string): Promise<void>
+loadSessionFiles(baseDir: string, name: string): Promise<void>
+listSessions(baseDir: string): Promise<SessionData[]>
+exportSessionToMarkdown(baseDir: string): Promise<void>
+getRecentProjects(): Promise<string[]>
+addRecentProject(baseDir: string): Promise<void>
+removeRecentProject(baseDir: string): Promise<void>
+interruptResponse(baseDir: string): void
+applyEdits(baseDir: string, edits: FileEdit[]): void
+clearContext(baseDir: string): void
+removeLastMessage(baseDir: string): void
+compactConversation(baseDir: string, mode: Mode, customInstructions?: string): void
+setZoomLevel(level: number): Promise<void>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+getVersions(forceRefresh = false): Promise<VersionsInfo | null>
+downloadLatestAiderDesk(): Promise<void>
+async getReleaseNotes(): Promise<string | null>
+clearReleaseNotes(): Promise<void>
+async getOS(): Promise<OS>
+loadModelsInfo(): Promise<Record<string, ModelInfo>>
+queryUsageData(from: string, to: string): Promise<UsageDataRow[]>
+getEffectiveEnvironmentVariable(key: string, baseDir?: string): Promise<EnvironmentVariable | undefined>
+addResponseChunkListener(baseDir: string, callback: (data: ResponseChunkData) => void): () => void
+addResponseCompletedListener(baseDir: string, callback: (data: ResponseCompletedData) => void): () => void
+addLogListener(baseDir: string, callback: (data: LogData) => void): () => void
+addContextFilesUpdatedListener(baseDir: string, callback: (data: ContextFilesUpdatedData) => void): () => void
+addCustomCommandsUpdatedListener(baseDir: string, callback: (data: CustomCommandsUpdatedData) => void): () => void
+addUpdateAutocompletionListener(baseDir: string, callback: (data: AutocompletionData) => void): () => void
+addAskQuestionListener(baseDir: string, callback: (data: QuestionData) => void): () => void
+addUpdateAiderModelsListener(baseDir: string, callback: (data: ModelsData) => void): () => void
+addCommandOutputListener(baseDir: string, callback: (data: CommandOutputData) => void): () => void
+addTokensInfoListener(baseDir: string, callback: (data: TokensInfoData) => void): () => void
+addToolListener(baseDir: string, callback: (data: ToolData) => void): () => void
+addUserMessageListener(baseDir: string, callback: (data: UserMessageData) => void): () => void
+addInputHistoryUpdatedListener(baseDir: string, callback: (data: InputHistoryData) => void): () => void
+addClearProjectListener(baseDir: string, callback: (data: ClearProjectData) => void): () => void
+addProjectStartedListener(baseDir: string, callback: (data: ProjectStartedData) => void): () => void
+addVersionsInfoUpdatedListener(callback: (data: VersionsInfo) => void): () => void
+addTerminalDataListener(baseDir: string, callback: (data: TerminalData) => void): () => void
+addTerminalExitListener(baseDir: string, callback: (data: TerminalExitData) => void): () => void
+addContextMenuListener(callback: (params: Electron.ContextMenuParams) => void): () => void
+addOpenSettingsListener(callback: (tabIndex: number) => void): () => void
+getCustomCommands(baseDir: string): Promise<CustomCommand[]>
+runCustomCommand(baseDir: string, commandName: string, args: string[], mode: Mode): Promise<void>
+isTerminalSupported(): boolean
+createTerminal(baseDir: string, cols?: number, rows?: number): Promise<string>
+writeToTerminal(terminalId: string, data: string): Promise<boolean>
+resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean>
+closeTerminal(terminalId: string): Promise<boolean>
+getTerminalForProject(baseDir: string): Promise<string | null>
+getAllTerminalsForProject(baseDir: string): Promise<Array<
 
 ================
 File: src/renderer/src/assets/electron.svg
@@ -7004,6 +7594,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { Checkbox } from '@/components/common/Checkbox';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type Props = {
   isActive: boolean;
@@ -7050,6 +7641,8 @@ import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { Checkbox } from '../common/Checkbox';
+⋮----
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type Props = {
   serverName: string;
@@ -7280,6 +7873,7 @@ import { CopyMessageButton } from '../message/CopyMessageButton';
 import { IconButton } from './IconButton';
 ⋮----
 import { DiffViewer, UDiffViewer } from '@/components/common/DiffViewer';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 const isCustomDiffContent = (content: string): boolean =>
 ⋮----
@@ -7719,6 +8313,7 @@ import { useTranslation } from 'react-i18next';
 import { StyledTooltip } from '../common/StyledTooltip';
 ⋮----
 import { useOS } from '@/hooks/useOS';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 interface TreeItem {
   index: string;
@@ -8455,6 +9050,7 @@ import { FileFinder } from '@/components/project/FileFinder';
 import { FileChip } from '@/components/common/FileChip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Checkbox } from '@/components/common/Checkbox';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type Props = {
   baseDir: string;
@@ -8497,6 +9093,7 @@ import { PiKeyReturn } from 'react-icons/pi';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type Props = {
   baseDir?: string;
@@ -8565,6 +9162,7 @@ import { Accordion } from '@/components/common/Accordion';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type Props = {
   onClose: () => void;
@@ -8611,6 +9209,7 @@ import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -8697,6 +9296,7 @@ File: src/renderer/src/components/project/ProjectView.tsx
 ================
 import {
   AutocompletionData,
+  ClearProjectData,
   CommandOutputData,
   InputHistoryData,
   LogData,
@@ -8713,7 +9313,6 @@ import {
   UserMessageData,
 } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { IpcRendererEvent } from 'electron';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
@@ -8751,6 +9350,7 @@ import { TodoWindow } from '@/components/project/TodoWindow';
 import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
 ⋮----
 import { useSearchText } from '@/hooks/useSearchText';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -8769,15 +9369,15 @@ const loadTodos = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const handleResponseChunk = (_: IpcRendererEvent,
+const handleResponseChunk = (
 ⋮----
-const handleResponseCompleted = (_: IpcRendererEvent,
+const handleResponseCompleted = (
 ⋮----
 // If no processing message exists, find the last response message
 ⋮----
 // If no response message exists, create a new one
 ⋮----
-const handleCommandOutput = (_: IpcRendererEvent,
+const handleCommandOutput = (
 ⋮----
 const handleTodoTool = (toolName: string, args: Record<string, unknown> | undefined, response: string | undefined) =>
 ⋮----
@@ -8785,11 +9385,11 @@ const handleTodoTool = (toolName: string, args: Record<string, unknown> | undefi
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const handleTool = (_: IpcRendererEvent,
+const handleTool = (
 ⋮----
 const createNewToolMessage = () =>
 ⋮----
-const handleLog = (_: IpcRendererEvent,
+const handleLog = (
 ⋮----
 // Mark all messages in the same group as finished before removing loading messages
 ⋮----
@@ -8801,21 +9401,21 @@ const handleLog = (_: IpcRendererEvent,
 ⋮----
 // Add new loading message
 ⋮----
-const handleUpdateAutocompletion = (_: IpcRendererEvent,
+const handleUpdateAutocompletion = (
 ⋮----
-const handleUpdateAiderModels = (_: IpcRendererEvent, data: ModelsData) =>
+const handleUpdateAiderModels = (data: ModelsData) =>
 ⋮----
-const handleTokensInfo = (_: IpcRendererEvent, data: TokensInfoData) =>
+const handleTokensInfo = (data: TokensInfoData) =>
 ⋮----
-const handleQuestion = (_: IpcRendererEvent, data: QuestionData) =>
+const handleQuestion = (data: QuestionData) =>
 ⋮----
-const handleInputHistoryUpdate = (_: IpcRendererEvent, data: InputHistoryData) =>
+const handleInputHistoryUpdate = (data: InputHistoryData) =>
 ⋮----
-const handleUserMessage = (_: IpcRendererEvent, data: UserMessageData) =>
+const handleUserMessage = (data: UserMessageData) =>
 ⋮----
 mode: data.mode || projectSettings?.currentMode || 'code', // Use projectSettings.currentMode as fallback
 ⋮----
-const handleClearProject = (_: IpcRendererEvent, messages: boolean, session: boolean) =>
+const handleClearProject = (
 ⋮----
 // eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
@@ -9125,6 +9725,7 @@ import { ModeSelector } from '@/components/PromptField/ModeSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
 import { useCustomCommands } from '@/hooks/useCustomCommands';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 const isPathLike = (input: string): boolean =>
 ⋮----
@@ -9745,6 +10346,7 @@ import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 // Helper functions for accordion summaries
 const getRunSettingsSummary = (profile: AgentProfile) =>
@@ -9926,6 +10528,7 @@ import { McpToolItem } from './McpToolItem';
 import { Accordion } from '@/components/common/Accordion';
 import { IconButton } from '@/components/common/IconButton';
 import { Checkbox } from '@/components/common/Checkbox';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type Props = {
   serverName: string;
@@ -9979,6 +10582,7 @@ import { Button } from '@/components/common/Button';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Section } from '@/components/common/Section';
 import { useVersions } from '@/hooks/useVersions';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type Props = {
   settings: SettingsData;
@@ -10236,6 +10840,7 @@ import { LlmProviderName } from '@common/agent';
 import { Settings } from '@/pages/Settings';
 import { useSettings } from '@/context/SettingsContext';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type Props = {
   onClose: () => void;
@@ -10276,9 +10881,10 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { Terminal as XTerm } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
-import { IpcRendererEvent } from 'electron';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
+⋮----
+import { useApi } from '@/context/ApiContext';
 ⋮----
 export type TerminalRef = {
   focus: () => void;
@@ -10313,9 +10919,9 @@ const createTerminal = async () =>
 ⋮----
 // Handle terminal data
 ⋮----
-const handleTerminalData = (_: IpcRendererEvent, data: TerminalData) =>
+const handleTerminalData = (data: TerminalData) =>
 ⋮----
-const handleTerminalExit = (_: IpcRendererEvent, data: TerminalExitData) =>
+const handleTerminalExit = (data: TerminalExitData) =>
 ⋮----
 // Handle resize when visibility changes
 ⋮----
@@ -10555,6 +11161,7 @@ import { MessageBreakdownChart } from './MessageBreakdownChart';
 import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
 import { GroupBy } from './utils';
 ⋮----
+import { useApi } from '@/context/ApiContext';
 import { DatePicker } from '@/components/common/DatePicker';
 import { MultiSelect } from '@/components/common/MultiSelect';
 import { IconButton } from '@/components/common/IconButton';
@@ -10859,12 +11466,25 @@ title=
 ⋮----
 
 ================
+File: src/renderer/src/context/ApiContext.tsx
+================
+import { createContext, useMemo, ReactNode, useContext } from 'react';
+import { ApplicationAPI } from '@common/api';
+⋮----
+import { BrowserApi } from '@/api/browser-api';
+⋮----
+export const ApiProvider = (
+⋮----
+export const useApi = (): ApplicationAPI =>
+
+================
 File: src/renderer/src/context/ContextMenuContext.tsx
 ================
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type ContextMenuContextType = {
   showMenu: (x: number, y: number, options: MenuOption[], targetElement?: Element | null) => void;
@@ -10891,7 +11511,7 @@ type Props = {
 ⋮----
 export const useContextMenu = () =>
 ⋮----
-const handleContextMenu = (_event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) =>
+const handleContextMenu = (params: Electron.ContextMenuParams) =>
 ⋮----
 // Capture the target element when context menu is triggered
 ⋮----
@@ -10913,6 +11533,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 ⋮----
 import { useSettings } from '@/context/SettingsContext';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type ProjectSettingsContextType = {
   projectSettings: ProjectSettings | null;
@@ -10949,6 +11570,8 @@ File: src/renderer/src/context/SettingsContext.tsx
 ================
 import { Font, SettingsData, Theme } from '@common/types';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+⋮----
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type SettingsContextType = {
   settings: SettingsData | null;
@@ -11005,6 +11628,8 @@ File: src/renderer/src/hooks/useCustomCommands.ts
 import { CustomCommand } from '@common/types';
 import { useEffect, useState } from 'react';
 ⋮----
+import { useApi } from '@/context/ApiContext';
+⋮----
 export const useCustomCommands = (baseDir: string) =>
 ⋮----
 // Load initial commands
@@ -11016,6 +11641,8 @@ File: src/renderer/src/hooks/useEffectiveEnvironmentVariable.ts
 ================
 import { EnvironmentVariable } from '@common/types';
 import { useEffect, useState } from 'react';
+⋮----
+import { useApi } from '@/context/ApiContext';
 ⋮----
 type UseEffectiveEnvironmentVariableResult = {
   environmentVariable: EnvironmentVariable | null;
@@ -11078,6 +11705,8 @@ File: src/renderer/src/hooks/useOS.ts
 ================
 import { OS } from '@common/types';
 import { useEffect, useState } from 'react';
+⋮----
+import { useApi } from '@/context/ApiContext';
 ⋮----
 export const useOS = (): OS | null =>
 ⋮----
@@ -11159,6 +11788,8 @@ File: src/renderer/src/hooks/useVersions.ts
 import { VersionsInfo } from '@common/types';
 import { useCallback, useEffect, useState } from 'react';
 ⋮----
+import { useApi } from '@/context/ApiContext';
+⋮----
 export const useVersions = () =>
 ⋮----
 // eslint-disable-next-line no-console
@@ -11197,6 +11828,7 @@ import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
+import { useApi } from '@/context/ApiContext';
 ⋮----
 const handleReorderProjects = async (reorderedProjects: ProjectData[]) =>
 ⋮----
@@ -11204,7 +11836,7 @@ const loadProjects = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const handleOpenSettings = (_event: Electron.IpcRendererEvent, tabIndex: number) =>
+const handleOpenSettings = (tabIndex: number) =>
 ⋮----
 const checkReleaseNotes = async () =>
 ⋮----
@@ -12867,6 +13499,7 @@ import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import { ROUTES } from '@/utils/routes';
 ⋮----
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { ApiProvider } from '@/context/ApiContext';
 ⋮----
 const ThemeAndFontManager = () =>
 ⋮----
@@ -12958,11 +13591,12 @@ File: src/renderer/index.html
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1000" />
     <title>AiderDesk</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https:;"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:;"
     />
     <link rel="stylesheet" href="/src/fonts.css">
   </head>
@@ -13186,7 +13820,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.29.0-dev",
+  "version": "0.30.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -13307,6 +13941,7 @@ File: package.json
     "rehype-slug": "^6.0.0",
     "simple-git": "^3.27.0",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^3.3.1",
     "textarea-caret": "^3.1.0",
     "tmp": "^0.2.3",
@@ -13320,7 +13955,8 @@ File: package.json
     "ws": "^8.18.0",
     "yaml": "^2.8.0",
     "yaml-front-matter": "^4.1.1",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "axios": "^1.8.3"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
@@ -13344,7 +13980,6 @@ File: package.json
     "@vitejs/plugin-react": "^4.3.1",
     "adm-zip": "^0.5.16",
     "autoprefixer": "^10.4.20",
-    "axios": "^1.8.3",
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12",
     "electron-vite": "^4.0.0",

@@ -3,18 +3,18 @@ import { z } from 'zod';
 
 import { BaseApi } from './base-api';
 
-import { ProjectManager } from '@/project';
+import { EventsHandler } from '@/events-handler';
 
 const RunPromptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   prompt: z.string().min(1, 'Prompt is required'),
-  editFormat: z.enum(['code', 'ask', 'architect', 'context']).optional(),
+  mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']).optional(),
 });
 
 export class PromptApi extends BaseApi {
   private isPromptRunning = false;
 
-  constructor(private readonly projectManager: ProjectManager) {
+  constructor(private readonly eventsHandler: EventsHandler) {
     super();
   }
 
@@ -22,16 +22,12 @@ export class PromptApi extends BaseApi {
     router.post(
       '/run-prompt',
       this.handleRequest(async (req, res) => {
-        const result = RunPromptSchema.safeParse(req.body);
-        if (!result.success) {
-          res.status(400).json({
-            error: 'Invalid request',
-            details: result.error.issues,
-          });
+        const parsed = this.validateRequest(RunPromptSchema, req.body, res);
+        if (!parsed) {
           return;
         }
 
-        const { projectDir, prompt, editFormat } = result.data;
+        const { projectDir, prompt, mode } = parsed;
 
         // Check if another prompt is already running
         if (this.isPromptRunning) {
@@ -42,16 +38,10 @@ export class PromptApi extends BaseApi {
           return;
         }
 
-        const project = this.projectManager.getProject(projectDir);
-        const validatedProject = this.findProject(project, projectDir, res);
-        if (!validatedProject) {
-          return;
-        }
-
         try {
           this.isPromptRunning = true;
 
-          const responses = await validatedProject.sendPrompt(prompt, undefined, editFormat);
+          const responses = await this.eventsHandler.runPrompt(projectDir, prompt, mode);
 
           res.status(200).json(responses);
         } finally {

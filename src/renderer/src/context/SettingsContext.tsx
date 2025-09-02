@@ -1,6 +1,8 @@
 import { Font, SettingsData, Theme } from '@common/types';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+import { useApi } from '@/context/ApiContext';
+
 type SettingsContextType = {
   settings: SettingsData | null;
   saveSettings: (settings: SettingsData) => Promise<void>;
@@ -19,22 +21,23 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme | null>(null);
   const [font, setFont] = useState<Font | null>(null);
   const [fontSize, setFontSize] = useState<number | null>(null);
+  const api = useApi();
 
   useEffect(() => {
     const loadSettings = async () => {
-      const loadedSettings = await window.api.loadSettings();
+      const loadedSettings = await api.loadSettings();
       setSettings(loadedSettings);
       setTheme(loadedSettings.theme || null);
       setFont(loadedSettings.font || null);
       setFontSize(loadedSettings.fontSize || null);
     };
     void loadSettings();
-  }, []);
+  }, [api]);
 
   const saveSettings = async (updated: SettingsData) => {
     try {
       setSettings(updated);
-      const updatedSettings = await window.api.saveSettings(updated);
+      const updatedSettings = await api.saveSettings(updated);
       setSettings(updatedSettings);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -45,7 +48,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const saveTheme = async (theme: Theme) => {
     try {
       setTheme(theme);
-      const updatedTheme = await window.api.saveTheme(theme);
+      const updatedTheme = await api.saveTheme(theme);
       setTheme(updatedTheme);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -56,7 +59,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const saveFont = async (font: Font) => {
     try {
       setFont(font);
-      const updatedFont = await window.api.saveFont(font);
+      const updatedFont = await api.saveFont(font);
       setFont(updatedFont);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -76,9 +79,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, saveSettings, theme, saveTheme, font, saveFont, fontSize, saveFontSize }}>
-      {children}
-    </SettingsContext.Provider>
+    <SettingsContext.Provider value={{ settings, saveSettings, theme, saveTheme, font, saveFont, fontSize, saveFontSize }}>{children}</SettingsContext.Provider>
   );
 };
 

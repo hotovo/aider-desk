@@ -9,6 +9,7 @@ import { McpToolItem } from './McpToolItem';
 import { Accordion } from '@/components/common/Accordion';
 import { IconButton } from '@/components/common/IconButton';
 import { Checkbox } from '@/components/common/Checkbox';
+import { useApi } from '@/context/ApiContext';
 
 type Props = {
   serverName: string;
@@ -37,11 +38,12 @@ export const McpServerItem = ({
   const [tools, setTools] = useState<McpTool[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const api = useApi();
 
   useEffect(() => {
     const loadTools = async () => {
       try {
-        const loadedTools = await window.api.loadMcpServerTools(serverName, config);
+        const loadedTools = await api.loadMcpServerTools(serverName, config);
         setTools(loadedTools);
         setError(null);
       } catch (error) {
@@ -56,7 +58,7 @@ export const McpServerItem = ({
 
     setLoading(true);
     void loadTools();
-  }, [serverName, config, reloadTrigger]);
+  }, [serverName, config, reloadTrigger, api]);
 
   const renderTitle = () => {
     const enabledCount =

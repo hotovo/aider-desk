@@ -15,6 +15,7 @@ import { MessageBreakdownChart } from './MessageBreakdownChart';
 import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
 import { GroupBy } from './utils';
 
+import { useApi } from '@/context/ApiContext';
 import { DatePicker } from '@/components/common/DatePicker';
 import { MultiSelect } from '@/components/common/MultiSelect';
 import { IconButton } from '@/components/common/IconButton';
@@ -41,6 +42,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
   const [filteredData, setFilteredData] = useState<UsageDataRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const api = useApi();
 
   const [selectedPeriod, setSelectedPeriod] = useState<DatePeriod>(DatePeriod.ThisMonth);
   const [selectedGroupBy, setSelectedGroupBy] = useState<GroupBy>(GroupBy.Day);
@@ -94,7 +96,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
     try {
       const [from, to] = dateRange;
       if (from && to) {
-        const result = await window.api.queryUsageData(from.toISOString(), to.toISOString());
+        const result = await api.queryUsageData(from.toISOString(), to.toISOString());
         setData(result);
       }
     } catch {
@@ -102,7 +104,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, t]);
+  }, [dateRange, t, api]);
 
   useEffect(() => {
     void fetchData();

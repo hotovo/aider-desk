@@ -1,11 +1,11 @@
 import * as os from 'os';
 
 import * as pty from '@homebridge/node-pty-prebuilt-multiarch';
-import { BrowserWindow } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
+import { EventManager } from '@/events';
 
 export interface TerminalInstance {
   id: string;
@@ -17,13 +17,11 @@ export interface TerminalInstance {
 
 export class TerminalManager {
   private terminals: Map<string, TerminalInstance> = new Map();
-  private mainWindow: BrowserWindow;
-  private telemetryManager?: TelemetryManager;
 
-  constructor(mainWindow: BrowserWindow, telemetryManager?: TelemetryManager) {
-    this.mainWindow = mainWindow;
-    this.telemetryManager = telemetryManager;
-  }
+  constructor(
+    private readonly eventManager: EventManager,
+    private readonly telemetryManager?: TelemetryManager,
+  ) {}
 
   private getShellCommand(): string {
     const platform = os.platform();
@@ -81,7 +79,7 @@ export class TerminalManager {
 
       // Handle data from terminal
       ptyProcess.onData((data) => {
-        this.mainWindow.webContents.send('terminal-data', {
+        this.eventManager.sendTerminalData({
           terminalId,
           baseDir,
           data,
@@ -92,14 +90,12 @@ export class TerminalManager {
       ptyProcess.onExit(({ exitCode, signal }) => {
         logger.info('Terminal exited:', { terminalId, exitCode, signal });
         this.terminals.delete(terminalId);
-        if (!this.mainWindow.isDestroyed()) {
-          this.mainWindow.webContents.send('terminal-exit', {
-            terminalId,
-            baseDir,
-            exitCode,
-            signal,
-          });
-        }
+        this.eventManager.sendTerminalExit({
+          terminalId,
+          baseDir,
+          exitCode,
+          signal,
+        });
       });
 
       this.terminals.set(terminalId, terminal);

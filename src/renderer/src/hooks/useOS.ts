@@ -1,13 +1,16 @@
 import { OS } from '@common/types';
 import { useEffect, useState } from 'react';
 
+import { useApi } from '@/context/ApiContext';
+
 export const useOS = (): OS | null => {
   const [os, setOS] = useState<OS | null>(null);
+  const api = useApi();
 
   useEffect(() => {
     const fetchOS = async () => {
       try {
-        const currentOS = await window.api.getOS();
+        const currentOS = await api.getOS();
         setOS(currentOS);
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -17,7 +20,7 @@ export const useOS = (): OS | null => {
     };
 
     void fetchOS();
-  }, []);
+  }, [api]);
 
   return os;
 };

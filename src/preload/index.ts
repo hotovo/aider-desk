@@ -1,5 +1,6 @@
 import {
   AutocompletionData,
+  ClearProjectData,
   CommandOutputData,
   ContextFilesUpdatedData,
   CustomCommandsUpdatedData,
@@ -9,6 +10,7 @@ import {
   McpServerConfig,
   ModelsData,
   OS,
+  ProjectStartedData,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -19,17 +21,16 @@ import {
   UserMessageData,
   VersionsInfo,
 } from '@common/types';
-import { normalizeBaseDir } from '@common/utils';
 import { electronAPI } from '@electron-toolkit/preload';
+import * as Electron from 'electron';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import { ApplicationAPI } from '@common/api';
+import { compareBaseDirs } from '@common/utils';
 
-import { ApplicationAPI } from './index.d';
-
-const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean => {
-  return normalizeBaseDir(baseDir1) === normalizeBaseDir(baseDir2);
-};
+import './index.d';
 
 const api: ApplicationAPI = {
+  isOpenLogsDirectorySupported: () => true,
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
@@ -43,9 +44,8 @@ const api: ApplicationAPI = {
   redoLastUserPrompt: (baseDir, mode, updatedPrompt?) => ipcRenderer.send('redo-last-user-prompt', baseDir, mode, updatedPrompt),
   answerQuestion: (baseDir, answer) => ipcRenderer.send('answer-question', baseDir, answer),
   loadInputHistory: (baseDir) => ipcRenderer.invoke('load-input-history', baseDir),
-  dialog: {
-    showOpenDialog: (options: Electron.OpenDialogSyncOptions) => ipcRenderer.invoke('show-open-dialog', options),
-  },
+  isOpenDialogSupported: () => true,
+  showOpenDialog: (options: Electron.OpenDialogSyncOptions) => ipcRenderer.invoke('show-open-dialog', options),
   getPathForFile: (file) => webUtils.getPathForFile(file),
   getOpenProjects: () => ipcRenderer.invoke('get-open-projects'),
   addOpenProject: (baseDir) => ipcRenderer.invoke('add-open-project', baseDir),
@@ -104,11 +104,11 @@ const api: ApplicationAPI = {
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => ipcRenderer.invoke('get-effective-environment-variable', key, baseDir),
 
   addResponseChunkListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: ResponseChunkData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ResponseChunkData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('response-chunk', listener);
     return () => {
@@ -117,11 +117,11 @@ const api: ApplicationAPI = {
   },
 
   addResponseCompletedListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ResponseCompletedData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('response-completed', listener);
     return () => {
@@ -130,11 +130,11 @@ const api: ApplicationAPI = {
   },
 
   addContextFilesUpdatedListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('context-files-updated', listener);
     return () => {
@@ -143,11 +143,11 @@ const api: ApplicationAPI = {
   },
 
   addCustomCommandsUpdatedListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('custom-commands-updated', listener);
     return () => {
@@ -156,11 +156,11 @@ const api: ApplicationAPI = {
   },
 
   addUpdateAutocompletionListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: AutocompletionData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: AutocompletionData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('update-autocompletion', listener);
     return () => {
@@ -169,11 +169,11 @@ const api: ApplicationAPI = {
   },
 
   addAskQuestionListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: QuestionData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: QuestionData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('ask-question', listener);
     return () => {
@@ -182,11 +182,11 @@ const api: ApplicationAPI = {
   },
 
   addUpdateAiderModelsListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: ModelsData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ModelsData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('update-aider-models', listener);
     return () => {
@@ -195,11 +195,11 @@ const api: ApplicationAPI = {
   },
 
   addCommandOutputListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: CommandOutputData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: CommandOutputData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('command-output', listener);
     return () => {
@@ -208,11 +208,11 @@ const api: ApplicationAPI = {
   },
 
   addLogListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: LogData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: LogData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('log', listener);
     return () => {
@@ -221,11 +221,11 @@ const api: ApplicationAPI = {
   },
 
   addTokensInfoListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: TokensInfoData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: TokensInfoData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('update-tokens-info', listener);
     return () => {
@@ -234,11 +234,11 @@ const api: ApplicationAPI = {
   },
 
   addToolListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: ToolData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ToolData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('tool', listener);
     return () => {
@@ -247,11 +247,11 @@ const api: ApplicationAPI = {
   },
 
   addInputHistoryUpdatedListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: InputHistoryData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: InputHistoryData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('input-history-updated', listener);
     return () => {
@@ -260,11 +260,11 @@ const api: ApplicationAPI = {
   },
 
   addUserMessageListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: UserMessageData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: UserMessageData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('user-message', listener);
     return () => {
@@ -273,11 +273,11 @@ const api: ApplicationAPI = {
   },
 
   addClearProjectListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, receivedBaseDir: string, clearMessages: boolean, clearSession: boolean) => {
-      if (!compareBaseDirs(receivedBaseDir, baseDir)) {
+    const listener = (_: Electron.IpcRendererEvent, data: ClearProjectData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, clearMessages, clearSession);
+      callback(data);
     };
     ipcRenderer.on('clear-project', listener);
     return () => {
@@ -286,11 +286,11 @@ const api: ApplicationAPI = {
   },
 
   addProjectStartedListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, receivedBaseDir: string) => {
-      if (!compareBaseDirs(receivedBaseDir, baseDir)) {
+    const listener = (_: Electron.IpcRendererEvent, data: ProjectStartedData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, receivedBaseDir);
+      callback(data);
     };
     ipcRenderer.on('project-started', listener);
     return () => {
@@ -299,8 +299,8 @@ const api: ApplicationAPI = {
   },
 
   addVersionsInfoUpdatedListener: (callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: VersionsInfo) => {
-      callback(event, data);
+    const listener = (_: Electron.IpcRendererEvent, data: VersionsInfo) => {
+      callback(data);
     };
     ipcRenderer.on('versions-info-updated', listener);
     return () => {
@@ -309,11 +309,11 @@ const api: ApplicationAPI = {
   },
 
   addTerminalDataListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: TerminalData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: TerminalData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('terminal-data', listener);
     return () => {
@@ -322,11 +322,11 @@ const api: ApplicationAPI = {
   },
 
   addTerminalExitListener: (baseDir, callback) => {
-    const listener = (event: Electron.IpcRendererEvent, data: TerminalExitData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: TerminalExitData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
     ipcRenderer.on('terminal-exit', listener);
     return () => {
@@ -335,7 +335,7 @@ const api: ApplicationAPI = {
   },
 
   addContextMenuListener: (callback) => {
-    const listener = (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(event, params);
+    const listener = (_: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(params);
     ipcRenderer.on('context-menu', listener);
     return () => {
       ipcRenderer.removeListener('context-menu', listener);
@@ -343,7 +343,7 @@ const api: ApplicationAPI = {
   },
 
   addOpenSettingsListener: (callback) => {
-    const listener = (event: Electron.IpcRendererEvent, tabIndex: number) => callback(event, tabIndex);
+    const listener = (_: Electron.IpcRendererEvent, tabIndex: number) => callback(tabIndex);
     ipcRenderer.on('open-settings', listener);
     return () => {
       ipcRenderer.removeListener('open-settings', listener);
@@ -354,6 +354,7 @@ const api: ApplicationAPI = {
   runCustomCommand: (baseDir, commandName, args, mode) => ipcRenderer.invoke('run-custom-command', baseDir, commandName, args, mode),
 
   // Terminal operations
+  isTerminalSupported: () => true,
   createTerminal: (baseDir, cols, rows) => ipcRenderer.invoke('terminal-create', baseDir, cols, rows),
   writeToTerminal: (terminalId, data) => ipcRenderer.invoke('terminal-write', terminalId, data),
   resizeTerminal: (terminalId, cols, rows) => ipcRenderer.invoke('terminal-resize', terminalId, cols, rows),

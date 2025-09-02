@@ -303,6 +303,8 @@
         "enableAsSubagentInformation": "启用后，此配置可被其他代理用作子代理。",
         "canUseSubagents": "可以使用子代理",
         "canUseSubagentsInformation": "启用后，此代理可以使用其他代理作为子代理。",
+        "hasContextMemory": "具有上下文记忆",
+        "hasContextMemoryTooltip": "启用后，子代理会在与主代理的同一对话会话中保持对其之前上下文的记忆，使其能够引用并基于过去的互动进行构建。",
         "description": "描述",
         "descriptionPlaceholder": "描述此子代理的目的、能力和专长...",
         "systemPrompt": "系统提示",

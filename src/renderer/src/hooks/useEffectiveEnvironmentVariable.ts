@@ -1,6 +1,8 @@
 import { EnvironmentVariable } from '@common/types';
 import { useEffect, useState } from 'react';
 
+import { useApi } from '@/context/ApiContext';
+
 type UseEffectiveEnvironmentVariableResult = {
   environmentVariable: EnvironmentVariable | null;
   loading: boolean;
@@ -11,13 +13,14 @@ export const useEffectiveEnvironmentVariable = (key: string, baseDir?: string): 
   const [environmentVariable, setEnvironmentVariable] = useState<EnvironmentVariable | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const api = useApi();
 
   useEffect(() => {
     const fetchEnvironmentVariable = async () => {
       try {
         setLoading(true);
         setError(null);
-        const result = await window.api.getEffectiveEnvironmentVariable(key, baseDir);
+        const result = await api.getEffectiveEnvironmentVariable(key, baseDir);
         setEnvironmentVariable(result || null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch environment variable');
@@ -28,7 +31,7 @@ export const useEffectiveEnvironmentVariable = (key: string, baseDir?: string): 
     };
 
     void fetchEnvironmentVariable();
-  }, [key, baseDir]);
+  }, [key, baseDir, api]);
 
   return { environmentVariable, loading, error };
 };

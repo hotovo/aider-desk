@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 
 import { Checkbox } from '../common/Checkbox';
 
+import { useApi } from '@/context/ApiContext';
+
 type Props = {
   serverName: string;
   disabled: boolean;
@@ -16,12 +18,13 @@ type Props = {
 export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onToggle }: Props) => {
   const { t } = useTranslation();
   const [toolsCount, setToolsCount] = useState<number | null>(null);
+  const api = useApi();
 
   useEffect(() => {
     const loadTools = async () => {
       const timeoutId = setTimeout(() => setToolsCount(null), 500);
       try {
-        const tools = await window.api.loadMcpServerTools(serverName);
+        const tools = await api.loadMcpServerTools(serverName);
         const totalTools = tools?.length ?? 0;
         const disabledCount =
           tools?.filter((tool) => toolApprovals[`${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`] === ToolApprovalState.Never).length ?? 0;
@@ -36,7 +39,7 @@ export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onT
     };
 
     void loadTools();
-  }, [toolApprovals, serverName]);
+  }, [toolApprovals, serverName, api]);
 
   return (
     <div className="flex items-center justify-between px-3 py-1 hover:bg-bg-secondary-light cursor-pointer text-xs" onClick={() => onToggle(serverName)}>

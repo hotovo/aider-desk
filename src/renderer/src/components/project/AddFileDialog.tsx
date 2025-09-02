@@ -5,6 +5,7 @@ import { FileFinder } from '@/components/project/FileFinder';
 import { FileChip } from '@/components/common/FileChip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Checkbox } from '@/components/common/Checkbox';
+import { useApi } from '@/context/ApiContext';
 
 type Props = {
   baseDir: string;
@@ -18,6 +19,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [isReadOnly, setIsReadOnly] = useState(initialReadOnly);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const api = useApi();
 
   const handleAddExternalFiles = useCallback(
     async (paths: string[]) => {
@@ -25,7 +27,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
       let switchToReadOnly = false;
 
       for (let filePath of paths) {
-        const isValid = await window.api.isValidPath(baseDir, filePath);
+        const isValid = await api.isValidPath(baseDir, filePath);
 
         if (filePath.startsWith(baseDir + '/') || filePath === baseDir) {
           filePath = filePath.slice(baseDir.length + 1);
@@ -45,7 +47,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
         }
       }
     },
-    [baseDir, selectedPaths],
+    [baseDir, selectedPaths, api],
   );
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
 
       if (event.dataTransfer?.files) {
         const files = Array.from(event.dataTransfer.files);
-        const droppedFilePaths = files.map((file) => window.api.getPathForFile(file));
+        const droppedFilePaths = files.map((file) => api.getPathForFile(file));
 
         await handleAddExternalFiles(droppedFilePaths);
       }
@@ -82,7 +84,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
       };
     }
     return () => {};
-  }, [baseDir, handleAddExternalFiles, selectedPaths, setIsReadOnly]);
+  }, [baseDir, handleAddExternalFiles, selectedPaths, setIsReadOnly, api]);
 
   const handleOnPaste = async (pastedText: string) => {
     if (pastedText) {

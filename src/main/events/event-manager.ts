@@ -9,159 +9,221 @@ import {
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
+  TerminalData,
+  TerminalExitData,
   ToolData,
   TokensInfoData,
   UserMessageData,
+  VersionsInfo,
 } from '@common/types';
 
-export interface EventConnector {
-  socket: Socket;
+import logger from '@/logger';
+
+export interface EventsConnectorConfig {
   eventTypes?: string[];
   baseDirs?: string[];
 }
 
-export class EventManager {
-  private eventConnectors: EventConnector[] = [];
+export interface EventsConnector extends EventsConnectorConfig {
+  socket: Socket;
+}
 
-  constructor(private readonly mainWindow: BrowserWindow) {}
+export class EventManager {
+  private eventsConnectors: EventsConnector[] = [];
+
+  constructor(private readonly mainWindow: BrowserWindow | null) {}
 
   // Project lifecycle events
   sendProjectStarted(baseDir: string): void {
-    this.mainWindow.webContents.send('project-started', baseDir);
+    const data = { baseDir };
+    this.sendToMainWindow('project-started', data);
+    this.broadcastToEventConnectors('project-started', data);
   }
 
   sendClearProject(baseDir: string, clearMessages: boolean, clearFiles: boolean): void {
-    this.mainWindow.webContents.send('clear-project', baseDir, clearMessages, clearFiles);
+    const data = { baseDir, clearMessages, clearFiles };
+    this.sendToMainWindow('clear-project', data);
+    this.broadcastToEventConnectors('clear-project', data);
   }
 
   // File management events
   sendFileAdded(baseDir: string, file: ContextFile): void {
-    this.mainWindow.webContents.send('file-added', {
+    const data = {
       baseDir,
       file,
-    });
+    };
+    this.sendToMainWindow('file-added', data);
+    this.broadcastToEventConnectors('file-added', data);
   }
 
   sendContextFilesUpdated(baseDir: string, files: ContextFile[]): void {
-    this.mainWindow.webContents.send('context-files-updated', {
+    const data = {
       baseDir,
       files,
-    });
+    };
+    this.sendToMainWindow('context-files-updated', data);
+    this.broadcastToEventConnectors('context-files-updated', data);
   }
 
   // Response events
   sendResponseChunk(data: ResponseChunkData): void {
-    this.mainWindow.webContents.send('response-chunk', data);
+    this.sendToMainWindow('response-chunk', data);
     this.broadcastToEventConnectors('response-chunk', data);
   }
 
   sendResponseCompleted(data: ResponseCompletedData): void {
-    this.mainWindow.webContents.send('response-completed', data);
+    this.sendToMainWindow('response-completed', data);
     this.broadcastToEventConnectors('response-completed', data);
   }
 
   // Question events
   sendAskQuestion(questionData: QuestionData): void {
-    this.mainWindow.webContents.send('ask-question', questionData);
+    this.sendToMainWindow('ask-question', questionData);
+    this.broadcastToEventConnectors('ask-question', questionData);
   }
 
   // Autocompletion events
   sendUpdateAutocompletion(baseDir: string, words: string[], allFiles: string[], models: string[]): void {
-    this.mainWindow.webContents.send('update-autocompletion', {
+    const data = {
       baseDir,
       words,
       allFiles,
       models,
-    });
+    };
+    this.sendToMainWindow('update-autocompletion', data);
+    this.broadcastToEventConnectors('update-autocompletion', data);
   }
 
   // Aider models events
   sendUpdateAiderModels(modelsData: ModelsData): void {
-    this.mainWindow.webContents.send('update-aider-models', modelsData);
+    this.sendToMainWindow('update-aider-models', modelsData);
+    this.broadcastToEventConnectors('update-aider-models', modelsData);
   }
 
   // Command events
   sendCommandOutput(baseDir: string, command: string, output: string): void {
-    this.mainWindow.webContents.send('command-output', {
+    const data = {
       baseDir,
       command,
       output,
-    });
+    };
+    this.sendToMainWindow('command-output', data);
+    this.broadcastToEventConnectors('command-output', data);
   }
 
   // Log events
   sendLog(data: LogData): void {
-    this.mainWindow.webContents.send('log', data);
+    this.sendToMainWindow('log', data);
     this.broadcastToEventConnectors('log', data);
   }
 
   // Tool events
   sendTool(data: ToolData): void {
-    this.mainWindow.webContents.send('tool', data);
+    this.sendToMainWindow('tool', data);
     this.broadcastToEventConnectors('tool', data);
   }
 
   // User message events
   sendUserMessage(data: UserMessageData): void {
-    this.mainWindow.webContents.send('user-message', data);
+    this.sendToMainWindow('user-message', data);
+    this.broadcastToEventConnectors('user-message', data);
   }
 
   // Tokens info events
   sendUpdateTokensInfo(tokensInfo: TokensInfoData): void {
-    this.mainWindow.webContents.send('update-tokens-info', tokensInfo);
+    this.sendToMainWindow('update-tokens-info', tokensInfo);
+    this.broadcastToEventConnectors('update-tokens-info', tokensInfo);
   }
 
   // Input history events
   sendInputHistoryUpdated(inputHistoryData: InputHistoryData): void {
-    this.mainWindow.webContents.send('input-history-updated', inputHistoryData);
+    this.sendToMainWindow('input-history-updated', inputHistoryData);
+    this.broadcastToEventConnectors('input-history-updated', inputHistoryData);
   }
 
   // Custom commands events
   sendCustomCommandsUpdated(baseDir: string, commands: CustomCommand[]): void {
-    this.mainWindow.webContents.send('custom-commands-updated', {
+    const data = {
       baseDir,
       commands,
-    });
+    };
+    this.sendToMainWindow('custom-commands-updated', data);
+    this.broadcastToEventConnectors('custom-commands-updated', data);
   }
 
   sendCustomCommandError(baseDir: string, error: string): void {
-    this.mainWindow.webContents.send('custom-command-error', {
+    const data = {
       baseDir,
       error,
-    });
+    };
+    this.sendToMainWindow('custom-command-error', data);
+    this.broadcastToEventConnectors('custom-command-error', data);
   }
 
-  handleEventSubscription(socket: Socket, config: { eventTypes?: string[]; baseDirs?: string[] }): void {
-    this.eventConnectors = this.eventConnectors.filter((connector) => connector.socket.id !== socket.id);
-    this.eventConnectors.push({
+  // Terminal events
+  sendTerminalData(data: TerminalData): void {
+    this.sendToMainWindow('terminal-data', data);
+    this.broadcastToEventConnectors('terminal-data', data);
+  }
+
+  sendTerminalExit(data: TerminalExitData): void {
+    this.sendToMainWindow('terminal-exit', data);
+    this.broadcastToEventConnectors('terminal-exit', data);
+  }
+
+  // Versions events
+  sendVersionsInfoUpdated(versionsInfo: VersionsInfo): void {
+    this.sendToMainWindow('versions-info-updated', versionsInfo);
+    this.broadcastToEventConnectors('versions-info-updated', versionsInfo);
+  }
+
+  subscribe(socket: Socket, config: EventsConnectorConfig): void {
+    this.eventsConnectors = this.eventsConnectors.filter((connector) => connector.socket.id !== socket.id);
+    logger.info('Subscribing to events', { eventTypes: config.eventTypes, baseDirs: config.baseDirs });
+    this.eventsConnectors.push({
       socket,
       eventTypes: config.eventTypes,
       baseDirs: config.baseDirs,
     });
   }
 
-  handleEventUnsubscription(socket: Socket): void {
-    this.eventConnectors = this.eventConnectors.filter((connector) => connector.socket.id !== socket.id);
+  unsubscribe(socket: Socket): void {
+    const before = this.eventsConnectors.length;
+    this.eventsConnectors = this.eventsConnectors.filter((connector) => connector.socket.id !== socket.id);
+    logger.info('Unsubscribed from events', { before, after: this.eventsConnectors.length });
+  }
+
+  private sendToMainWindow(eventType: string, data: unknown): void {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      return;
+    }
+
+    this.mainWindow.webContents.send(eventType, data);
   }
 
   private broadcastToEventConnectors(eventType: string, data: unknown): void {
-    this.eventConnectors.forEach((connector) => {
+    logger.debug('Broadcasting event to connectors:', { connectors: this.eventsConnectors.length, eventType });
+
+    this.eventsConnectors.forEach((connector) => {
       // Filter by event types if specified
       if (connector.eventTypes && !connector.eventTypes.includes(eventType)) {
+        logger.debug('Skipping event broadcast to connector, event type not included:', { eventType, connectorEventTypes: connector.eventTypes });
         return;
       }
 
       // Filter by base directories if specified
       const baseDir = (data as { baseDir?: string })?.baseDir;
       if (connector.baseDirs && baseDir && !connector.baseDirs.includes(baseDir)) {
+        logger.debug('Skipping event broadcast to connector, base dir not included:', { baseDir, connectorBaseDirs: connector.baseDirs });
         return;
       }
 
       try {
+        logger.debug('Broadcasting event to connector:', { eventType, baseDir });
         connector.socket.emit('event', { type: eventType, data });
       } catch {
         // Remove disconnected sockets
-        this.handleEventUnsubscription(connector.socket);
+        this.unsubscribe(connector.socket);
       }
     });
   }
