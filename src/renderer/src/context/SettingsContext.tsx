@@ -70,7 +70,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const saveFontSize = async (size: number) => {
     try {
       setFontSize(size);
-      const updatedFontSize = await window.api.saveFontSize(size);
+      const updatedFontSize = await api.saveFontSize(size);
       setFontSize(updatedFontSize);
     } catch (error) {
       // eslint-disable-next-line no-console
