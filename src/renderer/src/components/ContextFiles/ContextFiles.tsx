@@ -1,4 +1,4 @@
-import { ContextFile, ContextFilesUpdatedData, OS } from '@common/types';
+import { ContextFile, ContextFilesUpdatedData, OS, TokensInfoData } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
@@ -83,9 +83,10 @@ type Props = {
   baseDir: string;
   allFiles: string[];
   showFileDialog: () => void;
+  tokensInfo?: TokensInfoData | null;
 };
 
-export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
+export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: Props) => {
   const [files, setFiles] = useState<ContextFile[]>([]);
   const [newlyAddedFiles, setNewlyAddedFiles] = useState<string[]>([]);
   const [showAllFiles, setShowAllFiles] = useState(false);
@@ -352,6 +353,12 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                   <span
                     className={`select-none text-2xs overflow-hidden ${item.isFolder ? 'context-dimmed' : 'text-text-primary font-semibold'}`}
                     {...(item.isFolder ? { onClick: context.arrowProps.onClick } : {})}
+                    data-tooltip-id="context-files-tooltip"
+                    data-tooltip-content={
+                      tokensInfo?.files && item.index && !item.isFolder
+                        ? `${t('usageDashboard.charts.tokens')}: ${tokensInfo.files[item.index]?.tokens || 0}, ${t('usageDashboard.charts.cost')}: $${(tokensInfo.files[item.index]?.cost || 0).toFixed(5)}`
+                        : ''
+                    }
                   >
                     {title}
                   </span>

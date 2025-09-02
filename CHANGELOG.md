@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added tokens info for context files on hover
+
 ## [0.29.0]
 
 - updating the context info after Aider mode requests
