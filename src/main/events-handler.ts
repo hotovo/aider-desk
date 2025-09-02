@@ -80,6 +80,12 @@ export class EventsHandler {
     return this.store.getSettings().font;
   }
 
+  saveFontSize(fontSize: number): number | undefined {
+    const oldSettings = this.store.getSettings();
+    this.store.saveSettings({ ...oldSettings, fontSize });
+    return this.store.getSettings().fontSize;
+  }
+
   async loadModelsInfo(): Promise<Record<string, ModelInfo>> {
     try {
       return await this.modelInfoManager.getAllModelsInfo();

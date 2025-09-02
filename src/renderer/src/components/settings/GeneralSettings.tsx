@@ -41,15 +41,7 @@ type Props = {
   onFontSizeChange: (fontSize: number) => void;
 };
 
-export const GeneralSettings = ({
-  settings,
-  setSettings,
-  onLanguageChange,
-  onZoomChange,
-  onThemeChange,
-  onFontChange,
-  onFontSizeChange,
-}: Props) => {
+export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange, onFontChange, onFontSizeChange }: Props) => {
   const { t } = useTranslation();
 
   const fontOptions: Option[] = FONTS.map((font) => ({
@@ -156,12 +148,7 @@ export const GeneralSettings = ({
           <Select label={t('settings.zoom')} options={ZOOM_OPTIONS} value={String(settings.zoomLevel ?? 1)} onChange={handleZoomChange} />
           <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-2" />
           <Select label={t('settings.font')} options={fontOptions} value={settings.font ?? 'sono'} onChange={handleFontChange} />
-          <Select
-            label={t('settings.fontSize')}
-            options={FONT_SIZE_OPTIONS}
-            value={String(settings.fontSize ?? 14)}
-            onChange={handleFontSizeChange}
-          />
+          <Select label={t('settings.fontSize')} options={FONT_SIZE_OPTIONS} value={String(settings.fontSize ?? 14)} onChange={handleFontSizeChange} />
         </div>
       </Section>
 

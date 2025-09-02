@@ -21,12 +21,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler) => {
   });
 
   ipcMain.handle('save-font-size', (_, fontSize: number) => {
-    const oldSettings = store.getSettings();
-    store.saveSettings({ ...oldSettings, fontSize });
-
-    mainWindow.webContents.insertCSS(`:root { --font-size: ${fontSize}px !important; }`);
-
-    return store.getSettings().fontSize;
+    return eventsHandler.saveFontSize(fontSize);
   });
 
   ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {
