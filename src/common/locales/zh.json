@@ -698,7 +698,7 @@
     "sendMessage": "发送消息(Enter)",
     "clearChat": "清除聊天",
     "agentModeOnly": "仅在代理模式下可用",
-    "undoSuccess": ""
+    "undoSuccess": "已撤销 aider 的最后一次提交"
   },
   "agentProfiles": {
     "title": "代理配置",
