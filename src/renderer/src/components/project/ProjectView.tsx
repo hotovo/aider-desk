@@ -591,20 +591,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const runCommand = (command: string) => {
     api.runCommand(project.baseDir, command);
-    if (command.trim() === 'undo') {
-      const removeListener = api.addCommandOutputListener(project.baseDir, (data: CommandOutputData) => {
-        if (data.output.includes('The last commit was not made by aider in this chat session.')) {
-          const logMessage: LogMessage = {
-            id: uuidv4(),
-            type: 'log',
-            level: 'info',
-            content: t('promptField.undoSuccess'),
-          };
-          setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), logMessage]);
-          removeListener(); // Clean up the listener
-        }
-      });
-    }
   };
 
   const runTests = (testCmd?: string) => {
