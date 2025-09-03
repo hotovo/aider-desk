@@ -1,6 +1,6 @@
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
-import { AgentProfile, ContextMessage, InvocationMode, PromptContext, SettingsData } from '@common/types';
+import { AgentProfile, ContextMemoryMode, ContextMessage, InvocationMode, PromptContext, SettingsData } from '@common/types';
 import { v4 as uuidv4 } from 'uuid';
 import { SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { DEFAULT_AGENT_PROFILE, isSubagentEnabled } from '@common/agent';
@@ -26,17 +26,19 @@ export const createSubagentsToolset = (
     let description = 'Delegates a specific task to a subagent. You have access to the following subagents:\n';
 
     if (automaticSubagents.length > 0) {
-      description += '\nAutomatic subagents, that should be used proactively based on their description or when asked by user to use it:\n';
+      description += '\n<automatic-subagents>\n';
       for (const subagent of automaticSubagents) {
-        description += `- id: ${subagent.id}, name: ${subagent.name}, description: ${subagent.subagent.description}\n`;
+        description += `  <subagent>\n    <id>${subagent.id}</id>\n    <name>${subagent.name}</name>\n    <description>${subagent.subagent.description}</description>\n  </subagent>\n`;
       }
+      description += '</automatic-subagents>\n';
     }
 
     if (onDemandSubagents.length > 0) {
-      description += '\nThese are on-demand subagents - they can ONLY be used when requested by user, YOU MUST NOT use them automatically.:\n';
+      description += '\n<on-demand-subagents>\n';
       for (const subagent of onDemandSubagents) {
-        description += `- id: ${subagent.id}, name: ${subagent.name}\n`;
+        description += `  <subagent>\n    <id>${subagent.id}</id>\n    <name>${subagent.name}</name>\n  </subagent>\n`;
       }
+      description += '</on-demand-subagents>\n';
     }
 
     description +=
@@ -85,7 +87,7 @@ export const createSubagentsToolset = (
         },
       };
 
-      const getSubagentContextMessages = () => {
+      const getSubagentContextMessages = (contextMemory: ContextMemoryMode) => {
         const subagentContextMessages: ContextMessage[] = [];
 
         const findResultMessagesForToolCallId = (toolCallId: string) => {
@@ -149,7 +151,15 @@ export const createSubagentsToolset = (
                       // @ts-expect-error prompt is expected to be in the args
                       content: part.args.prompt,
                     });
-                    subagentContextMessages.push(...resultMessages);
+
+                    switch (contextMemory) {
+                      case ContextMemoryMode.FullContext:
+                        subagentContextMessages.push(...resultMessages);
+                        break;
+                      case ContextMemoryMode.LastMessage:
+                        subagentContextMessages.push(resultMessages[resultMessages.length - 1]);
+                        break;
+                    }
                   }
                 }
               }
@@ -178,7 +188,8 @@ export const createSubagentsToolset = (
         );
 
         // Run the subagent with the focused context
-        const subagentContextMessages = subagentProfile.subagent.hasContextMemory ? getSubagentContextMessages() : [];
+        const subagentContextMessages =
+          subagentProfile.subagent.contextMemory !== ContextMemoryMode.Off ? getSubagentContextMessages(subagentProfile.subagent.contextMemory) : [];
         const effectivePrompt =
           subagentContextMessages.length > 0
             ? `${prompt}

@@ -1,4 +1,4 @@
-import { AgentProfile, InvocationMode, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, ContextMemoryMode, InvocationMode, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -225,7 +225,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     invocationMode: InvocationMode.OnDemand,
     color: '#3368a8',
     description: '',
-    hasContextMemory: false,
+    contextMemory: ContextMemoryMode.Off,
   },
 };
 

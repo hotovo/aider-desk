@@ -1,10 +1,10 @@
-import { AgentProfile, GenericTool, InvocationMode, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, ContextMemoryMode, GenericTool, InvocationMode, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
 import React, { ReactNode, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import Sketch from '@uiw/react-color-sketch';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
@@ -697,15 +697,21 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
 
                 {selectedProfile.subagent.enabled && (
                   <div className="flex items-center justify-between mt-2">
-                    <Checkbox
+                    <Select
                       label={
                         <div className="flex items-center">
-                          <span>{t('settings.agent.subagent.hasContextMemory')}</span>
-                          <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.hasContextMemoryTooltip')} />
+                          <span>{t('settings.agent.subagent.contextMemory')}</span>
+                          <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.contextMemoryTooltip')} />
                         </div>
                       }
-                      checked={selectedProfile.subagent.hasContextMemory}
-                      onChange={(checked) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, hasContextMemory: checked })}
+                      options={[
+                        { label: t('settings.agent.subagent.contextMemory.off'), value: ContextMemoryMode.Off },
+                        { label: t('settings.agent.subagent.contextMemory.fullContext'), value: ContextMemoryMode.FullContext },
+                        { label: t('settings.agent.subagent.contextMemory.lastMessage'), value: ContextMemoryMode.LastMessage },
+                      ]}
+                      value={selectedProfile.subagent.contextMemory}
+                      onChange={(value) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, contextMemory: value as ContextMemoryMode })}
+                      size="sm"
                     />
                   </div>
                 )}

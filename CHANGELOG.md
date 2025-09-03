@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added option to change font size
+- extended context memory mode for Subagents to Full context or Last message
 
 ## [0.29.0]
 
