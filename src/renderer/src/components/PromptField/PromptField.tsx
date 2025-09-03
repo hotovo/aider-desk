@@ -22,7 +22,7 @@ import { VscTerminal } from 'react-icons/vsc';
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
-import { showErrorNotification } from '@/utils/notifications';
+import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
 import { useCustomCommands } from '@/hooks/useCustomCommands';
 import { useApi } from '@/context/ApiContext';
@@ -374,6 +374,15 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/clear-logs': {
             prepareForNextPrompt();
             clearLogMessages();
+            break;
+          }
+          case '/undo': {
+            prepareForNextPrompt();
+            runCommand(`${command.slice(1)} ${args || ''}`);
+            // Show success message after a brief delay to allow the command to complete
+            setTimeout(() => {
+              showSuccessNotification(t('promptField.undoSuccess'));
+            }, 1000);
             break;
           }
           default: {
