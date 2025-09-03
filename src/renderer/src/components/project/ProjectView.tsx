@@ -591,6 +591,15 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   const runCommand = (command: string) => {
     api.runCommand(project.baseDir, command);
+    if (command === 'undo ') {
+      const logMessage: LogMessage = {
+        id: uuidv4(),
+        type: 'log',
+        level: 'info',
+        content: t('promptField.undoSuccess'),
+      };
+      setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), logMessage]);
+    }
   };
 
   const runTests = (testCmd?: string) => {
