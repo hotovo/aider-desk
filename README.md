@@ -396,7 +396,7 @@ brew install hotovo-aider-desk
 
 Then open the app from your Applications folder.
 
-Update the app from within AiderDesk directly; `brew upgrade` won't alter the existing installation. 
+Updates are handled from within the AiderDesk application itself. The `brew upgrade` command will not update your installation.
 
 To completely remove the app and all associated data, use:
 
