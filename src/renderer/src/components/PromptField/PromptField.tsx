@@ -377,11 +377,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             clearLogMessages();
             break;
           }
-          case '/pluto': {
-            prepareForNextPrompt();
-            api.undoLastEdit(baseDir);
-            break;
-          }
           default: {
             setText('');
             runCommand(`${command.slice(1)} ${args || ''}`);
