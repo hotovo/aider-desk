@@ -2,7 +2,8 @@
 
 ## [UNRELEASED]
 
-- added tokens info for context files on hover
+- extended context memory mode for Subagents to Full context or Last message
+- added tokens info for context files
 
 ## [0.29.0]
 

@@ -32,6 +32,12 @@ export enum ReasoningEffort {
   None = 'none',
 }
 
+export enum ContextMemoryMode {
+  Off = 'off',
+  FullContext = 'full-context',
+  LastMessage = 'last-message',
+}
+
 export interface ResponseChunkData {
   messageId: string;
   baseDir: string;
@@ -257,7 +263,7 @@ export enum InvocationMode {
 
 export interface SubagentConfig {
   enabled: boolean;
-  hasContextMemory: boolean;
+  contextMemory: ContextMemoryMode;
   systemPrompt: string;
   invocationMode: InvocationMode;
   color: string;

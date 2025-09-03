@@ -1,5 +1,15 @@
 import { v4 as uuidv4 } from 'uuid';
-import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, ToolApprovalState, WindowState } from '@common/types';
+import {
+  AgentProfile,
+  ContextMemoryMode,
+  ProjectData,
+  ProjectSettings,
+  SettingsData,
+  StartupMode,
+  SuggestionMode,
+  ToolApprovalState,
+  WindowState,
+} from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
 import {
@@ -22,6 +32,7 @@ import { migrateV7ToV8 } from './migrations/v7-to-v8';
 import { migrateV8ToV9 } from './migrations/v8-to-v9';
 import { migrateV9ToV10 } from './migrations/v9-to-v10';
 import { migrateV10ToV11 } from './migrations/v10-to-v11';
+import { migrateV11ToV12 } from './migrations/v11-to-v12';
 
 import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
 import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
@@ -90,7 +101,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 11;
+const CURRENT_SETTINGS_VERSION = 12;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -139,6 +150,7 @@ export class Store {
         model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
         subagent: {
           ...DEFAULT_AGENT_PROFILE.subagent,
+          contextMemory: ContextMemoryMode.FullContext,
           description:
             'Direct file manipulation and system operations. Best for codebase analysis, file management, advanced search, data analysis, and tasks requiring precise control over individual files. This agent should be used as the main agent for analysis and coding tasks.',
           systemPrompt:
@@ -311,6 +323,11 @@ export class Store {
       if (settingsVersion === 10) {
         settings = migrateV10ToV11(settings);
         settingsVersion = 11;
+      }
+
+      if (settingsVersion === 11) {
+        settings = migrateV11ToV12(settings);
+        settingsVersion = 12;
       }
 
       this.store.set('settings', settings as SettingsData);
