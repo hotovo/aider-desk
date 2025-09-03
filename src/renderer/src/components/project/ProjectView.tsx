@@ -275,6 +275,28 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     };
 
     const handleCommandOutput = ({ command, output }: CommandOutputData) => {
+      // Check for undo command success/failure
+      if (command === 'undo' && output.trim()) {
+        // Success patterns - when aider actually undoes a commit
+        if (output.includes('Undid commit') || 
+            output.includes('Reverted') ||
+            output.match(/commit [a-f0-9]+ undone/i) ||
+            output.includes('Undo complete')) {
+          showSuccessNotification(t('notifications.undoSuccessful'));
+        }
+        // Failure patterns - when there's nothing to undo
+        else if (output.includes('No commits to undo') ||
+                 output.includes('Nothing to undo') ||
+                 output.includes('No aider commits found') ||
+                 output.includes('No aider commits to undo')) {
+          showErrorNotification(t('notifications.nothingToUndo'));
+        }
+        // Error patterns
+        else if (output.toLowerCase().includes('error') && output.toLowerCase().includes('undo')) {
+          showErrorNotification(t('notifications.undoFailed'));
+        }
+      }
+
       setMessages((prevMessages) => {
         const lastMessage = prevMessages[prevMessages.length - 1];
 
@@ -444,26 +466,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           setProcessing(true);
         }
       } else {
-        // Check for undo-related messages and show notifications
-        if (message) {
-          if (level === 'info' && (
-            message.includes('Undid commit') || 
-            message.includes('Reverted') ||
-            message.match(/commit [a-f0-9]+ undone/i)
-          )) {
-            showSuccessNotification(t('notifications.undoSuccessful'));
-          } else if ((level === 'info' || level === 'warning') && (
-            message.includes('No commits to undo') ||
-            message.includes('Nothing to undo') ||
-            message.includes('No aider commits found') ||
-            message.includes('No aider commits to undo')
-          )) {
-            showErrorNotification(t('notifications.nothingToUndo'));
-          } else if (level === 'error' && message.toLowerCase().includes('undo')) {
-            showErrorNotification(t('notifications.undoFailed'));
-          }
-        }
-
         const logMessage: LogMessage = {
           id: uuidv4(),
           type: 'log',
@@ -613,52 +615,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     api.runCommand(project.baseDir, command);
   };
 
-  const runUndoCommand = () => {
-    // Set up a flag to track undo-related log messages
-    const undoStartTime = Date.now();
-    
-    // Store original log handler to restore later
-    const originalHandleLog = handleLog;
-    
-    // Create a temporary log handler that watches for undo results
-    const undoLogHandler = (logData: LogData) => {
-      // Only process logs that come after we started the undo command
-      if (Date.now() - undoStartTime < 10000) { // 10 second window
-        if (logData.level === 'info' && logData.message) {
-          // Check for success patterns
-          if (logData.message.includes('Undid commit') || 
-              logData.message.includes('Reverted') ||
-              logData.message.match(/commit [a-f0-9]+ undone/i)) {
-            showSuccessNotification('Undo successful');
-          }
-          // Check for failure patterns  
-          else if (logData.message.includes('No commits to undo') ||
-                   logData.message.includes('Nothing to undo') ||
-                   logData.message.includes('No aider commits found')) {
-            showErrorNotification('Nothing to undo');
-          }
-        }
-        else if (logData.level === 'error' && logData.message) {
-          if (logData.message.toLowerCase().includes('undo')) {
-            showErrorNotification('Undo failed');
-          }
-        }
-      }
-      
-      // Always call the original handler
-      originalHandleLog(logData);
-    };
-    
-    // Temporarily replace the handler
-    handleLog = undoLogHandler;
-    
-    // Restore original handler after a delay
-    setTimeout(() => {
-      handleLog = originalHandleLog;
-    }, 10000);
-    
-    runCommand('undo');
-  };
 
   const runTests = (testCmd?: string) => {
     runCommand(`test ${testCmd || ''}`);
@@ -986,7 +942,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               answerQuestion={answerQuestion}
               interruptResponse={handleInterruptResponse}
               runCommand={runCommand}
-              runUndoCommand={runUndoCommand}
               runTests={runTests}
               redoLastUserPrompt={handleRedoLastUserPrompt}
               openModelSelector={projectTopBarRef.current?.openMainModelSelector}
