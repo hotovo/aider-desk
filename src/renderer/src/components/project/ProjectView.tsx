@@ -211,13 +211,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
     const handleResponseCompleted = ({ messageId, usageReport, content, reflectedMessage, promptContext }: ResponseCompletedData) => {
       const processingMessage = processingMessageRef.current;
-      const successMessage: LogMessage = {
-        id: uuidv4(),
-        type: 'log',
-        level: 'info',
-        content: t('promptField.undoSuccess'),
-      };
-      setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), successMessage]);
 
       if (content) {
         setMessages((prevMessages) => {
