@@ -55,7 +55,6 @@ const COMMANDS = [
   '/commit',
   '/init',
   '/clear-logs',
-  '/pluto',
 ];
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
