@@ -398,10 +398,13 @@ Then open the app from your Applications folder.
 
 Updates are handled from within the AiderDesk application itself. The `brew upgrade` command will not update your installation.
 
-To completely remove the app and all associated data, use:
+Uninstall using standard `brew uninstall` tool. To completely remove the app, use:
 
 ```bash
-brew uninstall --zap hotovo-aider-desk
+brew uninstall hotovo-aider-desk
+# optionally also remove all user-data:
+# brew uninstall --zap hotovo-aider-desk
+```
 
 ## 👨‍💻 Development Setup
 
