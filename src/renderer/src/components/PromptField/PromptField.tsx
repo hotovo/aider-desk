@@ -26,6 +26,8 @@ import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
 import { useCustomCommands } from '@/hooks/useCustomCommands';
 import { useApi } from '@/context/ApiContext';
+import {LogMessage} from "@/types/message";
+import {v4 as uuidv4} from "uuid";
 
 const COMMANDS = [
   '/code',
