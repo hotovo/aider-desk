@@ -8,7 +8,6 @@ import {
   EditFormat,
   EnvironmentVariable,
   FileEdit,
-  Font,
   InputHistoryData,
   LogData,
   McpServerConfig,
@@ -28,7 +27,6 @@ import {
   StartupMode,
   TerminalData,
   TerminalExitData,
-  Theme,
   TodoItem,
   TokensInfoData,
   ToolData,
@@ -197,15 +195,6 @@ export class BrowserApi implements ApplicationAPI {
   }
   saveSettings(settings: SettingsData): Promise<SettingsData> {
     return this.post('/settings', settings);
-  }
-  saveTheme(theme: Theme): Promise<Theme> {
-    return this.post('/settings/theme', { theme });
-  }
-  saveFont(font: string): Promise<Font> {
-    return this.post('/settings/font', { font });
-  }
-  saveFontSize(fontSize: number): Promise<number> {
-    return this.post('/settings/fontSize', { fontSize });
   }
   startProject(baseDir: string): void {
     this.post('/project/start', { projectDir: baseDir });

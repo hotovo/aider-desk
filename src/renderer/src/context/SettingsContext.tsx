@@ -7,11 +7,11 @@ type SettingsContextType = {
   settings: SettingsData | null;
   saveSettings: (settings: SettingsData) => Promise<void>;
   theme: Theme | null;
-  saveTheme: (theme: Theme) => void;
+  setTheme: (theme: Theme) => void;
   font: Font | null;
-  saveFont: (font: Font) => void;
+  setFont: (font: Font) => void;
   fontSize: number | null;
-  saveFontSize: (fontSize: number) => void;
+  setFontSize: (fontSize: number) => void;
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -39,47 +39,17 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       setSettings(updated);
       const updatedSettings = await api.saveSettings(updated);
       setSettings(updatedSettings);
+      setTheme(updatedSettings.theme || null);
+      setFont(updatedSettings.font || null);
+      setFontSize(updatedSettings.fontSize || null);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to save settings:', error);
     }
   };
 
-  const saveTheme = async (theme: Theme) => {
-    try {
-      setTheme(theme);
-      const updatedTheme = await api.saveTheme(theme);
-      setTheme(updatedTheme);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to save theme:', error);
-    }
-  };
-
-  const saveFont = async (font: Font) => {
-    try {
-      setFont(font);
-      const updatedFont = await api.saveFont(font);
-      setFont(updatedFont);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to save font:', error);
-    }
-  };
-
-  const saveFontSize = async (size: number) => {
-    try {
-      setFontSize(size);
-      const updatedFontSize = await api.saveFontSize(size);
-      setFontSize(updatedFontSize);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to save font size:', error);
-    }
-  };
-
   return (
-    <SettingsContext.Provider value={{ settings, saveSettings, theme, saveTheme, font, saveFont, fontSize, saveFontSize }}>{children}</SettingsContext.Provider>
+    <SettingsContext.Provider value={{ settings, saveSettings, theme, setTheme, font, setFont, fontSize, setFontSize }}>{children}</SettingsContext.Provider>
   );
 };
 

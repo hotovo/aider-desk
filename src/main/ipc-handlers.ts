@@ -1,4 +1,4 @@
-import { EditFormat, FileEdit, Font, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, Theme, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { ipcMain } from 'electron';
 
 import { EventsHandler } from './events-handler';
@@ -10,18 +10,6 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler) => {
 
   ipcMain.handle('save-settings', (_, newSettings: SettingsData) => {
     return eventsHandler.saveSettings(newSettings);
-  });
-
-  ipcMain.handle('save-theme', (_, theme: Theme) => {
-    return eventsHandler.saveTheme(theme);
-  });
-
-  ipcMain.handle('save-font', (_, font: Font) => {
-    return eventsHandler.saveFont(font);
-  });
-
-  ipcMain.handle('save-font-size', (_, fontSize: number) => {
-    return eventsHandler.saveFontSize(fontSize);
   });
 
   ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {

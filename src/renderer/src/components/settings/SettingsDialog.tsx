@@ -20,7 +20,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
   const { t, i18n } = useTranslation();
   const api = useApi();
 
-  const { settings: originalSettings, saveSettings, saveTheme, saveFont, saveFontSize } = useSettings();
+  const { settings: originalSettings, saveSettings, setTheme, setFont, setFontSize } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
 
   useEffect(() => {
@@ -41,15 +41,15 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       void api.setZoomLevel(originalSettings.zoomLevel ?? 1);
     }
     if (originalSettings && originalSettings.theme && localSettings?.theme !== originalSettings.theme) {
-      saveTheme(originalSettings.theme);
+      setTheme(originalSettings.theme);
     }
 
     if (originalSettings && originalSettings.font && localSettings?.font !== originalSettings.font) {
-      saveFont(originalSettings.font);
+      setFont(originalSettings.font);
     }
 
     if (originalSettings && originalSettings.fontSize && localSettings?.fontSize !== originalSettings.fontSize) {
-      saveFontSize(originalSettings.fontSize);
+      setFontSize(originalSettings.fontSize);
     }
 
     // Updated to use settings.mcpServers directly
@@ -107,16 +107,6 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
   };
 
-  const handleFontSizeChange = (fontSize: number) => {
-    if (localSettings) {
-      setLocalSettings({
-        ...localSettings,
-        fontSize,
-      });
-      saveFontSize(fontSize);
-    }
-  };
-
   return (
     <ConfirmDialog
       title={t('settings.title')}
@@ -132,9 +122,9 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
           updateSettings={setLocalSettings}
           onLanguageChange={handleLanguageChange}
           onZoomChange={handleZoomChange}
-          onThemeChange={saveTheme}
-          onFontChange={saveFont}
-          onFontSizeChange={handleFontSizeChange}
+          onThemeChange={setTheme}
+          onFontChange={setFont}
+          onFontSizeChange={setFontSize}
           initialTab={initialTab}
           initialAgentProfileId={initialAgentProfileId}
           initialAgentProvider={initialAgentProvider}
