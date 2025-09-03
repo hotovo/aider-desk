@@ -379,10 +379,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/undo': {
             prepareForNextPrompt();
             runCommand(`${command.slice(1)} ${args || ''}`);
-            // Show success message after a brief delay to allow the command to complete
-            setTimeout(() => {
-              showSuccessNotification(t('promptField.undoSuccess'));
-            }, 1000);
             break;
           }
           default: {
