@@ -928,8 +928,82 @@ export class Project {
       this.eventManager.sendClearProject(this.baseDir, true, false);
     }
 
+    // Special handling for undo command to provide better feedback
+    if (command.trim() === 'undo') {
+      this.handleUndoCommand();
+      return;
+    }
+
     this.findMessageConnectors('run-command').forEach((connector) =>
       connector.sendRunCommandMessage(command, this.sessionManager.toConnectorMessages(), this.sessionManager.getContextFiles()),
+    );
+  }
+
+  private handleUndoCommand() {
+    // Set up monitoring for undo command output
+    const undoStartTime = Date.now();
+    let undoCompleted = false;
+    
+    // Store the original addLogMessage to intercept undo-related messages
+    const originalAddLogMessage = this.addLogMessage.bind(this);
+    
+    // Override addLogMessage temporarily to catch undo results
+    this.addLogMessage = (level: LogLevel, message?: string, finished = false, promptContext?: PromptContext) => {
+      // Check if this is an undo-related message within reasonable time window
+      if (!undoCompleted && Date.now() - undoStartTime < 15000 && message) {
+        // Success patterns
+        if (level === 'info' && (
+          message.includes('Undid commit') || 
+          message.includes('Reverted') ||
+          message.match(/commit [a-f0-9]+ undone/i) ||
+          message.includes('Undo complete')
+        )) {
+          undoCompleted = true;
+          // Send success notification
+          originalAddLogMessage('info', 'Undo operation completed successfully', finished, promptContext);
+          // Restore original method
+          setTimeout(() => { this.addLogMessage = originalAddLogMessage; }, 100);
+          return;
+        }
+        // Failure patterns
+        else if ((level === 'info' || level === 'warning') && (
+          message.includes('No commits to undo') ||
+          message.includes('Nothing to undo') ||
+          message.includes('No aider commits found') ||
+          message.includes('No aider commits to undo')
+        )) {
+          undoCompleted = true;
+          // Send failure notification
+          originalAddLogMessage('warning', 'Nothing to undo - no previous aider commits found', finished, promptContext);
+          // Restore original method
+          setTimeout(() => { this.addLogMessage = originalAddLogMessage; }, 100);
+          return;
+        }
+        // Error patterns
+        else if (level === 'error' && message.toLowerCase().includes('undo')) {
+          undoCompleted = true;
+          // Send error notification
+          originalAddLogMessage('error', `Undo failed: ${message}`, finished, promptContext);
+          // Restore original method
+          setTimeout(() => { this.addLogMessage = originalAddLogMessage; }, 100);
+          return;
+        }
+      }
+      
+      // Call original method for all other messages
+      originalAddLogMessage(level, message, finished, promptContext);
+    };
+    
+    // Restore original method after timeout as safety measure
+    setTimeout(() => {
+      if (!undoCompleted) {
+        this.addLogMessage = originalAddLogMessage;
+      }
+    }, 15000);
+    
+    // Execute the undo command
+    this.findMessageConnectors('run-command').forEach((connector) =>
+      connector.sendRunCommandMessage('undo', this.sessionManager.toConnectorMessages(), this.sessionManager.getContextFiles()),
     );
   }
 
