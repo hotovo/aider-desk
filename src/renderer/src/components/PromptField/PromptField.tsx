@@ -55,6 +55,7 @@ const COMMANDS = [
   '/commit',
   '/init',
   '/clear-logs',
+  '/pluto',
 ];
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
@@ -374,6 +375,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/clear-logs': {
             prepareForNextPrompt();
             clearLogMessages();
+            break;
+          }
+          case '/pluto': {
+            prepareForNextPrompt();
+            api.undoLastEdit(baseDir);
             break;
           }
           default: {
