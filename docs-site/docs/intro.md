@@ -13,6 +13,9 @@ AiderDesk supercharges your coding workflow by combining the power of [aider](ht
 
 ### Installation
 
+> [!TIP]
+> To use a system package manager, please see [Installation with Package Managers](../../readme-ov-file#installation-with-package-managers)
+
 1. **Download** the latest version for your operating system from our [Releases page](https://github.com/hotovo/aider-desk/releases)
 2. **Install** the application:
    - **Windows**: Run the `.exe` installer
