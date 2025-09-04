@@ -1,20 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { Font, Theme } from '@common/types';
 
 import { BaseApi } from './base-api';
 
 import { EventsHandler } from '@/events-handler';
 
 const SettingsDataSchema = z.any(); // Placeholder - can be refined based on SettingsData type
-
-const SaveThemeSchema = z.object({
-  theme: z.string(),
-});
-
-const SaveFontSchema = z.object({
-  font: z.string(),
-});
 
 const GetRecentProjectsSchema = z.object({});
 
@@ -54,36 +45,6 @@ export class SettingsApi extends BaseApi {
       this.handleRequest(async (_, res) => {
         const settings = this.eventsHandler.loadSettings();
         res.status(200).json(settings);
-      }),
-    );
-
-    // Save theme
-    router.post(
-      '/settings/theme',
-      this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(SaveThemeSchema, req.body, res);
-        if (!parsed) {
-          return;
-        }
-
-        const { theme } = parsed;
-        const updatedTheme = this.eventsHandler.saveTheme(theme as Theme);
-        res.status(200).json(updatedTheme);
-      }),
-    );
-
-    // Save font
-    router.post(
-      '/settings/font',
-      this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(SaveFontSchema, req.body, res);
-        if (!parsed) {
-          return;
-        }
-
-        const { font } = parsed;
-        const updatedFont = this.eventsHandler.saveFont(font as Font);
-        res.status(200).json(updatedFont);
       }),
     );
 

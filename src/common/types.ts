@@ -346,6 +346,7 @@ export interface SettingsData {
   notificationsEnabled?: boolean;
   theme?: Theme;
   font?: Font;
+  fontSize?: number;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;

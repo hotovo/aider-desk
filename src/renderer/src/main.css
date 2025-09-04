@@ -38,7 +38,8 @@
 }
 
 :root {
-  --font-family: "Sono";
+  --font-family: Sono;
+  --font-size: 16px;
 }
 
 body {
