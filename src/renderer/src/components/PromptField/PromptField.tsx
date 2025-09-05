@@ -101,7 +101,6 @@ type Props = {
   answerQuestion: (answer: string) => void;
   interruptResponse: () => void;
   runCommand: (command: string) => void;
-  runUndoCommand?: () => void;
   runTests: (testCmd?: string) => void;
   redoLastUserPrompt: () => void;
   editLastUserMessage: () => void;
@@ -379,12 +378,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           }
           case '/undo': {
             prepareForNextPrompt();
-            // Use special undo handler if available, otherwise fall back to regular command
-            if (typeof runUndoCommand === 'function') {
-              runUndoCommand();
-            } else {
-              runCommand(`${command.slice(1)} ${args || ''}`);
-            }
+            runCommand(`${command.slice(1)} ${args || ''}`);
             break;
           }
           default: {

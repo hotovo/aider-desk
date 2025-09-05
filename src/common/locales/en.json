@@ -764,11 +764,6 @@
     "undo": "Undo the last git commit if it was done by Aider",
     "web": "Scrape a webpage and save it to a file. Use /web url [file] with optional [file]."
   },
-  "notifications": {
-    "undoSuccessful": "Undo successful",
-    "nothingToUndo": "Nothing to undo",
-    "undoFailed": "Undo failed"
-  },
   "telemetry": {
     "title": "Telemetry Information",
     "message": "To help us improve AiderDesk, anonymous telemetry data is collected. This includes information like mode usage (agent, code, ask...) and some specifics when Agent mode is used. No personal data or prompts are ever collected.",
