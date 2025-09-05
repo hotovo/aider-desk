@@ -22,7 +22,7 @@ import { VscTerminal } from 'react-icons/vsc';
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
-import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
+import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
 import { useCustomCommands } from '@/hooks/useCustomCommands';
 import { useApi } from '@/context/ApiContext';
