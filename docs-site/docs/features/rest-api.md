@@ -338,10 +338,32 @@ Updates application settings.
 - **Request Body**:
   ```json
   {
-    "theme": "light",
-    "font": "Fira Code"
+    "language": "en",
+    "theme": "dark",
+    "font": "JetBrainsMono",
+    "aiderDeskAutoUpdate": true,
+    "aider": {
+      "options": "--verbose --model gpt-4",
+      "cachingEnabled": true,
+      ...
+    },
+    "models": {
+      "aiderPreferred": ["gpt-4", "claude-3-sonnet"],
+      ...
+    },
+    "telemetryEnabled": false,
+    "promptBehavior": {
+      "suggestionMode": "automatically",
+      ...
+    },
+    "server": {
+      "enabled": true,
+      ...
+    },
+    ...
   }
   ```
+  For the complete `SettingsData` structure, see [src/common/types.ts](https://github.com/hotovo/aider-desk/blob/main/src/common/types.ts#L346).
 - **Response**: `200 OK` (returns updated settings)
 
 #### Get Models Info
