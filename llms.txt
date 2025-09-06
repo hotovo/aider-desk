@@ -125,6 +125,7 @@ src/
         v1-to-v2.ts
         v10-to-v11.ts
         v11-to-v12.ts
+        v12-to-v13.ts
         v2-to-v3.ts
         v3-to-v4.ts
         v4-to-v5.ts
@@ -286,6 +287,7 @@ src/
           LanguageSelector.tsx
           ModelProvidersSettings.tsx
           ProviderCard.tsx
+          ServerSettings.tsx
           SettingsDialog.tsx
         terminal/
           Terminal.scss
@@ -1322,6 +1324,7 @@ File: src/common/locales/en.json
       "providers": "Providers",
       "aider": "Aider",
       "agent": "Agent",
+      "server": "Server",
       "about": "About"
     },
     "gui": "Appearance",
@@ -1508,6 +1511,21 @@ File: src/common/locales/en.json
       "useVimBindings": "Use Vim bindings",
       "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field.",
       "modeAtSign": "@ mention mode"
+    },
+    "server": {
+      "description": "Enable REST API server which allows you to access AiderDesk via browser on port 23477",
+      "serverStatus": "Server Status",
+      "running": "Running",
+      "enableBasicAuth": "Enable Basic Authentication",
+      "enableBasicAuthDescription": "Require username and password for browser access and API calls",
+      "username": "Username",
+      "password": "Password",
+      "controlServer": "REST API Server",
+      "starting": "Starting...",
+      "stopping": "Stopping...",
+      "start": "Start",
+      "stop": "Stop",
+      "stopped": "Stopped"
     }
   },
   "messages": {
@@ -2158,7 +2176,8 @@ File: src/common/locales/zh.json
       "general": "通用",
       "providers": "模型提供者",
       "aider": "Aider",
-      "agent": "服务器",
+      "agent": "代理",
+      "server": "服务器",
       "about": "关于"
     },
     "gui": "GUI",
@@ -2689,7 +2708,21 @@ File: src/common/locales/zh.json
     "modelCommand": "/model",
     "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)",
     "modeAtSign": "@ 提及模式"
-
+  },
+  "server": {
+    "description": "启用 REST API 服务器，允许您通过浏览器在端口 23477 访问 AiderDesk",
+    "serverStatus": "服务器状态",
+    "running": "运行中",
+    "enableBasicAuth": "启用基本身份验证",
+    "enableBasicAuthDescription": "需要用户名和密码用于浏览器访问和 API 调用",
+    "username": "用户名",
+    "password": "密码",
+    "controlServer": "REST API 服务器",
+    "starting": "正在启动...",
+    "stopping": "正在停止...",
+    "start": "启动",
+    "stop": "停止",
+    "stopped": "已停止"
   },
   "multiselect": {
     "noneSelected": "未选择",
@@ -2721,7 +2754,7 @@ File: src/common/locales/zh.json
     "charts": {
       "tokenUsageTrend": "令牌使用趋势",
       "costBreakdown": "成本明细",
-      "MessageBreakdown": "消息明细",
+      "messageBreakdown": "消息明细",
       "modelUsageDistribution": "模型使用分布",
       "inputTokens": "输入令牌",
       "outputTokens": "输出令牌",
@@ -2982,6 +3015,9 @@ export interface ApplicationAPI {
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   saveTheme: (theme: Theme) => Promise<Theme>;
   saveFont: (font: string) => Promise<Font>;
+  isManageServerSupported: () => boolean;
+  startServer: (username?: string, password?: string) => Promise<boolean>;
+  stopServer: () => Promise<boolean>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;
@@ -3431,6 +3467,14 @@ export interface SettingsData {
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
   promptBehavior: PromptBehavior;
+  server: {
+    enabled: boolean;
+    basicAuth: {
+      enabled: boolean;
+      username: string;
+      password: string;
+    };
+  };
 }
 ⋮----
 export interface Group {
@@ -4553,14 +4597,13 @@ import {
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
-import { SERVER_PORT } from '@/constants';
 import { EventManager } from '@/events';
 ⋮----
 export class ConnectorManager
 ⋮----
 constructor(
-    private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
+    private readonly projectManager: ProjectManager,
     private readonly eventManager: EventManager,
 )
 ⋮----
@@ -5638,7 +5681,7 @@ File: src/main/rest-api/rest-api-controller.ts
 import { Server } from 'http';
 import { join } from 'path';
 ⋮----
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { is } from '@electron-toolkit/utils';
 ⋮----
@@ -5652,10 +5695,11 @@ import { SystemApi } from './system-api';
 import { TodoApi } from './todo-api';
 import { McpApi } from './mcp-api';
 ⋮----
-import { SERVER_PORT } from '@/constants';
+import { SERVER_PORT, AUTH_USERNAME, AUTH_PASSWORD } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
+import { Store } from '@/store';
 ⋮----
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 ⋮----
@@ -5665,11 +5709,18 @@ constructor(
     private readonly server: Server,
     private readonly projectManager: ProjectManager,
     private readonly eventsHandler: EventsHandler,
+    private readonly store: Store,
 )
 ⋮----
-// Configure Express
+private serverGuardMiddleware(_: Request, res: Response, next: NextFunction): void
 ⋮----
-// Set timeout for all requests
+// In headless mode, always allow requests regardless of server.enabled setting
+⋮----
+private timeoutMiddleware(req: Request, res: Response, next: NextFunction): void
+⋮----
+private basicAuthMiddleware(req: Request, res: Response, next: NextFunction): void
+⋮----
+// Check if environment variables for auth are provided, which overrides settings
 ⋮----
 private setupApiRoutes(): void
 ⋮----
@@ -5681,16 +5732,25 @@ private setupApiRoutes(): void
 ⋮----
 private init()
 ⋮----
+// Configure Express
+⋮----
+// Add server guard middleware as the first middleware
+⋮----
+// Set timeout for all requests
+⋮----
+// Add Basic Auth
+⋮----
 // Serve static renderer files in production (for browser access)
 ⋮----
 // Handle SPA routing: serve index.html for non-API routes
 ⋮----
-// The server is already listening from the main process,
-// so we just need to attach our Express app to it
-⋮----
 async close()
 ⋮----
-// nothing for now
+// No need to stop server anymore - it's always attached
+⋮----
+async startServer()
+⋮----
+async stopServer()
 
 ================
 File: src/main/rest-api/settings-api.ts
@@ -6020,6 +6080,14 @@ export const migrateV11ToV12 = (settings: any): SettingsData =>
 hasContextMemory: undefined, // Remove old field
 
 ================
+File: src/main/store/migrations/v12-to-v13.ts
+================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SettingsData } from '@common/types';
+⋮----
+export const migrateV12ToV13 = (settings: any): SettingsData =>
+
+================
 File: src/main/store/migrations/v2-to-v3.ts
 ================
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -6139,6 +6207,7 @@ import { migrateV8ToV9 } from './migrations/v8-to-v9';
 import { migrateV9ToV10 } from './migrations/v9-to-v10';
 import { migrateV10ToV11 } from './migrations/v10-to-v11';
 import { migrateV11ToV12 } from './migrations/v11-to-v12';
+import { migrateV12ToV13 } from './migrations/v12-to-v13';
 ⋮----
 import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
 import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
@@ -6832,6 +6901,10 @@ async deleteTodo(baseDir: string, name: string): Promise<TodoItem[]>
 async clearAllTodos(baseDir: string): Promise<TodoItem[]>
 ⋮----
 async initProjectRulesFile(baseDir: string): Promise<void>
+⋮----
+enableServer(username?: string, password?: string): SettingsData
+⋮----
+disableServer(): SettingsData
 
 ================
 File: src/main/index.ts
@@ -6862,6 +6935,7 @@ import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { EventsHandler } from '@/events-handler';
+import { SERVER_PORT, HEADLESS_MODE } from '@/constants';
 ⋮----
 const setupCustomMenu = (): void =>
 ⋮----
@@ -6900,9 +6974,11 @@ const initManagers = async (
 ⋮----
 // Initialize events handler
 ⋮----
-// Create and initialize REST API controller
+// Create and initialize REST API controller with the server
 ⋮----
 // Initialize connector manager with the server
+⋮----
+// start listening
 ⋮----
 const beforeQuit = async () =>
 ⋮----
@@ -6935,10 +7011,13 @@ import { EditFormat, FileEdit, Font, McpServerConfig, Mode, ProjectSettings, Set
 import { ipcMain } from 'electron';
 ⋮----
 import { EventsHandler } from './events-handler';
+import { RestApiController } from './rest-api';
 ⋮----
-export const setupIpcHandlers = (eventsHandler: EventsHandler) =>
+export const setupIpcHandlers = (eventsHandler: EventsHandler, restApiController: RestApiController) =>
 ⋮----
 // Terminal handlers
+⋮----
+// Server control handlers
 
 ================
 File: src/main/logger.ts
@@ -7560,6 +7639,15 @@ resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean>
 closeTerminal(terminalId: string): Promise<boolean>
 getTerminalForProject(baseDir: string): Promise<string | null>
 getAllTerminalsForProject(baseDir: string): Promise<Array<
+isManageServerSupported(): boolean
+⋮----
+startServer(username?: string, password?: string): Promise<boolean>
+⋮----
+// Server control not supported in browser mode
+⋮----
+stopServer(): Promise<boolean>
+⋮----
+// Server control not supported in browser mode
 
 ================
 File: src/renderer/src/assets/electron.svg
@@ -7878,7 +7966,7 @@ export const Button = ({
 File: src/renderer/src/components/common/Checkbox.tsx
 ================
 import { InputHTMLAttributes, ReactNode } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> & {
   label?: ReactNode;
@@ -8205,12 +8293,10 @@ import { ReactNode } from 'react';
 import clsx from 'clsx';
 ⋮----
 type Props = {
-  title: string;
+  title?: string;
   children: ReactNode;
   className?: string;
 };
-⋮----
-export const Section = (
 
 ================
 File: src/renderer/src/components/common/Select.tsx
@@ -10863,6 +10949,53 @@ const handleCardClick = (e: MouseEvent<HTMLDivElement>) =>
 const renderProviderParameters = () =>
 
 ================
+File: src/renderer/src/components/settings/ServerSettings.tsx
+================
+import { ChangeEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SettingsData } from '@common/types';
+import { clsx } from 'clsx';
+⋮----
+import { Input } from '../common/Input';
+import { Section } from '../common/Section';
+import { Button } from '../common/Button';
+import { Checkbox } from '../common/Checkbox';
+⋮----
+import { useApi } from '@/context/ApiContext';
+⋮----
+type Props = {
+  settings: SettingsData;
+  setSettings: (settings: SettingsData) => void;
+};
+⋮----
+const handleServerToggle = async () =>
+⋮----
+// Start server with current credentials if basic auth is enabled
+⋮----
+// Stop server
+⋮----
+// Update settings to reflect the new server state
+⋮----
+// Handle failure (could add toast notification here)
+⋮----
+// Handle error (could add toast notification here)
+⋮----
+const handleBasicAuthEnabledChange = (checked: boolean) =>
+⋮----
+const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const getButtonText = () =>
+⋮----
+{/* Authentication Toggle */}
+⋮----
+{/* Collapsible Authentication Inputs */}
+⋮----
+{/* Centered Server Status and Control */}
+⋮----
+
+================
 File: src/renderer/src/components/settings/SettingsDialog.tsx
 ================
 import { SettingsData, StartupMode } from '@common/types';
@@ -11941,15 +12074,17 @@ File: src/renderer/src/pages/Settings.tsx
 ================
 import { Font, SettingsData, Theme } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LlmProviderName } from '@common/agent';
 ⋮----
+import { useApi } from '@/context/ApiContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { ModelProvidersSettings } from '@/components/settings/ModelProvidersSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
+import { ServerSettings } from '@/components/settings/ServerSettings';
 ⋮----
 type Props = {
   settings: SettingsData;
@@ -13923,6 +14058,7 @@ File: package.json
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
     "ai": "^4.3.16",
+    "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "better-sqlite3": "^12.0.0",
     "cheerio": "^1.0.0",
@@ -13989,8 +14125,7 @@ File: package.json
     "ws": "^8.18.0",
     "yaml": "^2.8.0",
     "yaml-front-matter": "^4.1.1",
-    "zod": "^3.24.2",
-    "axios": "^1.8.3"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",

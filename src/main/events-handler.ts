@@ -23,12 +23,14 @@ import {
   TodoItem,
   UsageDataRow,
   VersionsInfo,
+  CloudflareTunnelStatus,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 
 import { Agent, McpManager } from '@/agent';
 import { ModelInfoManager } from '@/models';
 import { ProjectManager } from '@/project';
+import { CloudflareTunnelManager } from '@/server';
 import { getDefaultProjectSettings, Store } from '@/store';
 import { TelemetryManager } from '@/telemetry';
 import { VersionsManager } from '@/versions';
@@ -50,6 +52,7 @@ export class EventsHandler {
     private telemetryManager: TelemetryManager,
     private dataManager: DataManager,
     private terminalManager: TerminalManager,
+    private cloudflareTunnelManager: CloudflareTunnelManager,
   ) {}
 
   loadSettings(): SettingsData {
@@ -597,5 +600,60 @@ export class EventsHandler {
 
   async initProjectRulesFile(baseDir: string): Promise<void> {
     return await this.projectManager.getProject(baseDir).initProjectAgentsFile();
+  }
+
+  enableServer(username?: string, password?: string): SettingsData {
+    const currentSettings = this.store.getSettings();
+    const updatedSettings: SettingsData = {
+      ...currentSettings,
+      server: {
+        ...currentSettings.server,
+        enabled: true,
+        basicAuth: {
+          ...currentSettings.server.basicAuth,
+          enabled: Boolean(username && password),
+          username: username ?? currentSettings.server.basicAuth.username,
+          password: password ?? currentSettings.server.basicAuth.password,
+        },
+      },
+    };
+    this.store.saveSettings(updatedSettings);
+    return updatedSettings;
+  }
+
+  disableServer(): SettingsData {
+    const currentSettings = this.store.getSettings();
+    const updatedSettings: SettingsData = {
+      ...currentSettings,
+      server: {
+        ...currentSettings.server,
+        enabled: false,
+      },
+    };
+    this.store.saveSettings(updatedSettings);
+    return updatedSettings;
+  }
+
+  async startCloudflareTunnel(): Promise<CloudflareTunnelStatus | null> {
+    try {
+      await this.cloudflareTunnelManager.start();
+      const status = this.cloudflareTunnelManager.getStatus();
+      logger.info('Cloudflare tunnel started', {
+        status,
+      });
+      return status;
+    } catch (error) {
+      logger.error('Failed to start tunnel:', error);
+      return null;
+    }
+  }
+
+  stopCloudflareTunnel(): void {
+    this.cloudflareTunnelManager.stop();
+    logger.info('Cloudflare tunnel stopped');
+  }
+
+  getCloudflareTunnelStatus(): CloudflareTunnelStatus {
+    return this.cloudflareTunnelManager.getStatus();
   }
 }

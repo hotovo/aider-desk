@@ -128,7 +128,9 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         if (fileContent === modifiedContent) {
           const improveInfo = searchTerm.startsWith('\\\n')
             ? 'Do not start the search term with a \\ character. No escape characters are needed.'
-            : 'When you try again make sure to exactly match content, character for character, including all comments, docstrings, etc.';
+            : searchTerm.includes('\\"')
+              ? 'Try not using the \\ in the string like \\" and others, but use only ".'
+              : 'When you try again make sure to exactly match content, character for character, including all comments, docstrings, etc.';
 
           return `Warning: Given 'searchTerm' was not found in the file. Content remains the same. ${improveInfo}`;
         }

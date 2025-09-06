@@ -33,6 +33,7 @@ import { migrateV8ToV9 } from './migrations/v8-to-v9';
 import { migrateV9ToV10 } from './migrations/v9-to-v10';
 import { migrateV10ToV11 } from './migrations/v10-to-v11';
 import { migrateV11ToV12 } from './migrations/v11-to-v12';
+import { migrateV12ToV13 } from './migrations/v12-to-v13';
 
 import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
 import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
@@ -74,6 +75,14 @@ export const DEFAULT_SETTINGS: SettingsData = {
     },
     useVimBindings: false,
   },
+  server: {
+    enabled: false,
+    basicAuth: {
+      enabled: false,
+      username: '',
+      password: '',
+    },
+  },
 };
 
 export const getDefaultProjectSettings = (store: Store, baseDir: string): ProjectSettings => {
@@ -101,7 +110,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 12;
+const CURRENT_SETTINGS_VERSION = 13;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -259,6 +268,7 @@ export class Store {
       },
       agentProfiles: getAgentProfiles(),
       mcpServers: settings.mcpServers || DEFAULT_SETTINGS.mcpServers,
+      server: settings.server || DEFAULT_SETTINGS.server,
     };
   }
 
@@ -328,6 +338,11 @@ export class Store {
       if (settingsVersion === 11) {
         settings = migrateV11ToV12(settings);
         settingsVersion = 12;
+      }
+
+      if (settingsVersion === 12) {
+        settings = migrateV12ToV13(settings);
+        settingsVersion = 13;
       }
 
       this.store.set('settings', settings as SettingsData);

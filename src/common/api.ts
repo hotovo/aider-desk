@@ -35,6 +35,7 @@ import {
   FileEdit,
   ClearProjectData,
   ProjectStartedData,
+  CloudflareTunnelStatus,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -44,6 +45,12 @@ export interface ApplicationAPI {
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   saveTheme: (theme: Theme) => Promise<Theme>;
   saveFont: (font: string) => Promise<Font>;
+  isManageServerSupported: () => boolean;
+  startServer: (username?: string, password?: string) => Promise<boolean>;
+  stopServer: () => Promise<boolean>;
+  startCloudflareTunnel: () => Promise<boolean>;
+  stopCloudflareTunnel: () => Promise<void>;
+  getCloudflareTunnelStatus: () => Promise<CloudflareTunnelStatus>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;

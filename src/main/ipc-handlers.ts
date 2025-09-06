@@ -2,8 +2,9 @@ import { EditFormat, FileEdit, Font, McpServerConfig, Mode, ProjectSettings, Set
 import { ipcMain } from 'electron';
 
 import { EventsHandler } from './events-handler';
+import { ServerController } from './server/server-controller';
 
-export const setupIpcHandlers = (eventsHandler: EventsHandler) => {
+export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) => {
   ipcMain.handle('load-settings', () => {
     return eventsHandler.loadSettings();
   });
@@ -291,5 +292,35 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler) => {
 
   ipcMain.handle('terminal-get-all-for-project', async (_, baseDir: string) => {
     return eventsHandler.getTerminalsForProject(baseDir);
+  });
+
+  // Server control handlers
+  ipcMain.handle('start-server', async (_, username?: string, password?: string) => {
+    const started = await serverController.startServer();
+    if (started) {
+      eventsHandler.enableServer(username, password);
+    }
+    return started;
+  });
+
+  ipcMain.handle('stop-server', async () => {
+    const stopped = await serverController.stopServer();
+    if (stopped) {
+      eventsHandler.disableServer();
+    }
+    return stopped;
+  });
+
+  // Cloudflare tunnel handlers
+  ipcMain.handle('start-cloudflare-tunnel', async () => {
+    return await eventsHandler.startCloudflareTunnel();
+  });
+
+  ipcMain.handle('stop-cloudflare-tunnel', async () => {
+    eventsHandler.stopCloudflareTunnel();
+  });
+
+  ipcMain.handle('get-cloudflare-tunnel-status', () => {
+    return eventsHandler.getCloudflareTunnelStatus();
   });
 };

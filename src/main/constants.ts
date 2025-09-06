@@ -10,6 +10,7 @@ if (is.dev) {
 export const AIDER_DESK_TITLE = 'AiderDesk';
 export const AIDER_DESK_WEBSITE = 'https://github.com/hotovo/aider-desk';
 export const AIDER_DESK_DATA_DIR = app.getPath('userData');
+export const AIDER_DESK_BIN_DIR = path.join(AIDER_DESK_DATA_DIR, 'bin');
 export const RESOURCES_DIR = is.dev ? path.join(__dirname, '..', '..', 'resources') : process.resourcesPath;
 export const LOGS_DIR = path.join(AIDER_DESK_DATA_DIR, 'logs');
 export const DB_FILE_PATH = path.join(AIDER_DESK_DATA_DIR, 'aider-desk.db');
@@ -26,13 +27,20 @@ export const UV_EXECUTABLE =
       : path.join(RESOURCES_DIR, 'linux', 'uv');
 export const SERVER_PORT = process.env.AIDER_DESK_PORT ? parseInt(process.env.AIDER_DESK_PORT) : 24337;
 export const PID_FILES_DIR = path.join(AIDER_DESK_DATA_DIR, 'aider-processes');
+// constants for project directory files
 export const AIDER_DESK_DIR = '.aider-desk';
 export const AIDER_DESK_TODOS_FILE = path.join(AIDER_DESK_DIR, 'todos.json');
 export const AIDER_DESK_PROJECT_RULES_DIR = path.join(AIDER_DESK_DIR, 'rules');
 export const AIDER_DESK_COMMANDS_DIR = path.join(AIDER_DESK_DIR, 'commands');
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');
+
 export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
+
+export const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
+export const AUTH_USERNAME = process.env.AIDER_DESK_USERNAME;
+export const AUTH_PASSWORD = process.env.AIDER_DESK_PASSWORD;
+
 export const PROBE_BINARY_PATH = path.join(
   RESOURCES_DIR,
   'app.asar.unpacked',
@@ -41,4 +49,13 @@ export const PROBE_BINARY_PATH = path.join(
   'probe',
   'bin',
   process.platform === 'win32' ? 'probe.exe' : 'probe',
+);
+
+export const CLOUDFLARED_BINARY_PATH = path.join(
+  RESOURCES_DIR,
+  'app.asar.unpacked',
+  'node_modules',
+  'cloudflared',
+  'bin',
+  process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared',
 );
