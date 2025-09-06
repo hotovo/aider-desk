@@ -150,12 +150,14 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   return (
     <div className="space-y-6">
       <Section title={t('settings.gui')}>
-        <div className="grid grid-cols-2 gap-4 p-4">
+        <div className="grid grid-cols-2 gap-4 pt-4 px-4">
           <LanguageSelector language={settings.language} onChange={onLanguageChange} />
           <Select label={t('settings.zoom')} options={ZOOM_OPTIONS} value={String(settings.zoomLevel ?? 1)} onChange={handleZoomChange} />
-          <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-2" />
+        </div>
+        <div className="grid grid-cols-3 gap-4 p-4">
+          <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-3" />
           <Select label={t('settings.font')} options={fontOptions} value={settings.font ?? 'sono'} onChange={handleFontChange} />
-          <Select label={t('settings.fontSize')} options={FONT_SIZE_OPTIONS} value={String(settings.fontSize ?? 14)} onChange={handleFontSizeChange} />
+          <Select label={t('settings.fontSize')} options={FONT_SIZE_OPTIONS} value={String(settings.fontSize ?? 16)} onChange={handleFontSizeChange} />
         </div>
       </Section>
 
