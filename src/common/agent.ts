@@ -210,6 +210,8 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     // subagent tools
     [`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`]: ToolApprovalState.Always,
   },
+  bashToolAllowedPattern: '',
+  bashToolDeniedPattern: '',
   includeContextFiles: true,
   includeRepoMap: false,
   usePowerTools: true,
