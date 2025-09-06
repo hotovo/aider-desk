@@ -246,6 +246,7 @@
       "providers": "Providers",
       "aider": "Aider",
       "agent": "Agent",
+      "server": "Server",
       "about": "About"
     },
     "gui": "Appearance",
@@ -433,6 +434,26 @@
       "useVimBindings": "Use Vim bindings",
       "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field.",
       "modeAtSign": "@ mention mode"
+    },
+    "server": {
+      "description": "Enable server on port 24337 to access AiderDesk from external applications",
+      "status": "Status",
+      "running": "Running",
+      "enableBasicAuth": "Enable Basic Authentication",
+      "enableBasicAuthDescription": "Require username and password for browser access and API calls",
+      "username": "Username",
+      "password": "Password",
+      "controlServer": "REST API Server",
+      "starting": "Starting...",
+      "stopping": "Stopping...",
+      "start": "Start",
+      "stop": "Stop",
+      "stopped": "Stopped",
+      "copyUrl": "Copy URL",
+      "authentication": "Authentication",
+      "serverControl": "Server Control",
+      "tunnelManagement": "Tunnel Management",
+      "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally."
     }
   },
   "messages": {

@@ -952,6 +952,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
                   readOnly: false,
                 })
               }
+              tokensInfo={tokensInfo}
             />
           </div>
           <CostInfo

@@ -242,7 +242,8 @@
       "general": "通用",
       "providers": "模型提供者",
       "aider": "Aider",
-      "agent": "服务器",
+      "agent": "代理",
+      "server": "服务器",
       "about": "关于"
     },
     "gui": "GUI",
@@ -774,7 +775,31 @@
     "modelCommand": "/model",
     "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)",
     "modeAtSign": "@ 提及模式"
-
+  },
+  "server": {
+    "description": "启用 服务器，允许您通过浏览器在端口 24337 访问 AiderDesk",
+    "serverStatus": "服务器状态",
+    "running": "运行中",
+    "enableBasicAuth": "启用基本身份验证",
+    "enableBasicAuthDescription": "需要用户名和密码用于浏览器访问和 API 调用",
+    "username": "用户名",
+    "password": "密码",
+    "controlServer": "REST API 服务器",
+    "starting": "正在启动...",
+    "stopping": "正在停止...",
+    "start": "启动",
+    "stop": "停止",
+    "stopped": "已停止",
+    "tunnelStatus": "隧道状态",
+    "tunnelRunning": "运行中",
+    "tunnelStopped": "已停止",
+    "tunnelStarting": "正在启动...",
+    "tunnelStopping": "正在停止...",
+    "copyUrl": "复制 URL",
+    "authentication": "身份验证",
+    "serverControl": "服务器控制",
+    "tunnelManagement": "隧道管理",
+    "tunnelDescription": "创建 Cloudflare 隧道以安全地从外部网络访问您的服务器。当对外暴露服务器时，请务必使用身份验证。"
   },
   "multiselect": {
     "noneSelected": "未选择",
@@ -806,7 +831,7 @@
     "charts": {
       "tokenUsageTrend": "令牌使用趋势",
       "costBreakdown": "成本明细",
-      "MessageBreakdown": "消息明细",
+      "messageBreakdown": "消息明细",
       "modelUsageDistribution": "模型使用分布",
       "inputTokens": "输入令牌",
       "outputTokens": "输出令牌",

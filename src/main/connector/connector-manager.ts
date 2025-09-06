@@ -25,7 +25,6 @@ import {
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
-import { SERVER_PORT } from '@/constants';
 import { EventManager } from '@/events';
 
 export class ConnectorManager {
@@ -33,8 +32,8 @@ export class ConnectorManager {
   private connectors: Connector[] = [];
 
   constructor(
-    private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
+    private readonly projectManager: ProjectManager,
     private readonly eventManager: EventManager,
   ) {
     this.init(httpServer);
@@ -66,8 +65,6 @@ export class ConnectorManager {
         this.removeConnector(socket);
       });
     });
-
-    httpServer.listen(SERVER_PORT);
 
     logger.info('Socket.IO server initialized');
   }

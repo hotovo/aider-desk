@@ -1,4 +1,4 @@
-import { ContextFile, ContextFilesUpdatedData, OS } from '@common/types';
+import { ContextFile, ContextFilesUpdatedData, OS, TokensInfoData } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
@@ -83,9 +83,10 @@ type Props = {
   baseDir: string;
   allFiles: string[];
   showFileDialog: () => void;
+  tokensInfo?: TokensInfoData | null;
 };
 
-export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
+export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: Props) => {
   const [files, setFiles] = useState<ContextFile[]>([]);
   const [newlyAddedFiles, setNewlyAddedFiles] = useState<string[]>([]);
   const [showAllFiles, setShowAllFiles] = useState(false);
@@ -247,6 +248,20 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
     }
   };
 
+  const getFileTokenTooltip = useCallback(
+    (item: TreeItem): string => {
+      if (!tokensInfo?.files || item.isFolder) {
+        return '';
+      }
+      const fileTokenInfo = tokensInfo.files[item.index];
+      if (!fileTokenInfo) {
+        return '';
+      }
+      return `${fileTokenInfo.tokens || 0} ${t('usageDashboard.charts.tokens')}, $${(fileTokenInfo.cost || 0).toFixed(5)}`;
+    },
+    [tokensInfo?.files, t],
+  );
+
   return (
     <div
       className={`context-files-root flex-grow w-full h-full flex flex-col pb-2 overflow-hidden ${isDragging ? 'drag-over' : ''}`}
@@ -352,6 +367,9 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
                   <span
                     className={`select-none text-2xs overflow-hidden ${item.isFolder ? 'context-dimmed' : 'text-text-primary font-semibold'}`}
                     {...(item.isFolder ? { onClick: context.arrowProps.onClick } : {})}
+                    data-tooltip-id="context-files-tooltip"
+                    data-tooltip-content={getFileTokenTooltip(item as TreeItem)}
+                    data-tooltip-delay-show={800}
                   >
                     {title}
                   </span>

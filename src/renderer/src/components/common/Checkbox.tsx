@@ -1,5 +1,5 @@
 import { InputHTMLAttributes, ReactNode } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> & {
   label?: ReactNode;

@@ -69,10 +69,12 @@
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
     "ai": "^4.3.16",
+    "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "better-sqlite3": "^12.0.0",
     "cheerio": "^1.0.0",
     "chokidar": "^4.0.3",
+    "cloudflared": "^0.7.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "electron-store": "^10.1.0",
@@ -135,8 +137,7 @@
     "ws": "^8.18.0",
     "yaml": "^2.8.0",
     "yaml-front-matter": "^4.1.1",
-    "zod": "^3.24.2",
-    "axios": "^1.8.3"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
