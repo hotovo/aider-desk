@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.30.0]
 
 - extended context memory mode for Subagents to Full context or Last message
 - added server settings to control exposing the API and browser access
