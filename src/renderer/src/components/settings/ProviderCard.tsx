@@ -17,7 +17,7 @@ import {
 import { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import {
   AnthropicParameters,

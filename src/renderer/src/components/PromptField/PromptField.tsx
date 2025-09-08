@@ -889,8 +889,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               className="hover:!bg-bg-secondary-light !border-border-light !text-text-secondary hover:!text-text-primary"
               size="xs"
             >
-              <MdPlaylistRemove className="w-4 h-4 mr-1" />
-              {t('promptField.clearChat')}
+              <MdPlaylistRemove className="w-4 h-4" />
+              <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
             </Button>
           </div>
         </div>

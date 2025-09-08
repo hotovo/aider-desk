@@ -8,7 +8,6 @@ import {
   EditFormat,
   EnvironmentVariable,
   FileEdit,
-  Font,
   InputHistoryData,
   LogData,
   McpServerConfig,
@@ -28,13 +27,13 @@ import {
   StartupMode,
   TerminalData,
   TerminalExitData,
-  Theme,
   TodoItem,
   TokensInfoData,
   ToolData,
   UsageDataRow,
   UserMessageData,
   VersionsInfo,
+  CloudflareTunnelStatus,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -197,12 +196,6 @@ export class BrowserApi implements ApplicationAPI {
   }
   saveSettings(settings: SettingsData): Promise<SettingsData> {
     return this.post('/settings', settings);
-  }
-  saveTheme(theme: Theme): Promise<Theme> {
-    return this.post('/settings/theme', { theme });
-  }
-  saveFont(font: string): Promise<Font> {
-    return this.post('/settings/font', { font });
   }
   startProject(baseDir: string): void {
     this.post('/project/start', { projectDir: baseDir });
@@ -498,5 +491,32 @@ export class BrowserApi implements ApplicationAPI {
   getAllTerminalsForProject(baseDir: string): Promise<Array<{ id: string; baseDir: string; cols: number; rows: number }>> {
     void baseDir;
     throw new UnsupportedError('getAllTerminalsForProject not supported yet.');
+  }
+  isManageServerSupported(): boolean {
+    return false;
+  }
+
+  startServer(username?: string, password?: string): Promise<boolean> {
+    void username;
+    void password;
+    // Server control not supported in browser mode
+    return Promise.resolve(false);
+  }
+
+  stopServer(): Promise<boolean> {
+    // Server control not supported in browser mode
+    return Promise.resolve(false);
+  }
+
+  startCloudflareTunnel(): Promise<boolean> {
+    throw new UnsupportedError('Cloudflare tunnel not supported in browser mode');
+  }
+
+  stopCloudflareTunnel(): Promise<void> {
+    throw new UnsupportedError('Cloudflare tunnel not supported in browser mode');
+  }
+
+  getCloudflareTunnelStatus(): Promise<CloudflareTunnelStatus> {
+    throw new UnsupportedError('Cloudflare tunnel not supported in browser mode');
   }
 }

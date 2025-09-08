@@ -135,7 +135,7 @@ class PromptExecutor:
       if extra_response_data:
         response_payload.update(extra_response_data)
 
-      await self.connector.send_action(response_payload)
+      await self.connector.send_action(response_payload, False)
 
     return whole_content, response_id
 

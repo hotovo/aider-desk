@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
@@ -13,7 +13,7 @@ type Props = {
   onRemove?: () => void;
 };
 
-export const EditFileToolMessage = ({ message, onRemove }: Props) => {
+export const FileEditToolMessage = ({ message, onRemove }: Props) => {
   const { t } = useTranslation();
 
   const filePath = message.args.filePath as string;

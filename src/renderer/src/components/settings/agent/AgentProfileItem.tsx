@@ -1,6 +1,6 @@
 import { AgentProfile } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 

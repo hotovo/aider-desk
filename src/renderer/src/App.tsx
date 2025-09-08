@@ -6,6 +6,7 @@ import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { THEMES } from '@common/types';
 
+import { useResponsive } from '@/hooks/useResponsive';
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
 import { ContextMenuProvider, useContextMenu } from '@/context/ContextMenuContext';
@@ -17,7 +18,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { ApiProvider } from '@/context/ApiContext';
 
 const ThemeAndFontManager = () => {
-  const { theme, font = 'Sono' } = useSettings();
+  const { theme, font = 'Sono', fontSize = 16 } = useSettings();
 
   useEffect(() => {
     // Remove all theme classes first
@@ -29,8 +30,9 @@ const ThemeAndFontManager = () => {
     document.body.classList.add(`theme-${newTheme}`);
 
     document.documentElement.style.setProperty('--font-family', `"${font}", monospace`);
+    document.documentElement.style.setProperty('font-size', `${fontSize}px`);
     document.documentElement.style.setProperty('font-variation-settings', '"MONO" 1');
-  }, [font, theme]);
+  }, [font, theme, fontSize]);
 
   return null;
 };
@@ -39,6 +41,7 @@ const AnimatedRoutes = () => {
   const { i18n } = useTranslation();
   const location = useLocation();
   const { settings } = useSettings();
+  const { isMobile: _isMobile, isTablet: _isTablet, isDesktop: _isDesktop } = useResponsive();
   useContextMenu();
 
   useEffect(() => {
@@ -48,7 +51,7 @@ const AnimatedRoutes = () => {
   }, [i18n, settings]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
+    <div className="absolute inset-0">
       <AnimatePresence initial={true}>
         <motion.div
           key={location.pathname}

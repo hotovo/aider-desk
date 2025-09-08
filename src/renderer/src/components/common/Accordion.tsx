@@ -1,6 +1,6 @@
 import { ReactNode, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 
 type Props = {

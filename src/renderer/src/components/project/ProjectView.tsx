@@ -41,20 +41,21 @@ import {
   ToolMessage,
   UserMessage,
 } from '@/types/message';
-import { ContextFiles } from '@/components/ContextFiles';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { useSettings } from '@/context/SettingsContext';
 import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { ProjectBar, ProjectTopBarRef } from '@/components/project/ProjectBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
-import { CostInfo } from '@/components/CostInfo';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
 import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
+import { MobileSidebar } from '@/components/project/MobileSidebar';
+import { SidebarContent } from '@/components/project/SidebarContent';
 import 'react-resizable/css/styles.css';
 import { useSearchText } from '@/hooks/useSearchText';
 import { useApi } from '@/context/ApiContext';
+import { useResponsive } from '@/hooks/useResponsive';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -70,6 +71,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const { t } = useTranslation();
   const { settings } = useSettings();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
+  const { isMobile } = useResponsive();
   const api = useApi();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -87,6 +89,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
   const [terminalVisible, setTerminalVisible] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(isMobile);
 
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
@@ -819,7 +822,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   }
 
   return (
-    <div className="flex h-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative">
+    <div className={clsx('h-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative', isMobile ? 'flex flex-col' : 'flex')}>
       {loading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-bg-primary to-bg-primary-light z-10">
           <CgSpinner className="animate-spin w-10 h-10" />
@@ -838,6 +841,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           onRenderMarkdownChanged={handleRenderMarkdownChanged}
           onExportSessionToImage={exportMessagesToImage}
           runCommand={runCommand}
+          onToggleSidebar={() => setShowSidebar(!showSidebar)}
         />
         <div className="flex-grow overflow-y-hidden relative flex flex-col">
           {renderSearchInput()}
@@ -865,12 +869,12 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           </div>
           <ResizableBox
             className="flex flex-col flex-shrink-0"
-            height={terminalVisible ? 200 : 0}
+            height={terminalVisible ? (isMobile ? 150 : 200) : 0}
             width={Infinity}
             axis="y"
             resizeHandles={terminalVisible ? ['n'] : []}
             minConstraints={[Infinity, 100]}
-            maxConstraints={[Infinity, window.innerHeight / 2]}
+            maxConstraints={[Infinity, isMobile ? window.innerHeight / 3 : window.innerHeight / 2]}
             onResize={handleTerminalViewResize}
           >
             <TerminalView
@@ -933,20 +937,27 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           </div>
         </div>
       </div>
-      <ResizableBox
-        width={300}
-        height={Infinity}
-        minConstraints={[100, Infinity]}
-        maxConstraints={[window.innerWidth - 300, Infinity]}
-        axis="x"
-        resizeHandles={['w']}
-        className="border-l border-border-dark-light flex flex-col flex-shrink-0"
-      >
-        <div className="flex flex-col h-full">
-          <div className="flex-grow flex flex-col overflow-y-hidden">
-            <ContextFiles
+      {!isMobile && (
+        <ResizableBox
+          width={300}
+          height={Infinity}
+          minConstraints={[100, Infinity]}
+          maxConstraints={[window.innerWidth - 300, Infinity]}
+          axis="x"
+          resizeHandles={['w']}
+          className="border-l border-border-dark-light flex flex-col flex-shrink-0"
+        >
+          <div className="flex flex-col h-full">
+            <SidebarContent
               baseDir={project.baseDir}
               allFiles={allFiles}
+              tokensInfo={tokensInfo}
+              aiderTotalCost={aiderTotalCost}
+              maxInputTokens={maxInputTokens}
+              clearMessages={clearMessages}
+              runCommand={runCommand}
+              restartProject={restartProject}
+              mode={projectSettings.currentMode}
               showFileDialog={() =>
                 setAddFileDialogOptions({
                   readOnly: false,
@@ -954,17 +965,9 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               }
             />
           </div>
-          <CostInfo
-            tokensInfo={tokensInfo}
-            aiderTotalCost={aiderTotalCost}
-            maxInputTokens={maxInputTokens}
-            clearMessages={clearMessages}
-            refreshRepoMap={() => runCommand('map-refresh')}
-            restartProject={restartProject}
-            mode={projectSettings.currentMode}
-          />
-        </div>
-      </ResizableBox>
+        </ResizableBox>
+      )}
+
       {addFileDialogOptions && (
         <AddFileDialog
           baseDir={project.baseDir}
@@ -974,6 +977,22 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           }}
           onAddFiles={handleAddFiles}
           initialReadOnly={addFileDialogOptions.readOnly}
+        />
+      )}
+      {isMobile && (
+        <MobileSidebar
+          showSidebar={showSidebar}
+          setShowSidebar={setShowSidebar}
+          baseDir={project.baseDir}
+          allFiles={allFiles}
+          tokensInfo={tokensInfo}
+          aiderTotalCost={aiderTotalCost}
+          maxInputTokens={maxInputTokens}
+          clearMessages={clearMessages}
+          runCommand={runCommand}
+          restartProject={restartProject}
+          mode={projectSettings.currentMode}
+          setAddFileDialogOptions={setAddFileDialogOptions}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 import { EditFormat, Mode, ModelsData, RawModelInfo, SessionData } from '@common/types';
 import React, { ReactNode, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { BsCodeSlash, BsFilter } from 'react-icons/bs';
+import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
@@ -21,6 +21,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
 import { useApi } from '@/context/ApiContext';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -37,14 +38,19 @@ type Props = {
   onRenderMarkdownChanged: (value: boolean) => void;
   onExportSessionToImage: () => void;
   runCommand: (command: string) => void;
+  onToggleSidebar: () => void;
 };
 
 export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
-  ({ baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelsChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand }, ref) => {
+  (
+    { baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelsChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand, onToggleSidebar },
+    ref,
+  ) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
     const { projectSettings } = useProjectSettings();
     const api = useApi();
+    const { isMobile } = useResponsive();
     const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
     const mainModelSelectorRef = useRef<ModelSelectorRef>(null);
     const architectModelSelectorRef = useRef<ModelSelectorRef>(null);
@@ -425,6 +431,14 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                 />
               )}
             </div>
+            {isMobile && (
+              <IconButton
+                icon={<BsLayoutSidebar className="w-4 h-4" />}
+                onClick={onToggleSidebar}
+                tooltip={t('projectBar.toggleSidebar')}
+                className="p-1 hover:bg-bg-tertiary rounded-md"
+              />
+            )}
           </div>
         </div>
       </div>

@@ -100,7 +100,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
     if (displayAsUdiff && children) {
       return <UDiffViewer udiff={children} language={language} />;
     } else if (displayAsDiff) {
-      return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} />;
+      return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} isComplete={isComplete} />;
     } else if (codeForSyntaxHighlight && language) {
       let html = codeForSyntaxHighlight;
 

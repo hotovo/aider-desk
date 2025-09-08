@@ -2,7 +2,7 @@ import { MouseEvent, useState } from 'react';
 import { FaBrain, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { MdOutlineLightbulb } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { CopyMessageButton } from './CopyMessageButton';
 

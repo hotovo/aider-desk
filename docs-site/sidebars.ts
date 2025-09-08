@@ -36,7 +36,6 @@ const sidebars: SidebarsConfig = {
         'features/compact',
         'features/session-management',
         'features/usage-dashboard',
-        'features/rest-api',
         'features/aider-mcp-server',
       ],
     },
@@ -70,6 +69,12 @@ const sidebars: SidebarsConfig = {
         'configuration/automatic-updates',
         'configuration/telemetry',
       ],
+    },
+    {
+      type: 'category',
+      label: 'API & Integration',
+      collapsed: true,
+      items: ['features/rest-api', 'features/socketio-events', 'features/browser-api'],
     },
     {
       type: 'category',

@@ -4,7 +4,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { RiToolsFill } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,

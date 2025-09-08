@@ -103,19 +103,22 @@ src/
       index.ts
       project-manager.ts
       project.ts
-    rest-api/
-      base-api.ts
-      commands-api.ts
-      context-api.ts
+    server/
+      rest-api/
+        base-api.ts
+        commands-api.ts
+        context-api.ts
+        index.ts
+        mcp-api.ts
+        project-api.ts
+        prompt-api.ts
+        settings-api.ts
+        system-api.ts
+        todo-api.ts
+        usage-api.ts
+      cloudflare-tunnel-manager.ts
       index.ts
-      mcp-api.ts
-      project-api.ts
-      prompt-api.ts
-      rest-api-controller.ts
-      settings-api.ts
-      system-api.ts
-      todo-api.ts
-      usage-api.ts
+      server-controller.ts
     session/
       index.ts
       session-manager.ts
@@ -125,6 +128,7 @@ src/
         v1-to-v2.ts
         v10-to-v11.ts
         v11-to-v12.ts
+        v12-to-v13.ts
         v2-to-v3.ts
         v3-to-v4.ts
         v4-to-v5.ts
@@ -218,7 +222,7 @@ src/
           CommandOutputMessageBlock.tsx
           CopyMessageButton.tsx
           CustomCommandBashBlock.tsx
-          EditFileToolMessage.tsx
+          FileEditToolMessage.tsx
           FileWriteToolMessage.tsx
           GroupMessageBlock.tsx
           index.ts
@@ -240,11 +244,13 @@ src/
         project/
           AddFileDialog.tsx
           FileFinder.tsx
+          MobileSidebar.tsx
           NoProjectsOpen.tsx
           OpenProjectDialog.tsx
           ProjectBar.tsx
           ProjectTabs.tsx
           ProjectView.tsx
+          SidebarContent.tsx
           TodoListItem.tsx
           TodoWindow.tsx
         PromptField/
@@ -286,6 +292,7 @@ src/
           LanguageSelector.tsx
           ModelProvidersSettings.tsx
           ProviderCard.tsx
+          ServerSettings.tsx
           SettingsDialog.tsx
         terminal/
           Terminal.scss
@@ -322,6 +329,7 @@ src/
         useOS.ts
         useParsedContent.ts
         useRequestyModels.ts
+        useResponsive.ts
         useSearchText.tsx
         useVersions.ts
       i18n/
@@ -352,7 +360,6 @@ src/
         routes.ts
         string-utils.ts
       App.tsx
-      env.d.ts
       fonts.css
       main.css
       main.tsx
@@ -1322,6 +1329,7 @@ File: src/common/locales/en.json
       "providers": "Providers",
       "aider": "Aider",
       "agent": "Agent",
+      "server": "Server",
       "about": "About"
     },
     "gui": "Appearance",
@@ -1427,6 +1435,7 @@ File: src/common/locales/en.json
     "zoom": "Zoom level",
     "theme": "Theme",
     "font": "Font",
+    "fontSize": "Font size",
     "fontOptions": {
       "Sono": "Sono (Default)",
       "PlayfairDisplay": "Playfair Display",
@@ -1508,6 +1517,26 @@ File: src/common/locales/en.json
       "useVimBindings": "Use Vim bindings",
       "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field.",
       "modeAtSign": "@ mention mode"
+    },
+    "server": {
+      "description": "Enable server on port 24337 to access AiderDesk from external applications",
+      "status": "Status",
+      "running": "Running",
+      "enableBasicAuth": "Enable Basic Authentication",
+      "enableBasicAuthDescription": "Require username and password for browser access and API calls",
+      "username": "Username",
+      "password": "Password",
+      "controlServer": "REST API Server",
+      "starting": "Starting...",
+      "stopping": "Stopping...",
+      "start": "Start",
+      "stop": "Stop",
+      "stopped": "Stopped",
+      "copyUrl": "Copy URL",
+      "authentication": "Authentication",
+      "serverControl": "Server Control",
+      "tunnelManagement": "Tunnel Management",
+      "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally."
     }
   },
   "messages": {
@@ -1522,7 +1551,8 @@ File: src/common/locales/en.json
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
     "group": "Group",
-    "scrollToBottom": "Scroll to bottom"
+    "scrollToBottom": "Scroll to bottom",
+    "messageBar": "Message Bar"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
@@ -1798,7 +1828,8 @@ File: src/common/locales/en.json
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
-    "aider": "Aider"
+    "aider": "Aider",
+    "toggleSidebar": "Toggle sidebar"
   },
   "reasoningEffort": {
     "label": "Reasoning",
@@ -2158,7 +2189,8 @@ File: src/common/locales/zh.json
       "general": "通用",
       "providers": "模型提供者",
       "aider": "Aider",
-      "agent": "服务器",
+      "agent": "代理",
+      "server": "服务器",
       "about": "关于"
     },
     "gui": "GUI",
@@ -2262,6 +2294,7 @@ File: src/common/locales/zh.json
     "zoom": "缩放级别",
     "theme": "主题",
     "font": "字体",
+    "fontSize": "字体大小",
     "fontOptions": {
       "sono": "Sono (色)",
       "poppins": "Poppins ",
@@ -2337,7 +2370,8 @@ File: src/common/locales/zh.json
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
     "group": "分组",
-    "scrollToBottom": "滚动到底部"
+    "scrollToBottom": "滚动到底部",
+    "messageBar": "消息栏"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
@@ -2631,7 +2665,8 @@ File: src/common/locales/zh.json
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
-    "aider": "Aider"
+    "aider": "Aider",
+    "toggleSidebar": "切换侧边栏"
   },
   "reasoningEffort": {
     "label": "推理",
@@ -2689,7 +2724,31 @@ File: src/common/locales/zh.json
     "modelCommand": "/model",
     "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)",
     "modeAtSign": "@ 提及模式"
-
+  },
+  "server": {
+    "description": "启用 服务器，允许您通过浏览器在端口 24337 访问 AiderDesk",
+    "serverStatus": "服务器状态",
+    "running": "运行中",
+    "enableBasicAuth": "启用基本身份验证",
+    "enableBasicAuthDescription": "需要用户名和密码用于浏览器访问和 API 调用",
+    "username": "用户名",
+    "password": "密码",
+    "controlServer": "REST API 服务器",
+    "starting": "正在启动...",
+    "stopping": "正在停止...",
+    "start": "启动",
+    "stop": "停止",
+    "stopped": "已停止",
+    "tunnelStatus": "隧道状态",
+    "tunnelRunning": "运行中",
+    "tunnelStopped": "已停止",
+    "tunnelStarting": "正在启动...",
+    "tunnelStopping": "正在停止...",
+    "copyUrl": "复制 URL",
+    "authentication": "身份验证",
+    "serverControl": "服务器控制",
+    "tunnelManagement": "隧道管理",
+    "tunnelDescription": "创建 Cloudflare 隧道以安全地从外部网络访问您的服务器。当对外暴露服务器时，请务必使用身份验证。"
   },
   "multiselect": {
     "noneSelected": "未选择",
@@ -2721,7 +2780,7 @@ File: src/common/locales/zh.json
     "charts": {
       "tokenUsageTrend": "令牌使用趋势",
       "costBreakdown": "成本明细",
-      "MessageBreakdown": "消息明细",
+      "messageBreakdown": "消息明细",
       "modelUsageDistribution": "模型使用分布",
       "inputTokens": "输入令牌",
       "outputTokens": "输出令牌",
@@ -2967,12 +3026,11 @@ import {
   UsageDataRow,
   EnvironmentVariable,
   CustomCommand,
-  Font,
   StartupMode,
-  Theme,
   FileEdit,
   ClearProjectData,
   ProjectStartedData,
+  CloudflareTunnelStatus,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -2980,8 +3038,12 @@ export interface ApplicationAPI {
   openLogsDirectory: () => Promise<boolean>;
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
-  saveTheme: (theme: Theme) => Promise<Theme>;
-  saveFont: (font: string) => Promise<Font>;
+  isManageServerSupported: () => boolean;
+  startServer: (username?: string, password?: string) => Promise<boolean>;
+  stopServer: () => Promise<boolean>;
+  startCloudflareTunnel: () => Promise<boolean>;
+  stopCloudflareTunnel: () => Promise<void>;
+  getCloudflareTunnelStatus: () => Promise<CloudflareTunnelStatus>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;
@@ -3232,6 +3294,11 @@ export enum OS {
   MacOS = 'macos',
 }
 ⋮----
+export interface CloudflareTunnelStatus {
+  isRunning: boolean;
+  url?: string;
+}
+⋮----
 export enum MessageRole {
   User = 'user',
   Assistant = 'assistant',
@@ -3401,6 +3468,7 @@ export interface SettingsData {
   notificationsEnabled?: boolean;
   theme?: Theme;
   font?: Font;
+  fontSize?: number;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;
@@ -3431,6 +3499,14 @@ export interface SettingsData {
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
   promptBehavior: PromptBehavior;
+  server: {
+    enabled: boolean;
+    basicAuth: {
+      enabled: boolean;
+      username: string;
+      password: string;
+    };
+  };
 }
 ⋮----
 export interface Group {
@@ -4553,14 +4629,13 @@ import {
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
-import { SERVER_PORT } from '@/constants';
 import { EventManager } from '@/events';
 ⋮----
 export class ConnectorManager
 ⋮----
 constructor(
-    private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
+    private readonly projectManager: ProjectManager,
     private readonly eventManager: EventManager,
 )
 ⋮----
@@ -5416,7 +5491,7 @@ public async runCustomCommand(commandName: string, args: string[], mode: Mode = 
 // Clear loading message after execution completes (success or failure)
 
 ================
-File: src/main/rest-api/base-api.ts
+File: src/main/server/rest-api/base-api.ts
 ================
 import { Request, Response, Router } from 'express';
 import { z } from 'zod';
@@ -5451,7 +5526,7 @@ protected validateRequest<T>(schema: z.ZodSchema<T>, data: unknown, res: Respons
 abstract registerRoutes(router: Router): void;
 
 ================
-File: src/main/rest-api/commands-api.ts
+File: src/main/server/rest-api/commands-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5471,7 +5546,7 @@ registerRoutes(router: Router): void
 // Run custom command
 
 ================
-File: src/main/rest-api/context-api.ts
+File: src/main/server/rest-api/context-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5499,14 +5574,12 @@ registerRoutes(router: Router): void
 // Get addable files
 
 ================
-File: src/main/rest-api/index.ts
+File: src/main/server/rest-api/index.ts
 ================
-// Export main controller
-⋮----
-// Export API modules
+
 
 ================
-File: src/main/rest-api/mcp-api.ts
+File: src/main/server/rest-api/mcp-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5526,7 +5599,7 @@ registerRoutes(router: Router): void
 // Reload MCP servers
 
 ================
-File: src/main/rest-api/project-api.ts
+File: src/main/server/rest-api/project-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5613,7 +5686,7 @@ registerRoutes(router: Router): void
 // Add open project
 
 ================
-File: src/main/rest-api/prompt-api.ts
+File: src/main/server/rest-api/prompt-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5633,71 +5706,10 @@ registerRoutes(router: Router): void
 // Clear the running flag even if there's an error
 
 ================
-File: src/main/rest-api/rest-api-controller.ts
-================
-import { Server } from 'http';
-import { join } from 'path';
-⋮----
-import express from 'express';
-import cors from 'cors';
-import { is } from '@electron-toolkit/utils';
-⋮----
-import { ContextApi } from './context-api';
-import { PromptApi } from './prompt-api';
-import { SettingsApi } from './settings-api';
-import { ProjectApi } from './project-api';
-import { CommandsApi } from './commands-api';
-import { UsageApi } from './usage-api';
-import { SystemApi } from './system-api';
-import { TodoApi } from './todo-api';
-import { McpApi } from './mcp-api';
-⋮----
-import { SERVER_PORT } from '@/constants';
-import logger from '@/logger';
-import { ProjectManager } from '@/project';
-import { EventsHandler } from '@/events-handler';
-⋮----
-const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-⋮----
-export class RestApiController
-⋮----
-constructor(
-    private readonly server: Server,
-    private readonly projectManager: ProjectManager,
-    private readonly eventsHandler: EventsHandler,
-)
-⋮----
-// Configure Express
-⋮----
-// Set timeout for all requests
-⋮----
-private setupApiRoutes(): void
-⋮----
-// Create API router
-⋮----
-// Register all API modules
-⋮----
-// Mount the API router globally under /api
-⋮----
-private init()
-⋮----
-// Serve static renderer files in production (for browser access)
-⋮----
-// Handle SPA routing: serve index.html for non-API routes
-⋮----
-// The server is already listening from the main process,
-// so we just need to attach our Express app to it
-⋮----
-async close()
-⋮----
-// nothing for now
-
-================
-File: src/main/rest-api/settings-api.ts
+File: src/main/server/rest-api/settings-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
-import { Font, Theme } from '@common/types';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
@@ -5712,10 +5724,6 @@ constructor(private readonly eventsHandler: EventsHandler)
 registerRoutes(router: Router): void
 ⋮----
 // Get settings
-⋮----
-// Save theme
-⋮----
-// Save font
 ⋮----
 // Update settings
 ⋮----
@@ -5740,7 +5748,7 @@ registerRoutes(router: Router): void
 // Get OS
 
 ================
-File: src/main/rest-api/system-api.ts
+File: src/main/server/rest-api/system-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5756,7 +5764,7 @@ constructor(private readonly eventsHandler: EventsHandler)
 registerRoutes(router: Router): void
 
 ================
-File: src/main/rest-api/todo-api.ts
+File: src/main/server/rest-api/todo-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5782,7 +5790,7 @@ registerRoutes(router: Router): void
 // Clear all todos
 
 ================
-File: src/main/rest-api/usage-api.ts
+File: src/main/server/rest-api/usage-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5796,6 +5804,105 @@ export class UsageApi extends BaseApi
 constructor(private readonly eventsHandler: EventsHandler)
 ⋮----
 registerRoutes(router: Router): void
+
+================
+File: src/main/server/cloudflare-tunnel-manager.ts
+================
+import { CloudflareTunnelStatus } from '@common/types';
+import { Tunnel, use as setCloudflaredBinary } from 'cloudflared';
+import { is } from '@electron-toolkit/utils';
+⋮----
+import { CLOUDFLARED_BINARY_PATH, SERVER_PORT } from '@/constants';
+import logger from '@/logger';
+⋮----
+export class CloudflareTunnelManager
+⋮----
+async start(): Promise<void>
+⋮----
+// set cloudflared binary path only in production app
+⋮----
+// Wait for URL
+⋮----
+// Wait for connection
+⋮----
+// Keep listeners for ongoing events
+⋮----
+stop(): void
+⋮----
+getStatus(): CloudflareTunnelStatus
+
+================
+File: src/main/server/index.ts
+================
+// Export main controller
+
+================
+File: src/main/server/server-controller.ts
+================
+import { Server } from 'http';
+import { join } from 'path';
+⋮----
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import { is } from '@electron-toolkit/utils';
+⋮----
+import { ContextApi, PromptApi, SettingsApi, ProjectApi, CommandsApi, UsageApi, SystemApi, TodoApi, McpApi } from '@/server/rest-api';
+import { SERVER_PORT, AUTH_USERNAME, AUTH_PASSWORD } from '@/constants';
+import logger from '@/logger';
+import { ProjectManager } from '@/project';
+import { EventsHandler } from '@/events-handler';
+import { Store } from '@/store';
+⋮----
+const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+⋮----
+export class ServerController
+⋮----
+constructor(
+    private readonly server: Server,
+    private readonly projectManager: ProjectManager,
+    private readonly eventsHandler: EventsHandler,
+    private readonly store: Store,
+)
+⋮----
+private serverGuardMiddleware(_: Request, res: Response, next: NextFunction): void
+⋮----
+// In headless mode, always allow requests regardless of server.enabled setting
+⋮----
+private timeoutMiddleware(req: Request, res: Response, next: NextFunction): void
+⋮----
+private basicAuthMiddleware(req: Request, res: Response, next: NextFunction): void
+⋮----
+// Check if environment variables for auth are provided, which overrides settings
+⋮----
+private setupApiRoutes(): void
+⋮----
+// Create API router
+⋮----
+// Register all API modules
+⋮----
+// Mount the API router globally under /api
+⋮----
+private init()
+⋮----
+// Configure Express
+⋮----
+// Add server guard middleware as the first middleware
+⋮----
+// Set timeout for all requests
+⋮----
+// Add Basic Auth
+⋮----
+// Serve static renderer files in production (for browser access)
+⋮----
+// Handle SPA routing: serve index.html for non-API routes
+⋮----
+async close()
+⋮----
+// No need to stop server anymore - it's always attached
+⋮----
+async startServer()
+⋮----
+async stopServer()
 
 ================
 File: src/main/session/index.ts
@@ -6020,6 +6127,14 @@ export const migrateV11ToV12 = (settings: any): SettingsData =>
 hasContextMemory: undefined, // Remove old field
 
 ================
+File: src/main/store/migrations/v12-to-v13.ts
+================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SettingsData } from '@common/types';
+⋮----
+export const migrateV12ToV13 = (settings: any): SettingsData =>
+
+================
 File: src/main/store/migrations/v2-to-v3.ts
 ================
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -6139,6 +6254,7 @@ import { migrateV8ToV9 } from './migrations/v8-to-v9';
 import { migrateV9ToV10 } from './migrations/v9-to-v10';
 import { migrateV10ToV11 } from './migrations/v10-to-v11';
 import { migrateV11ToV12 } from './migrations/v11-to-v12';
+import { migrateV12ToV13 } from './migrations/v12-to-v13';
 ⋮----
 import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
 import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
@@ -6627,6 +6743,8 @@ import path from 'path';
 ⋮----
 import { is } from '@electron-toolkit/utils';
 import { app } from 'electron';
+⋮----
+// constants for project directory files
 
 ================
 File: src/main/events-handler.ts
@@ -6656,12 +6774,14 @@ import {
   TodoItem,
   UsageDataRow,
   VersionsInfo,
+  CloudflareTunnelStatus,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 ⋮----
 import { Agent, McpManager } from '@/agent';
 import { ModelInfoManager } from '@/models';
 import { ProjectManager } from '@/project';
+import { CloudflareTunnelManager } from '@/server';
 import { getDefaultProjectSettings, Store } from '@/store';
 import { TelemetryManager } from '@/telemetry';
 import { VersionsManager } from '@/versions';
@@ -6682,6 +6802,8 @@ saveSettings(newSettings: SettingsData): SettingsData
 saveTheme(theme: Theme): Theme | undefined
 ⋮----
 saveFont(font: Font): Font | undefined
+⋮----
+saveFontSize(fontSize: number): number | undefined
 ⋮----
 async loadModelsInfo(): Promise<Record<string, ModelInfo>>
 ⋮----
@@ -6832,6 +6954,16 @@ async deleteTodo(baseDir: string, name: string): Promise<TodoItem[]>
 async clearAllTodos(baseDir: string): Promise<TodoItem[]>
 ⋮----
 async initProjectRulesFile(baseDir: string): Promise<void>
+⋮----
+enableServer(username?: string, password?: string): SettingsData
+⋮----
+disableServer(): SettingsData
+⋮----
+async startCloudflareTunnel(): Promise<CloudflareTunnelStatus | null>
+⋮----
+stopCloudflareTunnel(): void
+⋮----
+getCloudflareTunnelStatus(): CloudflareTunnelStatus
 
 ================
 File: src/main/index.ts
@@ -6848,7 +6980,7 @@ import icon from '../../resources/icon.png?asset';
 ⋮----
 import { ProgressWindow } from '@/progress-window';
 import { Agent, McpManager } from '@/agent';
-import { RestApiController } from '@/rest-api';
+import { ServerController, CloudflareTunnelManager } from '@/server';
 import { ConnectorManager } from '@/connector';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { ProjectManager } from '@/project';
@@ -6862,6 +6994,7 @@ import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { EventsHandler } from '@/events-handler';
+import { SERVER_PORT, HEADLESS_MODE } from '@/constants';
 ⋮----
 const setupCustomMenu = (): void =>
 ⋮----
@@ -6898,11 +7031,15 @@ const initManagers = async (
 ⋮----
 // Create HTTP server
 ⋮----
+// Initialize Cloudflare tunnel manager
+⋮----
 // Initialize events handler
 ⋮----
-// Create and initialize REST API controller
+// Create and initialize REST API controller with the server
 ⋮----
 // Initialize connector manager with the server
+⋮----
+// start listening
 ⋮----
 const beforeQuit = async () =>
 ⋮----
@@ -6931,14 +7068,19 @@ updateProgress = () =>
 ================
 File: src/main/ipc-handlers.ts
 ================
-import { EditFormat, FileEdit, Font, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, Theme, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { ipcMain } from 'electron';
 ⋮----
 import { EventsHandler } from './events-handler';
+import { ServerController } from './server/server-controller';
 ⋮----
-export const setupIpcHandlers = (eventsHandler: EventsHandler) =>
+export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) =>
 ⋮----
 // Terminal handlers
+⋮----
+// Server control handlers
+⋮----
+// Cloudflare tunnel handlers
 
 ================
 File: src/main/logger.ts
@@ -7380,7 +7522,6 @@ import {
   EditFormat,
   EnvironmentVariable,
   FileEdit,
-  Font,
   InputHistoryData,
   LogData,
   McpServerConfig,
@@ -7400,13 +7541,13 @@ import {
   StartupMode,
   TerminalData,
   TerminalExitData,
-  Theme,
   TodoItem,
   TokensInfoData,
   ToolData,
   UsageDataRow,
   UserMessageData,
   VersionsInfo,
+  CloudflareTunnelStatus,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -7465,8 +7606,6 @@ isOpenLogsDirectorySupported(): boolean
 openLogsDirectory(): Promise<boolean>
 loadSettings(): Promise<SettingsData>
 saveSettings(settings: SettingsData): Promise<SettingsData>
-saveTheme(theme: Theme): Promise<Theme>
-saveFont(font: string): Promise<Font>
 startProject(baseDir: string): void
 stopProject(baseDir: string): void
 restartProject(baseDir: string, startupMode?: StartupMode): void
@@ -7560,6 +7699,21 @@ resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean>
 closeTerminal(terminalId: string): Promise<boolean>
 getTerminalForProject(baseDir: string): Promise<string | null>
 getAllTerminalsForProject(baseDir: string): Promise<Array<
+isManageServerSupported(): boolean
+⋮----
+startServer(username?: string, password?: string): Promise<boolean>
+⋮----
+// Server control not supported in browser mode
+⋮----
+stopServer(): Promise<boolean>
+⋮----
+// Server control not supported in browser mode
+⋮----
+startCloudflareTunnel(): Promise<boolean>
+⋮----
+stopCloudflareTunnel(): Promise<void>
+⋮----
+getCloudflareTunnelStatus(): Promise<CloudflareTunnelStatus>
 
 ================
 File: src/renderer/src/assets/electron.svg
@@ -7611,7 +7765,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdCheck, MdDoneAll, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap } from 'react-icons/md';
 import { RiToolsFill } from 'react-icons/ri';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { AgentProfile, ToolApprovalState } from '@common/types';
 import { getActiveAgentProfile } from '@common/utils';
 import { BiCog } from 'react-icons/bi';
@@ -7749,13 +7903,17 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Diff, Hunk, parseDiff } from 'react-diff-view';
 import { diffLines, formatLines } from 'unidiff';
+import { useDebounce } from '@reactuses/core';
 ⋮----
 import { createTokens } from './utils';
+⋮----
+import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 type Props = {
   oldValue: string;
   newValue: string;
   language: string;
+  isComplete?: boolean;
 };
 ⋮----
 export const DiffViewer = (
@@ -7802,7 +7960,7 @@ File: src/renderer/src/components/common/Accordion.tsx
 ================
 import { ReactNode, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 ⋮----
 type Props = {
@@ -7878,7 +8036,7 @@ export const Button = ({
 File: src/renderer/src/components/common/Checkbox.tsx
 ================
 import { InputHTMLAttributes, ReactNode } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> & {
   label?: ReactNode;
@@ -7945,7 +8103,7 @@ tooltip=
 ================
 File: src/renderer/src/components/common/CodeInline.tsx
 ================
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { ReactNode } from 'react';
 ⋮----
 type Props = {
@@ -8026,7 +8184,7 @@ import { forwardRef, ReactNode } from 'react';
 import ReactDatePicker, { type DatePickerProps } from 'react-datepicker';
 ⋮----
 import { FaCalendarAlt } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { Input } from './Input';
 ⋮----
@@ -8100,7 +8258,7 @@ File: src/renderer/src/components/common/InfoIcon.tsx
 ================
 import { FaInfoCircle } from 'react-icons/fa';
 import { ReactNode } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { IconButton } from './IconButton';
 ⋮----
@@ -8202,15 +8360,13 @@ className="sr-only" // Hide the actual input but keep it accessible
 File: src/renderer/src/components/common/Section.tsx
 ================
 import { ReactNode } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 type Props = {
-  title: string;
+  title?: string;
   children: ReactNode;
   className?: string;
 };
-⋮----
-export const Section = (
 
 ================
 File: src/renderer/src/components/common/Select.tsx
@@ -8334,7 +8490,7 @@ body.theme-light .context-dimmed {
 ================
 File: src/renderer/src/components/ContextFiles/ContextFiles.tsx
 ================
-import { ContextFile, ContextFilesUpdatedData, OS } from '@common/types';
+import { ContextFile, ContextFilesUpdatedData, OS, TokensInfoData } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
@@ -8365,6 +8521,7 @@ type Props = {
   baseDir: string;
   allFiles: string[];
   showFileDialog: () => void;
+  tokensInfo?: TokensInfoData | null;
 };
 ⋮----
 // Handle highlighting of new files
@@ -8448,12 +8605,12 @@ type Props = {
 const toggleAccordion = () =>
 
 ================
-File: src/renderer/src/components/message/EditFileToolMessage.tsx
+File: src/renderer/src/components/message/FileEditToolMessage.tsx
 ================
 import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
@@ -8496,12 +8653,12 @@ const getToolName = (): string =>
 ================
 File: src/renderer/src/components/message/GroupMessageBlock.tsx
 ================
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { LocalizedString, UsageReportData } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
-import { UsageInfo } from './UsageInfo';
+import { MessageBar } from './MessageBar';
 ⋮----
 import { Accordion } from '@/components/common/Accordion';
 import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage } from '@/types/message';
@@ -8587,6 +8744,7 @@ import { useTranslation } from 'react-i18next';
 import { UsageReportData } from '@common/types';
 import { MdDeleteForever, MdRedo, MdEdit } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 import { IconButton } from '../common/IconButton';
 ⋮----
@@ -8596,7 +8754,8 @@ import { UsageInfo } from './UsageInfo';
 import { useClickOutside } from '@/hooks/useClickOutside';
 ⋮----
 type Props = {
-  content: string;
+  className?: string;
+  content?: string;
   usageReport?: UsageReportData;
   remove?: () => void;
   redo?: () => void;
@@ -8630,6 +8789,10 @@ import { LogMessageBlock } from './LogMessageBlock';
 import { UserMessageBlock } from './UserMessageBlock';
 import { ReflectedMessageBlock } from './ReflectedMessageBlock';
 import { ResponseMessageBlock } from './ResponseMessageBlock';
+import { ToolMessageBlock } from './ToolMessageBlock';
+import { FileWriteToolMessage } from './FileWriteToolMessage';
+import { FileEditToolMessage } from './FileEditToolMessage';
+import { SubagentToolMessage } from './SubagentToolMessage';
 ⋮----
 import {
   isCommandOutputMessage,
@@ -8643,10 +8806,6 @@ import {
   Message,
   ToolMessage,
 } from '@/types/message';
-import { ToolMessageBlock } from '@/components/message/ToolMessageBlock';
-import { FileWriteToolMessage } from '@/components/message/FileWriteToolMessage';
-import { EditFileToolMessage } from '@/components/message/EditFileToolMessage';
-import { SubagentToolMessage } from '@/components/message/SubagentToolMessage';
 ⋮----
 type Props = {
   baseDir: string;
@@ -8729,7 +8888,7 @@ type Props = {
 ================
 File: src/renderer/src/components/message/ResponseMessageBlock.tsx
 ================
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { RiRobot2Line } from 'react-icons/ri';
 ⋮----
 import { MessageBar } from './MessageBar';
@@ -8771,7 +8930,7 @@ import { MouseEvent, useState } from 'react';
 import { FaBrain, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { MdOutlineLightbulb } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 ⋮----
@@ -8800,7 +8959,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { RiToolsFill } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -8893,7 +9052,7 @@ type Props = {
 File: src/renderer/src/components/message/UserMessageBlock.tsx
 ================
 import { FaRegUser } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { MessageBar } from './MessageBar';
 ⋮----
@@ -9055,7 +9214,7 @@ export const groupMessagesByPromptContext = (messages: Message[]): Message[] =>
 File: src/renderer/src/components/onboarding/OnboardingStepper.tsx
 ================
 import { HiCheck } from 'react-icons/hi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 type Step = {
   title: string;
@@ -9172,6 +9331,51 @@ const handleBrowse = async (browseType: 'file' | 'directory') =>
 // eslint-disable-next-line no-console
 
 ================
+File: src/renderer/src/components/project/MobileSidebar.tsx
+================
+import React from 'react';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { Mode, TokensInfoData } from '@common/types';
+import { FiChevronDown } from 'react-icons/fi';
+⋮----
+import { SidebarContent } from '@/components/project/SidebarContent';
+⋮----
+type AddFileDialogOptions = {
+  readOnly: boolean;
+};
+⋮----
+type Props = {
+  showSidebar: boolean;
+  setShowSidebar: (show: boolean) => void;
+  baseDir: string;
+  allFiles: string[];
+  tokensInfo: TokensInfoData | null;
+  aiderTotalCost: number;
+  maxInputTokens: number;
+  clearMessages: (clearContext?: boolean) => void;
+  runCommand: (command: string) => void;
+  restartProject: () => void;
+  mode: Mode;
+  setAddFileDialogOptions: React.Dispatch<React.SetStateAction<AddFileDialogOptions | null>>;
+};
+⋮----
+export const MobileSidebar = ({
+  showSidebar,
+  setShowSidebar,
+  baseDir,
+  allFiles,
+  tokensInfo,
+  aiderTotalCost,
+  maxInputTokens,
+  clearMessages,
+  runCommand,
+  restartProject,
+  mode,
+  setAddFileDialogOptions,
+}: Props) =>
+
+================
 File: src/renderer/src/components/project/NoProjectsOpen.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -9223,7 +9427,7 @@ File: src/renderer/src/components/project/ProjectBar.tsx
 ================
 import { EditFormat, Mode, ModelsData, RawModelInfo, SessionData } from '@common/types';
 import React, { ReactNode, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { BsCodeSlash, BsFilter } from 'react-icons/bs';
+import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
@@ -9244,6 +9448,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
 import { useApi } from '@/context/ApiContext';
+import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -9260,6 +9465,7 @@ type Props = {
   onRenderMarkdownChanged: (value: boolean) => void;
   onExportSessionToImage: () => void;
   runCommand: (command: string) => void;
+  onToggleSidebar: () => void;
 };
 ⋮----
 // optimistic update
@@ -9285,6 +9491,8 @@ type Props = {
 // Original horizontal layout for other modes
 ⋮----
 data-tooltip-content=
+⋮----
+tooltip=
 
 ================
 File: src/renderer/src/components/project/ProjectTabs.tsx
@@ -9293,7 +9501,7 @@ import { ProjectData } from '@common/types';
 import { CSS } from '@dnd-kit/utilities';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Tab, TabGroup, TabList } from '@headlessui/react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { MdAdd, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -9371,20 +9579,21 @@ import {
   ToolMessage,
   UserMessage,
 } from '@/types/message';
-import { ContextFiles } from '@/components/ContextFiles';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { useSettings } from '@/context/SettingsContext';
 import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { ProjectBar, ProjectTopBarRef } from '@/components/project/ProjectBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
-import { CostInfo } from '@/components/CostInfo';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
 import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
+import { MobileSidebar } from '@/components/project/MobileSidebar';
+import { SidebarContent } from '@/components/project/SidebarContent';
 ⋮----
 import { useSearchText } from '@/hooks/useSearchText';
 import { useApi } from '@/context/ApiContext';
+import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -9534,10 +9743,44 @@ const handleTerminalViewResize = () =>
 const handleCopyTerminalOutput = (output: string) =>
 
 ================
+File: src/renderer/src/components/project/SidebarContent.tsx
+================
+import { TokensInfoData, Mode } from '@common/types';
+⋮----
+import { ContextFiles } from '@/components/ContextFiles';
+import { CostInfo } from '@/components/CostInfo';
+⋮----
+type Props = {
+  baseDir: string;
+  allFiles: string[];
+  tokensInfo: TokensInfoData | null;
+  aiderTotalCost: number;
+  maxInputTokens: number;
+  clearMessages: (clearContext?: boolean) => void;
+  runCommand: (command: string) => void;
+  restartProject: () => void;
+  mode: Mode;
+  showFileDialog: () => void;
+};
+⋮----
+export const SidebarContent = ({
+  baseDir,
+  allFiles,
+  tokensInfo,
+  aiderTotalCost,
+  maxInputTokens,
+  clearMessages,
+  runCommand,
+  restartProject,
+  mode,
+  showFileDialog,
+}: Props) =>
+
+================
 File: src/renderer/src/components/project/TodoListItem.tsx
 ================
 import { useState } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { MdEdit, MdDelete, MdCheck, MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';
@@ -10195,7 +10438,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 import { HiPlus } from 'react-icons/hi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
@@ -10297,7 +10540,7 @@ File: src/renderer/src/components/settings/agent/AgentProfileItem.tsx
 ================
 import { AgentProfile } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 ⋮----
@@ -10700,6 +10943,7 @@ type Props = {
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (themeName: Theme) => void;
   onFontChange: (fontName: Font) => void;
+  onFontSizeChange: (fontSize: number) => void;
 };
 ⋮----
 const handleStartupModeChange = (mode: StartupMode) =>
@@ -10713,6 +10957,8 @@ const handleNotificationsEnabledChange = (checked: boolean) =>
 const handleThemeChange = (value: string) =>
 ⋮----
 const handleFontChange = (value: string) =>
+⋮----
+const handleFontSizeChange = (value: string) =>
 ⋮----
 const handleSuggestionModeChange = (mode: SuggestionMode) =>
 ⋮----
@@ -10831,7 +11077,7 @@ import {
 import { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import {
   AnthropicParameters,
@@ -10861,6 +11107,66 @@ type Props = {
 const handleCardClick = (e: MouseEvent<HTMLDivElement>) =>
 ⋮----
 const renderProviderParameters = () =>
+
+================
+File: src/renderer/src/components/settings/ServerSettings.tsx
+================
+import { ChangeEvent, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SettingsData, CloudflareTunnelStatus } from '@common/types';
+import { clsx } from 'clsx';
+import { BiCopy } from 'react-icons/bi';
+⋮----
+import { Input } from '../common/Input';
+import { Section } from '../common/Section';
+import { Button } from '../common/Button';
+import { Checkbox } from '../common/Checkbox';
+⋮----
+import { useApi } from '@/context/ApiContext';
+import { IconButton } from '@/components/common/IconButton';
+⋮----
+type Props = {
+  settings: SettingsData;
+  setSettings: (settings: SettingsData) => void;
+};
+⋮----
+const loadTunnelStatus = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const handleServerToggle = async () =>
+⋮----
+// Start server with current credentials if basic auth is enabled
+⋮----
+// Stop server
+⋮----
+// Update settings to reflect the new server state
+⋮----
+// Handle failure (could add toast notification here)
+⋮----
+// Handle error (could add toast notification here)
+⋮----
+const handleBasicAuthEnabledChange = (checked: boolean) =>
+⋮----
+const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleTunnelToggle = async () =>
+⋮----
+// Reload tunnel status
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const getButtonText = () =>
+⋮----
+const getTunnelButtonText = () =>
+⋮----
+<Section title=
+⋮----
+label=
+⋮----
+{/* Collapsible Authentication Inputs */}
 
 ================
 File: src/renderer/src/components/settings/SettingsDialog.tsx
@@ -10969,7 +11275,7 @@ File: src/renderer/src/components/terminal/TerminalView.tsx
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { IoMdAdd, IoMdClose, IoMdRemove } from 'react-icons/io';
 import { BiCopy } from 'react-icons/bi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
 ⋮----
@@ -11184,7 +11490,7 @@ import { FaSync, FaTable, FaChartBar } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { CgSpinner } from 'react-icons/cg';
 import { UsageDataRow } from '@common/types';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { Select } from '../common/Select';
 ⋮----
@@ -11325,7 +11631,7 @@ File: src/renderer/src/components/AutocompletionInput.tsx
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 type Props = {
   value: string;
@@ -11611,9 +11917,11 @@ type SettingsContextType = {
   settings: SettingsData | null;
   saveSettings: (settings: SettingsData) => Promise<void>;
   theme: Theme | null;
-  saveTheme: (theme: Theme) => void;
+  setTheme: (theme: Theme) => void;
   font: Font | null;
-  saveFont: (font: Font) => void;
+  setFont: (font: Font) => void;
+  fontSize: number | null;
+  setFontSize: (fontSize: number) => void;
 };
 ⋮----
 export const SettingsProvider = (
@@ -11621,14 +11929,6 @@ export const SettingsProvider = (
 const loadSettings = async () =>
 ⋮----
 const saveSettings = async (updated: SettingsData) =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const saveTheme = async (theme: Theme) =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const saveFont = async (font: Font) =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -11786,13 +12086,23 @@ const fetchModels = async () =>
 // eslint-disable-next-line no-console
 
 ================
+File: src/renderer/src/hooks/useResponsive.ts
+================
+import { useState, useEffect } from 'react';
+import { debounce } from 'lodash';
+⋮----
+export const useResponsive = () =>
+⋮----
+const checkScreenSize = () =>
+
+================
 File: src/renderer/src/hooks/useSearchText.tsx
 ================
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Mark from 'mark.js';
 import { IoIosArrowUp, IoIosArrowDown, IoMdClose } from 'react-icons/io';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { IconButton } from '@/components/common/IconButton';
@@ -11878,8 +12188,6 @@ const loadModels = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const setActiveProject = async (baseDir: string) =>
-⋮----
 // First TAB press - switch to previous tab
 ⋮----
 // Subsequent TAB presses - cycle through tabs
@@ -11941,15 +12249,17 @@ File: src/renderer/src/pages/Settings.tsx
 ================
 import { Font, SettingsData, Theme } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LlmProviderName } from '@common/agent';
 ⋮----
+import { useApi } from '@/context/ApiContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { ModelProvidersSettings } from '@/components/settings/ModelProvidersSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
+import { ServerSettings } from '@/components/settings/ServerSettings';
 ⋮----
 type Props = {
   settings: SettingsData;
@@ -11958,6 +12268,7 @@ type Props = {
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (theme: Theme) => void;
   onFontChange: (fontName: Font) => void;
+  onFontSizeChange: (fontSize: number) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;
@@ -13525,6 +13836,7 @@ import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { THEMES } from '@common/types';
 ⋮----
+import { useResponsive } from '@/hooks/useResponsive';
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
 import { ContextMenuProvider, useContextMenu } from '@/context/ContextMenuContext';
@@ -13544,11 +13856,6 @@ const ThemeAndFontManager = () =>
 const App = () =>
 ⋮----
 useEffect(() =>
-
-================
-File: src/renderer/src/env.d.ts
-================
-/// <reference types="vite/client" />
 
 ================
 File: src/renderer/src/fonts.css
@@ -13625,7 +13932,7 @@ File: src/renderer/index.html
 <html>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1000" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>AiderDesk</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
@@ -13908,6 +14215,7 @@ File: package.json
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
+    "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
     "@requesty/ai-sdk": "^0.0.9",
     "@smithy/eventstream-codec": "^2.0.0",
@@ -13923,10 +14231,12 @@ File: package.json
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
     "ai": "^4.3.16",
+    "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "better-sqlite3": "^12.0.0",
     "cheerio": "^1.0.0",
     "chokidar": "^4.0.3",
+    "cloudflared": "^0.7.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "electron-store": "^10.1.0",
@@ -13989,8 +14299,7 @@ File: package.json
     "ws": "^8.18.0",
     "yaml": "^2.8.0",
     "yaml-front-matter": "^4.1.1",
-    "zod": "^3.24.2",
-    "axios": "^1.8.3"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",

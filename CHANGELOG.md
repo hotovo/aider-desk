@@ -2,8 +2,20 @@
 
 ## [UNRELEASED]
 
-- extended context memory mode for Subagents to Full context or Last message
+- updated to React 19 for possible performance improvements
+- added better undo last commit support even outside of Aider modes
 - added feedback for /undo command
+
+## [0.30.0]
+
+- extended context memory mode for Subagents to Full context or Last message
+- added server settings to control exposing the API and browser access
+- added basic authentication for the server access
+- added possibility to start Cloudflare tunnel to access the server
+- added tokens info for context files
+- added option to change font size
+- added simple but functional responsive design
+- fixed issue causing info message types appearing before the end of diffs when using fast models
 
 ## [0.29.0]
 

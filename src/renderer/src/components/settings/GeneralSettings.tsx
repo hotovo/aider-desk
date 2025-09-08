@@ -21,6 +21,21 @@ const ZOOM_OPTIONS: Option[] = [
   { label: '150%', value: '1.5' },
 ];
 
+const FONT_SIZE_OPTIONS: Option[] = [
+  { label: '12px', value: '12' },
+  { label: '13px', value: '13' },
+  { label: '14px', value: '14' },
+  { label: '15px', value: '15' },
+  { label: '16px', value: '16' },
+  { label: '17px', value: '17' },
+  { label: '18px', value: '18' },
+  { label: '20px', value: '20' },
+  { label: '22px', value: '22' },
+  { label: '24px', value: '24' },
+  { label: '28px', value: '28' },
+  { label: '32px', value: '32' },
+];
+
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
@@ -28,9 +43,10 @@ type Props = {
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (themeName: Theme) => void;
   onFontChange: (fontName: Font) => void;
+  onFontSizeChange: (fontSize: number) => void;
 };
 
-export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange, onFontChange }: Props) => {
+export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoomChange, onThemeChange, onFontChange, onFontSizeChange }: Props) => {
   const { t } = useTranslation();
 
   const fontOptions: Option[] = FONTS.map((font) => ({
@@ -85,6 +101,15 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     onFontChange(value as Font);
   };
 
+  const handleFontSizeChange = (value: string) => {
+    const newFontSize = parseFloat(value);
+    setSettings({
+      ...settings,
+      fontSize: newFontSize,
+    });
+    onFontSizeChange(newFontSize);
+  };
+
   const handleSuggestionModeChange = (mode: SuggestionMode) => {
     setSettings({
       ...settings,
@@ -125,11 +150,14 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   return (
     <div className="space-y-6">
       <Section title={t('settings.gui')}>
-        <div className="grid grid-cols-2 gap-4 p-4">
+        <div className="grid grid-cols-2 gap-4 pt-4 px-4">
           <LanguageSelector language={settings.language} onChange={onLanguageChange} />
           <Select label={t('settings.zoom')} options={ZOOM_OPTIONS} value={String(settings.zoomLevel ?? 1)} onChange={handleZoomChange} />
-          <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-2" />
-          <Select label={t('settings.font')} options={fontOptions} value={settings.font ?? 'sono'} onChange={handleFontChange} className="col-span-2" />
+        </div>
+        <div className="grid grid-cols-3 gap-4 p-4">
+          <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-3" />
+          <Select label={t('settings.font')} options={fontOptions} value={settings.font ?? 'sono'} onChange={handleFontChange} />
+          <Select label={t('settings.fontSize')} options={FONT_SIZE_OPTIONS} value={String(settings.fontSize ?? 16)} onChange={handleFontSizeChange} />
         </div>
       </Section>
 

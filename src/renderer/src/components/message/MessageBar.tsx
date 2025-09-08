@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { UsageReportData } from '@common/types';
 import { MdDeleteForever, MdRedo, MdEdit } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
+import { twMerge } from 'tailwind-merge';
 
 import { IconButton } from '../common/IconButton';
 
@@ -12,14 +13,15 @@ import { UsageInfo } from './UsageInfo';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 type Props = {
-  content: string;
+  className?: string;
+  content?: string;
   usageReport?: UsageReportData;
   remove?: () => void;
   redo?: () => void;
   edit?: () => void;
 };
 
-export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) => {
+export const MessageBar = ({ className, content, usageReport, remove, redo, edit }: Props) => {
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -45,9 +47,9 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
   };
 
   return (
-    <div className="mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative">
+    <div className={twMerge('mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative', className)}>
       {usageReport && <UsageInfo usageReport={usageReport} className="mt-[4px]" />}
-      <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />
+      {content && <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />}
       {(remove || redo || edit) && (
         <div ref={buttonRef}>
           <IconButton

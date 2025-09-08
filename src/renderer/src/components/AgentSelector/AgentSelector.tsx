@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdCheck, MdDoneAll, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap } from 'react-icons/md';
 import { RiToolsFill } from 'react-icons/ri';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { AgentProfile, ToolApprovalState } from '@common/types';
 import { getActiveAgentProfile } from '@common/utils';
 import { BiCog } from 'react-icons/bi';

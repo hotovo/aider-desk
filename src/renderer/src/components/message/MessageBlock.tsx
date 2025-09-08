@@ -16,6 +16,10 @@ import { LogMessageBlock } from './LogMessageBlock';
 import { UserMessageBlock } from './UserMessageBlock';
 import { ReflectedMessageBlock } from './ReflectedMessageBlock';
 import { ResponseMessageBlock } from './ResponseMessageBlock';
+import { ToolMessageBlock } from './ToolMessageBlock';
+import { FileWriteToolMessage } from './FileWriteToolMessage';
+import { FileEditToolMessage } from './FileEditToolMessage';
+import { SubagentToolMessage } from './SubagentToolMessage';
 
 import {
   isCommandOutputMessage,
@@ -29,10 +33,6 @@ import {
   Message,
   ToolMessage,
 } from '@/types/message';
-import { ToolMessageBlock } from '@/components/message/ToolMessageBlock';
-import { FileWriteToolMessage } from '@/components/message/FileWriteToolMessage';
-import { EditFileToolMessage } from '@/components/message/EditFileToolMessage';
-import { SubagentToolMessage } from '@/components/message/SubagentToolMessage';
 
 type Props = {
   baseDir: string;
@@ -81,7 +81,7 @@ export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remov
         return <FileWriteToolMessage message={toolMessage} onRemove={remove} />;
       }
       if (toolMessage.toolName === POWER_TOOL_FILE_EDIT) {
-        return <EditFileToolMessage message={toolMessage} onRemove={remove} />;
+        return <FileEditToolMessage message={toolMessage} onRemove={remove} />;
       }
     }
     if (toolMessage.serverName === SUBAGENTS_TOOL_GROUP_NAME) {

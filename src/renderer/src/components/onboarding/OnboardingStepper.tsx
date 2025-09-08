@@ -1,5 +1,5 @@
 import { HiCheck } from 'react-icons/hi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 type Step = {
   title: string;

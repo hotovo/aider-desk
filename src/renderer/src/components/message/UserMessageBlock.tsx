@@ -1,5 +1,5 @@
 import { FaRegUser } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { MessageBar } from './MessageBar';
 

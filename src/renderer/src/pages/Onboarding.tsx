@@ -229,7 +229,7 @@ export const Onboarding = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen p-[4px] bg-bg-secondary">
+    <div className="flex flex-col h-full p-[4px] bg-bg-secondary">
       <div className="flex flex-col flex-1 border-2 border-border-default relative overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
         <div className="flex-1 flex flex-col justify-center items-center p-4">
           <div className="max-w-3xl w-full">

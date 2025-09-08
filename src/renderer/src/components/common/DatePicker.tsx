@@ -2,7 +2,7 @@ import { forwardRef, ReactNode } from 'react';
 import ReactDatePicker, { type DatePickerProps } from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FaCalendarAlt } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { Input } from './Input';
 

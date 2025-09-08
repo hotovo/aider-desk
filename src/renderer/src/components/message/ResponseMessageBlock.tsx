@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { RiRobot2Line } from 'react-icons/ri';
 
 import { MessageBar } from './MessageBar';

@@ -1,9 +1,9 @@
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { LocalizedString, UsageReportData } from '@common/types';
 
 import { MessageBlock } from './MessageBlock';
-import { UsageInfo } from './UsageInfo';
+import { MessageBar } from './MessageBar';
 
 import { Accordion } from '@/components/common/Accordion';
 import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage } from '@/types/message';
@@ -74,9 +74,8 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
   };
 
   const header = (
-    <div className={clsx('w-full flex items-center justify-between pl-2 py-1 group', !message.group.finished && 'animate-pulse')}>
-      <span className="text-xs">{getGroupDisplayName(message.group.name)}</span>
-      {aggregatedUsage && <UsageInfo usageReport={aggregatedUsage} />}
+    <div className={clsx('w-full px-3 py-1 group', !message.group.finished && 'animate-pulse')}>
+      <div className="text-xs text-left">{getGroupDisplayName(message.group.name)}</div>
     </div>
   );
 
@@ -106,6 +105,9 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
           ))}
         </div>
       </Accordion>
+      <div className="px-3 pb-3">
+        <MessageBar className="mt-0" usageReport={aggregatedUsage} />
+      </div>
     </div>
   );
 };

@@ -4,7 +4,7 @@ import { FaSync, FaTable, FaChartBar } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { CgSpinner } from 'react-icons/cg';
 import { UsageDataRow } from '@common/types';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { Select } from '../common/Select';
 

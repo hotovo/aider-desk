@@ -5,10 +5,6 @@ import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import prism from 'vite-plugin-prismjs';
 
-const ReactCompilerConfig = {
-  target: '18',
-};
-
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin(), tsconfigPaths()],
@@ -40,7 +36,7 @@ export default defineConfig({
       }),
       react({
         babel: {
-          plugins: [['babel-plugin-react-compiler', ReactCompilerConfig]],
+          plugins: ['babel-plugin-react-compiler'],
         },
       }),
       tsconfigPaths(),

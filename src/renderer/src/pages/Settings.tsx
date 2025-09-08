@@ -1,14 +1,16 @@
 import { Font, SettingsData, Theme } from '@common/types';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LlmProviderName } from '@common/agent';
 
+import { useApi } from '@/context/ApiContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { ModelProvidersSettings } from '@/components/settings/ModelProvidersSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
+import { ServerSettings } from '@/components/settings/ServerSettings';
 
 type Props = {
   settings: SettingsData;
@@ -17,6 +19,7 @@ type Props = {
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (theme: Theme) => void;
   onFontChange: (fontName: Font) => void;
+  onFontSizeChange: (fontSize: number) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;
@@ -29,11 +32,18 @@ export const Settings = ({
   onZoomChange,
   onThemeChange,
   onFontChange,
+  onFontSizeChange,
   initialTab = 0,
   initialAgentProfileId,
 }: Props) => {
   const { t } = useTranslation();
+  const api = useApi();
   const [selectedTabIndex, setSelectedTabIndex] = useState(initialTab);
+  const [isServerManagementSupported, setIsServerManagementSupported] = useState(false);
+
+  useEffect(() => {
+    setIsServerManagementSupported(api.isManageServerSupported());
+  }, [api]);
 
   const handleSwitchToAiderTab = () => {
     setSelectedTabIndex(2); // Aider tab is at index 2
@@ -66,6 +76,7 @@ export const Settings = ({
         {renderTab(t('settings.tabs.providers'))}
         {renderTab(t('settings.tabs.aider'))}
         {renderTab(t('settings.tabs.agent'))}
+        {isServerManagementSupported && renderTab(t('settings.tabs.server'))}
         {renderTab(t('settings.tabs.about'))}
       </TabList>
       <TabPanels className="flex flex-col flex-1 overflow-hidden">
@@ -77,11 +88,13 @@ export const Settings = ({
             onZoomChange={onZoomChange}
             onThemeChange={onThemeChange}
             onFontChange={onFontChange}
+            onFontSizeChange={onFontSizeChange}
           />,
         )}
         {renderTabPanel(<ModelProvidersSettings settings={settings} setSettings={updateSettings} onSwitchToAiderTab={handleSwitchToAiderTab} />)}
         {renderTabPanel(<AiderSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<AgentSettings settings={settings} setSettings={updateSettings} initialProfileId={initialAgentProfileId} />)}
+        {isServerManagementSupported && renderTabPanel(<ServerSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<AboutSettings settings={settings} setSettings={updateSettings} />)}
       </TabPanels>
     </TabGroup>

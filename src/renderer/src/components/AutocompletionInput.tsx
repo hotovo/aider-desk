@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 type Props = {
   value: string;

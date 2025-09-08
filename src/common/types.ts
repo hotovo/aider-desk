@@ -134,6 +134,11 @@ export enum OS {
   MacOS = 'macos',
 }
 
+export interface CloudflareTunnelStatus {
+  isRunning: boolean;
+  url?: string;
+}
+
 export enum MessageRole {
   User = 'user',
   Assistant = 'assistant',
@@ -346,6 +351,7 @@ export interface SettingsData {
   notificationsEnabled?: boolean;
   theme?: Theme;
   font?: Font;
+  fontSize?: number;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;
@@ -376,6 +382,14 @@ export interface SettingsData {
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
   promptBehavior: PromptBehavior;
+  server: {
+    enabled: boolean;
+    basicAuth: {
+      enabled: boolean;
+      username: string;
+      password: string;
+    };
+  };
 }
 
 export interface Group {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { MdEdit, MdDelete, MdCheck, MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';

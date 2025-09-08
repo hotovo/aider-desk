@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 import { HiPlus } from 'react-icons/hi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';

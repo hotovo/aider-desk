@@ -246,6 +246,7 @@
       "providers": "Providers",
       "aider": "Aider",
       "agent": "Agent",
+      "server": "Server",
       "about": "About"
     },
     "gui": "Appearance",
@@ -351,6 +352,7 @@
     "zoom": "Zoom level",
     "theme": "Theme",
     "font": "Font",
+    "fontSize": "Font size",
     "fontOptions": {
       "Sono": "Sono (Default)",
       "PlayfairDisplay": "Playfair Display",
@@ -432,6 +434,26 @@
       "useVimBindings": "Use Vim bindings",
       "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field.",
       "modeAtSign": "@ mention mode"
+    },
+    "server": {
+      "description": "Enable server on port 24337 to access AiderDesk from external applications",
+      "status": "Status",
+      "running": "Running",
+      "enableBasicAuth": "Enable Basic Authentication",
+      "enableBasicAuthDescription": "Require username and password for browser access and API calls",
+      "username": "Username",
+      "password": "Password",
+      "controlServer": "REST API Server",
+      "starting": "Starting...",
+      "stopping": "Stopping...",
+      "start": "Start",
+      "stop": "Stop",
+      "stopped": "Stopped",
+      "copyUrl": "Copy URL",
+      "authentication": "Authentication",
+      "serverControl": "Server Control",
+      "tunnelManagement": "Tunnel Management",
+      "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally."
     }
   },
   "messages": {
@@ -446,7 +468,8 @@
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
     "group": "Group",
-    "scrollToBottom": "Scroll to bottom"
+    "scrollToBottom": "Scroll to bottom",
+    "messageBar": "Message Bar"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
@@ -722,7 +745,8 @@
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
-    "aider": "Aider"
+    "aider": "Aider",
+    "toggleSidebar": "Toggle sidebar"
   },
   "reasoningEffort": {
     "label": "Reasoning",

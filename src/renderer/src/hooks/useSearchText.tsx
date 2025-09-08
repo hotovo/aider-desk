@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react
 import { useTranslation } from 'react-i18next';
 import Mark from 'mark.js';
 import { IoIosArrowUp, IoIosArrowDown, IoMdClose } from 'react-icons/io';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { Input } from '@/components/common/Input';
 import { IconButton } from '@/components/common/IconButton';

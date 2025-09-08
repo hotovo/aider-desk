@@ -912,12 +912,14 @@ export class Project {
     this.eventManager.sendContextFilesUpdated(this.baseDir, this.sessionManager.getContextFiles());
   }
 
-  public runCommand(command: string, addToHistory = true) {
+  public async runCommand(command: string, addToHistory = true) {
     if (this.currentQuestion) {
       this.answerQuestion('n');
     }
 
-    logger.info('Running command:', { command });
+    let sendToConnectors = true;
+
+    logger.info('Running command:', { command, addToHistory });
 
     if (addToHistory) {
       void this.addToInputHistory(`/${command}`);
@@ -928,9 +930,37 @@ export class Project {
       this.eventManager.sendClearProject(this.baseDir, true, false);
     }
 
-    this.findMessageConnectors('run-command').forEach((connector) =>
-      connector.sendRunCommandMessage(command, this.sessionManager.toConnectorMessages(), this.sessionManager.getContextFiles()),
-    );
+    if (command.trim() === 'undo') {
+      sendToConnectors = false;
+      try {
+        // Get the current HEAD commit hash before undoing
+        const commitHash = await this.git.revparse(['HEAD']);
+        const commitMessage = await this.git.show(['--format=%s', '--no-patch', 'HEAD']);
+
+        // Get all files from the last commit
+        const lastCommitFiles = await this.git.show(['--name-only', '--pretty=format:', 'HEAD']);
+        const files = lastCommitFiles.split('\n').filter((file) => file.trim() !== '');
+
+        // Checkout each file's version at HEAD~1
+        for (const file of files) {
+          await this.git.checkout(['HEAD~1', '--', file]);
+        }
+
+        // Reset --soft HEAD~1
+        await this.git.reset(['--soft', 'HEAD~1']);
+        logger.info(`Reverted: ${commitMessage} (${commitHash.substring(0, 7)})`);
+        this.addLogMessage('info', `Reverted ${commitHash.substring(0, 7)}: ${commitMessage}`);
+      } catch (error) {
+        logger.error('Failed to undo last commit:', { error: error instanceof Error ? error.message : String(error) });
+        this.addLogMessage('error', 'Failed to undo last commit.');
+      }
+    }
+
+    if (sendToConnectors) {
+      this.findMessageConnectors('run-command').forEach((connector) =>
+        connector.sendRunCommandMessage(command, this.sessionManager.toConnectorMessages(), this.sessionManager.getContextFiles()),
+      );
+    }
   }
 
   public updateContextFiles(contextFiles: ContextFile[]) {
@@ -1213,7 +1243,7 @@ export class Project {
     this.findMessageConnectors('add-message').forEach((connector) => connector.sendAddMessageMessage(role, content, acknowledge));
   }
 
-  public clearContext(addToHistory = false, updateContextInfo = true) {
+  public async clearContext(addToHistory = false, updateContextInfo = true) {
     logger.debug('Clearing context:', {
       baseDir: this.baseDir,
       addToHistory,
@@ -1221,11 +1251,11 @@ export class Project {
     });
 
     this.sessionManager.clearMessages();
-    this.runCommand('clear', addToHistory);
+    await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearProject(this.baseDir, true, false);
 
     if (updateContextInfo) {
-      void this.updateContextInfo();
+      await this.updateContextInfo();
     }
   }
 
@@ -1328,7 +1358,7 @@ export class Project {
 
   public async removeLastMessage() {
     this.sessionManager.removeLastMessage();
-    this.reloadConnectorMessages();
+    await this.reloadConnectorMessages();
 
     await this.updateContextInfo();
   }
@@ -1345,7 +1375,7 @@ export class Project {
 
     if (promptToRun) {
       logger.info('Found message content to run, reloading and re-running prompt.');
-      this.reloadConnectorMessages(); // This sends 'clear-project' which truncates UI messages
+      await this.reloadConnectorMessages(); // This sends 'clear-project' which truncates UI messages
       await this.updateContextInfo();
 
       // No need to await runPrompt here, let it run in the background
@@ -1355,8 +1385,8 @@ export class Project {
     }
   }
 
-  private reloadConnectorMessages() {
-    this.runCommand('clear', false);
+  private async reloadConnectorMessages() {
+    await this.runCommand('clear', false);
     this.sessionManager.toConnectorMessages().forEach((message) => {
       this.sendAddMessage(message.role, message.content, false);
     });

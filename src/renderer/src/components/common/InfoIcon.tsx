@@ -1,6 +1,6 @@
 import { FaInfoCircle } from 'react-icons/fa';
 import { ReactNode } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { IconButton } from './IconButton';
 

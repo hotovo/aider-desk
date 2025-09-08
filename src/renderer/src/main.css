@@ -34,11 +34,13 @@
     font-weight: 400;
     font-style: normal;
     font-variation-settings: "MONO" 1;
+    height: 100%;
   }
 }
 
 :root {
-  --font-family: "Sono";
+  --font-family: Sono;
+  --font-size: 16px;
 }
 
 body {
@@ -49,6 +51,8 @@ body {
   font-weight: 400;
   font-style: normal;
   font-variation-settings: "MONO" 1;
+  height: 100%;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 * {
