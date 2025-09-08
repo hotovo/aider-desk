@@ -743,14 +743,24 @@ class Connector:
 
       # Store the original commit hashes before calling undo
       original_hashes = list(coder.aider_commit_hashes) if hasattr(coder, 'aider_commit_hashes') else []
+      # Debug: log original hashes
+      if hasattr(coder, 'aider_commit_hashes'):
+          wait_for_async(self, self.send_log_message("info", f"Original commit hashes: {original_hashes}", False, prompt_context))
 
       try:
         result = original_cmd_undo(args)
 
         # Check if a commit was actually undone by comparing hash lists
         current_hashes = list(coder.aider_commit_hashes) if hasattr(coder, 'aider_commit_hashes') else []
+        # Debug: log current hashes
+        if hasattr(coder, 'aider_commit_hashes'):
+            wait_for_async(self, self.send_log_message("info", f"Current commit hashes: {current_hashes}", False, prompt_context))
+            wait_for_async(self, self.send_log_message("info", f"Original count: {len(original_hashes)}, Current count: {len(current_hashes)}", False, prompt_context))
+
         if len(current_hashes) < len(original_hashes):
           wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
+        else:
+          wait_for_async(self, self.send_log_message("info", "No commit was undone.", True, prompt_context))
         return result
       except Exception as e:
         wait_for_async(self, self.send_log_message("error", f"Failed to undo: {str(e)}", True, prompt_context))
