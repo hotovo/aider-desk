@@ -737,7 +737,7 @@ class Connector:
     coder.run_shell_commands = types.MethodType(_patched_run_shell_commands, coder)
 
     original_cmd_undo = coder.commands.cmd_undo
-    def _patched_cmd_undo(coder_commands_instance, args=""):
+    def _patched_cmd_undo(coder_commands_instance, args):
       # Send a message to AiderDesk before running undo
       wait_for_async(self, self.send_log_message("info", "Undoing last commit...", False, prompt_context))
 
