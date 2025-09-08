@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - extended context memory mode for Subagents to Full context or Last message
+- added feedback for /undo command
 
 ## [0.29.0]
 
