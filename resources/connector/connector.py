@@ -736,6 +736,24 @@ class Connector:
     # Replace the original run_shell_commands method with the patched version
     coder.run_shell_commands = types.MethodType(_patched_run_shell_commands, coder)
 
+    original_cmd_undo = coder.commands.cmd_undo
+    def _patched_cmd_undo(coder_commands_instance, args=""):
+      # Send a message to AiderDesk before running undo
+      wait_for_async(self, self.send_log_message("info", "Undoing last commit...", False, prompt_context))
+
+      try:
+        result = original_cmd_undo(args)
+        # Send success message after undo completes
+        if result:
+          wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
+        return result
+      except Exception as e:
+        wait_for_async(self, self.send_log_message("error", f"Failed to undo: {str(e)}", True, prompt_context))
+        raise
+
+    # Replace the original cmd_undo method with the patched version
+    coder.commands.cmd_undo = types.MethodType(_patched_cmd_undo, coder.commands)
+
   def monkey_patch_repo_functions(self, repo, prompt_context=None):
     if not repo:
       return
