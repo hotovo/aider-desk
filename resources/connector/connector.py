@@ -748,7 +748,7 @@ class Connector:
         # Check for specific messages in the result
         if "The last commit was not made by aider in this chat session" in result_str:
           wait_for_async(self, self.send_log_message("warning", "The last commit was not made by aider in this chat session.", True, prompt_context))
-        elif "No commits to undo" in result_str or not result:
+        elif "No commits to undo" in result_str or not result_str.strip():
           wait_for_async(self, self.send_log_message("warning", "No commits to undo.", True, prompt_context))
         else:
           wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
