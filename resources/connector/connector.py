@@ -741,17 +741,20 @@ class Connector:
       # Send a message to AiderDesk before running undo
       wait_for_async(self, self.send_log_message("info", "Undoing last commit...", False, prompt_context))
 
+      # Store the original commit hashes before calling undo
+      original_hashes = list(coder.aider_commit_hashes) if hasattr(coder, 'aider_commit_hashes') else []
+
       try:
         result = original_cmd_undo(args)
-        
-        # The undo command typically returns None on success
-        # We assume success if no exception was raised
-        wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
-        
+
+        # Check if a commit was actually undone by comparing hash lists
+        current_hashes = list(coder.aider_commit_hashes) if hasattr(coder, 'aider_commit_hashes') else []
+        if len(current_hashes) < len(original_hashes):
+          wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
         return result
       except Exception as e:
         error_msg = str(e)
-        
+
         # Check for specific error conditions and send appropriate messages
         if "The last commit was not made by aider in this chat session" in error_msg:
           wait_for_async(self, self.send_log_message("warning", "The last commit was not made by aider in this chat session.", True, prompt_context))
@@ -759,7 +762,7 @@ class Connector:
           wait_for_async(self, self.send_log_message("warning", "No commits to undo.", True, prompt_context))
         else:
           wait_for_async(self, self.send_log_message("error", f"Failed to undo: {error_msg}", True, prompt_context))
-        
+
         raise
 
     # Replace the original cmd_undo method with the patched version
