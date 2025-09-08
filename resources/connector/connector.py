@@ -743,9 +743,16 @@ class Connector:
 
       try:
         result = original_cmd_undo(args)
-        # Send success message after undo completes
-        if result:
+        result_str = str(result) if result else ""
+
+        # Check for specific messages in the result
+        if "The last commit was not made by aider in this chat session" in result_str:
+          wait_for_async(self, self.send_log_message("warning", "The last commit was not made by aider in this chat session.", True, prompt_context))
+        elif "No commits to undo" in result_str or not result:
+          wait_for_async(self, self.send_log_message("warning", "No commits to undo.", True, prompt_context))
+        else:
           wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
+
         return result
       except Exception as e:
         wait_for_async(self, self.send_log_message("error", f"Failed to undo: {str(e)}", True, prompt_context))
