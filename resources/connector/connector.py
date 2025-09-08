@@ -758,23 +758,11 @@ class Connector:
 
         # Check if the undo was successful by comparing both HEAD and aider_commit_hashes
         if hasattr(current_coder, 'repo') and current_coder.repo and current_coder.repo.repo:
-            try:
-                # Get the new HEAD commit hash after undo
-                new_head_hash = current_coder.repo.repo.head.commit.hexsha
+          new_head_hash = current_coder.repo.repo.head.commit.hexsha
 
-                # Check if HEAD changed (most reliable indicator)
-                if original_head_hash and original_head_hash != new_head_hash:
-                    wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
-                # Check if aider_commit_hashes changed (fallback)
-            except Exception as e:
-                # Fall back to hash list comparison if HEAD check fails
-                current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
-                if len(current_hashes) < len(original_hashes):
-                    wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
-                elif len(current_hashes) > len(original_hashes):
-                    wait_for_async(self, self.send_log_message("warning", f"Unexpected: commit hashes increased from {len(original_hashes)} to {len(current_hashes)}", True, prompt_context))
-                else:
-                    wait_for_async(self, self.send_log_message("info", "No commit was undone - commit hashes unchanged.", True, prompt_context))
+          # Check if HEAD changed (most reliable indicator)
+          if original_head_hash and original_head_hash != new_head_hash:
+            wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
         else:
             # No repo available, use hash list comparison
             current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
