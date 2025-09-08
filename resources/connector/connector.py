@@ -744,34 +744,33 @@ class Connector:
       # Store the original commit hashes before calling undo - use the specific coder instance
       current_coder = coder_commands_instance.coder
       original_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
-      # Debug: log original hashes
-      if hasattr(current_coder, 'aider_commit_hashes'):
-        wait_for_async(self, self.send_log_message("info", f"Original commit hashes: {original_hashes}", False, prompt_context))
-        wait_for_async(self, self.send_log_message("info", f"Original hashes object id: {id(current_coder.aider_commit_hashes)}", False, prompt_context))
-
+      
       try:
         result = original_cmd_undo(args)
-
-        # Check if a commit was actually undone by comparing hash lists - use the specific coder instance
-        current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
-        # Debug: log current hashes
-        if hasattr(current_coder, 'aider_commit_hashes'):
-          wait_for_async(self, self.send_log_message("info", f"Current commit hashes: {current_hashes}", False, prompt_context))
-          wait_for_async(self, self.send_log_message("info", f"Current hashes object id: {id(current_coder.aider_commit_hashes)}", False, prompt_context))
-          wait_for_async(self, self.send_log_message("info", f"Original count: {len(original_hashes)}, Current count: {len(current_hashes)}", False, prompt_context))
-          wait_for_async(self, self.send_log_message("info", f"Are hashes the same object? {current_coder.aider_commit_hashes is current_coder.aider_commit_hashes}", False, prompt_context))
-          wait_for_async(self, self.send_log_message("info", f"Are lists equal? {original_hashes == current_hashes}", False, prompt_context))
-
-        if len(current_hashes) < len(original_hashes):
-          wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
-        elif len(current_hashes) > len(original_hashes):
-          wait_for_async(self, self.send_log_message("warning", f"Unexpected: commit hashes increased from {len(original_hashes)} to {len(current_hashes)}", True, prompt_context))
+        
+        # Check if the undo was successful by seeing if the git repo HEAD changed
+        # This is a more reliable way to detect if a commit was actually undone
+        if hasattr(current_coder, 'repo') and current_coder.repo:
+            # Get the current HEAD commit hash after undo
+            try:
+                new_head_hash = current_coder.repo.repo.head.commit.hexsha
+                # Compare with the first hash in original_hashes (which would be the most recent)
+                if original_hashes and original_hashes[0] != new_head_hash:
+                    wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
+                else:
+                    wait_for_async(self, self.send_log_message("info", "No commit was undone - HEAD unchanged.", True, prompt_context))
+            except Exception as e:
+                # If we can't get the HEAD, fall back to the hash list comparison
+                current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
+                if len(current_hashes) < len(original_hashes):
+                    wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
+                elif len(current_hashes) > len(original_hashes):
+                    wait_for_async(self, self.send_log_message("warning", f"Unexpected: commit hashes increased from {len(original_hashes)} to {len(current_hashes)}", True, prompt_context))
+                else:
+                    wait_for_async(self, self.send_log_message("info", "No commit was undone - commit hashes unchanged.", True, prompt_context))
         else:
-          # Check if the hashes are actually the same content
-          if original_hashes and current_hashes and original_hashes != current_hashes:
-            wait_for_async(self, self.send_log_message("info", "Commit hashes changed but count remained the same.", True, prompt_context))
-          else:
-            wait_for_async(self, self.send_log_message("info", "No commit was undone - commit hashes unchanged.", True, prompt_context))
+            wait_for_async(self, self.send_log_message("info", "No repository available to check undo status.", True, prompt_context))
+            
         return result
       except Exception as e:
         wait_for_async(self, self.send_log_message("error", f"Failed to undo: {str(e)}", True, prompt_context))
