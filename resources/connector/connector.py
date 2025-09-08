@@ -745,16 +745,26 @@ class Connector:
         result = original_cmd_undo(args)
         result_str = str(result) if result else ""
 
+        # Debug logging to understand what's in the result
+        sys.stderr.write(f"DEBUG: undo result type: {type(result)}\n")
+        sys.stderr.write(f"DEBUG: undo result_str: '{result_str}'\n")
+        sys.stderr.write(f"DEBUG: undo result_str length: {len(result_str)}\n")
+        sys.stderr.write(f"DEBUG: undo result_str repr: {repr(result_str)}\n")
+
         # Check for specific messages in the result
         if "The last commit was not made by aider in this chat session" in result_str:
+          sys.stderr.write("DEBUG: Matched 'not made by aider' condition\n")
           wait_for_async(self, self.send_log_message("warning", "The last commit was not made by aider in this chat session.", True, prompt_context))
         elif "No commits to undo" in result_str or not result_str.strip():
+          sys.stderr.write("DEBUG: Matched 'no commits' condition\n")
           wait_for_async(self, self.send_log_message("warning", "No commits to undo.", True, prompt_context))
         else:
+          sys.stderr.write("DEBUG: Matched 'success' condition\n")
           wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
 
         return result
       except Exception as e:
+        sys.stderr.write(f"DEBUG: Exception in undo: {str(e)}\n")
         wait_for_async(self, self.send_log_message("error", f"Failed to undo: {str(e)}", True, prompt_context))
         raise
 
