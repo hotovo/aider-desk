@@ -752,7 +752,6 @@
     "map": "Print out the current repository map",
     "map-refresh": "Force a refresh of the repository map",
     "model": "Open the model selector",
-    "pluto": "Undo the last edit and commit the changes",
     "read-only": "Add files to the chat that are for reference only, or turn added files to read-only",
     "redo": "Redoes the last user prompt.",
     "reasoning-effort": "Set the reasoning effort level (values: minimal/low/medium/high depending on model)",
