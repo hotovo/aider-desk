@@ -549,6 +549,7 @@ export class Project {
   }
 
   public async runPrompt(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
+    // This is a test comment for /undo command
     if (this.currentQuestion) {
       if (this.answerQuestion('n', prompt)) {
         logger.debug('Processed by the answerQuestion function.');
