@@ -741,19 +741,20 @@ class Connector:
       # Send a message to AiderDesk before running undo
       wait_for_async(self, self.send_log_message("info", "Undoing last commit...", False, prompt_context))
 
-      # Store the original commit hashes before calling undo
-      original_hashes = list(coder.aider_commit_hashes) if hasattr(coder, 'aider_commit_hashes') else []
+      # Store the original commit hashes before calling undo - use the specific coder instance
+      current_coder = coder_commands_instance.coder
+      original_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
       # Debug: log original hashes
-      if hasattr(coder, 'aider_commit_hashes'):
-          wait_for_async(self, self.send_log_message("info", f"Original commit hashes: {original_hashes}", False, prompt_context))
+      if hasattr(current_coder, 'aider_commit_hashes'):
+        wait_for_async(self, self.send_log_message("info", f"Original commit hashes: {original_hashes}", False, prompt_context))
 
       try:
         result = original_cmd_undo(args)
 
-        # Check if a commit was actually undone by comparing hash lists
-        current_hashes = list(coder.aider_commit_hashes) if hasattr(coder, 'aider_commit_hashes') else []
+        # Check if a commit was actually undone by comparing hash lists - use the specific coder instance
+        current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
         # Debug: log current hashes
-        if hasattr(coder, 'aider_commit_hashes'):
+        if hasattr(current_coder, 'aider_commit_hashes'):
             wait_for_async(self, self.send_log_message("info", f"Current commit hashes: {current_hashes}", False, prompt_context))
             wait_for_async(self, self.send_log_message("info", f"Original count: {len(original_hashes)}, Current count: {len(current_hashes)}", False, prompt_context))
 
