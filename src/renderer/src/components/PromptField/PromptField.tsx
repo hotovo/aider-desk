@@ -376,11 +376,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             clearLogMessages();
             break;
           }
-          case '/undo': {
-            prepareForNextPrompt();
-            runCommand(`${command.slice(1)} ${args || ''}`);
-            break;
-          }
           default: {
             setText('');
             runCommand(`${command.slice(1)} ${args || ''}`);

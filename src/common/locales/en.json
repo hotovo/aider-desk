@@ -703,9 +703,7 @@
     "invalidCommand": "Invalid command",
     "stopResponse": "Stop response",
     "sendMessage": "Send message (Enter)",
-    "clearChat": "Clear chat",
-    "agentModeOnly": "Available in Agent mode only",
-    "undoSuccess": "Undid last commit by aider"
+    "clearChat": "Clear chat"
   },
   "agentProfiles": {
     "title": "Agent Profiles",
