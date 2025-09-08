@@ -703,7 +703,8 @@
     "invalidCommand": "Invalid command",
     "stopResponse": "Stop response",
     "sendMessage": "Send message (Enter)",
-    "clearChat": "Clear chat"
+    "clearChat": "Clear chat",
+    "agentModeOnly": "Available in Agent mode only"
   },
   "agentProfiles": {
     "title": "Agent Profiles",
