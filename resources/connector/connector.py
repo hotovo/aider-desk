@@ -747,6 +747,7 @@ class Connector:
       # Debug: log original hashes
       if hasattr(current_coder, 'aider_commit_hashes'):
         wait_for_async(self, self.send_log_message("info", f"Original commit hashes: {original_hashes}", False, prompt_context))
+        wait_for_async(self, self.send_log_message("info", f"Original hashes object id: {id(current_coder.aider_commit_hashes)}", False, prompt_context))
 
       try:
         result = original_cmd_undo(args)
@@ -755,17 +756,28 @@ class Connector:
         current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
         # Debug: log current hashes
         if hasattr(current_coder, 'aider_commit_hashes'):
-            wait_for_async(self, self.send_log_message("info", f"Current commit hashes: {current_hashes}", False, prompt_context))
-            wait_for_async(self, self.send_log_message("info", f"Original count: {len(original_hashes)}, Current count: {len(current_hashes)}", False, prompt_context))
+          wait_for_async(self, self.send_log_message("info", f"Current commit hashes: {current_hashes}", False, prompt_context))
+          wait_for_async(self, self.send_log_message("info", f"Current hashes object id: {id(current_coder.aider_commit_hashes)}", False, prompt_context))
+          wait_for_async(self, self.send_log_message("info", f"Original count: {len(original_hashes)}, Current count: {len(current_hashes)}", False, prompt_context))
+          wait_for_async(self, self.send_log_message("info", f"Are hashes the same object? {current_coder.aider_commit_hashes is current_coder.aider_commit_hashes}", False, prompt_context))
+          wait_for_async(self, self.send_log_message("info", f"Are lists equal? {original_hashes == current_hashes}", False, prompt_context))
 
         if len(current_hashes) < len(original_hashes):
           wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
+        elif len(current_hashes) > len(original_hashes):
+          wait_for_async(self, self.send_log_message("warning", f"Unexpected: commit hashes increased from {len(original_hashes)} to {len(current_hashes)}", True, prompt_context))
         else:
-          wait_for_async(self, self.send_log_message("info", "No commit was undone.", True, prompt_context))
+          # Check if the hashes are actually the same content
+          if original_hashes and current_hashes and original_hashes != current_hashes:
+            wait_for_async(self, self.send_log_message("info", "Commit hashes changed but count remained the same.", True, prompt_context))
+          else:
+            wait_for_async(self, self.send_log_message("info", "No commit was undone - commit hashes unchanged.", True, prompt_context))
         return result
       except Exception as e:
         wait_for_async(self, self.send_log_message("error", f"Failed to undo: {str(e)}", True, prompt_context))
         raise
+      finally:
+        coder.io.running_shell_command = False
 
     # Replace the original cmd_undo method with the patched version
     coder.commands.cmd_undo = types.MethodType(_patched_cmd_undo, coder.commands)
