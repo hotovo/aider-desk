@@ -744,7 +744,7 @@ class Connector:
       # Store the original commit hashes before calling undo - use the specific coder instance
       current_coder = coder_commands_instance.coder
       original_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
-      
+
       # Also store the original HEAD commit hash if available
       original_head_hash = None
       if hasattr(current_coder, 'repo') and current_coder.repo and current_coder.repo.repo:
@@ -752,33 +752,20 @@ class Connector:
               original_head_hash = current_coder.repo.repo.head.commit.hexsha
           except Exception:
               pass
-      
+
       try:
         result = original_cmd_undo(args)
-        
+
         # Check if the undo was successful by comparing both HEAD and aider_commit_hashes
         if hasattr(current_coder, 'repo') and current_coder.repo and current_coder.repo.repo:
             try:
                 # Get the new HEAD commit hash after undo
                 new_head_hash = current_coder.repo.repo.head.commit.hexsha
-                
-                # Get current aider_commit_hashes
-                current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
-                
+
                 # Check if HEAD changed (most reliable indicator)
                 if original_head_hash and original_head_hash != new_head_hash:
                     wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
                 # Check if aider_commit_hashes changed (fallback)
-                elif len(current_hashes) < len(original_hashes):
-                    wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
-                elif len(current_hashes) > len(original_hashes):
-                    wait_for_async(self, self.send_log_message("warning", f"Unexpected: commit hashes increased from {len(original_hashes)} to {len(current_hashes)}", True, prompt_context))
-                else:
-                    # Check if the content of the hashes changed even if count is the same
-                    if original_hashes and current_hashes and original_hashes != current_hashes:
-                        wait_for_async(self, self.send_log_message("info", "Commit hashes changed but count remained the same.", True, prompt_context))
-                    else:
-                        wait_for_async(self, self.send_log_message("info", "No commit was undone - HEAD and commit hashes unchanged.", True, prompt_context))
             except Exception as e:
                 # Fall back to hash list comparison if HEAD check fails
                 current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
@@ -793,11 +780,6 @@ class Connector:
             current_hashes = list(current_coder.aider_commit_hashes) if hasattr(current_coder, 'aider_commit_hashes') else []
             if len(current_hashes) < len(original_hashes):
                 wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
-            elif len(current_hashes) > len(original_hashes):
-                wait_for_async(self, self.send_log_message("warning", f"Unexpected: commit hashes increased from {len(original_hashes)} to {len(current_hashes)}", True, prompt_context))
-            else:
-                wait_for_async(self, self.send_log_message("info", "No commit was undone - commit hashes unchanged.", True, prompt_context))
-            
         return result
       except Exception as e:
         wait_for_async(self, self.send_log_message("error", f"Failed to undo: {str(e)}", True, prompt_context))
