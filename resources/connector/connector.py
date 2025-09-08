@@ -743,21 +743,23 @@ class Connector:
 
       try:
         result = original_cmd_undo(args)
-        result_str = str(result) if result else ""
-
-        # Check for specific messages in the result
-        if "The last commit was not made by aider in this chat session" in result_str:
-          wait_for_async(self, self.send_log_message("warning", "The last commit was not made by aider in this chat session.", True, prompt_context))
-        elif "No commits to undo" in result_str:
-          wait_for_async(self, self.send_log_message("warning", "No commits to undo.", True, prompt_context))
-        elif result_str.strip():
-          # Only send success message if there's actual content (successful undo)
-          wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
-        # If result is None/empty, don't send any message - aider already sent error to stderr
-
+        
+        # The undo command typically returns None on success
+        # We assume success if no exception was raised
+        wait_for_async(self, self.send_log_message("info", "Successfully undid last commit.", True, prompt_context))
+        
         return result
       except Exception as e:
-        wait_for_async(self, self.send_log_message("error", f"Failed to undo: {str(e)}", True, prompt_context))
+        error_msg = str(e)
+        
+        # Check for specific error conditions and send appropriate messages
+        if "The last commit was not made by aider in this chat session" in error_msg:
+          wait_for_async(self, self.send_log_message("warning", "The last commit was not made by aider in this chat session.", True, prompt_context))
+        elif "No commits to undo" in error_msg:
+          wait_for_async(self, self.send_log_message("warning", "No commits to undo.", True, prompt_context))
+        else:
+          wait_for_async(self, self.send_log_message("error", f"Failed to undo: {error_msg}", True, prompt_context))
+        
         raise
 
     # Replace the original cmd_undo method with the patched version
