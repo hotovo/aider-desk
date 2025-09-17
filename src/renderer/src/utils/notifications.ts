@@ -10,13 +10,13 @@ const baseOptions: ToastOptions = {
   pauseOnHover: true,
   draggable: true,
   progressStyle: {
-    backgroundColor: '#333652', // neutral-700 from tailwind.config.js
-    color: '#333652',
+    backgroundColor: 'var(--color-bg-tertiary)',
+    color: 'var(--color-bg-tertiary)',
   },
   style: {
-    backgroundColor: '#2a2c3f',
-    color: '#f1f3f5',
-    border: '1px solid #343a40',
+    backgroundColor: 'var(--color-bg-secondary-light)',
+    color: 'var(--color-text-primary)',
+    border: '1px solid var(--color-border-dark-light-strong)',
     borderRadius: '0.375rem',
     fontFamily: '"Sono", monospace',
     fontSize: '0.75rem',
@@ -26,7 +26,6 @@ const baseOptions: ToastOptions = {
 
 const getOptions = (): ToastOptions => ({
   ...baseOptions,
-  theme: document.body.classList.contains('theme-light') ? 'light' : 'dark',
 });
 
 export const showSuccessNotification = (message: string) => {
@@ -35,7 +34,7 @@ export const showSuccessNotification = (message: string) => {
     ...options,
     style: {
       ...options.style,
-      color: '#e9ecef',
+      color: 'var(--color-text-primary)',
     },
   });
 };
@@ -46,7 +45,7 @@ export const showErrorNotification = (message: string) => {
     ...options,
     style: {
       ...options.style,
-      color: '#e16b6b',
+      color: 'var(--color-error)',
     },
   });
 };
@@ -57,7 +56,7 @@ export const showInfoNotification = (message: string) => {
     ...options,
     style: {
       ...options.style,
-      color: '#f1f3f5',
+      color: 'var(--color-text-primary)',
     },
   });
 };
@@ -68,8 +67,8 @@ export const showWarningNotification = (message: string) => {
     ...options,
     style: {
       ...options.style,
-      backgroundColor: '#212529',
-      color: '#fed7aa',
+      backgroundColor: 'var(--color-bg-primary-light-strong)',
+      color: 'var(--color-warning-light)',
     },
   });
 };

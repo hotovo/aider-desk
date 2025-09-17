@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- fixed notification colors
+
 ## [0.31.0]
 
 - updated to React 19 for possible performance improvements
