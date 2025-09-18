@@ -1312,6 +1312,9 @@ def setup_telemetry():
     os.environ["LANGFUSE_HOST"] = langfuse_host
     litellm.callbacks = ["langfuse_otel"]
 
+  # Set OpenRouter site and app name
+  os.environ["OR_SITE_URL"] = 'https://aiderdesk.hotovo.com'
+  os.environ["OR_APP_NAME"] = 'AiderDesk'
 
 if __name__ == "__main__":
   main()

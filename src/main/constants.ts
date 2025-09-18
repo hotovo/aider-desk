@@ -8,9 +8,8 @@ if (is.dev) {
 }
 
 export const AIDER_DESK_TITLE = 'AiderDesk';
-export const AIDER_DESK_WEBSITE = 'https://github.com/hotovo/aider-desk';
+export const AIDER_DESK_WEBSITE = 'https://aiderdesk.hotovo.com';
 export const AIDER_DESK_DATA_DIR = app.getPath('userData');
-export const AIDER_DESK_BIN_DIR = path.join(AIDER_DESK_DATA_DIR, 'bin');
 export const RESOURCES_DIR = is.dev ? path.join(__dirname, '..', '..', 'resources') : process.resourcesPath;
 export const LOGS_DIR = path.join(AIDER_DESK_DATA_DIR, 'logs');
 export const DB_FILE_PATH = path.join(AIDER_DESK_DATA_DIR, 'aider-desk.db');
