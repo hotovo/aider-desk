@@ -2,6 +2,9 @@
 
 ## [UNRELEASED]
 
+- changed system prompt to XML structure for better instruction following across the various models
+- fixed issue with text jumping in Prompt field when typing fast
+- notifications correcly using selected theme
 - added check for new project paths
 
 ## [0.31.0]

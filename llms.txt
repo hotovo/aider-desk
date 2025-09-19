@@ -974,6 +974,8 @@ def setup_telemetry()
 langfuse_public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
 langfuse_secret_key = os.getenv("LANGFUSE_SECRET_KEY")
 langfuse_host = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+⋮----
+# Set OpenRouter site and app name
 
 ================
 File: scripts/before-pack.js
@@ -10435,7 +10437,7 @@ import { EditorView, keymap } from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
 import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
-import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import CodeMirror, { Prec, type ReactCodeMirrorRef, Annotation } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
@@ -10508,6 +10510,8 @@ filePath = undefined; // If only spaces after URL, treat as no filePath
 const requiresConfirmation = (command: string): boolean =>
 ⋮----
 const handleConfirmCommand = () =>
+⋮----
+const onChange = (newText: string) =>
 ⋮----
 const prepareForNextPrompt = () =>
 ⋮----
@@ -14239,8 +14243,6 @@ import { toast } from 'react-toastify';
 ⋮----
 import type { ToastOptions } from 'react-toastify';
 ⋮----
-backgroundColor: '#333652', // neutral-700 from tailwind.config.js
-⋮----
 const getOptions = (): ToastOptions => (
 ⋮----
 export const showSuccessNotification = (message: string) =>
@@ -14641,7 +14643,7 @@ File: package.json
     "@aws-sdk/credential-providers": "^3.782.0",
     "@aws-sdk/types": "^3.540.0",
     "@buger/probe": "^0.6.0-rc53",
-    "@codemirror/autocomplete": "^6.18.6",
+    "@codemirror/autocomplete": "^6.18.7",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dotenvx/dotenvx": "^1.24.5",
@@ -14665,7 +14667,7 @@ File: package.json
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@uiw/codemirror-theme-github": "^4.23.12",
-    "@uiw/react-codemirror": "4.23.12",
+    "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "^2.8.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
@@ -14752,8 +14754,8 @@ File: package.json
     "@types/node": "^20.14.8",
     "@types/object-hash": "^3.0.6",
     "@types/prismjs": "^1.26.5",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "@types/react-resizable": "^3.0.8",
     "@types/refractor": "^3.4.1",
     "@types/socket.io": "^3.0.1",
