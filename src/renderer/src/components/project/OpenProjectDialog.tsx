@@ -96,7 +96,6 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
           setShowSuggestions(!isFromSuggestion);
           setProjectPath(value);
           setIsProjectAlreadyOpen(false);
-          setIsValidPath(true);
         }}
         placeholder={t('dialogs.projectPathPlaceholder')}
         autoFocus
