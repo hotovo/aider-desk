@@ -48,6 +48,11 @@ export const getFilePathSuggestions = async (currentPath: string, directoriesOnl
 
 export const isProjectPath = async (path: string): Promise<boolean> => {
   try {
+    const st = fs.statSync(path);
+    if (!st.isDirectory()) {
+      logger.error('Provided path is not a directory:', { path: path });
+      return false;
+    }
     return fs.existsSync(path);
   } catch (error) {
     logger.error('Error checking if path exists:', { error });

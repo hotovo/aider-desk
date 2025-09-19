@@ -441,7 +441,8 @@
     "projectPathPlaceholder": "输入项目路径或使用图标浏览",
     "openButton": "打开",
     "browseFoldersTooltip": "浏览文件夹",
-    "projectAlreadyOpenWarning": "此项目已打开。"
+    "projectAlreadyOpenWarning": "此项目已打开。",
+    "cantOpenProject": "无法打开此项目。"
   },
   "mode": {
     "code": "代码",

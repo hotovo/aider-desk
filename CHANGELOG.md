@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added check for new project paths
+
 ## [0.31.0]
 
 - updated to React 19 for possible performance improvements

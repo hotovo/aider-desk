@@ -486,7 +486,8 @@
     "projectPathPlaceholder": "Type the path to your project or use icon to browse",
     "openButton": "Open",
     "browseFoldersTooltip": "Browse folders",
-    "projectAlreadyOpenWarning": "This project is already open."
+    "projectAlreadyOpenWarning": "This project is already open.",
+    "cantOpenProject": "This project can not be opened."
   },
   "mode": {
     "code": "Code",

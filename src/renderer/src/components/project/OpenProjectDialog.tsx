@@ -96,6 +96,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
           setShowSuggestions(!isFromSuggestion);
           setProjectPath(value);
           setIsProjectAlreadyOpen(false);
+          setIsValidPath(true);
         }}
         placeholder={t('dialogs.projectPathPlaceholder')}
         autoFocus
@@ -115,6 +116,8 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
       />
 
       {isProjectAlreadyOpen && <div className="text-error text-2xs mt-1 px-2">{t('dialogs.projectAlreadyOpenWarning')}</div>}
+
+      {!isValidPath && projectPath.length > 0 && <div className="text-error text-2xs mt-1 px-2">{t('dialogs.cantOpenProject')}</div>}
 
       {recentProjects.length > 0 && (
         <Accordion className="mt-2" title={<div className="flex items-center gap-2 text-sm">{t('dialogs.recentProjects')}</div>}>
