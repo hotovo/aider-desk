@@ -11,7 +11,7 @@ import { EditorView, keymap } from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
 import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
-import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import CodeMirror, { Prec, type ReactCodeMirrorRef, Annotation } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +26,8 @@ import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
 import { useCustomCommands } from '@/hooks/useCustomCommands';
 import { useApi } from '@/context/ApiContext';
+
+const External = Annotation.define<boolean>();
 
 const COMMANDS = [
   '/code',
@@ -471,32 +473,34 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       }
     }, [historyLimit, keepHistoryHighlightTop]);
 
-    const onChange = useCallback(
-      (newText: string) => {
-        setText(newText);
-        setPendingCommand(null);
+    const onChange = (newText: string) => {
+      setText(newText);
+      setPendingCommand(null);
 
-        if (question) {
-          if (question?.answers) {
-            const matchedAnswer = question.answers.find((answer) => answer.shortkey.toLowerCase() === newText.toLowerCase());
-            if (matchedAnswer) {
-              setSelectedAnswer(matchedAnswer.shortkey);
-              return;
-            } else {
-              setSelectedAnswer(null);
-            }
-          } else if (ANSWERS.includes(newText.toLowerCase())) {
-            setSelectedAnswer(newText);
+      if (question) {
+        if (question?.answers) {
+          const matchedAnswer = question.answers.find((answer) => answer.shortkey.toLowerCase() === newText.toLowerCase());
+          if (matchedAnswer) {
+            setSelectedAnswer(matchedAnswer.shortkey);
             return;
           } else {
             setSelectedAnswer(null);
           }
+        } else if (ANSWERS.includes(newText.toLowerCase())) {
+          setSelectedAnswer(newText);
+          return;
+        } else {
+          setSelectedAnswer(null);
         }
-      },
-      [question],
-    );
+      }
+    };
 
     const prepareForNextPrompt = () => {
+      const view = editorRef.current?.view;
+      view?.dispatch({
+        changes: { from: 0, to: view.state.doc.toString().length, insert: '' },
+        annotations: [External.of(true)],
+      });
       setText('');
       setPendingCommand(null);
     };

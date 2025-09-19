@@ -7,7 +7,7 @@ export const migrateV11ToV12 = (settings: any): SettingsData => {
       ...profile,
       subagent: {
         ...profile.subagent,
-        contextMemory: profile.subagent.hasContextMemory ? ContextMemoryMode.FullContext : ContextMemoryMode.Off,
+        contextMemory: profile.subagent?.hasContextMemory ? ContextMemoryMode.FullContext : ContextMemoryMode.Off,
         hasContextMemory: undefined, // Remove old field
       },
     })) || [];
