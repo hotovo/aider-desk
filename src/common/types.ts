@@ -289,6 +289,8 @@ export interface AgentProfile {
   temperature: number; // 0-1 for controlling randomness/creativity
   enabledServers: string[];
   toolApprovals: Record<string, ToolApprovalState>;
+  bashToolAllowedPattern: string;
+  bashToolDeniedPattern: string;
   includeContextFiles: boolean;
   includeRepoMap: boolean;
   usePowerTools: boolean;
