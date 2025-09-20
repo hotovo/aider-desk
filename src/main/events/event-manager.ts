@@ -4,9 +4,9 @@ import {
   ContextFile,
   CustomCommand,
   InputHistoryData,
+  ProviderProfile,
   LogData,
   ModelsData,
-  ProviderModels,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -17,6 +17,9 @@ import {
   UserMessageData,
   VersionsInfo,
   AutocompletionData,
+  ProviderModelsData,
+  ProvidersUpdatedData,
+  SettingsData,
 } from '@common/types';
 
 import logger from '@/logger';
@@ -179,10 +182,23 @@ export class EventManager {
     this.broadcastToEventConnectors('versions-info-updated', versionsInfo);
   }
 
-  // Provider models events
-  sendProviderModelsUpdated(providerModels: ProviderModels): void {
-    this.sendToMainWindow('provider-models-updated', providerModels);
-    this.broadcastToEventConnectors('provider-models-updated', providerModels);
+  sendSettingsUpdated(settings: SettingsData): void {
+    this.sendToMainWindow('settings-updated', settings);
+    this.broadcastToEventConnectors('settings-updated', settings);
+  }
+
+  // Provider events
+  sendProvidersUpdated(providers: ProviderProfile[]): void {
+    const data: ProvidersUpdatedData = {
+      providers,
+    };
+    this.sendToMainWindow('providers-updated', data);
+    this.broadcastToEventConnectors('providers-updated', data);
+  }
+
+  sendProviderModelsUpdated(data: ProviderModelsData): void {
+    this.sendToMainWindow('provider-models-updated', data);
+    this.broadcastToEventConnectors('provider-models-updated', data);
   }
 
   subscribe(socket: Socket, config: EventsConnectorConfig): void {

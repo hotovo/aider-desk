@@ -690,7 +690,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir } = parsed;
-        const projects = this.eventsHandler.addOpenProject(projectDir);
+        const projects = await this.eventsHandler.addOpenProject(projectDir);
         res.status(200).json(projects);
       }),
     );

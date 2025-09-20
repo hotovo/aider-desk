@@ -34,6 +34,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     void loadSettings();
   }, [api]);
 
+  useEffect(() => {
+    return api.addSettingsUpdatedListener((data) => {
+      setSettings(data);
+    });
+  }, [api]);
+
   const saveSettings = async (updated: SettingsData) => {
     try {
       setSettings(updated);

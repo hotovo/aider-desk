@@ -159,7 +159,63 @@
     "label": "模型",
     "selectLabel": "模型",
     "placeholder": "输入模型名称",
-    "chooseModelsToAdd": "选择要添加的模型..."
+    "chooseModelsToAdd": "选择要添加的模型...",
+    "library": {
+      "all": "全部"
+    }
+  },
+  "modelLibrary": {
+    "title": "模型库",
+    "search": "搜索模型",
+    "providers": "提供商",
+    "all": "全部",
+    "selectProvider": "选择要配置的提供商",
+    "profileForm": {
+      "title": "配置 {{provider}} 提供商的配置文件",
+      "name": "配置文件名称",
+      "id": "提供商 ID 前缀",
+      "parameters": "提供商参数",
+      "headers": "自定义头部",
+      "headerKey": "头部名称",
+      "headerValue": "头部值",
+      "addHeader": "添加头部",
+      "test": "测试并加载模型"
+    },
+    "noProvidersConfigured": "尚未配置任何提供商",
+    "addProvider": "添加提供商",
+    "addFirstProvider": "添加您的第一个提供商",
+    "searchPlaceholder": "搜索模型...",
+    "showingAllModels": "显示来自所有提供商的 {{count}} 个模型",
+    "showingModelsFromProviders": "显示来自 {{providerCount}} 个提供商的 {{modelCount}} 个模型",
+    "noModelsMatchSearch": "没有模型匹配您的搜索",
+    "selectProvidersToViewModels": "选择上面的提供商配置文件以查看其模型",
+    "noModelsFromSelectedProviders": "所选提供商没有可用的模型",
+    "addModel": "添加模型",
+    "editModel": "编辑模型",
+    "provider": "提供商",
+    "modelId": "模型 ID",
+    "modelIdPlaceholder": "例如 custom-gpt-4-turbo",
+    "maxInputTokens": "上下文窗口",
+    "maxOutputTokens": "最大输出令牌数",
+    "cacheWrites": "缓存写入",
+    "cachedInput": "缓存输入",
+    "inputCost": "输入",
+    "outputCost": "输出",
+    "inputTokenCost": "每百万令牌输入成本",
+    "outputTokenCost": "每百万令牌输出成本",
+    "cacheReadInputTokenCost": "缓存读取成本 / 每百万令牌",
+    "cacheWriteInputTokenCost": "缓存写入成本 / 每百万令牌",
+    "supportsTools": "支持工具",
+    "deleteProfileTitle": "删除配置文件",
+    "deleteProfileConfirm": "您确定要删除配置文件 '{{name}}' 吗？",
+    "hidden": "隐藏",
+    "errors": {
+      "idRequired": "模型 ID 必填",
+      "providerRequired": "提供商必填",
+      "invalidTokenCount": "令牌数必须为正数",
+      "invalidCost": "成本必须为非负数",
+      "duplicateId": "提供商 ID 已存在"
+    }
   },
   "openai": {
     "apiKey": "API 密钥",
@@ -236,7 +292,21 @@
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
-    "vertex-ai": "Vertex AI"
+    "vertex-ai": "Vertex AI",
+    "auto": {
+      "anthropic": "自动检测的 Anthropic",
+      "bedrock": "自动检测的 Bedrock",
+      "deepseek": "自动检测的 Deepseek",
+      "gemini": "自动检测的 Gemini",
+      "groq": "自动检测的 Groq",
+      "lmstudio": "自动检测的 LM Studio",
+      "ollama": "自动检测的 Ollama",
+      "openai": "自动检测的 OpenAI",
+      "openai-compatible": "自动检测的 OpenAI Compatible",
+      "openrouter": "自动检测的 OpenRouter",
+      "requesty": "自动检测的 Requesty",
+      "vertex-ai": "自动检测的 Vertex AI"
+    }
   },
   "select": {
     "placeholder": "选择选项",
@@ -297,7 +367,7 @@
       "autoApprove": "自动批准",
       "selectOrCreateProfile": "选择或创建新的代理配置",
       "newProfileName": "新配置",
-      "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",
+      "envVarPlaceholder": "{{envVar}}",
       "envVarFoundPlaceholder": "找到于: {{source}}",
       "createNewProfile": "创建新配置",
       "genericTools": "工具",
@@ -501,8 +571,10 @@
     "reasoning": "推理",
     "thinkingTokens": "思考令牌",
     "loadingModel": "加载模型中...",
-    "searchPlaceholder": "搜索模型或输入自定义名称...",
-    "removePreferred": "从首选模型中移除"
+    "searchPlaceholder": "搜索模型...",
+    "searchPlaceholderOrCustom": "搜索模型或输入自定义名称...",
+    "removePreferred": "从首选模型中移除",
+    "selectModel": "选择模型..."
   },
   "modelInfo": {
     "noInfo": "无模型信息可用。",
@@ -756,7 +828,8 @@
     "toggleMarkdown": "Markdown 渲染",
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
     "aider": "Aider",
-    "toggleSidebar": "切换侧边栏"
+    "toggleSidebar": "切换侧边栏",
+    "modelLibrary": "模型库"
   },
   "reasoningEffort": {
     "label": "推理",

@@ -14,10 +14,10 @@ import {
   McpTool,
   Mode,
   ModelInfo,
+  Model,
   ModelsData,
   OS,
   ProjectData,
-  ProviderModels,
   ProjectSettings,
   ProjectStartedData,
   QuestionData,
@@ -35,6 +35,9 @@ import {
   UserMessageData,
   VersionsInfo,
   CloudflareTunnelStatus,
+  ProviderProfile,
+  ProviderModelsData,
+  ProvidersUpdatedData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -43,6 +46,7 @@ import { compareBaseDirs } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
 type EventDataMap = {
+  'settings-updated': SettingsData;
   'response-chunk': ResponseChunkData;
   'response-completed': ResponseCompletedData;
   log: LogData;
@@ -58,7 +62,8 @@ type EventDataMap = {
   'input-history-updated': InputHistoryData;
   'clear-project': ClearProjectData;
   'project-started': ProjectStartedData;
-  'provider-models-updated': ProviderModels;
+  'provider-models-updated': ProviderModelsData;
+  'providers-updated': ProvidersUpdatedData;
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -90,6 +95,7 @@ export class BrowserApi implements ApplicationAPI {
       forceNew: true,
     });
     this.listeners = {
+      'settings-updated': new Map(),
       'response-chunk': new Map(),
       'response-completed': new Map(),
       log: new Map(),
@@ -106,6 +112,7 @@ export class BrowserApi implements ApplicationAPI {
       'clear-project': new Map(),
       'project-started': new Map(),
       'provider-models-updated': new Map(),
+      'providers-updated': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -185,6 +192,16 @@ export class BrowserApi implements ApplicationAPI {
 
   private async patch<B, R>(endpoint: string, body: B): Promise<R> {
     const response = await this.apiClient.patch<R>(endpoint, body);
+    return response.data;
+  }
+
+  private async delete<T>(endpoint: string): Promise<T> {
+    const response = await this.apiClient.delete<T>(endpoint);
+    return response.data;
+  }
+
+  private async put<B, R>(endpoint: string, body: B): Promise<R> {
+    const response = await this.apiClient.put<R>(endpoint, body);
     return response.data;
   }
 
@@ -384,14 +401,29 @@ export class BrowserApi implements ApplicationAPI {
   loadModelsInfo(): Promise<Record<string, ModelInfo>> {
     return this.get('/models-info');
   }
-  getProviderModels(): Promise<ProviderModels> {
+  getProviderModels(): Promise<ProviderModelsData> {
     return this.get('/models', {});
+  }
+  getProviders(): Promise<ProviderProfile[]> {
+    return this.get('/providers');
+  }
+  updateProviders(providers: ProviderProfile[]): Promise<ProviderProfile[]> {
+    return this.post('/providers', providers);
+  }
+  upsertModel(providerId: string, modelId: string, model: Model): Promise<Model[]> {
+    return this.put(`/providers/${providerId}/models/${modelId}`, model);
+  }
+  deleteModel(providerId: string, modelId: string): Promise<Model[]> {
+    return this.delete(`/providers/${providerId}/models/${modelId}`);
   }
   queryUsageData(from: string, to: string): Promise<UsageDataRow[]> {
     return this.get('/usage', { from, to });
   }
   getEffectiveEnvironmentVariable(key: string, baseDir?: string): Promise<EnvironmentVariable | undefined> {
     return this.get('/system/env-var', { key, baseDir });
+  }
+  addSettingsUpdatedListener(callback: (data: SettingsData) => void): () => void {
+    return this.addListener('settings-updated', undefined, callback);
   }
   addResponseChunkListener(baseDir: string, callback: (data: ResponseChunkData) => void): () => void {
     return this.addListener('response-chunk', baseDir, callback);
@@ -443,8 +475,12 @@ export class BrowserApi implements ApplicationAPI {
     return () => {};
   }
 
-  addProviderModelsUpdatedListener(callback: (data: ProviderModels) => void): () => void {
+  addProviderModelsUpdatedListener(callback: (data: ProviderModelsData) => void): () => void {
     return this.addListener('provider-models-updated', undefined, callback);
+  }
+
+  addProvidersUpdatedListener(callback: (data: ProvidersUpdatedData) => void): () => void {
+    return this.addListener('providers-updated', undefined, callback);
   }
   addTerminalDataListener(baseDir: string, callback: (data: TerminalData) => void): () => void {
     void baseDir;

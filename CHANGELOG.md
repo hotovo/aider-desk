@@ -1,5 +1,10 @@
 # Changelog
 
+## [UNRELEASED]
+
+- fixed issue with diff edit format not being set correctly on startup
+- added model library for provider and model management
+
 ## [0.32.0]
 
 - changed system prompt to XML structure for better instruction following across the various models

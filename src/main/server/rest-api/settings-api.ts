@@ -48,15 +48,6 @@ export class SettingsApi extends BaseApi {
       }),
     );
 
-    // Get provider models
-    router.get(
-      '/models',
-      this.handleRequest(async (_, res) => {
-        const models = await this.eventsHandler.getProviderModels();
-        res.status(200).json(models);
-      }),
-    );
-
     // Update settings
     router.post(
       '/settings',

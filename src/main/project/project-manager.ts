@@ -8,6 +8,7 @@ import logger from '@/logger';
 import { Project } from '@/project';
 import { Store } from '@/store';
 import { EventManager } from '@/events';
+import { ModelManager } from '@/models';
 
 export class ProjectManager {
   private projects: Project[] = [];
@@ -18,6 +19,7 @@ export class ProjectManager {
     private readonly telemetryManager: TelemetryManager,
     private readonly dataManager: DataManager,
     private readonly eventManager: EventManager,
+    private readonly modelManager: ModelManager,
   ) {}
 
   private findProject(baseDir: string): Project | undefined {
@@ -26,7 +28,7 @@ export class ProjectManager {
 
   private createProject(baseDir: string) {
     logger.info('Creating new project', { baseDir });
-    const project = new Project(baseDir, this.store, this.agent, this.telemetryManager, this.dataManager, this.eventManager);
+    const project = new Project(baseDir, this.store, this.agent, this.telemetryManager, this.dataManager, this.eventManager, this.modelManager);
     this.projects.push(project);
     return project;
   }

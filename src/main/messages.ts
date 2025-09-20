@@ -153,6 +153,7 @@ export interface SetModelsMessage extends Message {
   mainModel: string;
   weakModel?: string | null;
   editFormat?: EditFormat;
+  environmentVariables?: Record<string, string>;
   info?: RawModelInfo;
   hasError?: boolean;
 }

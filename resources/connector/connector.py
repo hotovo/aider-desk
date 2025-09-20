@@ -426,6 +426,8 @@ class ConnectorInputOutput(InputOutput):
       return True
     if message == "https://aider.chat/docs/troubleshooting/edit-errors.html":
       return True
+    if message.endswith("Unknown context window size and costs, using sane defaults."):
+      return True
     return False
 
   def tool_warning(self, message="", strip=True):
@@ -890,6 +892,10 @@ class Connector:
           main_model = message.get('mainModel')
           weak_model = message.get('weakModel')
           edit_format = message.get('editFormat')
+          environment_variables = message.get('environmentVariables')
+          if environment_variables:
+            await self.update_environment_variables(environment_variables)
+
           if not main_model:
             return
 

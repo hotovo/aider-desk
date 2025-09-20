@@ -40,6 +40,7 @@ import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport
 import { COMPACT_CONVERSATION_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
+import debounce from 'lodash/debounce';
 
 import type { SimpleGit } from 'simple-git';
 
@@ -54,7 +55,7 @@ import { DataManager } from '@/data-manager';
 import logger from '@/logger';
 import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
-import { DEFAULT_MAIN_MODEL } from '@/models';
+import { DEFAULT_MAIN_MODEL, ModelManager } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
@@ -93,6 +94,7 @@ export class Project {
     private readonly telemetryManager: TelemetryManager,
     private readonly dataManager: DataManager,
     private readonly eventManager: EventManager,
+    private readonly modelManager: ModelManager,
   ) {
     this.git = simpleGit(this.baseDir);
     this.customCommandManager = new CustomCommandManager(this);
@@ -176,7 +178,8 @@ export class Project {
       });
     }
     if (connector.listenTo.includes('update-env-vars')) {
-      this.sendUpdateEnvVars(this.store.getSettings());
+      const environmentVariables = getEnvironmentVariablesForAider(this.store.getSettings(), this.baseDir);
+      this.sendUpdateEnvVars(environmentVariables);
     }
     if (connector.listenTo.includes('request-context-info')) {
       connector.sendRequestTokensInfoMessage(this.sessionManager.toConnectorMessages(), this.getContextFiles());
@@ -271,10 +274,22 @@ export class Project {
     const environmentVariables = getEnvironmentVariablesForAider(settings, this.baseDir);
     const thinkingTokens = projectSettings.thinkingTokens;
 
+    const mainModelMapping = this.modelManager.getAiderModelMapping(mainModel);
+    const mainModelName = mainModelMapping.modelName;
+    const envFromMain = mainModelMapping.environmentVariables;
+
+    let envFromWeak = {};
+    let weakModelName: string | null = null;
+    if (weakModel) {
+      const weakModelMapping = this.modelManager.getAiderModelMapping(weakModel);
+      weakModelName = weakModelMapping.modelName;
+      envFromWeak = weakModelMapping.environmentVariables;
+    }
+
     logger.info('Running Aider for project', {
       baseDir: this.baseDir,
-      mainModel,
-      weakModel,
+      mainModel: mainModelName,
+      weakModel: weakModelName,
       reasoningEffort,
       thinkingTokens,
     });
@@ -297,15 +312,13 @@ export class Project {
     args.push(...processedOptionsArgs);
 
     args.push('--no-check-update', '--no-show-model-warnings');
-    args.push('--model', mainModel);
+    args.push('--model', mainModelName);
 
-    if (weakModel) {
-      args.push('--weak-model', weakModel);
+    if (weakModelName) {
+      args.push('--weak-model', weakModelName);
     }
 
-    if (modelEditFormats[mainModel]) {
-      args.push('--edit-format', modelEditFormats[mainModel]);
-    }
+    args.push('--edit-format', modelEditFormats[mainModel] || 'diff');
 
     if (reasoningEffort !== undefined && !optionsArgsSet.has('--reasoning-effort')) {
       args.push('--reasoning-effort', reasoningEffort);
@@ -336,6 +349,8 @@ export class Project {
     const env = {
       ...process.env,
       ...environmentVariables,
+      ...envFromMain,
+      ...envFromWeak,
       PYTHONPATH: AIDER_DESK_CONNECTOR_DIR,
       PYTHONUTF8: process.env.AIDER_DESK_OMIT_PYTHONUTF8 ? undefined : '1',
       BASE_DIR: this.baseDir,
@@ -614,9 +629,11 @@ export class Project {
 
     const connectorMessages = messages || this.sessionManager.toConnectorMessages();
     const contextFiles = files || this.sessionManager.getContextFiles();
+    const architectModel = this.getArchitectModel();
+    const architectModelMapping = architectModel ? this.modelManager.getAiderModelMapping(architectModel) : null;
 
     this.findMessageConnectors('prompt').forEach((connector) => {
-      connector.sendPromptMessage(prompt, promptContext, mode, this.getArchitectModel(), connectorMessages, contextFiles);
+      connector.sendPromptMessage(prompt, promptContext, mode, architectModelMapping?.modelName, connectorMessages, contextFiles);
     });
 
     // Wait for prompt to finish and return collected responses
@@ -1060,21 +1077,53 @@ export class Project {
     };
     this.store.saveProjectSettings(this.baseDir, updatedSettings);
 
+    const projectSettings = this.store.getProjectSettings(this.baseDir);
+    const mainModel = projectSettings.mainModel || DEFAULT_MAIN_MODEL;
+    const mainModelParts = mainModel.split('/');
+    const weakModelParts = projectSettings.weakModel?.split('/') || modelsData.weakModel?.split('/');
+    const architectModelParts = projectSettings.architectModel?.split('/') || modelsData.architectModel?.split('/');
+
+    const getWeakModelProvider = () => {
+      if (modelsData.mainModel !== projectSettings.mainModel) {
+        // use the provider prefix from the main model when Aider's provider prefix is different
+        return mainModelParts[0];
+      }
+      return weakModelParts ? weakModelParts[0] : mainModelParts[0];
+    };
+
     this.aiderModels = {
       ...modelsData,
-      architectModel: modelsData.architectModel !== undefined ? modelsData.architectModel : this.getArchitectModel(),
+      mainModel: `${mainModelParts[0]}/${mainModelParts.slice(1).join('/')}`,
+      weakModel: weakModelParts ? `${getWeakModelProvider()}/${weakModelParts.slice(1).join('/')}` : null,
+      architectModel: architectModelParts ? `${architectModelParts[0]}/${architectModelParts.slice(1).join('/')}` : null,
     };
     this.eventManager.sendUpdateAiderModels(this.aiderModels);
   }
 
   public updateModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff') {
+    const mainModelMapping = this.modelManager.getAiderModelMapping(mainModel);
+    const mainModelName = mainModelMapping.modelName;
+    const envFromMain = mainModelMapping.environmentVariables;
+
+    let envFromWeak = {};
+    let weakModelName: string | null = null;
+    if (weakModel) {
+      const weakModelMapping = this.modelManager.getAiderModelMapping(weakModel);
+      weakModelName = weakModelMapping.modelName;
+      envFromWeak = weakModelMapping.environmentVariables;
+    }
+
     logger.info('Updating models:', {
-      mainModel,
-      weakModel,
+      mainModel: mainModelName,
+      weakModel: weakModelName,
       editFormat,
     });
 
-    this.findMessageConnectors('set-models').forEach((connector) => connector.sendSetModelsMessage(mainModel, weakModel, editFormat));
+    this.sendSetModels(mainModelName, weakModelName, editFormat, { ...envFromMain, ...envFromWeak });
+  }
+
+  private sendSetModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff', environmentVariables?: Record<string, string>) {
+    this.findMessageConnectors('set-models').forEach((connector) => connector.sendSetModelsMessage(mainModel, weakModel, editFormat, environmentVariables));
   }
 
   public setArchitectModel(architectModel: string) {
@@ -1429,7 +1478,8 @@ export class Project {
   }
 
   async updateAgentEstimatedTokens(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {
-    logger.info('Updating agent estimated tokens', {
+    logger.debug('Updating agent estimated tokens', {
+      baseDir: this.baseDir,
       checkContextFilesIncluded,
       checkRepoMapIncluded,
     });
@@ -1438,15 +1488,20 @@ export class Project {
       return;
     }
 
-    const tokens = await this.agent.estimateTokens(this, agentProfile);
-    this.updateTokensInfo({
-      agent: {
-        cost: this.agentTotalCost,
-        tokens,
-        tokensEstimated: true,
-      },
-    });
+    const tokens = await this.debouncedEstimateTokens(agentProfile);
+
+    if (tokens !== undefined) {
+      this.updateTokensInfo({
+        agent: {
+          cost: this.agentTotalCost,
+          tokens,
+          tokensEstimated: true,
+        },
+      });
+    }
   }
+
+  debouncedEstimateTokens = debounce(async (agentProfile: AgentProfile) => this.agent.estimateTokens(this, agentProfile), 1000);
 
   settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {
     const projectSettings = this.store.getProjectSettings(this.baseDir);
@@ -1474,7 +1529,7 @@ export class Project {
       customInstructionsChanged;
 
     if (agentSettingsAffectingTokensChanged) {
-      logger.info('Agent settings affecting token count changed, updating estimated tokens.');
+      logger.debug('Agent settings affecting token count changed, updating estimated tokens.');
       void this.updateContextInfo();
     }
 
@@ -1483,14 +1538,14 @@ export class Project {
     const llmProvidersChanged = JSON.stringify(oldSettings.llmProviders) !== JSON.stringify(newSettings.llmProviders);
 
     if (aiderEnvVarsChanged || llmProvidersChanged) {
-      this.sendUpdateEnvVars(newSettings);
+      const updatedEnvironmentVariables = getEnvironmentVariablesForAider(newSettings, this.baseDir);
+      this.sendUpdateEnvVars(updatedEnvironmentVariables);
     }
   }
 
-  private sendUpdateEnvVars(settings: SettingsData) {
+  private sendUpdateEnvVars(environmentVariables: Record<string, unknown>) {
     logger.info('Environment variables or LLM providers changed, updating connectors.');
-    const updatedEnvironmentVariables = getEnvironmentVariablesForAider(settings, this.baseDir);
-    this.findMessageConnectors('update-env-vars').forEach((connector) => connector.sendUpdateEnvVarsMessage(updatedEnvironmentVariables));
+    this.findMessageConnectors('update-env-vars').forEach((connector) => connector.sendUpdateEnvVarsMessage(environmentVariables));
   }
 
   async updateTask(taskId: string, updates: { title?: string; completed?: boolean }): Promise<Task | undefined> {

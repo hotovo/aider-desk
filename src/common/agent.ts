@@ -1,4 +1,4 @@
-import { AgentProfile, ContextMemoryMode, InvocationMode, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, ContextMemoryMode, InvocationMode, Model, ReasoningEffort, ToolApprovalState } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -19,20 +19,21 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 
+// TODO: move to providers.ts
 export type LlmProviderName =
-  | 'openai'
   | 'anthropic'
-  | 'gemini'
-  | 'vertex-ai'
-  | 'lmstudio'
   | 'bedrock'
+  | 'cerebras'
   | 'deepseek'
-  | 'openai-compatible'
+  | 'gemini'
+  | 'groq'
+  | 'lmstudio'
   | 'ollama'
+  | 'openai'
+  | 'openai-compatible'
   | 'openrouter'
   | 'requesty'
-  | 'groq'
-  | 'cerebras';
+  | 'vertex-ai';
 
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -333,129 +334,128 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   },
 };
 
-export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: SettingsData | null): LlmProvider => {
-  let provider = settings?.llmProviders[providerName] || null;
+// TODO: move to providers.ts
+export const getDefaultProviderParams = (providerName: LlmProviderName): LlmProvider => {
+  let provider: LlmProvider;
 
-  if (!provider) {
-    const baseConfig: LlmProviderBase = {
-      name: providerName,
-    };
+  const baseConfig: LlmProviderBase = {
+    name: providerName,
+  };
 
-    switch (providerName) {
-      case 'openai':
-        provider = {
-          name: 'openai',
-          apiKey: '',
-        } satisfies OpenAiProvider;
-        break;
-      case 'anthropic':
-        provider = {
-          name: 'anthropic',
-          apiKey: '',
-        } satisfies AnthropicProvider;
-        break;
-      case 'gemini':
-        provider = {
-          name: 'gemini',
-          apiKey: '',
-          useSearchGrounding: false,
-          includeThoughts: false,
-          thinkingBudget: 0,
-          customBaseUrl: '',
-        } satisfies GeminiProvider;
-        break;
-      case 'vertex-ai':
-        provider = {
-          name: 'vertex-ai',
-          project: '',
-          location: '',
-          googleCloudCredentialsJson: '',
-          includeThoughts: false,
-          thinkingBudget: 0,
-        } satisfies VertexAiProvider;
-        break;
-      case 'groq':
-        provider = {
-          name: 'groq',
-          apiKey: '',
-        } satisfies GroqProvider;
-        break;
-      case 'cerebras':
-        provider = {
-          name: 'cerebras',
-          apiKey: '',
-        } satisfies CerebrasProvider;
-        break;
-      case 'deepseek':
-        provider = {
-          name: 'deepseek',
-          apiKey: '',
-        } satisfies DeepseekProvider;
-        break;
-      case 'bedrock':
-        provider = {
-          name: 'bedrock',
-          accessKeyId: '',
-          secretAccessKey: '',
-          region: 'us-east-1', // Default region
-        } satisfies BedrockProvider;
-        break;
-      case 'openai-compatible':
-        provider = {
-          name: 'openai-compatible',
-          apiKey: '',
-          baseUrl: '',
-        } satisfies OpenAiCompatibleProvider;
-        break;
-      case 'ollama':
-        provider = {
-          name: 'ollama',
-          baseUrl: '',
-        } satisfies OllamaProvider;
-        break;
-      case 'openrouter':
-        provider = {
-          name: 'openrouter',
-          apiKey: '',
-          order: [],
-          allowFallbacks: true,
-          dataCollection: 'allow',
-          only: [],
-          ignore: [],
-          quantizations: [],
-          sort: 'price',
-          requireParameters: true,
-        } satisfies OpenRouterProvider;
-        break;
-      case 'lmstudio':
-        provider = {
-          name: 'lmstudio',
-          baseUrl: '',
-        } satisfies LmStudioProvider;
-        break;
-      case 'requesty':
-        provider = {
-          name: 'requesty',
-          apiKey: '',
-          useAutoCache: true,
-          reasoningEffort: ReasoningEffort.None,
-        } satisfies RequestyProvider;
-        break;
-      default:
-        // For any other provider, create a base structure. This might need more specific handling if new providers are added.
-        provider = {
-          ...baseConfig,
-        } as LlmProvider;
-    }
-
-    return provider;
-  } else {
-    return {
-      ...provider,
-    };
+  switch (providerName) {
+    case 'openai':
+      provider = {
+        name: 'openai',
+        apiKey: '',
+      } satisfies OpenAiProvider;
+      break;
+    case 'anthropic':
+      provider = {
+        name: 'anthropic',
+        apiKey: '',
+      } satisfies AnthropicProvider;
+      break;
+    case 'gemini':
+      provider = {
+        name: 'gemini',
+        apiKey: '',
+        useSearchGrounding: false,
+        includeThoughts: false,
+        thinkingBudget: 0,
+        customBaseUrl: '',
+      } satisfies GeminiProvider;
+      break;
+    case 'vertex-ai':
+      provider = {
+        name: 'vertex-ai',
+        project: '',
+        location: '',
+        googleCloudCredentialsJson: '',
+        includeThoughts: false,
+        thinkingBudget: 0,
+      } satisfies VertexAiProvider;
+      break;
+    case 'groq':
+      provider = {
+        name: 'groq',
+        apiKey: '',
+      } satisfies GroqProvider;
+      break;
+    case 'cerebras':
+      provider = {
+        name: 'cerebras',
+        apiKey: '',
+      } satisfies CerebrasProvider;
+      break;
+    case 'deepseek':
+      provider = {
+        name: 'deepseek',
+        apiKey: '',
+      } satisfies DeepseekProvider;
+      break;
+    case 'bedrock':
+      provider = {
+        name: 'bedrock',
+        accessKeyId: '',
+        secretAccessKey: '',
+        region: 'us-east-1', // Default region
+      } satisfies BedrockProvider;
+      break;
+    case 'openai-compatible':
+      provider = {
+        name: 'openai-compatible',
+        apiKey: '',
+        baseUrl: '',
+      } satisfies OpenAiCompatibleProvider;
+      break;
+    case 'ollama':
+      provider = {
+        name: 'ollama',
+        baseUrl: '',
+      } satisfies OllamaProvider;
+      break;
+    case 'openrouter':
+      provider = {
+        name: 'openrouter',
+        apiKey: '',
+        order: [],
+        allowFallbacks: true,
+        dataCollection: 'allow',
+        only: [],
+        ignore: [],
+        quantizations: [],
+        sort: 'price',
+        requireParameters: true,
+      } satisfies OpenRouterProvider;
+      break;
+    case 'lmstudio':
+      provider = {
+        name: 'lmstudio',
+        baseUrl: '',
+      } satisfies LmStudioProvider;
+      break;
+    case 'requesty':
+      provider = {
+        name: 'requesty',
+        apiKey: '',
+        useAutoCache: true,
+        reasoningEffort: ReasoningEffort.None,
+      } satisfies RequestyProvider;
+      break;
+    default:
+      // For any other provider, create a base structure. This might need more specific handling if new providers are added.
+      provider = {
+        ...baseConfig,
+      } as LlmProvider;
   }
+
+  return provider;
 };
 
 export const isSubagentEnabled = (agentProfile: AgentProfile, currentProfileId?: string): boolean => {
   return Boolean(agentProfile.subagent.systemPrompt && agentProfile.subagent.enabled && (!currentProfileId || agentProfile.id !== currentProfileId));
+};
+
+export const getProviderModelId = (model: Model): string => {
+  return `${model.providerId}/${model.id}`;
 };

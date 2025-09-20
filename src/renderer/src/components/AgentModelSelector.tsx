@@ -1,15 +1,11 @@
 import { forwardRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AVAILABLE_PROVIDERS, LlmProviderName } from '@common/agent';
-import { AgentProfile, SettingsData } from '@common/types';
-import { BiCog } from 'react-icons/bi';
+import { AVAILABLE_PROVIDERS, getProviderModelId } from '@common/agent';
+import { AgentProfile, Model, SettingsData } from '@common/types';
 
 import { ModelSelector, ModelSelectorRef } from './ModelSelector';
 
-import { SettingsDialog } from '@/components/settings/SettingsDialog';
-import { IconButton } from '@/components/common/IconButton';
-import { useBooleanState } from '@/hooks/useBooleanState';
-import { useModels } from '@/contexts/ModelProvider';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
 
 type Props = {
@@ -17,60 +13,60 @@ type Props = {
   settings: SettingsData | null;
   agentProfile: AgentProfile | undefined;
   saveSettings: (settings: SettingsData) => void;
-  showSettingsButton?: boolean;
 };
 
-export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ className, settings, agentProfile, saveSettings, showSettingsButton = true }, ref) => {
+export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ className, settings, agentProfile, saveSettings }, ref) => {
   const { t } = useTranslation();
-  const [settingsDialogVisible, showSettingsDialog, hideSettingsDialog] = useBooleanState(false);
+  const { providers, models } = useModelProviders();
 
-  const { getModels } = useModels();
+  const currentModel = agentProfile ? models.find((m) => m.id === agentProfile.model && m.providerId === agentProfile.provider) : undefined;
+  const currentModelId = currentModel ? getProviderModelId(currentModel) : agentProfile ? `${agentProfile.provider}/${agentProfile.model}` : undefined;
 
   const agentModels = useMemo(() => {
-    if (!settings) {
-      return [];
-    }
+    const agentModels: Model[] = [...models];
 
-    const allModels: string[] = [];
-    AVAILABLE_PROVIDERS.forEach((provider) => {
-      const models = getModels(provider);
-      if (models && models.length > 0) {
-        allModels.push(...models.map((model) => `${provider}/${model.id}`).sort());
-      }
-    });
     // Add the currently selected model if it's not in the known list (custom model)
-    if (agentProfile && !allModels.some((model) => model === `${agentProfile.provider}/${agentProfile.model}`)) {
-      const currentSelection = `${agentProfile.provider}/${agentProfile.model}`;
-      if (!allModels.includes(currentSelection)) {
-        allModels.unshift(currentSelection); // Add to the beginning for visibility
+    if (currentModelId) {
+      const existingModel = agentModels.find((model) => getProviderModelId(model) === currentModelId);
+      if (!existingModel) {
+        // Create a custom model object for the current model
+        const [providerId, ...modelNameParts] = currentModelId.split('/');
+        const modelId = modelNameParts.join('/');
+        if (providerId && modelId) {
+          const customModel: Model = {
+            id: modelId,
+            providerId: providerId,
+          };
+          agentModels.unshift(customModel); // Add to the beginning for visibility
+        }
       }
     }
-    return allModels;
-  }, [settings, agentProfile, getModels]);
-
-  const selectedModelDisplay = agentProfile ? `${agentProfile.provider}/${agentProfile.model}` : t('common.notSet');
+    return agentModels;
+  }, [currentModelId, models]);
 
   const onModelSelected = useCallback(
-    (selectedModelString: string) => {
+    (selectedModel: Model) => {
       if (!settings) {
         return;
       }
 
-      const [providerName, ...modelNameParts] = selectedModelString.split('/');
-      const modelName = modelNameParts.join('/');
-      if (!providerName || !modelName) {
+      const selectedModelId = getProviderModelId(selectedModel);
+      const [providerId, ...modelNameParts] = selectedModelId.split('/');
+      const modelId = modelNameParts.join('/');
+      if (!providerId || !modelId) {
         showErrorNotification(
           t('modelSelector.invalidModelSelection', {
-            model: selectedModelString,
+            model: selectedModelId,
           }),
         );
         return;
       }
 
-      if (!AVAILABLE_PROVIDERS.includes(providerName as LlmProviderName)) {
+      const provider = providers.find((provider) => provider.id === providerId);
+      if (!provider) {
         showErrorNotification(
           t('modelSelector.providerNotSupported', {
-            provider: providerName,
+            provider: providerId,
             providers: AVAILABLE_PROVIDERS.join(', '),
           }),
         );
@@ -81,8 +77,8 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
         if (profile.id === agentProfile?.id) {
           return {
             ...profile,
-            provider: providerName,
-            model: modelName,
+            provider: provider.id,
+            model: modelId,
           } as AgentProfile;
         }
         return profile;
@@ -91,14 +87,11 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
       const updatedSettings: SettingsData = {
         ...settings,
         agentProfiles: updatedProfiles,
-        models: {
-          ...settings.models,
-          agentPreferred: [...new Set([selectedModelString, ...settings.models.agentPreferred])],
-        },
+        preferredModels: [...new Set([selectedModelId, ...settings.preferredModels])],
       };
       saveSettings(updatedSettings);
     },
-    [settings, saveSettings, t, agentProfile?.id],
+    [settings, providers, saveSettings, t, agentProfile?.id],
   );
 
   const removePreferredModel = useCallback(
@@ -109,11 +102,8 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
 
       const updatedSettings = {
         ...settings,
-        models: {
-          ...settings.models,
-          agentPreferred: (settings.models.agentPreferred || []).filter((m: string) => m !== model),
-        },
-      };
+        preferredModels: (settings.preferredModels || []).filter((m: string) => m !== model),
+      } satisfies SettingsData;
       saveSettings(updatedSettings);
     },
     [settings, saveSettings],
@@ -124,23 +114,18 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
   }
 
   return (
-    <>
-      <div className="relative flex items-center space-x-1">
-        <ModelSelector
-          ref={ref}
-          className={className}
-          models={agentModels}
-          selectedModel={selectedModelDisplay}
-          onChange={onModelSelected}
-          preferredModels={settings?.models.agentPreferred || []}
-          removePreferredModel={removePreferredModel}
-        />
-        {showSettingsButton && (
-          <IconButton icon={<BiCog className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-bg-tertiary rounded-md" />
-        )}
-      </div>
-      {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={1} initialAgentProvider={agentProfile?.provider} />}
-    </>
+    <div className="relative flex items-center space-x-1">
+      <ModelSelector
+        ref={ref}
+        className={className}
+        models={agentModels}
+        selectedModelId={currentModelId}
+        onChange={onModelSelected}
+        preferredModelIds={settings?.preferredModels || []}
+        removePreferredModel={removePreferredModel}
+        providers={providers}
+      />
+    </div>
   );
 });
 

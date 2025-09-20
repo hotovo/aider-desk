@@ -7,7 +7,6 @@ import { LlmProviderName } from '@common/agent';
 import { useApi } from '@/context/ApiContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
-import { ModelProvidersSettings } from '@/components/settings/ModelProvidersSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
 import { ServerSettings } from '@/components/settings/ServerSettings';
@@ -45,10 +44,6 @@ export const Settings = ({
     setIsServerManagementSupported(api.isManageServerSupported());
   }, [api]);
 
-  const handleSwitchToAiderTab = () => {
-    setSelectedTabIndex(2); // Aider tab is at index 2
-  };
-
   const renderTab = (label: string) => (
     <Tab
       className={({ selected }) =>
@@ -73,7 +68,6 @@ export const Settings = ({
     <TabGroup className="flex flex-col flex-1 min-h-0" selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
       <TabList className="flex bg-bg-secondary backdrop-blur-sm border border-border-default-dark rounded-t-lg shadow-lg">
         {renderTab(t('settings.tabs.general'))}
-        {renderTab(t('settings.tabs.providers'))}
         {renderTab(t('settings.tabs.aider'))}
         {renderTab(t('settings.tabs.agent'))}
         {isServerManagementSupported && renderTab(t('settings.tabs.server'))}
@@ -91,7 +85,6 @@ export const Settings = ({
             onFontSizeChange={onFontSizeChange}
           />,
         )}
-        {renderTabPanel(<ModelProvidersSettings settings={settings} setSettings={updateSettings} onSwitchToAiderTab={handleSwitchToAiderTab} />)}
         {renderTabPanel(<AiderSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<AgentSettings settings={settings} setSettings={updateSettings} initialProfileId={initialAgentProfileId} />)}
         {isServerManagementSupported && renderTabPanel(<ServerSettings settings={settings} setSettings={updateSettings} />)}

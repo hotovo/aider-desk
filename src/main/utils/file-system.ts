@@ -54,8 +54,7 @@ export const isProjectPath = async (path: string): Promise<boolean> => {
       return false;
     }
     return true;
-  } catch (error) {
-    logger.error('Error checking if path exists:', { error });
+  } catch {
     return false;
   }
 };

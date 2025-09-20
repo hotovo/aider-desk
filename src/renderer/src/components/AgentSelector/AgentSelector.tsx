@@ -340,7 +340,7 @@ export const AgentSelector = ({ isActive }: Props) => {
       <StyledTooltip id="agent-selector-tooltip" />
 
       {showAgentProfilesDialog && (
-        <SettingsDialog onClose={() => setShowAgentProfilesDialog(false)} initialTab={3} initialAgentProfileId={projectSettings?.agentProfileId} />
+        <SettingsDialog onClose={() => setShowAgentProfilesDialog(false)} initialTab={2} initialAgentProfileId={projectSettings?.agentProfileId} />
       )}
     </div>
   );

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaSync, FaTable, FaChartBar } from 'react-icons/fa';
-import { IoMdClose } from 'react-icons/io';
 import { CgSpinner } from 'react-icons/cg';
 import { UsageDataRow } from '@common/types';
 import { clsx } from 'clsx';
 
 import { Select } from '../common/Select';
+import { ModalOverlayLayout } from '../common/ModalOverlayLayout';
 
 import { UsageTable } from './UsageTable';
 import { TokenUsageTrendChart } from './TokenUsageTrendChart';
@@ -127,19 +127,7 @@ export const UsageDashboard = ({ onClose }: Props) => {
   };
 
   return (
-    <div className="absolute inset-0 bg-bg-primary-light z-50 flex flex-col">
-      <div className="flex items-center border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light min-h-[40px] pl-4">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-md uppercase font-medium text-text-primary">{t('usageDashboard.title')}</h2>
-        </div>
-        <IconButton
-          icon={<IoMdClose className="h-5 w-5 text-text-secondary" />}
-          onClick={onClose}
-          tooltip={t('common.close')}
-          className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiary-emphasis transition-colors duration-200"
-        />
-      </div>
-
+    <ModalOverlayLayout title={t('usageDashboard.title')} onClose={onClose}>
       <div className="flex items-center space-x-4 p-4 border-b-2 border-border-dark-light">
         <div className="flex items-end space-x-2">
           <DatePicker
@@ -257,6 +245,6 @@ export const UsageDashboard = ({ onClose }: Props) => {
           )}
         </>
       )}
-    </div>
+    </ModalOverlayLayout>
   );
 };

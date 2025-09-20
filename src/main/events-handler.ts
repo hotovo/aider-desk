@@ -13,10 +13,11 @@ import {
   McpTool,
   Mode,
   ModelInfo,
+  Model,
   OS,
   ProjectData,
   ProjectSettings,
-  ProviderModels,
+  ProviderProfile,
   ResponseCompletedData,
   SessionData,
   SettingsData,
@@ -25,6 +26,7 @@ import {
   TodoItem,
   UsageDataRow,
   VersionsInfo,
+  ProviderModelsData,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 
@@ -40,6 +42,7 @@ import { TerminalManager } from '@/terminal/terminal-manager';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
+import { EventManager } from '@/events';
 
 export class EventsHandler {
   constructor(
@@ -54,6 +57,7 @@ export class EventsHandler {
     private dataManager: DataManager,
     private terminalManager: TerminalManager,
     private cloudflareTunnelManager: CloudflareTunnelManager,
+    private eventManager: EventManager,
   ) {}
 
   loadSettings(): SettingsData {
@@ -68,10 +72,6 @@ export class EventsHandler {
     this.agent.settingsChanged(oldSettings, newSettings);
     this.projectManager.settingsChanged(oldSettings, newSettings);
     this.telemetryManager.settingsChanged(oldSettings, newSettings);
-
-    if (await this.modelManager.settingsChanged(oldSettings, newSettings)) {
-      await this.store.updateProviderModelInAgentProfiles(this.modelManager);
-    }
 
     return this.store.getSettings();
   }
@@ -133,14 +133,16 @@ export class EventsHandler {
     return this.store.getOpenProjects();
   }
 
-  addOpenProject(baseDir: string): ProjectData[] {
+  async addOpenProject(baseDir: string): Promise<ProjectData[]> {
     const projects = this.store.getOpenProjects();
     const existingProject = projects.find((p) => normalizeBaseDir(p.baseDir) === normalizeBaseDir(baseDir));
 
     if (!existingProject) {
+      logger.info('EventsHandler: addOpenProject', { baseDir });
+      const providerModels = await this.modelManager.getProviderModels();
       const newProject: ProjectData = {
         baseDir: baseDir.endsWith('/') ? baseDir.slice(0, -1) : baseDir,
-        settings: getDefaultProjectSettings(this.store, baseDir),
+        settings: getDefaultProjectSettings(this.store, providerModels.models || [], baseDir),
         active: true,
       };
       const updatedProjects = [...projects.map((p) => ({ ...p, active: false })), newProject];
@@ -306,15 +308,12 @@ export class EventsHandler {
 
   updateMainModel(baseDir: string, mainModel: string): void {
     const projectSettings = this.store.getProjectSettings(baseDir);
-    const clearWeakModel = projectSettings.weakModel === projectSettings.mainModel;
 
     projectSettings.mainModel = mainModel;
-    if (clearWeakModel) {
-      projectSettings.weakModel = null;
-    }
+    projectSettings.weakModel = null;
 
     this.store.saveProjectSettings(baseDir, projectSettings);
-    this.projectManager.getProject(baseDir).updateModels(mainModel, projectSettings?.weakModel || null, projectSettings.modelEditFormats[mainModel]);
+    this.projectManager.getProject(baseDir).updateModels(mainModel, projectSettings.weakModel, projectSettings.modelEditFormats[mainModel]);
   }
 
   updateWeakModel(baseDir: string, weakModel: string): void {
@@ -440,7 +439,10 @@ export class EventsHandler {
       }
 
       await fs.writeFile(targetFilePath, `Scraped content of ${url}:\n\n${content}`);
-      await project.addFile({ path: path.relative(baseDir, targetFilePath), readOnly: true });
+      await project.addFile({
+        path: path.relative(baseDir, targetFilePath),
+        readOnly: true,
+      });
       if (filePath) {
         await project.addToInputHistory(`/web ${url} ${filePath}`);
       } else {
@@ -557,8 +559,30 @@ export class EventsHandler {
     return getEffectiveEnvironmentVariable(key, baseDir, this.store.getSettings());
   }
 
-  async getProviderModels(): Promise<ProviderModels> {
+  async getProviderModels(): Promise<ProviderModelsData> {
     return await this.modelManager.getProviderModels();
+  }
+
+  getProviders(): ProviderProfile[] {
+    return this.store.getProviders();
+  }
+
+  async updateProviders(providers: ProviderProfile[]): Promise<void> {
+    const oldProviders = this.store.getProviders();
+
+    this.store.setProviders(providers);
+
+    await this.modelManager.providersChanged(oldProviders, providers);
+
+    this.eventManager.sendProvidersUpdated(providers);
+  }
+
+  async upsertModel(providerId: string, modelId: string, model: Model): Promise<void> {
+    await this.modelManager.upsertModel(providerId, modelId, model);
+  }
+
+  async deleteModel(providerId: string, modelId: string): Promise<void> {
+    await this.modelManager.deleteModel(providerId, modelId);
   }
 
   async showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue> {

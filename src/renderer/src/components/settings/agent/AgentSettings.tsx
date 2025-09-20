@@ -463,13 +463,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               <div className="!mb-4">
                 <label className="block text-sm font-medium text-text-primary mb-1">{t('agentProfiles.model')}</label>
                 <div className="w-full p-2 bg-bg-secondary-light border-2 border-border-default rounded focus-within:outline-none focus-within:border-border-light">
-                  <AgentModelSelector
-                    className="w-full justify-between"
-                    settings={settings}
-                    agentProfile={selectedProfile}
-                    saveSettings={setSettings}
-                    showSettingsButton={false}
-                  />
+                  <AgentModelSelector className="w-full justify-between" settings={settings} agentProfile={selectedProfile} saveSettings={setSettings} />
                 </div>
               </div>
             )}

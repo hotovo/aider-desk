@@ -13,7 +13,7 @@ import {
 } from '@common/tools';
 
 import logger from '@/logger';
-import { CacheControl } from '@/agent';
+import { CacheControl } from '@/models';
 
 /**
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.

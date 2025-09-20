@@ -78,7 +78,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const [processing, setProcessing] = useState(false);
   const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
   const [allFiles, setAllFiles] = useState<string[]>([]);
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [autocompletionWords, setAutocompletionWords] = useState<string[]>([]);
   const [aiderModelsData, setAiderModelsData] = useState<ModelsData | null>(null);
   const [inputHistory, setInputHistory] = useState<string[]>([]);
@@ -462,9 +461,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleUpdateAutocompletion = ({ allFiles, models, words }: AutocompletionData) => {
+    const handleUpdateAutocompletion = ({ allFiles, words }: AutocompletionData) => {
       setAllFiles(allFiles);
-      setAvailableModels(models);
       setAutocompletionWords([...words, ...allFiles]);
     };
 
@@ -834,7 +832,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           ref={projectTopBarRef}
           baseDir={project.baseDir}
           modelsData={aiderModelsData}
-          allModels={availableModels}
           mode={projectSettings.currentMode}
           renderMarkdown={projectSettings.renderMarkdown}
           onModelsChange={handleModelChange}

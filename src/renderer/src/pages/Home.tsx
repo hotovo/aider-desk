@@ -1,6 +1,7 @@
 import { ModelInfo, ProjectData } from '@common/types';
 import { useCallback, useEffect, useState } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
+import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
 
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
@@ -16,6 +17,7 @@ import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
 import { useApi } from '@/context/ApiContext';
+import { ModelLibrary } from '@/components/ModelLibrary';
 
 export const Home = () => {
   const { t } = useTranslation();
@@ -30,6 +32,7 @@ export const Home = () => {
   const [releaseNotesContent, setReleaseNotesContent] = useState<string | null>(null);
   const [modelsInfo, setModelsInfo] = useState<Record<string, ModelInfo>>({});
   const [isUsageDashboardVisible, setIsUsageDashboardVisible] = useState(false);
+  const [isModelLibraryVisible, setIsModelLibraryVisible] = useState(false);
   const [hasShownUpdateNotification, setHasShownUpdateNotification] = useState(false);
 
   const activeProject = openProjects.find((project) => project.active) || openProjects[0];
@@ -226,6 +229,12 @@ export const Home = () => {
               />
             )}
             <IconButton
+              icon={<PiNotebookFill className="h-5 w-5 text-text-secondary" />}
+              tooltip={t('projectBar.modelLibrary')}
+              onClick={() => setIsModelLibraryVisible(true)}
+              className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
+            />
+            <IconButton
               icon={<MdBarChart className="h-5 w-5 text-text-secondary" />}
               tooltip={t('usageDashboard.title')}
               onClick={() => setIsUsageDashboardVisible(true)}
@@ -246,6 +255,7 @@ export const Home = () => {
         )}
         {showSettingsTab !== null && <SettingsDialog onClose={() => setShowSettingsTab(null)} initialTab={showSettingsTab} />}
         {isUsageDashboardVisible && <UsageDashboard onClose={() => setIsUsageDashboardVisible(false)} />}
+        {isModelLibraryVisible && <ModelLibrary onClose={() => setIsModelLibraryVisible(false)} />}
         {releaseNotesContent && versions && (
           <HtmlInfoDialog
             title={`${t('settings.about.releaseNotes')} - ${versions.aiderDeskCurrentVersion}`}
