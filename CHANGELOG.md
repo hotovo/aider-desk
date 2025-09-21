@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.32.0]
 
 - changed system prompt to XML structure for better instruction following across the various models
 - fixed issue with text jumping in Prompt field when typing fast
