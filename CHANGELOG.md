@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.32.1]
+
+- reverted yes-always option behavior
+
 ## [0.32.0]
 
 - changed system prompt to XML structure for better instruction following across the various models
