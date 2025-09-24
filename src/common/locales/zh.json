@@ -896,6 +896,9 @@
   },
   "contextMenu": {
     "copy": "复制",
-    "paste": "粘贴"
+    "paste": "粘贴",
+    "close": "关闭",
+    "closeOtherTabs": "关闭其他标签页",
+    "closeAllTabs": "关闭所有标签页"
   }
 }

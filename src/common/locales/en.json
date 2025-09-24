@@ -890,6 +890,9 @@
   },
   "contextMenu": {
     "copy": "Copy",
-    "paste": "Paste"
+    "paste": "Paste",
+    "close": "Close",
+    "closeOtherTabs": "Close other tabs",
+    "closeAllTabs": "Close all tabs"
   }
 }

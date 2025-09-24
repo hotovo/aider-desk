@@ -6,19 +6,28 @@ import { clsx } from 'clsx';
 import { MdAdd, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { useTranslation } from 'react-i18next';
 
 import type { DragEndEvent } from '@dnd-kit/core';
+
+import { MenuOption, useContextMenu } from '@/context/ContextMenuContext';
+
+type ProjectOperations = {
+  onCloseProject: (baseDir: string) => Promise<void>;
+  onCloseOtherProjects: (baseDir: string) => Promise<void>;
+  onCloseAllProjects: () => Promise<void>;
+};
 
 type Props = {
   openProjects: ProjectData[];
   activeProject: ProjectData | undefined;
   onAddProject: () => void;
   onSetActiveProject: (baseDir: string) => void;
-  onCloseProject: (projectBaseDir: string) => void;
+  projectOperations: ProjectOperations;
   onReorderProjects: (projects: ProjectData[]) => void;
 };
 
-export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetActiveProject, onCloseProject, onReorderProjects }: Props) => {
+export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetActiveProject, projectOperations, onReorderProjects }: Props) => {
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftScrollButton, setShowLeftScrollButton] = useState(false);
   const [showRightScrollButton, setShowRightScrollButton] = useState(false);
@@ -121,7 +130,13 @@ export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetAc
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => setDragging(true)} onDragEnd={handleDragEnd}>
             <SortableContext items={projectIds} strategy={horizontalListSortingStrategy}>
               {openProjects.map((project) => (
-                <SortableTabItem key={project.baseDir} project={project} activeProject={activeProject} onCloseProject={onCloseProject} />
+                <SortableTabItem
+                  key={project.baseDir}
+                  project={project}
+                  activeProject={activeProject}
+                  projectOperations={projectOperations}
+                  openProjectsNumber={openProjects.length}
+                />
               ))}
             </SortableContext>
           </DndContext>
@@ -148,11 +163,49 @@ export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetAc
 type SortableTabItemProps = {
   project: ProjectData;
   activeProject: ProjectData | undefined;
-  onCloseProject: (projectBaseDir: string) => void;
+  projectOperations: ProjectOperations;
+  openProjectsNumber: number;
 };
 
-const SortableTabItem = ({ project, activeProject, onCloseProject }: SortableTabItemProps) => {
+const SortableTabItem = ({ project, activeProject, projectOperations, openProjectsNumber }: SortableTabItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.baseDir });
+  const { showMenu } = useContextMenu();
+  const { t } = useTranslation();
+
+  const handleRightClick = (event: React.MouseEvent) => {
+    event.preventDefault();
+
+    const options: MenuOption[] = [
+      {
+        label: t('contextMenu.close'),
+        action: () => {
+          projectOperations!.onCloseProject(project.baseDir);
+        },
+      },
+      ...(openProjectsNumber > 1
+        ? [
+            {
+              label: t('contextMenu.closeOtherTabs'),
+              action: () => {
+                projectOperations!.onCloseOtherProjects(project.baseDir);
+              },
+            },
+          ]
+        : []),
+      ...(openProjectsNumber > 1
+        ? [
+            {
+              label: t('contextMenu.closeAllTabs'),
+              action: () => {
+                projectOperations!.onCloseAllProjects();
+              },
+            },
+          ]
+        : []),
+    ];
+
+    showMenu(event.clientX, event.clientY, options, event.target as Element);
+  };
 
   const style = {
     transform: CSS.Transform.toString({
@@ -168,6 +221,7 @@ const SortableTabItem = ({ project, activeProject, onCloseProject }: SortableTab
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
       <Tab
+        onContextMenu={handleRightClick}
         className={({ selected }) =>
           clsx(
             'text-sm pl-3 py-2 pr-1 border-r border-border-dark-light transition-all duration-200 ease-in-out flex items-center gap-3 relative whitespace-nowrap',
@@ -186,7 +240,7 @@ const SortableTabItem = ({ project, activeProject, onCloseProject }: SortableTab
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation(); // Prevent tab selection/drag initiation
-            onCloseProject(project.baseDir);
+            projectOperations.onCloseProject(project.baseDir);
           }}
         >
           <MdClose className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
