@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added more tab control
+
 ## [0.32.0]
 
 - changed system prompt to XML structure for better instruction following across the various models

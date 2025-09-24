@@ -167,6 +167,25 @@ export const Home = () => {
     setOpenProjects(updatedProjects);
   };
 
+  const handleCloseOtherProjects = async (baseDir: string) => {
+    const projectsToClose = openProjects.filter((p) => p.baseDir !== baseDir);
+    for (const project of projectsToClose) {
+      await handleCloseProject(project.baseDir);
+    }
+  };
+
+  const handleCloseAllProjects = async () => {
+    for (const project of openProjects) {
+      await handleCloseProject(project.baseDir);
+    }
+  };
+
+  const projectOperations = {
+    onCloseProject: handleCloseProject,
+    onCloseOtherProjects: handleCloseOtherProjects,
+    onCloseAllProjects: handleCloseAllProjects,
+  };
+
   const renderProjectPanels = () =>
     openProjects.map((project) => (
       <ProjectSettingsProvider key={project.baseDir} baseDir={project.baseDir}>
@@ -211,7 +230,7 @@ export const Home = () => {
             activeProject={activeProject}
             onAddProject={() => setIsOpenProjectDialogVisible(true)}
             onSetActiveProject={setActiveProject}
-            onCloseProject={handleCloseProject}
+            projectOperations={projectOperations}
             onReorderProjects={handleReorderProjects}
           />
           <div className="flex items-center">
