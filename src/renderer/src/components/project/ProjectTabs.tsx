@@ -178,31 +178,22 @@ const SortableTabItem = ({ project, activeProject, projectOperations, openProjec
     const options: MenuOption[] = [
       {
         label: t('contextMenu.close'),
-        action: () => {
-          projectOperations!.onCloseProject(project.baseDir);
-        },
+        action: () => projectOperations.onCloseProject(project.baseDir),
       },
-      ...(openProjectsNumber > 1
-        ? [
-            {
-              label: t('contextMenu.closeOtherTabs'),
-              action: () => {
-                projectOperations!.onCloseOtherProjects(project.baseDir);
-              },
-            },
-          ]
-        : []),
-      ...(openProjectsNumber > 1
-        ? [
-            {
-              label: t('contextMenu.closeAllTabs'),
-              action: () => {
-                projectOperations!.onCloseAllProjects();
-              },
-            },
-          ]
-        : []),
     ];
+
+    if (openProjectsNumber > 1) {
+      options.push(
+        {
+          label: t('contextMenu.closeOtherTabs'),
+          action: () => projectOperations.onCloseOtherProjects(project.baseDir),
+        },
+        {
+          label: t('contextMenu.closeAllTabs'),
+          action: () => projectOperations.onCloseAllProjects(),
+        },
+      );
+    }
 
     showMenu(event.clientX, event.clientY, options, event.target as Element);
   };
