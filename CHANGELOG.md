@@ -2,10 +2,20 @@
 
 ## [UNRELEASED]
 
+- added more tab control
+
+## [0.32.0]
+
 - changed system prompt to XML structure for better instruction following across the various models
 - fixed issue with text jumping in Prompt field when typing fast
-- notifications correcly using selected theme
-- added more tab control
+- notifications correctly using selected theme
+- added check for new project paths
+- yes-always options correctly respected
+- correctly using the selected edit format in Architect mode
+- added warning for Gemini models' tool limitation with search grounding
+- added compact information about current actions to subagent messages
+- added 'clear_context' tool to AiderDesk MCP server
+- added Cerebras provider
 
 ## [0.31.0]
 

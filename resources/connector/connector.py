@@ -360,7 +360,7 @@ async def run_editor_coder_stream(architect_coder, connector, prompt_context):
     architect_coder,
     editor_prompt_context,
     main_model=editor_model,
-    edit_format=architect_coder.main_model.editor_edit_format,
+    edit_format=connector.coder.edit_format,
     suggest_shell_commands=False,
     map_tokens=0,
     total_cost=architect_coder.total_cost,
@@ -460,11 +460,15 @@ class ConnectorInputOutput(InputOutput):
     group=None,
     allow_never=False,
   ):
+    result = None
+
+    if self.yes is True:
+      result = "y"
+
     if group and group.preference == "y":
-      return True
+      result = "y"
     elif group and group.preference == "n":
-      self.tool_warning("No preference.")
-      return False
+      result = "n"
 
     if not self.connector:
       return False
@@ -486,7 +490,8 @@ class ConnectorInputOutput(InputOutput):
         await asyncio.sleep(0.25)
       return confirmation_result
 
-    result = wait_for_async(self.connector, ask_question())
+    if result is None:
+      result = wait_for_async(self.connector, ask_question())
 
     if result == "y" and question == "Edit the files?":
       # Get the specific coder for this prompt

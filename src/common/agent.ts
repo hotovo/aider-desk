@@ -31,7 +31,8 @@ export type LlmProviderName =
   | 'ollama'
   | 'openrouter'
   | 'requesty'
-  | 'groq';
+  | 'groq'
+  | 'cerebras';
 
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -45,6 +46,7 @@ export interface OllamaProvider extends LlmProviderBase {
 export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'anthropic',
   'bedrock',
+  'cerebras',
   'deepseek',
   'gemini',
   'groq',
@@ -110,6 +112,12 @@ export interface GroqProvider extends LlmProviderBase {
 }
 export const isGroqProvider = (provider: LlmProviderBase): provider is GroqProvider => provider.name === 'groq';
 
+export interface CerebrasProvider extends LlmProviderBase {
+  name: 'cerebras';
+  apiKey: string;
+}
+export const isCerebrasProvider = (provider: LlmProviderBase): provider is CerebrasProvider => provider.name === 'cerebras';
+
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -160,6 +168,7 @@ export type LlmProvider =
   | BedrockProvider
   | DeepseekProvider
   | GroqProvider
+  | CerebrasProvider
   | OpenAiCompatibleProvider
   | OllamaProvider
   | OpenRouterProvider
@@ -167,6 +176,7 @@ export type LlmProvider =
 
 export const DEFAULT_PROVIDER_MODEL: Partial<Record<LlmProviderName, string>> = {
   anthropic: 'claude-sonnet-4-20250514',
+  cerebras: 'llama3.1-8b',
   deepseek: 'deepseek-chat',
   gemini: 'gemini-2.5-pro',
   openai: 'gpt-5',
@@ -369,6 +379,12 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
           name: 'groq',
           apiKey: '',
         } satisfies GroqProvider;
+        break;
+      case 'cerebras':
+        provider = {
+          name: 'cerebras',
+          apiKey: '',
+        } satisfies CerebrasProvider;
         break;
       case 'deepseek':
         provider = {

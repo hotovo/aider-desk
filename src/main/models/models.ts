@@ -6,5 +6,6 @@ export const OPENROUTER_MODEL = 'openrouter/anthropic/claude-sonnet-4';
 export const LM_STUDIO_MODEL = 'lm_studio/qwen3-coder:30b';
 export const OLLAMA_MODEL = 'ollama/qwen3-coder:30b';
 export const GROQ_MODEL = 'groq/qwen/qwen3-32b';
+export const CEREBRAS_MODEL = 'cerebras/qwen-3-coder-480b';
 
 export const DEFAULT_MAIN_MODEL = SONNET_MODEL;

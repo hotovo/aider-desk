@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
@@ -42,9 +42,10 @@ export const Accordion = ({
     } else {
       setUncontrolledIsOpen(!uncontrolledIsOpen);
     }
+  };
 
-    // Scroll to visible when expanding
-    if (!isOpen && scrollToVisibleWhenExpanded && contentRef.current) {
+  useEffect(() => {
+    if (isOpen && scrollToVisibleWhenExpanded && contentRef.current) {
       setTimeout(() => {
         contentRef.current?.scrollIntoView({
           behavior: 'smooth',
@@ -52,7 +53,7 @@ export const Accordion = ({
         });
       }, 100);
     }
-  };
+  }, [isOpen, scrollToVisibleWhenExpanded]);
 
   const chevron = (
     <FaChevronDown className={clsx('w-3 h-3 transition-transform duration-200', isOpen ? 'rotate-0' : '-rotate-90', chevronPosition === 'right' && 'ml-1')} />

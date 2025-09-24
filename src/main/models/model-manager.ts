@@ -9,6 +9,7 @@ import { loadGeminiModels } from './providers/gemini';
 import { loadBedrockModels } from './providers/bedrock';
 import { loadDeepseekModels } from './providers/deepseek';
 import { loadGroqModels } from './providers/groq';
+import { loadCerebrasModels } from './providers/cerebras';
 import { loadOpenaiCompatibleModels } from './providers/openai-compatible';
 import { loadOpenrouterModels } from './providers/openrouter';
 import { loadRequestyModels } from './providers/requesty';
@@ -149,6 +150,9 @@ export class ModelManager {
       },
       groq: async () => {
         updatedProviderModels.groq = await loadGroqModels(settings, this.modelsInfo);
+      },
+      cerebras: async () => {
+        updatedProviderModels.cerebras = await loadCerebrasModels(settings, this.modelsInfo);
       },
       lmstudio: async () => {
         updatedProviderModels.lmstudio = await loadLmStudioModels(settings, this.modelsInfo);

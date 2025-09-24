@@ -11,27 +11,35 @@ type Props = {
   message: ResponseMessage;
   allFiles: string[];
   renderMarkdown: boolean;
+  compact?: boolean;
   onRemove?: () => void;
 };
 
-export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, onRemove }: Props) => {
-  const baseClasses = 'rounded-md p-3 mb-2 max-w-full text-xs bg-bg-secondary border border-border-dark-light text-text-primary';
+export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, compact = false, onRemove }: Props) => {
+  const baseClasses = 'rounded-md max-w-full text-xs bg-bg-secondary text-text-primary';
 
-  const parsedContent = useParsedContent(baseDir, message.content, allFiles, renderMarkdown);
+  const parsedContent = useParsedContent(baseDir, message.content, allFiles, renderMarkdown, !compact);
 
   if (!message.content) {
     return null;
   }
 
   return (
-    <div className={clsx(baseClasses, 'relative flex flex-col group', !renderMarkdown && 'break-words whitespace-pre-wrap')}>
+    <div
+      className={clsx(
+        baseClasses,
+        'relative flex flex-col group',
+        !renderMarkdown && 'break-words whitespace-pre-wrap',
+        !compact && 'p-3 mb-2 border border-border-dark-light',
+      )}
+    >
       <div className="flex items-start gap-2">
         <div className="mt-[1px]">
           <RiRobot2Line className="text-text-muted w-4 h-4" />
         </div>
         <div className="flex-grow-1 w-full overflow-hidden">{parsedContent}</div>
       </div>
-      <MessageBar content={message.content} usageReport={message.usageReport} remove={onRemove} />
+      {!compact && <MessageBar content={message.content} usageReport={message.usageReport} remove={onRemove} />}
     </div>
   );
 };

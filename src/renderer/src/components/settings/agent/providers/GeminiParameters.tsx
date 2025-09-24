@@ -7,6 +7,7 @@ import { Slider } from '@/components/common/Slider';
 import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+import { WarningIcon } from '@/components/common/WarningIcon';
 
 type Props = {
   provider: GeminiProvider;
@@ -50,8 +51,12 @@ export const GeminiParameters = ({ provider, onChange }: Props) => {
         onChange={handleApiKeyChange}
         placeholder={
           geminiApiKeyEnv
-            ? t('settings.agent.envVarFoundPlaceholder', { source: geminiApiKeyEnv.source })
-            : t('settings.agent.envVarPlaceholder', { envVar: 'GEMINI_API_KEY' })
+            ? t('settings.agent.envVarFoundPlaceholder', {
+                source: geminiApiKeyEnv.source,
+              })
+            : t('settings.agent.envVarPlaceholder', {
+                envVar: 'GEMINI_API_KEY',
+              })
         }
       />
       <Input
@@ -60,8 +65,12 @@ export const GeminiParameters = ({ provider, onChange }: Props) => {
         onChange={handleCustomBaseUrlChange}
         placeholder={
           geminiBaseUrlEnv
-            ? t('settings.agent.envVarFoundPlaceholder', { source: geminiBaseUrlEnv.source })
-            : t('settings.agent.envVarPlaceholder', { envVar: 'GEMINI_API_BASE_URL' })
+            ? t('settings.agent.envVarFoundPlaceholder', {
+                source: geminiBaseUrlEnv.source,
+              })
+            : t('settings.agent.envVarPlaceholder', {
+                envVar: 'GEMINI_API_BASE_URL',
+              })
         }
       />
       <Slider
@@ -87,6 +96,7 @@ export const GeminiParameters = ({ provider, onChange }: Props) => {
           onChange={handleUseSearchGroundingChange}
         />
         <InfoIcon tooltip={t('gemini.useSearchGroundingTooltip')} />
+        {useSearchGrounding && <WarningIcon tooltip={t('gemini.useSearchGroundingWarning')} />}
       </div>
     </div>
   );

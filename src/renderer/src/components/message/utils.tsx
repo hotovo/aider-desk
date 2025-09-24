@@ -19,9 +19,9 @@ const ALL_FENCES = [
   ['<sourcecode>', '</sourcecode>'],
 ] as const;
 
-export const parseMessageContent = (baseDir: string, content: string, allFiles: string[], renderMarkdown = false) => {
+export const parseMessageContent = (baseDir: string, content: string, allFiles: string[], renderMarkdown = false, renderThinking = true) => {
   // First check if the content matches the thinking/answer format
-  const thinkingAnswerContent = parseThinkingAnswerFormat(content, baseDir, allFiles, renderMarkdown);
+  const thinkingAnswerContent = parseThinkingAnswerFormat(content, baseDir, allFiles, renderMarkdown, renderThinking);
   if (thinkingAnswerContent) {
     return thinkingAnswerContent;
   }
@@ -269,7 +269,13 @@ export const parseMessageContent = (baseDir: string, content: string, allFiles: 
   return parts;
 };
 
-export const parseThinkingAnswerFormat = (content: string, baseDir: string = '', allFiles: string[] = [], renderMarkdown = false): React.ReactNode | null => {
+export const parseThinkingAnswerFormat = (
+  content: string,
+  baseDir: string = '',
+  allFiles: string[] = [],
+  renderMarkdown = false,
+  renderThinking = true,
+): React.ReactNode | null => {
   // Check for the thinking section first
   const thinkingRegex = /[-]{3,}\s*\n\s*►\s*\*\*THINKING\*\*\s*\n\s*([\s\S]*?)(?:\s*[-]{3,}\s*\n\s*►\s*\*\*ANSWER\*\*|$)/i;
   const thinkingMatch = content.match(thinkingRegex);
@@ -283,7 +289,11 @@ export const parseThinkingAnswerFormat = (content: string, baseDir: string = '',
 
     const answer = answerMatch && answerMatch[1].trim();
 
-    return <ThinkingAnswerBlock thinking={thinking} answer={answer} baseDir={baseDir} allFiles={allFiles} renderMarkdown={renderMarkdown} />;
+    return renderThinking ? (
+      <ThinkingAnswerBlock thinking={thinking} answer={answer} baseDir={baseDir} allFiles={allFiles} renderMarkdown={renderMarkdown} />
+    ) : (
+      parseMessageContent(baseDir, answer || thinking, allFiles, renderMarkdown)
+    );
   }
 
   return null;

@@ -27,6 +27,7 @@ import { CodeInline } from '@/components/common/CodeInline';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
 const formatName = (name: string): string => {
@@ -37,7 +38,7 @@ const formatName = (name: string): string => {
     .join(' ');
 };
 
-export const ToolMessageBlock = ({ message, onRemove }: Props) => {
+export const ToolMessageBlock = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
   const isExecuting = message.content === '';
   const parsedResult = !isExecuting ? parseToolContent(message.content) : null;
@@ -205,6 +206,10 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
       {renderToolSpecificContent()}
     </div>
   );
+
+  if (compact) {
+    return title;
+  }
 
   return <ExpandableMessageBlock title={title} content={content} copyContent={copyContent} usageReport={message.usageReport} onRemove={onRemove} />;
 };

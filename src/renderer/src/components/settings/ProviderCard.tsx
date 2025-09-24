@@ -1,6 +1,7 @@
 import {
   isAnthropicProvider,
   isBedrockProvider,
+  isCerebrasProvider,
   isDeepseekProvider,
   isGeminiProvider,
   isGroqProvider,
@@ -22,6 +23,7 @@ import { clsx } from 'clsx';
 import {
   AnthropicParameters,
   BedrockParameters,
+  CerebrasParameters,
   DeepseekParameters,
   GeminiParameters,
   GroqParameters,
@@ -64,6 +66,9 @@ export const ProviderCard = ({ providerName, provider, isConfigured, isExpanded,
     }
     if (isGroqProvider(provider)) {
       return <GroqParameters provider={provider} onChange={onProviderChange} />;
+    }
+    if (isCerebrasProvider(provider)) {
+      return <CerebrasParameters provider={provider} onChange={onProviderChange} />;
     }
     if (isLmStudioProvider(provider)) {
       return <LmStudioParameters provider={provider} onChange={onProviderChange} />;

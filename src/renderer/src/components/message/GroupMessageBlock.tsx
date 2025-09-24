@@ -1,3 +1,5 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { useMemo, useState } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { LocalizedString, UsageReportData } from '@common/types';
@@ -6,7 +8,7 @@ import { MessageBlock } from './MessageBlock';
 import { MessageBar } from './MessageBar';
 
 import { Accordion } from '@/components/common/Accordion';
-import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage } from '@/types/message';
+import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage, isUserMessage } from '@/types/message';
 
 type Props = {
   baseDir: string;
@@ -20,6 +22,12 @@ type Props = {
 
 export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remove, redo, edit }: Props) => {
   const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const previewMessage = useMemo(() => {
+    const messages = message.children.filter((msg) => isResponseMessage(msg) || isToolMessage(msg) || isUserMessage(msg)).reverse();
+    return messages[0];
+  }, [message.children]);
 
   const aggregateUsage = (messages: Message[]): UsageReportData | undefined => {
     const messagesWithUsage: (ResponseMessage | ToolMessage)[] = [];
@@ -89,7 +97,16 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
         }}
       />
       {/* Content */}
-      <Accordion buttonClassName="rounded-b-none" title={header} chevronPosition="right" noMaxHeight={true} showCollapseButton={true}>
+      <Accordion
+        buttonClassName="rounded-b-none"
+        title={header}
+        chevronPosition="right"
+        noMaxHeight={true}
+        showCollapseButton={true}
+        isOpen={isOpen}
+        scrollToVisibleWhenExpanded={true}
+        onOpenChange={setIsOpen}
+      >
         <div className="p-2 pl-3 pb-0.5 bg-bg-primary-light">
           {message.children.map((child, index) => (
             <MessageBlock
@@ -105,6 +122,29 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
           ))}
         </div>
       </Accordion>
+      <AnimatePresence>
+        {!message.group.finished && !isOpen && previewMessage && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 32 }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="relative overflow-hidden"
+          >
+            <motion.div
+              key={previewMessage.id}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="absolute top-0.5 left-6 right-6"
+            >
+              <MessageBlock baseDir={baseDir} message={previewMessage} allFiles={allFiles} renderMarkdown={renderMarkdown} compact={true} />
+            </motion.div>
+            <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-bg-secondary via-bg-secondary to-transparent pointer-events-none" />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="px-3 pb-3">
         <MessageBar className="mt-0" usageReport={aggregatedUsage} />
       </div>

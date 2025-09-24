@@ -11,9 +11,10 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
-export const SemanticSearchToolMessage = ({ message, onRemove }: Props) => {
+export const SemanticSearchToolMessage = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
 
   const searchQuery = (message.args.searchQuery as string) || (message.args.query as string);
@@ -72,6 +73,10 @@ export const SemanticSearchToolMessage = ({ message, onRemove }: Props) => {
       </div>
     );
   };
+
+  if (compact) {
+    return title;
+  }
 
   return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
 };
