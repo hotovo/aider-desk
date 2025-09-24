@@ -11,9 +11,10 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
-export const GrepToolMessage = ({ message, onRemove }: Props) => {
+export const GrepToolMessage = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
 
   const filePattern = message.args.filePattern as string;
@@ -115,6 +116,10 @@ export const GrepToolMessage = ({ message, onRemove }: Props) => {
       </div>
     );
   };
+
+  if (compact) {
+    return title;
+  }
 
   return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
 };

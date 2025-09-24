@@ -10,9 +10,10 @@ import { IconButton } from '@/components/common/IconButton';
 type Props = {
   message: LogMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
-export const LogMessageBlock = ({ message, onRemove }: Props) => {
+export const LogMessageBlock = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
   const baseClasses = 'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs border';
 
@@ -37,12 +38,20 @@ export const LogMessageBlock = ({ message, onRemove }: Props) => {
   const config = levelConfig[message.level] || levelConfig.info;
   const Icon = config.Icon;
 
+  const renderMessage = () => (
+    <div className="flex items-start gap-3">
+      <Icon className="inline-block h-3 w-3 flex-shrink-0 mt-[3px]" />
+      <div>{t(message.content)}</div>
+    </div>
+  );
+
+  if (compact) {
+    return renderMessage();
+  }
+
   return (
     <div className={`${baseClasses} ${config.levelClasses} relative group`}>
-      <div className="flex items-start gap-3">
-        <Icon className="inline-block h-3 w-3 flex-shrink-0 mt-[3px]" />
-        <div>{t(message.content)}</div>
-      </div>
+      {renderMessage()}
       <div className="absolute top-2 right-2 flex items-center space-x-1">
         <CopyMessageButton content={message.content} className={config.tooltipClass} />
         {onRemove && (

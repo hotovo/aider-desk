@@ -39,13 +39,15 @@ const GetAddableFilesSchema = {
 
 const RunPromptSchema = {
   prompt: z.string().describe('The prompt to run'),
-  editFormat: z
+  mode: z
     .enum(['code', 'ask', 'architect', 'context'])
     .default('code')
     .describe(
       'Type of the action that AiderDesk will perform. Code is for coding tasks, ask is for asking questions, architect is for planing changes, context automatically identifies which files need to added to context based on the prompt.',
     ),
 };
+
+const ClearContextSchema = {};
 
 // Add tools to the server
 server.tool('add_context_file', 'Add a file to the context of AiderDesk.', AddContextFileSchema, async (params) => {
@@ -96,6 +98,21 @@ server.tool(
     try {
       const requestParams = { ...params, projectDir };
       const response = await axios.post(`${AIDER_DESK_API_BASE_URL}/run-prompt`, requestParams);
+      return { content: [{ type: 'text', text: JSON.stringify(response.data) }] };
+    } catch (error: any) {
+      return { content: [{ type: 'text', text: error.response?.data || error.message }] };
+    }
+  },
+);
+
+server.tool(
+  'clear_context',
+  'Clear the context messages of AiderDesk. Useful when you want to start a new task with clear context.',
+  ClearContextSchema,
+  async (params) => {
+    try {
+      const requestParams = { ...params, projectDir };
+      const response = await axios.post(`${AIDER_DESK_API_BASE_URL}/project/clear-context`, requestParams);
       return { content: [{ type: 'text', text: JSON.stringify(response.data) }] };
     } catch (error: any) {
       return { content: [{ type: 'text', text: error.response?.data || error.message }] };

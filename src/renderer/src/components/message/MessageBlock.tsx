@@ -3,15 +3,15 @@ import {
   HELPERS_TOOL_GROUP_NAME,
   HELPERS_TOOL_INVALID_TOOL_ARGUMENTS,
   HELPERS_TOOL_NO_SUCH_TOOL,
+  POWER_TOOL_BASH,
+  POWER_TOOL_FETCH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE,
   POWER_TOOL_GLOB,
   POWER_TOOL_GREP,
-  POWER_TOOL_BASH,
-  POWER_TOOL_FETCH,
-  POWER_TOOL_SEMANTIC_SEARCH,
   POWER_TOOL_GROUP_NAME,
+  POWER_TOOL_SEMANTIC_SEARCH,
   SUBAGENTS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_RUN_TASK,
 } from '@common/tools';
@@ -51,12 +51,13 @@ type Props = {
   message: Message;
   allFiles: string[];
   renderMarkdown: boolean;
+  compact?: boolean;
   remove?: () => void;
   redo?: () => void;
   edit?: (content: string) => void;
 };
 
-export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remove, redo, edit }: Props) => {
+export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, compact = false, remove, redo, edit }: Props) => {
   const { t } = useTranslation();
 
   if (isLoadingMessage(message)) {
@@ -64,25 +65,34 @@ export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remov
   }
 
   if (isLogMessage(message)) {
-    return <LogMessageBlock message={message} onRemove={remove} />;
+    return <LogMessageBlock message={message} onRemove={remove} compact={compact} />;
   }
 
   if (isReflectedMessage(message)) {
-    return <ReflectedMessageBlock baseDir={baseDir} message={message} allFiles={allFiles} />;
+    return <ReflectedMessageBlock baseDir={baseDir} message={message} allFiles={allFiles} compact={compact} />;
   }
 
   if (isCommandOutputMessage(message)) {
-    return <CommandOutputMessageBlock message={message} />;
+    return <CommandOutputMessageBlock message={message} compact={compact} />;
   }
 
   if (isUserMessage(message)) {
     return (
-      <UserMessageBlock baseDir={baseDir} message={message} allFiles={allFiles} renderMarkdown={renderMarkdown} onRemove={remove} onRedo={redo} onEdit={edit} />
+      <UserMessageBlock
+        baseDir={baseDir}
+        message={message}
+        allFiles={allFiles}
+        renderMarkdown={renderMarkdown}
+        onRemove={remove}
+        onRedo={redo}
+        onEdit={edit}
+        compact={compact}
+      />
     );
   }
 
   if (isResponseMessage(message)) {
-    return <ResponseMessageBlock baseDir={baseDir} message={message} allFiles={allFiles} renderMarkdown={renderMarkdown} onRemove={remove} />;
+    return <ResponseMessageBlock baseDir={baseDir} message={message} allFiles={allFiles} renderMarkdown={renderMarkdown} onRemove={remove} compact={compact} />;
   }
 
   if (isToolMessage(message)) {
@@ -92,21 +102,21 @@ export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remov
       case POWER_TOOL_GROUP_NAME:
         switch (toolMessage.toolName) {
           case POWER_TOOL_FILE_WRITE:
-            return <FileWriteToolMessage message={toolMessage} onRemove={remove} />;
+            return <FileWriteToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           case POWER_TOOL_FILE_EDIT:
-            return <FileEditToolMessage message={toolMessage} onRemove={remove} />;
+            return <FileEditToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           case POWER_TOOL_FILE_READ:
-            return <FileReadToolMessage message={toolMessage} onRemove={remove} />;
+            return <FileReadToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           case POWER_TOOL_GLOB:
-            return <GlobToolMessage message={toolMessage} onRemove={remove} />;
+            return <GlobToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           case POWER_TOOL_GREP:
-            return <GrepToolMessage message={toolMessage} onRemove={remove} />;
+            return <GrepToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           case POWER_TOOL_BASH:
-            return <BashToolMessage message={toolMessage} onRemove={remove} />;
+            return <BashToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           case POWER_TOOL_FETCH:
-            return <FetchToolMessage message={toolMessage} onRemove={remove} />;
+            return <FetchToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           case POWER_TOOL_SEMANTIC_SEARCH:
-            return <SemanticSearchToolMessage message={toolMessage} onRemove={remove} />;
+            return <SemanticSearchToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           default:
             break;
         }
@@ -114,7 +124,7 @@ export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remov
       case SUBAGENTS_TOOL_GROUP_NAME:
         switch (toolMessage.toolName) {
           case SUBAGENTS_TOOL_RUN_TASK:
-            return <SubagentToolMessage message={toolMessage} onRemove={remove} />;
+            return <SubagentToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           default:
             break;
         }
@@ -123,7 +133,9 @@ export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remov
         let logMessageContent = toolMessage.content;
 
         if (toolMessage.toolName === HELPERS_TOOL_NO_SUCH_TOOL) {
-          logMessageContent = t('toolMessage.errors.noSuchTool', { toolName: toolMessage.args.toolName });
+          logMessageContent = t('toolMessage.errors.noSuchTool', {
+            toolName: toolMessage.args.toolName,
+          });
         } else if (toolMessage.toolName === HELPERS_TOOL_INVALID_TOOL_ARGUMENTS) {
           logMessageContent = t('toolMessage.errors.invalidToolArguments', {
             toolName: toolMessage.args.toolName,
@@ -136,13 +148,13 @@ export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remov
           id: toolMessage.id,
           content: logMessageContent,
         };
-        return <LogMessageBlock message={logMessage} onRemove={remove} />;
+        return <LogMessageBlock message={logMessage} onRemove={remove} compact={compact} />;
       }
       default:
         break;
     }
 
-    return <ToolMessageBlock message={toolMessage} onRemove={remove} />;
+    return <ToolMessageBlock message={toolMessage} onRemove={remove} compact={compact} />;
   }
 
   return null;

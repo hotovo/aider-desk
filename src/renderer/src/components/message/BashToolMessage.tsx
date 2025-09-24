@@ -10,9 +10,10 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
-export const BashToolMessage = ({ message, onRemove }: Props) => {
+export const BashToolMessage = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
 
   const command = message.args.command as string;
@@ -20,7 +21,7 @@ export const BashToolMessage = ({ message, onRemove }: Props) => {
   const isError = content && typeof content === 'object' && 'exitCode' in content && content.exitCode !== 0;
 
   const title = (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex items-center gap-2 w-full text-left">
       <div className="text-text-muted">
         <RiTerminalLine className="w-4 h-4" />
       </div>
@@ -73,6 +74,10 @@ export const BashToolMessage = ({ message, onRemove }: Props) => {
       </div>
     );
   };
+
+  if (compact) {
+    return title;
+  }
 
   return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
 };

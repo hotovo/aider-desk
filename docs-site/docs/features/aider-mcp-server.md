@@ -77,6 +77,7 @@ The built-in server exposes these tools to MCP clients:
 - `get_context_files`: List files currently in AiderDesk's context.
 - `get_addable_files`: List project files available to be added to the context.
 - `run_prompt`: Execute a prompt within AiderDesk.
+- `clear_context`: Clear the context of AiderDesk.
 
 ## Requirements
 

@@ -99,6 +99,7 @@ src/
       providers/
         anthropic.ts
         bedrock.ts
+        cerebras.ts
         deepseek.ts
         gemini.ts
         groq.ts
@@ -227,6 +228,7 @@ src/
           StyledTooltip.tsx
           TextArea.tsx
           TriStateCheckbox.tsx
+          WarningIcon.tsx
         ContextFiles/
           ContextFiles.css
           ContextFiles.tsx
@@ -285,6 +287,7 @@ src/
             providers/
               AnthropicParameters.tsx
               BedrockParameters.tsx
+              CerebrasParameters.tsx
               DeepseekParameters.tsx
               GeminiParameters.tsx
               GroqParameters.tsx
@@ -620,6 +623,12 @@ def tool_warning(self, message="", strip=True)
 def is_error_ignored(self, message)
 ⋮----
 def tool_error(self, message="", strip=True)
+⋮----
+result = None
+⋮----
+result = "y"
+⋮----
+result = "n"
 ⋮----
 # Reset the result
 ⋮----
@@ -1284,7 +1293,8 @@ File: src/common/locales/en.json
     "includeThoughts": "Include thoughts",
     "includeThoughtsTooltip": "When enabled, the model's internal thought process will be included in the conversation.",
     "useSearchGrounding": "Use Search grounding",
-    "useSearchGroundingTooltip": "When enabled, the model will use search results to ground its responses, improving accuracy and relevance."
+    "useSearchGroundingTooltip": "When enabled, the model will use search results to ground its responses, improving accuracy and relevance.",
+    "useSearchGroundingWarning": "When enabled, Gemini models are not able to use tools, e.g. Power tools, MCP tools, etc."
   },
   "groq": {
     "apiKey": "API Key",
@@ -1304,6 +1314,9 @@ File: src/common/locales/en.json
     "sessionToken": "Session Token",
     "sessionTokenTooltip": "Optional session token for temporary credentials."
   },
+  "cerebras": {
+    "apiKey": "API Key"
+  },
   "openRouter": {
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. anthropic/claude-3.7-sonnet"
@@ -1321,6 +1334,7 @@ File: src/common/locales/en.json
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
+    "cerebras": "Cerebras",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
@@ -1582,7 +1596,8 @@ File: src/common/locales/en.json
     "projectPathPlaceholder": "Type the path to your project or use icon to browse",
     "openButton": "Open",
     "browseFoldersTooltip": "Browse folders",
-    "projectAlreadyOpenWarning": "This project is already open."
+    "projectAlreadyOpenWarning": "This project is already open.",
+    "cantOpenProject": "This project can not be opened."
   },
   "mode": {
     "code": "Code",
@@ -2186,7 +2201,8 @@ File: src/common/locales/zh.json
     "includeThoughts": "包含思考过程",
     "includeThoughtsTooltip": "启用后，代理的内部思考过程将包含在对话历史中，这有助于调试或理解其决策。",
     "useSearchGrounding": "使用搜索基础",
-    "useSearchGroundingTooltip": "启用后，代理将使用搜索结果作为其响应的基础，从而提高准确性和相关性。"
+    "useSearchGroundingTooltip": "启用后，代理将使用搜索结果作为其响应的基础，从而提高准确性和相关性。",
+    "useSearchGroundingWarning": "当启用时，Gemini 模型的工具使用受到限制。"
   },
   "groq": {
     "apiKey": "API 密钥",
@@ -2206,6 +2222,9 @@ File: src/common/locales/zh.json
     "sessionToken": "会话令牌",
     "sessionTokenTooltip": "临时凭证的可选会话令牌。"
   },
+  "cerebras": {
+    "apiKey": "API 密钥"
+  },
   "openRouter": {
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 anthropic/claude-3.7-sonnet"
@@ -2217,6 +2236,7 @@ File: src/common/locales/zh.json
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
+    "cerebras": "Cerebras",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
@@ -2436,7 +2456,8 @@ File: src/common/locales/zh.json
     "projectPathPlaceholder": "输入项目路径或使用图标浏览",
     "openButton": "打开",
     "browseFoldersTooltip": "浏览文件夹",
-    "projectAlreadyOpenWarning": "此项目已打开。"
+    "projectAlreadyOpenWarning": "此项目已打开。",
+    "cantOpenProject": "无法打开此项目。"
   },
   "mode": {
     "code": "代码",
@@ -2931,7 +2952,8 @@ export type LlmProviderName =
   | 'ollama'
   | 'openrouter'
   | 'requesty'
-  | 'groq';
+  | 'groq'
+  | 'cerebras';
 ⋮----
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -2995,6 +3017,12 @@ export interface GroqProvider extends LlmProviderBase {
 }
 export const isGroqProvider = (provider: LlmProviderBase): provider is GroqProvider
 ⋮----
+export interface CerebrasProvider extends LlmProviderBase {
+  name: 'cerebras';
+  apiKey: string;
+}
+export const isCerebrasProvider = (provider: LlmProviderBase): provider is CerebrasProvider
+⋮----
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -3048,6 +3076,7 @@ export type LlmProvider =
   | BedrockProvider
   | DeepseekProvider
   | GroqProvider
+  | CerebrasProvider
   | OpenAiCompatibleProvider
   | OllamaProvider
   | OpenRouterProvider
@@ -4364,6 +4393,7 @@ import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from
 import { createVertex } from '@ai-sdk/google-vertex';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createGroq } from '@ai-sdk/groq';
+import { createCerebras } from '@ai-sdk/cerebras';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createOllama } from 'ollama-ai-provider';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
@@ -4373,6 +4403,7 @@ import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk'
 import {
   isAnthropicProvider,
   isBedrockProvider,
+  isCerebrasProvider,
   isDeepseekProvider,
   isGeminiProvider,
   isGroqProvider,
@@ -5122,6 +5153,23 @@ nextToken = response.nextToken; // Will be undefined if no more pages
 // Check if the model is authorized and available
 
 ================
+File: src/main/models/providers/cerebras.ts
+================
+import { SettingsData, Model, ModelInfo } from '@common/types';
+import { CerebrasProvider, getLlmProviderConfig } from '@common/agent';
+⋮----
+import { getEffectiveEnvironmentVariable } from '@/utils/environment';
+import logger from '@/logger';
+⋮----
+interface CerebrasModel {
+  id: string;
+  max_context_length?: number;
+  description?: string;
+}
+⋮----
+export const loadCerebrasModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+
+================
 File: src/main/models/providers/deepseek.ts
 ================
 import { ModelInfo, Model, SettingsData } from '@common/types';
@@ -5264,6 +5312,7 @@ import { loadGeminiModels } from './providers/gemini';
 import { loadBedrockModels } from './providers/bedrock';
 import { loadDeepseekModels } from './providers/deepseek';
 import { loadGroqModels } from './providers/groq';
+import { loadCerebrasModels } from './providers/cerebras';
 import { loadOpenaiCompatibleModels } from './providers/openai-compatible';
 import { loadOpenrouterModels } from './providers/openrouter';
 import { loadRequestyModels } from './providers/requesty';
@@ -6775,6 +6824,7 @@ import YAML from 'yaml';
 import {
   AnthropicProvider,
   BedrockProvider,
+  CerebrasProvider,
   DeepseekProvider,
   GeminiProvider,
   getLlmProviderConfig,
@@ -6791,6 +6841,7 @@ import { EnvironmentVariable, SettingsData } from '@common/types';
 ⋮----
 import logger from '@/logger';
 import {
+  CEREBRAS_MODEL,
   DEEPSEEK_MODEL,
   DEFAULT_MAIN_MODEL,
   GEMINI_MODEL,
@@ -8277,7 +8328,7 @@ export const createTokens = (hunks: HunkData[], language: string) =>
 ================
 File: src/renderer/src/components/common/Accordion.tsx
 ================
-import { ReactNode, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
@@ -8298,8 +8349,6 @@ type Props = {
 };
 ⋮----
 const handleOpenChange = () =>
-⋮----
-// Scroll to visible when expanding
 ⋮----
 className=
 
@@ -8785,6 +8834,26 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 ================
+File: src/renderer/src/components/common/WarningIcon.tsx
+================
+import { FaExclamationTriangle } from 'react-icons/fa';
+import { ReactNode } from 'react';
+import { clsx } from 'clsx';
+⋮----
+import { IconButton } from './IconButton';
+⋮----
+type Props = {
+  tooltip: ReactNode;
+  tooltipId?: string;
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+};
+⋮----
+export const WarningIcon = (
+⋮----
+className=
+
+================
 File: src/renderer/src/components/ContextFiles/ContextFiles.css
 ================
 .rct-tree-items-container {
@@ -8888,6 +8957,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
 ================
@@ -8902,6 +8972,7 @@ import { CommandOutputMessage } from '@/types/message';
 ⋮----
 type Props = {
   message: CommandOutputMessage;
+  compact?: boolean;
 };
 
 ================
@@ -8984,6 +9055,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 ⋮----
 if (isError)
@@ -9006,6 +9078,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 ⋮----
 <strong>
@@ -9029,6 +9102,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
 ================
@@ -9050,6 +9124,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 ⋮----
 const formatName = (name: string): string =>
@@ -9074,6 +9149,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 ⋮----
 if (isError)
@@ -9094,6 +9170,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 ⋮----
 if (isError)
@@ -9103,6 +9180,8 @@ if (isError)
 ================
 File: src/renderer/src/components/message/GroupMessageBlock.tsx
 ================
+import { AnimatePresence, motion } from 'framer-motion';
+import { useMemo, useState } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { LocalizedString, UsageReportData } from '@common/types';
@@ -9111,7 +9190,7 @@ import { MessageBlock } from './MessageBlock';
 import { MessageBar } from './MessageBar';
 ⋮----
 import { Accordion } from '@/components/common/Accordion';
-import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage } from '@/types/message';
+import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage, isUserMessage } from '@/types/message';
 ⋮----
 type Props = {
   baseDir: string;
@@ -9182,7 +9261,15 @@ import { IconButton } from '@/components/common/IconButton';
 type Props = {
   message: LogMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
+⋮----
+const renderMessage = () => (
+    <div className="flex items-start gap-3">
+      <Icon className="inline-block h-3 w-3 flex-shrink-0 mt-[3px]" />
+      <div>{t(message.content)}</div>
+    </div>
+  );
 ⋮----
 tooltip=
 
@@ -9226,15 +9313,15 @@ import {
   HELPERS_TOOL_GROUP_NAME,
   HELPERS_TOOL_INVALID_TOOL_ARGUMENTS,
   HELPERS_TOOL_NO_SUCH_TOOL,
+  POWER_TOOL_BASH,
+  POWER_TOOL_FETCH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE,
   POWER_TOOL_GLOB,
   POWER_TOOL_GREP,
-  POWER_TOOL_BASH,
-  POWER_TOOL_FETCH,
-  POWER_TOOL_SEMANTIC_SEARCH,
   POWER_TOOL_GROUP_NAME,
+  POWER_TOOL_SEMANTIC_SEARCH,
   SUBAGENTS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_RUN_TASK,
 } from '@common/tools';
@@ -9274,6 +9361,7 @@ type Props = {
   message: Message;
   allFiles: string[];
   renderMarkdown: boolean;
+  compact?: boolean;
   remove?: () => void;
   redo?: () => void;
   edit?: (content: string) => void;
@@ -9345,6 +9433,7 @@ type Props = {
   baseDir: string;
   message: Message;
   allFiles: string[];
+  compact?: boolean;
 };
 
 ================
@@ -9363,6 +9452,7 @@ type Props = {
   message: ResponseMessage;
   allFiles: string[];
   renderMarkdown: boolean;
+  compact?: boolean;
   onRemove?: () => void;
 };
 
@@ -9382,6 +9472,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 ⋮----
 if (isError)
@@ -9399,11 +9490,22 @@ import { MessageBar } from '@/components/message/MessageBar';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 ⋮----
-export const SubagentToolMessage = (
-⋮----
 const getToolName = (): string =>
+⋮----
+const renderHeader = () => (
+    <div className="flex items-center gap-2 mb-2">
+      <div className={`text-text-muted ${isExecuting ? 'animate-pulse' : ''}`}>
+        <RiToolsFill className="w-4 h-4" />
+      </div>
+      <div className={`text-xs text-text-primary flex items-center gap-1 ${isExecuting ? 'animate-pulse' : ''}`}>
+        <span>{getToolName()}</span>
+        {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />}
+      </div>
+    </div>
+  );
 
 ================
 File: src/renderer/src/components/message/ThinkingAnswerBlock.tsx
@@ -9463,6 +9565,7 @@ import { CodeInline } from '@/components/common/CodeInline';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 ⋮----
 const formatName = (name: string): string =>
@@ -9513,6 +9616,7 @@ type Props = {
   message: UserMessage;
   allFiles: string[];
   renderMarkdown: boolean;
+  compact?: boolean;
   onRemove?: () => void;
   onRedo?: () => void;
   onEdit?: (content: string) => void;
@@ -9580,7 +9684,13 @@ const findFileInNextLine = (currentLine: number):
 ⋮----
 // Handle any remaining content
 ⋮----
-export const parseThinkingAnswerFormat = (content: string, baseDir: string = '', allFiles: string[] = [], renderMarkdown = false): React.ReactNode | null =>
+export const parseThinkingAnswerFormat = (
+  content: string,
+  baseDir: string = '',
+  allFiles: string[] = [],
+  renderMarkdown = false,
+  renderThinking = true,
+): React.ReactNode | null =>
 ⋮----
 // Check for the thinking section first
 ⋮----
@@ -10503,6 +10613,8 @@ const completionSource = async (context: CompletionContext): Promise<CompletionR
 ⋮----
 // Ensure cursor is at the end after appending text
 ⋮----
+const setTextWithDispatch = (newText: string) =>
+⋮----
 url = commandArgs; // Only URL provided
 ⋮----
 filePath = undefined; // If only spaces after URL, treat as no filePath
@@ -10512,8 +10624,6 @@ const requiresConfirmation = (command: string): boolean =>
 const handleConfirmCommand = () =>
 ⋮----
 const onChange = (newText: string) =>
-⋮----
-const prepareForNextPrompt = () =>
 ⋮----
 const handleSubmit = () =>
 ⋮----
@@ -10601,6 +10711,29 @@ placeholder=
 <span>
 
 ================
+File: src/renderer/src/components/settings/agent/providers/CerebrasParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CerebrasProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: CerebrasProvider;
+  onChange: (updated: CerebrasProvider) => void;
+};
+⋮----
+export const CerebrasParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
 File: src/renderer/src/components/settings/agent/providers/DeepseekParameters.tsx
 ================
 import { ChangeEvent } from 'react';
@@ -10635,6 +10768,7 @@ import { Slider } from '@/components/common/Slider';
 import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+import { WarningIcon } from '@/components/common/WarningIcon';
 ⋮----
 type Props = {
   provider: GeminiProvider;
@@ -10656,6 +10790,7 @@ label=
 ? t('settings.agent.envVarFoundPlaceholder',
 ⋮----
 <InfoIcon tooltip=
+⋮----
 
 ================
 File: src/renderer/src/components/settings/agent/providers/GroqParameters.tsx
@@ -11442,6 +11577,7 @@ import {
   getLlmProviderConfig,
   isAnthropicProvider,
   isBedrockProvider,
+  isCerebrasProvider,
   isDeepseekProvider,
   isGeminiProvider,
   isGroqProvider,
@@ -11493,6 +11629,7 @@ File: src/renderer/src/components/settings/ProviderCard.tsx
 import {
   isAnthropicProvider,
   isBedrockProvider,
+  isCerebrasProvider,
   isDeepseekProvider,
   isGeminiProvider,
   isGroqProvider,
@@ -11514,6 +11651,7 @@ import { clsx } from 'clsx';
 import {
   AnthropicParameters,
   BedrockParameters,
+  CerebrasParameters,
   DeepseekParameters,
   GeminiParameters,
   GroqParameters,
@@ -12498,7 +12636,13 @@ import { useMemo } from 'react';
 ⋮----
 import { parseMessageContent } from '@/components/message/utils';
 ⋮----
-export const useParsedContent = (baseDir: string, content: string | null | undefined, allFiles: string[], renderMarkdown?: boolean) =>
+export const useParsedContent = (
+  baseDir: string,
+  content: string | null | undefined,
+  allFiles: string[],
+  renderMarkdown?: boolean,
+  renderThinking?: boolean,
+) =>
 ⋮----
 // we use allFiles.length to re-evaluate if the array content might have changed
 // even if the array reference itself hasn't.
@@ -14601,7 +14745,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.32.0-dev",
+  "version": "0.33.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -14632,6 +14776,7 @@ File: package.json
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^2.2.12",
     "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/cerebras": "^0.2.16",
     "@ai-sdk/deepseek": "^0.2.16",
     "@ai-sdk/google": "^1.2.22",
     "@ai-sdk/google-vertex": "^2.2.27",

@@ -11,9 +11,10 @@ type Props = {
   baseDir: string;
   message: Message;
   allFiles: string[];
+  compact?: boolean;
 };
 
-export const ReflectedMessageBlock = ({ baseDir, message, allFiles }: Props) => {
+export const ReflectedMessageBlock = ({ baseDir, message, allFiles, compact: _compact = false }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const parsedContent = useParsedContent(baseDir, message.content, allFiles);

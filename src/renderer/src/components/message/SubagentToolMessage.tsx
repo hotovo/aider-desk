@@ -8,9 +8,10 @@ import { MessageBar } from '@/components/message/MessageBar';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
-export const SubagentToolMessage = ({ message, onRemove }: Props) => {
+export const SubagentToolMessage = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
 
   const isExecuting = message.content === '';
@@ -24,17 +25,25 @@ export const SubagentToolMessage = ({ message, onRemove }: Props) => {
     return t('toolMessage.subagents.completed');
   };
 
+  const renderHeader = () => (
+    <div className="flex items-center gap-2 mb-2">
+      <div className={`text-text-muted ${isExecuting ? 'animate-pulse' : ''}`}>
+        <RiToolsFill className="w-4 h-4" />
+      </div>
+      <div className={`text-xs text-text-primary flex items-center gap-1 ${isExecuting ? 'animate-pulse' : ''}`}>
+        <span>{getToolName()}</span>
+        {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />}
+      </div>
+    </div>
+  );
+
+  if (compact) {
+    return renderHeader();
+  }
+
   return (
     <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
-      <div className="flex items-center gap-2 mb-2">
-        <div className={`text-text-muted ${isExecuting ? 'animate-pulse' : ''}`}>
-          <RiToolsFill className="w-4 h-4" />
-        </div>
-        <div className={`text-xs text-text-primary flex items-center gap-1 ${isExecuting ? 'animate-pulse' : ''}`}>
-          <span>{getToolName()}</span>
-          {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />}
-        </div>
-      </div>
+      {renderHeader()}
 
       <div className="text-xs text-text-tertiary">
         <div className="mb-2">

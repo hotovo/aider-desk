@@ -4,6 +4,7 @@ import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from
 import { createVertex } from '@ai-sdk/google-vertex';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createGroq } from '@ai-sdk/groq';
+import { createCerebras } from '@ai-sdk/cerebras';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createOllama } from 'ollama-ai-provider';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
@@ -13,6 +14,7 @@ import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk'
 import {
   isAnthropicProvider,
   isBedrockProvider,
+  isCerebrasProvider,
   isDeepseekProvider,
   isGeminiProvider,
   isGroqProvider,
@@ -104,6 +106,13 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     }
     const groqProvider = createGroq({ apiKey });
     return groqProvider(model);
+  } else if (isCerebrasProvider(provider)) {
+    const apiKey = provider.apiKey || env['CEREBRAS_API_KEY'];
+    if (!apiKey) {
+      throw new Error('Cerebras API key is required in Providers settings or Aider environment variables (CEREBRAS_API_KEY)');
+    }
+    const cerebrasProvider = createCerebras({ apiKey });
+    return cerebrasProvider(model);
   } else if (isLmStudioProvider(provider)) {
     const baseUrl = provider.baseUrl || env['LMSTUDIO_API_BASE'];
     if (!baseUrl) {

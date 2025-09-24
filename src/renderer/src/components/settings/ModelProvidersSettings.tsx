@@ -3,6 +3,7 @@ import {
   getLlmProviderConfig,
   isAnthropicProvider,
   isBedrockProvider,
+  isCerebrasProvider,
   isDeepseekProvider,
   isGeminiProvider,
   isGroqProvider,
@@ -50,6 +51,7 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
   const { environmentVariable: requestyApiKey } = useEffectiveEnvironmentVariable('REQUESTY_API_KEY');
   const { environmentVariable: awsAccessKeyId } = useEffectiveEnvironmentVariable('AWS_ACCESS_KEY_ID');
   const { environmentVariable: awsSecretAccessKey } = useEffectiveEnvironmentVariable('AWS_SECRET_ACCESS_KEY');
+  const { environmentVariable: cerebrasApiKey } = useEffectiveEnvironmentVariable('CEREBRAS_API_KEY');
 
   const handleProviderParamsChange = (updatedProviderConfig: LlmProvider) => {
     setSettings({
@@ -72,6 +74,8 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
       return !!provider.apiKey || !!openaiApiKey?.value;
     } else if (isAnthropicProvider(provider)) {
       return !!provider.apiKey || !!anthropicApiKey?.value;
+    } else if (isCerebrasProvider(provider)) {
+      return !!provider.apiKey || !!cerebrasApiKey?.value;
     } else if (isDeepseekProvider(provider)) {
       return !!provider.apiKey || !!deepseekApiKey?.value;
     } else if (isGroqProvider(provider)) {

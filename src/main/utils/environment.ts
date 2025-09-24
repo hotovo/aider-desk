@@ -6,6 +6,7 @@ import YAML from 'yaml';
 import {
   AnthropicProvider,
   BedrockProvider,
+  CerebrasProvider,
   DeepseekProvider,
   GeminiProvider,
   getLlmProviderConfig,
@@ -22,6 +23,7 @@ import { EnvironmentVariable, SettingsData } from '@common/types';
 
 import logger from '@/logger';
 import {
+  CEREBRAS_MODEL,
   DEEPSEEK_MODEL,
   DEFAULT_MAIN_MODEL,
   GEMINI_MODEL,
@@ -238,6 +240,8 @@ export const determineMainModel = (settings: SettingsData, baseDir: string): str
     return LM_STUDIO_MODEL;
   } else if (env.GROQ_API_KEY) {
     return GROQ_MODEL;
+  } else if (env.CEREBRAS_API_KEY) {
+    return CEREBRAS_MODEL;
   }
 
   // Default model if no other condition is met
@@ -257,6 +261,7 @@ export const getEnvironmentVariablesForAider = (settings: SettingsData, baseDir:
   const anthropicProvider = getLlmProviderConfig('anthropic', settings) as AnthropicProvider;
   const geminiProvider = getLlmProviderConfig('gemini', settings) as GeminiProvider;
   const groqProvider = getLlmProviderConfig('groq', settings) as GroqProvider;
+  const cerebrasProvider = getLlmProviderConfig('cerebras', settings) as CerebrasProvider;
   const lmStudioProvider = getLlmProviderConfig('lmstudio', settings) as LmStudioProvider;
   const deepseekProvider = getLlmProviderConfig('deepseek', settings) as DeepseekProvider;
   const openRouterProvider = getLlmProviderConfig('openrouter', settings) as OpenRouterProvider;
@@ -280,6 +285,7 @@ export const getEnvironmentVariablesForAider = (settings: SettingsData, baseDir:
       : {}),
     ANTHROPIC_API_KEY: anthropicProvider.apiKey || undefined,
     GROQ_API_KEY: groqProvider.apiKey || undefined,
+    CEREBRAS_API_KEY: cerebrasProvider.apiKey || undefined,
     GEMINI_API_KEY: geminiProvider.apiKey || undefined,
     LM_STUDIO_API_BASE: lmStudioProvider.baseUrl || undefined,
     DEEPSEEK_API_KEY: deepseekProvider.apiKey || undefined,
@@ -315,6 +321,9 @@ export const determineProvider = (projectDir?: string, settings?: SettingsData):
   }
   if (getEffectiveEnvironmentVariable('OPENROUTER_API_KEY', projectDir, settings)) {
     return 'openrouter';
+  }
+  if (getEffectiveEnvironmentVariable('CEREBRAS_API_KEY', projectDir, settings)) {
+    return 'cerebras';
   }
   if (getEffectiveEnvironmentVariable('REQUESTY_API_KEY', projectDir, settings)) {
     return 'requesty';

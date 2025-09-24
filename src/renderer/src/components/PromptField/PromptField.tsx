@@ -244,22 +244,23 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         editorRef.current?.view?.focus();
       },
       setText: (newText: string) => {
-        setText(newText);
+        setTextWithDispatch(newText);
         // Ensure cursor is at the end after setting text
         setTimeout(() => {
-          if (editorRef.current?.view) {
-            const end = editorRef.current.view.state.doc.length;
-            editorRef.current.view.dispatch({
+          const view = editorRef.current?.view;
+          if (view) {
+            const end = view.state.doc.length;
+            view.dispatch({
               selection: { anchor: end, head: end },
             });
-            editorRef.current.view.focus();
+            view.focus();
           }
         }, 0);
       },
       appendText: (textToAppend: string) => {
         const currentText = text;
         const newText = currentText ? `${currentText}\n${textToAppend}` : textToAppend;
-        setText(newText);
+        setTextWithDispatch(newText);
         // Ensure cursor is at the end after appending text
         setTimeout(() => {
           if (editorRef.current?.view) {
@@ -273,6 +274,20 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       },
     }));
 
+    const setTextWithDispatch = (newText: string) => {
+      const view = editorRef.current?.view;
+      view?.dispatch({
+        changes: { from: 0, to: view.state.doc.toString().length, insert: newText },
+        annotations: [External.of(true)],
+      });
+      setText(newText);
+    };
+
+    const prepareForNextPrompt = useCallback(() => {
+      setTextWithDispatch('');
+      setPendingCommand(null);
+    }, []);
+
     const executeCommand = useCallback(
       (command: string, args?: string): void => {
         switch (command) {
@@ -282,7 +297,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/architect': {
             const newMode = command.slice(1) as Mode;
             onModeChanged(newMode);
-            setText(args || '');
+            setTextWithDispatch(args || '');
             break;
           }
           case '/agent': {
@@ -292,7 +307,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               prepareForNextPrompt();
             } else {
               onModeChanged(newMode);
-              setText(args || '');
+              setTextWithDispatch(args || '');
             }
             break;
           }
@@ -361,7 +376,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               return;
             }
             prepareForNextPrompt();
-            api.initProjectRulesFile(baseDir);
+            void api.initProjectRulesFile(baseDir);
             break;
           }
           case '/clear-logs': {
@@ -370,30 +385,31 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             break;
           }
           default: {
-            setText('');
+            setTextWithDispatch('');
             runCommand(`${command.slice(1)} ${args || ''}`);
             break;
           }
         }
       },
       [
-        showFileDialog,
+        prepareForNextPrompt,
         addFiles,
         openModelSelector,
         clearMessages,
         redoLastUserPrompt,
         editLastUserMessage,
-        onModeChanged,
-        text,
+        api,
+        baseDir,
         mode,
+        onModeChanged,
         openAgentModelSelector,
+        showFileDialog,
+        text,
         scrapeWeb,
         runTests,
-        runCommand,
-        baseDir,
         t,
         clearLogMessages,
-        api,
+        runCommand,
       ],
     );
 
@@ -493,16 +509,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           setSelectedAnswer(null);
         }
       }
-    };
-
-    const prepareForNextPrompt = () => {
-      const view = editorRef.current?.view;
-      view?.dispatch({
-        changes: { from: 0, to: view.state.doc.toString().length, insert: '' },
-        annotations: [External.of(true)],
-      });
-      setText('');
-      setPendingCommand(null);
     };
 
     const handleSubmit = () => {
@@ -775,7 +781,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           <div className="relative flex-shrink-0">
             <CodeMirror
               ref={editorRef}
-              value={text}
               onChange={onChange}
               placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
               editable={!disabled}
@@ -900,7 +905,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             keepHighlightAtTop={keepHistoryHighlightTop}
             onScrollTop={loadMoreHistory}
             onSelect={(item) => {
-              setText(item);
+              setTextWithDispatch(item);
               setHistoryMenuVisible(false);
             }}
             onClose={() => setHistoryMenuVisible(false)}

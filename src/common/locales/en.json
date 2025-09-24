@@ -188,7 +188,8 @@
     "includeThoughts": "Include thoughts",
     "includeThoughtsTooltip": "When enabled, the model's internal thought process will be included in the conversation.",
     "useSearchGrounding": "Use Search grounding",
-    "useSearchGroundingTooltip": "When enabled, the model will use search results to ground its responses, improving accuracy and relevance."
+    "useSearchGroundingTooltip": "When enabled, the model will use search results to ground its responses, improving accuracy and relevance.",
+    "useSearchGroundingWarning": "When enabled, Gemini models are not able to use tools, e.g. Power tools, MCP tools, etc."
   },
   "groq": {
     "apiKey": "API Key",
@@ -208,6 +209,9 @@
     "sessionToken": "Session Token",
     "sessionTokenTooltip": "Optional session token for temporary credentials."
   },
+  "cerebras": {
+    "apiKey": "API Key"
+  },
   "openRouter": {
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. anthropic/claude-3.7-sonnet"
@@ -225,6 +229,7 @@
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
+    "cerebras": "Cerebras",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
@@ -486,7 +491,8 @@
     "projectPathPlaceholder": "Type the path to your project or use icon to browse",
     "openButton": "Open",
     "browseFoldersTooltip": "Browse folders",
-    "projectAlreadyOpenWarning": "This project is already open."
+    "projectAlreadyOpenWarning": "This project is already open.",
+    "cantOpenProject": "This project can not be opened."
   },
   "mode": {
     "code": "Code",

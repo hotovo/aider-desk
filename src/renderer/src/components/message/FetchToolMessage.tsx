@@ -10,9 +10,10 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
-export const FetchToolMessage = ({ message, onRemove }: Props) => {
+export const FetchToolMessage = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
 
   const url = message.args.url as string;
@@ -74,6 +75,10 @@ export const FetchToolMessage = ({ message, onRemove }: Props) => {
       </div>
     );
   };
+
+  if (compact) {
+    return title;
+  }
 
   return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
 };

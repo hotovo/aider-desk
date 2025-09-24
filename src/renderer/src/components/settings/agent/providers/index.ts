@@ -2,6 +2,7 @@ export * from './OpenAiParameters';
 export * from './AnthropicParameters';
 export * from './GeminiParameters';
 export * from './GroqParameters';
+export * from './CerebrasParameters';
 export * from './LmStudioParameters';
 export * from './BedrockParameters';
 export * from './DeepseekParameters';

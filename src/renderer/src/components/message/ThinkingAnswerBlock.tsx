@@ -30,15 +30,18 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
     <div className="flex flex-col w-full gap-1 pt-0">
       {/* Thinking section */}
       <div className="border border-border-default-dark rounded-md overflow-hidden ml-2">
-        <div className="flex items-center justify-between gap-2 p-2 bg-bg-secondary-light cursor-pointer hover:bg-bg-tertiary" onClick={handleToggleThinking}>
-          <div className="flex items-center gap-2">
-            <div className="text-text-secondary">{isThinkingExpanded ? <FaChevronDown size={14} /> : <FaChevronRight size={14} />}</div>
+        <div
+          className="flex items-center justify-between gap-2 px-3 py-2 bg-bg-secondary-light cursor-pointer hover:bg-bg-tertiary w-full"
+          onClick={handleToggleThinking}
+        >
+          <div className="flex items-center gap-2 w-full">
             <div className={`text-text-secondary ${!answer ? 'animate-pulse' : ''}`}>
-              <FaBrain size={16} />
+              <FaBrain className="w-4 h-4" />
             </div>
-            <div className={`font-medium text-text-primary ${!answer ? 'animate-pulse' : ''}`}>{t('thinkingAnswer.thinking')}</div>
+            <div className={`font-medium text-text-primary flex-1 ${!answer ? 'animate-pulse' : ''}`}>{t('thinkingAnswer.thinking')}</div>
           </div>
           {thinking && <CopyMessageButton content={thinking} className="text-text-muted-dark hover:text-text-tertiary" />}
+          <div className="text-text-secondary">{isThinkingExpanded ? <FaChevronDown className="w-3 h-3" /> : <FaChevronRight className="w-3 h-3" />}</div>
         </div>
 
         {isThinkingExpanded && (

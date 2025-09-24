@@ -14,6 +14,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
+  compact?: boolean;
 };
 
 const formatName = (name: string): string => {
@@ -24,7 +25,7 @@ const formatName = (name: string): string => {
     .join(' ');
 };
 
-export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
+export const FileWriteToolMessage = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
   const expandableRef = useRef<ExpandableMessageBlockRef>(null);
   const [hasClosedOnError, setHasClosedOnError] = useState(false);
@@ -88,6 +89,10 @@ export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
       </CodeBlock>
     </div>
   );
+
+  if (compact) {
+    return title;
+  }
 
   return (
     <ExpandableMessageBlock

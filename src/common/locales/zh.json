@@ -191,7 +191,8 @@
     "includeThoughts": "包含思考过程",
     "includeThoughtsTooltip": "启用后，代理的内部思考过程将包含在对话历史中，这有助于调试或理解其决策。",
     "useSearchGrounding": "使用搜索基础",
-    "useSearchGroundingTooltip": "启用后，代理将使用搜索结果作为其响应的基础，从而提高准确性和相关性。"
+    "useSearchGroundingTooltip": "启用后，代理将使用搜索结果作为其响应的基础，从而提高准确性和相关性。",
+    "useSearchGroundingWarning": "当启用时，Gemini 模型的工具使用受到限制。"
   },
   "groq": {
     "apiKey": "API 密钥",
@@ -211,6 +212,9 @@
     "sessionToken": "会话令牌",
     "sessionTokenTooltip": "临时凭证的可选会话令牌。"
   },
+  "cerebras": {
+    "apiKey": "API 密钥"
+  },
   "openRouter": {
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 anthropic/claude-3.7-sonnet"
@@ -222,6 +226,7 @@
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
+    "cerebras": "Cerebras",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
@@ -441,7 +446,8 @@
     "projectPathPlaceholder": "输入项目路径或使用图标浏览",
     "openButton": "打开",
     "browseFoldersTooltip": "浏览文件夹",
-    "projectAlreadyOpenWarning": "此项目已打开。"
+    "projectAlreadyOpenWarning": "此项目已打开。",
+    "cantOpenProject": "无法打开此项目。"
   },
   "mode": {
     "code": "代码",
