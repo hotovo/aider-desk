@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.33.0]
 
 - fixed issue with diff edit format not being set correctly on startup
 - added model library for provider and model management
