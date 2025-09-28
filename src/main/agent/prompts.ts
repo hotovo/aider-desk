@@ -99,7 +99,7 @@ export const getSystemPrompt = async (projectDir: string, agentProfile: AgentPro
       <Instruction>Using the confirmed file list, create a comprehensive multi-file change plan.${
         useSubagents ? ' If specialized subagents are available, consider using one for codebase analysis to assist in this step.' : ''
       }</Instruction>
-      <Instruction autoApprove="${autoApprove}">${autoApprove ? 'After presenting the plan, execute it automatically.' : 'Present the plan and await explicit user approval before changes.'}</Instruction>
+      <Instruction autoApprove="${autoApprove}">${autoApprove ? 'After presenting the plan, execute it automatically.' : 'Present the plan and await explicit user approval before changes. For example: "May I proceed? (y/n)"'}</Instruction>
     </Step>
     <Step number="5" title="Execute Implementation">
       <Instruction>Apply planned changes using appropriate tools. Ensure all relevant files from Step 3 are in context before modifications.</Instruction>

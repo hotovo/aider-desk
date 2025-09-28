@@ -1,5 +1,7 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
 
+import logger from '@/logger';
+
 /**
  * Extract an XML-tagged reasoning section from the generated text and exposes it
  * as a `reasoning` property on the result.
@@ -58,6 +60,9 @@ export const extractReasoningMiddleware = function extractReasoningMiddleware({
       let isFirstText = true;
       let afterSwitch = false;
       let isReasoning = false;
+      let reasoningDone = false;
+      let fullText = '';
+      let reasoningText = '';
       let buffer = '';
 
       return {
@@ -70,6 +75,10 @@ export const extractReasoningMiddleware = function extractReasoningMiddleware({
               }
 
               buffer += chunk.textDelta;
+              fullText += chunk.textDelta;
+              if (isReasoning) {
+                reasoningText += chunk.textDelta;
+              }
 
               const publish = function publish(text: string) {
                 if (text.length > 0) {
@@ -89,41 +98,64 @@ export const extractReasoningMiddleware = function extractReasoningMiddleware({
                 }
               };
 
-              let shouldContinue = true;
-              while (shouldContinue) {
-                const nextTag = isReasoning ? closingTag : openingTag;
+              if (reasoningDone) {
+                publish(buffer);
+                buffer = '';
+                return;
+              }
 
-                // For reasoning mode, only look for opening tag at the start of buffer
-                let startIndex: number | null = null;
-                if (!isReasoning) {
-                  // When looking for reasoning opening tag, it must be at the start of buffer
-                  if (buffer.startsWith(openingTag)) {
-                    startIndex = 0;
+              if (fullText.length < openingTag.length) {
+                return;
+              }
+              if (!isReasoning && buffer.startsWith(openingTag)) {
+                isReasoning = true;
+                publish(buffer.slice(openingTag.length));
+                reasoningText += buffer;
+                buffer = '';
+                return;
+              }
+
+              if (isReasoning) {
+                const lastStartIndex = getPotentialStartIndex(reasoningText, closingTag);
+                if (lastStartIndex !== null) {
+                  if (reasoningText.slice(lastStartIndex).length < closingTag.length + 1) {
+                    // check for additional character at the end, e.g. `
+                    // if not found, continue with the next chunk
+                    return;
                   }
-                } else {
-                  startIndex = getPotentialStartIndex(buffer, nextTag);
-                }
 
-                // no opening or closing tag found, publish the buffer
-                if (startIndex == null) {
+                  if (reasoningText[lastStartIndex - 1] === '`' && reasoningText[lastStartIndex + closingTag.length] === '`') {
+                    // if there is a backtick before the closing tag and after, publish the buffer, as this is not ending
+                    publish(buffer);
+                    buffer = '';
+                    return;
+                  }
+
+                  const index = buffer.indexOf(closingTag);
+                  if (index === -1) {
+                    // this should not happen
+                    logger.warn('No closing tag found in buffer although it was found in reasoningText');
+                    return;
+                  }
+                  publish(buffer.slice(0, index));
+
+                  // set and publish the rest of the buffer as non reasoning
+                  buffer = buffer.slice(index + closingTag.length);
+                  isReasoning = false;
+                  reasoningDone = true;
+                  afterSwitch = true;
                   publish(buffer);
                   buffer = '';
-                  shouldContinue = false;
+                  return;
                 } else {
-                  // publish text before the tag
-                  publish(buffer.slice(0, startIndex));
-
-                  const foundFullMatch = startIndex + nextTag.length <= buffer.length;
-
-                  if (foundFullMatch) {
-                    buffer = buffer.slice(startIndex + nextTag.length);
-                    isReasoning = !isReasoning;
-                    afterSwitch = true;
-                  } else {
-                    buffer = buffer.slice(startIndex);
-                    shouldContinue = false;
-                  }
+                  publish(buffer);
+                  buffer = '';
+                  return;
                 }
+              } else {
+                publish(buffer);
+                buffer = '';
+                return;
               }
             },
           }),
@@ -154,7 +186,7 @@ const getPotentialStartIndex = function getPotentialStartIndex(text: string, sea
   // a prefix of "searchedText". We go from the end of text inward.
   for (let i = text.length - 1; i >= 0; i--) {
     const suffix = text.substring(i);
-    if (searchedText.startsWith(suffix)) {
+    if (searchedText.startsWith(suffix) && text[i - 1] !== '`') {
       return i;
     }
   }

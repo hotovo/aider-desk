@@ -91,12 +91,13 @@ export class Connector {
     this.sendMessage(message);
   };
 
-  public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat: EditFormat): void {
+  public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat: EditFormat, environmentVariables?: Record<string, string>): void {
     const message: SetModelsMessage = {
       action: 'set-models',
       mainModel,
       weakModel,
       editFormat,
+      environmentVariables,
     };
     this.sendMessage(message);
   }

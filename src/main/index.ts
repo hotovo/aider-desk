@@ -2,7 +2,7 @@ import { join } from 'path';
 import { createServer } from 'http';
 import { existsSync, statSync } from 'fs';
 
-import { delay } from '@common/utils';
+import { compareBaseDirs, delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 
@@ -10,12 +10,12 @@ import icon from '../../resources/icon.png?asset';
 
 import { ProgressWindow } from '@/progress-window';
 import { Agent, McpManager } from '@/agent';
-import { ServerController, CloudflareTunnelManager } from '@/server';
+import { CloudflareTunnelManager, ServerController } from '@/server';
 import { ConnectorManager } from '@/connector';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { ProjectManager } from '@/project';
 import { performStartUp, UpdateProgressData } from '@/start-up';
-import { Store, getDefaultProjectSettings } from '@/store';
+import { getDefaultProjectSettings, Store } from '@/store';
 import { VersionsManager } from '@/versions';
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
@@ -24,7 +24,7 @@ import { ModelManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { EventsHandler } from '@/events-handler';
-import { SERVER_PORT, HEADLESS_MODE } from '@/constants';
+import { HEADLESS_MODE, SERVER_PORT } from '@/constants';
 
 const setupCustomMenu = (): void => {
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [
@@ -65,19 +65,19 @@ const setupCustomMenu = (): void => {
           },
         },
         {
-          label: 'Providers',
+          label: 'Aider',
           click: () => {
             BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 1);
           },
         },
         {
-          label: 'Aider',
+          label: 'Agent',
           click: () => {
             BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 2);
           },
         },
         {
-          label: 'Agent',
+          label: 'Server',
           click: () => {
             BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 3);
           },
@@ -107,13 +107,25 @@ const initStore = async (): Promise<Store> => {
       const absolutePath = join(process.cwd(), potentialDir);
       if (existsSync(absolutePath) && statSync(absolutePath).isDirectory()) {
         const normalizedDir = absolutePath;
-        store.setOpenProjects([
-          {
-            baseDir: normalizedDir,
-            active: true,
-            settings: getDefaultProjectSettings(store, normalizedDir),
-          },
-        ]);
+        const projectOpened = store.getOpenProjects().some((project) => compareBaseDirs(project.baseDir, normalizedDir));
+
+        if (!projectOpened) {
+          store.setOpenProjects([
+            ...store.getOpenProjects().map((project) => ({ ...project, active: false })),
+            {
+              baseDir: normalizedDir,
+              active: true,
+              settings: getDefaultProjectSettings(store, [], normalizedDir),
+            },
+          ]);
+        } else {
+          store.setOpenProjects(
+            store.getOpenProjects().map((project) => ({
+              ...project,
+              active: compareBaseDirs(project.baseDir, normalizedDir),
+            })),
+          );
+        }
       } else {
         logger.warn(`Provided path is not a directory: ${potentialDir}`);
       }
@@ -145,18 +157,18 @@ const initManagers = async (
   // Initialize event manager
   const eventManager = new EventManager(mainWindow);
 
-  // Initialize model info manager
-  const modelInfoManager = new ModelManager(store, eventManager);
+  // Initialize model manager
+  const modelManager = new ModelManager(store, eventManager);
 
   // Initialize data manager
   const dataManager = new DataManager();
   dataManager.init();
 
   // Initialize agent
-  const agent = new Agent(store, mcpManager, modelInfoManager, telemetryManager);
+  const agent = new Agent(store, mcpManager, modelManager, telemetryManager);
 
   // Initialize project manager
-  const projectManager = new ProjectManager(store, agent, telemetryManager, dataManager, eventManager);
+  const projectManager = new ProjectManager(store, agent, telemetryManager, dataManager, eventManager, modelManager);
 
   // Initialize terminal manager
   const terminalManager = new TerminalManager(eventManager, telemetryManager);
@@ -178,11 +190,12 @@ const initManagers = async (
     mcpManager,
     agent,
     versionsManager,
-    modelInfoManager,
+    modelManager,
     telemetryManager,
     dataManager,
     terminalManager,
     cloudflareTunnelManager,
+    eventManager,
   );
 
   // Create and initialize REST API controller with the server

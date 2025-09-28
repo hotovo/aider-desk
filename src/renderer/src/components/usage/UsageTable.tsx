@@ -4,6 +4,8 @@ import { UsageDataRow } from '@common/types';
 
 import { formatDateByGroup, GroupBy } from './utils';
 
+import { Column, FooterColumn, Table } from '@/components/common/Table';
+
 type Props = {
   data: UsageDataRow[];
   groupBy: GroupBy;
@@ -68,57 +70,98 @@ export const UsageTable = ({ data, groupBy }: Props) => {
     );
   }, [aggregatedData]);
 
-  return (
-    <div className="flex-grow overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary m-2">
-      <div className="border border-border-dark-light">
-        <table className="w-full text-sm text-left text-text-primary">
-          <thead className="text-xs text-text-primary uppercase bg-bg-secondary-light sticky top-0">
-            <tr>
-              <th className="px-4 py-2">{t('usageDashboard.table.date')}</th>
-              <th className="px-4 py-2">{t('usageDashboard.table.project')}</th>
-              <th className="px-4 py-2">{t('usageDashboard.table.model')}</th>
-              <th className="px-4 py-2 text-right">{t('usageDashboard.table.input')}</th>
-              <th className="px-4 py-2 text-right">{t('usageDashboard.table.output')}</th>
-              <th className="px-4 py-2 text-right">{t('usageDashboard.table.cacheRead')}</th>
-              <th className="px-4 py-2 text-right">{t('usageDashboard.table.cacheWrite')}</th>
-              <th className="px-4 py-2 text-right">{t('usageDashboard.table.totalTokens')}</th>
-              <th className="px-4 py-2 text-right">{t('usageDashboard.table.cost')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {aggregatedData.map((row, index) => (
-              <tr key={index} className="bg-bg-primary-light border-b border-border-dark-light hover:bg-bg-secondary text-sm">
-                <td className="px-4 py-2 text-xs">{formatDateByGroup(row.timestamp, groupBy)}</td>
-                <td className="px-4 py-2">
-                  <div className="whitespace-pre-line text-xs">{row.project}</div>
-                </td>
-                <td className="px-4 py-2">
-                  <div className="whitespace-pre-line text-xs">{row.model}</div>
-                </td>
-                <td className="px-4 py-2 text-right">{row.input_tokens || 0}</td>
-                <td className="px-4 py-2 text-right">{row.output_tokens || 0}</td>
-                <td className="px-4 py-2 text-right">{row.cache_read_tokens || 0}</td>
-                <td className="px-4 py-2 text-right">{row.cache_write_tokens || 0}</td>
-                <td className="px-4 py-2 text-right">{(row.input_tokens || 0) + (row.output_tokens || 0)}</td>
-                <td className="px-4 py-2 text-right">${(row.cost || 0).toFixed(6)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot className="sticky bottom-0 bg-bg-secondary-light text-xs uppercase text-text-primary">
-            <tr>
-              <th colSpan={3} className="px-4 py-2 text-left font-medium">
-                {t('usageDashboard.total')}
-              </th>
-              <th className="px-4 py-2 text-right font-medium">{totals.input}</th>
-              <th className="px-4 py-2 text-right font-medium">{totals.output}</th>
-              <th className="px-4 py-2 text-right font-medium">{totals.cacheRead}</th>
-              <th className="px-4 py-2 text-right font-medium">{totals.cacheWrite}</th>
-              <th className="px-4 py-2 text-right font-medium">{totals.totalTokens}</th>
-              <th className="px-4 py-2 text-right font-medium">${totals.cost.toFixed(6)}</th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-  );
+  const columns: Column<UsageDataRow>[] = [
+    {
+      accessor: 'timestamp',
+      header: t('usageDashboard.table.date'),
+      cell: (value) => formatDateByGroup(value as string, groupBy),
+      cellClassName: 'text-xs',
+    },
+    {
+      accessor: 'project',
+      header: t('usageDashboard.table.project'),
+      cell: (value) => <div className="whitespace-pre-line text-xs">{value as string}</div>,
+    },
+    {
+      accessor: 'model',
+      header: t('usageDashboard.table.model'),
+      cell: (value) => <div className="whitespace-pre-line text-xs">{value as string}</div>,
+    },
+    {
+      accessor: 'input_tokens',
+      header: t('usageDashboard.table.input'),
+      cell: (value) => (value as number) || 0,
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+    },
+    {
+      accessor: 'output_tokens',
+      header: t('usageDashboard.table.output'),
+      cell: (value) => (value as number) || 0,
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+    },
+    {
+      accessor: 'cache_read_tokens',
+      header: t('usageDashboard.table.cacheRead'),
+      cell: (value) => (value as number) || 0,
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+    },
+    {
+      accessor: 'cache_write_tokens',
+      header: t('usageDashboard.table.cacheWrite'),
+      cell: (value) => (value as number) || 0,
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+    },
+    {
+      accessor: 'input_tokens',
+      header: t('usageDashboard.table.totalTokens'),
+      cell: (_, row) => (row.input_tokens || 0) + (row.output_tokens || 0),
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+    },
+    {
+      accessor: 'cost',
+      header: t('usageDashboard.table.cost'),
+      cell: (value) => `$${((value as number) || 0).toFixed(6)}`,
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+    },
+  ];
+
+  const footerColumns: FooterColumn[] = [
+    {
+      cell: t('usageDashboard.total'),
+      colSpan: 3,
+      className: 'text-left',
+    },
+    {
+      cell: totals.input,
+      className: 'text-right',
+    },
+    {
+      cell: totals.output,
+      className: 'text-right',
+    },
+    {
+      cell: totals.cacheRead,
+      className: 'text-right',
+    },
+    {
+      cell: totals.cacheWrite,
+      className: 'text-right',
+    },
+    {
+      cell: totals.totalTokens,
+      className: 'text-right',
+    },
+    {
+      cell: `$${totals.cost.toFixed(6)}`,
+      className: 'text-right',
+    },
+  ];
+
+  return <Table data={aggregatedData} columns={columns} footerColumns={footerColumns} />;
 };

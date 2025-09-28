@@ -11,7 +11,6 @@ import {
   ModelsData,
   OS,
   ProjectStartedData,
-  ProviderModels,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -21,6 +20,9 @@ import {
   ToolData,
   UserMessageData,
   VersionsInfo,
+  ProviderModelsData,
+  ProvidersUpdatedData,
+  SettingsData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import * as Electron from 'electron';
@@ -105,8 +107,22 @@ const api: ApplicationAPI = {
   getOS: (): Promise<OS> => ipcRenderer.invoke('get-os'),
   loadModelsInfo: () => ipcRenderer.invoke('load-models-info'),
   getProviderModels: () => ipcRenderer.invoke('get-provider-models'),
+  getProviders: () => ipcRenderer.invoke('get-providers'),
+  updateProviders: async (providers) => await ipcRenderer.invoke('update-providers', providers),
+  upsertModel: (providerId, modelId, model) => ipcRenderer.invoke('upsert-model', providerId, modelId, model),
+  deleteModel: (providerId, modelId) => ipcRenderer.invoke('delete-model', providerId, modelId),
   queryUsageData: (from, to) => ipcRenderer.invoke('query-usage-data', from, to),
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => ipcRenderer.invoke('get-effective-environment-variable', key, baseDir),
+
+  addSettingsUpdatedListener: (callback: (data: SettingsData) => void) => {
+    const listener = (_: Electron.IpcRendererEvent, data: SettingsData) => {
+      callback(data);
+    };
+    ipcRenderer.on('settings-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('settings-updated', listener);
+    };
+  },
 
   addResponseChunkListener: (baseDir, callback) => {
     const listener = (_: Electron.IpcRendererEvent, data: ResponseChunkData) => {
@@ -314,12 +330,22 @@ const api: ApplicationAPI = {
   },
 
   addProviderModelsUpdatedListener: (callback) => {
-    const listener = (_: Electron.IpcRendererEvent, data: ProviderModels) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ProviderModelsData) => {
       callback(data);
     };
     ipcRenderer.on('provider-models-updated', listener);
     return () => {
       ipcRenderer.removeListener('provider-models-updated', listener);
+    };
+  },
+
+  addProvidersUpdatedListener: (callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ProvidersUpdatedData) => {
+      callback(data);
+    };
+    ipcRenderer.on('providers-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('providers-updated', listener);
     };
   },
 

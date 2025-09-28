@@ -1,8 +1,10 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, KeyboardEvent, MouseEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, KeyboardEvent, MouseEvent, useOptimistic, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdKeyboardArrowUp, MdKeyboardReturn } from 'react-icons/md';
 import { useDebounce } from '@reactuses/core';
 import { twMerge } from 'tailwind-merge';
+import { Model, ProviderProfile } from '@common/types';
+import { getProviderModelId } from '@common/agent';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
@@ -13,15 +15,16 @@ export type ModelSelectorRef = {
 
 type Props = {
   className?: string;
-  models: string[];
-  selectedModel?: string;
-  onChange: (model: string) => void;
-  preferredModels: string[];
-  removePreferredModel: (model: string) => void;
+  models: Model[];
+  selectedModelId?: string;
+  onChange: (model: Model) => void;
+  preferredModelIds: string[];
+  removePreferredModel: (modelId: string) => void;
+  providers: ProviderProfile[];
 };
 
 export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
-  ({ className, models, selectedModel, onChange, preferredModels, removePreferredModel }, ref) => {
+  ({ className, models, selectedModelId, onChange, preferredModelIds, removePreferredModel, providers }, ref) => {
     const { t } = useTranslation();
     const [modelSearchTerm, setModelSearchTerm] = useState('');
     const [highlightedModelIndex, setHighlightedModelIndex] = useState(-1);
@@ -29,6 +32,47 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
     const modelSelectorRef = useRef<HTMLDivElement>(null);
     const highlightedModelRef = useRef<HTMLDivElement>(null);
     const debouncedSearchTerm = useDebounce(modelSearchTerm, 300);
+    const [optimisticSelectedModelId, setOptimisticSelectedModel] = useOptimistic(selectedModelId);
+
+    const preferredModels = !debouncedSearchTerm
+      ? preferredModelIds.map((id) => {
+          const existing = models.find((m) => getProviderModelId(m) === id);
+          if (existing) {
+            return existing;
+          }
+          const [providerId, ...modelParts] = id.split('/');
+          return { id: modelParts.join('/'), providerId } as Model;
+        })
+      : [];
+
+    const filteredModels = models.filter((model) => {
+      const modelId = getProviderModelId(model);
+      return modelId.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) && !model.isHidden;
+    });
+
+    // Group filtered models by providerId
+    const groupedFilteredModels = Object.entries(
+      filteredModels.reduce(
+        (acc, model) => {
+          const providerId = model.providerId;
+          if (!acc[providerId]) {
+            acc[providerId] = [];
+          }
+          acc[providerId].push(model);
+          return acc;
+        },
+        {} as Record<string, Model[]>,
+      ),
+    )
+      .map(([providerId, models]) => ({ providerId, models }))
+      .sort((a, b) => a.providerId.localeCompare(b.providerId));
+
+    const showCustomModelHint = filteredModels.length === 0 && modelSearchTerm.trim() !== '';
+
+    const getProviderName = (providerId: string) => {
+      const provider = providers.find((p) => p.id === providerId);
+      return provider?.name || t(`providers.${providerId}`);
+    };
 
     useClickOutside(modelSelectorRef, hide);
 
@@ -54,21 +98,23 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
       }
     }, [visible, hide, show]);
 
-    const onModelSelected = (model: string) => {
-      onChange(model);
-      hide();
+    const onModelSelected = (model: Model) => {
+      startTransition(async () => {
+        const modelId = getProviderModelId(model);
+        setOptimisticSelectedModel(modelId);
+        hide();
+        onChange(model);
+      });
     };
 
     const onModelSelectorSearchInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-      const visiblePreferredModels = debouncedSearchTerm ? [] : preferredModels;
-      const sortedModels = [...visiblePreferredModels, ...models.filter((model) => !visiblePreferredModels.includes(model))];
-      const filteredModels = sortedModels.filter((model) => model.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+      const allModels = [...preferredModels, ...groupedFilteredModels.flatMap((group) => group.models)];
 
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
           setHighlightedModelIndex((prev) => {
-            const newIndex = Math.min(prev + 1, filteredModels.length - 1);
+            const newIndex = Math.min(prev + 1, allModels.length - 1);
             setTimeout(() => highlightedModelRef.current?.scrollIntoView({ block: 'nearest' }), 0);
             return newIndex;
           });
@@ -84,12 +130,8 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
         case 'Enter':
           if (highlightedModelIndex !== -1) {
             e.preventDefault();
-            const selected = filteredModels[highlightedModelIndex];
+            const selected = allModels[highlightedModelIndex];
             onModelSelected(selected);
-          } else if (highlightedModelIndex === -1 && modelSearchTerm.trim()) {
-            // If no model is highlighted and there's a search term, select the custom term
-            e.preventDefault();
-            onModelSelected(modelSearchTerm.trim());
           }
           break;
         case 'Escape':
@@ -99,30 +141,28 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
       }
     };
 
-    const filteredModels = models.filter((model) => model.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
-    const showCustomModelHint = filteredModels.length === 0 && modelSearchTerm.trim() !== '';
-
-    const renderModelItem = (model: string, index: number) => {
-      const isPreferred = preferredModels.includes(model);
-      index = index + (isPreferred || debouncedSearchTerm ? 0 : preferredModels.length);
+    const renderModelItem = (model: Model, index: number, isPreferred: boolean) => {
+      const fullModelId = getProviderModelId(model);
+      const displayModelId = isPreferred ? fullModelId : model.id;
+      index = index + (isPreferred ? 0 : preferredModels.length);
 
       const handleRemovePreferredModel = (e: MouseEvent) => {
         e.stopPropagation();
-        removePreferredModel(model);
+        removePreferredModel(fullModelId);
       };
 
       return (
         <div
-          key={model}
+          key={fullModelId}
           ref={index === highlightedModelIndex ? highlightedModelRef : undefined}
           className={`flex items-center w-full hover:bg-bg-tertiary transition-colors duration-200 ${index === highlightedModelIndex ? 'bg-bg-tertiary' : 'text-text-tertiary'}`}
         >
           <button
             onClick={() => onModelSelected(model)}
             className={`flex-grow px-3 py-1 text-left text-xs
-                        ${model === selectedModel ? 'text-text-primary font-bold' : ''}`}
+                        ${fullModelId === optimisticSelectedModelId ? 'text-text-primary font-bold' : ''}`}
           >
-            {model}
+            {displayModelId}
           </button>
           {isPreferred && (
             <button
@@ -140,19 +180,19 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
     return (
       <div className="relative w-full" ref={modelSelectorRef}>
         <button
-          onClick={selectedModel ? toggleVisible : undefined}
-          disabled={!selectedModel}
+          onClick={optimisticSelectedModelId ? toggleVisible : undefined}
+          disabled={!optimisticSelectedModelId}
           className={twMerge(
             'flex items-center focus:outline-none transition-colors duration-200 text-xs',
-            selectedModel ? 'hover:text-text-tertiary' : 'text-text-muted cursor-not-allowed',
+            optimisticSelectedModelId ? 'hover:text-text-tertiary' : 'text-text-muted cursor-not-allowed',
             className,
           )}
         >
-          <span>{selectedModel || t('common.loading')}</span>
-          <MdKeyboardArrowUp className={`w-3 h-3 ml-1 transform rotate-180 ${!selectedModel ? 'text-text-muted' : ''}`} />
+          <span>{optimisticSelectedModelId || t('common.loading')}</span>
+          <MdKeyboardArrowUp className={`w-3 h-3 ml-1 transform rotate-180 ${!optimisticSelectedModelId ? 'text-text-muted' : ''}`} />
         </button>
         {visible && (
-          <div className="absolute top-full left-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-10 flex flex-col w-[600px]">
+          <div className="absolute top-full left-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-10 flex flex-col w-[500px]">
             <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
               <input
                 type="text"
@@ -170,13 +210,20 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
               )}
             </div>
             <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
-              {!debouncedSearchTerm && (
+              {preferredModels.length > 0 && (
                 <>
-                  {preferredModels.map(renderModelItem)}
+                  {preferredModels.map((model, index) => renderModelItem(model, index, true))}
                   <div key="divider" className="border-t border-border-default-dark my-1" />
                 </>
               )}
-              {filteredModels.map(renderModelItem)}
+              {groupedFilteredModels.map((group) => (
+                <div key={group.providerId}>
+                  <div className="sticky top-0 bg-bg-secondary border-b border-border-default-dark px-3 py-1 text-xs font-semibold text-text-primary z-10">
+                    {getProviderName(group.providerId)}
+                  </div>
+                  {group.models.map((model, index) => renderModelItem(model, index, false))}
+                </div>
+              ))}
             </div>
           </div>
         )}

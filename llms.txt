@@ -77,7 +77,6 @@ src/
         todo.ts
       agent.ts
       index.ts
-      llm-providers.ts
       mcp-manager.ts
       optimizer.ts
       prompts.ts
@@ -98,6 +97,7 @@ src/
     models/
       providers/
         anthropic.ts
+        azure.ts
         bedrock.ts
         cerebras.ts
         deepseek.ts
@@ -113,6 +113,7 @@ src/
       index.ts
       model-manager.ts
       models.ts
+      types.ts
     project/
       index.ts
       project-manager.ts
@@ -126,6 +127,7 @@ src/
         mcp-api.ts
         project-api.ts
         prompt-api.ts
+        providers-api.ts
         settings-api.ts
         system-api.ts
         todo-api.ts
@@ -143,6 +145,8 @@ src/
         v10-to-v11.ts
         v11-to-v12.ts
         v12-to-v13.ts
+        v13-to-v14.ts
+        v14-to-v15.ts
         v2-to-v3.ts
         v3-to-v4.ts
         v4-to-v5.ts
@@ -190,9 +194,6 @@ src/
     src/
       api/
         browser-api.ts
-      assets/
-        electron.svg
-        wavy-lines.svg
       components/
         AgentSelector/
           AgentSelector.tsx
@@ -220,12 +221,14 @@ src/
           InfoIcon.tsx
           Input.tsx
           MarkdownInfoDialog.tsx
+          ModalOverlayLayout.tsx
           MultiSelect.tsx
           RadioButton.tsx
           Section.tsx
           Select.tsx
           Slider.tsx
           StyledTooltip.tsx
+          Table.tsx
           TextArea.tsx
           TriStateCheckbox.tsx
           WarningIcon.tsx
@@ -261,7 +264,18 @@ src/
           UsageInfo.tsx
           UserMessageBlock.tsx
           utils.tsx
+        ModelLibrary/
+          index.ts
+          ModelDialog.tsx
+          ModelLibrary.tsx
+          ModelTableSection.tsx
+          ProviderCard.tsx
+          ProviderHeader.tsx
+          ProviderProfileCard.tsx
+          ProviderProfileForm.tsx
+          ProviderSelection.tsx
         onboarding/
+          OnboardingProviderSetup.tsx
           OnboardingStepper.tsx
         project/
           AddFileDialog.tsx
@@ -286,6 +300,7 @@ src/
           agent/
             providers/
               AnthropicParameters.tsx
+              AzureParameters.tsx
               BedrockParameters.tsx
               CerebrasParameters.tsx
               DeepseekParameters.tsx
@@ -313,8 +328,6 @@ src/
           AiderSettings.tsx
           GeneralSettings.tsx
           LanguageSelector.tsx
-          ModelProvidersSettings.tsx
-          ProviderCard.tsx
           ServerSettings.tsx
           SettingsDialog.tsx
         terminal/
@@ -342,7 +355,7 @@ src/
         ProjectSettingsContext.tsx
         SettingsContext.tsx
       contexts/
-        ModelProvider.tsx
+        ModelProviderContext.tsx
       hooks/
         useBooleanState.ts
         useClickOutside.ts
@@ -359,6 +372,22 @@ src/
         useVersions.ts
       i18n/
         index.ts
+      icons/
+        AnthropicIcon.tsx
+        AzureIcon.tsx
+        BedrockIcon.tsx
+        CerebrasIcon.tsx
+        DeepseekIcon.tsx
+        GeminiIcon.tsx
+        GroqIcon.tsx
+        index.ts
+        LmStudioIcon.tsx
+        OllamaIcon.tsx
+        OpenAiCompatibleIcon.tsx
+        OpenAiIcon.tsx
+        OpenRouterIcon.tsx
+        RequestyIcon.tsx
+        VertexAiIcon.tsx
       pages/
         Home.tsx
         Onboarding.tsx
@@ -385,6 +414,7 @@ src/
         routes.ts
         string-utils.ts
       App.tsx
+      env.d.ts
       fonts.css
       main.css
       main.tsx
@@ -811,6 +841,7 @@ confirmation_result = message.get('answer')
 main_model = message.get('mainModel')
 weak_model = message.get('weakModel')
 edit_format = message.get('editFormat')
+environment_variables = message.get('environmentVariables')
 ⋮----
 model = models.Model(main_model, weak_model=weak_model)
 ⋮----
@@ -823,8 +854,6 @@ command = message.get('command')
 edits = message.get('edits')
 ⋮----
 edit_tuples = [(edit['path'], edit['original'], edit['updated']) for edit in edits]
-⋮----
-environment_variables = message.get('environmentVariables')
 ⋮----
 main_model = models.Model(self.coder.main_model.name, weak_model=self.coder.main_model.weak_model.name)
 ⋮----
@@ -1207,7 +1236,8 @@ File: src/common/locales/en.json
       "sort": "Sort",
       "sortDescription": "Sort providers by price or throughput.",
       "requireParameters": "Require Parameters",
-      "requireParametersDescription": "Only use providers that support all parameters in your request."
+      "requireParametersDescription": "Only use providers that support all parameters in your request.",
+      "setupLater": "You can also configure the providers and models in Model Library later."
     },
     "agent": {
       "title": "Meet Your AI Agent",
@@ -1265,7 +1295,63 @@ File: src/common/locales/en.json
     "labelMultiple": "Models",
     "selectLabel": "Model",
     "placeholder": "e.g. anthropic/claude-sonnet-4-20250514",
-    "chooseModelsToAdd": "Choose models to add..."
+    "chooseModelsToAdd": "Choose models to add...",
+    "library": {
+      "all": "All"
+    }
+  },
+  "modelLibrary": {
+    "title": "Model Library",
+    "search": "Search Models",
+    "providers": "Providers",
+    "all": "All",
+    "selectProvider": "Select a Provider to Configure",
+    "profileForm": {
+      "title": "Configure Profile for {{provider}} Provider",
+      "name": "Profile Name",
+      "id": "Provider ID (prefix)",
+      "parameters": "Provider Parameters",
+      "headers": "Custom Headers",
+      "headerKey": "Header Name",
+      "headerValue": "Header Value",
+      "addHeader": "Add Header",
+      "test": "Test & Load Models"
+    },
+    "noProvidersConfigured": "No providers configured yet",
+    "addProvider": "Add Provider",
+    "addFirstProvider": "Add Your First Provider",
+    "searchPlaceholder": "Search models...",
+    "showingAllModels": "Showing {{count}} models from all providers",
+    "showingModelsFromProviders": "Showing {{modelCount}} models from {{providerCount}} providers",
+    "noModelsMatchSearch": "No models match your search",
+    "selectProvidersToViewModels": "Select provider profiles above to view their models",
+    "noModelsFromSelectedProviders": "No models available from selected providers",
+    "hidden": "Hidden",
+    "deleteProfileTitle": "Delete Profile",
+    "deleteProfileConfirm": "Are you sure you want to delete the profile '{{name}}'?",
+    "addModel": "Add Model",
+    "editModel": "Edit Model",
+    "provider": "Provider",
+    "modelId": "Model ID",
+    "modelIdPlaceholder": "e.g. custom-gpt-4-turbo",
+    "maxInputTokens": "Context Window",
+    "maxOutputTokens": "Max Output Tokens",
+    "cacheWrites": "Cache Writes",
+    "cachedInput": "Cached Input",
+    "inputCost": "Input",
+    "outputCost": "Output",
+    "inputTokenCost": "Input Cost per 1M Tokens",
+    "outputTokenCost": "Output Cost per 1M Tokens",
+    "cacheReadInputTokenCost": "Cache Read Cost per 1M Tokens",
+    "cacheWriteInputTokenCost": "Cache Write Cost per 1M Tokens",
+    "supportsTools": "Supports Tools",
+    "errors": {
+      "idRequired": "Model ID is required",
+      "providerRequired": "Provider is required",
+      "invalidTokenCount": "Token count must be a positive number",
+      "invalidCost": "Cost must be a non-negative number",
+      "duplicateId": "Provider ID already exists"
+    }
   },
   "openai": {
     "apiKey": "API Key",
@@ -1331,6 +1417,12 @@ File: src/common/locales/en.json
     "baseUrl": "Base URL",
     "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
   },
+  "azure": {
+    "apiKey": "API Key",
+    "resourceName": "Resource Name",
+    "apiVersion": "API Version",
+    "addCustomModelInfo": "Models cannot be loaded automatically for Azure provider and you need to add them manually using ”+ Add Model”, ensuring the model name matches the deployment name."
+  },
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
@@ -1344,7 +1436,8 @@ File: src/common/locales/en.json
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
-    "vertex-ai": "Vertex AI"
+    "vertex-ai": "Vertex AI",
+    "azure": "Azure"
   },
   "select": {
     "placeholder": "Select an option",
@@ -1406,7 +1499,7 @@ File: src/common/locales/en.json
       "autoApprove": "Auto approve",
       "selectOrCreateProfile": "Select or create new agent profile",
       "newProfileName": "New Profile",
-      "envVarPlaceholder": "{{envVar}} env var is used if left empty",
+      "envVarPlaceholder": "{{envVar}}",
       "envVarFoundPlaceholder": "Found in: {{source}}",
       "createNewProfile": "Create New",
       "genericTools": "Tools",
@@ -1651,10 +1744,12 @@ File: src/common/locales/en.json
     "reasoning": "Reasoning",
     "thinkingTokens": "Thinking tokens",
     "loadingModel": "Loading model...",
-    "searchPlaceholder": "Search models or enter custom name...",
+    "searchPlaceholder": "Search models...",
+    "searchPlaceholderOrCustom": "Search models or enter custom name...",
     "removePreferred": "Remove from preferred models",
     "invalidModelSelection": "Invalid format of the model. Expected format is 'provider/model', e.g. 'openai/gpt-4'.",
-    "providerNotSupported": "Provider '{{provider}}' is not supported. Supported providers are: {{providers}}."
+    "providerNotSupported": "Provider '{{provider}}' is not supported. Supported providers are: {{providers}}.",
+    "selectModel": "Select model..."
   },
   "modelInfo": {
     "noInfo": "No model information available.",
@@ -1892,7 +1987,8 @@ File: src/common/locales/en.json
     "toggleMarkdown": "Markdown rendering",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
     "aider": "Aider",
-    "toggleSidebar": "Toggle sidebar"
+    "toggleSidebar": "Toggle sidebar",
+    "modelLibrary": "Model Library"
   },
   "reasoningEffort": {
     "label": "Reasoning",
@@ -2112,7 +2208,8 @@ File: src/common/locales/zh.json
       "sort": "排序",
       "sortDescription": "按价格或吞吐量对提供商进行排序",
       "requireParameters": "要求参数",
-      "requireParametersDescription": "是否要求提供商支持模型参数。"
+      "requireParametersDescription": "是否要求提供商支持模型参数。",
+      "setupLater": "您也可以稍后在设置中配置这些。"
     },
     "agent": {
       "title": "认识您的AI代理",
@@ -2169,7 +2266,63 @@ File: src/common/locales/zh.json
     "label": "模型",
     "selectLabel": "模型",
     "placeholder": "输入模型名称",
-    "chooseModelsToAdd": "选择要添加的模型..."
+    "chooseModelsToAdd": "选择要添加的模型...",
+    "library": {
+      "all": "全部"
+    }
+  },
+  "modelLibrary": {
+    "title": "模型库",
+    "search": "搜索模型",
+    "providers": "提供商",
+    "all": "全部",
+    "selectProvider": "选择要配置的提供商",
+    "profileForm": {
+      "title": "配置 {{provider}} 提供商的配置文件",
+      "name": "配置文件名称",
+      "id": "提供商 ID 前缀",
+      "parameters": "提供商参数",
+      "headers": "自定义头部",
+      "headerKey": "头部名称",
+      "headerValue": "头部值",
+      "addHeader": "添加头部",
+      "test": "测试并加载模型"
+    },
+    "noProvidersConfigured": "尚未配置任何提供商",
+    "addProvider": "添加提供商",
+    "addFirstProvider": "添加您的第一个提供商",
+    "searchPlaceholder": "搜索模型...",
+    "showingAllModels": "显示来自所有提供商的 {{count}} 个模型",
+    "showingModelsFromProviders": "显示来自 {{providerCount}} 个提供商的 {{modelCount}} 个模型",
+    "noModelsMatchSearch": "没有模型匹配您的搜索",
+    "selectProvidersToViewModels": "选择上面的提供商配置文件以查看其模型",
+    "noModelsFromSelectedProviders": "所选提供商没有可用的模型",
+    "addModel": "添加模型",
+    "editModel": "编辑模型",
+    "provider": "提供商",
+    "modelId": "模型 ID",
+    "modelIdPlaceholder": "例如 custom-gpt-4-turbo",
+    "maxInputTokens": "上下文窗口",
+    "maxOutputTokens": "最大输出令牌数",
+    "cacheWrites": "缓存写入",
+    "cachedInput": "缓存输入",
+    "inputCost": "输入",
+    "outputCost": "输出",
+    "inputTokenCost": "每百万令牌输入成本",
+    "outputTokenCost": "每百万令牌输出成本",
+    "cacheReadInputTokenCost": "缓存读取成本 / 每百万令牌",
+    "cacheWriteInputTokenCost": "缓存写入成本 / 每百万令牌",
+    "supportsTools": "支持工具",
+    "deleteProfileTitle": "删除配置文件",
+    "deleteProfileConfirm": "您确定要删除配置文件 '{{name}}' 吗？",
+    "hidden": "隐藏",
+    "errors": {
+      "idRequired": "模型 ID 必填",
+      "providerRequired": "提供商必填",
+      "invalidTokenCount": "令牌数必须为正数",
+      "invalidCost": "成本必须为非负数",
+      "duplicateId": "提供商 ID 已存在"
+    }
   },
   "openai": {
     "apiKey": "API 密钥",
@@ -2233,6 +2386,12 @@ File: src/common/locales/zh.json
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 claude-4-sonnet"
   },
+  "azure": {
+    "apiKey": "API 密钥",
+    "resourceName": "资源名称",
+    "apiVersion": "API 版本",
+    "addCustomModelInfo": "Azure 提供商的模型无法自动加载，您需要手动使用“+ 添加模型”添加它们，并确保模型名称与部署名称匹配。"
+  },
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
@@ -2246,7 +2405,8 @@ File: src/common/locales/zh.json
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
-    "vertex-ai": "Vertex AI"
+    "vertex-ai": "Vertex AI",
+    "azure": "Azure"
   },
   "select": {
     "placeholder": "选择选项",
@@ -2307,7 +2467,7 @@ File: src/common/locales/zh.json
       "autoApprove": "自动批准",
       "selectOrCreateProfile": "选择或创建新的代理配置",
       "newProfileName": "新配置",
-      "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",
+      "envVarPlaceholder": "{{envVar}}",
       "envVarFoundPlaceholder": "找到于: {{source}}",
       "createNewProfile": "创建新配置",
       "genericTools": "工具",
@@ -2511,8 +2671,10 @@ File: src/common/locales/zh.json
     "reasoning": "推理",
     "thinkingTokens": "思考令牌",
     "loadingModel": "加载模型中...",
-    "searchPlaceholder": "搜索模型或输入自定义名称...",
-    "removePreferred": "从首选模型中移除"
+    "searchPlaceholder": "搜索模型...",
+    "searchPlaceholderOrCustom": "搜索模型或输入自定义名称...",
+    "removePreferred": "从首选模型中移除",
+    "selectModel": "选择模型..."
   },
   "modelInfo": {
     "noInfo": "无模型信息可用。",
@@ -2766,7 +2928,8 @@ File: src/common/locales/zh.json
     "toggleMarkdown": "Markdown 渲染",
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
     "aider": "Aider",
-    "toggleSidebar": "切换侧边栏"
+    "toggleSidebar": "切换侧边栏",
+    "modelLibrary": "模型库"
   },
   "reasoningEffort": {
     "label": "推理",
@@ -2919,7 +3082,7 @@ File: src/common/locales/zh.json
 ================
 File: src/common/agent.ts
 ================
-import { AgentProfile, ContextMemoryMode, InvocationMode, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, ContextMemoryMode, InvocationMode, Model, ReasoningEffort, ToolApprovalState } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -2940,20 +3103,22 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 ⋮----
+// TODO: move to providers.ts
 export type LlmProviderName =
-  | 'openai'
   | 'anthropic'
-  | 'gemini'
-  | 'vertex-ai'
-  | 'lmstudio'
+  | 'azure'
   | 'bedrock'
+  | 'cerebras'
   | 'deepseek'
-  | 'openai-compatible'
+  | 'gemini'
+  | 'groq'
+  | 'lmstudio'
   | 'ollama'
+  | 'openai'
+  | 'openai-compatible'
   | 'openrouter'
   | 'requesty'
-  | 'groq'
-  | 'cerebras';
+  | 'vertex-ai';
 ⋮----
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -2970,6 +3135,14 @@ export interface OpenAiProvider extends LlmProviderBase {
   reasoningEffort?: ReasoningEffort;
 }
 export const isOpenAiProvider = (provider: LlmProviderBase): provider is OpenAiProvider
+⋮----
+export interface AzureProvider extends LlmProviderBase {
+  name: 'azure';
+  apiKey: string;
+  resourceName: string;
+  apiVersion?: string;
+}
+export const isAzureProvider = (provider: LlmProviderBase): provider is AzureProvider
 ⋮----
 export interface AnthropicProvider extends LlmProviderBase {
   name: 'anthropic';
@@ -3070,6 +3243,7 @@ export const isRequestyProvider = (provider: LlmProviderBase): provider is Reque
 export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
+  | AzureProvider
   | GeminiProvider
   | VertexAiProvider
   | LmStudioProvider
@@ -3094,13 +3268,17 @@ export type LlmProvider =
 ⋮----
 // Aider with Power Search
 ⋮----
-export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: SettingsData | null): LlmProvider =>
+// TODO: move to providers.ts
+⋮----
+export const getDefaultProviderParams = (providerName: LlmProviderName): LlmProvider =>
 ⋮----
 region: 'us-east-1', // Default region
 ⋮----
 // For any other provider, create a base structure. This might need more specific handling if new providers are added.
 ⋮----
 export const isSubagentEnabled = (agentProfile: AgentProfile, currentProfileId?: string): boolean =>
+⋮----
+export const getProviderModelId = (model: Model): string =>
 
 ================
 File: src/common/api.ts
@@ -3132,6 +3310,7 @@ import {
   EditFormat,
   OS,
   ModelInfo,
+  Model,
   TodoItem,
   UsageDataRow,
   EnvironmentVariable,
@@ -3141,7 +3320,9 @@ import {
   ClearProjectData,
   ProjectStartedData,
   CloudflareTunnelStatus,
-  ProviderModels,
+  ProviderProfile,
+  ProviderModelsData,
+  ProvidersUpdatedData,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -3222,8 +3403,13 @@ export interface ApplicationAPI {
   loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
   queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
-  getProviderModels: () => Promise<ProviderModels>;
+  getProviderModels: () => Promise<ProviderModelsData>;
+  getProviders: () => Promise<ProviderProfile[]>;
+  updateProviders: (providers: ProviderProfile[]) => Promise<ProviderProfile[]>;
+  upsertModel: (providerId: string, modelId: string, model: Model) => Promise<Model[]>;
+  deleteModel: (providerId: string, modelId: string) => Promise<Model[]>;
 
+  addSettingsUpdatedListener: (callback: (data: SettingsData) => void) => () => void;
   addResponseChunkListener: (baseDir: string, callback: (data: ResponseChunkData) => void) => () => void;
   addResponseCompletedListener: (baseDir: string, callback: (data: ResponseCompletedData) => void) => () => void;
   addLogListener: (baseDir: string, callback: (data: LogData) => void) => () => void;
@@ -3240,7 +3426,8 @@ export interface ApplicationAPI {
   addClearProjectListener: (baseDir: string, callback: (data: ClearProjectData) => void) => () => void;
   addProjectStartedListener: (baseDir: string, callback: (data: ProjectStartedData) => void) => () => void;
   addVersionsInfoUpdatedListener: (callback: (data: VersionsInfo) => void) => () => void;
-  addProviderModelsUpdatedListener: (callback: (data: ProviderModels) => void) => () => void;
+  addProviderModelsUpdatedListener: (callback: (data: ProviderModelsData) => void) => () => void;
+  addProvidersUpdatedListener: (callback: (data: ProvidersUpdatedData) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (params: Electron.ContextMenuParams) => void) => () => void;
@@ -3277,7 +3464,7 @@ import {
   DeepseekProvider,
   GeminiProvider,
   GroqProvider,
-  LlmProviderName,
+  LlmProvider,
   LmStudioProvider,
   OllamaProvider,
   OpenAiCompatibleProvider,
@@ -3542,7 +3729,7 @@ export interface SubagentConfig {
 export interface AgentProfile {
   id: string;
   name: string;
-  provider: LlmProviderName;
+  provider: string;
   model: string;
   maxIterations: number;
   maxTokens: number;
@@ -3595,10 +3782,7 @@ export interface SettingsData {
     watchFiles: boolean;
     confirmBeforeEdit: boolean;
   };
-  models: {
-    aiderPreferred: string[];
-    agentPreferred: string[];
-  };
+  preferredModels: string[];
   agentProfiles: AgentProfile[];
   mcpServers: Record<string, McpServerConfig>;
   llmProviders: {
@@ -3626,6 +3810,17 @@ export interface SettingsData {
       password: string;
     };
   };
+}
+⋮----
+export interface ProviderProfile {
+  id: string;
+  name?: string;
+  provider: LlmProvider;
+  headers?: Record<string, string>;
+}
+⋮----
+export interface ProvidersUpdatedData {
+  providers: ProviderProfile[];
 }
 ⋮----
 export interface Group {
@@ -3765,15 +3960,28 @@ export interface UsageDataRow {
 ⋮----
 export interface Model {
   id: string;
+  providerId: string;
   maxInputTokens?: number;
   maxOutputTokens?: number;
   inputCostPerToken?: number;
   outputCostPerToken?: number;
-  supportsTools?: boolean;
+  cacheWriteInputTokenCost?: number;
   cacheReadInputTokenCost?: number;
+  supportsTools?: boolean;
+  isCustom?: boolean;
+  isHidden?: boolean;
 }
 ⋮----
-export type ProviderModels = Partial<Record<LlmProviderName, Model[]>>;
+export interface ProviderModelsData {
+  models?: Model[];
+  loading?: boolean;
+  errors?: Record<string, string>;
+}
+⋮----
+export interface ModelOverrides {
+  version: number;
+  models: Model[];
+}
 ⋮----
 export interface CustomCommandArgument {
   description: string;
@@ -4133,6 +4341,7 @@ import {
   ContextUserMessage,
   McpTool,
   PromptContext,
+  ProviderProfile,
   SettingsData,
   ToolApprovalState,
   UsageReportData,
@@ -4153,7 +4362,7 @@ import {
   wrapLanguageModel,
 } from 'ai';
 import { delay, extractServerNameToolName } from '@common/utils';
-import { getLlmProviderConfig, LlmProviderName } from '@common/agent';
+import { LlmProvider, LlmProviderName } from '@common/agent';
 // @ts-expect-error gpt-tokenizer is not typed
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
@@ -4168,10 +4377,9 @@ import { createTodoToolset } from './tools/todo';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-providers';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG, ANSWER_RESPONSE_START_TAG } from './utils';
+import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 ⋮----
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
@@ -4226,6 +4434,7 @@ private async getWorkingFilesMessages(contextFiles: ContextFile[]): Promise<Core
 private async getAvailableTools(
     project: Project,
     profile: AgentProfile,
+    llmProvider: LlmProvider,
     messages?: ContextMessage[],
     resultMessages?: ContextMessage[],
     abortSignal?: AbortSignal,
@@ -4327,6 +4536,8 @@ error: error.message, // Pass the validation error message
 ⋮----
 // stop
 ⋮----
+// Check for 'stop' with trailing tool message
+⋮----
 // Clean up abort controller only if we created it
 ⋮----
 // Always send a final "finished" message, regardless of whether there was text or tools
@@ -4358,13 +4569,14 @@ parameters: tool.parameters ? tool.parameters.describe() : '', // Get Zod schema
 role: msg.role === 'tool' ? 'user' : msg.role, // Map 'tool' role to user message as gpt-tokenizer does not support tool messages
 content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content), // Handle potential non-string content if necessary
 ⋮----
-interrupt()
+interrupt(baseDir: string)
 ⋮----
 private processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
     { reasoning, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
     project: Project,
     profile: AgentProfile,
+    provider: ProviderProfile,
     promptContext?: PromptContext,
 ): ContextMessage[]
 ⋮----
@@ -4383,121 +4595,6 @@ text: text?.substring(0, 100), // Log truncated text
 File: src/main/agent/index.ts
 ================
 
-
-================
-File: src/main/agent/llm-providers.ts
-================
-import { createAnthropic } from '@ai-sdk/anthropic';
-import { createOpenAI } from '@ai-sdk/openai';
-import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import { createVertex } from '@ai-sdk/google-vertex';
-import { createDeepSeek } from '@ai-sdk/deepseek';
-import { createGroq } from '@ai-sdk/groq';
-import { createCerebras } from '@ai-sdk/cerebras';
-import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
-import { createOllama } from 'ollama-ai-provider';
-import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
-import {
-  isAnthropicProvider,
-  isBedrockProvider,
-  isCerebrasProvider,
-  isDeepseekProvider,
-  isGeminiProvider,
-  isGroqProvider,
-  isLmStudioProvider,
-  isOllamaProvider,
-  isOpenAiCompatibleProvider,
-  isOpenAiProvider,
-  isOpenRouterProvider,
-  isRequestyProvider,
-  isVertexAiProvider,
-  LlmProvider,
-} from '@common/agent';
-import { AgentProfile, ReasoningEffort, UsageReportData } from '@common/types';
-⋮----
-import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
-⋮----
-import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
-import { ModelManager } from '@/models/model-manager';
-import { Project } from '@/project/project';
-⋮----
-export const createLlm = (provider: LlmProvider, model: string, env: Record<string, string | undefined> =
-⋮----
-// using custom base URL to fix the 'global' location
-⋮----
-// Use createOpenAICompatible to get a provider instance, then get the model
-⋮----
-// Check if we have explicit keys or if AWS_PROFILE is set in the main process env
-⋮----
-// AI SDK Bedrock provider handles credentials via environment variables or default chain.
-// We pass credentials explicitly only if they were found in config or env.
-// Otherwise, we let the SDK handle the default credential chain (which includes AWS_PROFILE from process.env).
-⋮----
-// Let the SDK handle the default chain if explicit keys aren't provided
-⋮----
-type AnthropicMetadata = {
-  anthropic: {
-    cacheCreationInputTokens?: number;
-    cacheReadInputTokens?: number;
-  };
-};
-⋮----
-type OpenAiMetadata = {
-  openai: {
-    cachedPromptTokens?: number;
-  };
-};
-⋮----
-type OpenRouterMetadata = {
-  openrouter: {
-    usage: {
-      completionTokens: number;
-      completionTokensDetails: {
-        reasoningTokens: number;
-      };
-      cost: number;
-      promptTokens: number;
-      promptTokensDetails?: {
-        cachedTokens: number;
-      };
-      totalTokens: number;
-    };
-  };
-};
-⋮----
-type GoogleMetadata = {
-  google: {
-    cachedContentTokenCount?: number;
-  };
-};
-⋮----
-export const calculateCost = (
-  modelInfoManager: ModelManager,
-  profile: AgentProfile,
-  sentTokens: number,
-  receivedTokens: number,
-  providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | RequestyProviderMetadata | unknown,
-) =>
-⋮----
-// Get the model name directly from the provider
-⋮----
-// Calculate cost in dollars (costs are per million tokens)
-⋮----
-export const getUsageReport = (
-  project: Project,
-  profile: AgentProfile,
-  messageCost: number,
-  usage: LanguageModelUsage,
-  providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | RequestyProviderMetadata | unknown,
-): UsageReportData =>
-⋮----
-export type CacheControl = Record<string, Record<string, JSONValue>> | undefined;
-export const getCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl =>
-⋮----
-export const getProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined =>
 
 ================
 File: src/main/agent/mcp-manager.ts
@@ -4599,7 +4696,7 @@ import {
 } from '@common/tools';
 ⋮----
 import logger from '@/logger';
-import { CacheControl } from '@/agent';
+import { CacheControl } from '@/models';
 ⋮----
 /**
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
@@ -4821,7 +4918,7 @@ public sendPromptMessage(
     files: ContextFile[] = [],
 ): void
 ⋮----
-public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat: EditFormat): void
+public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat: EditFormat, environmentVariables?: Record<string, string>): void
 ⋮----
 public sendRunCommandMessage(command: string, messages:
 ⋮----
@@ -5012,9 +5109,9 @@ import {
   ContextFile,
   CustomCommand,
   InputHistoryData,
+  ProviderProfile,
   LogData,
   ModelsData,
-  ProviderModels,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -5025,6 +5122,9 @@ import {
   UserMessageData,
   VersionsInfo,
   AutocompletionData,
+  ProviderModelsData,
+  ProvidersUpdatedData,
+  SettingsData,
 } from '@common/types';
 ⋮----
 import logger from '@/logger';
@@ -5097,8 +5197,12 @@ sendTerminalExit(data: TerminalExitData): void
 // Versions events
 sendVersionsInfoUpdated(versionsInfo: VersionsInfo): void
 ⋮----
-// Provider models events
-sendProviderModelsUpdated(providerModels: ProviderModels): void
+sendSettingsUpdated(settings: SettingsData): void
+⋮----
+// Provider events
+sendProvidersUpdated(providers: ProviderProfile[]): void
+⋮----
+sendProviderModelsUpdated(data: ProviderModelsData): void
 ⋮----
 subscribe(socket: Socket, config: EventsConnectorConfig): void
 ⋮----
@@ -5122,23 +5226,125 @@ File: src/main/events/index.ts
 ================
 File: src/main/models/providers/anthropic.ts
 ================
-import { Model, ModelInfo, SettingsData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isAnthropicProvider, AnthropicProvider, LlmProvider } from '@common/agent';
+import { createAnthropic } from '@ai-sdk/anthropic';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { getEffectiveEnvironmentVariable } from '@/utils';
+import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
+import { Project } from '@/project/project';
+import { LoadModelsResponse } from '@/models/types';
+⋮----
+export const loadAnthropicModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
+⋮----
+export const hasAnthropicEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getAnthropicAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createAnthropicLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+type AnthropicMetadata = {
+  anthropic: {
+    cacheCreationInputTokens?: number;
+    cacheReadInputTokens?: number;
+  };
+};
+⋮----
+// === Cost and Usage Functions ===
+export const calculateAnthropicCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number =>
+⋮----
+export const getAnthropicUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Configuration Helper Functions ===
+export const getAnthropicCacheControl = (_profile: AgentProfile, _provider: LlmProvider): CacheControl =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
+⋮----
+// Configuration helpers
+
+================
+File: src/main/models/providers/azure.ts
+================
+import { createAzure } from '@ai-sdk/azure';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { AZURE_DEFAULT_API_VERSION, AzureProvider, isAzureProvider } from '@common/agent';
+⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadAnthropicModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadAzureModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
+⋮----
+const extractResourceNameFromEndpoint = (endpoint: string): string =>
+⋮----
+// Extract resource name from hostname like "resource-name.openai.azure.com"
+⋮----
+export const hasAzureEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getAzureAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createAzureLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+type AzureMetadata = {
+  openai: {
+    cachedPromptTokens?: number;
+  };
+};
+⋮----
+// === Cost and Usage Functions ===
+export const calculateAzureCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number =>
+⋮----
+export const getAzureUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/bedrock.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
-import { BedrockClient, ListInferenceProfilesCommand, GetFoundationModelAvailabilityCommand, type InferenceProfileSummary } from '@aws-sdk/client-bedrock';
+import { BedrockClient, GetFoundationModelAvailabilityCommand, type InferenceProfileSummary, ListInferenceProfilesCommand } from '@aws-sdk/client-bedrock';
+import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { BedrockProvider, isBedrockProvider } from '@common/agent';
+import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
+import { LoadModelsResponse } from '@/models/types';
 ⋮----
-export const loadBedrockModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadBedrockModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
 ⋮----
 // Check if we have explicit keys or if AWS_PROFILE is set in the main process env
 ⋮----
@@ -5151,15 +5357,56 @@ nextToken = response.nextToken; // Will be undefined if no more pages
 // Extract modelId from the first model's modelArn
 ⋮----
 // Check if the model is authorized and available
+⋮----
+export const hasBedrockEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getBedrockAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createBedrockLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// Check if we have explicit keys or if AWS_PROFILE is set in the main process env
+⋮----
+// AI SDK Bedrock provider handles credentials via environment variables or default chain.
+// We pass credentials explicitly only if they were found in config or env.
+// Otherwise, we let the SDK handle the default credential chain (which includes AWS_PROFILE from process.env).
+⋮----
+// Let the SDK handle the default chain if explicit keys aren't provided
+⋮----
+// === Cost and Usage Functions ===
+export const calculateBedrockCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
+⋮----
+// Standard cost calculation without caching adjustments
+⋮----
+export const getBedrockUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/cerebras.ts
 ================
-import { SettingsData, Model, ModelInfo } from '@common/types';
-import { CerebrasProvider, getLlmProviderConfig } from '@common/agent';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { CerebrasProvider, isCerebrasProvider } from '@common/agent';
+import { createCerebras } from '@ai-sdk/cerebras';
 ⋮----
-import { getEffectiveEnvironmentVariable } from '@/utils/environment';
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy } from '@/models';
 import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils/environment';
+import { LoadModelsResponse } from '@/models/types';
+import { Project } from '@/project/project';
 ⋮----
 interface CerebrasModel {
   id: string;
@@ -5167,35 +5414,142 @@ interface CerebrasModel {
   description?: string;
 }
 ⋮----
-export const loadCerebrasModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadCerebrasModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
+⋮----
+// Filter out models that don't have pricing information
+⋮----
+export const hasCerebrasEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getCerebrasAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createCerebrasLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// === Cost and Usage Functions ===
+export const calculateCerebrasCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
+⋮----
+// Standard cost calculation without caching adjustments
+⋮----
+export const getCerebrasUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/deepseek.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { DeepseekProvider, isDeepseekProvider } from '@common/agent';
+import { createDeepSeek } from '@ai-sdk/deepseek';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadDeepseekModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadDeepseekModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
+⋮----
+export const hasDeepseekEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getDeepseekAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createDeepseekLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// === Cost and Usage Functions ===
+export const calculateDeepseekCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
+⋮----
+// Standard cost calculation without caching adjustments
+⋮----
+export const getDeepseekUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/gemini.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { GeminiProvider, isGeminiProvider, LlmProvider } from '@common/agent';
+import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 ⋮----
+import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadGeminiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadGeminiModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
+⋮----
+export const hasGeminiEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getGeminiAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createGeminiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+type GoogleMetadata = {
+  google: {
+    cachedContentTokenCount?: number;
+  };
+};
+⋮----
+// === Cost and Usage Functions ===
+export const calculateGeminiCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number =>
+⋮----
+export const getGeminiUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+export const getGeminiProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/groq.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { GroqProvider, isGroqProvider } from '@common/agent';
+import { createGroq } from '@ai-sdk/groq';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
 interface GroqModel {
   id: string;
@@ -5205,93 +5559,459 @@ interface GroqApiResponse {
   data: GroqModel[];
 }
 ⋮----
-export const loadGroqModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadGroqModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
 ⋮----
 // Filter out models that don't have pricing information
+⋮----
+export const hasGroqEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getGroqAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createGroqLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// === Cost and Usage Functions ===
+export const calculateGroqCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
+⋮----
+// Standard cost calculation without caching adjustments
+⋮----
+export const getGroqUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/lm-studio.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isLmStudioProvider, LmStudioProvider } from '@common/agent';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadLmStudioModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadLmStudioModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
 ⋮----
 const normalized = effectiveBaseUrl.replace(/\/+$/g, ''); // Remove all trailing slashes
 ⋮----
 ...info, // Merge with existing model info if available
+⋮----
+export const hasLmStudioEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getLmStudioAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createLmStudioLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// === Cost and Usage Functions ===
+export const calculateLmStudioCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
+⋮----
+// Standard cost calculation without caching adjustments
+⋮----
+export const getLmStudioUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/ollama.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isOllamaProvider, OllamaProvider } from '@common/agent';
+import { createOllama } from 'ollama-ai-provider';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadOllamaModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadOllamaModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
 ⋮----
 let normalized = effectiveBaseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
 ⋮----
 ...info, // Merge with existing model info if available
+⋮----
+export const hasOllamaEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getOllamaAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createOllamaLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// === Cost and Usage Functions ===
+export const calculateOllamaCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
+⋮----
+// Standard cost calculation without caching adjustments
+⋮----
+export const getOllamaUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/openai-compatible.ts
 ================
-import { Model, ModelInfo, SettingsData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isOpenAiCompatibleProvider, OpenAiCompatibleProvider } from '@common/agent';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
+import { Project } from '@/project/project';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadOpenaiCompatibleModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadOpenaiCompatibleModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
+⋮----
+export const hasOpenAiCompatibleEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getOpenAiCompatibleAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// Use openai prefix for OpenAI-compatible providers
+⋮----
+// === LLM Creation Functions ===
+export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// Use createOpenAICompatible to get a provider instance, then get the model
+⋮----
+// === Cost and Usage Functions ===
+export const calculateOpenAiCompatibleCost = (
+  modelInfo: ModelInfo | undefined,
+  sentTokens: number,
+  receivedTokens: number,
+  _providerMetadata?: unknown,
+): number =>
+⋮----
+// Standard cost calculation without caching adjustments
+⋮----
+export const getOpenAiCompatibleUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/openai.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isOpenAiProvider, OpenAiProvider } from '@common/agent';
+import { createOpenAI } from '@ai-sdk/openai';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadOpenAiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadOpenAiModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
+⋮----
+export const hasOpenAiEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getOpenAiAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createOpenAiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+type OpenAiMetadata = {
+  openai: {
+    cachedPromptTokens?: number;
+  };
+};
+⋮----
+// === Cost and Usage Functions ===
+export const calculateOpenAiCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number =>
+⋮----
+export const getOpenAiUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/providers/openrouter.ts
 ================
-import { Model, ModelInfo, SettingsData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isOpenRouterProvider, LlmProvider, OpenRouterProvider } from '@common/agent';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
+import { AiderModelMapping, LlmProviderStrategy, CacheControl, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadOpenrouterModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+interface OpenRouterTopProvider {
+  is_moderated: boolean;
+  context_length: number;
+  max_completion_tokens: number;
+}
+⋮----
+interface OpenRouterPricing {
+  prompt: string;
+  completion: string;
+  input_cache_read?: string;
+  input_cache_write?: string;
+}
+⋮----
+interface OpenRouterModel {
+  id: string;
+  name: string;
+  created: number;
+  description: string;
+  top_provider: OpenRouterTopProvider;
+  pricing: OpenRouterPricing;
+  context_length: number;
+}
+⋮----
+interface OpenRouterModelsResponse {
+  data: OpenRouterModel[];
+}
+⋮----
+export const loadOpenrouterModels = async (profile: ProviderProfile): Promise<LoadModelsResponse> =>
+⋮----
+export const hasOpenRouterEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getOpenRouterAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createOpenRouterLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+type OpenRouterMetadata = {
+  openrouter: {
+    usage: {
+      completionTokens: number;
+      completionTokensDetails: {
+        reasoningTokens: number;
+      };
+      cost: number;
+      promptTokens: number;
+      promptTokensDetails?: {
+        cachedTokens: number;
+      };
+      totalTokens: number;
+    };
+  };
+};
+⋮----
+// === Cost and Usage Functions ===
+export const calculateOpenRouterCost = (
+  _modelInfo: ModelInfo | undefined,
+  _sentTokens: number,
+  _receivedTokens: number,
+  providerMetadata?: unknown,
+): number =>
+⋮----
+export const getOpenRouterUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Configuration Helper Functions ===
+export const getOpenRouterCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
+⋮----
+// Configuration helpers
 
 ================
 File: src/main/models/providers/requesty.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
+import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 ⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
+import { AiderModelMapping, LlmProviderStrategy, CacheControl, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadRequestyModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+interface RequestyModel {
+  id: string;
+  created: number;
+  owned_by: string;
+  input_price: number;
+  caching_price?: number;
+  cached_price?: number;
+  output_price: number;
+  max_output_tokens: number;
+  context_window: number;
+  supports_caching: boolean;
+  supports_vision: boolean;
+  supports_computer_use: boolean;
+  supports_reasoning: boolean;
+  description: string;
+}
+⋮----
+interface RequestyModelsResponse {
+  data: RequestyModel[];
+}
+⋮----
+export const loadRequestyModels = async (profile: ProviderProfile): Promise<LoadModelsResponse> =>
+⋮----
+export const hasRequestyEnvVars = (projectDir?: string, settings?: SettingsData): boolean =>
+⋮----
+export const getRequestyAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// Requesty doesn't have direct Aider support, so we use OpenAI-compatible endpoint
+⋮----
+// === LLM Creation Functions ===
+export const createRequestyLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// === Cost and Usage Functions ===
+export const calculateRequestyCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number =>
+⋮----
+export const getRequestyUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Configuration Helper Functions ===
+export const getRequestyCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
+⋮----
+// Configuration helpers
 
 ================
 File: src/main/models/providers/vertex-ai.ts
 ================
-import { ModelInfo, Model, SettingsData } from '@common/types';
 import { v1beta1 } from '@google-cloud/aiplatform';
 import { GoogleAuth } from 'google-auth-library';
+import { Model, ModelInfo, ProviderProfile, UsageReportData } from '@common/types';
+import { isVertexAiProvider, LlmProvider, VertexAiProvider } from '@common/agent';
+import { createVertex } from '@ai-sdk/google-vertex';
 ⋮----
+import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { Project } from '@/project/project';
 ⋮----
-export const loadVertexAIModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
+export const loadVertexAIModels = async (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>): Promise<LoadModelsResponse> =>
 ⋮----
 // Use provided credentials JSON
 ⋮----
 // Use default credentials (e.g., gcloud, environment variables, or service account)
+⋮----
+export const hasVertexAiEnvVars = (): boolean =>
+⋮----
+// Vertex AI doesn't have a simple environment variable check like other providers
+// It requires project, location, and potentially credentials
+⋮----
+export const getVertexAiAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// Aider uses vertex_ai prefix instead of vertex-ai
+⋮----
+// === LLM Creation Functions ===
+export const createVertexAiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+// using custom base URL to fix the 'global' location
+⋮----
+type VertexGoogleMetadata = {
+  google: {
+    cachedContentTokenCount?: number;
+  };
+};
+⋮----
+// === Cost and Usage Functions ===
+export const calculateVertexAiCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number =>
+⋮----
+export const getVertexAiUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+export const getVertexAiProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
+⋮----
+// Configuration helpers
 
 ================
 File: src/main/models/index.ts
@@ -5301,26 +6021,35 @@ File: src/main/models/index.ts
 ================
 File: src/main/models/model-manager.ts
 ================
-import { ModelInfo, ProviderModels, SettingsData } from '@common/types';
-import { AVAILABLE_PROVIDERS, LlmProviderName } from '@common/agent';
+import { promises as fs } from 'fs';
+import path from 'path';
 ⋮----
-import { loadOllamaModels } from './providers/ollama';
-import { loadLmStudioModels } from './providers/lm-studio';
-import { loadOpenAiModels } from './providers/openai';
-import { loadAnthropicModels } from './providers/anthropic';
-import { loadGeminiModels } from './providers/gemini';
-import { loadBedrockModels } from './providers/bedrock';
-import { loadDeepseekModels } from './providers/deepseek';
-import { loadGroqModels } from './providers/groq';
-import { loadCerebrasModels } from './providers/cerebras';
-import { loadOpenaiCompatibleModels } from './providers/openai-compatible';
-import { loadOpenrouterModels } from './providers/openrouter';
-import { loadRequestyModels } from './providers/requesty';
-import { loadVertexAIModels } from './providers/vertex-ai';
+import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
+import { AgentProfile, Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, UsageReportData } from '@common/types';
 ⋮----
+import { ollamaProviderStrategy } from './providers/ollama';
+import { lmStudioProviderStrategy } from './providers/lm-studio';
+import { openaiProviderStrategy } from './providers/openai';
+import { anthropicProviderStrategy } from './providers/anthropic';
+import { geminiProviderStrategy } from './providers/gemini';
+import { bedrockProviderStrategy } from './providers/bedrock';
+import { cerebrasProviderStrategy } from './providers/cerebras';
+import { deepseekProviderStrategy } from './providers/deepseek';
+import { groqProviderStrategy } from './providers/groq';
+import { openaiCompatibleProviderStrategy } from './providers/openai-compatible';
+import { openrouterProviderStrategy } from './providers/openrouter';
+import { requestyProviderStrategy } from './providers/requesty';
+import { vertexAiProviderStrategy } from './providers/vertex-ai';
+import { azureProviderStrategy } from './providers/azure';
+⋮----
+import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
 import { Store } from '@/store';
 import { EventManager } from '@/events';
+import { Project } from '@/project/project';
+import { AiderModelMapping, CacheControl, LlmProviderRegistry } from '@/models/types';
 ⋮----
 interface RawModelData {
   max_input_tokens?: number;
@@ -5329,12 +6058,15 @@ interface RawModelData {
   output_cost_per_token?: number;
   supports_function_calling?: boolean;
   cache_read_input_token_cost?: number;
+  cache_creation_input_token_cost?: number;
   // Add other fields from the JSON if needed, marking them as optional
 }
 ⋮----
 // Add other fields from the JSON if needed, marking them as optional
 ⋮----
 export class ModelManager
+⋮----
+// Provider registry for strategy pattern
 ⋮----
 constructor(
     private store: Store,
@@ -5347,32 +6079,201 @@ private async fetchAndProcessModelInfo(): Promise<void>
 ⋮----
 // Skip the sample_spec entry
 ⋮----
+// Ignore wandb/ models
+⋮----
 // Ensure modelData is not undefined and has the expected properties
 ⋮----
 // console.warn(`Skipping model ${key} due to missing or invalid data`);
 ⋮----
 getModelInfo(modelName: string): ModelInfo | undefined
 ⋮----
-private getChangedProviders(oldProviders: Record<string, unknown>, newProviders: Record<string, unknown>): LlmProviderName[]
+private createEnvVarProvider(providerName: LlmProviderName): ProviderProfile
 ⋮----
-async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData)
+private getChangedProviders(oldProviders: ProviderProfile[], newProviders: ProviderProfile[]): ProviderProfile[]
+⋮----
+// Check for added/modified providers
+⋮----
+async providersChanged(oldProviders: ProviderProfile[], newProviders: ProviderProfile[])
 ⋮----
 async getAllModelsInfo(): Promise<Record<string, ModelInfo>>
 ⋮----
-private async loadProviderModels(providersToLoad: LlmProviderName[] = AVAILABLE_PROVIDERS): Promise<void>
+private async loadProviderModels(providers: ProviderProfile[]): Promise<void>
 ⋮----
-providersToLoad = AVAILABLE_PROVIDERS; // do full reload
+// Group providers by their provider name
+⋮----
+const loadModels = async () =>
+⋮----
+// Load models from each profile for this provider type
+⋮----
+// Add custom models or override existing ones
 ⋮----
 // Emit the updated provider models event
 ⋮----
-async getProviderModels(): Promise<ProviderModels>
+// Update agent profiles with the new models
+⋮----
+/**
+   * Detect and add automatic providers from environment variables
+   */
+private updateEnvVarsProviders()
+⋮----
+async getProviderModels(): Promise<ProviderModelsData>
 ⋮----
 // Fallback in case loading failed during init
+⋮----
+private async loadModelOverrides(): Promise<void>
+⋮----
+private async saveModelOverrides(): Promise<void>
+⋮----
+async upsertModel(providerId: string, modelId: string, model: Model): Promise<void>
+⋮----
+async deleteModel(providerId: string, modelId: string): Promise<void>
+⋮----
+getAiderModelMapping(modelName: string): AiderModelMapping
+⋮----
+private getProviderAiderMapping(provider: ProviderProfile, modelId: string): AiderModelMapping
+⋮----
+createLlm(profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+⋮----
+calculateCost(provider: ProviderProfile, model: string, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number
+⋮----
+getUsageReport(
+    project: Project,
+    provider: ProviderProfile,
+    modelId: string,
+    messageCost: number,
+    usage: LanguageModelUsage,
+    providerMetadata?: unknown,
+): UsageReportData
+⋮----
+getCacheControl(profile: AgentProfile, llmProvider: LlmProvider): CacheControl
+⋮----
+getProviderOptions(llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined
 
 ================
 File: src/main/models/models.ts
 ================
 
+
+================
+File: src/main/models/types.ts
+================
+import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { LlmProvider, LlmProviderName } from '@common/agent';
+⋮----
+import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { Project } from '@/project';
+⋮----
+export type CacheControl = Record<string, Record<string, JSONValue>> | undefined;
+⋮----
+export interface AiderModelMapping {
+  modelName: string;
+  environmentVariables: Record<string, string>;
+}
+⋮----
+/**
+ * Complete strategy interface for LLM providers
+ * Encapsulates all provider-specific functionality including:
+ * - LLM creation and usage tracking
+ * - Model discovery and configuration
+ * - Cost calculation and usage reporting
+ * - Environment variable detection
+ * - Aider integration
+ */
+export interface LoadModelsResponse {
+  models: Model[];
+  success: boolean;
+  error?: string;
+}
+⋮----
+export interface LlmProviderStrategy {
+  // === LLM Creation and Usage Functions ===
+  /**
+   * Creates a LanguageModel instance for the given provider and model
+   */
+  createLlm: (profile: ProviderProfile, model: string, env: Record<string, string | undefined>) => LanguageModel;
+
+  /**
+   * Calculates the cost for token usage with provider-specific caching adjustments
+   */
+  calculateCost: (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, providerMetadata?: unknown) => number;
+
+  /**
+   * Generates usage reports with provider-specific metadata
+   */
+  getUsageReport: (
+    project: Project,
+    provider: ProviderProfile,
+    modelId: string,
+    messageCost: number,
+    usage: LanguageModelUsage,
+    providerMetadata?: unknown,
+  ) => UsageReportData;
+
+  // === Model Discovery and Configuration Functions ===
+  /**
+   * Loads available models from the provider's API
+   */
+  loadModels: (profile: ProviderProfile, modelsInfo: Record<string, ModelInfo>) => Promise<LoadModelsResponse>;
+
+  /**
+   * Checks if required environment variables are available
+   */
+  hasEnvVars: (projectDir?: string, settings?: SettingsData) => boolean;
+
+  /**
+   * Generates Aider-compatible model mapping with environment variables
+   */
+  getAiderMapping: (provider: ProviderProfile, modelId: string) => AiderModelMapping;
+
+  // === Optional Configuration Helper Functions ===
+  /**
+   * Returns provider-specific cache control configuration
+   */
+  getCacheControl?: (profile: AgentProfile, provider: LlmProvider) => CacheControl;
+
+  /**
+   * Returns provider-specific options for model instantiation
+   */
+  getProviderOptions?: (provider: LlmProvider) => Record<string, Record<string, JSONValue>> | undefined;
+}
+⋮----
+// === LLM Creation and Usage Functions ===
+/**
+   * Creates a LanguageModel instance for the given provider and model
+   */
+⋮----
+/**
+   * Calculates the cost for token usage with provider-specific caching adjustments
+   */
+⋮----
+/**
+   * Generates usage reports with provider-specific metadata
+   */
+⋮----
+// === Model Discovery and Configuration Functions ===
+/**
+   * Loads available models from the provider's API
+   */
+⋮----
+/**
+   * Checks if required environment variables are available
+   */
+⋮----
+/**
+   * Generates Aider-compatible model mapping with environment variables
+   */
+⋮----
+// === Optional Configuration Helper Functions ===
+/**
+   * Returns provider-specific cache control configuration
+   */
+⋮----
+/**
+   * Returns provider-specific options for model instantiation
+   */
+⋮----
+export type LlmProviderRegistry = Record<LlmProviderName, LlmProviderStrategy>;
 
 ================
 File: src/main/project/index.ts
@@ -5392,6 +6293,7 @@ import logger from '@/logger';
 import { Project } from '@/project';
 import { Store } from '@/store';
 import { EventManager } from '@/events';
+import { ModelManager } from '@/models';
 ⋮----
 export class ProjectManager
 ⋮----
@@ -5460,6 +6362,7 @@ import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport
 import { COMPACT_CONVERSATION_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
+import debounce from 'lodash/debounce';
 ⋮----
 import type { SimpleGit } from 'simple-git';
 ⋮----
@@ -5474,7 +6377,7 @@ import { DataManager } from '@/data-manager';
 import logger from '@/logger';
 import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
-import { DEFAULT_MAIN_MODEL } from '@/models';
+import { DEFAULT_MAIN_MODEL, ModelManager } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
@@ -5489,6 +6392,7 @@ constructor(
     private readonly telemetryManager: TelemetryManager,
     private readonly dataManager: DataManager,
     private readonly eventManager: EventManager,
+    private readonly modelManager: ModelManager,
 )
 ⋮----
 public async start(startupMode?: StartupMode)
@@ -5669,7 +6573,13 @@ public async updateAutocompletionData(words: string[], models: string[])
 ⋮----
 public updateAiderModels(modelsData: ModelsData)
 ⋮----
+const getWeakModelProvider = () =>
+⋮----
+// use the provider prefix from the main model when Aider's provider prefix is different
+⋮----
 public updateModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff')
+⋮----
+private sendSetModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff', environmentVariables?: Record<string, string>)
 ⋮----
 public setArchitectModel(architectModel: string)
 ⋮----
@@ -5760,7 +6670,7 @@ settingsChanged(oldSettings: SettingsData, newSettings: SettingsData)
 ⋮----
 // Check for changes in environment variables or LLM providers
 ⋮----
-private sendUpdateEnvVars(settings: SettingsData)
+private sendUpdateEnvVars(environmentVariables: Record<string, unknown>)
 ⋮----
 async updateTask(taskId: string, updates:
 ⋮----
@@ -6042,6 +6952,30 @@ registerRoutes(router: Router): void
 // Clear the running flag even if there's an error
 
 ================
+File: src/main/server/rest-api/providers-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+const LlmProviderProfileSchema = z.any(); // Placeholder - can be refined based on LlmProviderProfile type
+⋮----
+export class ProvidersApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Get providers
+⋮----
+// Update providers
+⋮----
+// Get provider models
+
+================
 File: src/main/server/rest-api/settings-api.ts
 ================
 import { Router } from 'express';
@@ -6060,8 +6994,6 @@ constructor(private readonly eventsHandler: EventsHandler)
 registerRoutes(router: Router): void
 ⋮----
 // Get settings
-⋮----
-// Get provider models
 ⋮----
 // Update settings
 ⋮----
@@ -6184,7 +7116,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { is } from '@electron-toolkit/utils';
 ⋮----
-import { ContextApi, PromptApi, SettingsApi, ProjectApi, CommandsApi, UsageApi, SystemApi, TodoApi, McpApi } from '@/server/rest-api';
+import { ContextApi, PromptApi, SettingsApi, ProjectApi, CommandsApi, UsageApi, SystemApi, TodoApi, McpApi, ProvidersApi } from '@/server/rest-api';
 import { SERVER_PORT, AUTH_USERNAME, AUTH_PASSWORD } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
@@ -6473,6 +7405,28 @@ import { SettingsData } from '@common/types';
 export const migrateV12ToV13 = (settings: any): SettingsData =>
 
 ================
+File: src/main/store/migrations/v13-to-v14.ts
+================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { ProviderProfile } from '@common/types';
+import { LlmProvider, LlmProviderName } from '@common/agent';
+⋮----
+export const migrateProvidersV13toV14 = (settings:
+
+================
+File: src/main/store/migrations/v14-to-v15.ts
+================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SettingsData } from '@common/types';
+⋮----
+export const migrateSettingsV14toV15 = (settings: any): SettingsData =>
+⋮----
+// Combine aiderPreferred and agentPreferred into preferredModels
+// Add aiderPreferred first, then agentPreferred, removing duplicates
+⋮----
+// Remove the old models structure
+
+================
 File: src/main/store/migrations/v2-to-v3.ts
 ================
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -6558,9 +7512,9 @@ File: src/main/store/index.ts
 File: src/main/store/store.ts
 ================
 import { v4 as uuidv4 } from 'uuid';
-import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState } from '@common/types';
+import { AgentProfile, ProviderProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState, Model } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { AVAILABLE_PROVIDERS, DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES, DEFAULT_PROVIDER_MODEL } from '@common/agent';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES, DEFAULT_PROVIDER_MODEL } from '@common/agent';
 ⋮----
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
@@ -6578,9 +7532,10 @@ import { migrateV12ToV13 } from './migrations/v12-to-v13';
 ⋮----
 import { determineMainModel, determineWeakModel } from '@/utils';
 import logger from '@/logger';
-import { ModelManager } from '@/models';
+import { migrateProvidersV13toV14 } from '@/store/migrations/v13-to-v14';
+import { migrateSettingsV14toV15 } from '@/store/migrations/v14-to-v15';
 ⋮----
-export const getDefaultProjectSettings = (store: Store, baseDir: string): ProjectSettings =>
+export const getDefaultProjectSettings = (store: Store, providerModels: Model[], baseDir: string): ProjectSettings =>
 ⋮----
 const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean =>
 ⋮----
@@ -6589,6 +7544,7 @@ interface StoreSchema {
   openProjects: ProjectData[];
   recentProjects: string[]; // baseDir paths of recently closed projects
   settings: SettingsData;
+  providers: ProviderProfile[];
   settingsVersion: number;
   releaseNotes?: string | null;
   userId?: string;
@@ -6623,7 +7579,7 @@ const mergeDefaultProperties = (agentProfile: AgentProfile) => (
 // Ensure proper merging for nested objects
 ⋮----
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-private migrateSettings(settings: any, openProjects: any): SettingsData
+private migrateSettings(settings: any, openProjects: any, providers: any): SettingsData
 ⋮----
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 private findOutCurrentVersion(settings: any): number
@@ -6639,7 +7595,7 @@ updateOpenProjectsOrder(baseDirs: string[]): ProjectData[]
 // This case should ideally not happen if baseDirs comes from the existing open projects.
 // If it can happen, we might need to decide how to handle it (e.g., log a warning).
 ⋮----
-async updateProviderModelInAgentProfiles(modelManager: ModelManager)
+async updateProviderModelInAgentProfiles(providerModels: Model[])
 ⋮----
 // Provider not configured, find the first available configured provider
 ⋮----
@@ -6668,6 +7624,10 @@ clearReleaseNotes(): void
 setReleaseNotes(releaseNotes: string)
 ⋮----
 getAgentProfile(profileId: string): AgentProfile | undefined
+⋮----
+getProviders(): ProviderProfile[]
+⋮----
+setProviders(providers: ProviderProfile[]): void
 
 ================
 File: src/main/tasks/index.ts
@@ -6821,37 +7781,11 @@ import path from 'path';
 ⋮----
 import { parse } from '@dotenvx/dotenvx';
 import YAML from 'yaml';
-import {
-  AnthropicProvider,
-  BedrockProvider,
-  CerebrasProvider,
-  DeepseekProvider,
-  GeminiProvider,
-  getLlmProviderConfig,
-  GroqProvider,
-  LlmProviderName,
-  LmStudioProvider,
-  OllamaProvider,
-  OpenAiCompatibleProvider,
-  OpenAiProvider,
-  OpenRouterProvider,
-  RequestyProvider,
-} from '@common/agent';
-import { EnvironmentVariable, SettingsData } from '@common/types';
+import { DEFAULT_PROVIDER_MODEL, LlmProviderName } from '@common/agent';
+import { EnvironmentVariable, Model, ProviderProfile, SettingsData } from '@common/types';
 ⋮----
 import logger from '@/logger';
-import {
-  CEREBRAS_MODEL,
-  DEEPSEEK_MODEL,
-  DEFAULT_MAIN_MODEL,
-  GEMINI_MODEL,
-  GROQ_MODEL,
-  LM_STUDIO_MODEL,
-  OLLAMA_MODEL,
-  OPEN_AI_DEFAULT_MODEL,
-  OPENROUTER_MODEL,
-  SONNET_MODEL,
-} from '@/models';
+import { DEFAULT_MAIN_MODEL } from '@/models';
 import { getLangfuseEnvironmentVariables } from '@/telemetry';
 ⋮----
 const readEnvFile = (filePath: string): Record<string, string> | null =>
@@ -6895,21 +7829,13 @@ export const readAiderConfProperty = (baseDir: string, property: string): string
 ⋮----
 export const determineWeakModel = (baseDir: string): string | undefined =>
 ⋮----
-export const determineMainModel = (settings: SettingsData, baseDir: string): string =>
+export const determineMainModel = (settings: SettingsData, providers: ProviderProfile[], providerModels: Model[], baseDir: string): string =>
 ⋮----
 // Check for --model in aider options
-⋮----
-// Check environment variables in order
 ⋮----
 // Default model if no other condition is met
 ⋮----
 export const getEnvironmentVariablesForAider = (settings: SettingsData, baseDir: string): Record<string, unknown> =>
-⋮----
-? // only set OPENAI_API_KEY and OPENAI_API_BASE for openai-compatible if openai and requesty are not configured
-⋮----
-? // only set OPENAI_API_KEY and OPENAI_API_BASE for requesty if openai and openai-compatible are not configured
-⋮----
-// Bedrock
 ⋮----
 const getTelemetryEnvironmentVariablesForAider = (settings: SettingsData, baseDir: string): Record<string, unknown> =>
 ⋮----
@@ -7124,10 +8050,11 @@ import {
   McpTool,
   Mode,
   ModelInfo,
+  Model,
   OS,
   ProjectData,
   ProjectSettings,
-  ProviderModels,
+  ProviderProfile,
   ResponseCompletedData,
   SessionData,
   SettingsData,
@@ -7136,6 +8063,7 @@ import {
   TodoItem,
   UsageDataRow,
   VersionsInfo,
+  ProviderModelsData,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 ⋮----
@@ -7151,6 +8079,7 @@ import { TerminalManager } from '@/terminal/terminal-manager';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
+import { EventManager } from '@/events';
 ⋮----
 export class EventsHandler
 ⋮----
@@ -7182,7 +8111,7 @@ async restartProject(baseDir: string, startupMode?: StartupMode): Promise<void>
 ⋮----
 getOpenProjects(): ProjectData[]
 ⋮----
-addOpenProject(baseDir: string): ProjectData[]
+async addOpenProject(baseDir: string): Promise<ProjectData[]>
 ⋮----
 removeOpenProject(baseDir: string): ProjectData[]
 ⋮----
@@ -7294,7 +8223,15 @@ async queryUsageData(from: Date, to: Date): Promise<UsageDataRow[]>
 ⋮----
 getEffectiveEnvironmentVariable(key: string, baseDir?: string): EnvironmentVariable | undefined
 ⋮----
-async getProviderModels(): Promise<ProviderModels>
+async getProviderModels(): Promise<ProviderModelsData>
+⋮----
+getProviders(): ProviderProfile[]
+⋮----
+async updateProviders(providers: ProviderProfile[]): Promise<void>
+⋮----
+async upsertModel(providerId: string, modelId: string, model: Model): Promise<void>
+⋮----
+async deleteModel(providerId: string, modelId: string): Promise<void>
 ⋮----
 async showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue>
 ⋮----
@@ -7335,7 +8272,7 @@ import { join } from 'path';
 import { createServer } from 'http';
 import { existsSync, statSync } from 'fs';
 ⋮----
-import { delay } from '@common/utils';
+import { compareBaseDirs, delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 ⋮----
@@ -7343,12 +8280,12 @@ import icon from '../../resources/icon.png?asset';
 ⋮----
 import { ProgressWindow } from '@/progress-window';
 import { Agent, McpManager } from '@/agent';
-import { ServerController, CloudflareTunnelManager } from '@/server';
+import { CloudflareTunnelManager, ServerController } from '@/server';
 import { ConnectorManager } from '@/connector';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { ProjectManager } from '@/project';
 import { performStartUp, UpdateProgressData } from '@/start-up';
-import { Store, getDefaultProjectSettings } from '@/store';
+import { getDefaultProjectSettings, Store } from '@/store';
 import { VersionsManager } from '@/versions';
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
@@ -7357,7 +8294,7 @@ import { ModelManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { EventsHandler } from '@/events-handler';
-import { SERVER_PORT, HEADLESS_MODE } from '@/constants';
+import { HEADLESS_MODE, SERVER_PORT } from '@/constants';
 ⋮----
 const setupCustomMenu = (): void =>
 ⋮----
@@ -7380,7 +8317,7 @@ const initManagers = async (
 ⋮----
 // Initialize event manager
 ⋮----
-// Initialize model info manager
+// Initialize model manager
 ⋮----
 // Initialize data manager
 ⋮----
@@ -7431,7 +8368,7 @@ updateProgress = () =>
 ================
 File: src/main/ipc-handlers.ts
 ================
-import { EditFormat, FileEdit, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, ProviderProfile, McpServerConfig, Mode, Model, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { ipcMain } from 'electron';
 ⋮----
 import { EventsHandler } from './events-handler';
@@ -7602,6 +8539,7 @@ export interface SetModelsMessage extends Message {
   mainModel: string;
   weakModel?: string | null;
   editFormat?: EditFormat;
+  environmentVariables?: Record<string, string>;
   info?: RawModelInfo;
   hasError?: boolean;
 }
@@ -7851,7 +8789,6 @@ import {
   ModelsData,
   OS,
   ProjectStartedData,
-  ProviderModels,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -7861,6 +8798,9 @@ import {
   ToolData,
   UserMessageData,
   VersionsInfo,
+  ProviderModelsData,
+  ProvidersUpdatedData,
+  SettingsData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 ⋮----
@@ -7868,7 +8808,7 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { ApplicationAPI } from '@common/api';
 import { compareBaseDirs } from '@common/utils';
 ⋮----
-const listener = (_: Electron.IpcRendererEvent, data: ResponseChunkData) =>
+const listener = (_: Electron.IpcRendererEvent, data: SettingsData) =>
 ⋮----
 // Terminal operations
 ⋮----
@@ -7893,10 +8833,10 @@ import {
   McpTool,
   Mode,
   ModelInfo,
+  Model,
   ModelsData,
   OS,
   ProjectData,
-  ProviderModels,
   ProjectSettings,
   ProjectStartedData,
   QuestionData,
@@ -7914,6 +8854,9 @@ import {
   UserMessageData,
   VersionsInfo,
   CloudflareTunnelStatus,
+  ProviderProfile,
+  ProviderModelsData,
+  ProvidersUpdatedData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -7922,6 +8865,7 @@ import { compareBaseDirs } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 ⋮----
 type EventDataMap = {
+  'settings-updated': SettingsData;
   'response-chunk': ResponseChunkData;
   'response-completed': ResponseCompletedData;
   log: LogData;
@@ -7937,7 +8881,8 @@ type EventDataMap = {
   'input-history-updated': InputHistoryData;
   'clear-project': ClearProjectData;
   'project-started': ProjectStartedData;
-  'provider-models-updated': ProviderModels;
+  'provider-models-updated': ProviderModelsData;
+  'providers-updated': ProvidersUpdatedData;
 };
 ⋮----
 type EventCallback<T> = (data: T) => void;
@@ -7968,6 +8913,10 @@ private async post<B, R>(endpoint: string, body: B): Promise<R>
 private async get<T>(endpoint: string, params?: Record<string, unknown>): Promise<T>
 ⋮----
 private async patch<B, R>(endpoint: string, body: B): Promise<R>
+⋮----
+private async delete<T>(endpoint: string): Promise<T>
+⋮----
+private async put<B, R>(endpoint: string, body: B): Promise<R>
 ⋮----
 isOpenLogsDirectorySupported(): boolean
 openLogsDirectory(): Promise<boolean>
@@ -8035,9 +8984,14 @@ async getReleaseNotes(): Promise<string | null>
 clearReleaseNotes(): Promise<void>
 async getOS(): Promise<OS>
 loadModelsInfo(): Promise<Record<string, ModelInfo>>
-getProviderModels(): Promise<ProviderModels>
+getProviderModels(): Promise<ProviderModelsData>
+getProviders(): Promise<ProviderProfile[]>
+updateProviders(providers: ProviderProfile[]): Promise<ProviderProfile[]>
+upsertModel(providerId: string, modelId: string, model: Model): Promise<Model[]>
+deleteModel(providerId: string, modelId: string): Promise<Model[]>
 queryUsageData(from: string, to: string): Promise<UsageDataRow[]>
 getEffectiveEnvironmentVariable(key: string, baseDir?: string): Promise<EnvironmentVariable | undefined>
+addSettingsUpdatedListener(callback: (data: SettingsData) => void): () => void
 addResponseChunkListener(baseDir: string, callback: (data: ResponseChunkData) => void): () => void
 addResponseCompletedListener(baseDir: string, callback: (data: ResponseCompletedData) => void): () => void
 addLogListener(baseDir: string, callback: (data: LogData) => void): () => void
@@ -8055,7 +9009,9 @@ addClearProjectListener(baseDir: string, callback: (data: ClearProjectData) => v
 addProjectStartedListener(baseDir: string, callback: (data: ProjectStartedData) => void): () => void
 addVersionsInfoUpdatedListener(callback: (data: VersionsInfo) => void): () => void
 ⋮----
-addProviderModelsUpdatedListener(callback: (data: ProviderModels) => void): () => void
+addProviderModelsUpdatedListener(callback: (data: ProviderModelsData) => void): () => void
+⋮----
+addProvidersUpdatedListener(callback: (data: ProvidersUpdatedData) => void): () => void
 addTerminalDataListener(baseDir: string, callback: (data: TerminalData) => void): () => void
 addTerminalExitListener(baseDir: string, callback: (data: TerminalExitData) => void): () => void
 addContextMenuListener(callback: (params: Electron.ContextMenuParams) => void): () => void
@@ -8084,49 +9040,6 @@ startCloudflareTunnel(): Promise<boolean>
 stopCloudflareTunnel(): Promise<void>
 ⋮----
 getCloudflareTunnelStatus(): Promise<CloudflareTunnelStatus>
-
-================
-File: src/renderer/src/assets/electron.svg
-================
-<svg viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="64" cy="64" r="64" fill="#2F3242"/>
-  <ellipse cx="63.9835" cy="23.2036" rx="4.48794" ry="4.495" stroke="#A2ECFB" stroke-width="3.6" stroke-linecap="round"/>
-  <path d="M51.3954 39.5028C52.3733 39.6812 53.3108 39.033 53.4892 38.055C53.6676 37.0771 53.0194 36.1396 52.0414 35.9612L51.3954 39.5028ZM28.6153 43.5751L30.1748 44.4741L30.1748 44.4741L28.6153 43.5751ZM28.9393 60.9358C29.4332 61.7985 30.5329 62.0976 31.3957 61.6037C32.2585 61.1098 32.5575 60.0101 32.0636 59.1473L28.9393 60.9358ZM37.6935 66.7457C37.025 66.01 35.8866 65.9554 35.1508 66.6239C34.415 67.2924 34.3605 68.4308 35.029 69.1666L37.6935 66.7457ZM53.7489 81.7014L52.8478 83.2597L53.7489 81.7014ZM96.9206 89.515C97.7416 88.9544 97.9526 87.8344 97.3919 87.0135C96.8313 86.1925 95.7113 85.9815 94.8904 86.5422L96.9206 89.515ZM52.0414 35.9612C46.4712 34.9451 41.2848 34.8966 36.9738 35.9376C32.6548 36.9806 29.0841 39.1576 27.0559 42.6762L30.1748 44.4741C31.5693 42.0549 34.1448 40.3243 37.8188 39.4371C41.5009 38.5479 46.1547 38.5468 51.3954 39.5028L52.0414 35.9612ZM27.0559 42.6762C24.043 47.9029 25.2781 54.5399 28.9393 60.9358L32.0636 59.1473C28.6579 53.1977 28.1088 48.0581 30.1748 44.4741L27.0559 42.6762ZM35.029 69.1666C39.6385 74.24 45.7158 79.1355 52.8478 83.2597L54.6499 80.1432C47.8081 76.1868 42.0298 71.5185 37.6935 66.7457L35.029 69.1666ZM52.8478 83.2597C61.344 88.1726 70.0465 91.2445 77.7351 92.3608C85.359 93.4677 92.2744 92.6881 96.9206 89.515L94.8904 86.5422C91.3255 88.9767 85.4902 89.849 78.2524 88.7982C71.0793 87.7567 62.809 84.8612 54.6499 80.1432L52.8478 83.2597ZM105.359 84.9077C105.359 81.4337 102.546 78.6127 99.071 78.6127V82.2127C100.553 82.2127 101.759 83.4166 101.759 84.9077H105.359ZM99.071 78.6127C95.5956 78.6127 92.7831 81.4337 92.7831 84.9077H96.3831C96.3831 83.4166 97.5892 82.2127 99.071 82.2127V78.6127ZM92.7831 84.9077C92.7831 88.3817 95.5956 91.2027 99.071 91.2027V87.6027C97.5892 87.6027 96.3831 86.3988 96.3831 84.9077H92.7831ZM99.071 91.2027C102.546 91.2027 105.359 88.3817 105.359 84.9077H101.759C101.759 86.3988 100.553 87.6027 99.071 87.6027V91.2027Z" fill="#A2ECFB"/>
-  <path d="M91.4873 65.382C90.8456 66.1412 90.9409 67.2769 91.7002 67.9186C92.4594 68.5603 93.5951 68.465 94.2368 67.7058L91.4873 65.382ZM99.3169 43.6354L97.7574 44.5344L99.3169 43.6354ZM84.507 35.2412C83.513 35.2282 82.6967 36.0236 82.6838 37.0176C82.6708 38.0116 83.4661 38.8279 84.4602 38.8409L84.507 35.2412ZM74.9407 39.8801C75.9127 39.6716 76.5315 38.7145 76.323 37.7425C76.1144 36.7706 75.1573 36.1517 74.1854 36.3603L74.9407 39.8801ZM53.7836 46.3728L54.6847 47.931L53.7836 46.3728ZM25.5491 80.9047C25.6932 81.8883 26.6074 82.5688 27.5911 82.4247C28.5747 82.2806 29.2552 81.3664 29.1111 80.3828L25.5491 80.9047ZM94.2368 67.7058C97.8838 63.3907 100.505 58.927 101.752 54.678C103.001 50.4213 102.9 46.2472 100.876 42.7365L97.7574 44.5344C99.1494 46.9491 99.3603 50.0419 98.2974 53.6644C97.2323 57.2945 94.9184 61.3223 91.4873 65.382L94.2368 67.7058ZM100.876 42.7365C97.9119 37.5938 91.7082 35.335 84.507 35.2412L84.4602 38.8409C91.1328 38.9278 95.7262 41.0106 97.7574 44.5344L100.876 42.7365ZM74.1854 36.3603C67.4362 37.8086 60.0878 40.648 52.8826 44.8146L54.6847 47.931C61.5972 43.9338 68.5948 41.2419 74.9407 39.8801L74.1854 36.3603ZM52.8826 44.8146C44.1366 49.872 36.9669 56.0954 32.1491 62.3927C27.3774 68.63 24.7148 75.2115 25.5491 80.9047L29.1111 80.3828C28.4839 76.1026 30.4747 70.5062 35.0084 64.5802C39.496 58.7143 46.2839 52.7889 54.6847 47.931L52.8826 44.8146Z" fill="#A2ECFB"/>
-  <path d="M49.0825 87.2295C48.7478 86.2934 47.7176 85.8059 46.7816 86.1406C45.8455 86.4753 45.358 87.5055 45.6927 88.4416L49.0825 87.2295ZM78.5635 96.4256C79.075 95.5732 78.7988 94.4675 77.9464 93.9559C77.0941 93.4443 75.9884 93.7205 75.4768 94.5729L78.5635 96.4256ZM79.5703 85.1795C79.2738 86.1284 79.8027 87.1379 80.7516 87.4344C81.7004 87.7308 82.71 87.2019 83.0064 86.2531L79.5703 85.1795ZM84.3832 64.0673H82.5832H84.3832ZM69.156 22.5301C68.2477 22.1261 67.1838 22.535 66.7799 23.4433C66.3759 24.3517 66.7848 25.4155 67.6931 25.8194L69.156 22.5301ZM45.6927 88.4416C47.5994 93.7741 50.1496 98.2905 53.2032 101.505C56.2623 104.724 59.9279 106.731 63.9835 106.731V103.131C61.1984 103.131 58.4165 101.765 55.8131 99.0249C53.2042 96.279 50.8768 92.2477 49.0825 87.2295L45.6927 88.4416ZM63.9835 106.731C69.8694 106.731 74.8921 102.542 78.5635 96.4256L75.4768 94.5729C72.0781 100.235 68.0122 103.131 63.9835 103.131V106.731ZM83.0064 86.2531C85.0269 79.7864 86.1832 72.1831 86.1832 64.0673H82.5832C82.5832 71.8536 81.4723 79.0919 79.5703 85.1795L83.0064 86.2531ZM86.1832 64.0673C86.1832 54.1144 84.4439 44.922 81.4961 37.6502C78.5748 30.4436 74.3436 24.8371 69.156 22.5301L67.6931 25.8194C71.6364 27.5731 75.3846 32.1564 78.1598 39.0026C80.9086 45.7836 82.5832 54.507 82.5832 64.0673H86.1832Z" fill="#A2ECFB"/>
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M103.559 84.9077C103.559 82.4252 101.55 80.4127 99.071 80.4127C96.5924 80.4127 94.5831 82.4252 94.5831 84.9077C94.5831 87.3902 96.5924 89.4027 99.071 89.4027C101.55 89.4027 103.559 87.3902 103.559 84.9077V84.9077Z" stroke="#A2ECFB" stroke-width="3.6" stroke-linecap="round"/>
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M28.8143 89.4027C31.2929 89.4027 33.3023 87.3902 33.3023 84.9077C33.3023 82.4252 31.2929 80.4127 28.8143 80.4127C26.3357 80.4127 24.3264 82.4252 24.3264 84.9077C24.3264 87.3902 26.3357 89.4027 28.8143 89.4027V89.4027V89.4027Z" stroke="#A2ECFB" stroke-width="3.6" stroke-linecap="round"/>
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M64.8501 68.0857C62.6341 68.5652 60.451 67.1547 59.9713 64.9353C59.4934 62.7159 60.9007 60.5293 63.1167 60.0489C65.3326 59.5693 67.5157 60.9798 67.9954 63.1992C68.4742 65.4186 67.066 67.6052 64.8501 68.0857Z" fill="#A2ECFB"/>
-</svg>
-
-================
-File: src/renderer/src/assets/wavy-lines.svg
-================
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1422 800" opacity="0.3">
-  <defs>
-    <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="oooscillate-grad">
-      <stop stop-color="hsl(206, 75%, 49%)" stop-opacity="1" offset="0%"></stop>
-      <stop stop-color="hsl(331, 90%, 56%)" stop-opacity="1" offset="100%"></stop>
-    </linearGradient>
-  </defs>
-  <g stroke-width="1" stroke="url(#oooscillate-grad)" fill="none" stroke-linecap="round">
-    <path d="M 0 448 Q 355.5 -100 711 400 Q 1066.5 900 1422 448" opacity="0.05"></path>
-    <path d="M 0 420 Q 355.5 -100 711 400 Q 1066.5 900 1422 420" opacity="0.11"></path>
-    <path d="M 0 392 Q 355.5 -100 711 400 Q 1066.5 900 1422 392" opacity="0.18"></path>
-    <path d="M 0 364 Q 355.5 -100 711 400 Q 1066.5 900 1422 364" opacity="0.24"></path>
-    <path d="M 0 336 Q 355.5 -100 711 400 Q 1066.5 900 1422 336" opacity="0.30"></path>
-    <path d="M 0 308 Q 355.5 -100 711 400 Q 1066.5 900 1422 308" opacity="0.37"></path>
-    <path d="M 0 280 Q 355.5 -100 711 400 Q 1066.5 900 1422 280" opacity="0.43"></path>
-    <path d="M 0 252 Q 355.5 -100 711 400 Q 1066.5 900 1422 252" opacity="0.49"></path>
-    <path d="M 0 224 Q 355.5 -100 711 400 Q 1066.5 900 1422 224" opacity="0.56"></path>
-    <path d="M 0 196 Q 355.5 -100 711 400 Q 1066.5 900 1422 196" opacity="0.62"></path>
-    <path d="M 0 168 Q 355.5 -100 711 400 Q 1066.5 900 1422 168" opacity="0.68"></path>
-    <path d="M 0 140 Q 355.5 -100 711 400 Q 1066.5 900 1422 140" opacity="0.75"></path>
-    <path d="M 0 112 Q 355.5 -100 711 400 Q 1066.5 900 1422 112" opacity="0.81"></path>
-    <path d="M 0 84 Q 355.5 -100 711 400 Q 1066.5 900 1422 84" opacity="0.87"></path>
-    <path d="M 0 56 Q 355.5 -100 711 400 Q 1066.5 900 1422 56" opacity="0.94"></path>
-  </g>
-</svg>
 
 ================
 File: src/renderer/src/components/AgentSelector/AgentSelector.tsx
@@ -8374,6 +9287,7 @@ const handleKeyDown = (event: KeyboardEvent) =>
 File: src/renderer/src/components/common/Button.tsx
 ================
 import { ReactNode } from 'react';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 type ButtonVariant = 'contained' | 'text' | 'outline';
 type ButtonColor = 'primary' | 'secondary' | 'danger';
@@ -8388,6 +9302,7 @@ type Props = {
   disabled?: boolean;
   autoFocus?: boolean;
   size?: ButtonSize;
+  type?: 'button' | 'submit' | 'reset';
 };
 ⋮----
 export const Button = ({
@@ -8399,7 +9314,10 @@ export const Button = ({
   disabled = false,
   autoFocus = false,
   size = 'md',
+  type = 'button',
 }: Props) =>
+⋮----
+className=
 
 ================
 File: src/renderer/src/components/common/Checkbox.tsx
@@ -8666,6 +9584,23 @@ type Props = {
 };
 
 ================
+File: src/renderer/src/components/common/ModalOverlayLayout.tsx
+================
+import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { IoMdClose } from 'react-icons/io';
+⋮----
+import { IconButton } from './IconButton';
+⋮----
+type Props = {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+};
+⋮----
+tooltip=
+
+================
 File: src/renderer/src/components/common/MultiSelect.tsx
 ================
 import { useState, useRef, ReactNode } from 'react';
@@ -8760,6 +9695,7 @@ type Props = {
   onChange?: (value: string) => void;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
 };
 ⋮----
 const dropdownRef = useRef<HTMLUListElement>(null); // Ref for the dropdown itself
@@ -8806,6 +9742,33 @@ type Props = {
   id: string;
   content?: ReactNode;
   maxWidth?: number | string;
+};
+
+================
+File: src/renderer/src/components/common/Table.tsx
+================
+import { ReactNode } from 'react';
+⋮----
+export type Column<T> = {
+  accessor?: keyof T;
+  header: string;
+  cell?: (value: T[keyof T] | null, row: T) => ReactNode;
+  headerClassName?: string;
+  cellClassName?: string;
+  align?: 'left' | 'center' | 'right';
+  maxWidth?: string | number;
+};
+⋮----
+export type FooterColumn = {
+  cell: ReactNode;
+  colSpan?: number;
+  className?: string;
+};
+⋮----
+type Props<T> = {
+  data: T[];
+  columns: Column<T>[];
+  footerColumns?: FooterColumn[];
 };
 
 ================
@@ -9770,6 +10733,380 @@ export const groupMessagesByPromptContext = (messages: Message[]): Message[] =>
 // Only create the group once
 
 ================
+File: src/renderer/src/components/ModelLibrary/index.ts
+================
+
+
+================
+File: src/renderer/src/components/ModelLibrary/ModelDialog.tsx
+================
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Model, ProviderProfile } from '@common/types';
+⋮----
+import { Input } from '@/components/common/Input';
+import { Select } from '@/components/common/Select';
+import { Checkbox } from '@/components/common/Checkbox';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+⋮----
+type Props = {
+  model?: Model;
+  providers: ProviderProfile[];
+  onSave: (model: Model) => void;
+  onCancel: () => void;
+};
+⋮----
+const validateForm = (): boolean =>
+⋮----
+const handleSubmit = () =>
+⋮----
+const handleInputChange = (field: keyof Model, value: unknown) =>
+⋮----
+// Clear error when user starts typing
+⋮----
+label=
+⋮----
+onChange=
+⋮----
+disabled={!!model} // Don't allow changing provider for existing models
+⋮----
+placeholder=
+disabled={!!model} // Don't allow changing ID for existing models
+⋮----
+const perMillionValue = e.target.value ? parseFloat(e.target.value) : undefined;
+⋮----
+handleInputChange('inputCostPerToken', perTokenValue);
+⋮----
+handleInputChange('outputCostPerToken', perTokenValue);
+⋮----
+handleInputChange('cacheReadInputTokenCost', perTokenValue);
+⋮----
+<Checkbox label=
+
+================
+File: src/renderer/src/components/ModelLibrary/ModelLibrary.tsx
+================
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Model, ProviderProfile } from '@common/types';
+import { LlmProviderName } from '@common/agent';
+⋮----
+import { ModelDialog } from './ModelDialog';
+import { ProviderSelection } from './ProviderSelection';
+import { ProviderProfileForm } from './ProviderProfileForm';
+import { ProviderHeader } from './ProviderHeader';
+import { ModelTableSection } from './ModelTableSection';
+⋮----
+import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
+⋮----
+type Props = {
+  onClose: () => void;
+};
+⋮----
+const handleToggleProviderSelect = (profileId: string) =>
+⋮----
+const handleAddProvider = () =>
+⋮----
+const handleSelectProvider = (provider: LlmProviderName) =>
+⋮----
+const handleEditProfile = (profile: ProviderProfile) =>
+⋮----
+const handleDeleteProfile = async (profile: ProviderProfile) =>
+⋮----
+const handleCancelConfigure = () =>
+⋮----
+const handleSaveProfile = async (profile: ProviderProfile) =>
+⋮----
+const handleAddModel = () =>
+⋮----
+const handleEditModel = (model: Model) =>
+⋮----
+const handleDeleteModel = async (model: Model) =>
+⋮----
+const handleSaveModel = async (model: Model) =>
+⋮----
+const handleToggleHidden = async (model: Model) =>
+⋮----
+// Show provider selection when adding new provider
+⋮----
+<ModalOverlayLayout title=
+⋮----
+// Show provider configuration form
+
+================
+File: src/renderer/src/components/ModelLibrary/ModelTableSection.tsx
+================
+import { useState, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FiEdit2, FiTrash2, FiPlus, FiEye } from 'react-icons/fi';
+import { Model, ProviderProfile } from '@common/types';
+⋮----
+import { Input } from '@/components/common/Input';
+import { Button } from '@/components/common/Button';
+import { Column, Table } from '@/components/common/Table';
+import { IconButton } from '@/components/common/IconButton';
+⋮----
+type Props = {
+  models: Model[];
+  modelCount: number;
+  selectedProviderIds: string[];
+  providers: ProviderProfile[];
+  onAddModel: () => void;
+  onEditModel: (model: Model) => void;
+  onDeleteModel: (model: Model) => void;
+  onToggleHidden: (model: Model) => void;
+};
+⋮----
+{/* Search and Info Header */}
+⋮----
+{/* Table */}
+
+================
+File: src/renderer/src/components/ModelLibrary/ProviderCard.tsx
+================
+import { ReactNode } from 'react';
+⋮----
+type Props = {
+  name: string;
+  icon: ReactNode;
+  onClick: () => void;
+};
+⋮----
+export const ProviderCard = (
+
+================
+File: src/renderer/src/components/ModelLibrary/ProviderHeader.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { FiPlus } from 'react-icons/fi';
+import { ProviderProfile } from '@common/types';
+⋮----
+import { ProviderProfileCard } from './ProviderProfileCard';
+⋮----
+import { Button } from '@/components/common/Button';
+⋮----
+type Props = {
+  providers: ProviderProfile[];
+  providerErrors: Record<string, string>;
+  selectedProfileIds: string[];
+  onToggleSelect: (profileId: string) => void;
+  onAddProvider: () => void;
+  onEditProfile: (profile: ProviderProfile) => void;
+  onDeleteProfile: (profile: ProviderProfile) => void;
+};
+⋮----
+isSelected=
+
+================
+File: src/renderer/src/components/ModelLibrary/ProviderProfileCard.tsx
+================
+import { useState, ComponentType } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { clsx } from 'clsx';
+import { ProviderProfile } from '@common/types';
+import { LlmProviderName } from '@common/agent';
+import { FaExclamationCircle } from 'react-icons/fa';
+⋮----
+import { IconButton } from '@/components/common/IconButton';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import {
+  AnthropicIcon,
+  AzureIcon,
+  BedrockIcon,
+  CerebrasIcon,
+  DeepseekIcon,
+  GeminiIcon,
+  GroqIcon,
+  LmStudioIcon,
+  OllamaIcon,
+  OpenAiCompatibleIcon,
+  OpenAiIcon,
+  OpenRouterIcon,
+  RequestyIcon,
+  VertexAiIcon,
+} from '@/icons';
+import { useResponsive } from '@/hooks/useResponsive';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
+type Props = {
+  provider: ProviderProfile;
+  error?: string;
+  isSelected: boolean;
+  onToggleSelect: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+};
+⋮----
+const handleCardClick = () =>
+⋮----
+// If already selected and no actions showing, show actions (mobile behavior)
+⋮----
+// Otherwise, toggle selection (mobile behavior)
+⋮----
+const handleEdit = () =>
+⋮----
+const handleDelete = () =>
+⋮----
+{/* Action buttons - shown on hover (desktop) or when showActions is true (mobile) */}
+⋮----
+title=
+
+================
+File: src/renderer/src/components/ModelLibrary/ProviderProfileForm.tsx
+================
+import { getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
+import { ProviderProfile } from '@common/types';
+import { useTranslation } from 'react-i18next';
+import { ComponentType, ReactNode, useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { FaPlus, FaTrash } from 'react-icons/fa';
+⋮----
+import {
+  AnthropicParameters,
+  AzureParameters,
+  BedrockParameters,
+  DeepseekParameters,
+  GeminiParameters,
+  GroqParameters,
+  LmStudioParameters,
+  OllamaParameters,
+  OpenAiCompatibleParameters,
+  OpenAiParameters,
+  OpenRouterParameters,
+  RequestyParameters,
+  VertexAIParameters,
+} from '@/components/settings/agent/providers';
+import { Input } from '@/components/common/Input';
+import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
+import { Accordion } from '@/components/common/Accordion';
+⋮----
+type ProviderParametersProps<T extends LlmProvider> = {
+  provider: T;
+  onChange: (updated: T) => void;
+};
+⋮----
+// @ts-expect-error using LlmProvider as type
+⋮----
+type Header = { id: string; key: string; value: string };
+⋮----
+type Props = {
+  provider: LlmProviderName;
+  editProfile?: ProviderProfile; // for editing
+  providers: ProviderProfile[];
+  onSave: (profile: ProviderProfile) => void;
+  onCancel: () => void;
+};
+⋮----
+editProfile?: ProviderProfile; // for editing
+⋮----
+// Set defaults for new profile
+⋮----
+const handleIdChange = (value: string) =>
+⋮----
+// Clear error when user starts typing
+⋮----
+const handleHeaderChange = (id: string, field: 'key' | 'value', value: string) =>
+⋮----
+const addHeader = () =>
+⋮----
+const removeHeader = (id: string) =>
+⋮----
+const validateForm = (): boolean =>
+⋮----
+// Check for duplicate IDs
+⋮----
+const handleSave = () =>
+⋮----
+const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) => (
+    <Accordion
+      title={<div className="flex-1 text-left text-sm font-medium px-2">{title}</div>}
+      chevronPosition="right"
+      className="mb-2 border rounded-md border-border-default-dark"
+      isOpen={open}
+      onOpenChange={setOpen}
+    >
+      <div className="p-4 pt-2">{children}</div>
+    </Accordion>
+  );
+⋮----
+placeholder=
+⋮----
+onChange=
+
+================
+File: src/renderer/src/components/ModelLibrary/ProviderSelection.tsx
+================
+import { LlmProviderName, AVAILABLE_PROVIDERS } from '@common/agent';
+import { useTranslation } from 'react-i18next';
+import { ComponentType } from 'react';
+import { FiArrowLeft } from 'react-icons/fi';
+⋮----
+import { ProviderCard } from './ProviderCard';
+⋮----
+import { IconButton } from '@/components/common/IconButton';
+import {
+  AnthropicIcon,
+  AzureIcon,
+  BedrockIcon,
+  CerebrasIcon,
+  DeepseekIcon,
+  GeminiIcon,
+  GroqIcon,
+  LmStudioIcon,
+  OllamaIcon,
+  OpenAiCompatibleIcon,
+  OpenAiIcon,
+  OpenRouterIcon,
+  RequestyIcon,
+  VertexAiIcon,
+} from '@/icons';
+⋮----
+type Props = {
+  onSelectProvider: (provider: LlmProviderName) => void;
+  onCancel?: () => void;
+  showTitle?: boolean;
+};
+⋮----
+name=
+⋮----
+onClick={() => onSelectProvider(provider)}
+            />
+          );
+
+================
+File: src/renderer/src/components/onboarding/OnboardingProviderSetup.tsx
+================
+import { useState } from 'react';
+import { ProviderProfile } from '@common/types';
+import { LlmProviderName } from '@common/agent';
+⋮----
+import { ProviderSelection } from '@/components/ModelLibrary/ProviderSelection';
+import { ProviderProfileForm } from '@/components/ModelLibrary/ProviderProfileForm';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { ProviderHeader } from '@/components/ModelLibrary/ProviderHeader';
+⋮----
+export const OnboardingProviderSetup = () =>
+⋮----
+const handleAddProvider = () =>
+⋮----
+const handleSelectProvider = (provider: LlmProviderName) =>
+⋮----
+const handleEditProfile = (profile: ProviderProfile) =>
+⋮----
+const handleDeleteProfile = async (profile: ProviderProfile) =>
+⋮----
+const handleCancelConfigure = () =>
+⋮----
+const handleSaveProfile = async (profile: ProviderProfile) =>
+⋮----
+// Show provider configuration form
+⋮----
+// Show provider selection when adding new provider
+
+================
 File: src/renderer/src/components/onboarding/OnboardingStepper.tsx
 ================
 import { HiCheck } from 'react-icons/hi';
@@ -9984,7 +11321,7 @@ confirmButtonText=
 ================
 File: src/renderer/src/components/project/ProjectBar.tsx
 ================
-import { EditFormat, Mode, ModelsData, RawModelInfo, SessionData } from '@common/types';
+import { EditFormat, Mode, Model, ModelsData, RawModelInfo, SessionData } from '@common/types';
 import React, { ReactNode, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
@@ -9994,6 +11331,7 @@ import { MdHistory } from 'react-icons/md';
 import { IoLogoMarkdown } from 'react-icons/io5';
 import { RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
+import { getProviderModelId } from '@common/agent';
 ⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { AgentModelSelector } from '@/components/AgentModelSelector';
@@ -10008,6 +11346,7 @@ import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
 import { useApi } from '@/context/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
 ⋮----
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -10016,7 +11355,6 @@ export type ProjectTopBarRef = {
 ⋮----
 type Props = {
   baseDir: string;
-  allModels?: string[];
   modelsData: ModelsData | null;
   mode: Mode;
   renderMarkdown: boolean;
@@ -10679,6 +12017,35 @@ const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 label=
 ⋮----
 ? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/settings/agent/providers/AzureParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AzureProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: AzureProvider;
+  onChange: (updated: AzureProvider) => void;
+};
+⋮----
+// Environment variable hooks for placeholders
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleResourceNameChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleApiVersionChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+⋮----
+<p className="text-xs text-info-lightest">
 
 ================
 File: src/renderer/src/components/settings/agent/providers/BedrockParameters.tsx
@@ -11570,115 +12937,6 @@ type Props = {
 export const LanguageSelector = (
 
 ================
-File: src/renderer/src/components/settings/ModelProvidersSettings.tsx
-================
-import {
-  AVAILABLE_PROVIDERS,
-  getLlmProviderConfig,
-  isAnthropicProvider,
-  isBedrockProvider,
-  isCerebrasProvider,
-  isDeepseekProvider,
-  isGeminiProvider,
-  isGroqProvider,
-  isLmStudioProvider,
-  isOllamaProvider,
-  isOpenAiCompatibleProvider,
-  isOpenAiProvider,
-  isOpenRouterProvider,
-  isRequestyProvider,
-  isVertexAiProvider,
-  LlmProvider,
-  LlmProviderName,
-} from '@common/agent';
-import { SettingsData } from '@common/types';
-import { useState } from 'react';
-import { useTranslation, Trans } from 'react-i18next';
-⋮----
-import { ProviderCard } from './ProviderCard';
-⋮----
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { Button } from '@/components/common/Button';
-⋮----
-type Props = {
-  settings: SettingsData;
-  setSettings: (settings: SettingsData) => void;
-  onSwitchToAiderTab?: () => void;
-  showProminentModels?: boolean;
-};
-⋮----
-// Define prominent providers
-⋮----
-// Environment variable hooks for API keys
-⋮----
-const handleProviderParamsChange = (updatedProviderConfig: LlmProvider) =>
-⋮----
-const handleProviderExpand = (providerName: LlmProviderName) =>
-⋮----
-const isProviderConfigured = (providerName: LlmProviderName): boolean =>
-⋮----
-// Determine which providers to show
-⋮----
-const getAgentOnly = () =>
-⋮----
-agentOnly=
-
-================
-File: src/renderer/src/components/settings/ProviderCard.tsx
-================
-import {
-  isAnthropicProvider,
-  isBedrockProvider,
-  isCerebrasProvider,
-  isDeepseekProvider,
-  isGeminiProvider,
-  isGroqProvider,
-  isLmStudioProvider,
-  isOllamaProvider,
-  isOpenAiCompatibleProvider,
-  isOpenAiProvider,
-  isOpenRouterProvider,
-  isRequestyProvider,
-  isVertexAiProvider,
-  LlmProvider,
-  LlmProviderName,
-} from '@common/agent';
-import { MouseEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import { clsx } from 'clsx';
-⋮----
-import {
-  AnthropicParameters,
-  BedrockParameters,
-  CerebrasParameters,
-  DeepseekParameters,
-  GeminiParameters,
-  GroqParameters,
-  LmStudioParameters,
-  OllamaParameters,
-  OpenAiCompatibleParameters,
-  OpenAiParameters,
-  OpenRouterParameters,
-  RequestyParameters,
-  VertexAIParameters,
-} from './agent/providers';
-⋮----
-type Props = {
-  providerName: LlmProviderName;
-  provider: LlmProvider;
-  isConfigured: boolean;
-  isExpanded: boolean;
-  agentOnly?: boolean;
-  onExpand: () => void;
-  onProviderChange: (provider: LlmProvider) => void;
-};
-⋮----
-const handleCardClick = (e: MouseEvent<HTMLDivElement>) =>
-⋮----
-const renderProviderParameters = () =>
-
-================
 File: src/renderer/src/components/settings/ServerSettings.tsx
 ================
 import { ChangeEvent, useState, useEffect } from 'react';
@@ -12057,12 +13315,12 @@ File: src/renderer/src/components/usage/UsageDashboard.tsx
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaSync, FaTable, FaChartBar } from 'react-icons/fa';
-import { IoMdClose } from 'react-icons/io';
 import { CgSpinner } from 'react-icons/cg';
 import { UsageDataRow } from '@common/types';
 import { clsx } from 'clsx';
 ⋮----
 import { Select } from '../common/Select';
+import { ModalOverlayLayout } from '../common/ModalOverlayLayout';
 ⋮----
 import { UsageTable } from './UsageTable';
 import { TokenUsageTrendChart } from './TokenUsageTrendChart';
@@ -12102,9 +13360,11 @@ const handleDateRangeChange = (update: [Date | null, Date | null]) =>
 ⋮----
 const handleRefresh = () =>
 ⋮----
-tooltip=
+<ModalOverlayLayout title=
 ⋮----
 label=
+⋮----
+tooltip=
 ⋮----
 {/* Tab Navigation */}
 
@@ -12117,13 +13377,12 @@ import { UsageDataRow } from '@common/types';
 ⋮----
 import { formatDateByGroup, GroupBy } from './utils';
 ⋮----
+import { Column, FooterColumn, Table } from '@/components/common/Table';
+⋮----
 type Props = {
   data: UsageDataRow[];
   groupBy: GroupBy;
 };
-⋮----
-<td className="px-4 py-2 text-xs">
-⋮----
 
 ================
 File: src/renderer/src/components/usage/utils.ts
@@ -12160,16 +13419,12 @@ File: src/renderer/src/components/AgentModelSelector.tsx
 ================
 import { forwardRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AVAILABLE_PROVIDERS, LlmProviderName } from '@common/agent';
-import { AgentProfile, SettingsData } from '@common/types';
-import { BiCog } from 'react-icons/bi';
+import { AVAILABLE_PROVIDERS, getProviderModelId } from '@common/agent';
+import { AgentProfile, Model, SettingsData } from '@common/types';
 ⋮----
 import { ModelSelector, ModelSelectorRef } from './ModelSelector';
 ⋮----
-import { SettingsDialog } from '@/components/settings/SettingsDialog';
-import { IconButton } from '@/components/common/IconButton';
-import { useBooleanState } from '@/hooks/useBooleanState';
-import { useModels } from '@/contexts/ModelProvider';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
 ⋮----
 type Props = {
@@ -12177,12 +13432,13 @@ type Props = {
   settings: SettingsData | null;
   agentProfile: AgentProfile | undefined;
   saveSettings: (settings: SettingsData) => void;
-  showSettingsButton?: boolean;
 };
 ⋮----
 // Add the currently selected model if it's not in the known list (custom model)
 ⋮----
-allModels.unshift(currentSelection); // Add to the beginning for visibility
+// Create a custom model object for the current model
+⋮----
+agentModels.unshift(customModel); // Add to the beginning for visibility
 
 ================
 File: src/renderer/src/components/AutocompletionInput.tsx
@@ -12244,11 +13500,13 @@ const filesTotalTokens = tokensInfo?.files ? Object.values(tokensInfo.files).red
 ================
 File: src/renderer/src/components/ModelSelector.tsx
 ================
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, KeyboardEvent, MouseEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, KeyboardEvent, MouseEvent, useOptimistic, startTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdKeyboardArrowUp, MdKeyboardReturn } from 'react-icons/md';
 import { useDebounce } from '@reactuses/core';
 import { twMerge } from 'tailwind-merge';
+import { Model, ProviderProfile } from '@common/types';
+import { getProviderModelId } from '@common/agent';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
@@ -12259,25 +13517,27 @@ export type ModelSelectorRef = {
 ⋮----
 type Props = {
   className?: string;
-  models: string[];
-  selectedModel?: string;
-  onChange: (model: string) => void;
-  preferredModels: string[];
-  removePreferredModel: (model: string) => void;
+  models: Model[];
+  selectedModelId?: string;
+  onChange: (model: Model) => void;
+  preferredModelIds: string[];
+  removePreferredModel: (modelId: string) => void;
+  providers: ProviderProfile[];
 };
 ⋮----
-const onModelSelected = (model: string) =>
+// Group filtered models by providerId
+⋮----
+const getProviderName = (providerId: string) =>
+⋮----
+const onModelSelected = (model: Model) =>
 ⋮----
 const onModelSelectorSearchInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) =>
-⋮----
-// If no model is highlighted and there's a search term, select the custom term
 ⋮----
 const handleRemovePreferredModel = (e: MouseEvent) =>
 ⋮----
 placeholder=
 ⋮----
 onChange=
-⋮----
 
 ================
 File: src/renderer/src/components/SessionDialog.tsx
@@ -12494,24 +13754,33 @@ const saveSettings = async (updated: SettingsData) =>
 export const useSettings = () =>
 
 ================
-File: src/renderer/src/contexts/ModelProvider.tsx
+File: src/renderer/src/contexts/ModelProviderContext.tsx
 ================
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { Model, ProviderModels } from '@common/types';
-import { LlmProviderName } from '@common/agent';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState, useOptimistic, startTransition } from 'react';
+import { Model, ProviderProfile } from '@common/types';
 ⋮----
 import { useApi } from '@/context/ApiContext';
 ⋮----
 type ModelProviderContextType = {
   refresh: () => void;
-  getModels: (provider: LlmProviderName) => Model[] | undefined;
-  loading: boolean;
-  error: string | null;
+  models: Model[];
+  providers: ProviderProfile[];
+  saveProvider: (profile: ProviderProfile) => Promise<void>;
+  deleteProvider: (profileId: string) => Promise<void>;
+  upsertModel: (providerId: string, modelId: string, model: Model) => Promise<void>;
+  deleteModel: (providerId: string, modelId: string) => Promise<void>;
+  modelsLoading: boolean;
+  providersLoading: boolean;
+  errors: Record<string, string>;
 };
 ⋮----
-export const ModelProvider: React.FC<
+export const ModelProviderProvider: React.FC<
 ⋮----
-export const useModels = (): ModelProviderContextType =>
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+export const useModelProviders = (): ModelProviderContextType =>
 
 ================
 File: src/renderer/src/hooks/useBooleanState.ts
@@ -12738,11 +14007,369 @@ import zh from '@common/locales/zh.json';
 // eslint-disable-next-line import/no-named-as-default-member
 
 ================
+File: src/renderer/src/icons/AnthropicIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const AnthropicIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="Anthropic"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(241, 240, 232)',
+      color: 'rgb(20, 20, 19)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>Anthropic</title>
+      <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z"></path>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/AzureIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+
+================
+File: src/renderer/src/icons/BedrockIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const BedrockIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="Bedrock"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundImage: 'linear-gradient(45deg, rgb(154, 216, 248), rgb(61, 143, 255), rgb(99, 80, 251))',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>Bedrock</title>
+      <path d="M13.05 15.513h3.08c.214 0 .389.177.389.394v1.82a1.704 1.704 0 011.296 1.661c0 .943-.755 1.708-1.685 1.708-.931 0-1.686-.765-1.686-1.708 0-.807.554-1.484 1.297-1.662v-1.425h-2.69v4.663a.395.395 0 01-.188.338l-2.69 1.641a.385.385 0 01-.405-.002l-4.926-3.086a.395.395 0 01-.185-.336V16.3L2.196 14.87A.395.395 0 012 14.555L2 14.528V9.406c0-.14.073-.27.192-.34l2.465-1.462V4.448c0-.129.062-.249.165-.322l.021-.014L9.77 1.058a.385.385 0 01.407 0l2.69 1.675a.395.395 0 01.185.336V7.6h3.856V5.683a1.704 1.704 0 01-1.296-1.662c0-.943.755-1.708 1.685-1.708.931 0 1.685.765 1.685 1.708 0 .807-.553 1.484-1.296 1.662v2.311a.391.391 0 01-.389.394h-4.245v1.806h6.624a1.69 1.69 0 011.64-1.313c.93 0 1.685.764 1.685 1.707 0 .943-.754 1.708-1.685 1.708a1.69 1.69 0 01-1.64-1.314H13.05v1.937h4.953l.915 1.18a1.66 1.66 0 01.84-.227c.931 0 1.685.764 1.685 1.707 0 .943-.754 1.708-1.685 1.708-.93 0-1.685-.765-1.685-1.708 0-.346.102-.668.276-.937l-.724-.935H13.05v1.806zM9.973 1.856L7.93 3.122V6.09h-.778V3.604L5.435 4.669v2.945l2.11 1.36L9.712 7.61V5.334h.778V7.83c0 .136-.07.263-.184.335L7.963 9.638v2.081l1.422 1.009-.446.646-1.406-.998-1.53 1.005-.423-.66 1.605-1.055v-1.99L5.038 8.29l-2.26 1.34v1.676l1.972-1.189.398.677-2.37 1.429V14.3l2.166 1.258 2.27-1.368.397.677-2.176 1.311V19.3l1.876 1.175 2.365-1.426.398.678-2.017 1.216 1.918 1.201 2.298-1.403v-5.78l-4.758 2.893-.4-.675 5.158-3.136V3.289L9.972 1.856zM16.13 18.47a.913.913 0 00-.908.92c0 .507.406.918.908.918a.913.913 0 00.907-.919.913.913 0 00-.907-.92zm3.63-3.81a.913.913 0 00-.908.92c0 .508.406.92.907.92a.913.913 0 00.908-.92.913.913 0 00-.908-.92zm1.555-4.99a.913.913 0 00-.908.92c0 .507.407.918.908.918a.913.913 0 00.907-.919.913.913 0 00-.907-.92zM17.296 3.1a.913.913 0 00-.907.92c0 .508.406.92.907.92a.913.913 0 00.908-.92.913.913 0 00-.908-.92z"></path>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/CerebrasIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+
+================
+File: src/renderer/src/icons/DeepseekIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const DeepseekIcon = ({ width = 48, height = 48, className }: Props) => (
+  <div
+    aria-label="DeepSeek"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(77, 107, 254)',
+      color: 'white',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>DeepSeek</title>
+      <path d="M23.748 4.482c-.254-.124-.364.113-.512.234-.051.039-.094.09-.137.136-.372.397-.806.657-1.373.626-.829-.046-1.537.214-2.163.848-.133-.782-.575-1.248-1.247-1.548-.352-.156-.708-.311-.955-.65-.172-.241-.219-.51-.305-.774-.055-.16-.11-.323-.293-.35-.2-.031-.278.136-.356.276-.313.572-.434 1.202-.422 1.84.027 1.436.633 2.58 1.838 3.393.137.093.172.187.129.323-.082.28-.18.552-.266.833-.055.179-.137.217-.329.14a5.526 5.526 0 01-1.736-1.18c-.857-.828-1.631-1.742-2.597-2.458a11.365 11.365 0 00-.689-.471c-.985-.957.13-1.743.388-1.836.27-.098.093-.432-.779-.428-.872.004-1.67.295-2.687.684a3.055 3.055 0 01-.465.137 9.597 9.597 0 00-2.883-.102c-1.885.21-3.39 1.102-4.497 2.623C.082 8.606-.231 10.684.152 12.85c.403 2.284 1.569 4.175 3.36 5.653 1.858 1.533 3.997 2.284 6.438 2.14 1.482-.085 3.133-.284 4.994-1.86.47.234.962.327 1.78.397.63.059 1.236-.03 1.705-.128.735-.156.684-.837.419-.961-2.155-1.004-1.682-.595-2.113-.926 1.096-1.296 2.746-2.642 3.392-7.003.05-.347.007-.565 0-.845-.004-.17.035-.237.23-.256a4.173 4.173 0 001.545-.475c1.396-.763 1.96-2.015 2.093-3.517.02-.23-.004-.467-.247-.588zM11.581 18c-2.089-1.642-3.102-2.183-3.52-2.16-.392.024-.321.471-.235.763.09.288.207.486.371.739.114.167.192.416-.113.603-.673.416-1.842-.14-1.897-.167-1.361-.802-2.5-1.86-3.301-3.307-.774-1.393-1.224-2.887-1.298-4.482-.02-.386.093-.522.477-.592a4.696 4.696 0 011.529-.039c2.132.312 3.946 1.265 5.468 2.774.868.86 1.525 1.887 2.202 2.891.72 1.066 1.494 2.082 2.48 2.914.348.292.625.514.891.677-.802.09-2.14.11-3.054-.614zm1-6.44a.306.306 0 01.415-.287.302.302 0 01.2.288.306.306 0 01-.31.307.303.303 0 01-.304-.308zm3.11 1.596c-.2.081-.399.151-.59.16a1.245 1.245 0 01-.798-.254c-.274-.23-.47-.358-.552-.758a1.73 1.73 0 01.016-.588c.07-.327-.008-.537-.239-.727-.187-.156-.426-.199-.688-.199a.559.559 0 01-.254-.078c-.11-.054-.2-.19-.114-.358.028-.054.16-.186.192-.21.356-.202.767-.136 1.146.016.352.144.618.408 1.001.782.391.451.462.576.685.914.176.265.336.537.445.848.067.195-.019.354-.25.452z"></path>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/GeminiIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const GeminiIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="Gemini"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(255, 255, 255)',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg height={width * 0.75} viewBox="0 0 24 24" width={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>Gemini</title>
+      <path
+        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
+        fill="#3186FF"
+      ></path>
+      <path
+        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
+        fill="url(#lobe-icons-gemini-fill-0)"
+      ></path>
+      <path
+        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
+        fill="url(#lobe-icons-gemini-fill-1)"
+      ></path>
+      <path
+        d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"
+        fill="url(#lobe-icons-gemini-fill-2)"
+      ></path>
+      <defs>
+        <linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-0" x1="7" x2="11" y1="15.5" y2="12">
+          <stop stopColor="#08B962"></stop>
+          <stop offset="1" stopColor="#08B962" stopOpacity="0"></stop>
+        </linearGradient>
+        <linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-1" x1="8" x2="11.5" y1="5.5" y2="11">
+          <stop stopColor="#F94543"></stop>
+          <stop offset="1" stopColor="#F94543" stopOpacity="0"></stop>
+        </linearGradient>
+        <linearGradient gradientUnits="userSpaceOnUse" id="lobe-icons-gemini-fill-2" x1="3.5" x2="17.5" y1="13.5" y2="12">
+          <stop stopColor="#FABC12"></stop>
+          <stop offset=".46" stopColor="#FABC12" stopOpacity="0"></stop>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/GroqIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const GroqIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="Groq"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(245, 80, 54)',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>Groq</title>
+      <path d="M12.036 2c-3.853-.035-7 3-7.036 6.781-.035 3.782 3.055 6.872 6.908 6.907h2.42v-2.566h-2.292c-2.407.028-4.38-1.866-4.408-4.23-.029-2.362 1.901-4.298 4.308-4.326h.1c2.407 0 4.358 1.915 4.365 4.278v6.305c0 2.342-1.944 4.25-4.323 4.279a4.375 4.375 0 01-3.033-1.252l-1.851 1.818A7 7 0 0012.029 22h.092c3.803-.056 6.858-3.083 6.879-6.816v-6.5C18.907 4.963 15.817 2 12.036 2z"></path>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/index.ts
+================
+
+
+================
+File: src/renderer/src/icons/LmStudioIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const LmStudioIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="LM Studio"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundImage: 'linear-gradient(135deg, rgb(108, 120, 239), rgb(79, 20, 190))',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>LM Studio</title>
+      <path
+        d="M2.84 2a1.273 1.273 0 100 2.547h14.107a1.273 1.273 0 100-2.547H2.84zM7.935 5.33a1.273 1.273 0 000 2.548H22.04a1.274 1.274 0 000-2.547H7.935zM3.624 9.935c0-.704.57-1.274 1.274-1.274h14.106a1.274 1.274 0 010 2.547H4.898c-.703 0-1.274-.57-1.274-1.273zM1.273 12.188a1.273 1.273 0 100 2.547H15.38a1.274 1.274 0 000-2.547H1.273zM3.624 16.792c0-.704.57-1.274 1.274-1.274h14.106a1.273 1.273 0 110 2.547H4.898c-.703 0-1.274-.57-1.274-1.273zM13.029 18.849a1.273 1.273 0 100 2.547h9.698a1.273 1.273 0 100-2.547h-9.698z"
+        fillOpacity=".3"
+      ></path>
+      <path d="M2.84 2a1.273 1.273 0 100 2.547h10.287a1.274 1.274 0 000-2.547H2.84zM7.935 5.33a1.273 1.273 0 000 2.548H18.22a1.274 1.274 0 000-2.547H7.935zM3.624 9.935c0-.704.57-1.274 1.274-1.274h10.286a1.273 1.273 0 010 2.547H4.898c-.703 0-1.274-.57-1.274-1.273zM1.273 12.188a1.273 1.273 0 100 2.547H11.56a1.274 1.274 0 000-2.547H1.273zM3.624 16.792c0-.704.57-1.274 1.274-1.274h10.286a1.273 1.273 0 110 2.547H4.898c-.703 0-1.274-.57-1.274-1.273zM13.029 18.849a1.273 1.273 0 100 2.547h5.78a1.273 1.273 0 100-2.547h-5.78z"></path>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/OllamaIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const OllamaIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="Ollama"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(255, 255, 255)',
+      color: 'rgb(0, 0, 0)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>Ollama</title>
+      <path d="M7.905 1.09c.216.085.411.225.588.41.295.306.544.744.734 1.263.191.522.315 1.1.362 1.68a5.054 5.054 0 012.049-.636l.051-.004c.87-.07 1.73.087 2.48.474.101.053.2.11.297.17.05-.569.172-1.134.36-1.644.19-.52.439-.957.733-1.264a1.67 1.67 0 01.589-.41c.257-.1.53-.118.796-.042.401.114.745.368 1.016.737.248.337.434.769.561 1.287.23.934.27 2.163.115 3.645l.053.04.026.019c.757.576 1.284 1.397 1.563 2.35.435 1.487.216 3.155-.534 4.088l-.018.021.002.003c.417.762.67 1.567.724 2.4l.002.03c.064 1.065-.2 2.137-.814 3.19l-.007.01.01.024c.472 1.157.62 2.322.438 3.486l-.006.039a.651.651 0 01-.747.536.648.648 0 01-.54-.742c.167-1.033.01-2.069-.48-3.123a.643.643 0 01.04-.617l.004-.006c.604-.924.854-1.83.8-2.72-.046-.779-.325-1.544-.8-2.273a.644.644 0 01.18-.886l.009-.006c.243-.159.467-.565.58-1.12a4.229 4.229 0 00-.095-1.974c-.205-.7-.58-1.284-1.105-1.683-.595-.454-1.383-.673-2.38-.61a.653.653 0 01-.632-.371c-.314-.665-.772-1.141-1.343-1.436a3.288 3.288 0 00-1.772-.332c-1.245.099-2.343.801-2.67 1.686a.652.652 0 01-.61.425c-1.067.002-1.893.252-2.497.703-.522.39-.878.935-1.066 1.588a4.07 4.07 0 00-.068 1.886c.112.558.331 1.02.582 1.269l.008.007c.212.207.257.53.109.785-.36.622-.629 1.549-.673 2.44-.05 1.018.186 1.902.719 2.536l.016.019a.643.643 0 01.095.69c-.576 1.236-.753 2.252-.562 3.052a.652.652 0 01-1.269.298c-.243-1.018-.078-2.184.473-3.498l.014-.035-.008-.012a4.339 4.339 0 01-.598-1.309l-.005-.019a5.764 5.764 0 01-.177-1.785c.044-.91.278-1.842.622-2.59l.012-.026-.002-.002c-.293-.418-.51-.953-.63-1.545l-.005-.024a5.352 5.352 0 01.093-2.49c.262-.915.777-1.701 1.536-2.269.06-.045.123-.09.186-.132-.159-1.493-.119-2.73.112-3.67.127-.518.314-.95.562-1.287.27-.368.614-.622 1.015-.737.266-.076.54-.059.797.042zm4.116 9.09c.936 0 1.8.313 2.446.855.63.527 1.005 1.235 1.005 1.94 0 .888-.406 1.58-1.133 2.022-.62.375-1.451.557-2.403.557-1.009 0-1.871-.259-2.493-.734-.617-.47-.963-1.13-.963-1.845 0-.707.398-1.417 1.056-1.946.668-.537 1.55-.849 2.485-.849zm0 .896a3.07 3.07 0 00-1.916.65c-.461.37-.722.835-.722 1.25 0 .428.21.829.61 1.134.455.347 1.124.548 1.943.548.799 0 1.473-.147 1.932-.426.463-.28.7-.686.7-1.257 0-.423-.246-.89-.683-1.256-.484-.405-1.14-.643-1.864-.643zm.662 1.21l.004.004c.12.151.095.37-.056.49l-.292.23v.446a.375.375 0 01-.376.373.375.375 0 01-.376-.373v-.46l-.271-.218a.347.347 0 01-.052-.49.353.353 0 01.494-.051l.215.172.22-.174a.353.353 0 01.49.051zm-5.04-1.919c.478 0 .867.39.867.871a.87.87 0 01-.868.871.87.87 0 01-.867-.87.87.87 0 01.867-.872zm8.706 0c.48 0 .868.39.868.871a.87.87 0 01-.868.871.87.87 0 01-.867-.87.87.87 0 01.867-.872zM7.44 2.3l-.003.002a.659.659 0 00-.285.238l-.005.006c-.138.189-.258.467-.348.832-.17.692-.216 1.631-.124 2.782.43-.128.899-.208 1.404-.237l.01-.001.019-.034c.046-.082.095-.161.148-.239.123-.771.022-1.692-.253-2.444-.134-.364-.297-.65-.453-.813a.628.628 0 00-.107-.09L7.44 2.3zm9.174.04l-.002.001a.628.628 0 00-.107.09c-.156.163-.32.45-.453.814-.29.794-.387 1.776-.23 2.572l.058.097.008.014h.03a5.184 5.184 0 011.466.212c.086-1.124.038-2.043-.128-2.722-.09-.365-.21-.643-.349-.832l-.004-.006a.659.659 0 00-.285-.239h-.004z"></path>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/OpenAiCompatibleIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+
+================
+File: src/renderer/src/icons/OpenAiIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const OpenAiIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="OpenAI"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(0, 0, 0)',
+      boxShadow: 'rgba(255, 255, 255, 0.1) 0px 0px 0px 1px inset',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>OpenAI</title>
+      <path d="M21.55 10.004a5.416 5.416 0 00-.478-4.501c-1.217-2.09-3.662-3.166-6.05-2.66A5.59 5.59 0 0010.831 1C8.39.995 6.224 2.546 5.473 4.838A5.553 5.553 0 001.76 7.496a5.487 5.487 0 00.691 6.5 5.416 5.416 0 00.477 4.502c1.217 2.09 3.662 3.165 6.05 2.66A5.586 5.586 0 0013.168 23c2.443.006 4.61-1.546 5.361-3.84a5.553 5.553 0 003.715-2.66 5.488 5.488 0 00-.693-6.497v.001zm-8.381 11.558a4.199 4.199 0 01-2.675-.954c.034-.018.093-.05.132-.074l4.44-2.53a.71.71 0 00.364-.623v-6.176l1.877 1.069c.02.01.033.029.036.05v5.115c-.003 2.274-1.87 4.118-4.174 4.123zM4.192 17.78a4.059 4.059 0 01-.498-2.763c.032.02.09.055.131.078l4.44 2.53c.225.13.504.13.73 0l5.42-3.088v2.138a.068.068 0 01-.027.057L9.9 19.288c-1.999 1.136-4.552.46-5.707-1.51h-.001zM3.023 8.216A4.15 4.15 0 015.198 6.41l-.002.151v5.06a.711.711 0 00.364.624l5.42 3.087-1.876 1.07a.067.067 0 01-.063.005l-4.489-2.559c-1.995-1.14-2.679-3.658-1.53-5.63h.001zm15.417 3.54l-5.42-3.088L14.896 7.6a.067.067 0 01.063-.006l4.489 2.557c1.998 1.14 2.683 3.662 1.529 5.633a4.163 4.163 0 01-2.174 1.807V12.38a.71.71 0 00-.363-.623zm1.867-2.773a6.04 6.04 0 00-.132-.078l-4.44-2.53a.731.731 0 00-.729 0l-5.42 3.088V7.325a.068.068 0 01.027-.057L14.1 4.713c2-1.137 4.555-.46 5.707 1.513.487.833.664 1.809.499 2.757h.001zm-11.741 3.81l-1.877-1.068a.065.065 0 01-.036-.051V6.559c.001-2.277 1.873-4.122 4.181-4.12.976 0 1.92.338 2.671.954-.034.018-.092.05-.131.073l-4.44 2.53a.71.71 0 00-.365.623l-.003 6.173v.002zm1.02-2.168L12 9.25l2.414 1.375v2.75L12 14.75l-2.415-1.375v-2.75z"></path>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/OpenRouterIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const OpenRouterIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="OpenRouter"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(101, 102, 241)',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>OpenRouter</title>
+      <path d="M16.804 1.957l7.22 4.105v.087L16.73 10.21l.017-2.117-.821-.03c-1.059-.028-1.611.002-2.268.11-1.064.175-2.038.577-3.147 1.352L8.345 11.03c-.284.195-.495.336-.68.455l-.515.322-.397.234.385.23.53.338c.476.314 1.17.796 2.701 1.866 1.11.775 2.083 1.177 3.147 1.352l.3.045c.694.091 1.375.094 2.825.033l.022-2.159 7.22 4.105v.087L16.589 22l.014-1.862-.635.022c-1.386.042-2.137.002-3.138-.162-1.694-.28-3.26-.926-4.881-2.059l-2.158-1.5a21.997 21.997 0 00-.755-.498l-.467-.28a55.927 55.927 0 00-.76-.43C2.908 14.73.563 14.116 0 14.116V9.888l.14.004c.564-.007 2.91-.622 3.809-1.124l1.016-.58.438-.274c.428-.28 1.072-.726 2.686-1.853 1.621-1.133 3.186-1.78 4.881-2.059 1.152-.19 1.974-.213 3.814-.138l.02-1.907z"></path>
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/RequestyIcon.tsx
+================
+import requestyIcon from './requesty.png';
+⋮----
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+
+================
+File: src/renderer/src/icons/VertexAiIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const VertexAiIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="VertexAI"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(66, 133, 244)',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>VertexAI</title>
+      <path d="M11.995 20.216a1.892 1.892 0 100 3.785 1.892 1.892 0 000-3.785zm0 2.806a.927.927 0 11.927-.914.914.914 0 01-.927.914z"></path>
+      <path
+        clipRule="evenodd"
+        d="M21.687 14.144c.237.038.452.16.605.344a.978.978 0 01-.18 1.3l-8.24 6.082a1.892 1.892 0 00-1.147-1.508l8.28-6.08a.991.991 0 01.682-.138z"
+      ></path>
+      <path clipRule="evenodd" d="M10.122 21.842l-8.217-6.066a.952.952 0 01-.206-1.287.978.978 0 011.287-.206l8.28 6.08a1.893 1.893 0 00-1.144 1.479z"></path>
+      <path d="M4.273 4.475a.978.978 0 01-.965-.965V1.09a.978.978 0 111.943 0v2.42a.978.978 0 01-.978.965zM4.247 13.034a.978.978 0 100-1.956.978.978 0 000 1.956zM4.247 10.19a.978.978 0 100-1.956.978.978 0 000 1.956zM4.247 7.332a.978.978 0 100-1.956.978.978 0 000 1.956z"></path>
+      <path d="M19.718 7.307a.978.978 0 01-.965-.979v-2.42a.965.965 0 011.93 0v2.42a.964.964 0 01-.965.979zM19.743 13.047a.978.978 0 100-1.956.978.978 0 000 1.956zM19.743 10.151a.978.978 0 100-1.956.978.978 0 000 1.956zM19.743 2.068a.978.978 0 100-1.956.978.978 0 000 1.956z"></path>
+      <path d="M11.995 15.917a.978.978 0 01-.965-.965v-2.459a.978.978 0 011.943 0v2.433a.976.976 0 01-.978.991zM11.995 18.762a.978.978 0 100-1.956.978.978 0 000 1.956zM11.995 10.64a.978.978 0 100-1.956.978.978 0 000 1.956zM11.995 7.783a.978.978 0 100-1.956.978.978 0 000 1.956z"></path>
+      <path d="M15.856 10.177a.978.978 0 01-.965-.965v-2.42a.977.977 0 011.702-.763.979.979 0 01.241.763v2.42a.978.978 0 01-.978.965zM15.869 4.913a.978.978 0 100-1.956.978.978 0 000 1.956zM15.869 15.853a.978.978 0 100-1.956.978.978 0 000 1.956zM15.869 12.996a.978.978 0 100-1.956.978.978 0 000 1.956z"></path>
+      <path d="M8.121 15.853a.978.978 0 100-1.956.978.978 0 000 1.956zM8.121 7.783a.978.978 0 100-1.956.978.978 0 000 1.956zM8.121 4.913a.978.978 0 100-1.957.978.978 0 000 1.957zM8.134 12.996a.978.978 0 01-.978-.94V9.611a.965.965 0 011.93 0v2.445a.966.966 0 01-.952.94z"></path>
+    </svg>
+  </div>
+);
+
+================
 File: src/renderer/src/pages/Home.tsx
 ================
 import { ModelInfo, ProjectData } from '@common/types';
 import { useCallback, useEffect, useState } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
+import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
@@ -12758,6 +14385,7 @@ import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
 import { useApi } from '@/context/ApiContext';
+import { ModelLibrary } from '@/components/ModelLibrary';
 ⋮----
 const handleReorderProjects = async (reorderedProjects: ProjectData[]) =>
 ⋮----
@@ -12798,7 +14426,7 @@ import { SettingsData } from '@common/types';
 import { useSettings } from '@/context/SettingsContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
-import { ModelProvidersSettings } from '@/components/settings/ModelProvidersSettings';
+import { OnboardingProviderSetup } from '@/components/onboarding/OnboardingProviderSetup';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { Button } from '@/components/common/Button';
 import { OnboardingStepper } from '@/components/onboarding/OnboardingStepper';
@@ -12841,7 +14469,6 @@ import { LlmProviderName } from '@common/agent';
 import { useApi } from '@/context/ApiContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
-import { ModelProvidersSettings } from '@/components/settings/ModelProvidersSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
 import { ServerSettings } from '@/components/settings/ServerSettings';
@@ -12858,10 +14485,6 @@ type Props = {
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;
 };
-⋮----
-const handleSwitchToAiderTab = () =>
-⋮----
-setSelectedTabIndex(2); // Aider tab is at index 2
 
 ================
 File: src/renderer/src/themes/theme-aurora.scss
@@ -14429,7 +16052,7 @@ import { ROUTES } from '@/utils/routes';
 ⋮----
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { ApiProvider } from '@/context/ApiContext';
-import { ModelProvider } from '@/contexts/ModelProvider';
+import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 ⋮----
 const ThemeAndFontManager = () =>
 ⋮----
@@ -14440,6 +16063,11 @@ const ThemeAndFontManager = () =>
 const App = () =>
 ⋮----
 useEffect(() =>
+
+================
+File: src/renderer/src/env.d.ts
+================
+/// <reference types="vite/client" />
 
 ================
 File: src/renderer/src/fonts.css
@@ -14776,6 +16404,7 @@ File: package.json
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^2.2.12",
     "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/azure": "^1.3.25",
     "@ai-sdk/cerebras": "^0.2.16",
     "@ai-sdk/deepseek": "^0.2.16",
     "@ai-sdk/google": "^1.2.22",

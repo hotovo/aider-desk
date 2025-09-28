@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { twMerge } from 'tailwind-merge';
 
 type ButtonVariant = 'contained' | 'text' | 'outline';
 type ButtonColor = 'primary' | 'secondary' | 'danger';
@@ -13,6 +14,7 @@ type Props = {
   disabled?: boolean;
   autoFocus?: boolean;
   size?: ButtonSize;
+  type?: 'button' | 'submit' | 'reset';
 };
 
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
@@ -48,6 +50,7 @@ export const Button = ({
   disabled = false,
   autoFocus = false,
   size = 'md',
+  type = 'button',
 }: Props) => {
   const baseColorClasses = disabled
     ? 'bg-bg-tertiary-strong text-text-muted cursor-not-allowed hover:bg-bg-tertiary-strong hover:text-text-muted'
@@ -59,10 +62,11 @@ export const Button = ({
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
       autoFocus={autoFocus}
-      className={`flex items-center space-x-1 rounded-lg font-medium transition-colors ${borderClass} ${baseColorClasses} ${baseSizeClasses} ${className}`}
+      className={twMerge('flex items-center space-x-1 rounded-lg font-medium transition-colors', borderClass, baseColorClasses, baseSizeClasses, className)}
     >
       {children}
     </button>

@@ -11,6 +11,7 @@ import {
   ContextUserMessage,
   McpTool,
   PromptContext,
+  ProviderProfile,
   SettingsData,
   ToolApprovalState,
   UsageReportData,
@@ -31,7 +32,7 @@ import {
   wrapLanguageModel,
 } from 'ai';
 import { delay, extractServerNameToolName } from '@common/utils';
-import { getLlmProviderConfig, LlmProviderName } from '@common/agent';
+import { LlmProvider, LlmProviderName } from '@common/agent';
 // @ts-expect-error gpt-tokenizer is not typed
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
@@ -46,10 +47,9 @@ import { createTodoToolset } from './tools/todo';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-providers';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG, ANSWER_RESPONSE_START_TAG } from './utils';
+import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
@@ -65,15 +65,17 @@ import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
 import { createSubagentsToolset } from '@/agent/tools/subagents';
 
+const MAX_RETRIES = 3;
+
 export class Agent {
-  private abortController: AbortController | null = null;
+  private abortControllers: Record<string, AbortController> = {};
   private aiderEnv: Record<string, string> | null = null;
   private lastToolCallTime: number = 0;
 
   constructor(
     private readonly store: Store,
     private readonly mcpManager: McpManager,
-    private readonly modelInfoManager: ModelManager,
+    private readonly modelManager: ModelManager,
     private readonly telemetryManager: TelemetryManager,
   ) {}
 
@@ -280,6 +282,7 @@ export class Agent {
   private async getAvailableTools(
     project: Project,
     profile: AgentProfile,
+    llmProvider: LlmProvider,
     messages?: ContextMessage[],
     resultMessages?: ContextMessage[],
     abortSignal?: AbortSignal,
@@ -315,7 +318,7 @@ export class Agent {
         }
 
         acc[normalizedToolId] = this.convertMpcToolToAiSdkTool(
-          profile.provider,
+          llmProvider.name,
           mcpConnector.serverName,
           project,
           profile,
@@ -506,6 +509,14 @@ export class Agent {
   ): Promise<ContextMessage[]> {
     const settings = this.store.getSettings();
 
+    const providers = this.store.getProviders();
+    const provider = providers.find((p) => p.id === profile.provider);
+    if (!provider) {
+      logger.error(`Provider ${profile.provider} not found`);
+      project.addLogMessage('error', 'Selected model is not configured. Select another model and try again.', false, promptContext);
+      return [];
+    }
+
     this.telemetryManager.captureAgentRun(profile);
 
     logger.debug('runAgent', {
@@ -520,13 +531,13 @@ export class Agent {
     // Create new abort controller for this run only if abortSignal is not provided
     const shouldCreateAbortController = !abortSignal;
     if (shouldCreateAbortController) {
-      this.abortController = new AbortController();
+      this.abortControllers[project.baseDir] = new AbortController();
     }
-    const effectiveAbortSignal = abortSignal || this.abortController?.signal;
+    const effectiveAbortSignal = abortSignal || this.abortControllers[project.baseDir]?.signal;
 
-    const llmProvider = getLlmProviderConfig(profile.provider, settings);
-    const cacheControl = getCacheControl(profile, llmProvider);
-    const providerOptions = getProviderOptions(llmProvider);
+    const llmProvider = provider.provider;
+    const cacheControl = this.modelManager.getCacheControl(profile, llmProvider);
+    const providerOptions = this.modelManager.getProviderOptions(llmProvider);
 
     const userRequestMessage: ContextUserMessage = {
       id: promptContext?.id || uuidv4(),
@@ -549,7 +560,7 @@ export class Agent {
       project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`, false, promptContext);
     }
 
-    const toolSet = await this.getAvailableTools(project, profile, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
+    const toolSet = await this.getAvailableTools(project, profile, llmProvider, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
     logger.debug('Tools:', {
@@ -559,7 +570,7 @@ export class Agent {
     let currentResponseId: string = uuidv4();
 
     try {
-      const model = createLlm(llmProvider, profile.model, await this.getLlmEnv(project));
+      const model = this.modelManager.createLlm(provider, profile.model, await this.getLlmEnv(project));
 
       if (!systemPrompt) {
         systemPrompt = await getSystemPrompt(project.baseDir, profile);
@@ -790,7 +801,7 @@ export class Agent {
               return;
             }
 
-            responseMessages = this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile, promptContext);
+            responseMessages = this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile, provider, promptContext);
             currentResponseId = uuidv4();
             hasReasoning = false;
           },
@@ -821,11 +832,20 @@ export class Agent {
         messages.push(...responseMessages);
         resultMessages.push(...responseMessages);
 
-        if ((finishReason === 'unknown' || finishReason === 'other') && retryCount < 3) {
-          logger.warn(`Finish reason: ${finishReason}. Retrying...`);
+        if ((finishReason === 'unknown' || finishReason === 'other') && retryCount < MAX_RETRIES) {
+          logger.debug(`Finish reason is "${finishReason}". Retrying...`);
           retryCount++;
           continue;
         }
+
+        // Check for 'stop' with trailing tool message
+        const lastMessage = responseMessages[responseMessages.length - 1];
+        if (finishReason === 'stop' && lastMessage?.role === 'tool' && retryCount < MAX_RETRIES) {
+          logger.debug('Finish reason is "stop" but last message is a tool call. Retrying...');
+          retryCount++;
+          continue;
+        }
+
         retryCount = 0;
 
         if (finishReason === 'length') {
@@ -857,7 +877,7 @@ export class Agent {
     } finally {
       // Clean up abort controller only if we created it
       if (shouldCreateAbortController) {
-        this.abortController = null;
+        delete this.abortControllers[project.baseDir];
       }
 
       // Always send a final "finished" message, regardless of whether there was text or tools
@@ -946,12 +966,18 @@ export class Agent {
   async estimateTokens(project: Project, profile: AgentProfile): Promise<number> {
     try {
       const settings = this.store.getSettings();
+      const providers = this.store.getProviders();
+      const provider = providers.find((p) => p.id === profile.provider);
+      if (!provider) {
+        logger.warn(`Estimation failed: Provider ${profile.provider} not found`);
+        return 0;
+      }
+
       const messages = await this.prepareMessages(project, profile, project.getContextMessages(), project.getContextFiles());
-      const toolSet = await this.getAvailableTools(project, profile);
+      const toolSet = await this.getAvailableTools(project, profile, provider.provider);
       const systemPrompt = await getSystemPrompt(project.baseDir, profile);
 
-      const llmProvider = getLlmProviderConfig(profile.provider, settings);
-      const cacheControl = getCacheControl(profile, llmProvider);
+      const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
 
       const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
       const userRequestMessageIndex = lastUserIndex >= 0 ? lastUserIndex : 0;
@@ -982,9 +1008,9 @@ export class Agent {
     }
   }
 
-  interrupt() {
-    logger.info('Interrupting Agent run');
-    this.abortController?.abort();
+  interrupt(baseDir: string) {
+    logger.info('Interrupting Agent run', { baseDir });
+    this.abortControllers[baseDir]?.abort();
   }
 
   private processStep<TOOLS extends ToolSet>(
@@ -992,6 +1018,7 @@ export class Agent {
     { reasoning, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
     project: Project,
     profile: AgentProfile,
+    provider: ProviderProfile,
     promptContext?: PromptContext,
   ): ContextMessage[] {
     logger.info(`Step finished. Reason: ${finishReason}`, {
@@ -1005,8 +1032,8 @@ export class Agent {
     });
 
     const messages: ContextMessage[] = [];
-    const messageCost = calculateCost(this.modelInfoManager, profile, usage.promptTokens, usage.completionTokens, providerMetadata);
-    const usageReport: UsageReportData = getUsageReport(project, profile, messageCost, usage, providerMetadata);
+    const messageCost = this.modelManager.calculateCost(provider, profile.model, usage.promptTokens, usage.completionTokens, providerMetadata);
+    const usageReport: UsageReportData = this.modelManager.getUsageReport(project, provider, profile.model, messageCost, usage, providerMetadata);
 
     // Process text/reasoning content
     if (reasoning || text?.trim()) {

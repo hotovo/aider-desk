@@ -5,7 +5,7 @@ import {
   InputHistoryData,
   LogData,
   Mode,
-  ModelInfo,
+  Model,
   ModelsData,
   ProjectData,
   QuestionData,
@@ -24,6 +24,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { clsx } from 'clsx';
 import { getActiveAgentProfile } from '@common/utils';
 import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
+import { getProviderModelId } from '@common/agent';
 
 import {
   CommandOutputMessage,
@@ -56,6 +57,7 @@ import 'react-resizable/css/styles.css';
 import { useSearchText } from '@/hooks/useSearchText';
 import { useApi } from '@/context/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -63,22 +65,21 @@ type AddFileDialogOptions = {
 
 type Props = {
   project: ProjectData;
-  modelsInfo: Record<string, ModelInfo>;
   isActive?: boolean;
 };
 
-export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) => {
+export const ProjectView = ({ project, isActive = false }: Props) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
   const { isMobile } = useResponsive();
   const api = useApi();
+  const { models } = useModelProviders();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [processing, setProcessing] = useState(false);
   const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
   const [allFiles, setAllFiles] = useState<string[]>([]);
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [autocompletionWords, setAutocompletionWords] = useState<string[]>([]);
   const [aiderModelsData, setAiderModelsData] = useState<ModelsData | null>(null);
   const [inputHistory, setInputHistory] = useState<string[]>([]);
@@ -98,23 +99,21 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   const terminalViewRef = useRef<TerminalViewRef | null>(null);
 
   const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
-
-  const maxInputTokens = useMemo(() => {
-    if (!projectSettings) {
-      return 0;
-    }
-    if (projectSettings.currentMode === 'agent') {
+  const currentModel = useMemo(() => {
+    let model: Model | undefined;
+    if (projectSettings?.currentMode === 'agent') {
       const activeAgentProfile = getActiveAgentProfile(settings, projectSettings);
       if (activeAgentProfile) {
-        const modelParts = activeAgentProfile.model.split('/');
-
-        return modelsInfo[modelParts[modelParts.length - 1]]?.maxInputTokens || 0;
+        model = models.find((m) => m.id === activeAgentProfile.model && m.providerId === activeAgentProfile.provider);
       }
-      return 0;
     } else {
-      return aiderModelsData?.info?.max_input_tokens ?? 0;
+      model = models.find((m) => getProviderModelId(m) === aiderModelsData?.mainModel);
     }
-  }, [projectSettings, settings, modelsInfo, aiderModelsData?.info?.max_input_tokens]);
+
+    return model;
+  }, [projectSettings, settings, models, aiderModelsData?.mainModel]);
+
+  const maxInputTokens = currentModel?.maxInputTokens || 0;
 
   const todoListVisible = useMemo(() => {
     return projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
@@ -462,9 +461,8 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const handleUpdateAutocompletion = ({ allFiles, models, words }: AutocompletionData) => {
+    const handleUpdateAutocompletion = ({ allFiles, words }: AutocompletionData) => {
       setAllFiles(allFiles);
-      setAvailableModels(models);
       setAutocompletionWords([...words, ...allFiles]);
     };
 
@@ -834,7 +832,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           ref={projectTopBarRef}
           baseDir={project.baseDir}
           modelsData={aiderModelsData}
-          allModels={availableModels}
           mode={projectSettings.currentMode}
           renderMarkdown={projectSettings.renderMarkdown}
           onModelsChange={handleModelChange}
@@ -953,7 +950,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               allFiles={allFiles}
               tokensInfo={tokensInfo}
               aiderTotalCost={aiderTotalCost}
-              maxInputTokens={maxInputTokens}
+              maxInputTokens={currentModel?.maxInputTokens || 0}
               clearMessages={clearMessages}
               runCommand={runCommand}
               restartProject={restartProject}

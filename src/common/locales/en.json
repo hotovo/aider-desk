@@ -102,7 +102,8 @@
       "sort": "Sort",
       "sortDescription": "Sort providers by price or throughput.",
       "requireParameters": "Require Parameters",
-      "requireParametersDescription": "Only use providers that support all parameters in your request."
+      "requireParametersDescription": "Only use providers that support all parameters in your request.",
+      "setupLater": "You can also configure the providers and models in Model Library later."
     },
     "agent": {
       "title": "Meet Your AI Agent",
@@ -160,7 +161,63 @@
     "labelMultiple": "Models",
     "selectLabel": "Model",
     "placeholder": "e.g. anthropic/claude-sonnet-4-20250514",
-    "chooseModelsToAdd": "Choose models to add..."
+    "chooseModelsToAdd": "Choose models to add...",
+    "library": {
+      "all": "All"
+    }
+  },
+  "modelLibrary": {
+    "title": "Model Library",
+    "search": "Search Models",
+    "providers": "Providers",
+    "all": "All",
+    "selectProvider": "Select a Provider to Configure",
+    "profileForm": {
+      "title": "Configure Profile for {{provider}} Provider",
+      "name": "Profile Name",
+      "id": "Provider ID (prefix)",
+      "parameters": "Provider Parameters",
+      "headers": "Custom Headers",
+      "headerKey": "Header Name",
+      "headerValue": "Header Value",
+      "addHeader": "Add Header",
+      "test": "Test & Load Models"
+    },
+    "noProvidersConfigured": "No providers configured yet",
+    "addProvider": "Add Provider",
+    "addFirstProvider": "Add Your First Provider",
+    "searchPlaceholder": "Search models...",
+    "showingAllModels": "Showing {{count}} models from all providers",
+    "showingModelsFromProviders": "Showing {{modelCount}} models from {{providerCount}} providers",
+    "noModelsMatchSearch": "No models match your search",
+    "selectProvidersToViewModels": "Select provider profiles above to view their models",
+    "noModelsFromSelectedProviders": "No models available from selected providers",
+    "hidden": "Hidden",
+    "deleteProfileTitle": "Delete Profile",
+    "deleteProfileConfirm": "Are you sure you want to delete the profile '{{name}}'?",
+    "addModel": "Add Model",
+    "editModel": "Edit Model",
+    "provider": "Provider",
+    "modelId": "Model ID",
+    "modelIdPlaceholder": "e.g. custom-gpt-4-turbo",
+    "maxInputTokens": "Context Window",
+    "maxOutputTokens": "Max Output Tokens",
+    "cacheWrites": "Cache Writes",
+    "cachedInput": "Cached Input",
+    "inputCost": "Input",
+    "outputCost": "Output",
+    "inputTokenCost": "Input Cost per 1M Tokens",
+    "outputTokenCost": "Output Cost per 1M Tokens",
+    "cacheReadInputTokenCost": "Cache Read Cost per 1M Tokens",
+    "cacheWriteInputTokenCost": "Cache Write Cost per 1M Tokens",
+    "supportsTools": "Supports Tools",
+    "errors": {
+      "idRequired": "Model ID is required",
+      "providerRequired": "Provider is required",
+      "invalidTokenCount": "Token count must be a positive number",
+      "invalidCost": "Cost must be a non-negative number",
+      "duplicateId": "Provider ID already exists"
+    }
   },
   "openai": {
     "apiKey": "API Key",
@@ -226,6 +283,12 @@
     "baseUrl": "Base URL",
     "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
   },
+  "azure": {
+    "apiKey": "API Key",
+    "resourceName": "Resource Name",
+    "apiVersion": "API Version",
+    "addCustomModelInfo": "Models cannot be loaded automatically for Azure provider and you need to add them manually using ”+ Add Model”, ensuring the model name matches the deployment name."
+  },
   "providers": {
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
@@ -239,7 +302,8 @@
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
-    "vertex-ai": "Vertex AI"
+    "vertex-ai": "Vertex AI",
+    "azure": "Azure"
   },
   "select": {
     "placeholder": "Select an option",
@@ -301,7 +365,7 @@
       "autoApprove": "Auto approve",
       "selectOrCreateProfile": "Select or create new agent profile",
       "newProfileName": "New Profile",
-      "envVarPlaceholder": "{{envVar}} env var is used if left empty",
+      "envVarPlaceholder": "{{envVar}}",
       "envVarFoundPlaceholder": "Found in: {{source}}",
       "createNewProfile": "Create New",
       "genericTools": "Tools",
@@ -546,10 +610,12 @@
     "reasoning": "Reasoning",
     "thinkingTokens": "Thinking tokens",
     "loadingModel": "Loading model...",
-    "searchPlaceholder": "Search models or enter custom name...",
+    "searchPlaceholder": "Search models...",
+    "searchPlaceholderOrCustom": "Search models or enter custom name...",
     "removePreferred": "Remove from preferred models",
     "invalidModelSelection": "Invalid format of the model. Expected format is 'provider/model', e.g. 'openai/gpt-4'.",
-    "providerNotSupported": "Provider '{{provider}}' is not supported. Supported providers are: {{providers}}."
+    "providerNotSupported": "Provider '{{provider}}' is not supported. Supported providers are: {{providers}}.",
+    "selectModel": "Select model..."
   },
   "modelInfo": {
     "noInfo": "No model information available.",
@@ -787,7 +853,8 @@
     "toggleMarkdown": "Markdown rendering",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
     "aider": "Aider",
-    "toggleSidebar": "Toggle sidebar"
+    "toggleSidebar": "Toggle sidebar",
+    "modelLibrary": "Model Library"
   },
   "reasoningEffort": {
     "label": "Reasoning",

@@ -1,40 +1,82 @@
-import { ModelInfo, ProviderModels, SettingsData } from '@common/types';
-import { AVAILABLE_PROVIDERS, LlmProviderName } from '@common/agent';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-import { loadOllamaModels } from './providers/ollama';
-import { loadLmStudioModels } from './providers/lm-studio';
-import { loadOpenAiModels } from './providers/openai';
-import { loadAnthropicModels } from './providers/anthropic';
-import { loadGeminiModels } from './providers/gemini';
-import { loadBedrockModels } from './providers/bedrock';
-import { loadDeepseekModels } from './providers/deepseek';
-import { loadGroqModels } from './providers/groq';
-import { loadCerebrasModels } from './providers/cerebras';
-import { loadOpenaiCompatibleModels } from './providers/openai-compatible';
-import { loadOpenrouterModels } from './providers/openrouter';
-import { loadRequestyModels } from './providers/requesty';
-import { loadVertexAIModels } from './providers/vertex-ai';
+import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
+import { AgentProfile, Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, UsageReportData } from '@common/types';
 
+import { anthropicProviderStrategy } from './providers/anthropic';
+import { azureProviderStrategy } from './providers/azure';
+import { bedrockProviderStrategy } from './providers/bedrock';
+import { cerebrasProviderStrategy } from './providers/cerebras';
+import { deepseekProviderStrategy } from './providers/deepseek';
+import { geminiProviderStrategy } from './providers/gemini';
+import { groqProviderStrategy } from './providers/groq';
+import { lmStudioProviderStrategy } from './providers/lm-studio';
+import { ollamaProviderStrategy } from './providers/ollama';
+import { openaiProviderStrategy } from './providers/openai';
+import { openaiCompatibleProviderStrategy } from './providers/openai-compatible';
+import { openrouterProviderStrategy } from './providers/openrouter';
+import { requestyProviderStrategy } from './providers/requesty';
+import { vertexAiProviderStrategy } from './providers/vertex-ai';
+
+import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
+
+import { AIDER_DESK_DATA_DIR, AIDER_DESK_CACHE_DIR } from '@/constants';
 import logger from '@/logger';
 import { Store } from '@/store';
 import { EventManager } from '@/events';
+import { Project } from '@/project/project';
+import { AiderModelMapping, CacheControl, LlmProviderRegistry } from '@/models/types';
 
-const MODEL_INFO_URL = 'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json';
+const MODELS_META_URL = 'https://models.dev/api.json';
+const MODELS_FILE = path.join(AIDER_DESK_DATA_DIR, 'models.json');
 
-interface RawModelData {
-  max_input_tokens?: number;
-  max_output_tokens?: number;
-  input_cost_per_token?: number;
-  output_cost_per_token?: number;
-  supports_function_calling?: boolean;
-  cache_read_input_token_cost?: number;
-  // Add other fields from the JSON if needed, marking them as optional
-}
+type ModelsMetaResponse = Record<
+  string,
+  {
+    models: Record<
+      string,
+      {
+        id: string;
+        cost?: {
+          input?: number;
+          output?: number;
+          cache_read?: number;
+          cache_write?: number;
+        };
+        limit: {
+          context: number;
+          output: number;
+        };
+      }
+    >;
+  }
+>;
 
 export class ModelManager {
   private readonly modelsInfo: Record<string, ModelInfo> = {};
-  private providerModels?: ProviderModels;
   private readonly initPromise: Promise<void>;
+  private providerModels: Record<string, Model[]> = {};
+  private providerErrors: Record<string, string> = {};
+  private modelOverrides: Model[] = [];
+
+  // Provider registry for strategy pattern
+  private providerRegistry: LlmProviderRegistry = {
+    anthropic: anthropicProviderStrategy,
+    azure: azureProviderStrategy,
+    bedrock: bedrockProviderStrategy,
+    cerebras: cerebrasProviderStrategy,
+    deepseek: deepseekProviderStrategy,
+    gemini: geminiProviderStrategy,
+    groq: groqProviderStrategy,
+    lmstudio: lmStudioProviderStrategy,
+    ollama: ollamaProviderStrategy,
+    openai: openaiProviderStrategy,
+    'openai-compatible': openaiCompatibleProviderStrategy,
+    openrouter: openrouterProviderStrategy,
+    requesty: requestyProviderStrategy,
+    'vertex-ai': vertexAiProviderStrategy,
+  };
 
   constructor(
     private store: Store,
@@ -47,7 +89,11 @@ export class ModelManager {
     try {
       logger.info('Initializing ModelInfoManager...');
 
-      await Promise.all([this.fetchAndProcessModelInfo(), this.loadProviderModels()]);
+      this.updateEnvVarsProviders();
+
+      await this.loadModelsInfo();
+      await this.loadModelOverrides();
+      await this.loadProviderModels(this.store.getProviders());
 
       logger.info('ModelInfoManager initialized successfully.', {
         modelCount: Object.keys(this.modelsInfo).length,
@@ -57,45 +103,99 @@ export class ModelManager {
     }
   }
 
-  private async fetchAndProcessModelInfo(): Promise<void> {
-    const response = await fetch(MODEL_INFO_URL);
-    if (!response.ok) {
-      logger.error('Failed to fetch model info:', {
-        status: response.status,
-        statusText: response.statusText,
-      });
-      throw new Error('Failed to fetch model info');
+  private async loadModelsInfo(): Promise<void> {
+    const cacheFile = path.join(AIDER_DESK_CACHE_DIR, 'models-meta.json');
+    let cacheLoaded = false;
+
+    // Try to load from cache first
+    try {
+      await fs.access(cacheFile);
+      const cachedData = await fs.readFile(cacheFile, 'utf-8');
+      const cachedJson = JSON.parse(cachedData) as ModelsMetaResponse;
+      this.processModelsMeta(cachedJson);
+      logger.info('Loaded models info from cache');
+      cacheLoaded = true;
+    } catch {
+      // Cache file doesn't exist or is invalid, we'll fetch fresh data
+      logger.info('Cache file not found or invalid, fetching fresh data');
     }
-    const data = (await response.json()) as Record<string, RawModelData>;
 
-    for (const key in data) {
-      if (key === 'sample_spec') {
-        // Skip the sample_spec entry
+    const fetchFreshDataAndCache = async (cacheFile: string): Promise<void> => {
+      const response = await fetch(MODELS_META_URL);
+      if (!response.ok) {
+        logger.error('Failed to fetch model info:', {
+          status: response.status,
+          statusText: response.statusText,
+        });
+        throw new Error('Failed to fetch model info');
+      }
+      const data = (await response.json()) as ModelsMetaResponse;
+      this.processModelsMeta(data);
+
+      // Save the fresh data to cache
+      try {
+        await fs.mkdir(AIDER_DESK_CACHE_DIR, { recursive: true });
+        await fs.writeFile(cacheFile, JSON.stringify(data, null, 2));
+        logger.info('Saved models info to cache');
+      } catch (error) {
+        logger.error('Failed to save models info to cache:', error);
+      }
+    };
+
+    // Fetch fresh data in background if cache was loaded, otherwise await it
+    const freshDataPromise = fetchFreshDataAndCache(cacheFile);
+
+    if (cacheLoaded) {
+      freshDataPromise.catch((error) => {
+        logger.error('Background fetch of fresh models data failed:', error);
+      });
+    } else {
+      await freshDataPromise;
+    }
+  }
+
+  private processModelsMeta(data: ModelsMetaResponse) {
+    for (const providerId in data) {
+      const providerData = data[providerId];
+      if (!providerData.models) {
         continue;
       }
-      const modelData = data[key];
-      // Ensure modelData is not undefined and has the expected properties
-      if (
-        !modelData ||
-        typeof modelData.max_input_tokens === 'undefined' ||
-        typeof modelData.max_output_tokens === 'undefined' ||
-        typeof modelData.input_cost_per_token === 'undefined' ||
-        typeof modelData.output_cost_per_token === 'undefined'
-      ) {
-        // console.warn(`Skipping model ${key} due to missing or invalid data`);
-        continue;
+
+      for (const modelKey in providerData.models) {
+        const modelData = providerData.models[modelKey];
+        const existingModelInfo = this.modelsInfo[modelKey];
+
+        if (existingModelInfo) {
+          // Add properties only if they don't exist
+          if (!existingModelInfo.maxInputTokens) {
+            existingModelInfo.maxInputTokens = modelData.limit.context;
+          }
+          if (!existingModelInfo.maxOutputTokens) {
+            existingModelInfo.maxOutputTokens = modelData.limit.output;
+          }
+          if (!existingModelInfo.inputCostPerToken && modelData.cost?.input) {
+            existingModelInfo.inputCostPerToken = modelData.cost.input / 1_000_000;
+          }
+          if (!existingModelInfo.outputCostPerToken && modelData.cost?.output) {
+            existingModelInfo.outputCostPerToken = modelData.cost.output / 1_000_000;
+          }
+          if (!existingModelInfo.cacheReadInputTokenCost && modelData.cost?.cache_read) {
+            existingModelInfo.cacheReadInputTokenCost = modelData.cost.cache_read / 1_000_000;
+          }
+          if (!existingModelInfo.cacheWriteInputTokenCost && modelData.cost?.cache_write) {
+            existingModelInfo.cacheReadInputTokenCost = modelData.cost.cache_write / 1_000_000;
+          }
+        } else {
+          this.modelsInfo[modelData.id] = {
+            maxInputTokens: modelData.limit.context,
+            maxOutputTokens: modelData.limit.output,
+            inputCostPerToken: (modelData.cost?.input || 0) / 1_000_000,
+            outputCostPerToken: (modelData.cost?.output || 0) / 1_000_000,
+            cacheReadInputTokenCost: modelData.cost?.cache_read ? modelData.cost.cache_read / 1_000_000 : undefined,
+            cacheWriteInputTokenCost: modelData.cost?.cache_write ? modelData.cost.cache_write / 1_000_000 : undefined,
+          } satisfies ModelInfo;
+        }
       }
-
-      const modelName = key.includes('/') ? key.substring(key.lastIndexOf('/') + 1) : key;
-
-      this.modelsInfo[modelName] = {
-        maxInputTokens: modelData.max_input_tokens,
-        maxOutputTokens: modelData.max_output_tokens,
-        inputCostPerToken: modelData.input_cost_per_token,
-        outputCostPerToken: modelData.output_cost_per_token,
-        cacheReadInputTokenCost: modelData.cache_read_input_token_cost,
-        supportsTools: modelData.supports_function_calling === true,
-      };
     }
   }
 
@@ -104,20 +204,40 @@ export class ModelManager {
     return this.modelsInfo[modelParts[modelParts.length - 1]];
   }
 
-  private getChangedProviders(oldProviders: Record<string, unknown>, newProviders: Record<string, unknown>): LlmProviderName[] {
-    return AVAILABLE_PROVIDERS.filter((key) => JSON.stringify(oldProviders?.[key]) !== JSON.stringify(newProviders?.[key]));
+  private createEnvVarProvider(providerName: LlmProviderName): ProviderProfile {
+    return {
+      id: providerName,
+      provider: getDefaultProviderParams(providerName),
+    };
   }
 
-  async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {
-    const changedProviders = this.getChangedProviders(oldSettings.llmProviders, newSettings.llmProviders);
-    if (changedProviders.length === 0) {
-      return false;
+  private getChangedProviders(oldProviders: ProviderProfile[], newProviders: ProviderProfile[]): ProviderProfile[] {
+    const oldMap = new Map(oldProviders.map((p) => [p.id, p]));
+    const changed = new Set<ProviderProfile>();
+
+    // Check for added/modified providers
+    for (const newProfile of newProviders) {
+      const oldProfile = oldMap.get(newProfile.id);
+      if (!oldProfile || JSON.stringify(oldProfile) !== JSON.stringify(newProfile)) {
+        changed.add(newProfile);
+      }
     }
 
-    await this.initPromise;
-    await this.loadProviderModels(changedProviders);
+    return Array.from(changed);
+  }
 
-    return true;
+  async providersChanged(oldProviders: ProviderProfile[], newProviders: ProviderProfile[]) {
+    await this.initPromise;
+
+    const removedProviders = oldProviders.filter((p) => !newProviders.find((np) => np.id === p.id));
+    for (const removedProvider of removedProviders) {
+      delete this.providerErrors[removedProvider.id];
+    }
+
+    const changedProviderProfiles = this.getChangedProviders(oldProviders, newProviders);
+    await this.loadProviderModels(changedProviderProfiles);
+
+    return changedProviderProfiles.length > 0 || removedProviders.length > 0;
   }
 
   async getAllModelsInfo(): Promise<Record<string, ModelInfo>> {
@@ -125,84 +245,279 @@ export class ModelManager {
     return this.modelsInfo;
   }
 
-  private async loadProviderModels(providersToLoad: LlmProviderName[] = AVAILABLE_PROVIDERS): Promise<void> {
-    if (!this.providerModels) {
-      if (providersToLoad) {
-        providersToLoad = AVAILABLE_PROVIDERS; // do full reload
+  private async loadProviderModels(providers: ProviderProfile[]): Promise<void> {
+    // Group providers by their provider name
+    const providersByName: Record<LlmProviderName, ProviderProfile[]> = {} as Record<LlmProviderName, ProviderProfile[]>;
+    for (const provider of providers || []) {
+      if (!providersByName[provider.provider.name]) {
+        providersByName[provider.provider.name] = [];
       }
+      providersByName[provider.provider.name].push(provider);
     }
-
-    const settings = this.store.getSettings();
-    const updatedProviderModels: Partial<ProviderModels> = {};
-
-    const providerLoaders: Record<LlmProviderName, () => Promise<void>> = {
-      anthropic: async () => {
-        updatedProviderModels.anthropic = await loadAnthropicModels(settings, this.modelsInfo);
-      },
-      bedrock: async () => {
-        updatedProviderModels.bedrock = await loadBedrockModels(settings, this.modelsInfo);
-      },
-      deepseek: async () => {
-        updatedProviderModels.deepseek = await loadDeepseekModels(settings, this.modelsInfo);
-      },
-      gemini: async () => {
-        updatedProviderModels.gemini = await loadGeminiModels(settings, this.modelsInfo);
-      },
-      groq: async () => {
-        updatedProviderModels.groq = await loadGroqModels(settings, this.modelsInfo);
-      },
-      cerebras: async () => {
-        updatedProviderModels.cerebras = await loadCerebrasModels(settings, this.modelsInfo);
-      },
-      lmstudio: async () => {
-        updatedProviderModels.lmstudio = await loadLmStudioModels(settings, this.modelsInfo);
-      },
-      ollama: async () => {
-        updatedProviderModels.ollama = await loadOllamaModels(settings, this.modelsInfo);
-      },
-      'openai-compatible': async () => {
-        updatedProviderModels['openai-compatible'] = await loadOpenaiCompatibleModels(settings, this.modelsInfo);
-      },
-      openai: async () => {
-        updatedProviderModels.openai = await loadOpenAiModels(settings, this.modelsInfo);
-      },
-      openrouter: async () => {
-        updatedProviderModels.openrouter = await loadOpenrouterModels(settings, this.modelsInfo);
-      },
-      requesty: async () => {
-        updatedProviderModels.requesty = await loadRequestyModels(settings, this.modelsInfo);
-      },
-      'vertex-ai': async () => {
-        updatedProviderModels['vertex-ai'] = await loadVertexAIModels(settings, this.modelsInfo);
-      },
-    };
 
     const toLoadPromises: Promise<void>[] = [];
-    for (const key of providersToLoad) {
-      if (providerLoaders[key]) {
-        toLoadPromises.push(providerLoaders[key]());
+
+    for (const providerName of Object.keys(providersByName) as LlmProviderName[]) {
+      const profilesForProvider = providersByName[providerName];
+      const strategy = this.providerRegistry[providerName];
+
+      if (strategy && profilesForProvider.length > 0) {
+        const loadModels = async () => {
+          // Load models from each profile for this provider type
+          for (const profile of profilesForProvider) {
+            const allModels: Model[] = [];
+            const response = await strategy.loadModels(profile, this.modelsInfo);
+
+            delete this.providerErrors[profile.id];
+            if (response.success) {
+              allModels.push(...response.models);
+            } else {
+              logger.error(`Failed to load models for provider profile ${profile.id}:`, response.error);
+              if (response.error) {
+                this.providerErrors[profile.id] = response.error;
+              }
+            }
+
+            // Add custom models or override existing ones
+            const providerModelOverrides = this.modelOverrides.filter((modelOverride) => modelOverride.providerId === profile.id);
+            for (const modelOverride of providerModelOverrides) {
+              const existingIndex = allModels.findIndex((m) => m.id === modelOverride.id);
+              if (existingIndex >= 0) {
+                allModels[existingIndex] = {
+                  ...allModels[existingIndex],
+                  ...modelOverride,
+                };
+              } else if (modelOverride.isCustom) {
+                allModels.push({ ...modelOverride });
+              }
+            }
+
+            this.providerModels[profile.id] = allModels;
+          }
+        };
+
+        toLoadPromises.push(loadModels());
       }
     }
+
     await Promise.all(toLoadPromises);
 
-    this.providerModels = {
-      ...(this.providerModels || {}),
-      ...updatedProviderModels,
-    } as ProviderModels;
-
     // Emit the updated provider models event
-    this.eventManager.sendProviderModelsUpdated(this.providerModels);
+    this.eventManager.sendProviderModelsUpdated({
+      models: Object.values(this.providerModels).flat(),
+      loading: false,
+      errors: this.providerErrors,
+    });
+
+    // Update agent profiles with the new models
+    await this.store.updateProviderModelInAgentProfiles(Object.values(this.providerModels).flat());
+    this.eventManager.sendSettingsUpdated(this.store.getSettings());
   }
 
-  async getProviderModels(): Promise<ProviderModels> {
+  /**
+   * Detect and add automatic providers from environment variables
+   */
+  private updateEnvVarsProviders() {
+    let providers = this.store.getProviders();
+    const existingNames = new Set(providers.map((p) => p.provider.name));
+    const envVarProviders: ProviderProfile[] = [];
+
+    for (const providerName of AVAILABLE_PROVIDERS) {
+      if (!existingNames.has(providerName)) {
+        const strategy = this.providerRegistry[providerName];
+        if (strategy?.hasEnvVars()) {
+          envVarProviders.push(this.createEnvVarProvider(providerName));
+        }
+      }
+    }
+
+    if (envVarProviders.length > 0) {
+      providers = [...providers, ...envVarProviders];
+      this.store.setProviders(providers);
+      logger.info(`Added ${envVarProviders.length} auto-detected providers`);
+    }
+  }
+
+  async getProviderModels(): Promise<ProviderModelsData> {
     await this.initPromise;
-    if (!this.providerModels) {
+    if (Object.keys(this.providerModels).length === 0) {
       // Fallback in case loading failed during init
-      await this.loadProviderModels();
+      await this.loadProviderModels(this.store.getProviders());
     }
-    if (!this.providerModels) {
-      throw new Error('Failed to load provider models');
+
+    return {
+      models: Object.values(this.providerModels).flat(),
+      loading: false,
+      errors: this.providerErrors,
+    };
+  }
+
+  private async loadModelOverrides(): Promise<void> {
+    try {
+      await fs.access(MODELS_FILE);
+    } catch {
+      logger.info('Custom models file does not exist yet. No custom models loaded.');
+      this.modelOverrides = [];
+      return;
     }
-    return this.providerModels;
+
+    try {
+      const content = await fs.readFile(MODELS_FILE, 'utf-8');
+      const modelsFile: ModelOverrides = JSON.parse(content);
+      this.modelOverrides = modelsFile.models;
+      logger.info(`Loaded ${this.modelOverrides.length} model overrides.`);
+    } catch (error) {
+      logger.error('Error loading model overrides:', error);
+      this.modelOverrides = [];
+    }
+  }
+
+  private async saveModelOverrides(): Promise<void> {
+    try {
+      const modelOverrides: ModelOverrides = {
+        version: 1,
+        models: this.modelOverrides || [],
+      };
+
+      await fs.mkdir(path.dirname(MODELS_FILE), { recursive: true });
+      await fs.writeFile(MODELS_FILE, JSON.stringify(modelOverrides, null, 2));
+      logger.info(`Saved ${this.modelOverrides?.length || 0} model overrides.`);
+    } catch (error) {
+      logger.error('Error saving model overrides:', error);
+      throw error;
+    }
+  }
+
+  async upsertModel(providerId: string, modelId: string, model: Model): Promise<void> {
+    await this.initPromise;
+
+    if (!this.modelOverrides) {
+      this.modelOverrides = [];
+    }
+
+    const existingIndex = this.modelOverrides.findIndex((m) => m.id === modelId && m.providerId === providerId);
+
+    const modelOverride: Model = {
+      ...model,
+      id: modelId,
+      providerId,
+    };
+
+    if (existingIndex >= 0) {
+      this.modelOverrides[existingIndex] = modelOverride;
+      logger.info(`Updated model override: ${providerId}/${modelId}`);
+    } else {
+      this.modelOverrides.push(modelOverride);
+      logger.info(`Added model override: ${providerId}/${modelId}`);
+    }
+
+    await this.saveModelOverrides();
+    this.eventManager.sendProviderModelsUpdated({ loading: true });
+    await this.loadProviderModels(this.store.getProviders().filter((provider) => provider.id === providerId));
+    this.eventManager.sendProviderModelsUpdated(await this.getProviderModels());
+  }
+
+  async deleteModel(providerId: string, modelId: string): Promise<void> {
+    await this.initPromise;
+
+    if (!this.modelOverrides) {
+      return;
+    }
+
+    const initialLength = this.modelOverrides.length;
+    this.modelOverrides = this.modelOverrides.filter((m) => !(m.id === modelId && m.providerId === providerId && m.isCustom));
+
+    if (this.modelOverrides.length < initialLength) {
+      await this.saveModelOverrides();
+      logger.info(`Deleted model override: ${providerId}/${modelId}`);
+      this.eventManager.sendProviderModelsUpdated({ loading: true });
+      await this.loadProviderModels(this.store.getProviders().filter((provider) => provider.id === providerId));
+      this.eventManager.sendProviderModelsUpdated(await this.getProviderModels());
+    } else {
+      logger.warn(`Model override not found for deletion: ${providerId}/${modelId}`);
+    }
+  }
+
+  getAiderModelMapping(modelName: string): AiderModelMapping {
+    const providers = this.store.getProviders();
+    const [providerId, ...modelIdParts] = modelName.split('/');
+    const modelId = modelIdParts.join('/');
+    if (!providerId || !modelId) {
+      logger.error('Invalid provider/model format:', modelName);
+      return {
+        modelName: modelName,
+        environmentVariables: {},
+      };
+    }
+
+    const provider = providers.find((p) => p.id === providerId);
+    if (!provider) {
+      logger.debug('Provider not found:', providerId, '- returning modelName with empty env vars');
+      return {
+        modelName: modelName,
+        environmentVariables: {},
+      };
+    }
+
+    return this.getProviderAiderMapping(provider, modelId);
+  }
+
+  private getProviderAiderMapping(provider: ProviderProfile, modelId: string): AiderModelMapping {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy) {
+      return {
+        modelName: modelId,
+        environmentVariables: {},
+      };
+    }
+
+    return strategy.getAiderMapping(provider, modelId);
+  }
+
+  createLlm(profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel {
+    const strategy = this.providerRegistry[profile.provider.name];
+    if (!strategy) {
+      throw new Error(`Unsupported LLM provider: ${profile.provider.name}`);
+    }
+    return strategy.createLlm(profile, model, env);
+  }
+
+  calculateCost(provider: ProviderProfile, model: string, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy) {
+      throw new Error(`Unsupported LLM provider: ${provider.provider.name}`);
+    }
+    return strategy.calculateCost(this.getModelInfo(model), sentTokens, receivedTokens, providerMetadata);
+  }
+
+  getUsageReport(
+    project: Project,
+    provider: ProviderProfile,
+    modelId: string,
+    messageCost: number,
+    usage: LanguageModelUsage,
+    providerMetadata?: unknown,
+  ): UsageReportData {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy) {
+      throw new Error(`Unsupported LLM provider: ${provider.provider.name}`);
+    }
+    return strategy.getUsageReport(project, provider, modelId, messageCost, usage, providerMetadata);
+  }
+
+  getCacheControl(profile: AgentProfile, llmProvider: LlmProvider): CacheControl {
+    const strategy = this.providerRegistry[llmProvider.name];
+    if (!strategy?.getCacheControl) {
+      return undefined;
+    }
+    return strategy.getCacheControl(profile, llmProvider);
+  }
+
+  getProviderOptions(llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined {
+    const strategy = this.providerRegistry[llmProvider.name];
+    if (!strategy?.getProviderOptions) {
+      return undefined;
+    }
+    return strategy.getProviderOptions(llmProvider);
   }
 }

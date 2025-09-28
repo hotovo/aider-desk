@@ -1,4 +1,4 @@
-import { EditFormat, Mode, ModelsData, RawModelInfo, SessionData } from '@common/types';
+import { EditFormat, Mode, Model, ModelsData, RawModelInfo, SessionData } from '@common/types';
 import React, { ReactNode, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
@@ -8,6 +8,7 @@ import { MdHistory } from 'react-icons/md';
 import { IoLogoMarkdown } from 'react-icons/io5';
 import { RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
+import { getProviderModelId } from '@common/agent';
 
 import { IconButton } from '@/components/common/IconButton';
 import { AgentModelSelector } from '@/components/AgentModelSelector';
@@ -22,6 +23,7 @@ import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
 import { useApi } from '@/context/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
 
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -30,7 +32,6 @@ export type ProjectTopBarRef = {
 
 type Props = {
   baseDir: string;
-  allModels?: string[];
   modelsData: ModelsData | null;
   mode: Mode;
   renderMarkdown: boolean;
@@ -42,15 +43,24 @@ type Props = {
 };
 
 export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
-  (
-    { baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelsChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand, onToggleSidebar },
-    ref,
-  ) => {
+  ({ baseDir, modelsData, mode, renderMarkdown, onModelsChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand, onToggleSidebar }, ref) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
     const { projectSettings } = useProjectSettings();
+    const { models, providers } = useModelProviders();
     const api = useApi();
     const { isMobile } = useResponsive();
+
+    const aiderModels = useMemo(() => {
+      const aiderModels: Model[] = [...models];
+      aiderModels.sort((a, b) => {
+        const aId = getProviderModelId(a);
+        const bId = getProviderModelId(b);
+        return aId.localeCompare(bId);
+      });
+
+      return aiderModels;
+    }, [models]);
     const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
     const mainModelSelectorRef = useRef<ModelSelectorRef>(null);
     const architectModelSelectorRef = useRef<ModelSelectorRef>(null);
@@ -120,10 +130,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         }
         const updatedSettings = {
           ...settings,
-          models: {
-            ...settings.models,
-            aiderPreferred: [...new Set([model, ...settings.models.aiderPreferred])],
-          },
+          preferredModels: [...new Set([model, ...settings.preferredModels])],
         };
         void saveSettings(updatedSettings);
       },
@@ -151,9 +158,10 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     );
 
     const updateMainModel = useCallback(
-      (mainModel: string) => {
-        api.updateMainModel(baseDir, mainModel);
-        updatePreferredModels(mainModel);
+      (mainModel: Model) => {
+        const modelId = getProviderModelId(mainModel);
+        api.updateMainModel(baseDir, modelId);
+        updatePreferredModels(modelId);
 
         if (modelsData && onModelsChange) {
           onModelsChange(null);
@@ -163,13 +171,14 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     );
 
     const updateWeakModel = useCallback(
-      (weakModel: string) => {
-        api.updateWeakModel(baseDir, weakModel);
-        updatePreferredModels(weakModel);
+      (weakModel: Model) => {
+        const modelId = getProviderModelId(weakModel);
+        api.updateWeakModel(baseDir, modelId);
+        updatePreferredModels(modelId);
         if (modelsData && onModelsChange) {
           onModelsChange({
             ...modelsData,
-            weakModel,
+            weakModel: modelId,
           });
         }
       },
@@ -177,13 +186,14 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     );
 
     const updateArchitectModel = useCallback(
-      (architectModel: string) => {
-        api.updateArchitectModel(baseDir, architectModel);
-        updatePreferredModels(architectModel);
+      (architectModel: Model) => {
+        const modelId = getProviderModelId(architectModel);
+        api.updateArchitectModel(baseDir, modelId);
+        updatePreferredModels(modelId);
         if (modelsData && onModelsChange) {
           onModelsChange({
             ...modelsData,
-            architectModel,
+            architectModel: modelId,
           });
         }
       },
@@ -274,10 +284,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       }
       const updatedSettings = {
         ...settings,
-        models: {
-          ...settings.models,
-          aiderPreferred: settings.models.aiderPreferred.filter((preferred) => preferred !== model),
-        },
+        preferredModels: settings.preferredModels.filter((preferred) => preferred !== model),
       };
       void saveSettings(updatedSettings);
     };
@@ -292,11 +299,12 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
             <StyledTooltip id="main-model-tooltip" content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)} />
             <ModelSelector
               ref={mainModelSelectorRef}
-              models={allModels}
-              selectedModel={modelsData?.mainModel}
+              models={aiderModels}
+              selectedModelId={modelsData?.mainModel}
               onChange={updateMainModel}
-              preferredModels={settings?.models.aiderPreferred || []}
+              preferredModelIds={settings?.preferredModels || []}
               removePreferredModel={handleRemovePreferredModel}
+              providers={providers}
             />
           </div>
           <div className="h-3 w-px bg-bg-fourth"></div>
@@ -304,11 +312,12 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
             <BsFilter className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
             <StyledTooltip id="weak-model-tooltip" />
             <ModelSelector
-              models={allModels}
-              selectedModel={modelsData?.weakModel || modelsData?.mainModel}
+              models={aiderModels}
+              selectedModelId={modelsData?.weakModel || modelsData?.mainModel}
               onChange={updateWeakModel}
-              preferredModels={settings?.models.aiderPreferred || []}
+              preferredModelIds={settings?.preferredModels || []}
               removePreferredModel={handleRemovePreferredModel}
+              providers={providers}
             />
           </div>
           {modelsData?.editFormat && (
@@ -389,11 +398,12 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                           <StyledTooltip id="architect-model-tooltip" />
                           <ModelSelector
                             ref={architectModelSelectorRef}
-                            models={allModels}
-                            selectedModel={modelsData?.architectModel || modelsData?.mainModel}
+                            models={aiderModels}
+                            selectedModelId={modelsData?.architectModel || modelsData?.mainModel}
                             onChange={updateArchitectModel}
-                            preferredModels={settings?.models.aiderPreferred || []}
+                            preferredModelIds={settings?.preferredModels || []}
                             removePreferredModel={handleRemovePreferredModel}
+                            providers={providers}
                           />
                         </div>
                         <div className="h-3 w-px bg-bg-fourth"></div>

@@ -1,4 +1,4 @@
-import { EditFormat, FileEdit, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, ProviderProfile, McpServerConfig, Mode, Model, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { ipcMain } from 'electron';
 
 import { EventsHandler } from './events-handler';
@@ -318,6 +318,25 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.handle('get-provider-models', async () => {
+    return await eventsHandler.getProviderModels();
+  });
+
+  ipcMain.handle('get-providers', () => {
+    return eventsHandler.getProviders();
+  });
+
+  ipcMain.handle('update-providers', async (_, providers: ProviderProfile[]) => {
+    await eventsHandler.updateProviders(providers);
+    return providers;
+  });
+
+  ipcMain.handle('upsert-model', async (_, providerId: string, modelId: string, model: Model) => {
+    await eventsHandler.upsertModel(providerId, modelId, model);
+    return await eventsHandler.getProviderModels();
+  });
+
+  ipcMain.handle('delete-model', async (_, providerId: string, modelId: string) => {
+    await eventsHandler.deleteModel(providerId, modelId);
     return await eventsHandler.getProviderModels();
   });
 };

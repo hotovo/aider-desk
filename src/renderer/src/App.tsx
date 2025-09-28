@@ -16,7 +16,7 @@ import { ROUTES } from '@/utils/routes';
 import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { ApiProvider } from '@/context/ApiContext';
-import { ModelProvider } from '@/contexts/ModelProvider';
+import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 
 const ThemeAndFontManager = () => {
   const { theme, font = 'Sono', fontSize = 16 } = useSettings();
@@ -88,7 +88,7 @@ const App = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
       <Router>
         <ApiProvider>
-          <ModelProvider>
+          <ModelProviderProvider>
             <SettingsProvider>
               <ContextMenuProvider>
                 <ThemeAndFontManager />
@@ -96,7 +96,7 @@ const App = () => {
                 <ToastContainer />
               </ContextMenuProvider>
             </SettingsProvider>
-          </ModelProvider>
+          </ModelProviderProvider>
         </ApiProvider>
       </Router>
     </motion.div>

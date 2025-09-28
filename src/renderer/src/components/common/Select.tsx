@@ -18,9 +18,10 @@ type Props = {
   onChange?: (value: string) => void;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
 };
 
-export const Select = ({ label, className = '', options = [], value, onChange, size = 'md' }: Props) => {
+export const Select = ({ label, className = '', options = [], value, onChange, size = 'md', disabled = false }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -107,12 +108,13 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
           onKeyDown={handleKeyDown}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
+          disabled={disabled}
           className={`flex w-full min-w-[8rem] bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-1 ${sizeClasses[size]} ${className}`}
         >
           <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
             <span className="block truncate">{selectedOption?.label || t('select.placeholder')}</span>
           </span>
-          <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-text-muted" />
+          {!disabled && <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-text-muted" />}
         </button>
       </div>
 

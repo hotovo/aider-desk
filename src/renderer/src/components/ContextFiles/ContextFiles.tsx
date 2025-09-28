@@ -23,6 +23,10 @@ interface TreeItem {
   file?: ContextFile;
 }
 
+const normalizePath = (path: string): string => {
+  return path.replace(/\\/g, '/');
+};
+
 const createFileTree = (files: ContextFile[]) => {
   const tree: Record<string, TreeItem> = {
     root: { index: 'root', children: [], isFolder: true, data: 'root' },
@@ -111,7 +115,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
             continue;
           }
 
-          const isInsideProject = filePath.startsWith(baseDir + '/') || filePath === baseDir;
+          const isInsideProject = filePath.startsWith(baseDir + '/') || filePath.startsWith(baseDir + '\\') || filePath === baseDir;
           if (isInsideProject) {
             filePath = filePath.slice(baseDir.length + 1);
           }
@@ -135,11 +139,11 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
       setFiles(updatedFiles);
 
       // Handle highlighting of new files
-      const newFiles = updatedFiles.filter((file) => !files.some((f) => f.path === file.path));
+      const newFiles = updatedFiles.filter((file) => !files.some((f) => normalizePath(f.path) === normalizePath(file.path)));
       if (newFiles.length > 0) {
         setNewlyAddedFiles((prev) => [...prev, ...newFiles.map((f) => f.path)]);
         setTimeout(() => {
-          setNewlyAddedFiles((prev) => prev.filter((path) => !newFiles.some((f) => f.path === path)));
+          setNewlyAddedFiles((prev) => prev.filter((path) => !newFiles.some((f) => normalizePath(f.path) === normalizePath(path))));
         }, 2000);
       }
     });
@@ -161,7 +165,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
     if (showAllFiles) {
       const allFileObjects: ContextFile[] = sortedAllFiles.map((path) => ({
         path,
-        readOnly: sortedFiles.find((file) => file.path === path)?.readOnly,
+        readOnly: sortedFiles.find((file) => normalizePath(file.path) === normalizePath(path))?.readOnly,
       }));
       return createFileTree(allFileObjects);
     } else {
@@ -182,7 +186,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
           return false;
         }
         if (!childNode.isFolder) {
-          return files.some((f) => f.path === childNode.file?.path);
+          return files.some((f) => normalizePath(f.path) === normalizePath(childNode.file?.path || ''));
         }
         return childNode.children.some(checkChild);
       };
@@ -223,7 +227,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
     const file = (item as TreeItem).file;
     if (file) {
       let pathToDrop = file.path;
-      if (pathToDrop.startsWith(baseDir + '/') || pathToDrop === baseDir) {
+      if (pathToDrop.startsWith(baseDir + '/') || pathToDrop.startsWith(baseDir + '\\') || pathToDrop === baseDir) {
         pathToDrop = pathToDrop.slice(baseDir.length + 1);
       }
       api.dropFile(baseDir, pathToDrop);
@@ -288,7 +292,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
               onClick={handleExpandAll}
               className="p-1.5 hover:bg-bg-tertiary rounded-md"
               data-tooltip-id="context-files-tooltip"
-              data-tooltip-content={t('contextFiles.expandAll') || 'Expand all'}
+              data-tooltip-content={t('contextFiles.expandAll')}
               data-tooltip-delay-show={500}
             >
               <BiExpandVertical className="w-4 h-4" />
@@ -297,7 +301,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
               onClick={handleCollapseAll}
               className="p-1.5 hover:bg-bg-tertiary rounded-md"
               data-tooltip-id="context-files-tooltip"
-              data-tooltip-content={t('contextFiles.collapseAll') || 'Collapse all'}
+              data-tooltip-content={t('contextFiles.collapseAll')}
               data-tooltip-delay-show={500}
             >
               <BiCollapseVertical className="w-4 h-4" />
@@ -332,7 +336,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
             const treeItem = item as TreeItem;
             const filePath = treeItem.file?.path;
             const isNewlyAdded = filePath && newlyAddedFiles.includes(filePath);
-            const isContextFile = filePath ? files.some((f) => f.path === filePath) : false;
+            const isContextFile = filePath ? files.some((f) => normalizePath(f.path) === normalizePath(filePath)) : false;
             const dimmed = showAllFiles && filePath && !isContextFile;
 
             return (
@@ -405,7 +409,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
                       />
                     )}
                     {showAllFiles ? (
-                      files.some((f) => f.path === (item as TreeItem).file?.path) ? (
+                      files.some((f) => normalizePath(f.path) === normalizePath((item as TreeItem).file?.path || '')) ? (
                         <button
                           onClick={dropFile(item as TreeItem)}
                           className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-error-dark"

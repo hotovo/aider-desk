@@ -4,7 +4,7 @@ import {
   DeepseekProvider,
   GeminiProvider,
   GroqProvider,
-  LlmProviderName,
+  LlmProvider,
   LmStudioProvider,
   OllamaProvider,
   OpenAiCompatibleProvider,
@@ -281,7 +281,7 @@ export interface SubagentConfig {
 export interface AgentProfile {
   id: string;
   name: string;
-  provider: LlmProviderName;
+  provider: string;
   model: string;
   maxIterations: number;
   maxTokens: number;
@@ -365,10 +365,7 @@ export interface SettingsData {
     watchFiles: boolean;
     confirmBeforeEdit: boolean;
   };
-  models: {
-    aiderPreferred: string[];
-    agentPreferred: string[];
-  };
+  preferredModels: string[];
   agentProfiles: AgentProfile[];
   mcpServers: Record<string, McpServerConfig>;
   llmProviders: {
@@ -396,6 +393,17 @@ export interface SettingsData {
       password: string;
     };
   };
+}
+
+export interface ProviderProfile {
+  id: string;
+  name?: string;
+  provider: LlmProvider;
+  headers?: Record<string, string>;
+}
+
+export interface ProvidersUpdatedData {
+  providers: ProviderProfile[];
 }
 
 export interface Group {
@@ -508,7 +516,6 @@ export interface ModelInfo {
   outputCostPerToken: number;
   cacheWriteInputTokenCost?: number;
   cacheReadInputTokenCost?: number;
-  supportsTools: boolean;
 }
 
 export interface Task {
@@ -535,15 +542,28 @@ export interface UsageDataRow {
 
 export interface Model {
   id: string;
+  providerId: string;
   maxInputTokens?: number;
   maxOutputTokens?: number;
   inputCostPerToken?: number;
   outputCostPerToken?: number;
-  supportsTools?: boolean;
+  cacheWriteInputTokenCost?: number;
   cacheReadInputTokenCost?: number;
+  supportsTools?: boolean;
+  isCustom?: boolean;
+  isHidden?: boolean;
 }
 
-export type ProviderModels = Partial<Record<LlmProviderName, Model[]>>;
+export interface ProviderModelsData {
+  models?: Model[];
+  loading?: boolean;
+  errors?: Record<string, string>;
+}
+
+export interface ModelOverrides {
+  version: number;
+  models: Model[];
+}
 
 export interface CustomCommandArgument {
   description: string;

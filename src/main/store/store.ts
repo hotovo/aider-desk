@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState } from '@common/types';
+import { AgentProfile, ProviderProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState, Model } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { AVAILABLE_PROVIDERS, DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES, DEFAULT_PROVIDER_MODEL } from '@common/agent';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES, DEFAULT_PROVIDER_MODEL } from '@common/agent';
 
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
@@ -19,7 +19,8 @@ import { migrateV12ToV13 } from './migrations/v12-to-v13';
 
 import { determineMainModel, determineWeakModel } from '@/utils';
 import logger from '@/logger';
-import { ModelManager } from '@/models';
+import { migrateProvidersV13toV14 } from '@/store/migrations/v13-to-v14';
+import { migrateSettingsV14toV15 } from '@/store/migrations/v14-to-v15';
 
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',
@@ -38,10 +39,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
     watchFiles: false,
     confirmBeforeEdit: false,
   },
-  models: {
-    aiderPreferred: [],
-    agentPreferred: [],
-  },
+  preferredModels: [],
   agentProfiles: DEFAULT_AGENT_PROFILES,
   mcpServers: {},
   llmProviders: {},
@@ -67,9 +65,9 @@ export const DEFAULT_SETTINGS: SettingsData = {
   },
 };
 
-export const getDefaultProjectSettings = (store: Store, baseDir: string): ProjectSettings => {
+export const getDefaultProjectSettings = (store: Store, providerModels: Model[], baseDir: string): ProjectSettings => {
   return {
-    mainModel: determineMainModel(store.getSettings(), baseDir),
+    mainModel: determineMainModel(store.getSettings(), store.getProviders(), providerModels, baseDir),
     weakModel: determineWeakModel(baseDir),
     modelEditFormats: {},
     currentMode: 'code',
@@ -87,12 +85,13 @@ interface StoreSchema {
   openProjects: ProjectData[];
   recentProjects: string[]; // baseDir paths of recently closed projects
   settings: SettingsData;
+  providers: ProviderProfile[];
   settingsVersion: number;
   releaseNotes?: string | null;
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 13;
+const CURRENT_SETTINGS_VERSION = 15;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -109,8 +108,9 @@ export class Store {
 
     const settings = this.store.get('settings');
     const openProjects = this.store.get('openProjects');
+    const providers = this.store.get('providers');
     if (settings) {
-      this.migrateSettings(settings, openProjects);
+      this.migrateSettings(settings, openProjects, providers);
     }
   }
 
@@ -166,10 +166,6 @@ export class Store {
         ...DEFAULT_SETTINGS.aider,
         ...settings?.aider,
       },
-      models: {
-        ...DEFAULT_SETTINGS.models,
-        ...settings?.models,
-      },
       promptBehavior: {
         ...DEFAULT_SETTINGS.promptBehavior,
         ...settings?.promptBehavior,
@@ -185,7 +181,7 @@ export class Store {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private migrateSettings(settings: any, openProjects: any): SettingsData {
+  private migrateSettings(settings: any, openProjects: any, providers: any): SettingsData {
     let settingsVersion = this.store.get('settingsVersion') ?? this.findOutCurrentVersion(settings);
 
     if (settingsVersion < CURRENT_SETTINGS_VERSION) {
@@ -257,8 +253,19 @@ export class Store {
         settingsVersion = 13;
       }
 
+      if (settingsVersion === 13) {
+        providers = migrateProvidersV13toV14(settings);
+        settingsVersion = 14;
+      }
+
+      if (settingsVersion === 14) {
+        settings = migrateSettingsV14toV15(settings);
+        settingsVersion = 15;
+      }
+
       this.store.set('settings', settings as SettingsData);
       this.store.set('openProjects', openProjects || []);
+      this.store.set('providers', providers);
     }
 
     this.store.set('settingsVersion', CURRENT_SETTINGS_VERSION);
@@ -311,20 +318,22 @@ export class Store {
     return orderedProjects;
   }
 
-  async updateProviderModelInAgentProfiles(modelManager: ModelManager) {
+  async updateProviderModelInAgentProfiles(providerModels: Model[]) {
     const settings = this.getSettings();
-    const providerModels = await modelManager.getProviderModels();
+    const providers = this.getProviders();
 
     const updatedAgentProfiles = settings.agentProfiles.map((agentProfile) => {
-      if (providerModels[agentProfile.provider] === undefined) {
+      const agentProviderModels = providerModels.filter((model) => model.providerId === agentProfile.provider);
+
+      if (agentProviderModels.length === 0) {
         // Provider not configured, find the first available configured provider
-        for (const provider of AVAILABLE_PROVIDERS) {
-          const models = providerModels[provider];
-          const defaultModel = DEFAULT_PROVIDER_MODEL[provider];
-          if (models !== undefined && (defaultModel || models.length > 0)) {
+        for (const provider of providers) {
+          const models = providerModels.filter((model) => model.providerId === provider.id);
+          const defaultModel = DEFAULT_PROVIDER_MODEL[provider.provider.name];
+          if (defaultModel || models.length > 0) {
             return {
               ...agentProfile,
-              provider,
+              provider: provider.id,
               model: defaultModel || models[0].id,
             };
           }
@@ -367,10 +376,7 @@ export class Store {
   getProjectSettings(baseDir: string): ProjectSettings {
     const projects = this.getOpenProjects();
     const project = projects.find((p) => compareBaseDirs(p.baseDir, baseDir));
-    return {
-      ...getDefaultProjectSettings(this, baseDir),
-      ...project?.settings,
-    };
+    return project?.settings || getDefaultProjectSettings(this, [], baseDir);
   }
 
   saveProjectSettings(baseDir: string, settings: ProjectSettings): ProjectSettings {
@@ -431,6 +437,14 @@ export class Store {
   getAgentProfile(profileId: string): AgentProfile | undefined {
     const settings = this.getSettings();
     return settings.agentProfiles.find((profile) => profile.id === profileId);
+  }
+
+  getProviders(): ProviderProfile[] {
+    return this.store.get('providers') || [];
+  }
+
+  setProviders(providers: ProviderProfile[]): void {
+    this.store.set('providers', providers);
   }
 }
 

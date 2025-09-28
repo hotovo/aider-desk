@@ -7,7 +7,7 @@ import { SettingsData } from '@common/types';
 import { useSettings } from '@/context/SettingsContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
-import { ModelProvidersSettings } from '@/components/settings/ModelProvidersSettings';
+import { OnboardingProviderSetup } from '@/components/onboarding/OnboardingProviderSetup';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { Button } from '@/components/common/Button';
 import { OnboardingStepper } from '@/components/onboarding/OnboardingStepper';
@@ -139,10 +139,7 @@ export const Onboarding = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.providers.connectTitle')}</h2>
             <p className="text-text-tertiary text-sm">{t('onboarding.providers.connectDescription')}</p>
-            <ModelProvidersSettings settings={localSettings!} setSettings={setLocalSettings} showProminentModels={true} />
-            <div className="mt-4 p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
-              <p className="text-xs text-info-lightest">{t('onboarding.providers.advancedUsersNote')}</p>
-            </div>
+            <OnboardingProviderSetup />
             <div className="flex justify-center mt-4">
               <button
                 onClick={handleNext}
@@ -151,6 +148,9 @@ export const Onboarding = () => {
               >
                 {t('onboarding.skipForNow')}
               </button>
+            </div>
+            <div className="p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
+              <p className="text-xs text-info-lightest">{t('onboarding.providers.setupLater')}</p>
             </div>
           </div>
         );
@@ -245,7 +245,7 @@ export const Onboarding = () => {
             <div className="mt-10 flex justify-between">
               <div>
                 {step > 1 && (
-                  <Button onClick={handleBack} variant="outline" color="secondary" className="gap-2" disabled={isNavigating || isSaving}>
+                  <Button onClick={handleBack} variant="outline" className="gap-2" disabled={isNavigating || isSaving}>
                     <HiArrowLeft className="w-4 h-4" />
                     {t('common.back')}
                   </Button>

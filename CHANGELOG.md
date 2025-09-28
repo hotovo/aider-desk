@@ -2,7 +2,15 @@
 
 ## [UNRELEASED]
 
-- added more tab control
+- fixed issue with diff edit format not being set correctly on startup
+- added model library for provider and model management
+- allow to customize AIDER_DESK_DATA_DIR via environment variable
+- added support for Azure provider
+- fixed not being possible to interrupt agent run when switching between projects
+- fixed issue with context files not being highlighted in All files mode on Windows
+- improved parsing of thinking blocks to avoid nested issues
+- using models.dev to load models metadata
+- added more actions for project tabs
 
 ## [0.32.0]
 

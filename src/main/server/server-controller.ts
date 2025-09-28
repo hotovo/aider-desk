@@ -5,7 +5,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { is } from '@electron-toolkit/utils';
 
-import { ContextApi, PromptApi, SettingsApi, ProjectApi, CommandsApi, UsageApi, SystemApi, TodoApi, McpApi } from '@/server/rest-api';
+import { ContextApi, PromptApi, SettingsApi, ProjectApi, CommandsApi, UsageApi, SystemApi, TodoApi, McpApi, ProvidersApi } from '@/server/rest-api';
 import { SERVER_PORT, AUTH_USERNAME, AUTH_PASSWORD } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
@@ -93,6 +93,7 @@ export class ServerController {
     new SystemApi(this.eventsHandler).registerRoutes(apiRouter);
     new TodoApi(this.eventsHandler).registerRoutes(apiRouter);
     new McpApi(this.eventsHandler).registerRoutes(apiRouter);
+    new ProvidersApi(this.eventsHandler).registerRoutes(apiRouter);
 
     // Mount the API router globally under /api
     this.app.use('/api', apiRouter);

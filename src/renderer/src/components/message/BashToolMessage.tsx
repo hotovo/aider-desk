@@ -52,10 +52,12 @@ export const BashToolMessage = ({ message, onRemove, compact = false }: Props) =
     return (
       <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="font-semibold text-text-secondary">{t('toolMessage.power.bash.exitCode')}:</div>
-            <div>{content.exitCode}</div>
-          </div>
+          {content && (
+            <div className="flex items-center gap-2">
+              <div className="font-semibold text-text-secondary">{t('toolMessage.power.bash.exitCode')}:</div>
+              <div>{content.exitCode}</div>
+            </div>
+          )}
           {content.stdout && (
             <div className="relative">
               <pre className="whitespace-pre-wrap bg-bg-primary-light p-3 rounded text-2xs text-text-secondary max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth font-mono">
