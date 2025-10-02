@@ -4,6 +4,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 
+import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
 import { Project } from '@/project/project';
@@ -55,6 +56,7 @@ export const loadAnthropicModels = async (
         } satisfies Model;
       }) || [];
 
+    logger.info(`Loaded ${models.length} Anthropic models for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
     return {
