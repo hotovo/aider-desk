@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { HiEye, HiInformationCircle, HiRefresh } from 'react-icons/hi';
 import { Trans, useTranslation } from 'react-i18next';
-import { EnvironmentVariable, SettingsData } from '@common/types';
+import { API_KEY_ENV_VARS, EnvironmentVariable, SettingsData } from '@common/types';
 
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -25,20 +25,9 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
   const loadEffectiveEnvVars = async () => {
     try {
       setIsLoadingEnvVars(true);
-      const apiKeys = [
-        'OPENAI_API_KEY',
-        'ANTHROPIC_API_KEY',
-        'GOOGLE_API_KEY',
-        'GROQ_API_KEY',
-        'DEEPSEEK_API_KEY',
-        'OPENROUTER_API_KEY',
-        'CEREBRAS_API_KEY',
-        'REQUESTY_API_KEY'
-      ];
-
       const result: Record<string, EnvironmentVariable> = {};
       
-      for (const key of apiKeys) {
+      for (const key of API_KEY_ENV_VARS) {
         const envVar = await window.api.getEffectiveEnvironmentVariable(key);
         if (envVar) {
           result[key] = envVar;

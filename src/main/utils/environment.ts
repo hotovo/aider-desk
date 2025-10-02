@@ -62,27 +62,16 @@ const readApiKeyFromConfFile = (filePath: string, envVarName: string): string | 
         
         const providerNames = envVarToProviderName[envVarName] || [envVarName.replace(/_API_KEY$/, '').toLowerCase()];
         
-        // Handle single string value
-        if (typeof apiKeyValue === 'string') {
-          for (const providerName of providerNames) {
-            const match = apiKeyValue.match(new RegExp(`^${providerName}=(.+)$`, 'i'));
-            if (match) {
-              logger.debug(`Found API key for ${envVarName} using provider name '${providerName}' in ${filePath}`);
-              return match[1];
-            }
-          }
-        }
+        // Normalize apiKeyValue to array for unified processing
+        const apiKeys = Array.isArray(apiKeyValue) ? apiKeyValue : [apiKeyValue];
         
-        // Handle array of strings
-        if (Array.isArray(apiKeyValue)) {
-          for (const item of apiKeyValue) {
-            if (typeof item === 'string') {
-              for (const providerName of providerNames) {
-                const match = item.match(new RegExp(`^${providerName}=(.+)$`, 'i'));
-                if (match) {
-                  logger.debug(`Found API key for ${envVarName} using provider name '${providerName}' in ${filePath}`);
-                  return match[1];
-                }
+        for (const item of apiKeys) {
+          if (typeof item === 'string') {
+            for (const providerName of providerNames) {
+              const match = item.match(new RegExp(`^${providerName}=(.+)$`, 'i'));
+              if (match) {
+                logger.debug(`Found API key for ${envVarName} using provider name '${providerName}' in ${filePath}`);
+                return match[1];
               }
             }
           }

@@ -3,6 +3,7 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
+  API_KEY_ENV_VARS,
   ContextFile,
   ContextMessage,
   ContextUserMessage,
@@ -84,6 +85,8 @@ export class Agent {
       case 'groq': return 'GROQ_API_KEY';
       case 'deepseek': return 'DEEPSEEK_API_KEY';
       case 'openrouter': return 'OPENROUTER_API_KEY';
+      case 'cerebras': return 'CEREBRAS_API_KEY';
+      case 'requesty': return 'REQUESTY_API_KEY';
       default: return '';
     }
   }
@@ -930,18 +933,7 @@ export class Agent {
 
     // Load API keys using the same mechanism as determineProvider function
     // This properly handles .aider.conf.yml files, .env files, etc.
-    const apiKeys = [
-      'OPENAI_API_KEY',
-      'ANTHROPIC_API_KEY', 
-      'GOOGLE_API_KEY',
-      'GROQ_API_KEY',
-      'DEEPSEEK_API_KEY',
-      'OPENROUTER_API_KEY',
-      'CEREBRAS_API_KEY',
-      'REQUESTY_API_KEY'
-    ];
-
-    for (const apiKey of apiKeys) {
+    for (const apiKey of API_KEY_ENV_VARS) {
       const effectiveVar = getEffectiveEnvironmentVariable(apiKey, settings, project.baseDir);
       if (effectiveVar) {
         env[apiKey] = effectiveVar.value;
@@ -950,31 +942,13 @@ export class Agent {
     }
 
     // Add provider-specific API keys to environment if they exist (these take precedence)
-    if (provider) {
+    if (provider && 'apiKey' in provider.provider && provider.provider.apiKey) {
       const llmProvider = provider.provider;
-      logger.debug('Processing provider-specific API keys', {
-        providerName: llmProvider.name,
-        hasApiKey: 'apiKey' in llmProvider && !!llmProvider.apiKey,
-      });
-
-      if (llmProvider.name === 'openai' && llmProvider.apiKey) {
-        env.OPENAI_API_KEY = llmProvider.apiKey;
-        logger.debug('Set OPENAI_API_KEY from provider (overriding other sources)');
-      } else if (llmProvider.name === 'anthropic' && llmProvider.apiKey) {
-        env.ANTHROPIC_API_KEY = llmProvider.apiKey;
-        logger.debug('Set ANTHROPIC_API_KEY from provider (overriding other sources)');
-      } else if (llmProvider.name === 'gemini' && llmProvider.apiKey) {
-        env.GOOGLE_API_KEY = llmProvider.apiKey;
-        logger.debug('Set GOOGLE_API_KEY from provider (overriding other sources)');
-      } else if (llmProvider.name === 'groq' && llmProvider.apiKey) {
-        env.GROQ_API_KEY = llmProvider.apiKey;
-        logger.debug('Set GROQ_API_KEY from provider (overriding other sources)');
-      } else if (llmProvider.name === 'deepseek' && llmProvider.apiKey) {
-        env.DEEPSEEK_API_KEY = llmProvider.apiKey;
-        logger.debug('Set DEEPSEEK_API_KEY from provider (overriding other sources)');
-      } else if (llmProvider.name === 'openrouter' && llmProvider.apiKey) {
-        env.OPENROUTER_API_KEY = llmProvider.apiKey;
-        logger.debug('Set OPENROUTER_API_KEY from provider (overriding other sources)');
+      const apiKeyEnvVar = this.getApiKeyEnvVar(llmProvider.name);
+      
+      if (apiKeyEnvVar) {
+        env[apiKeyEnvVar] = llmProvider.apiKey;
+        logger.debug(`Set ${apiKeyEnvVar} from provider (overriding other sources)`);
       }
     }
 
