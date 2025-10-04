@@ -217,6 +217,11 @@
       "invalidTokenCount": "Token count must be a positive number",
       "invalidCost": "Cost must be a non-negative number",
       "duplicateId": "Provider ID already exists"
+    },
+    "overrides": {
+      "title": "Provider Overrides",
+      "resetToDefaults": "Clear overrides",
+      "overridesProviderParameters": "Overrides some provider parameters"
     }
   },
   "openai": {
@@ -283,6 +288,9 @@
     "baseUrl": "Base URL",
     "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
   },
+  "zaiPlan": {
+    "apiKey": "API Key"
+  },
   "azure": {
     "apiKey": "API Key",
     "resourceName": "Resource Name",
@@ -303,6 +311,7 @@
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
     "vertex-ai": "Vertex AI",
+    "zai-plan": "Z.AI Coding Plan",
     "azure": "Azure"
   },
   "select": {

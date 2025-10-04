@@ -6,7 +6,7 @@ import { StyledTooltip } from './StyledTooltip';
 
 type Props = {
   icon: ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
   tooltip?: ReactNode;
   className?: string;
   tooltipId?: string;
@@ -26,12 +26,12 @@ export const IconButton = ({ icon, onClick, tooltip, className, tooltipId, disab
 
   const handleClick = (e: MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    onClick();
+    onClick?.();
   };
 
   const renderButton = () => (
     <div
-      onClick={disabled ? undefined : handleClick}
+      onClick={disabled || !onClick ? undefined : handleClick}
       data-tooltip-id={tooltip ? tooltipIdRef.current : undefined}
       data-tooltip-content={typeof tooltip === 'string' && tooltipId ? tooltip : undefined}
       className={combinedClassName}

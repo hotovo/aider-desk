@@ -12,3 +12,4 @@ export { OpenAiCompatibleIcon } from './OpenAiCompatibleIcon';
 export { OpenRouterIcon } from './OpenRouterIcon';
 export { RequestyIcon } from './RequestyIcon';
 export { VertexAiIcon } from './VertexAiIcon';
+export { ZaiPlanIcon } from './ZaiPlanIcon';

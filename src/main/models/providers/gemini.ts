@@ -1,4 +1,4 @@
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { GeminiProvider, isGeminiProvider, LlmProvider } from '@common/agent';
 import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 
@@ -87,7 +87,7 @@ export const getGeminiAiderMapping = (provider: ProviderProfile, modelId: string
 };
 
 // === LLM Creation Functions ===
-export const createGeminiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createGeminiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as GeminiProvider;
   const apiKey = provider.apiKey || env['GEMINI_API_KEY'];
 
@@ -97,13 +97,16 @@ export const createGeminiLlm = (profile: ProviderProfile, model: string, env: Re
 
   const baseUrl = provider.customBaseUrl || env['GEMINI_API_BASE_URL'];
 
+  const providerOverrides = model.providerOverrides as Partial<GeminiProvider> | undefined;
+  const useSearchGrounding = providerOverrides?.useSearchGrounding ?? provider.useSearchGrounding;
+
   const googleProvider = createGoogleGenerativeAI({
     apiKey,
     baseURL: baseUrl,
     headers: profile.headers,
   });
-  return googleProvider(model, {
-    useSearchGrounding: provider.useSearchGrounding,
+  return googleProvider(model.id, {
+    useSearchGrounding,
   });
 };
 
@@ -159,14 +162,20 @@ export const getGeminiUsageReport = (
   return usageReportData;
 };
 
-export const getGeminiProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined => {
+export const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model): Record<string, Record<string, JSONValue>> | undefined => {
   if (isGeminiProvider(llmProvider)) {
+    const providerOverrides = model.providerOverrides as Partial<GeminiProvider> | undefined;
+
+    // Use model-specific overrides, falling back to provider defaults
+    const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts;
+    const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget;
+
     return {
       google: {
-        ...((llmProvider.includeThoughts || llmProvider.thinkingBudget) && {
+        ...((includeThoughts || thinkingBudget) && {
           thinkingConfig: {
-            includeThoughts: llmProvider.includeThoughts && (llmProvider.thinkingBudget ?? 0) > 0,
-            thinkingBudget: llmProvider.thinkingBudget || null,
+            includeThoughts: includeThoughts && (thinkingBudget ?? 0) > 0,
+            thinkingBudget: thinkingBudget || null,
           },
         }),
       } satisfies GoogleGenerativeAIProviderOptions,

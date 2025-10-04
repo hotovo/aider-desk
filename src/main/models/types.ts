@@ -32,7 +32,7 @@ export interface LlmProviderStrategy {
   /**
    * Creates a LanguageModel instance for the given provider and model
    */
-  createLlm: (profile: ProviderProfile, model: string, env: Record<string, string | undefined>) => LanguageModel;
+  createLlm: (profile: ProviderProfile, model: Model, env: Record<string, string | undefined>) => LanguageModel;
 
   /**
    * Calculates the cost for token usage with provider-specific caching adjustments
@@ -76,7 +76,7 @@ export interface LlmProviderStrategy {
   /**
    * Returns provider-specific options for model instantiation
    */
-  getProviderOptions?: (provider: LlmProvider) => Record<string, Record<string, JSONValue>> | undefined;
+  getProviderOptions?: (provider: LlmProvider, model: Model) => Record<string, Record<string, JSONValue>> | undefined;
 }
 
 export type LlmProviderRegistry = Record<LlmProviderName, LlmProviderStrategy>;

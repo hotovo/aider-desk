@@ -1,5 +1,5 @@
 import { createAzure } from '@ai-sdk/azure';
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { AZURE_DEFAULT_API_VERSION, AzureProvider } from '@common/agent';
 
 import type { LanguageModel, LanguageModelUsage } from 'ai';
@@ -50,7 +50,7 @@ export const getAzureAiderMapping = (provider: ProviderProfile, modelId: string)
 };
 
 // === LLM Creation Functions ===
-export const createAzureLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createAzureLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as AzureProvider;
   const apiKey = provider.apiKey || env['AZURE_API_KEY'];
   const resourceName = provider.resourceName || (env['AZURE_RESOURCE_NAME'] ? extractResourceNameFromEndpoint(env['AZURE_RESOURCE_NAME']) : '');
@@ -69,7 +69,7 @@ export const createAzureLlm = (profile: ProviderProfile, model: string, env: Rec
     apiVersion,
     headers: profile.headers,
   });
-  return azureProvider(model);
+  return azureProvider(model.id);
 };
 
 type AzureMetadata = {

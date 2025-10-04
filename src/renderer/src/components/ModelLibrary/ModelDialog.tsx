@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Model, ProviderProfile } from '@common/types';
 
+import { ModelParameterOverrides } from './ModelParameterOverrides';
+
 import { Input } from '@/components/common/Input';
 import { Select } from '@/components/common/Select';
 import { Checkbox } from '@/components/common/Checkbox';
@@ -23,6 +25,8 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [providerOverrides, setProviderOverrides] = useState<Record<string, unknown>>(model?.providerOverrides || {});
+  const selectedProvider = providers.find((p) => p.id === formData.providerId);
 
   useEffect(() => {
     if (model) {
@@ -38,11 +42,13 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
         supportsTools: model.supportsTools,
         isHidden: model.isHidden,
       });
+      setProviderOverrides(model.providerOverrides || {});
     } else {
       setFormData({
         id: '',
         providerId: providers[0]?.id || '',
       });
+      setProviderOverrides({});
     }
     setErrors({});
   }, [model, providers]);
@@ -95,6 +101,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
       supportsTools: formData.supportsTools,
       isHidden: formData.isHidden,
       isCustom: model?.isCustom || !model,
+      providerOverrides,
     };
 
     onSave(modelData);
@@ -109,7 +116,13 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
   };
 
   return (
-    <ConfirmDialog title={model ? t('modelLibrary.editModel') : t('modelLibrary.addModel')} onCancel={onCancel} onConfirm={handleSubmit} width={600}>
+    <ConfirmDialog
+      title={model ? t('modelLibrary.editModel') : t('modelLibrary.addModel')}
+      contentClass="bg-bg-secondary"
+      onCancel={onCancel}
+      onConfirm={handleSubmit}
+      width={700}
+    >
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -221,6 +234,9 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
             />
           </div>
         </div>
+
+        {/* Advanced Settings - Provider Overrides */}
+        {selectedProvider && <ModelParameterOverrides provider={selectedProvider.provider} overrides={providerOverrides} onChange={setProviderOverrides} />}
 
         <div className="flex justify-end">
           <Checkbox label={t('modelLibrary.hidden')} checked={formData.isHidden || false} onChange={(checked) => handleInputChange('isHidden', checked)} />

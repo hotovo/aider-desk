@@ -21,6 +21,7 @@ import {
   OpenRouterIcon,
   RequestyIcon,
   VertexAiIcon,
+  ZaiPlanIcon,
 } from '@/icons';
 
 const PROVIDER_ICON_MAP: Record<LlmProviderName, ComponentType<{ width?: number; height?: number; className?: string }>> = {
@@ -38,6 +39,7 @@ const PROVIDER_ICON_MAP: Record<LlmProviderName, ComponentType<{ width?: number;
   openrouter: OpenRouterIcon,
   requesty: RequestyIcon,
   'vertex-ai': VertexAiIcon,
+  'zai-plan': ZaiPlanIcon,
 };
 
 type Props = {

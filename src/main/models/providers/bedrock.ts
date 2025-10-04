@@ -189,7 +189,7 @@ export const getBedrockAiderMapping = (provider: ProviderProfile, modelId: strin
 };
 
 // === LLM Creation Functions ===
-export const createBedrockLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createBedrockLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as BedrockProvider;
   const region = provider.region || env['AWS_REGION'];
   const accessKeyId = provider.accessKeyId || env['AWS_ACCESS_KEY_ID'];
@@ -221,7 +221,7 @@ export const createBedrockLlm = (profile: ProviderProfile, model: string, env: R
     // Let the SDK handle the default chain if explicit keys aren't provided
     credentialProvider: !accessKeyId && !secretAccessKey ? fromNodeProviderChain() : undefined,
   });
-  return bedrockProviderInstance(model);
+  return bedrockProviderInstance(model.id);
 };
 
 // === Cost and Usage Functions ===

@@ -12,3 +12,16 @@ export * from './OpenAiCompatibleParameters';
 export * from './OpenRouterParameters';
 export * from './RequestyParameters';
 export * from './VertexAIParameters';
+export * from './ZaiPlanParameters';
+
+// Advanced Settings
+export * from './OpenAiAdvancedSettings';
+export * from './GeminiAdvancedSettings';
+export * from './VertexAiAdvancedSettings';
+export * from './RequestyAdvancedSettings';
+
+// Model Overrides
+export * from './OpenAiModelOverrides';
+export * from './GeminiModelOverrides';
+export * from './VertexAiModelOverrides';
+export * from './RequestyModelOverrides';

@@ -1,10 +1,10 @@
 import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenAiProvider } from '@common/agent';
-import { ReasoningEffort } from '@common/types';
+
+import { OpenAiAdvancedSettings } from './OpenAiAdvancedSettings';
 
 import { Input } from '@/components/common/Input';
-import { Select, Option } from '@/components/common/Select';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
 type Props = {
@@ -16,15 +16,6 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
   const apiKey = provider.apiKey || '';
-  const reasoningEffort = provider.reasoningEffort || ReasoningEffort.None;
-
-  const reasoningOptions: Option[] = [
-    { value: ReasoningEffort.None, label: t('openai.reasoningEffortNone') },
-    { value: ReasoningEffort.Minimal, label: t('openai.reasoningEffortMinimal') },
-    { value: ReasoningEffort.Low, label: t('openai.reasoningEffortLow') },
-    { value: ReasoningEffort.Medium, label: t('openai.reasoningEffortMedium') },
-    { value: ReasoningEffort.High, label: t('openai.reasoningEffortHigh') },
-  ];
 
   const { environmentVariable: openAiApiKeyEnv } = useEffectiveEnvironmentVariable('OPENAI_API_KEY');
 
@@ -32,12 +23,13 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
     onChange({ ...provider, apiKey: e.target.value });
   };
 
-  const handleReasoningEffortChange = (value: string) => {
-    onChange({ ...provider, reasoningEffort: value as ReasoningEffort });
-  };
-
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
+      <div className="!mt-0 !mb-5">
+        <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
+          Get OpenAI API key
+        </a>
+      </div>
       <Input
         label={t('openai.apiKey')}
         type="password"
@@ -54,9 +46,7 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
         }
       />
 
-      <div className="grid grid-cols-2 gap-x-10">
-        <Select label={t('openai.reasoningEffort')} value={reasoningEffort} onChange={handleReasoningEffortChange} options={reasoningOptions} />
-      </div>
+      <OpenAiAdvancedSettings provider={provider} onChange={onChange} />
     </div>
   );
 };

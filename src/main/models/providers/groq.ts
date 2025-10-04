@@ -1,4 +1,4 @@
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { GroqProvider, isGroqProvider } from '@common/agent';
 import { createGroq } from '@ai-sdk/groq';
 
@@ -87,7 +87,7 @@ export const getGroqAiderMapping = (provider: ProviderProfile, modelId: string):
 };
 
 // === LLM Creation Functions ===
-export const createGroqLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createGroqLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as GroqProvider;
   const apiKey = provider.apiKey || env['GROQ_API_KEY'];
 
@@ -99,7 +99,7 @@ export const createGroqLlm = (profile: ProviderProfile, model: string, env: Reco
     apiKey,
     headers: profile.headers,
   });
-  return groqProvider(model);
+  return groqProvider(model.id);
 };
 
 // === Cost and Usage Functions ===

@@ -34,7 +34,8 @@ export type LlmProviderName =
   | 'openai-compatible'
   | 'openrouter'
   | 'requesty'
-  | 'vertex-ai';
+  | 'vertex-ai'
+  | 'zai-plan';
 
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -60,6 +61,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'openrouter',
   'requesty',
   'vertex-ai',
+  'zai-plan',
 ];
 
 export interface OpenAiProvider extends LlmProviderBase {
@@ -170,6 +172,12 @@ export interface RequestyProvider extends LlmProviderBase {
 }
 export const isRequestyProvider = (provider: LlmProviderBase): provider is RequestyProvider => provider.name === 'requesty';
 
+export interface ZaiPlanProvider extends LlmProviderBase {
+  name: 'zai-plan';
+  apiKey: string;
+}
+export const isZaiPlanProvider = (provider: LlmProviderBase): provider is ZaiPlanProvider => provider.name === 'zai-plan';
+
 export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
@@ -184,7 +192,8 @@ export type LlmProvider =
   | OpenAiCompatibleProvider
   | OllamaProvider
   | OpenRouterProvider
-  | RequestyProvider;
+  | RequestyProvider
+  | ZaiPlanProvider;
 
 export const DEFAULT_PROVIDER_MODEL: Partial<Record<LlmProviderName, string>> = {
   anthropic: 'claude-sonnet-4-20250514',
@@ -347,7 +356,7 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
 
 // TODO: move to providers.ts
 export const AZURE_DEFAULT_API_VERSION = '2025-01-01-preview';
-export const getDefaultProviderParams = (providerName: LlmProviderName): LlmProvider => {
+export const getDefaultProviderParams = <T extends LlmProvider>(providerName: LlmProviderName): T => {
   let provider: LlmProvider;
 
   const baseConfig: LlmProviderBase = {
@@ -444,8 +453,8 @@ export const getDefaultProviderParams = (providerName: LlmProviderName): LlmProv
         only: [],
         ignore: [],
         quantizations: [],
-        sort: 'price',
-        requireParameters: true,
+        sort: null,
+        requireParameters: false,
       } satisfies OpenRouterProvider;
       break;
     case 'lmstudio':
@@ -462,6 +471,12 @@ export const getDefaultProviderParams = (providerName: LlmProviderName): LlmProv
         reasoningEffort: ReasoningEffort.None,
       } satisfies RequestyProvider;
       break;
+    case 'zai-plan':
+      provider = {
+        name: 'zai-plan',
+        apiKey: '',
+      } satisfies ZaiPlanProvider;
+      break;
     default:
       // For any other provider, create a base structure. This might need more specific handling if new providers are added.
       provider = {
@@ -469,7 +484,7 @@ export const getDefaultProviderParams = (providerName: LlmProviderName): LlmProv
       } as LlmProvider;
   }
 
-  return provider;
+  return provider as T;
 };
 
 export const isSubagentEnabled = (agentProfile: AgentProfile, currentProfileId?: string): boolean => {

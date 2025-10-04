@@ -122,7 +122,7 @@ export const getVertexAiAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createVertexAiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createVertexAiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as VertexAiProvider;
   const project = provider.project || env['VERTEXAI_PROJECT'];
   const location = provider.location || env['VERTEXAI_LOCATION'] || 'global';
@@ -141,7 +141,7 @@ export const createVertexAiLlm = (profile: ProviderProfile, model: string, env: 
       credentials: JSON.parse(provider.googleCloudCredentialsJson),
     }),
   });
-  return vertexProvider(model);
+  return vertexProvider(model.id);
 };
 
 type VertexGoogleMetadata = {
@@ -196,14 +196,20 @@ export const getVertexAiUsageReport = (
   return usageReportData;
 };
 
-export const getVertexAiProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined => {
+export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): Record<string, Record<string, JSONValue>> | undefined => {
   if (isVertexAiProvider(llmProvider)) {
+    const providerOverrides = model.providerOverrides as Partial<VertexAiProvider> | undefined;
+
+    // Use model-specific overrides, falling back to provider defaults
+    const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts;
+    const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget;
+
     return {
       google: {
-        ...((llmProvider.includeThoughts || llmProvider.thinkingBudget) && {
+        ...((includeThoughts || thinkingBudget) && {
           thinkingConfig: {
-            includeThoughts: llmProvider.includeThoughts && (llmProvider.thinkingBudget ?? 0) > 0,
-            thinkingBudget: llmProvider.thinkingBudget || null,
+            includeThoughts: includeThoughts && (thinkingBudget ?? 0) > 0,
+            thinkingBudget: thinkingBudget || null,
           },
         }),
       },

@@ -1,17 +1,19 @@
 import { FocusTrap } from 'focus-trap-react';
 import { ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
 
 type Props = {
   title: string;
   onClose?: () => void;
   children: ReactNode;
+  contentClass?: string;
   footer?: ReactNode;
   width?: number;
   closeOnEscape?: boolean;
 };
 
-export const BaseDialog = ({ title, onClose, children, footer, width = 384, closeOnEscape = false }: Props) => {
+export const BaseDialog = ({ title, onClose, children, contentClass, footer, width = 500, closeOnEscape = true }: Props) => {
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +47,12 @@ export const BaseDialog = ({ title, onClose, children, footer, width = 384, clos
           <div className="px-6 py-4 border-b border-bg-tertiary-strong flex-shrink-0">
             <h2 className="text-lg font-medium text-text-primary uppercase">{title}</h2>
           </div>
-          <div className="p-6 flex flex-col flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth scrollbar-thumb-rounded-full">
+          <div
+            className={twMerge(
+              'p-6 flex flex-col flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth scrollbar-thumb-rounded-full',
+              contentClass,
+            )}
+          >
             {children}
           </div>
           <div className="px-6 py-4 border-t border-bg-tertiary-strong flex justify-end space-x-3 flex-shrink-0">

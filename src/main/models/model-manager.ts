@@ -18,6 +18,7 @@ import { openaiCompatibleProviderStrategy } from './providers/openai-compatible'
 import { openrouterProviderStrategy } from './providers/openrouter';
 import { requestyProviderStrategy } from './providers/requesty';
 import { vertexAiProviderStrategy } from './providers/vertex-ai';
+import { zaiPlanProviderStrategy } from './providers/zai-plan';
 
 import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
 
@@ -76,6 +77,7 @@ export class ModelManager {
     openrouter: openrouterProviderStrategy,
     requesty: requestyProviderStrategy,
     'vertex-ai': vertexAiProviderStrategy,
+    'zai-plan': zaiPlanProviderStrategy,
   };
 
   constructor(
@@ -478,12 +480,40 @@ export class ModelManager {
     return strategy.getAiderMapping(provider, modelId);
   }
 
-  createLlm(profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel {
+  getModel(providerId: string, modelId: string): Model | undefined {
+    const providerModels = this.providerModels[providerId];
+    if (!providerModels) {
+      return undefined;
+    }
+    return providerModels.find((m) => m.id === modelId);
+  }
+
+  createLlm(profile: ProviderProfile, model: string | Model, env: Record<string, string | undefined> = {}): LanguageModel {
     const strategy = this.providerRegistry[profile.provider.name];
     if (!strategy) {
       throw new Error(`Unsupported LLM provider: ${profile.provider.name}`);
     }
-    return strategy.createLlm(profile, model, env);
+
+    // Resolve Model object if string is provided
+    let modelObj: Model | undefined;
+    if (typeof model === 'string') {
+      modelObj = this.getModel(profile.id, model);
+      if (!modelObj) {
+        // Fallback to creating a minimal Model object if not found
+        modelObj = {
+          id: model,
+          providerId: profile.id,
+        };
+      }
+    } else {
+      modelObj = model;
+    }
+
+    if (!modelObj) {
+      throw new Error(`Model not found: ${model}`);
+    }
+
+    return strategy.createLlm(profile, modelObj, env);
   }
 
   calculateCost(provider: ProviderProfile, model: string, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number {
@@ -517,11 +547,34 @@ export class ModelManager {
     return strategy.getCacheControl(profile, llmProvider);
   }
 
-  getProviderOptions(llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined {
+  getProviderOptions(llmProvider: LlmProvider, model: string): Record<string, Record<string, JSONValue>> | undefined {
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderOptions) {
       return undefined;
     }
-    return strategy.getProviderOptions(llmProvider);
+
+    // Find the provider profile for this LLM provider
+    const providers = this.store.getProviders();
+    const providerProfile = providers.find((p) => p.provider.name === llmProvider.name);
+    if (!providerProfile) {
+      // Fallback to old behavior if provider not found
+      return strategy.getProviderOptions(llmProvider, {
+        id: model,
+        providerId: '',
+      });
+    }
+
+    // Resolve Model object
+    const modelObj = this.getModel(providerProfile.id, model);
+    if (!modelObj) {
+      // Fallback to minimal Model object if not found
+      const fallbackModel: Model = {
+        id: model,
+        providerId: providerProfile.id,
+      };
+      return strategy.getProviderOptions(llmProvider, fallbackModel);
+    }
+
+    return strategy.getProviderOptions(llmProvider, modelObj);
   }
 }

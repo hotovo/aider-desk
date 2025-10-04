@@ -1,13 +1,13 @@
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { isOpenAiProvider, OpenAiProvider } from '@common/agent';
 import { createOpenAI } from '@ai-sdk/openai';
+import { isOpenAiProvider, OpenAiProvider } from '@common/agent';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 
-import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
-import { getEffectiveEnvironmentVariable } from '@/utils';
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { Project } from '@/project/project';
+import { getEffectiveEnvironmentVariable } from '@/utils';
 
 export const loadOpenAiModels = async (
   profile: ProviderProfile,
@@ -99,7 +99,7 @@ export const getOpenAiAiderMapping = (provider: ProviderProfile, modelId: string
 };
 
 // === LLM Creation Functions ===
-export const createOpenAiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createOpenAiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as OpenAiProvider;
   const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
 
@@ -112,9 +112,13 @@ export const createOpenAiLlm = (profile: ProviderProfile, model: string, env: Re
     compatibility: 'strict',
     headers: profile.headers,
   });
-  return openAIProvider(model, {
+
+  const providerOverrides = model.providerOverrides as Partial<OpenAiProvider> | undefined;
+  const reasoningEffort = providerOverrides?.reasoningEffort ?? provider.reasoningEffort;
+
+  return openAIProvider(model.id, {
     structuredOutputs: false,
-    reasoningEffort: provider.reasoningEffort === undefined ? undefined : (provider.reasoningEffort as 'low' | 'medium' | 'high' | undefined),
+    reasoningEffort: reasoningEffort === undefined ? undefined : (reasoningEffort as 'low' | 'medium' | 'high' | undefined),
   });
 };
 

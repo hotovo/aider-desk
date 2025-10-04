@@ -1,4 +1,4 @@
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isOpenAiCompatibleProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -87,7 +87,7 @@ export const getOpenAiCompatibleAiderMapping = (provider: ProviderProfile, model
 };
 
 // === LLM Creation Functions ===
-export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as OpenAiCompatibleProvider;
   const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
   if (!apiKey) {
@@ -105,7 +105,7 @@ export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: strin
     baseURL: baseUrl,
     headers: profile.headers,
   });
-  return compatibleProvider(model);
+  return compatibleProvider(model.id);
 };
 
 // === Cost and Usage Functions ===

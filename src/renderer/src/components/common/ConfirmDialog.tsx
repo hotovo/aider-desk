@@ -10,6 +10,7 @@ type Props = {
   onCancel: () => void;
   confirmButtonText?: string;
   cancelButtonText?: string;
+  contentClass?: string;
   children: ReactNode;
   disabled?: boolean;
   confirmButtonClass?: string;
@@ -23,6 +24,7 @@ export const ConfirmDialog = ({
   onCancel,
   confirmButtonText,
   cancelButtonText,
+  contentClass,
   children,
   disabled = false,
   confirmButtonClass,
@@ -37,6 +39,7 @@ export const ConfirmDialog = ({
       title={title}
       onClose={onCancel}
       width={width}
+      contentClass={contentClass}
       footer={
         <>
           <Button onClick={onCancel} variant="text">

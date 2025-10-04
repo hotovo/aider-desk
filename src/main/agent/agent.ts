@@ -550,7 +550,7 @@ export class Agent {
     const effectiveAbortSignal = abortSignal || this.abortControllers[project.baseDir]?.signal;
 
     const cacheControl = this.modelManager.getCacheControl(profile, llmProvider);
-    const providerOptions = this.modelManager.getProviderOptions(llmProvider);
+    const providerOptions = this.modelManager.getProviderOptions(llmProvider, profile.model);
 
     const userRequestMessage: ContextUserMessage = {
       id: promptContext?.id || uuidv4(),

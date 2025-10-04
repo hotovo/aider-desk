@@ -1,14 +1,15 @@
-import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { isAnthropicProvider, AnthropicProvider, LlmProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { AnthropicProvider, isAnthropicProvider } from '@common/agent';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
-import { Project } from '@/project/project';
 import { LoadModelsResponse } from '@/models/types';
+import { Project } from '@/project/project';
+import { getEffectiveEnvironmentVariable } from '@/utils';
 
 export const loadAnthropicModels = async (
   profile: ProviderProfile,
@@ -86,7 +87,7 @@ export const getAnthropicAiderMapping = (provider: ProviderProfile, modelId: str
 };
 
 // === LLM Creation Functions ===
-export const createAnthropicLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createAnthropicLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as AnthropicProvider;
   const apiKey = provider.apiKey || env['ANTHROPIC_API_KEY'];
 
@@ -98,7 +99,7 @@ export const createAnthropicLlm = (profile: ProviderProfile, model: string, env:
     apiKey,
     headers: profile.headers,
   });
-  return anthropicProvider(model);
+  return anthropicProvider(model.id);
 };
 
 type AnthropicMetadata = {
@@ -156,7 +157,7 @@ export const getAnthropicUsageReport = (
 };
 
 // === Configuration Helper Functions ===
-export const getAnthropicCacheControl = (_profile: AgentProfile, _provider: LlmProvider): CacheControl => {
+export const getAnthropicCacheControl = (): CacheControl => {
   return {
     anthropic: {
       cacheControl: { type: 'ephemeral' },

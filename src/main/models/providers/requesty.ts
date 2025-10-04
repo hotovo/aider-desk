@@ -1,4 +1,4 @@
-import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
 import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 
@@ -110,13 +110,17 @@ export const getRequestyAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createRequestyLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createRequestyLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as RequestyProvider;
   const apiKey = provider.apiKey || env['REQUESTY_API_KEY'];
 
   if (!apiKey) {
     throw new Error('Requesty API key is required in Providers settings or Aider environment variables (REQUESTY_API_KEY)');
   }
+
+  const providerOverrides = model.providerOverrides as Partial<RequestyProvider> | undefined;
+  const useAutoCache = providerOverrides?.useAutoCache ?? provider.useAutoCache;
+  const reasoningEffort = providerOverrides?.reasoningEffort ?? provider.reasoningEffort;
 
   const requestyProvider = createRequesty({
     apiKey,
@@ -127,12 +131,12 @@ export const createRequestyLlm = (profile: ProviderProfile, model: string, env: 
       'X-Title': AIDER_DESK_TITLE,
     },
     extraBody: {
-      ...(provider.useAutoCache && { requesty: { auto_cache: true } }),
+      ...(useAutoCache && { requesty: { auto_cache: true } }),
     },
   });
-  return requestyProvider(model, {
-    includeReasoning: provider.reasoningEffort !== undefined,
-    reasoningEffort: provider.reasoningEffort === undefined ? undefined : provider.reasoningEffort,
+  return requestyProvider(model.id, {
+    includeReasoning: reasoningEffort !== undefined,
+    reasoningEffort: reasoningEffort === ReasoningEffort.None ? undefined : reasoningEffort,
   });
 };
 

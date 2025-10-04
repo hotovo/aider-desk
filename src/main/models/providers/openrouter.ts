@@ -110,13 +110,23 @@ export const getOpenRouterAiderMapping = (provider: ProviderProfile, modelId: st
 };
 
 // === LLM Creation Functions ===
-export const createOpenRouterLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createOpenRouterLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
   const provider = profile.provider as OpenRouterProvider;
   const apiKey = provider.apiKey || env['OPENROUTER_API_KEY'];
 
   if (!apiKey) {
     throw new Error('OpenRouter API key is required in Providers settings or Aider environment variables (OPENROUTER_API_KEY)');
   }
+
+  const providerOverrides = model.providerOverrides as Partial<OpenRouterProvider> | undefined;
+  const requireParameters = providerOverrides?.requireParameters ?? provider.requireParameters;
+  const order = providerOverrides?.order ?? provider.order;
+  const only = providerOverrides?.only ?? provider.only;
+  const ignore = providerOverrides?.ignore ?? provider.ignore;
+  const allowFallbacks = providerOverrides?.allowFallbacks ?? provider.allowFallbacks;
+  const dataCollection = providerOverrides?.dataCollection ?? provider.dataCollection;
+  const quantizations = providerOverrides?.quantizations ?? provider.quantizations;
+  const sort = providerOverrides?.sort ?? provider.sort;
 
   const openRouter = createOpenRouter({
     apiKey,
@@ -128,18 +138,18 @@ export const createOpenRouterLlm = (profile: ProviderProfile, model: string, env
     },
     extraBody: {
       provider: {
-        require_parameters: provider.requireParameters,
-        order: provider.order?.length ? provider.order : undefined,
-        only: provider.only?.length ? provider.only : undefined,
-        ignore: provider.ignore?.length ? provider.ignore : undefined,
-        allow_fallbacks: provider.allowFallbacks,
-        data_collection: provider.dataCollection,
-        quantizations: provider.quantizations?.length ? provider.quantizations : undefined,
-        sort: provider.sort || undefined,
+        require_parameters: requireParameters,
+        order: order?.length ? order : undefined,
+        only: only?.length ? only : undefined,
+        ignore: ignore?.length ? ignore : undefined,
+        allow_fallbacks: allowFallbacks,
+        data_collection: dataCollection,
+        quantizations: quantizations?.length ? quantizations : undefined,
+        sort: sort || undefined,
       },
     },
   });
-  return openRouter.chat(model, {
+  return openRouter.chat(model.id, {
     usage: {
       include: true,
     },

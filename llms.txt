@@ -110,6 +110,7 @@ src/
         openrouter.ts
         requesty.ts
         vertex-ai.ts
+        zai-plan.ts
       index.ts
       model-manager.ts
       models.ts
@@ -231,6 +232,7 @@ src/
           Table.tsx
           TextArea.tsx
           TriStateCheckbox.tsx
+          VirtualTable.tsx
           WarningIcon.tsx
         ContextFiles/
           ContextFiles.css
@@ -265,9 +267,38 @@ src/
           UserMessageBlock.tsx
           utils.tsx
         ModelLibrary/
+          providers/
+            AnthropicParameters.tsx
+            AzureParameters.tsx
+            BedrockParameters.tsx
+            CerebrasParameters.tsx
+            DeepseekParameters.tsx
+            GeminiAdvancedSettings.tsx
+            GeminiModelOverrides.tsx
+            GeminiParameters.tsx
+            GroqParameters.tsx
+            index.ts
+            LmStudioParameters.tsx
+            OllamaParameters.tsx
+            OpenAiAdvancedSettings.tsx
+            OpenAiCompatibleParameters.tsx
+            OpenAiModelOverrides.tsx
+            OpenAiParameters.tsx
+            OpenRouterAdvancedSettings.tsx
+            OpenRouterModelOverrides.tsx
+            OpenRouterParameters.tsx
+            ProviderModels.tsx
+            RequestyAdvancedSettings.tsx
+            RequestyModelOverrides.tsx
+            RequestyParameters.tsx
+            VertexAiAdvancedSettings.tsx
+            VertexAiModelOverrides.tsx
+            VertexAIParameters.tsx
+            ZaiPlanParameters.tsx
           index.ts
           ModelDialog.tsx
           ModelLibrary.tsx
+          ModelParameterOverrides.tsx
           ModelTableSection.tsx
           ProviderCard.tsx
           ProviderHeader.tsx
@@ -298,24 +329,6 @@ src/
           PromptField.tsx
         settings/
           agent/
-            providers/
-              AnthropicParameters.tsx
-              AzureParameters.tsx
-              BedrockParameters.tsx
-              CerebrasParameters.tsx
-              DeepseekParameters.tsx
-              GeminiParameters.tsx
-              GroqParameters.tsx
-              index.ts
-              LmStudioParameters.tsx
-              OllamaParameters.tsx
-              OpenAiCompatibleParameters.tsx
-              OpenAiParameters.tsx
-              OpenRouterAdvancedSettings.tsx
-              OpenRouterParameters.tsx
-              ProviderModels.tsx
-              RequestyParameters.tsx
-              VertexAIParameters.tsx
             AgentProfileItem.tsx
             AgentRules.tsx
             AgentSettings.tsx
@@ -388,6 +401,7 @@ src/
         OpenRouterIcon.tsx
         RequestyIcon.tsx
         VertexAiIcon.tsx
+        ZaiPlanIcon.tsx
       pages/
         Home.tsx
         Onboarding.tsx
@@ -1351,6 +1365,11 @@ File: src/common/locales/en.json
       "invalidTokenCount": "Token count must be a positive number",
       "invalidCost": "Cost must be a non-negative number",
       "duplicateId": "Provider ID already exists"
+    },
+    "overrides": {
+      "title": "Provider Overrides",
+      "resetToDefaults": "Clear overrides",
+      "overridesProviderParameters": "Overrides some provider parameters"
     }
   },
   "openai": {
@@ -1417,6 +1436,9 @@ File: src/common/locales/en.json
     "baseUrl": "Base URL",
     "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
   },
+  "zaiPlan": {
+    "apiKey": "API Key"
+  },
   "azure": {
     "apiKey": "API Key",
     "resourceName": "Resource Name",
@@ -1437,6 +1459,7 @@ File: src/common/locales/en.json
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
     "vertex-ai": "Vertex AI",
+    "zai-plan": "Z.AI Coding Plan",
     "azure": "Azure"
   },
   "select": {
@@ -2325,6 +2348,11 @@ File: src/common/locales/zh.json
       "invalidTokenCount": "令牌数必须为正数",
       "invalidCost": "成本必须为非负数",
       "duplicateId": "提供商 ID 已存在"
+    },
+    "overrides": {
+      "title": "提供商覆盖",
+      "resetToDefaults": "清除覆盖",
+      "overridesProviderParameters": "覆盖一些提供商参数"
     }
   },
   "openai": {
@@ -2346,6 +2374,9 @@ File: src/common/locales/zh.json
   "lmstudio": {
     "baseUrl": "基础 URL",
     "baseUrlPlaceholder": "例如 http://localhost:1234/v1"
+  },
+  "zaiPlan": {
+    "apiKey": "API 密钥"
   },
   "anthropic": {
     "apiKey": "API 密钥"
@@ -2409,6 +2440,7 @@ File: src/common/locales/zh.json
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
     "vertex-ai": "Vertex AI",
+    "zai-plan": "Z.AI Coding Plan",
     "azure": "Azure"
   },
   "select": {
@@ -3124,7 +3156,8 @@ export type LlmProviderName =
   | 'openai-compatible'
   | 'openrouter'
   | 'requesty'
-  | 'vertex-ai';
+  | 'vertex-ai'
+  | 'zai-plan';
 ⋮----
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -3246,6 +3279,12 @@ export interface RequestyProvider extends LlmProviderBase {
 }
 export const isRequestyProvider = (provider: LlmProviderBase): provider is RequestyProvider
 ⋮----
+export interface ZaiPlanProvider extends LlmProviderBase {
+  name: 'zai-plan';
+  apiKey: string;
+}
+export const isZaiPlanProvider = (provider: LlmProviderBase): provider is ZaiPlanProvider
+⋮----
 export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
@@ -3260,7 +3299,8 @@ export type LlmProvider =
   | OpenAiCompatibleProvider
   | OllamaProvider
   | OpenRouterProvider
-  | RequestyProvider;
+  | RequestyProvider
+  | ZaiPlanProvider;
 ⋮----
 // aider tools
 ⋮----
@@ -3276,7 +3316,7 @@ export type LlmProvider =
 ⋮----
 // TODO: move to providers.ts
 ⋮----
-export const getDefaultProviderParams = (providerName: LlmProviderName): LlmProvider =>
+export const getDefaultProviderParams = <T extends LlmProvider>(providerName: LlmProviderName): T =>
 ⋮----
 region: 'us-east-1', // Default region
 ⋮----
@@ -3975,6 +4015,7 @@ export interface Model {
   supportsTools?: boolean;
   isCustom?: boolean;
   isHidden?: boolean;
+  providerOverrides?: Record<string, unknown>;
 }
 ⋮----
 export interface ProviderModelsData {
@@ -5236,16 +5277,16 @@ File: src/main/events/index.ts
 ================
 File: src/main/models/providers/anthropic.ts
 ================
-import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { isAnthropicProvider, AnthropicProvider, LlmProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { AnthropicProvider, isAnthropicProvider } from '@common/agent';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 ⋮----
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 ⋮----
-import { getEffectiveEnvironmentVariable } from '@/utils';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
-import { Project } from '@/project/project';
 import { LoadModelsResponse } from '@/models/types';
+import { Project } from '@/project/project';
+import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
 export const loadAnthropicModels = async (
   profile: ProviderProfile,
@@ -5258,7 +5299,7 @@ export const hasAnthropicEnvVars = (settings: SettingsData): boolean =>
 export const getAnthropicAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createAnthropicLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createAnthropicLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 type AnthropicMetadata = {
   anthropic: {
@@ -5280,7 +5321,7 @@ export const getAnthropicUsageReport = (
 ): UsageReportData =>
 ⋮----
 // === Configuration Helper Functions ===
-export const getAnthropicCacheControl = (_profile: AgentProfile, _provider: LlmProvider): CacheControl =>
+export const getAnthropicCacheControl = (): CacheControl =>
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5294,7 +5335,7 @@ export const getAnthropicCacheControl = (_profile: AgentProfile, _provider: LlmP
 File: src/main/models/providers/azure.ts
 ================
 import { createAzure } from '@ai-sdk/azure';
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { AZURE_DEFAULT_API_VERSION, AzureProvider } from '@common/agent';
 ⋮----
 import type { LanguageModel, LanguageModelUsage } from 'ai';
@@ -5312,7 +5353,7 @@ export const hasAzureEnvVars = (settings: SettingsData): boolean =>
 export const getAzureAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createAzureLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createAzureLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 type AzureMetadata = {
   openai: {
@@ -5378,7 +5419,7 @@ export const hasBedrockEnvVars = (settings: SettingsData): boolean =>
 export const getBedrockAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createBedrockLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createBedrockLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // Check if we have explicit keys or if AWS_PROFILE is set in the main process env
 ⋮----
@@ -5411,7 +5452,7 @@ export const getBedrockUsageReport = (
 ================
 File: src/main/models/providers/cerebras.ts
 ================
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { CerebrasProvider, isCerebrasProvider } from '@common/agent';
 import { createCerebras } from '@ai-sdk/cerebras';
 ⋮----
@@ -5442,7 +5483,7 @@ export const hasCerebrasEnvVars = (settings: SettingsData): boolean =>
 export const getCerebrasAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createCerebrasLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createCerebrasLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // === Cost and Usage Functions ===
 export const calculateCerebrasCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
@@ -5467,7 +5508,7 @@ export const getCerebrasUsageReport = (
 ================
 File: src/main/models/providers/deepseek.ts
 ================
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { DeepseekProvider, isDeepseekProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 ⋮----
@@ -5489,7 +5530,7 @@ export const hasDeepseekEnvVars = (settings: SettingsData): boolean =>
 export const getDeepseekAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createDeepseekLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createDeepseekLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // === Cost and Usage Functions ===
 export const calculateDeepseekCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
@@ -5514,7 +5555,7 @@ export const getDeepseekUsageReport = (
 ================
 File: src/main/models/providers/gemini.ts
 ================
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { GeminiProvider, isGeminiProvider, LlmProvider } from '@common/agent';
 import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 ⋮----
@@ -5536,7 +5577,7 @@ export const hasGeminiEnvVars = (settings: SettingsData): boolean =>
 export const getGeminiAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createGeminiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createGeminiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 type GoogleMetadata = {
   google: {
@@ -5556,7 +5597,9 @@ export const getGeminiUsageReport = (
   providerMetadata?: unknown,
 ): UsageReportData =>
 ⋮----
-export const getGeminiProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined =>
+export const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model): Record<string, Record<string, JSONValue>> | undefined =>
+⋮----
+// Use model-specific overrides, falling back to provider defaults
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5567,7 +5610,7 @@ export const getGeminiProviderOptions = (llmProvider: LlmProvider): Record<strin
 ================
 File: src/main/models/providers/groq.ts
 ================
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { GroqProvider, isGroqProvider } from '@common/agent';
 import { createGroq } from '@ai-sdk/groq';
 ⋮----
@@ -5595,7 +5638,7 @@ export const hasGroqEnvVars = (settings: SettingsData): boolean =>
 export const getGroqAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createGroqLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createGroqLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // === Cost and Usage Functions ===
 export const calculateGroqCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
@@ -5620,7 +5663,7 @@ export const getGroqUsageReport = (
 ================
 File: src/main/models/providers/lm-studio.ts
 ================
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isLmStudioProvider, LmStudioProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
@@ -5646,7 +5689,7 @@ export const hasLmStudioEnvVars = (settings: SettingsData): boolean =>
 export const getLmStudioAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createLmStudioLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createLmStudioLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // === Cost and Usage Functions ===
 export const calculateLmStudioCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
@@ -5671,7 +5714,7 @@ export const getLmStudioUsageReport = (
 ================
 File: src/main/models/providers/ollama.ts
 ================
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isOllamaProvider, OllamaProvider } from '@common/agent';
 import { createOllama } from 'ollama-ai-provider';
 ⋮----
@@ -5697,7 +5740,7 @@ export const hasOllamaEnvVars = (settings: SettingsData): boolean =>
 export const getOllamaAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createOllamaLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createOllamaLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // === Cost and Usage Functions ===
 export const calculateOllamaCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
@@ -5722,7 +5765,7 @@ export const getOllamaUsageReport = (
 ================
 File: src/main/models/providers/openai-compatible.ts
 ================
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isOpenAiCompatibleProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
@@ -5746,7 +5789,7 @@ export const getOpenAiCompatibleAiderMapping = (provider: ProviderProfile, model
 // Use openai prefix for OpenAI-compatible providers
 ⋮----
 // === LLM Creation Functions ===
-export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // Use createOpenAICompatible to get a provider instance, then get the model
 ⋮----
@@ -5778,16 +5821,16 @@ export const getOpenAiCompatibleUsageReport = (
 ================
 File: src/main/models/providers/openai.ts
 ================
-import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { isOpenAiProvider, OpenAiProvider } from '@common/agent';
 import { createOpenAI } from '@ai-sdk/openai';
+import { isOpenAiProvider, OpenAiProvider } from '@common/agent';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 ⋮----
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 ⋮----
-import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
-import { getEffectiveEnvironmentVariable } from '@/utils';
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { Project } from '@/project/project';
+import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
 export const loadOpenAiModels = async (
   profile: ProviderProfile,
@@ -5800,7 +5843,7 @@ export const hasOpenAiEnvVars = (settings: SettingsData): boolean =>
 export const getOpenAiAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createOpenAiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createOpenAiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 type OpenAiMetadata = {
   openai: {
@@ -5879,7 +5922,7 @@ export const hasOpenRouterEnvVars = (settings: SettingsData): boolean =>
 export const getOpenRouterAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createOpenRouterLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createOpenRouterLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 type OpenRouterMetadata = {
   openrouter: {
@@ -5929,7 +5972,7 @@ export const getOpenRouterCacheControl = (profile: AgentProfile, llmProvider: Ll
 ================
 File: src/main/models/providers/requesty.ts
 ================
-import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
 import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 ⋮----
@@ -5975,7 +6018,7 @@ export const getRequestyAiderMapping = (provider: ProviderProfile, modelId: stri
 // Requesty doesn't have direct Aider support, so we use OpenAI-compatible endpoint
 ⋮----
 // === LLM Creation Functions ===
-export const createRequestyLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createRequestyLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // === Cost and Usage Functions ===
 export const calculateRequestyCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number =>
@@ -6036,7 +6079,7 @@ export const getVertexAiAiderMapping = (provider: ProviderProfile, modelId: stri
 // Aider uses vertex_ai prefix instead of vertex-ai
 ⋮----
 // === LLM Creation Functions ===
-export const createVertexAiLlm = (profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+export const createVertexAiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
 ⋮----
 // using custom base URL to fix the 'global' location
 ⋮----
@@ -6058,7 +6101,9 @@ export const getVertexAiUsageReport = (
   providerMetadata?: unknown,
 ): UsageReportData =>
 ⋮----
-export const getVertexAiProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined =>
+export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): Record<string, Record<string, JSONValue>> | undefined =>
+⋮----
+// Use model-specific overrides, falling back to provider defaults
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -6067,6 +6112,60 @@ export const getVertexAiProviderOptions = (llmProvider: LlmProvider): Record<str
 // Model discovery functions
 ⋮----
 // Configuration helpers
+
+================
+File: src/main/models/providers/zai-plan.ts
+================
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isZaiPlanProvider, ZaiPlanProvider } from '@common/agent';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import logger from '@/logger';
+import { Project } from '@/project/project';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadZaiPlanModels = async (
+  profile: ProviderProfile,
+  modelsInfo: Record<string, ModelInfo>,
+  settings: SettingsData,
+): Promise<LoadModelsResponse> =>
+⋮----
+// ZAI uses specific endpoint for model discovery
+⋮----
+export const hasZaiPlanEnvVars = (settings: SettingsData): boolean =>
+⋮----
+export const getZaiPlanAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// Use zai-plan prefix for ZAI providers
+⋮----
+// === LLM Creation Functions ===
+export const createZaiPlanLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> =
+⋮----
+// Use createOpenAICompatible to get a provider instance, then get the model
+// ZAI uses specific base URL for chat completions
+⋮----
+// === Cost and Usage Functions ===
+export const calculateZaiPlanCost = (modelInfo: ModelInfo | undefined, sentTokens: number, receivedTokens: number, _providerMetadata?: unknown): number =>
+⋮----
+// Standard cost calculation without caching adjustments
+⋮----
+export const getZaiPlanUsageReport = (
+  project: Project,
+  provider: ProviderProfile,
+  modelId: string,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
 
 ================
 File: src/main/models/index.ts
@@ -6096,6 +6195,7 @@ import { openaiCompatibleProviderStrategy } from './providers/openai-compatible'
 import { openrouterProviderStrategy } from './providers/openrouter';
 import { requestyProviderStrategy } from './providers/requesty';
 import { vertexAiProviderStrategy } from './providers/vertex-ai';
+import { zaiPlanProviderStrategy } from './providers/zai-plan';
 ⋮----
 import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
 ⋮----
@@ -6202,7 +6302,13 @@ getAiderModelMapping(modelName: string): AiderModelMapping
 ⋮----
 private getProviderAiderMapping(provider: ProviderProfile, modelId: string): AiderModelMapping
 ⋮----
-createLlm(profile: ProviderProfile, model: string, env: Record<string, string | undefined> =
+getModel(providerId: string, modelId: string): Model | undefined
+⋮----
+createLlm(profile: ProviderProfile, model: string | Model, env: Record<string, string | undefined> =
+⋮----
+// Resolve Model object if string is provided
+⋮----
+// Fallback to creating a minimal Model object if not found
 ⋮----
 calculateCost(provider: ProviderProfile, model: string, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number
 ⋮----
@@ -6217,7 +6323,15 @@ getUsageReport(
 ⋮----
 getCacheControl(profile: AgentProfile, llmProvider: LlmProvider): CacheControl
 ⋮----
-getProviderOptions(llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined
+getProviderOptions(llmProvider: LlmProvider, model: string): Record<string, Record<string, JSONValue>> | undefined
+⋮----
+// Find the provider profile for this LLM provider
+⋮----
+// Fallback to old behavior if provider not found
+⋮----
+// Resolve Model object
+⋮----
+// Fallback to minimal Model object if not found
 
 ================
 File: src/main/models/models.ts
@@ -6261,7 +6375,7 @@ export interface LlmProviderStrategy {
   /**
    * Creates a LanguageModel instance for the given provider and model
    */
-  createLlm: (profile: ProviderProfile, model: string, env: Record<string, string | undefined>) => LanguageModel;
+  createLlm: (profile: ProviderProfile, model: Model, env: Record<string, string | undefined>) => LanguageModel;
 
   /**
    * Calculates the cost for token usage with provider-specific caching adjustments
@@ -6305,7 +6419,7 @@ export interface LlmProviderStrategy {
   /**
    * Returns provider-specific options for model instantiation
    */
-  getProviderOptions?: (provider: LlmProvider) => Record<string, Record<string, JSONValue>> | undefined;
+  getProviderOptions?: (provider: LlmProvider, model: Model) => Record<string, Record<string, JSONValue>> | undefined;
 }
 ⋮----
 // === LLM Creation and Usage Functions ===
@@ -9341,17 +9455,21 @@ File: src/renderer/src/components/common/BaseDialog.tsx
 import { FocusTrap } from 'focus-trap-react';
 import { ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 type Props = {
   title: string;
   onClose?: () => void;
   children: ReactNode;
+  contentClass?: string;
   footer?: ReactNode;
   width?: number;
   closeOnEscape?: boolean;
 };
 ⋮----
 const handleKeyDown = (event: KeyboardEvent) =>
+⋮----
+className=
 
 ================
 File: src/renderer/src/components/common/Button.tsx
@@ -9487,6 +9605,7 @@ type Props = {
   onCancel: () => void;
   confirmButtonText?: string;
   cancelButtonText?: string;
+  contentClass?: string;
   children: ReactNode;
   disabled?: boolean;
   confirmButtonClass?: string;
@@ -9500,6 +9619,7 @@ export const ConfirmDialog = ({
   onCancel,
   confirmButtonText,
   cancelButtonText,
+  contentClass,
   children,
   disabled = false,
   confirmButtonClass,
@@ -9589,7 +9709,7 @@ import { StyledTooltip } from './StyledTooltip';
 ⋮----
 type Props = {
   icon: ReactNode;
-  onClick: () => void;
+  onClick?: () => void;
   tooltip?: ReactNode;
   className?: string;
   tooltipId?: string;
@@ -9597,17 +9717,6 @@ type Props = {
 };
 ⋮----
 const handleClick = (e: MouseEvent<HTMLDivElement>) =>
-⋮----
-const renderButton = () => (
-    <div
-      onClick={disabled ? undefined : handleClick}
-      data-tooltip-id={tooltip ? tooltipIdRef.current : undefined}
-      data-tooltip-content={typeof tooltip === 'string' && tooltipId ? tooltip : undefined}
-      className={combinedClassName}
-    >
-      {icon}
-    </div>
-  );
 ⋮----
 
 ================
@@ -9865,6 +9974,39 @@ type Props = InputHTMLAttributes<HTMLInputElement> & {
   onChange: () => void;
   className?: string;
 };
+
+================
+File: src/renderer/src/components/common/VirtualTable.tsx
+================
+import { ReactNode, useMemo } from 'react';
+⋮----
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+⋮----
+import { Column, FooterColumn } from './Table';
+⋮----
+type Props<T> = {
+  data: T[];
+  columns: Column<T>[];
+  footerColumns?: FooterColumn[];
+  rowHeight?: number | ((params: { index: number }) => number);
+  overscanCount?: number;
+  disableHeader?: boolean;
+};
+⋮----
+// Convert Column<T> to ColumnDef<T> for @tanstack/react-table
+⋮----
+// Create table instance
+⋮----
+// Parent ref for virtualizer
+⋮----
+// Create virtualizer
+⋮----
+{/* Header - Outside virtualized area */}
+⋮----
+{/* Virtualized body */}
+⋮----
+{/* Footer - Outside virtualized area */}
 
 ================
 File: src/renderer/src/components/common/WarningIcon.tsx
@@ -10805,6 +10947,676 @@ export const groupMessagesByPromptContext = (messages: Message[]): Message[] =>
 // Only create the group once
 
 ================
+File: src/renderer/src/components/ModelLibrary/providers/AnthropicParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AnthropicProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: AnthropicProvider;
+  onChange: (updated: AnthropicProvider) => void;
+};
+⋮----
+export const AnthropicParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/AzureParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AzureProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: AzureProvider;
+  onChange: (updated: AzureProvider) => void;
+};
+⋮----
+// Environment variable hooks for placeholders
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleResourceNameChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleApiVersionChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+⋮----
+<p className="text-xs text-info-lightest">
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/BedrockParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { BedrockProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { InfoIcon } from '@/components/common/InfoIcon';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: BedrockProvider;
+  onChange: (updated: BedrockProvider) => void;
+};
+⋮----
+const handleRegionChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleAccessKeyIdChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleSecretAccessKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleSessionTokenChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+placeholder=
+⋮----
+<span>
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/CerebrasParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CerebrasProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: CerebrasProvider;
+  onChange: (updated: CerebrasProvider) => void;
+};
+⋮----
+export const CerebrasParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/DeepseekParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { DeepseekProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: DeepseekProvider;
+  onChange: (updated: DeepseekProvider) => void;
+};
+⋮----
+export const DeepseekParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/GeminiAdvancedSettings.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { GeminiProvider } from '@common/agent';
+⋮----
+import { Slider } from '@/components/common/Slider';
+import { Checkbox } from '@/components/common/Checkbox';
+import { InfoIcon } from '@/components/common/InfoIcon';
+import { WarningIcon } from '@/components/common/WarningIcon';
+⋮----
+type Props = {
+  provider: GeminiProvider;
+  onChange: (updated: GeminiProvider) => void;
+};
+⋮----
+const handleThinkingBudgetChange = (value: number) =>
+⋮----
+const handleIncludeThoughtsChange = (checked: boolean) =>
+⋮----
+const handleUseSearchGroundingChange = (checked: boolean) =>
+⋮----
+label=
+⋮----
+<InfoIcon tooltip=
+⋮----
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/GeminiModelOverrides.tsx
+================
+import { getDefaultProviderParams, GeminiProvider } from '@common/agent';
+⋮----
+import { GeminiAdvancedSettings } from './GeminiAdvancedSettings';
+⋮----
+type Props = {
+  overrides: Partial<GeminiProvider>;
+  onChange: (overrides: Record<string, unknown>) => void;
+};
+⋮----
+export const GeminiModelOverrides = (
+⋮----
+// Convert overrides to GeminiProvider format for AdvancedSettings
+⋮----
+// Convert GeminiProvider back to overrides format
+const handleProviderChange = (updatedProvider: GeminiProvider) =>
+⋮----
+// Remove undefined values
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/GeminiParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { GeminiProvider } from '@common/agent';
+⋮----
+import { GeminiAdvancedSettings } from './GeminiAdvancedSettings';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: GeminiProvider;
+  onChange: (updated: GeminiProvider) => void;
+};
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleCustomBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/GroqParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { GroqProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: GroqProvider;
+  onChange: (updated: GroqProvider) => void;
+};
+⋮----
+export const GroqParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/index.ts
+================
+// Advanced Settings
+⋮----
+// Model Overrides
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/LmStudioParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LmStudioProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: LmStudioProvider;
+  onChange: (updated: LmStudioProvider) => void;
+};
+⋮----
+export const LmStudioParameters = (
+⋮----
+const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+placeholder=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OllamaParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { OllamaProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: OllamaProvider;
+  onChange: (updated: OllamaProvider) => void;
+};
+⋮----
+export const OllamaParameters = (
+⋮----
+const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+placeholder=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenAiAdvancedSettings.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { OpenAiProvider } from '@common/agent';
+import { ReasoningEffort } from '@common/types';
+⋮----
+import { Select, Option } from '@/components/common/Select';
+⋮----
+type Props = {
+  provider: OpenAiProvider;
+  onChange: (updated: OpenAiProvider) => void;
+};
+⋮----
+export const OpenAiAdvancedSettings = (
+⋮----
+const handleReasoningEffortChange = (value: string) =>
+⋮----
+<Select label=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenAiCompatibleParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { OpenAiCompatibleProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: OpenAiCompatibleProvider;
+  onChange: (updated: OpenAiCompatibleProvider) => void;
+};
+⋮----
+const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+placeholder=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenAiModelOverrides.tsx
+================
+import { getDefaultProviderParams, OpenAiProvider } from '@common/agent';
+⋮----
+import { OpenAiAdvancedSettings } from './OpenAiAdvancedSettings';
+⋮----
+type Props = {
+  overrides: Partial<OpenAiProvider>;
+  onChange: (overrides: Record<string, unknown>) => void;
+};
+⋮----
+export const OpenAiModelOverrides = (
+⋮----
+// Convert overrides to OpenAiProvider format for AdvancedSettings
+⋮----
+// Convert OpenAiProvider back to overrides format
+const handleProviderChange = (updatedProvider: OpenAiProvider) =>
+⋮----
+// Remove undefined values
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenAiParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { OpenAiProvider } from '@common/agent';
+⋮----
+import { OpenAiAdvancedSettings } from './OpenAiAdvancedSettings';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: OpenAiProvider;
+  onChange: (updated: OpenAiProvider) => void;
+};
+⋮----
+export const OpenAiParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenRouterAdvancedSettings.tsx
+================
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { OpenRouterProvider } from '@common/agent';
+⋮----
+import { InfoIcon } from '@/components/common/InfoIcon';
+import { Input } from '@/components/common/Input';
+import { Select } from '@/components/common/Select';
+import { Checkbox } from '@/components/common/Checkbox';
+⋮----
+type Props = {
+  provider: OpenRouterProvider;
+  onChange: (updated: OpenRouterProvider) => void;
+};
+⋮----
+const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleOrderBlur = () =>
+⋮----
+const handleOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleOnlyBlur = () =>
+⋮----
+const handleIgnoreChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleIgnoreBlur = () =>
+⋮----
+const handleQuantizationsChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleQuantizationsBlur = () =>
+⋮----
+const handleAllowFallbacksChange = (checked: boolean) =>
+⋮----
+const handleDataCollectionChange = (value: string) =>
+⋮----
+const handleSortChange = (value: string) =>
+⋮----
+const handleRequireParametersChange = (checked: boolean) =>
+⋮----
+href="https://openrouter.ai/docs/features/provider-routing#ordering-specific-providers"
+⋮----
+href="https://openrouter.ai/docs/features/provider-routing#disabling-fallbacks"
+⋮----
+href="https://openrouter.ai/docs/features/provider-routing#allowing-only-specific-providers"
+⋮----
+href="https://openrouter.ai/docs/features/provider-routing#quantization"
+⋮----
+href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenRouterModelOverrides.tsx
+================
+import { getDefaultProviderParams, OpenRouterProvider } from '@common/agent';
+⋮----
+import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
+⋮----
+type Props = {
+  overrides: Partial<OpenRouterProvider>;
+  onChange: (overrides: Record<string, unknown>) => void;
+};
+⋮----
+export const OpenRouterModelOverrides = (
+⋮----
+// Convert overrides to OpenRouterProvider format for AdvancedSettings
+⋮----
+// Convert OpenRouterProvider back to overrides format
+const handleProviderChange = (updatedProvider: OpenRouterProvider) =>
+⋮----
+// Remove undefined values
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenRouterParameters.tsx
+================
+import { ChangeEvent, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { OpenRouterProvider } from '@common/agent';
+⋮----
+import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+import { Accordion } from '@/components/common/Accordion';
+⋮----
+type Props = {
+  provider: OpenRouterProvider;
+  onChange: (updated: OpenRouterProvider) => void;
+};
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) => (
+    <Accordion
+      title={<div className="flex-1 text-left text-sm font-medium px-2">{title}</div>}
+      chevronPosition="right"
+      className="mb-2 border rounded-md border-border-default-dark"
+      isOpen={open}
+      onOpenChange={setOpen}
+    >
+      <div className="p-4 pt-2">{children}</div>
+    </Accordion>
+  );
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/ProviderModels.tsx
+================
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { IoClose } from 'react-icons/io5';
+import { HiPlus } from 'react-icons/hi';
+import { clsx } from 'clsx';
+⋮----
+import { Input } from '@/components/common/Input';
+import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
+import { MultiSelect } from '@/components/common/MultiSelect';
+⋮----
+type Props = {
+  models: string[];
+  onChange: (updatedModels: string[]) => void;
+  placeholder?: string;
+  availableModels?: string[];
+};
+⋮----
+const handleModelsChange = (updatedModels: string[]) =>
+⋮----
+const handleRemoveModel = (index: number) =>
+⋮----
+const handleAddModels = () =>
+⋮----
+// Add all selected models at once
+⋮----
+onChange=
+placeholder=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/RequestyAdvancedSettings.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RequestyProvider } from '@common/agent';
+import { ReasoningEffort } from '@common/types';
+⋮----
+import { Checkbox } from '@/components/common/Checkbox';
+import { InfoIcon } from '@/components/common/InfoIcon';
+import { Select, Option } from '@/components/common/Select';
+⋮----
+type Props = {
+  provider: RequestyProvider;
+  onChange: (updated: RequestyProvider) => void;
+};
+⋮----
+const handleUseAutoCacheChange = (checked: boolean) =>
+⋮----
+const handleReasoningEffortChange = (value: string) =>
+⋮----
+<Checkbox label=
+<InfoIcon tooltip=
+⋮----
+<span>
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/RequestyModelOverrides.tsx
+================
+import { getDefaultProviderParams, RequestyProvider } from '@common/agent';
+⋮----
+import { RequestyAdvancedSettings } from './RequestyAdvancedSettings';
+⋮----
+type Props = {
+  overrides: Partial<RequestyProvider>;
+  onChange: (overrides: Record<string, unknown>) => void;
+};
+⋮----
+export const RequestyModelOverrides = (
+⋮----
+// Convert overrides to RequestyProvider format for AdvancedSettings
+⋮----
+// Convert RequestyProvider back to overrides format
+const handleProviderChange = (updatedProvider: RequestyProvider) =>
+⋮----
+// Remove undefined values
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/RequestyParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { RequestyProvider } from '@common/agent';
+⋮----
+import { RequestyAdvancedSettings } from './RequestyAdvancedSettings';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: RequestyProvider;
+  onChange: (updated: RequestyProvider) => void;
+};
+⋮----
+export const RequestyParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/VertexAiAdvancedSettings.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { VertexAiProvider } from '@common/agent';
+⋮----
+import { Slider } from '@/components/common/Slider';
+import { Checkbox } from '@/components/common/Checkbox';
+import { InfoIcon } from '@/components/common/InfoIcon';
+⋮----
+type Props = {
+  provider: VertexAiProvider;
+  onChange: (updated: VertexAiProvider) => void;
+};
+⋮----
+const handleThinkingBudgetChange = (value: number) =>
+⋮----
+const handleIncludeThoughtsChange = (checked: boolean) =>
+⋮----
+label=
+⋮----
+<InfoIcon tooltip=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/VertexAiModelOverrides.tsx
+================
+import { getDefaultProviderParams, VertexAiProvider } from '@common/agent';
+⋮----
+import { VertexAiAdvancedSettings } from './VertexAiAdvancedSettings';
+⋮----
+type Props = {
+  overrides: Partial<VertexAiProvider>;
+  onChange: (overrides: Record<string, unknown>) => void;
+};
+⋮----
+export const VertexAiModelOverrides = (
+⋮----
+// Convert overrides to VertexAiProvider format for AdvancedSettings
+⋮----
+// Convert VertexAiProvider back to overrides format
+const handleProviderChange = (updatedProvider: VertexAiProvider) =>
+⋮----
+// Remove undefined values
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/VertexAIParameters.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { VertexAiProvider } from '@common/agent';
+import { ChangeEvent } from 'react';
+⋮----
+import { VertexAiAdvancedSettings } from './VertexAiAdvancedSettings';
+⋮----
+import { Input } from '@/components/common/Input';
+import { TextArea } from '@/components/common/TextArea';
+⋮----
+type Props = {
+  provider: VertexAiProvider;
+  onChange: (updated: VertexAiProvider) => void;
+};
+⋮----
+const handleProjectChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleLocationChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleCredentialsChange = (e: ChangeEvent<HTMLTextAreaElement>) =>
+⋮----
+label=
+placeholder=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/ZaiPlanParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ZaiPlanProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: ZaiPlanProvider;
+  onChange: (updated: ZaiPlanProvider) => void;
+};
+⋮----
+export const ZaiPlanParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+⋮----
+? t('settings.agent.envVarFoundPlaceholder',
+
+================
 File: src/renderer/src/components/ModelLibrary/index.ts
 ================
 
@@ -10815,6 +11627,8 @@ File: src/renderer/src/components/ModelLibrary/ModelDialog.tsx
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Model, ProviderProfile } from '@common/types';
+⋮----
+import { ModelParameterOverrides } from './ModelParameterOverrides';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { Select } from '@/components/common/Select';
@@ -10852,6 +11666,8 @@ handleInputChange('inputCostPerToken', perTokenValue);
 handleInputChange('outputCostPerToken', perTokenValue);
 ⋮----
 handleInputChange('cacheReadInputTokenCost', perTokenValue);
+⋮----
+{/* Advanced Settings - Provider Overrides */}
 ⋮----
 <Checkbox label=
 
@@ -10907,16 +11723,52 @@ const handleToggleHidden = async (model: Model) =>
 // Show provider configuration form
 
 ================
+File: src/renderer/src/components/ModelLibrary/ModelParameterOverrides.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { LlmProvider, LlmProviderName } from '@common/agent';
+import { ComponentType } from 'react';
+⋮----
+import { OpenRouterModelOverrides } from './providers/OpenRouterModelOverrides';
+import { GeminiModelOverrides } from './providers/GeminiModelOverrides';
+import { VertexAiModelOverrides } from './providers/VertexAiModelOverrides';
+import { OpenAiModelOverrides } from './providers/OpenAiModelOverrides';
+import { RequestyModelOverrides } from './providers/RequestyModelOverrides';
+⋮----
+import { Button } from '@/components/common/Button';
+import { Accordion } from '@/components/common/Accordion';
+⋮----
+type ProviderOverridesProps = {
+  overrides: Record<string, unknown>;
+  onChange: (overrides: Record<string, unknown>) => void;
+};
+⋮----
+type Props = {
+  provider: LlmProvider;
+  overrides: Record<string, unknown>;
+  onChange: (overrides: Record<string, unknown>) => void;
+  className?: string;
+};
+⋮----
+const handleProviderOverrideChange = (providerOverrides: Record<string, unknown>) =>
+⋮----
+const handleResetToDefaults = () =>
+⋮----
+<div className="text-sm font-medium text-text-primary">
+
+================
 File: src/renderer/src/components/ModelLibrary/ModelTableSection.tsx
 ================
 import { useState, ReactNode } from 'react';
+import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
-import { FiEdit2, FiTrash2, FiPlus, FiEye } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiPlus, FiEye, FiSliders } from 'react-icons/fi';
 import { Model, ProviderProfile } from '@common/types';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
-import { Column, Table } from '@/components/common/Table';
+import { Column } from '@/components/common/Table';
+import { VirtualTable } from '@/components/common/VirtualTable';
 import { IconButton } from '@/components/common/IconButton';
 ⋮----
 type Props = {
@@ -10998,6 +11850,7 @@ import {
   OpenRouterIcon,
   RequestyIcon,
   VertexAiIcon,
+  ZaiPlanIcon,
 } from '@/icons';
 import { useResponsive } from '@/hooks/useResponsive';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
@@ -11049,7 +11902,8 @@ import {
   OpenRouterParameters,
   RequestyParameters,
   VertexAIParameters,
-} from '@/components/settings/agent/providers';
+  ZaiPlanParameters,
+} from '@/components/ModelLibrary/providers';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
@@ -11134,6 +11988,7 @@ import {
   OpenRouterIcon,
   RequestyIcon,
   VertexAiIcon,
+  ZaiPlanIcon,
 } from '@/icons';
 ⋮----
 type Props = {
@@ -12108,480 +12963,6 @@ render: (completion) =>
 Prec.high(keymapExtension),
 ⋮----
 onClose=
-
-================
-File: src/renderer/src/components/settings/agent/providers/AnthropicParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { AnthropicProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: AnthropicProvider;
-  onChange: (updated: AnthropicProvider) => void;
-};
-⋮----
-export const AnthropicParameters = (
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-
-================
-File: src/renderer/src/components/settings/agent/providers/AzureParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { AzureProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: AzureProvider;
-  onChange: (updated: AzureProvider) => void;
-};
-⋮----
-// Environment variable hooks for placeholders
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleResourceNameChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleApiVersionChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-⋮----
-<p className="text-xs text-info-lightest">
-
-================
-File: src/renderer/src/components/settings/agent/providers/BedrockParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { BedrockProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { InfoIcon } from '@/components/common/InfoIcon';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: BedrockProvider;
-  onChange: (updated: BedrockProvider) => void;
-};
-⋮----
-const handleRegionChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleAccessKeyIdChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleSecretAccessKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleSessionTokenChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-placeholder=
-⋮----
-<span>
-
-================
-File: src/renderer/src/components/settings/agent/providers/CerebrasParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { CerebrasProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: CerebrasProvider;
-  onChange: (updated: CerebrasProvider) => void;
-};
-⋮----
-export const CerebrasParameters = (
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-
-================
-File: src/renderer/src/components/settings/agent/providers/DeepseekParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { DeepseekProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: DeepseekProvider;
-  onChange: (updated: DeepseekProvider) => void;
-};
-⋮----
-export const DeepseekParameters = (
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-
-================
-File: src/renderer/src/components/settings/agent/providers/GeminiParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { GeminiProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { Slider } from '@/components/common/Slider';
-import { Checkbox } from '@/components/common/Checkbox';
-import { InfoIcon } from '@/components/common/InfoIcon';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { WarningIcon } from '@/components/common/WarningIcon';
-⋮----
-type Props = {
-  provider: GeminiProvider;
-  onChange: (updated: GeminiProvider) => void;
-};
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleCustomBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleThinkingBudgetChange = (value: number) =>
-⋮----
-const handleIncludeThoughtsChange = (checked: boolean) =>
-⋮----
-const handleUseSearchGroundingChange = (checked: boolean) =>
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-⋮----
-<InfoIcon tooltip=
-⋮----
-
-================
-File: src/renderer/src/components/settings/agent/providers/GroqParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { GroqProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: GroqProvider;
-  onChange: (updated: GroqProvider) => void;
-};
-⋮----
-export const GroqParameters = (
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-
-================
-File: src/renderer/src/components/settings/agent/providers/index.ts
-================
-
-
-================
-File: src/renderer/src/components/settings/agent/providers/LmStudioParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { LmStudioProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: LmStudioProvider;
-  onChange: (updated: LmStudioProvider) => void;
-};
-⋮----
-export const LmStudioParameters = (
-⋮----
-const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-placeholder=
-
-================
-File: src/renderer/src/components/settings/agent/providers/OllamaParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { OllamaProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: OllamaProvider;
-  onChange: (updated: OllamaProvider) => void;
-};
-⋮----
-export const OllamaParameters = (
-⋮----
-const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-placeholder=
-
-================
-File: src/renderer/src/components/settings/agent/providers/OpenAiCompatibleParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { OpenAiCompatibleProvider } from '@common/agent';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: OpenAiCompatibleProvider;
-  onChange: (updated: OpenAiCompatibleProvider) => void;
-};
-⋮----
-const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-label=
-⋮----
-placeholder=
-
-================
-File: src/renderer/src/components/settings/agent/providers/OpenAiParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { OpenAiProvider } from '@common/agent';
-import { ReasoningEffort } from '@common/types';
-⋮----
-import { Input } from '@/components/common/Input';
-import { Select, Option } from '@/components/common/Select';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: OpenAiProvider;
-  onChange: (updated: OpenAiProvider) => void;
-};
-⋮----
-export const OpenAiParameters = (
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleReasoningEffortChange = (value: string) =>
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-⋮----
-<Select label=
-
-================
-File: src/renderer/src/components/settings/agent/providers/OpenRouterAdvancedSettings.tsx
-================
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { OpenRouterProvider } from '@common/agent';
-⋮----
-import { InfoIcon } from '@/components/common/InfoIcon';
-import { Input } from '@/components/common/Input';
-import { Select } from '@/components/common/Select';
-import { Checkbox } from '@/components/common/Checkbox';
-⋮----
-type Props = {
-  provider: OpenRouterProvider;
-  onChange: (updated: OpenRouterProvider) => void;
-};
-⋮----
-const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleOrderBlur = () =>
-⋮----
-const handleOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleOnlyBlur = () =>
-⋮----
-const handleIgnoreChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleIgnoreBlur = () =>
-⋮----
-const handleQuantizationsChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleQuantizationsBlur = () =>
-⋮----
-const handleAllowFallbacksChange = (checked: boolean) =>
-⋮----
-const handleDataCollectionChange = (value: string) =>
-⋮----
-const handleSortChange = (value: string) =>
-⋮----
-const handleRequireParametersChange = (checked: boolean) =>
-⋮----
-href="https://openrouter.ai/docs/features/provider-routing#ordering-specific-providers"
-⋮----
-href="https://openrouter.ai/docs/features/provider-routing#disabling-fallbacks"
-⋮----
-href="https://openrouter.ai/docs/features/provider-routing#allowing-only-specific-providers"
-⋮----
-href="https://openrouter.ai/docs/features/provider-routing#quantization"
-⋮----
-href="https://openrouter.ai/docs/features/provider-routing#provider-sorting"
-
-================
-File: src/renderer/src/components/settings/agent/providers/OpenRouterParameters.tsx
-================
-import { ChangeEvent, ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
-import { OpenRouterProvider } from '@common/agent';
-⋮----
-import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
-⋮----
-import { Input } from '@/components/common/Input';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { Accordion } from '@/components/common/Accordion';
-⋮----
-type Props = {
-  provider: OpenRouterProvider;
-  onChange: (updated: OpenRouterProvider) => void;
-};
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) => (
-    <Accordion
-      title={<div className="flex-1 text-left text-sm font-medium px-2">{title}</div>}
-      chevronPosition="right"
-      className="mb-2 border rounded-md border-border-default-dark"
-      isOpen={open}
-      onOpenChange={setOpen}
-    >
-      <div className="p-4 pt-2">{children}</div>
-    </Accordion>
-  );
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-
-================
-File: src/renderer/src/components/settings/agent/providers/ProviderModels.tsx
-================
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { IoClose } from 'react-icons/io5';
-import { HiPlus } from 'react-icons/hi';
-import { clsx } from 'clsx';
-⋮----
-import { Input } from '@/components/common/Input';
-import { Button } from '@/components/common/Button';
-import { IconButton } from '@/components/common/IconButton';
-import { MultiSelect } from '@/components/common/MultiSelect';
-⋮----
-type Props = {
-  models: string[];
-  onChange: (updatedModels: string[]) => void;
-  placeholder?: string;
-  availableModels?: string[];
-};
-⋮----
-const handleModelsChange = (updatedModels: string[]) =>
-⋮----
-const handleRemoveModel = (index: number) =>
-⋮----
-const handleAddModels = () =>
-⋮----
-// Add all selected models at once
-⋮----
-onChange=
-placeholder=
-
-================
-File: src/renderer/src/components/settings/agent/providers/RequestyParameters.tsx
-================
-import { ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
-import { RequestyProvider } from '@common/agent';
-import { ReasoningEffort } from '@common/types';
-⋮----
-import { Input } from '@/components/common/Input';
-import { Checkbox } from '@/components/common/Checkbox';
-import { InfoIcon } from '@/components/common/InfoIcon';
-import Select from '@/components/common/Select';
-import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-⋮----
-type Props = {
-  provider: RequestyProvider;
-  onChange: (updated: RequestyProvider) => void;
-};
-⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleUseAutoCacheChange = (checked: boolean) =>
-⋮----
-const handleReasoningEffortChange = (value: string) =>
-⋮----
-label=
-⋮----
-? t('settings.agent.envVarFoundPlaceholder',
-⋮----
-<span>
-⋮----
-<Checkbox label=
-<InfoIcon tooltip=
-
-================
-File: src/renderer/src/components/settings/agent/providers/VertexAIParameters.tsx
-================
-import { useTranslation } from 'react-i18next';
-import { VertexAiProvider } from '@common/agent';
-import { ChangeEvent } from 'react';
-⋮----
-import { Input } from '@/components/common/Input';
-import { TextArea } from '@/components/common/TextArea';
-import { Slider } from '@/components/common/Slider';
-import { Checkbox } from '@/components/common/Checkbox';
-import { InfoIcon } from '@/components/common/InfoIcon';
-⋮----
-type Props = {
-  provider: VertexAiProvider;
-  onChange: (updated: VertexAiProvider) => void;
-};
-⋮----
-const handleProjectChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleLocationChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleCredentialsChange = (e: ChangeEvent<HTMLTextAreaElement>) =>
-⋮----
-const handleThinkingBudgetChange = (value: number) =>
-⋮----
-const handleIncludeThoughtsChange = (checked: boolean) =>
-⋮----
-label=
-placeholder=
 
 ================
 File: src/renderer/src/components/settings/agent/AgentProfileItem.tsx
@@ -14476,6 +14857,15 @@ export const VertexAiIcon = ({ width = 64, height = 64, className }: Props) => (
     </svg>
   </div>
 );
+
+================
+File: src/renderer/src/icons/ZaiPlanIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
 
 ================
 File: src/renderer/src/pages/Home.tsx
@@ -16552,6 +16942,8 @@ File: package.json
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",
     "@smithy/util-utf8": "^2.0.0",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.12",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@uiw/codemirror-theme-github": "^4.23.12",
@@ -16653,7 +17045,7 @@ File: package.json
     "@vitejs/plugin-react": "^4.3.1",
     "adm-zip": "^0.5.16",
     "autoprefixer": "^10.4.20",
-    "electron": "^37.4.0",
+    "electron": "^37.6.0",
     "electron-builder": "^26.0.12",
     "electron-vite": "^4.0.0",
     "esbuild": "^0.25.9",

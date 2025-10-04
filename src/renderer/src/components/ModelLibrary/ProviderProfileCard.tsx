@@ -23,6 +23,7 @@ import {
   OpenRouterIcon,
   RequestyIcon,
   VertexAiIcon,
+  ZaiPlanIcon,
 } from '@/icons';
 import { useResponsive } from '@/hooks/useResponsive';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
@@ -42,6 +43,7 @@ const PROVIDER_ICON_MAP: Record<LlmProviderName, ComponentType<{ width?: number;
   openrouter: OpenRouterIcon,
   requesty: RequestyIcon,
   'vertex-ai': VertexAiIcon,
+  'zai-plan': ZaiPlanIcon,
 };
 
 type Props = {
