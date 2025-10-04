@@ -12,8 +12,19 @@ import {
   OpenRouterProvider,
   RequestyProvider,
   VertexAiProvider,
-} from '@common/agent';
+} from './agent';
 import { z } from 'zod';
+
+export const API_KEY_ENV_VARS = [
+  'OPENAI_API_KEY',
+  'ANTHROPIC_API_KEY',
+  'GOOGLE_API_KEY',
+  'GROQ_API_KEY',
+  'DEEPSEEK_API_KEY',
+  'OPENROUTER_API_KEY',
+  'CEREBRAS_API_KEY',
+  'REQUESTY_API_KEY',
+] as const;
 
 import type { AssistantContent, ToolContent, UserContent } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';

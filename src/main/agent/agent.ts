@@ -1,11 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { homedir } from 'os';
-
-import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
+  API_KEY_ENV_VARS,
   ContextFile,
   ContextMessage,
   ContextUserMessage,
@@ -58,7 +56,7 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Project } from '@/project';
 import { Store } from '@/store';
 import logger from '@/logger';
-import { parseAiderEnv } from '@/utils';
+import { getEnvironmentVariablesForAider, getEffectiveEnvironmentVariable } from '@/utils';
 import { optimizeMessages } from '@/agent/optimizer';
 import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
@@ -69,7 +67,6 @@ const MAX_RETRIES = 3;
 
 export class Agent {
   private abortControllers: Record<string, AbortController> = {};
-  private aiderEnv: Record<string, string> | null = null;
   private lastToolCallTime: number = 0;
 
   constructor(
@@ -79,16 +76,18 @@ export class Agent {
     private readonly telemetryManager: TelemetryManager,
   ) {}
 
-  private invalidateAiderEnv() {
-    this.aiderEnv = null;
-  }
 
-  settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {
-    const aiderEnvChanged = oldSettings.aider?.environmentVariables !== newSettings.aider?.environmentVariables;
-    const aiderOptionsChanged = oldSettings.aider?.options !== newSettings.aider?.options;
-    if (aiderEnvChanged || aiderOptionsChanged) {
-      logger.info('Aider environment or options changed, invalidating cached environment.');
-      this.invalidateAiderEnv();
+  private getApiKeyEnvVar(providerName: string): string {
+    switch (providerName) {
+      case 'openai': return 'OPENAI_API_KEY';
+      case 'anthropic': return 'ANTHROPIC_API_KEY';
+      case 'gemini': return 'GOOGLE_API_KEY';
+      case 'groq': return 'GROQ_API_KEY';
+      case 'deepseek': return 'DEEPSEEK_API_KEY';
+      case 'openrouter': return 'OPENROUTER_API_KEY';
+      case 'cerebras': return 'CEREBRAS_API_KEY';
+      case 'requesty': return 'REQUESTY_API_KEY';
+      default: return '';
     }
   }
 
@@ -513,7 +512,22 @@ export class Agent {
     const provider = providers.find((p) => p.id === profile.provider);
     if (!provider) {
       logger.error(`Provider ${profile.provider} not found`);
-      project.addLogMessage('error', 'Selected model is not configured. Select another model and try again.', false, promptContext);
+      project.addLogMessage('error', `Provider ${profile.provider} not found. Please configure the provider in Settings -> Providers.`, false, promptContext);
+      return [];
+    }
+
+    // Validate API key availability before proceeding
+    const llmProvider = provider.provider;
+    const apiKeyEnvVar = this.getApiKeyEnvVar(llmProvider.name);
+    const hasProviderApiKey = 'apiKey' in llmProvider && !!llmProvider.apiKey;
+    const hasEnvApiKey = !!getEffectiveEnvironmentVariable(apiKeyEnvVar, settings, project.baseDir);
+    
+    if (!hasProviderApiKey && !hasEnvApiKey) {
+      logger.error(`${llmProvider.name} provider found but API key is missing`, {
+        providerName: llmProvider.name,
+        expectedEnvVar: apiKeyEnvVar,
+      });
+      project.addLogMessage('error', `${llmProvider.name} API key is required in Providers settings or Aider environment variables (${apiKeyEnvVar}). Configure credentials in the Settings -> Providers.`, false, promptContext);
       return [];
     }
 
@@ -535,7 +549,6 @@ export class Agent {
     }
     const effectiveAbortSignal = abortSignal || this.abortControllers[project.baseDir]?.signal;
 
-    const llmProvider = provider.provider;
     const cacheControl = this.modelManager.getCacheControl(profile, llmProvider);
     const providerOptions = this.modelManager.getProviderOptions(llmProvider, profile.model);
 
@@ -569,8 +582,17 @@ export class Agent {
 
     let currentResponseId: string = uuidv4();
 
+    const llmEnv = await this.getLlmEnv(project, provider);
+
     try {
-      const model = this.modelManager.createLlm(provider, profile.model, await this.getLlmEnv(project));
+      logger.debug('Creating LLM model', {
+        providerId: provider.id,
+        providerName: provider.provider.name,
+        modelName: profile.model,
+      });
+
+      const model = this.modelManager.createLlm(provider, profile.model, llmEnv);
+      logger.debug('LLM model created successfully');
 
       if (!systemPrompt) {
         systemPrompt = await getSystemPrompt(project.baseDir, profile);
@@ -893,42 +915,46 @@ export class Agent {
     return resultMessages;
   }
 
-  private async getLlmEnv(project: Project) {
-    const env = {
+  private async getLlmEnv(project: Project, provider?: ProviderProfile): Promise<Record<string, string | undefined>> {
+    const settings = this.store.getSettings();
+    
+    // Start with process environment and basic Aider settings
+    const env: Record<string, string | undefined> = {
       ...process.env,
     };
 
-    const homeEnvPath = path.join(homedir(), '.env');
-    const projectEnvPath = path.join(project.baseDir, '.env');
+    // Add Aider environment variables
+    const aiderEnvVars = getEnvironmentVariablesForAider(settings, project.baseDir);
+    Object.entries(aiderEnvVars).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        env[key] = value;
+      }
+    });
 
-    try {
-      await fs.access(homeEnvPath);
-      const homeEnvContent = await fs.readFile(homeEnvPath, 'utf8');
-      Object.assign(env, dotenv.parse(homeEnvContent));
-    } catch {
-      // File does not exist or other read error, ignore
+    // Load API keys using the same mechanism as determineProvider function
+    // This properly handles .aider.conf.yml files, .env files, etc.
+    for (const apiKey of API_KEY_ENV_VARS) {
+      const effectiveVar = getEffectiveEnvironmentVariable(apiKey, settings, project.baseDir);
+      if (effectiveVar) {
+        env[apiKey] = effectiveVar.value;
+        logger.debug(`Loaded ${apiKey} from ${effectiveVar.source}`);
+      }
     }
 
-    try {
-      await fs.access(projectEnvPath);
-      const projectEnvContent = await fs.readFile(projectEnvPath, 'utf8');
-      Object.assign(env, dotenv.parse(projectEnvContent));
-    } catch {
-      // File does not exist or other read error, ignore
+    // Add provider-specific API keys to environment if they exist (these take precedence)
+    if (provider && 'apiKey' in provider.provider && provider.provider.apiKey) {
+      const llmProvider = provider.provider;
+      const apiKeyEnvVar = this.getApiKeyEnvVar(llmProvider.name);
+      
+      if (apiKeyEnvVar) {
+        env[apiKeyEnvVar] = llmProvider.apiKey;
+        logger.debug(`Set ${apiKeyEnvVar} from provider (overriding other sources)`);
+      }
     }
-
-    Object.assign(env, this.getAiderEnv());
 
     return env;
   }
 
-  private getAiderEnv(): Record<string, string> {
-    if (!this.aiderEnv) {
-      this.aiderEnv = parseAiderEnv(this.store.getSettings());
-    }
-
-    return this.aiderEnv;
-  }
 
   private async prepareMessages(project: Project, profile: AgentProfile, contextMessages: CoreMessage[], contextFiles: ContextFile[]): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];
@@ -1011,6 +1037,11 @@ export class Agent {
   interrupt(baseDir: string) {
     logger.info('Interrupting Agent run', { baseDir });
     this.abortControllers[baseDir]?.abort();
+  }
+
+  settingsChanged(_oldSettings: SettingsData, _newSettings: SettingsData) {
+    // Agent doesn't need to cache environment variables since getEnvironmentVariablesForAider handles this
+    // This method exists for compatibility with EventsHandler
   }
 
   private processStep<TOOLS extends ToolSet>(
