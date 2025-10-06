@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
@@ -9,7 +10,6 @@ import {
   McpTool,
   PromptContext,
   ProviderProfile,
-  SettingsData,
   ToolApprovalState,
   UsageReportData,
 } from '@common/types';
@@ -495,7 +495,7 @@ export class Agent {
     const provider = providers.find((p) => p.id === profile.provider);
     if (!provider) {
       logger.error(`Provider ${profile.provider} not found`);
-      project.addLogMessage('error', `Provider ${profile.provider} not found. Please configure the provider in Settings -> Providers.`, false, promptContext);
+      project.addLogMessage('error', `Provider ${profile.provider} not found. Please configure the provider in Model Library`, false, promptContext);
       return [];
     }
 
@@ -857,7 +857,11 @@ export class Agent {
       }
 
       logger.error('Error running prompt:', error);
-      project.addLogMessage('error', `${error instanceof Error ? error.message : String(error)}`, false, promptContext);
+      if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
+        project.addLogMessage('error', `${error.message}. Configure credentials in the Settings -> Providers.`, false, promptContext);
+      } else {
+        project.addLogMessage('error', `${error instanceof Error ? error.message : String(error)}`, false, promptContext);
+      }
     } finally {
       // Clean up abort controller only if we created it
       if (shouldCreateAbortController) {
@@ -958,11 +962,6 @@ export class Agent {
   interrupt(baseDir: string) {
     logger.info('Interrupting Agent run', { baseDir });
     this.abortControllers[baseDir]?.abort();
-  }
-
-  settingsChanged(_oldSettings: SettingsData, _newSettings: SettingsData) {
-    // Agent doesn't need to cache environment variables since getEnvironmentVariablesForAider handles this
-    // This method exists for compatibility with EventsHandler
   }
 
   private processStep<TOOLS extends ToolSet>(

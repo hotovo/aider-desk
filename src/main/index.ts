@@ -188,7 +188,6 @@ const initManagers = async (
     projectManager,
     store,
     mcpManager,
-    agent,
     versionsManager,
     modelManager,
     telemetryManager,
