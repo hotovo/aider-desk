@@ -519,18 +519,38 @@ export class ModelManager {
     return strategy.getCacheControl(profile, llmProvider);
   }
 
-  getProviderOptions(llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined {
+  getProviderOptions(llmProvider: LlmProvider, modelId: string): Record<string, Record<string, JSONValue>> | undefined {
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderOptions) {
       return undefined;
     }
 
-    // Create a minimal Model object for compatibility
-    const fallbackModel: Model = {
-      id: '',
-      providerId: '',
-    };
+    // Find the provider profile for this LLM provider
+    const providers = this.store.getProviders();
+    const providerProfile = providers.find((p) => p.provider.name === llmProvider.name);
+    
+    if (!providerProfile) {
+      // Fallback to minimal Model object if provider not found
+      const fallbackModel: Model = {
+        id: modelId,
+        providerId: '',
+      };
+      return strategy.getProviderOptions(llmProvider, fallbackModel);
+    }
 
-    return strategy.getProviderOptions(llmProvider, fallbackModel);
+    // Look up the actual Model object from providerModels
+    const models = this.providerModels[providerProfile.id] || [];
+    const modelObj = models.find((m) => m.id === modelId);
+    
+    if (!modelObj) {
+      // Fallback to minimal Model object if model not found
+      const fallbackModel: Model = {
+        id: modelId,
+        providerId: providerProfile.id,
+      };
+      return strategy.getProviderOptions(llmProvider, fallbackModel);
+    }
+
+    return strategy.getProviderOptions(llmProvider, modelObj);
   }
 }
