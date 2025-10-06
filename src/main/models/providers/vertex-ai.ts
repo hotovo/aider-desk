@@ -174,7 +174,7 @@ export const createVertexAiLlm = (
       credentials: JSON.parse(googleCloudCredentialsJson),
     }),
   });
-  return vertexProvider(model.id);
+  return vertexProvider(model);
 };
 
 type VertexGoogleMetadata = {

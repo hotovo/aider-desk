@@ -131,16 +131,6 @@ export const createOpenRouterLlm = (
     throw new Error('OpenRouter API key is required in Providers settings or Aider environment variables (OPENROUTER_API_KEY)');
   }
 
-  const providerOverrides = model.providerOverrides as Partial<OpenRouterProvider> | undefined;
-  const requireParameters = providerOverrides?.requireParameters ?? provider.requireParameters;
-  const order = providerOverrides?.order ?? provider.order;
-  const only = providerOverrides?.only ?? provider.only;
-  const ignore = providerOverrides?.ignore ?? provider.ignore;
-  const allowFallbacks = providerOverrides?.allowFallbacks ?? provider.allowFallbacks;
-  const dataCollection = providerOverrides?.dataCollection ?? provider.dataCollection;
-  const quantizations = providerOverrides?.quantizations ?? provider.quantizations;
-  const sort = providerOverrides?.sort ?? provider.sort;
-
   const openRouter = createOpenRouter({
     apiKey,
     compatibility: 'strict',
@@ -151,18 +141,18 @@ export const createOpenRouterLlm = (
     },
     extraBody: {
       provider: {
-        require_parameters: requireParameters,
-        order: order?.length ? order : undefined,
-        only: only?.length ? only : undefined,
-        ignore: ignore?.length ? ignore : undefined,
-        allow_fallbacks: allowFallbacks,
-        data_collection: dataCollection,
-        quantizations: quantizations?.length ? quantizations : undefined,
-        sort: sort || undefined,
+        require_parameters: provider.requireParameters,
+        order: provider.order?.length ? provider.order : undefined,
+        only: provider.only?.length ? provider.only : undefined,
+        ignore: provider.ignore?.length ? provider.ignore : undefined,
+        allow_fallbacks: provider.allowFallbacks,
+        data_collection: provider.dataCollection,
+        quantizations: provider.quantizations?.length ? provider.quantizations : undefined,
+        sort: provider.sort || undefined,
       },
     },
   });
-  return openRouter.chat(model.id, {
+  return openRouter.chat(model, {
     usage: {
       include: true,
     },

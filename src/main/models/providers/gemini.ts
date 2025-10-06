@@ -119,16 +119,13 @@ export const createGeminiLlm = (
     }
   }
 
-  const providerOverrides = model.providerOverrides as Partial<GeminiProvider> | undefined;
-  const useSearchGrounding = providerOverrides?.useSearchGrounding ?? provider.useSearchGrounding;
-
   const googleProvider = createGoogleGenerativeAI({
     apiKey,
     baseURL: baseUrl,
     headers: profile.headers,
   });
-  return googleProvider(model.id, {
-    useSearchGrounding,
+  return googleProvider(model, {
+    useSearchGrounding: provider.useSearchGrounding,
   });
 };
 

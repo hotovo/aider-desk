@@ -1,5 +1,5 @@
 import { createAzure } from '@ai-sdk/azure';
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { AZURE_DEFAULT_API_VERSION, AzureProvider } from '@common/agent';
 
 import type { LanguageModel, LanguageModelUsage } from 'ai';
@@ -51,14 +51,9 @@ export const getAzureAiderMapping = (provider: ProviderProfile, modelId: string)
 };
 
 // === LLM Creation Functions ===
-export const createAzureLlm = (
-  profile: ProviderProfile,
-  model: string,
-  settings: SettingsData,
-  projectDir: string
-): LanguageModel => {
+export const createAzureLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as AzureProvider;
-  
+
   let apiKey = provider.apiKey;
   if (!apiKey) {
     const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_KEY', settings, projectDir);
@@ -67,11 +62,11 @@ export const createAzureLlm = (
       logger.debug(`Loaded AZURE_API_KEY from ${effectiveVar.source}`);
     }
   }
-  
+
   if (!apiKey) {
     throw new Error('Azure OpenAI API key is required in Providers settings or Aider environment variables (AZURE_API_KEY)');
   }
-  
+
   let resourceName = provider.resourceName;
   if (!resourceName) {
     const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_BASE', settings, projectDir);
@@ -80,11 +75,11 @@ export const createAzureLlm = (
       logger.debug(`Loaded AZURE_API_BASE from ${effectiveVar.source}`);
     }
   }
-  
+
   if (!resourceName) {
     throw new Error('Azure OpenAI resource name is required in Providers settings or Aider environment variables (AZURE_API_BASE)');
   }
-  
+
   let apiVersion = provider.apiVersion;
   if (!apiVersion) {
     const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_VERSION', settings, projectDir);
@@ -93,14 +88,14 @@ export const createAzureLlm = (
       logger.debug(`Loaded AZURE_API_VERSION from ${effectiveVar.source}`);
     }
   }
-  
+
   const azureProvider = createAzure({
     resourceName,
     apiKey,
     apiVersion: apiVersion || AZURE_DEFAULT_API_VERSION,
     headers: profile.headers,
   });
-  return azureProvider(model.id);
+  return azureProvider(model);
 };
 
 type AzureMetadata = {

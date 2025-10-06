@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isOpenAiCompatibleProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -122,7 +122,7 @@ export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: strin
     baseURL: baseUrl,
     headers: profile.headers,
   });
-  return compatibleProvider(model.id);
+  return compatibleProvider(model);
 };
 
 // === Cost and Usage Functions ===

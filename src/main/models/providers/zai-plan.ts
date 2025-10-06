@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isZaiPlanProvider, ZaiPlanProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -81,22 +81,29 @@ export const getZaiPlanAiderMapping = (provider: ProviderProfile, modelId: strin
 };
 
 // === LLM Creation Functions ===
-export const createZaiPlanLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createZaiPlanLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as ZaiPlanProvider;
-  const apiKey = provider.apiKey || env['ZAI_API_KEY'];
+
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('ZAI_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded ZAI_API_KEY from ${effectiveVar.source}`);
+    }
+  }
+
   if (!apiKey) {
     throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (ZAI_API_KEY).`);
   }
 
-  // Use createOpenAICompatible to get a provider instance, then get the model
-  // ZAI uses specific base URL for chat completions
   const compatibleProvider = createOpenAICompatible({
     name: provider.name,
     apiKey,
     baseURL: 'https://api.z.ai/api/coding/paas/v4',
     headers: profile.headers,
   });
-  return compatibleProvider(model.id);
+  return compatibleProvider(model);
 };
 
 // === Cost and Usage Functions ===

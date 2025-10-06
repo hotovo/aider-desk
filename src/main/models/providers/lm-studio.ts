@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isLmStudioProvider, LmStudioProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -81,14 +81,9 @@ export const getLmStudioAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createLmStudioLlm = (
-  profile: ProviderProfile,
-  model: string,
-  settings: SettingsData,
-  projectDir: string
-): LanguageModel => {
+export const createLmStudioLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as LmStudioProvider;
-  
+
   let baseUrl = provider.baseUrl;
   if (!baseUrl) {
     const effectiveVar = getEffectiveEnvironmentVariable('LMSTUDIO_API_BASE', settings, projectDir);
@@ -107,7 +102,7 @@ export const createLmStudioLlm = (
     baseURL: baseUrl,
     headers: profile.headers,
   });
-  return lmStudioProvider(model.id);
+  return lmStudioProvider(model);
 };
 
 // === Cost and Usage Functions ===

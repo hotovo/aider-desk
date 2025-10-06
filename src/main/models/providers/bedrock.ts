@@ -256,7 +256,7 @@ export const createBedrockLlm = (
       }),
     credentialProvider: !accessKeyId && !secretAccessKey ? fromNodeProviderChain() : undefined,
   });
-  return bedrockProviderInstance(model.id);
+  return bedrockProviderInstance(model);
 };
 
 // === Cost and Usage Functions ===

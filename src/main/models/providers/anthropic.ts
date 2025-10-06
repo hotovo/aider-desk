@@ -112,7 +112,7 @@ export const createAnthropicLlm = (
     apiKey,
     headers: profile.headers,
   });
-  return anthropicProvider(model.id);
+  return anthropicProvider(model);
 };
 
 type AnthropicMetadata = {

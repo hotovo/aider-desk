@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isOllamaProvider, OllamaProvider } from '@common/agent';
 import { createOllama } from 'ollama-ai-provider';
 
@@ -79,14 +79,9 @@ export const getOllamaAiderMapping = (provider: ProviderProfile, modelId: string
 };
 
 // === LLM Creation Functions ===
-export const createOllamaLlm = (
-  profile: ProviderProfile,
-  model: string,
-  settings: SettingsData,
-  projectDir: string
-): LanguageModel => {
+export const createOllamaLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as OllamaProvider;
-  
+
   let baseUrl = provider.baseUrl;
   if (!baseUrl) {
     const effectiveVar = getEffectiveEnvironmentVariable('OLLAMA_API_BASE', settings, projectDir);
@@ -104,7 +99,7 @@ export const createOllamaLlm = (
     baseURL: baseUrl,
     headers: profile.headers,
   });
-  return ollamaInstance(model.id, {
+  return ollamaInstance(model, {
     simulateStreaming: true,
   });
 };
