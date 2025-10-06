@@ -5,6 +5,7 @@ import { AZURE_DEFAULT_API_VERSION, AzureProvider } from '@common/agent';
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy } from '@/models';
+import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Project } from '@/project/project';
 
@@ -50,23 +51,53 @@ export const getAzureAiderMapping = (provider: ProviderProfile, modelId: string)
 };
 
 // === LLM Creation Functions ===
-export const createAzureLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createAzureLlm = (
+  profile: ProviderProfile,
+  model: string,
+  settings: SettingsData,
+  projectDir: string
+): LanguageModel => {
   const provider = profile.provider as AzureProvider;
-  const apiKey = provider.apiKey || env['AZURE_API_KEY'];
-  const resourceName = provider.resourceName || (env['AZURE_RESOURCE_NAME'] ? extractResourceNameFromEndpoint(env['AZURE_RESOURCE_NAME']) : '');
-  const apiVersion = provider.apiVersion || env['AZURE_API_VERSION'] || AZURE_DEFAULT_API_VERSION;
-
+  
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded AZURE_API_KEY from ${effectiveVar.source}`);
+    }
+  }
+  
   if (!apiKey) {
     throw new Error('Azure OpenAI API key is required in Providers settings or Aider environment variables (AZURE_API_KEY)');
   }
+  
+  let resourceName = provider.resourceName;
+  if (!resourceName) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_BASE', settings, projectDir);
+    if (effectiveVar?.value) {
+      resourceName = extractResourceNameFromEndpoint(effectiveVar.value);
+      logger.debug(`Loaded AZURE_API_BASE from ${effectiveVar.source}`);
+    }
+  }
+  
   if (!resourceName) {
     throw new Error('Azure OpenAI resource name is required in Providers settings or Aider environment variables (AZURE_API_BASE)');
   }
-
+  
+  let apiVersion = provider.apiVersion;
+  if (!apiVersion) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_VERSION', settings, projectDir);
+    if (effectiveVar) {
+      apiVersion = effectiveVar.value;
+      logger.debug(`Loaded AZURE_API_VERSION from ${effectiveVar.source}`);
+    }
+  }
+  
   const azureProvider = createAzure({
     resourceName,
     apiKey,
-    apiVersion,
+    apiVersion: apiVersion || AZURE_DEFAULT_API_VERSION,
     headers: profile.headers,
   });
   return azureProvider(model.id);

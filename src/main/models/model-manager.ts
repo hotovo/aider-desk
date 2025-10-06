@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
-import { AgentProfile, Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, UsageReportData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, SettingsData, ModelOverrides, ProviderModelsData, ProviderProfile, UsageReportData } from '@common/types';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
 import { azureProviderStrategy } from './providers/azure';
@@ -480,40 +480,12 @@ export class ModelManager {
     return strategy.getAiderMapping(provider, modelId);
   }
 
-  getModel(providerId: string, modelId: string): Model | undefined {
-    const providerModels = this.providerModels[providerId];
-    if (!providerModels) {
-      return undefined;
-    }
-    return providerModels.find((m) => m.id === modelId);
-  }
-
-  createLlm(profile: ProviderProfile, model: string | Model, env: Record<string, string | undefined> = {}): LanguageModel {
+  createLlm(profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel {
     const strategy = this.providerRegistry[profile.provider.name];
     if (!strategy) {
       throw new Error(`Unsupported LLM provider: ${profile.provider.name}`);
     }
-
-    // Resolve Model object if string is provided
-    let modelObj: Model | undefined;
-    if (typeof model === 'string') {
-      modelObj = this.getModel(profile.id, model);
-      if (!modelObj) {
-        // Fallback to creating a minimal Model object if not found
-        modelObj = {
-          id: model,
-          providerId: profile.id,
-        };
-      }
-    } else {
-      modelObj = model;
-    }
-
-    if (!modelObj) {
-      throw new Error(`Model not found: ${model}`);
-    }
-
-    return strategy.createLlm(profile, modelObj, env);
+    return strategy.createLlm(profile, model, settings, projectDir);
   }
 
   calculateCost(provider: ProviderProfile, model: string, sentTokens: number, receivedTokens: number, providerMetadata?: unknown): number {

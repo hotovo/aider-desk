@@ -79,9 +79,22 @@ export const getOllamaAiderMapping = (provider: ProviderProfile, modelId: string
 };
 
 // === LLM Creation Functions ===
-export const createOllamaLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createOllamaLlm = (
+  profile: ProviderProfile,
+  model: string,
+  settings: SettingsData,
+  projectDir: string
+): LanguageModel => {
   const provider = profile.provider as OllamaProvider;
-  const baseUrl = provider.baseUrl || env['OLLAMA_API_BASE'];
+  
+  let baseUrl = provider.baseUrl;
+  if (!baseUrl) {
+    const effectiveVar = getEffectiveEnvironmentVariable('OLLAMA_API_BASE', settings, projectDir);
+    if (effectiveVar) {
+      baseUrl = effectiveVar.value;
+      logger.debug(`Loaded OLLAMA_API_BASE from ${effectiveVar.source}`);
+    }
+  }
 
   if (!baseUrl) {
     throw new Error('Base URL is required for Ollama provider. Set it in Providers settings or via the OLLAMA_API_BASE environment variable.');

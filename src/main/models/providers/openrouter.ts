@@ -110,9 +110,22 @@ export const getOpenRouterAiderMapping = (provider: ProviderProfile, modelId: st
 };
 
 // === LLM Creation Functions ===
-export const createOpenRouterLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createOpenRouterLlm = (
+  profile: ProviderProfile,
+  model: string,
+  settings: SettingsData,
+  projectDir: string
+): LanguageModel => {
   const provider = profile.provider as OpenRouterProvider;
-  const apiKey = provider.apiKey || env['OPENROUTER_API_KEY'];
+  
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('OPENROUTER_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded OPENROUTER_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('OpenRouter API key is required in Providers settings or Aider environment variables (OPENROUTER_API_KEY)');

@@ -3,7 +3,6 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
-  API_KEY_ENV_VARS,
   ContextFile,
   ContextMessage,
   ContextUserMessage,
@@ -56,7 +55,6 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Project } from '@/project';
 import { Store } from '@/store';
 import logger from '@/logger';
-import { getEnvironmentVariablesForAider, getEffectiveEnvironmentVariable } from '@/utils';
 import { optimizeMessages } from '@/agent/optimizer';
 import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
@@ -75,21 +73,6 @@ export class Agent {
     private readonly modelManager: ModelManager,
     private readonly telemetryManager: TelemetryManager,
   ) {}
-
-
-  private getApiKeyEnvVar(providerName: string): string {
-    switch (providerName) {
-      case 'openai': return 'OPENAI_API_KEY';
-      case 'anthropic': return 'ANTHROPIC_API_KEY';
-      case 'gemini': return 'GOOGLE_API_KEY';
-      case 'groq': return 'GROQ_API_KEY';
-      case 'deepseek': return 'DEEPSEEK_API_KEY';
-      case 'openrouter': return 'OPENROUTER_API_KEY';
-      case 'cerebras': return 'CEREBRAS_API_KEY';
-      case 'requesty': return 'REQUESTY_API_KEY';
-      default: return '';
-    }
-  }
 
   private async getFilesContentForPrompt(files: ContextFile[], project: Project): Promise<{ textFileContents: string[]; imageParts: ImagePart[] }> {
     const textFileContents: string[] = [];
@@ -516,21 +499,6 @@ export class Agent {
       return [];
     }
 
-    // Validate API key availability before proceeding
-    const llmProvider = provider.provider;
-    const apiKeyEnvVar = this.getApiKeyEnvVar(llmProvider.name);
-    const hasProviderApiKey = 'apiKey' in llmProvider && !!llmProvider.apiKey;
-    const hasEnvApiKey = !!getEffectiveEnvironmentVariable(apiKeyEnvVar, settings, project.baseDir);
-    
-    if (!hasProviderApiKey && !hasEnvApiKey) {
-      logger.error(`${llmProvider.name} provider found but API key is missing`, {
-        providerName: llmProvider.name,
-        expectedEnvVar: apiKeyEnvVar,
-      });
-      project.addLogMessage('error', `${llmProvider.name} API key is required in Providers settings or Aider environment variables (${apiKeyEnvVar}). Configure credentials in the Settings -> Providers.`, false, promptContext);
-      return [];
-    }
-
     this.telemetryManager.captureAgentRun(profile);
 
     logger.debug('runAgent', {
@@ -549,8 +517,8 @@ export class Agent {
     }
     const effectiveAbortSignal = abortSignal || this.abortControllers[project.baseDir]?.signal;
 
-    const cacheControl = this.modelManager.getCacheControl(profile, llmProvider);
-    const providerOptions = this.modelManager.getProviderOptions(llmProvider, profile.model);
+    const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
+    const providerOptions = this.modelManager.getProviderOptions(provider.provider);
 
     const userRequestMessage: ContextUserMessage = {
       id: promptContext?.id || uuidv4(),
@@ -573,7 +541,7 @@ export class Agent {
       project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`, false, promptContext);
     }
 
-    const toolSet = await this.getAvailableTools(project, profile, llmProvider, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
+    const toolSet = await this.getAvailableTools(project, profile, provider.provider, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
     logger.debug('Tools:', {
@@ -582,8 +550,6 @@ export class Agent {
 
     let currentResponseId: string = uuidv4();
 
-    const llmEnv = await this.getLlmEnv(project, provider);
-
     try {
       logger.debug('Creating LLM model', {
         providerId: provider.id,
@@ -591,7 +557,7 @@ export class Agent {
         modelName: profile.model,
       });
 
-      const model = this.modelManager.createLlm(provider, profile.model, llmEnv);
+      const model = this.modelManager.createLlm(provider, profile.model, settings, project.baseDir);
       logger.debug('LLM model created successfully');
 
       if (!systemPrompt) {
@@ -891,11 +857,7 @@ export class Agent {
       }
 
       logger.error('Error running prompt:', error);
-      if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
-        project.addLogMessage('error', `${error.message}. Configure credentials in the Settings -> Providers.`, false, promptContext);
-      } else {
-        project.addLogMessage('error', `${error instanceof Error ? error.message : String(error)}`, false, promptContext);
-      }
+      project.addLogMessage('error', `${error instanceof Error ? error.message : String(error)}`, false, promptContext);
     } finally {
       // Clean up abort controller only if we created it
       if (shouldCreateAbortController) {
@@ -914,47 +876,6 @@ export class Agent {
 
     return resultMessages;
   }
-
-  private async getLlmEnv(project: Project, provider?: ProviderProfile): Promise<Record<string, string | undefined>> {
-    const settings = this.store.getSettings();
-    
-    // Start with process environment and basic Aider settings
-    const env: Record<string, string | undefined> = {
-      ...process.env,
-    };
-
-    // Add Aider environment variables
-    const aiderEnvVars = getEnvironmentVariablesForAider(settings, project.baseDir);
-    Object.entries(aiderEnvVars).forEach(([key, value]) => {
-      if (typeof value === 'string') {
-        env[key] = value;
-      }
-    });
-
-    // Load API keys using the same mechanism as determineProvider function
-    // This properly handles .aider.conf.yml files, .env files, etc.
-    for (const apiKey of API_KEY_ENV_VARS) {
-      const effectiveVar = getEffectiveEnvironmentVariable(apiKey, settings, project.baseDir);
-      if (effectiveVar) {
-        env[apiKey] = effectiveVar.value;
-        logger.debug(`Loaded ${apiKey} from ${effectiveVar.source}`);
-      }
-    }
-
-    // Add provider-specific API keys to environment if they exist (these take precedence)
-    if (provider && 'apiKey' in provider.provider && provider.provider.apiKey) {
-      const llmProvider = provider.provider;
-      const apiKeyEnvVar = this.getApiKeyEnvVar(llmProvider.name);
-      
-      if (apiKeyEnvVar) {
-        env[apiKeyEnvVar] = llmProvider.apiKey;
-        logger.debug(`Set ${apiKeyEnvVar} from provider (overriding other sources)`);
-      }
-    }
-
-    return env;
-  }
-
 
   private async prepareMessages(project: Project, profile: AgentProfile, contextMessages: CoreMessage[], contextFiles: ContextFile[]): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];

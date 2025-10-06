@@ -110,9 +110,22 @@ export const getRequestyAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createRequestyLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createRequestyLlm = (
+  profile: ProviderProfile,
+  model: string,
+  settings: SettingsData,
+  projectDir: string
+): LanguageModel => {
   const provider = profile.provider as RequestyProvider;
-  const apiKey = provider.apiKey || env['REQUESTY_API_KEY'];
+  
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('REQUESTY_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded REQUESTY_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Requesty API key is required in Providers settings or Aider environment variables (REQUESTY_API_KEY)');
