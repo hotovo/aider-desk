@@ -5,7 +5,6 @@ import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 
 import logger from '@/logger';
-import { getEffectiveEnvironmentVariable } from '@/utils';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
 import { LoadModelsResponse } from '@/models/types';
 import { Project } from '@/project/project';
