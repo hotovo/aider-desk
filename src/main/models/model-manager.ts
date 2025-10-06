@@ -530,7 +530,10 @@ export class ModelManager {
     const providerProfile = providers.find((p) => p.provider.name === llmProvider.name);
     
     if (!providerProfile) {
-      // Fallback to minimal Model object if provider not found
+      logger.warn(`Provider profile not found for ${llmProvider.name}, using fallback without model overrides`, {
+        modelId,
+        providerName: llmProvider.name,
+      });
       const fallbackModel: Model = {
         id: modelId,
         providerId: '',
@@ -543,13 +546,21 @@ export class ModelManager {
     const modelObj = models.find((m) => m.id === modelId);
     
     if (!modelObj) {
-      // Fallback to minimal Model object if model not found
+      logger.warn(`Model ${modelId} not found in provider ${providerProfile.id}, using fallback without model overrides`, {
+        modelId,
+        providerId: providerProfile.id,
+        availableModels: models.map((m) => m.id),
+      });
       const fallbackModel: Model = {
         id: modelId,
         providerId: providerProfile.id,
       };
       return strategy.getProviderOptions(llmProvider, fallbackModel);
     }
+
+    logger.debug(`Found model object for ${modelId} in provider ${providerProfile.id}`, {
+      hasProviderOverrides: !!modelObj.providerOverrides,
+    });
 
     return strategy.getProviderOptions(llmProvider, modelObj);
   }
