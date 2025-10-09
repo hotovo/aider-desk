@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { DeepseekProvider, isDeepseekProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 
@@ -75,9 +75,17 @@ export const getDeepseekAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createDeepseekLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createDeepseekLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as DeepseekProvider;
-  const apiKey = provider.apiKey || env['DEEPSEEK_API_KEY'];
+
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('DEEPSEEK_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded DEEPSEEK_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Deepseek API key is required in Providers settings or Aider environment variables (DEEPSEEK_API_KEY)');
@@ -87,7 +95,7 @@ export const createDeepseekLlm = (profile: ProviderProfile, model: Model, env: R
     apiKey,
     headers: profile.headers,
   });
-  return deepseekProvider(model.id);
+  return deepseekProvider(model);
 };
 
 // === Cost and Usage Functions ===

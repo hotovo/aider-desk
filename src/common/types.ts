@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
   AnthropicProvider,
   BedrockProvider,
@@ -12,8 +14,7 @@ import {
   OpenRouterProvider,
   RequestyProvider,
   VertexAiProvider,
-} from '@common/agent';
-import { z } from 'zod';
+} from './agent';
 
 import type { AssistantContent, ToolContent, UserContent } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';

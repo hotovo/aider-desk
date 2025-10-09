@@ -1,4 +1,4 @@
-import { AgentProfile, Model, ModelInfo, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 
@@ -106,17 +106,21 @@ export const getRequestyAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createRequestyLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createRequestyLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as RequestyProvider;
-  const apiKey = provider.apiKey || env['REQUESTY_API_KEY'];
+
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('REQUESTY_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded REQUESTY_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Requesty API key is required in Providers settings or Aider environment variables (REQUESTY_API_KEY)');
   }
-
-  const providerOverrides = model.providerOverrides as Partial<RequestyProvider> | undefined;
-  const useAutoCache = providerOverrides?.useAutoCache ?? provider.useAutoCache;
-  const reasoningEffort = providerOverrides?.reasoningEffort ?? provider.reasoningEffort;
 
   const requestyProvider = createRequesty({
     apiKey,
@@ -127,12 +131,12 @@ export const createRequestyLlm = (profile: ProviderProfile, model: Model, env: R
       'X-Title': AIDER_DESK_TITLE,
     },
     extraBody: {
-      ...(useAutoCache && { requesty: { auto_cache: true } }),
+      ...(provider.useAutoCache && { requesty: { auto_cache: true } }),
     },
   });
-  return requestyProvider(model.id, {
-    includeReasoning: reasoningEffort !== undefined,
-    reasoningEffort: reasoningEffort === ReasoningEffort.None ? undefined : reasoningEffort,
+  return requestyProvider(model, {
+    includeReasoning: provider.reasoningEffort !== undefined,
+    reasoningEffort: provider.reasoningEffort === undefined ? undefined : provider.reasoningEffort,
   });
 };
 

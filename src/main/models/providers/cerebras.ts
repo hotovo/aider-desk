@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { CerebrasProvider, isCerebrasProvider } from '@common/agent';
 import { createCerebras } from '@ai-sdk/cerebras';
 
@@ -94,9 +94,17 @@ export const getCerebrasAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createCerebrasLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createCerebrasLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as CerebrasProvider;
-  const apiKey = provider.apiKey || env['CEREBRAS_API_KEY'];
+
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('CEREBRAS_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded CEREBRAS_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Cerebras API key is required in Providers settings or Aider environment variables (CEREBRAS_API_KEY)');
@@ -106,7 +114,7 @@ export const createCerebrasLlm = (profile: ProviderProfile, model: Model, env: R
     apiKey,
     headers: profile.headers,
   });
-  return cerebrasProvider(model.id);
+  return cerebrasProvider(model);
 };
 
 // === Cost and Usage Functions ===

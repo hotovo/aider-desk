@@ -4,6 +4,7 @@ import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from
 
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 
+import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
 import { LoadModelsResponse } from '@/models/types';
 import { Project } from '@/project/project';
@@ -55,6 +56,7 @@ export const loadAnthropicModels = async (
         } satisfies Model;
       }) || [];
 
+    logger.info(`Loaded ${models.length} Anthropic models for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
     return {
@@ -84,9 +86,23 @@ export const getAnthropicAiderMapping = (provider: ProviderProfile, modelId: str
 };
 
 // === LLM Creation Functions ===
-export const createAnthropicLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createAnthropicLlm = (
+  profile: ProviderProfile,
+  model: string,
+  settings: SettingsData,
+  projectDir: string
+): LanguageModel => {
   const provider = profile.provider as AnthropicProvider;
-  const apiKey = provider.apiKey || env['ANTHROPIC_API_KEY'];
+  
+  let apiKey = provider.apiKey;
+  
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('ANTHROPIC_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded ANTHROPIC_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Anthropic API key is required in Providers settings or Aider environment variables (ANTHROPIC_API_KEY)');
@@ -96,7 +112,7 @@ export const createAnthropicLlm = (profile: ProviderProfile, model: Model, env: 
     apiKey,
     headers: profile.headers,
   });
-  return anthropicProvider(model.id);
+  return anthropicProvider(model);
 };
 
 type AnthropicMetadata = {

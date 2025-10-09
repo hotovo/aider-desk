@@ -1,6 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { isOpenAiProvider, OpenAiProvider } from '@common/agent';
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 
 import type { LanguageModel, LanguageModelUsage } from 'ai';
 
@@ -101,9 +101,18 @@ export const getOpenAiAiderMapping = (provider: ProviderProfile, modelId: string
 };
 
 // === LLM Creation Functions ===
-export const createOpenAiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createOpenAiLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as OpenAiProvider;
-  const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
+
+  let apiKey = provider.apiKey;
+
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('OPENAI_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded OPENAI_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('OpenAI API key is required in Providers settings or Aider environment variables (OPENAI_API_KEY)');
@@ -115,12 +124,9 @@ export const createOpenAiLlm = (profile: ProviderProfile, model: Model, env: Rec
     headers: profile.headers,
   });
 
-  const providerOverrides = model.providerOverrides as Partial<OpenAiProvider> | undefined;
-  const reasoningEffort = providerOverrides?.reasoningEffort ?? provider.reasoningEffort;
-
-  return openAIProvider(model.id, {
+  return openAIProvider(model, {
     structuredOutputs: false,
-    reasoningEffort: reasoningEffort === undefined ? undefined : (reasoningEffort as 'low' | 'medium' | 'high' | undefined),
+    reasoningEffort: provider.reasoningEffort === undefined ? undefined : (provider.reasoningEffort as 'low' | 'medium' | 'high' | undefined),
   });
 };
 

@@ -30,7 +30,7 @@ import {
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 
-import { Agent, McpManager } from '@/agent';
+import { McpManager } from '@/agent';
 import { ModelManager } from '@/models';
 import { ProjectManager } from '@/project';
 import { CloudflareTunnelManager } from '@/server';
@@ -50,7 +50,6 @@ export class EventsHandler {
     private projectManager: ProjectManager,
     private store: Store,
     private mcpManager: McpManager,
-    private agent: Agent,
     private versionsManager: VersionsManager,
     private modelManager: ModelManager,
     private telemetryManager: TelemetryManager,
@@ -69,7 +68,6 @@ export class EventsHandler {
     this.store.saveSettings(newSettings);
 
     this.mcpManager.settingsChanged(oldSettings, newSettings);
-    this.agent.settingsChanged(oldSettings, newSettings);
     this.projectManager.settingsChanged(oldSettings, newSettings);
     this.telemetryManager.settingsChanged(oldSettings, newSettings);
 

@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { GroqProvider, isGroqProvider } from '@common/agent';
 import { createGroq } from '@ai-sdk/groq';
 
@@ -91,9 +91,17 @@ export const getGroqAiderMapping = (provider: ProviderProfile, modelId: string):
 };
 
 // === LLM Creation Functions ===
-export const createGroqLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createGroqLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as GroqProvider;
-  const apiKey = provider.apiKey || env['GROQ_API_KEY'];
+
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('GROQ_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded GROQ_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Groq API key is required in Providers settings or Aider environment variables (GROQ_API_KEY)');
@@ -103,7 +111,7 @@ export const createGroqLlm = (profile: ProviderProfile, model: Model, env: Recor
     apiKey,
     headers: profile.headers,
   });
-  return groqProvider(model.id);
+  return groqProvider(model);
 };
 
 // === Cost and Usage Functions ===

@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isOpenAiCompatibleProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -87,25 +87,42 @@ export const getOpenAiCompatibleAiderMapping = (provider: ProviderProfile, model
 };
 
 // === LLM Creation Functions ===
-export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: string, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as OpenAiCompatibleProvider;
-  const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
+
+  let apiKey = provider.apiKey;
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('OPENAI_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded OPENAI_API_KEY from ${effectiveVar.source}`);
+    }
+  }
+
   if (!apiKey) {
     throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (OPENAI_API_KEY).`);
   }
-  const baseUrl = provider.baseUrl || env['OPENAI_API_BASE'];
+
+  let baseUrl = provider.baseUrl;
+  if (!baseUrl) {
+    const effectiveVar = getEffectiveEnvironmentVariable('OPENAI_API_BASE', settings, projectDir);
+    if (effectiveVar) {
+      baseUrl = effectiveVar.value;
+      logger.debug(`Loaded OPENAI_API_BASE from ${effectiveVar.source}`);
+    }
+  }
+
   if (!baseUrl) {
     throw new Error(`Base URL is required for ${provider.name} provider. Set it in Providers settings or via the OPENAI_API_BASE environment variable.`);
   }
 
-  // Use createOpenAICompatible to get a provider instance, then get the model
   const compatibleProvider = createOpenAICompatible({
     name: provider.name,
     apiKey,
     baseURL: baseUrl,
     headers: profile.headers,
   });
-  return compatibleProvider(model.id);
+  return compatibleProvider(model);
 };
 
 // === Cost and Usage Functions ===

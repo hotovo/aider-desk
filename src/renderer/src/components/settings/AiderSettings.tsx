@@ -107,31 +107,34 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
       </Section>
 
       <Section title={t('settings.aider.environmentVariables')}>
-        <div className="px-4 py-6 pb-3">
-          <div className="relative">
-            <TextArea
-              value={settings.aider.environmentVariables}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  aider: {
-                    ...settings.aider,
-                    environmentVariables: e.target.value,
-                  },
-                })
-              }
-              spellCheck={false}
-              className="min-h-[200px]"
-              placeholder={t('settings.aider.envVarsPlaceholder')}
-            />
-            {!showEnvVars && (
-              <div className="absolute inset-[3px] bottom-[9px] bg-bg-primary-light-strong backdrop-blur-sm flex items-center justify-center rounded-sm">
-                <Button variant="text" color="secondary" onClick={() => setShowEnvVars(true)} className="flex items-center" size="sm">
-                  <HiEye className="mr-2" /> {t('settings.common.showSecrets')}
-                </Button>
-              </div>
-            )}
+        <div className="px-4 py-6 pb-3 space-y-4">
+          <div>
+            <div className="relative">
+              <TextArea
+                value={settings.aider.environmentVariables}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    aider: {
+                      ...settings.aider,
+                      environmentVariables: e.target.value,
+                    },
+                  })
+                }
+                spellCheck={false}
+                className="min-h-[200px]"
+                placeholder={t('settings.aider.envVarsPlaceholder')}
+              />
+              {!showEnvVars && (
+                <div className="absolute inset-[3px] bottom-[9px] bg-bg-primary-light-strong backdrop-blur-sm flex items-center justify-center rounded-sm">
+                  <Button variant="text" color="secondary" onClick={() => setShowEnvVars(true)} className="flex items-center" size="sm">
+                    <HiEye className="mr-2" /> {t('settings.common.showSecrets')}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
+
           <p className="text-xs text-text-secondary px-1">
             {t('settings.aider.envVarsDocumentation')}{' '}
             <a
