@@ -57,7 +57,7 @@
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
-    "@probelabs/probe": "^0.6.0-rc115",
+    "@probelabs/probe": "0.6.0-rc128",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
     "@requesty/ai-sdk": "^1.0.1",
