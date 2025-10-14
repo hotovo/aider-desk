@@ -7,22 +7,27 @@ exports.default = async function(context) {
   const platform = context.packager.platform.name;
 
   if (platform === 'mac') {
-    console.log(`Preparing uv binary for macOS ${arch}...`);
+    console.log(`Preparing binaries for macOS ${arch}...`);
     if (arch === 'x64' || arch === 'arm64') {
       const sourceDir = path.join(__dirname, '..', 'resources', `macos-${arch}`);
       const targetDir = path.join(__dirname, '..', 'resources', 'macos');
-      const sourceFile = path.join(sourceDir, 'uv');
-      const targetFile = path.join(targetDir, 'uv');
 
       if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
       }
 
-      if (fs.existsSync(sourceFile)) {
-        fs.copyFileSync(sourceFile, targetFile);
-        console.log(`uv binary for macOS ${arch} copied successfully.`);
+      if (fs.existsSync(sourceDir)) {
+        // Copy all files from source directory to target directory
+        const files = fs.readdirSync(sourceDir);
+        for (const file of files) {
+          const sourceFile = path.join(sourceDir, file);
+          const targetFile = path.join(targetDir, file);
+          fs.copyFileSync(sourceFile, targetFile);
+          console.log(`Copied ${file} for macOS ${arch}.`);
+        }
+        console.log(`All binaries for macOS ${arch} copied successfully.`);
       } else {
-        console.error(`uv binary for macOS ${arch} not found at ${sourceFile}`);
+        console.error(`Source directory for macOS ${arch} not found at ${sourceDir}`);
       }
     }
   }

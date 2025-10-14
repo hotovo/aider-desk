@@ -16,11 +16,8 @@ tsconfig.*.tsbuildinfo
 .taskmaster
 
 # uv binaries
-resources/linux/uv*
-resources/macos/uv*
-resources/macos-x64/uv*
-resources/macos-arm64/uv*
-resources/win/uv*
+resources/*/uv*
+resources/*/probe*
 
 dev-app-update.yml
 

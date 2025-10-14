@@ -1,11 +1,11 @@
 diff --git a/node_modules/@probelabs/probe/build/utils.js b/node_modules/@probelabs/probe/build/utils.js
-index 5f444d4..09bf12b 100644
+index 5f444d4..fea4304 100644
 --- a/node_modules/@probelabs/probe/build/utils.js
 +++ b/node_modules/@probelabs/probe/build/utils.js
 @@ -27,6 +27,10 @@ let probeBinaryPath = '';
  export async function getBinaryPath(options = {}) {
  	const { forceDownload = false, version } = options;
- 
+
 +  if (options.path) {
 +    return options.path;
 +  }
@@ -13,14 +13,30 @@ index 5f444d4..09bf12b 100644
  	// Return cached path if available and not forcing download
  	if (probeBinaryPath && !forceDownload && fs.existsSync(probeBinaryPath)) {
  		return probeBinaryPath;
+diff --git a/node_modules/@probelabs/probe/cjs/index.cjs b/node_modules/@probelabs/probe/cjs/index.cjs
+index eabe4bd..9ab40bd 100644
+--- a/node_modules/@probelabs/probe/cjs/index.cjs
++++ b/node_modules/@probelabs/probe/cjs/index.cjs
+@@ -748,6 +748,11 @@ var init_downloader = __esm({
+ // src/utils.js
+ async function getBinaryPath(options = {}) {
+   const { forceDownload = false, version } = options;
++
++  if (options.path) {
++    return options.path;
++  }
++
+   if (probeBinaryPath && !forceDownload && import_fs_extra3.default.existsSync(probeBinaryPath)) {
+     return probeBinaryPath;
+   }
 diff --git a/node_modules/@probelabs/probe/src/utils.js b/node_modules/@probelabs/probe/src/utils.js
-index 5f444d4..09bf12b 100644
+index 5f444d4..fea4304 100644
 --- a/node_modules/@probelabs/probe/src/utils.js
 +++ b/node_modules/@probelabs/probe/src/utils.js
 @@ -27,6 +27,10 @@ let probeBinaryPath = '';
  export async function getBinaryPath(options = {}) {
  	const { forceDownload = false, version } = options;
- 
+
 +  if (options.path) {
 +    return options.path;
 +  }

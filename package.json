@@ -21,7 +21,7 @@
     "dev:no-hmr": "NO_HMR=true electron-vite dev",
     "build:mcp": "esbuild src/mcp-server/aider-desk-mcp-server.ts --bundle --platform=node --outdir=out/mcp-server",
     "build": "npm run typecheck && electron-vite build && npm run build:mcp",
-    "postinstall": "electron-builder install-app-deps && node scripts/download-uv.mjs && patch-package",
+    "postinstall": "electron-builder install-app-deps && node scripts/download-uv.mjs && node scripts/download-probe.mjs && patch-package",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",

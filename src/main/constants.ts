@@ -45,12 +45,8 @@ export const AUTH_PASSWORD = process.env.AIDER_DESK_PASSWORD;
 
 export const PROBE_BINARY_PATH = path.join(
   RESOURCES_DIR,
-  'app.asar.unpacked',
-  'node_modules',
-  '@probelabs',
-  'probe',
-  'bin',
-  process.platform === 'win32' ? 'probe.exe' : 'probe-binary',
+  process.platform === 'win32' ? 'win' : process.platform === 'darwin' ? 'macos' : 'linux',
+  process.platform === 'win32' ? 'probe.exe' : 'probe',
 );
 
 export const CLOUDFLARED_BINARY_PATH = path.join(
