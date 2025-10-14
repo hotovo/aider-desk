@@ -14,9 +14,27 @@ index 5f444d4..fea4304 100644
  	if (probeBinaryPath && !forceDownload && fs.existsSync(probeBinaryPath)) {
  		return probeBinaryPath;
 diff --git a/node_modules/@probelabs/probe/cjs/index.cjs b/node_modules/@probelabs/probe/cjs/index.cjs
-index eabe4bd..9ab40bd 100644
+index eabe4bd..b9d93bd 100644
 --- a/node_modules/@probelabs/probe/cjs/index.cjs
 +++ b/node_modules/@probelabs/probe/cjs/index.cjs
+@@ -200,7 +200,7 @@ var init_directory_resolver = __esm({
+     import_os = __toESM(require("os"), 1);
+     import_fs_extra = __toESM(require("fs-extra"), 1);
+     import_url = require("url");
+-    __filename = (0, import_url.fileURLToPath)("file:///");
++    __filename = ".";
+     __dirname = import_path.default.dirname(__filename);
+   }
+ });
+@@ -740,7 +740,7 @@ var init_downloader = __esm({
+     REPO_OWNER = "probelabs";
+     REPO_NAME = "probe";
+     BINARY_NAME = "probe";
+-    __filename2 = (0, import_url2.fileURLToPath)("file:///");
++    __filename2 = ".";
+     __dirname2 = import_path2.default.dirname(__filename2);
+   }
+ });
 @@ -748,6 +748,11 @@ var init_downloader = __esm({
  // src/utils.js
  async function getBinaryPath(options = {}) {
@@ -29,6 +47,24 @@ index eabe4bd..9ab40bd 100644
    if (probeBinaryPath && !forceDownload && import_fs_extra3.default.existsSync(probeBinaryPath)) {
      return probeBinaryPath;
    }
+@@ -809,7 +814,7 @@ var init_utils = __esm({
+     import_url3 = require("url");
+     init_downloader();
+     init_directory_resolver();
+-    __filename3 = (0, import_url3.fileURLToPath)("file:///");
++    __filename3 = ".";
+     __dirname3 = import_path3.default.dirname(__filename3);
+     probeBinaryPath = "";
+   }
+@@ -72770,7 +72775,7 @@ var init_config = __esm({
+     import_path8 = require("path");
+     import_os3 = require("os");
+     import_url4 = require("url");
+-    __filename4 = (0, import_url4.fileURLToPath)("file:///");
++    __filename4 = ".";
+     __dirname4 = (0, import_path8.dirname)(__filename4);
+     DEFAULT_CONFIG = {
+       mcpServers: {
 diff --git a/node_modules/@probelabs/probe/src/utils.js b/node_modules/@probelabs/probe/src/utils.js
 index 5f444d4..fea4304 100644
 --- a/node_modules/@probelabs/probe/src/utils.js
