@@ -1,11 +1,13 @@
 import { AgentProfile, ContextMemoryMode, GenericTool, InvocationMode, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
-import React, { ReactNode, useRef, useState } from 'react';
+import React, { ReactNode, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import { clsx } from 'clsx';
 import Sketch from '@uiw/react-color-sketch';
+import { DndContext, DragEndEvent, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DESCRIPTIONS,
@@ -37,8 +39,8 @@ import { FaArrowRightFromBracket } from 'react-icons/fa6';
 import { McpServer, McpServerForm } from './McpServerForm';
 import { McpServerItem } from './McpServerItem';
 import { GenericToolGroupItem } from './GenericToolGroupItem';
-import { AgentProfileItem } from './AgentProfileItem';
 import { AgentRules } from './AgentRules';
+import { SortableAgentProfileItem } from './SortableAgentProfileItem';
 
 import { AgentModelSelector } from '@/components/AgentModelSelector';
 import { Button } from '@/components/common/Button';
@@ -227,10 +229,45 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
   const [mcpServersExpanded, setMcpServersExpanded] = useState(false);
   const profileNameInputRef = useRef<HTMLInputElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const { agentProfiles, mcpServers } = settings;
   const selectedProfile = agentProfiles.find((profile) => profile.id === selectedProfileId) || null;
   const defaultProfile = agentProfiles.find((profile) => profile.id === DEFAULT_AGENT_PROFILE.id) || DEFAULT_AGENT_PROFILE;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 150,
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = agentProfiles.findIndex((p) => p.id === active.id);
+      const newIndex = agentProfiles.findIndex((p) => p.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedProfiles = arrayMove(agentProfiles, oldIndex, newIndex);
+        setSettings({
+          ...settings,
+          agentProfiles: reorderedProfiles,
+        });
+      }
+    }
+    setTimeout(() => {
+      setDragging(false);
+    }, 0);
+  };
+
+  // useMemo for project IDs to prevent SortableContext from re-rendering unnecessarily
+  const agentProfileIds = useMemo(() => agentProfiles.map((p) => p.id), [agentProfiles]);
 
   const getSubagentSummary = (profile: AgentProfile) => {
     if (!profile.subagent.enabled) {
@@ -428,17 +465,23 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
       <div className="w-[260px] border-r border-bg-tertiary-strong p-4 pb-2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary">
         <h4 className="text-sm uppercase font-medium">{t('agentProfiles.profiles')}</h4>
         <div className="py-2">
-          {agentProfiles.map((profile) => (
-            <AgentProfileItem
-              key={profile.id}
-              profile={profile}
-              isSelected={selectedProfileId === profile.id}
-              onClick={(id) => {
-                setSelectedProfileId(id);
-              }}
-              isDefault={profile.id === DEFAULT_AGENT_PROFILE.id}
-            />
-          ))}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => setDragging(true)} onDragEnd={handleDragEnd}>
+            <SortableContext items={agentProfileIds} strategy={verticalListSortingStrategy}>
+              {agentProfiles.map((profile) => (
+                <SortableAgentProfileItem
+                  key={profile.id}
+                  profile={profile}
+                  isSelected={selectedProfileId === profile.id}
+                  onClick={(id) => {
+                    if (!dragging) {
+                      setSelectedProfileId(id);
+                    }
+                  }}
+                  isDefault={profile.id === DEFAULT_AGENT_PROFILE.id}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
           <button
             onClick={handleCreateNewProfile}
             className="w-full text-left px-2 py-1 mt-2 rounded-sm text-sm transition-colors text-text-primary hover:bg-bg-secondary-light flex items-center"
