@@ -967,6 +967,8 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
                   readOnly: false,
                 })
               }
+              projectSettings={projectSettings}
+              saveProjectSettings={saveProjectSettings}
             />
           </div>
         </ResizableBox>

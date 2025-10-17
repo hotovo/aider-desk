@@ -1,8 +1,9 @@
-import { TokensInfoData, Mode } from '@common/types';
+import { TokensInfoData, Mode, ProjectSettings } from '@common/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IoClose, IoChevronDown, IoChevronUp } from 'react-icons/io5';
+import { IoClose, IoChevronDown, IoChevronUp, IoInformationCircleOutline } from 'react-icons/io5';
 import { MdOutlineRefresh } from 'react-icons/md';
+import { Slider } from '@nextui-org/react';
 
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { formatHumanReadable } from '@/utils/string-utils';
@@ -15,9 +16,21 @@ type Props = {
   restartProject?: () => void;
   maxInputTokens?: number;
   mode: Mode;
+  projectSettings: ProjectSettings;
+  saveProjectSettings: (settings: Partial<ProjectSettings>) => void;
 };
 
-export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRepoMap, restartProject, maxInputTokens = 0, mode }: Props) => {
+export const CostInfo = ({
+  tokensInfo,
+  aiderTotalCost,
+  clearMessages,
+  refreshRepoMap,
+  restartProject,
+  maxInputTokens = 0,
+  mode,
+  projectSettings,
+  saveProjectSettings,
+}: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [refreshingAnimation, setRefreshingAnimation] = useState(false);
@@ -54,7 +67,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
         </button>
       </div>
       <div className="text-2xs text-text-muted-light">
-        <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-24 mb-2' : 'max-h-0'}`}>
+        <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-48 mb-2' : 'max-h-0'}`}>
           {renderLabelValue('costInfo.files', `${filesTotalTokens} tokens, $${filesTotalCost.toFixed(5)}`, t)}
           <div className="flex items-center h-[20px]">
             <div className="flex-1">{renderLabelValue('costInfo.repoMap', `${repoMapTokens} tokens, $${repoMapCost.toFixed(5)}`, t)}</div>
@@ -129,6 +142,39 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
               : formatHumanReadable(t, totalTokens)}
           </div>
         </div>
+        {mode === 'agent' && (
+          <div className="mt-2 text-2xs text-text-muted-light">
+            <div className="flex items-center gap-2">
+              <Slider
+                aria-label="Context Compacting Threshold"
+                size="sm"
+                step={1}
+                maxValue={100}
+                minValue={0}
+                value={projectSettings.contextCompactingThreshold ?? 80}
+                onChange={(value) => {
+                  saveProjectSettings({
+                    contextCompactingThreshold: value as number,
+                  });
+                }}
+                className="max-w-md"
+                classNames={{
+                  label: 'text-2xs text-text-muted-light',
+                  value: 'text-2xs text-text-muted-light',
+                }}
+                label={t('costInfo.contextCompactingThreshold')}
+                getValue={(value) => (value === 0 ? t('costInfo.contextCompactingThresholdOff') : `${value}%`)}
+              />
+              <button
+                data-tooltip-id="context-compacting-threshold-tooltip"
+                data-tooltip-content={t('costInfo.contextCompactingThresholdTooltip')}
+              >
+                <IoInformationCircleOutline className="w-4 h-4" />
+              </button>
+              <StyledTooltip id="context-compacting-threshold-tooltip" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

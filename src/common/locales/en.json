@@ -697,7 +697,10 @@
     "aider": "Aider",
     "total": "Total",
     "restartSession": "Restart session",
-    "tokenUsage": "{{usedTokens}} of {{maxTokens}}"
+    "tokenUsage": "{{usedTokens}} of {{maxTokens}}",
+    "contextCompactingThreshold": "Auto-compacting threshold",
+    "contextCompactingThresholdOff": "Off",
+    "contextCompactingThresholdTooltip": "When token usage exceeds this threshold, the conversation will be automatically compacted to save space."
   },
   "sessions": {
     "title": "Sessions",

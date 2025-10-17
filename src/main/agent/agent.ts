@@ -674,6 +674,24 @@ export class Agent {
       while (true) {
         logger.info(`Starting iteration ${iterationCount}`);
         iterationCount++;
+
+        // Check for context compacting
+        const projectSettings = task.project.getProjectSettings();
+        const threshold = projectSettings.contextCompactingThreshold;
+        if (threshold && threshold > 0) {
+          const estimatedTokens = await this.estimateTokens(task, profile);
+          const maxTokens = this.modelManager.getModel(profile.provider, profile.model)?.maxInputTokens;
+          if (maxTokens && estimatedTokens > (maxTokens * threshold) / 100) {
+            logger.info(`Token usage ${estimatedTokens} exceeds threshold of ${threshold}%. Compacting conversation.`);
+            task.addLogMessage('info', 'Token usage exceeds threshold. Compacting conversation...', false, promptContext);
+            await task.compactConversation('agent');
+
+            // reload messages after compacting
+            messages = await this.prepareMessages(task, profile, task.getContextMessages(), contextFiles);
+            messages.push(...resultMessages);
+          }
+        }
+
         if (iterationCount > profile.maxIterations) {
           logger.warn(`Max iterations (${profile.maxIterations}) reached. Stopping agent.`);
           task.addLogMessage(

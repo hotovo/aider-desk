@@ -671,7 +671,10 @@
     "aider": "Aider",
     "total": "全部的",
     "restartSession": "重启会话",
-    "tokenUsage": "{{usedTokens}} / {{maxTokens}}"
+    "tokenUsage": "{{usedTokens}} / {{maxTokens}}",
+    "contextCompactingThreshold": "自动压缩上下文阈值",
+    "contextCompactingThresholdOff": "关闭",
+    "contextCompactingThresholdTooltip": "当令牌使用量超过此阈值时，对话将自动压缩以节省空间。"
   },
   "sessions": {
     "title": "会话",

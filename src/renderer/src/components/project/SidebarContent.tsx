@@ -1,4 +1,4 @@
-import { TokensInfoData, Mode } from '@common/types';
+import { TokensInfoData, Mode, ProjectSettings } from '@common/types';
 
 import { ContextFiles } from '@/components/ContextFiles';
 import { CostInfo } from '@/components/CostInfo';
@@ -14,6 +14,8 @@ type Props = {
   restartProject: () => void;
   mode: Mode;
   showFileDialog: () => void;
+  projectSettings: ProjectSettings;
+  saveProjectSettings: (settings: Partial<ProjectSettings>) => void;
 };
 
 export const SidebarContent = ({
@@ -27,6 +29,8 @@ export const SidebarContent = ({
   restartProject,
   mode,
   showFileDialog,
+  projectSettings,
+  saveProjectSettings,
 }: Props) => {
   return (
     <>
@@ -41,6 +45,8 @@ export const SidebarContent = ({
         refreshRepoMap={() => runCommand('map-refresh')}
         restartProject={restartProject}
         mode={mode}
+        projectSettings={projectSettings}
+        saveProjectSettings={saveProjectSettings}
       />
     </>
   );
