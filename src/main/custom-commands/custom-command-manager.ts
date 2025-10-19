@@ -132,23 +132,32 @@ export class CustomCommandManager {
     }
 
     try {
-      const files = fs.readdirSync(commandsDir).filter((f) => f.endsWith('.md'));
-      for (const file of files) {
-        this.loadCommandFile(path.join(commandsDir, file), commands);
-      }
+      this.loadCommandsRecursively(commandsDir, commands, commandsDir);
     } catch (err) {
       logger.error(`Failed to read commands directory ${commandsDir}: ${err}`);
     }
   }
 
-  private loadCommandFile(filePath: string, commands: Map<string, CustomCommand>) {
+  private loadCommandsRecursively(dir: string, commands: Map<string, CustomCommand>, baseDir: string, prefix = '') {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        this.loadCommandsRecursively(fullPath, commands, baseDir, `${prefix}${entry.name}:`);
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        const name = `${prefix}${path.basename(entry.name, '.md')}`;
+        this.loadCommandFile(fullPath, name, commands);
+      }
+    }
+  }
+
+  private loadCommandFile(filePath: string, name: string, commands: Map<string, CustomCommand>) {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       const parsed = loadFront(content);
       if (!parsed.description) {
         logger.warn(`Command file ${filePath} is missing a description`);
       }
-      const name = path.basename(filePath, '.md');
       const args = Array.isArray(parsed.arguments) ? parsed.arguments : [];
       const template = parsed.__content?.trim() || '';
       const includeContext = typeof parsed.includeContext === 'boolean' ? parsed.includeContext : true;
