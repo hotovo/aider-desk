@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.36.0]
 
 - added checkbox for showing/hiding Hidden models in Model Library
 - correctly opening About tab in Settings when Update is available icon is clicked
