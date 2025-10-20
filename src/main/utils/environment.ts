@@ -39,6 +39,51 @@ const readPropertyFromConfFile = (filePath: string, property: string): string | 
   return undefined;
 };
 
+const readApiKeyFromConfFile = (filePath: string, envVarName: string): string | undefined => {
+  try {
+    if (fs.existsSync(filePath)) {
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const config = YAML.parse(fileContent);
+      if (config && typeof config === 'object' && 'api-key' in config) {
+        const apiKeyValue = config['api-key'];
+
+        // Map environment variable names to provider names used in api-key property
+        // GOOGLE_API_KEY maps to 'gemini' in the api-key property
+        const envVarToProviderName: Record<string, string[]> = {
+          GOOGLE_API_KEY: ['gemini', 'google'],
+          OPENAI_API_KEY: ['openai'],
+          ANTHROPIC_API_KEY: ['anthropic'],
+          GROQ_API_KEY: ['groq'],
+          DEEPSEEK_API_KEY: ['deepseek'],
+          OPENROUTER_API_KEY: ['openrouter'],
+          CEREBRAS_API_KEY: ['cerebras'],
+          REQUESTY_API_KEY: ['requesty'],
+        };
+
+        const providerNames = envVarToProviderName[envVarName] || [envVarName.replace(/_API_KEY$/, '').toLowerCase()];
+
+        // Normalize apiKeyValue to array for unified processing
+        const apiKeys = Array.isArray(apiKeyValue) ? apiKeyValue : [apiKeyValue];
+
+        for (const item of apiKeys) {
+          if (typeof item === 'string') {
+            for (const providerName of providerNames) {
+              const match = item.match(new RegExp(`^${providerName}=(.+)$`, 'i'));
+              if (match) {
+                logger.debug(`Found API key for ${envVarName} using provider name '${providerName}' in ${filePath}`);
+                return match[1];
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    logger.warn(`Failed to read or parse api-key from .aider.conf.yml at ${filePath}:`, e);
+  }
+  return undefined;
+};
+
 export const getEffectiveEnvironmentVariable = (key: string, settings?: SettingsData, projectDir?: string): EnvironmentVariable | undefined => {
   // 1. From settings.aider.environmentVariables
   if (settings) {
@@ -82,7 +127,13 @@ export const getEffectiveEnvironmentVariable = (key: string, settings?: Settings
       return { value: projectEnvVars[key], source: projectEnvPath };
     }
 
-    // 5. from kebab-case property in $projectDir/.aider.conf.yml
+    // 5. from api-key property in $projectDir/.aider.conf.yml
+    const projectApiKey = readApiKeyFromConfFile(projectAiderConfPath, key);
+    if (projectApiKey !== undefined) {
+      return { value: projectApiKey, source: projectAiderConfPath };
+    }
+
+    // 6. from kebab-case property in $projectDir/.aider.conf.yml
     const projectKebabValue = readPropertyFromConfFile(projectAiderConfPath, kebabCaseKey);
     if (projectKebabValue !== undefined) {
       return { value: projectKebabValue, source: projectAiderConfPath };
@@ -92,7 +143,7 @@ export const getEffectiveEnvironmentVariable = (key: string, settings?: Settings
   // Home dir related checks
   const homeDir = process.env.HOME || process.env.USERPROFILE;
   if (homeDir) {
-    // 6. from `env-file` in $HOME/.aider.conf.yml
+    // 7. from `env-file` in $HOME/.aider.conf.yml
     const homeAiderConfPath = path.join(homeDir, '.aider.conf.yml');
     const envFileFromConf = readPropertyFromConfFile(homeAiderConfPath, 'env-file');
     if (envFileFromConf) {
@@ -103,21 +154,27 @@ export const getEffectiveEnvironmentVariable = (key: string, settings?: Settings
       }
     }
 
-    // 7. from $HOME/.env
+    // 8. from $HOME/.env
     const homeEnvPath = path.join(homeDir, '.env');
     const homeEnvVars = readEnvFile(homeEnvPath);
     if (homeEnvVars && homeEnvVars[key] !== undefined) {
       return { value: homeEnvVars[key], source: homeEnvPath };
     }
 
-    // 8. from kebab-case property in $HOME/.aider.conf.yml
+    // 9. from api-key property in $HOME/.aider.conf.yml
+    const homeApiKey = readApiKeyFromConfFile(homeAiderConfPath, key);
+    if (homeApiKey !== undefined) {
+      return { value: homeApiKey, source: homeAiderConfPath };
+    }
+
+    // 10. from kebab-case property in $HOME/.aider.conf.yml
     const homeKebabValue = readPropertyFromConfFile(homeAiderConfPath, kebabCaseKey);
     if (homeKebabValue !== undefined) {
       return { value: homeKebabValue, source: homeAiderConfPath };
     }
   }
 
-  // 9. From process.env
+  // 11. From process.env
   if (process.env[key] !== undefined) {
     return { value: process.env[key] as string, source: 'process.env' };
   }

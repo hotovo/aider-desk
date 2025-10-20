@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
-import { AgentProfile, Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, UsageReportData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, SettingsData, ModelOverrides, ProviderModelsData, ProviderProfile, UsageReportData } from '@common/types';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
 import { azureProviderStrategy } from './providers/azure';
@@ -20,8 +20,8 @@ import { requestyProviderStrategy } from './providers/requesty';
 import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModelUsage, ToolSet } from 'ai';
+import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelUsage, ToolSet, JSONValue } from 'ai';
 
 import { AIDER_DESK_DATA_DIR, AIDER_DESK_CACHE_DIR } from '@/constants';
 import logger from '@/logger';
@@ -496,7 +496,7 @@ export class ModelManager {
     return providerModels.find((m) => m.id === modelId);
   }
 
-  createLlm(profile: ProviderProfile, model: string | Model, env: Record<string, string | undefined> = {}): LanguageModelV2 {
+  createLlm(profile: ProviderProfile, model: string | Model, settings: SettingsData, projectDir: string): LanguageModelV2 {
     const strategy = this.providerRegistry[profile.provider.name];
     if (!strategy) {
       throw new Error(`Unsupported LLM provider: ${profile.provider.name}`);
@@ -521,7 +521,7 @@ export class ModelManager {
       throw new Error(`Model not found: ${model}`);
     }
 
-    return strategy.createLlm(profile, modelObj, env);
+    return strategy.createLlm(profile, modelObj, settings, projectDir);
   }
 
   getUsageReport(task: Task, provider: ProviderProfile, model: string | Model, usage: LanguageModelUsage, providerMetadata?: unknown): UsageReportData {
@@ -562,32 +562,48 @@ export class ModelManager {
     return strategy.getCacheControl(profile, llmProvider);
   }
 
-  getProviderOptions(providerId: string, modelId: string): SharedV2ProviderOptions | undefined {
-    // Find the provider profile for this LLM provider
-    const providers = this.store.getProviders();
-    const providerProfile = providers.find((p) => p.id === providerId);
-    if (!providerProfile) {
-      logger.debug(`Provider profile not found for ${providerId}`);
-      return undefined;
-    }
-
-    const llmProvider = providerProfile.provider;
+  getProviderOptions(llmProvider: LlmProvider, modelId: string): Record<string, Record<string, JSONValue>> | undefined {
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderOptions) {
-      logger.debug(`Provider options not available for ${llmProvider.name}`);
       return undefined;
     }
 
-    // Resolve Model object
-    const modelObj = this.getModel(providerProfile.id, modelId);
+    // Find the provider profile for this LLM provider
+    const providers = this.store.getProviders();
+    const providerProfile = providers.find((p) => p.provider.name === llmProvider.name);
+
+    if (!providerProfile) {
+      logger.warn(`Provider profile not found for ${llmProvider.name}, using fallback without model overrides`, {
+        modelId,
+        providerName: llmProvider.name,
+      });
+      const fallbackModel: Model = {
+        id: modelId,
+        providerId: '',
+      };
+      return strategy.getProviderOptions(llmProvider, fallbackModel);
+    }
+
+    // Look up the actual Model object from providerModels
+    const models = this.providerModels[providerProfile.id] || [];
+    const modelObj = models.find((m) => m.id === modelId);
+
     if (!modelObj) {
-      // Fallback to minimal Model object if not found
+      logger.warn(`Model ${modelId} not found in provider ${providerProfile.id}, using fallback without model overrides`, {
+        modelId,
+        providerId: providerProfile.id,
+        availableModels: models.map((m) => m.id),
+      });
       const fallbackModel: Model = {
         id: modelId,
         providerId: providerProfile.id,
       };
       return strategy.getProviderOptions(llmProvider, fallbackModel);
     }
+
+    logger.debug(`Found model object for ${modelId} in provider ${providerProfile.id}`, {
+      hasProviderOverrides: !!modelObj.providerOverrides,
+    });
 
     return strategy.getProviderOptions(llmProvider, modelObj);
   }

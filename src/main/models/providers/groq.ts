@@ -92,9 +92,17 @@ export const getGroqAiderMapping = (provider: ProviderProfile, modelId: string):
 };
 
 // === LLM Creation Functions ===
-export const createGroqLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModelV2 => {
+export const createGroqLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as GroqProvider;
-  const apiKey = provider.apiKey || env['GROQ_API_KEY'];
+  let apiKey = provider.apiKey;
+
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('GROQ_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded GROQ_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Groq API key is required in Providers settings or Aider environment variables (GROQ_API_KEY)');

@@ -5,6 +5,7 @@ import { AZURE_DEFAULT_API_VERSION, AzureProvider } from '@common/agent';
 import type { LanguageModelUsage } from 'ai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 
+import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy } from '@/models';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Task } from '@/task/task';
@@ -51,23 +52,48 @@ export const getAzureAiderMapping = (provider: ProviderProfile, modelId: string)
 };
 
 // === LLM Creation Functions ===
-export const createAzureLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModelV2 => {
+export const createAzureLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as AzureProvider;
-  const apiKey = provider.apiKey || env['AZURE_API_KEY'];
-  const resourceName = provider.resourceName || (env['AZURE_RESOURCE_NAME'] ? extractResourceNameFromEndpoint(env['AZURE_RESOURCE_NAME']) : '');
-  const apiVersion = provider.apiVersion || env['AZURE_API_VERSION'] || AZURE_DEFAULT_API_VERSION;
+  let apiKey = provider.apiKey;
+  let resourceName = provider.resourceName;
+  let apiVersion = provider.apiVersion;
+
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded AZURE_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Azure OpenAI API key is required in Providers settings or Aider environment variables (AZURE_API_KEY)');
   }
+
+  if (!resourceName) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_BASE', settings, projectDir);
+    if (effectiveVar?.value) {
+      resourceName = extractResourceNameFromEndpoint(effectiveVar.value);
+      logger.debug(`Loaded AZURE_API_BASE from ${effectiveVar.source}`);
+    }
+  }
+
   if (!resourceName) {
     throw new Error('Azure OpenAI resource name is required in Providers settings or Aider environment variables (AZURE_API_BASE)');
+  }
+
+  if (!apiVersion) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AZURE_API_VERSION', settings, projectDir);
+    if (effectiveVar) {
+      apiVersion = effectiveVar.value;
+      logger.debug(`Loaded AZURE_API_VERSION from ${effectiveVar.source}`);
+    }
   }
 
   const azureProvider = createAzure({
     resourceName,
     apiKey,
-    apiVersion,
+    apiVersion: apiVersion || AZURE_DEFAULT_API_VERSION,
     headers: profile.headers,
   });
   return azureProvider(model.id);

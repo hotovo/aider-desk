@@ -76,9 +76,17 @@ export const getDeepseekAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createDeepseekLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModelV2 => {
+export const createDeepseekLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as DeepseekProvider;
-  const apiKey = provider.apiKey || env['DEEPSEEK_API_KEY'];
+  let apiKey = provider.apiKey;
+
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('DEEPSEEK_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded DEEPSEEK_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Deepseek API key is required in Providers settings or Aider environment variables (DEEPSEEK_API_KEY)');

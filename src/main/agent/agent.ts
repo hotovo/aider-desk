@@ -1,8 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { homedir } from 'os';
 
-import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
@@ -13,7 +11,6 @@ import {
   McpToolInputSchema,
   PromptContext,
   ProviderProfile,
-  SettingsData,
   ToolApprovalState,
   UsageReportData,
 } from '@common/types';
@@ -56,7 +53,6 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Task } from '@/task';
 import { Store } from '@/store';
 import logger from '@/logger';
-import { parseAiderEnv } from '@/utils';
 import { optimizeMessages } from '@/agent/optimizer';
 import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
@@ -67,7 +63,6 @@ const MAX_RETRIES = 3;
 
 export class Agent {
   private abortControllers: Record<string, AbortController> = {};
-  private aiderEnv: Record<string, string> | null = null;
   private lastToolCallTime: number = 0;
 
   constructor(
@@ -76,19 +71,6 @@ export class Agent {
     private readonly modelManager: ModelManager,
     private readonly telemetryManager: TelemetryManager,
   ) {}
-
-  private invalidateAiderEnv() {
-    this.aiderEnv = null;
-  }
-
-  settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {
-    const aiderEnvChanged = oldSettings.aider?.environmentVariables !== newSettings.aider?.environmentVariables;
-    const aiderOptionsChanged = oldSettings.aider?.options !== newSettings.aider?.options;
-    if (aiderEnvChanged || aiderOptionsChanged) {
-      logger.info('Aider environment or options changed, invalidating cached environment.');
-      this.invalidateAiderEnv();
-    }
-  }
 
   private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: ImagePart[] }> {
     const textFileContents: string[] = [];
@@ -534,9 +516,8 @@ export class Agent {
     }
     const effectiveAbortSignal = abortSignal || this.abortControllers[task.project.baseDir]?.signal;
 
-    const llmProvider = provider.provider;
-    const cacheControl = this.modelManager.getCacheControl(profile, llmProvider);
-    const providerOptions = this.modelManager.getProviderOptions(profile.provider, profile.model);
+    const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
+    const providerOptions = this.modelManager.getProviderOptions(provider.provider, profile.model);
 
     const userRequestMessage: ContextUserMessage = {
       id: promptContext?.id || uuidv4(),
@@ -559,7 +540,7 @@ export class Agent {
       task.addLogMessage('error', `Error reinitializing MCP clients: ${error}`, false, promptContext);
     }
 
-    const toolSet = await this.getAvailableTools(task, profile, llmProvider, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
+    const toolSet = await this.getAvailableTools(task, profile, provider.provider, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
     logger.debug('Tools:', {
@@ -569,7 +550,14 @@ export class Agent {
     let currentResponseId: string = uuidv4();
 
     try {
-      const model = this.modelManager.createLlm(provider, profile.model, await this.getLlmEnv(task));
+      logger.debug('Creating LLM model', {
+        providerId: provider.id,
+        providerName: provider.provider.name,
+        modelName: profile.model,
+      });
+
+      const model = this.modelManager.createLlm(provider, profile.model, settings, task.project.baseDir);
+      logger.debug('LLM model created successfully');
 
       if (!systemPrompt) {
         systemPrompt = await getSystemPrompt(task.project.baseDir, profile);
@@ -880,43 +868,6 @@ export class Agent {
     }
 
     return resultMessages;
-  }
-
-  private async getLlmEnv(task: Task) {
-    const env = {
-      ...process.env,
-    };
-
-    const homeEnvPath = path.join(homedir(), '.env');
-    const taskEnvPath = path.join(task.project.baseDir, '.env');
-
-    try {
-      await fs.access(homeEnvPath);
-      const homeEnvContent = await fs.readFile(homeEnvPath, 'utf8');
-      Object.assign(env, dotenv.parse(homeEnvContent));
-    } catch {
-      // File does not exist or other read error, ignore
-    }
-
-    try {
-      await fs.access(taskEnvPath);
-      const taskEnvContent = await fs.readFile(taskEnvPath, 'utf8');
-      Object.assign(env, dotenv.parse(taskEnvContent));
-    } catch {
-      // File does not exist or other read error, ignore
-    }
-
-    Object.assign(env, this.getAiderEnv());
-
-    return env;
-  }
-
-  private getAiderEnv(): Record<string, string> {
-    if (!this.aiderEnv) {
-      this.aiderEnv = parseAiderEnv(this.store.getSettings());
-    }
-
-    return this.aiderEnv;
   }
 
   private async prepareMessages(task: Task, profile: AgentProfile, contextMessages: ModelMessage[], contextFiles: ContextFile[]): Promise<ModelMessage[]> {

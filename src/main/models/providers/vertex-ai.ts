@@ -123,18 +123,38 @@ export const getVertexAiAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createVertexAiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModelV2 => {
+export const createVertexAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as VertexAiProvider;
-  const project = provider.project || env['VERTEXAI_PROJECT'];
-  const location = provider.location || env['VERTEXAI_LOCATION'] || 'global';
+  let project = provider.project;
+  let location = provider.location;
+
+  if (!project) {
+    const effectiveVar = getEffectiveEnvironmentVariable('VERTEXAI_PROJECT', settings, projectDir);
+    if (effectiveVar) {
+      project = effectiveVar.value;
+      logger.debug(`Loaded VERTEXAI_PROJECT from ${effectiveVar.source}`);
+    }
+  }
 
   if (!project) {
     throw new Error('Vertex AI project is required in Providers settings or Aider environment variables (VERTEXAI_PROJECT)');
   }
 
+  if (!location) {
+    const effectiveVar = getEffectiveEnvironmentVariable('VERTEXAI_LOCATION', settings, projectDir);
+    if (effectiveVar) {
+      location = effectiveVar.value;
+      logger.debug(`Loaded VERTEXAI_LOCATION from ${effectiveVar.source}`);
+    }
+  }
+
+  if (!location) {
+    location = 'global';
+  }
+
   const vertexProvider = createVertex({
-    project: provider.project,
-    location: provider.location,
+    project,
+    location,
     headers: profile.headers,
     // using custom base URL to fix the 'global' location
     baseURL: `https://${location && location !== 'global' ? location + '-' : ''}aiplatform.googleapis.com/v1/projects/${provider.project}/locations/${provider.location}/publishers/google`,

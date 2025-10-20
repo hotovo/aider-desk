@@ -90,15 +90,30 @@ export const getGeminiAiderMapping = (provider: ProviderProfile, modelId: string
 };
 
 // === LLM Creation Functions ===
-export const createGeminiLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModelV2 => {
+export const createGeminiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as GeminiProvider;
-  const apiKey = provider.apiKey || env['GEMINI_API_KEY'];
+  let apiKey = provider.apiKey;
+  let baseUrl = provider.customBaseUrl;
+
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('GEMINI_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded GEMINI_API_KEY from ${effectiveVar.source}`);
+    }
+  }
 
   if (!apiKey) {
     throw new Error('Gemini API key is required in Providers settings or Aider environment variables (GEMINI_API_KEY)');
   }
 
-  const baseUrl = provider.customBaseUrl || env['GEMINI_API_BASE_URL'];
+  if (!baseUrl) {
+    const effectiveBaseUrl = getEffectiveEnvironmentVariable('GEMINI_API_BASE_URL', settings, projectDir);
+    if (effectiveBaseUrl) {
+      baseUrl = effectiveBaseUrl.value;
+      logger.debug(`Loaded GEMINI_API_BASE_URL from ${effectiveBaseUrl.source}`);
+    }
+  }
 
   const googleProvider = createGoogleGenerativeAI({
     apiKey,

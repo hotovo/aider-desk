@@ -78,9 +78,18 @@ const getZaiPlanAiderMapping = (provider: ProviderProfile, modelId: string): Aid
 };
 
 // === LLM Creation Functions ===
-const createZaiPlanLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModelV2 => {
+const createZaiPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as ZaiPlanProvider;
-  const apiKey = provider.apiKey || env['ZAI_API_KEY'];
+  let apiKey = provider.apiKey;
+
+  if (!apiKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('ZAI_API_KEY', settings, projectDir);
+    if (effectiveVar) {
+      apiKey = effectiveVar.value;
+      logger.debug(`Loaded ZAI_API_KEY from ${effectiveVar.source}`);
+    }
+  }
+
   if (!apiKey) {
     throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (ZAI_API_KEY).`);
   }

@@ -190,26 +190,57 @@ export const getBedrockAiderMapping = (provider: ProviderProfile, modelId: strin
 };
 
 // === LLM Creation Functions ===
-export const createBedrockLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModelV2 => {
+export const createBedrockLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as BedrockProvider;
-  const region = provider.region || env['AWS_REGION'];
-  const accessKeyId = provider.accessKeyId || env['AWS_ACCESS_KEY_ID'];
-  const secretAccessKey = provider.secretAccessKey || env['AWS_SECRET_ACCESS_KEY'];
-  const sessionToken = provider.sessionToken || env['AWS_SESSION_TOKEN'];
+  let region = provider.region;
+  let accessKeyId = provider.accessKeyId;
+  let secretAccessKey = provider.secretAccessKey;
+  let sessionToken = provider.sessionToken;
+
+  if (!region) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AWS_REGION', settings, projectDir);
+    if (effectiveVar) {
+      region = effectiveVar.value;
+      logger.debug(`Loaded AWS_REGION from ${effectiveVar.source}`);
+    }
+  }
 
   if (!region) {
     throw new Error('AWS region is required for Bedrock. You can set it in the MCP settings or Aider environment variables (AWS_REGION).');
   }
-  // Check if we have explicit keys or if AWS_PROFILE is set in the main process env
-  if (!accessKeyId && !secretAccessKey && !process.env.AWS_PROFILE) {
+
+  if (!accessKeyId) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AWS_ACCESS_KEY_ID', settings, projectDir);
+    if (effectiveVar) {
+      accessKeyId = effectiveVar.value;
+      logger.debug(`Loaded AWS_ACCESS_KEY_ID from ${effectiveVar.source}`);
+    }
+  }
+
+  if (!secretAccessKey) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AWS_SECRET_ACCESS_KEY', settings, projectDir);
+    if (effectiveVar) {
+      secretAccessKey = effectiveVar.value;
+      logger.debug(`Loaded AWS_SECRET_ACCESS_KEY from ${effectiveVar.source}`);
+    }
+  }
+
+  if (!sessionToken) {
+    const effectiveVar = getEffectiveEnvironmentVariable('AWS_SESSION_TOKEN', settings, projectDir);
+    if (effectiveVar) {
+      sessionToken = effectiveVar.value;
+      logger.debug(`Loaded AWS_SESSION_TOKEN from ${effectiveVar.source}`);
+    }
+  }
+
+  const awsProfile = getEffectiveEnvironmentVariable('AWS_PROFILE', settings, projectDir);
+
+  if (!accessKeyId && !secretAccessKey && !awsProfile) {
     throw new Error(
       'AWS credentials (accessKeyId/secretAccessKey) or AWS_PROFILE must be provided for Bedrock in Providers settings or Aider environment variables.',
     );
   }
 
-  // AI SDK Bedrock provider handles credentials via environment variables or default chain.
-  // We pass credentials explicitly only if they were found in config or env.
-  // Otherwise, we let the SDK handle the default credential chain (which includes AWS_PROFILE from process.env).
   const bedrockProviderInstance = createAmazonBedrock({
     region,
     headers: profile.headers,
@@ -219,7 +250,6 @@ export const createBedrockLlm = (profile: ProviderProfile, model: Model, env: Re
         secretAccessKey,
         sessionToken,
       }),
-    // Let the SDK handle the default chain if explicit keys aren't provided
     credentialProvider: !accessKeyId && !secretAccessKey ? fromNodeProviderChain() : undefined,
   });
   return bedrockProviderInstance(model.id);

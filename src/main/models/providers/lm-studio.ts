@@ -82,9 +82,17 @@ export const getLmStudioAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createLmStudioLlm = (profile: ProviderProfile, model: Model, env: Record<string, string | undefined> = {}): LanguageModelV2 => {
+export const createLmStudioLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as LmStudioProvider;
-  const baseUrl = provider.baseUrl || env['LMSTUDIO_API_BASE'];
+  let baseUrl = provider.baseUrl;
+
+  if (!baseUrl) {
+    const effectiveVar = getEffectiveEnvironmentVariable('LMSTUDIO_API_BASE', settings, projectDir);
+    if (effectiveVar) {
+      baseUrl = effectiveVar.value;
+      logger.debug(`Loaded LMSTUDIO_API_BASE from ${effectiveVar.source}`);
+    }
+  }
 
   if (!baseUrl) {
     throw new Error('Base URL is required for LMStudio provider. Set it in Providers settings or via the LMSTUDIO_API_BASE environment variable.');
