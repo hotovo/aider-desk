@@ -1,0 +1,31 @@
+# Configuration file for models that need to be monkey patched into aider's MODEL_SETTINGS
+# This allows adding support for newer models that aren't yet in aider's official model list
+
+models:
+  - name: anthropic/claude-sonnet-4-5-20250929
+    edit_format: diff
+    weak_model_name: anthropic/claude-haiku-4-5-20251001
+    use_repo_map: true
+    examples_as_sys_msg: false
+    extra_params:
+      extra_headers:
+        anthropic-beta: prompt-caching-2024-07-31,pdfs-2024-09-25,output-128k-2025-02-19
+      max_tokens: 64000
+    cache_control: true
+    editor_model_name: anthropic/claude-sonnet-4-5-20250929
+    editor_edit_format: editor-diff
+    accepts_settings: ["thinking_tokens"]
+
+  - name: anthropic/claude-haiku-4-5-20251001
+    edit_format: diff
+    weak_model_name: anthropic/claude-3-5-haiku-20241022
+    use_repo_map: true
+    examples_as_sys_msg: false
+    extra_params:
+      extra_headers:
+        anthropic-beta: prompt-caching-2024-07-31,pdfs-2024-09-25,output-128k-2025-02-19
+      max_tokens: 64000
+    cache_control: true
+    editor_model_name: anthropic/claude-haiku-4-5-20251001
+    editor_edit_format: editor-diff
+    accepts_settings: ["thinking_tokens"]

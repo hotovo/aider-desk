@@ -55,10 +55,18 @@ const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: Updat
     fs.mkdirSync(AIDER_DESK_CONNECTOR_DIR, { recursive: true });
   }
 
-  // Copy connector.py from resources
-  const sourceConnectorPath = path.join(RESOURCES_DIR, 'connector/connector.py');
-  const destConnectorPath = path.join(AIDER_DESK_CONNECTOR_DIR, 'connector.py');
-  fs.copyFileSync(sourceConnectorPath, destConnectorPath);
+  const sourceConnectorDir = path.join(RESOURCES_DIR, 'connector');
+
+  if (fs.existsSync(sourceConnectorDir)) {
+    fs.cpSync(sourceConnectorDir, AIDER_DESK_CONNECTOR_DIR, {
+      recursive: true,
+      force: true,
+    });
+    logger.info(`Copied connector directory from ${sourceConnectorDir} to ${AIDER_DESK_CONNECTOR_DIR}`);
+  } else {
+    logger.error(`Connector directory not found: ${sourceConnectorDir}`);
+    throw new Error(`Connector directory not found: ${sourceConnectorDir}`);
+  }
 
   await installAiderConnectorRequirements(cleanInstall, updateProgress);
 };

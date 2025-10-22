@@ -22,6 +22,8 @@ from concurrent.futures import ThreadPoolExecutor, Future
 import nest_asyncio
 import litellm
 import types
+from monkeypatch import monkey_patch_model_settings
+from logger import log_info, log_error, log_warning, log_debug
 
 class PromptContext:
   def __init__(self, id: str, group=None):
@@ -597,9 +599,16 @@ def clone_coder(connector, coder, prompt_context=None, messages=None, files=None
   return coder
 
 def create_base_coder(connector):
+  log_info("Initializing aider with monkey patches...")
+  monkey_patch_model_settings()
+  
+  log_info("Creating aider coder instance...")
   coder = cli_main(return_coder=True)
   if not isinstance(coder, Coder):
     raise ValueError(coder)
+
+  for line in coder.get_announcements():
+    log_info(f"AIDER: {line}")
 
   return coder
 
