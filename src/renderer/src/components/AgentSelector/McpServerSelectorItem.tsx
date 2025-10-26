@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Checkbox } from '../common/Checkbox';
 
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   serverName: string;

@@ -2,7 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, u
 import { useTranslation } from 'react-i18next';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type ContextMenuContextType = {
   showMenu: (x: number, y: number, options: MenuOption[], targetElement?: Element | null) => void;

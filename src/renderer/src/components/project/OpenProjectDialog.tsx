@@ -8,7 +8,7 @@ import { Accordion } from '@/components/common/Accordion';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   onClose: () => void;

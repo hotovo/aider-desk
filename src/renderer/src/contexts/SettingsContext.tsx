@@ -1,7 +1,7 @@
 import { Font, SettingsData, Theme } from '@common/types';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type SettingsContextType = {
   settings: SettingsData | null;

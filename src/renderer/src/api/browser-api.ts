@@ -1,6 +1,6 @@
 import {
   AutocompletionData,
-  ClearProjectData,
+  ClearTaskData,
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
@@ -21,7 +21,6 @@ import {
   ProjectData,
   ProjectSettings,
   ProjectStartedData,
-  ProjectStartMode,
   ProviderModelsData,
   ProviderProfile,
   ProvidersUpdatedData,
@@ -29,6 +28,7 @@ import {
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  TaskContextData,
   TaskData,
   TerminalData,
   TerminalExitData,
@@ -60,10 +60,17 @@ type EventDataMap = {
   tool: ToolData;
   'user-message': UserMessageData;
   'input-history-updated': InputHistoryData;
-  'clear-project': ClearProjectData;
+  'clear-task': ClearTaskData;
   'project-started': ProjectStartedData;
   'provider-models-updated': ProviderModelsData;
   'providers-updated': ProvidersUpdatedData;
+  'task-created': TaskData;
+  'task-initialized': TaskData;
+  'task-updated': TaskData;
+  'task-deleted': TaskData;
+  'task-started': TaskData;
+  'task-completed': TaskData;
+  'task-cancelled': TaskData;
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -71,6 +78,7 @@ type EventCallback<T> = (data: T) => void;
 interface ListenerEntry<T> {
   callback: EventCallback<T>;
   baseDir?: string;
+  taskId?: string;
 }
 
 class UnsupportedError extends Error {
@@ -111,10 +119,17 @@ export class BrowserApi implements ApplicationAPI {
       tool: new Map(),
       'user-message': new Map(),
       'input-history-updated': new Map(),
-      'clear-project': new Map(),
+      'clear-task': new Map(),
       'project-started': new Map(),
       'provider-models-updated': new Map(),
       'providers-updated': new Map(),
+      'task-created': new Map(),
+      'task-initialized': new Map(),
+      'task-started': new Map(),
+      'task-updated': new Map(),
+      'task-deleted': new Map(),
+      'task-completed': new Map(),
+      'task-cancelled': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -156,9 +171,18 @@ export class BrowserApi implements ApplicationAPI {
         const typedData = data as EventDataMap[typeof eventType];
         eventListeners.forEach((entry) => {
           const baseDir = (typedData as { baseDir?: string })?.baseDir;
+          const taskId = (typedData as { taskId?: string })?.taskId;
+
+          // Filter by baseDir
           if (entry.baseDir && baseDir && !compareBaseDirs(entry.baseDir, baseDir, this.appOS || undefined)) {
             return;
           }
+
+          // Filter by taskId for task-level events
+          if (entry.taskId && taskId && entry.taskId !== taskId) {
+            return;
+          }
+
           entry.callback(typedData);
         });
       }
@@ -171,11 +195,11 @@ export class BrowserApi implements ApplicationAPI {
     }
   }
 
-  private addListener<T extends keyof EventDataMap>(eventType: T, baseDir: string | undefined, callback: EventCallback<EventDataMap[T]>): () => void {
+  private addListener<T extends keyof EventDataMap>(eventType: T, callback: EventCallback<EventDataMap[T]>, baseDir?: string, taskId?: string): () => void {
     this.ensureSocketConnected();
     const eventListeners = this.listeners[eventType];
     const id = uuidv4();
-    eventListeners.set(id, { callback, baseDir });
+    eventListeners.set(id, { callback, baseDir, taskId });
 
     return () => {
       eventListeners.delete(id);
@@ -219,27 +243,36 @@ export class BrowserApi implements ApplicationAPI {
   saveSettings(settings: SettingsData): Promise<SettingsData> {
     return this.post('/settings', settings);
   }
-  startProject(baseDir: string): void {
-    this.post('/project/start', { projectDir: baseDir });
+  startProject(baseDir: string): Promise<void> {
+    return this.post('/project/start', { projectDir: baseDir });
   }
   stopProject(baseDir: string): void {
     this.post('/project/stop', { projectDir: baseDir });
   }
-  restartProject(baseDir: string, startupMode?: ProjectStartMode): void {
-    this.post('/project/restart', { projectDir: baseDir, startupMode });
+
+  restartProject(baseDir: string): void {
+    this.post('/project/restart', { projectDir: baseDir });
   }
-  runPrompt(baseDir: string, prompt: string, mode?: Mode): void {
-    this.post('/run-prompt', { projectDir: baseDir, prompt, mode });
+  restartTask(baseDir: string, taskId: string): void {
+    this.post('/project/tasks/restart', { projectDir: baseDir, taskId });
   }
-  redoLastUserPrompt(baseDir: string, mode: Mode, updatedPrompt?: string): void {
+  runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode): void {
+    this.post('/run-prompt', { projectDir: baseDir, taskId, prompt, mode });
+  }
+  redoLastUserPrompt(baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string): void {
     this.post('/project/redo-prompt', {
       projectDir: baseDir,
+      taskId,
       mode,
       updatedPrompt,
     });
   }
-  answerQuestion(baseDir: string, answer: string): void {
-    this.post('/project/answer-question', { projectDir: baseDir, answer });
+  answerQuestion(baseDir: string, taskId: string, answer: string): void {
+    this.post('/project/answer-question', {
+      projectDir: baseDir,
+      taskId,
+      answer,
+    });
   }
   loadInputHistory(baseDir: string): Promise<string[]> {
     return this.get('/project/input-history', { projectDir: baseDir });
@@ -309,12 +342,13 @@ export class BrowserApi implements ApplicationAPI {
       directoriesOnly,
     });
   }
-  getAddableFiles(baseDir: string): Promise<string[]> {
-    return this.post('/get-addable-files', { projectDir: baseDir });
+  getAddableFiles(baseDir: string, taskId: string): Promise<string[]> {
+    return this.post('/get-addable-files', { projectDir: baseDir, taskId });
   }
-  addFile(baseDir: string, filePath: string, readOnly?: boolean): void {
+  addFile(baseDir: string, taskId: string, filePath: string, readOnly?: boolean): void {
     this.post('/add-context-file', {
       projectDir: baseDir,
+      taskId,
       path: filePath,
       readOnly,
     });
@@ -327,43 +361,53 @@ export class BrowserApi implements ApplicationAPI {
   async isProjectPath(path: string): Promise<boolean> {
     return this.post<{ path: string }, { isProject: boolean }>('/project/is-project-path', { path }).then((res) => res.isProject);
   }
-  dropFile(baseDir: string, path: string): void {
-    this.post('/drop-context-file', { projectDir: baseDir, path });
+  dropFile(baseDir: string, taskId: string, path: string): void {
+    this.post('/drop-context-file', { projectDir: baseDir, taskId, path });
   }
-  runCommand(baseDir: string, command: string): void {
-    this.post('/project/run-command', { projectDir: baseDir, command });
+  runCommand(baseDir: string, taskId: string, command: string): void {
+    this.post('/project/run-command', { projectDir: baseDir, taskId, command });
   }
-  pasteImage(baseDir: string): void {
-    this.post('/project/paste-image', { projectDir: baseDir });
+  pasteImage(baseDir: string, taskId: string): void {
+    this.post('/project/paste-image', { projectDir: baseDir, taskId });
   }
-  scrapeWeb(baseDir: string, url: string, filePath?: string): Promise<string> {
+  scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void> {
     return this.post('/project/scrape-web', {
       projectDir: baseDir,
+      taskId,
       url,
       filePath,
     });
   }
-  initProjectRulesFile(baseDir: string): Promise<void> {
-    return this.post('/project/init-rules', { projectDir: baseDir });
+  initProjectRulesFile(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/init-rules', { projectDir: baseDir, taskId });
   }
-  getTodos(baseDir: string): Promise<TodoItem[]> {
-    return this.get('/project/todos', { projectDir: baseDir });
+  getTodos(baseDir: string, taskId: string): Promise<TodoItem[]> {
+    return this.get('/project/todos', { projectDir: baseDir, taskId });
   }
-  addTodo(baseDir: string, name: string): Promise<TodoItem[]> {
-    return this.post('/project/todo/add', { projectDir: baseDir, name });
+  addTodo(baseDir: string, taskId: string, name: string): Promise<TodoItem[]> {
+    return this.post('/project/todo/add', {
+      projectDir: baseDir,
+      taskId,
+      name,
+    });
   }
-  updateTodo(baseDir: string, name: string, updates: Partial<TodoItem>): Promise<TodoItem[]> {
+  updateTodo(baseDir: string, taskId: string, name: string, updates: Partial<TodoItem>): Promise<TodoItem[]> {
     return this.patch('/project/todo/update', {
       projectDir: baseDir,
+      taskId,
       name,
       updates,
     });
   }
-  deleteTodo(baseDir: string, name: string): Promise<TodoItem[]> {
-    return this.post('/project/todo/delete', { projectDir: baseDir, name });
+  deleteTodo(baseDir: string, taskId: string, name: string): Promise<TodoItem[]> {
+    return this.post('/project/todo/delete', {
+      projectDir: baseDir,
+      taskId,
+      name,
+    });
   }
-  clearAllTodos(baseDir: string): Promise<TodoItem[]> {
-    return this.post('/project/todo/clear', { projectDir: baseDir });
+  clearAllTodos(baseDir: string, taskId: string): Promise<TodoItem[]> {
+    return this.post('/project/todo/clear', { projectDir: baseDir, taskId });
   }
   loadMcpServerTools(serverName: string, config?: McpServerConfig): Promise<McpTool[] | null> {
     return this.post('/mcp/tools', { serverName, config });
@@ -371,24 +415,25 @@ export class BrowserApi implements ApplicationAPI {
   reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void> {
     return this.post('/mcp/reload', { mcpServers, force });
   }
-  saveTask(baseDir: string, name: string, id?: string): Promise<boolean> {
-    return this.post('/project/tasks', { projectDir: baseDir, name, id });
+  createNewTask(baseDir: string): Promise<TaskData> {
+    return this.post('/project/tasks/new', { projectDir: baseDir });
+  }
+  updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<boolean> {
+    return this.post('/project/tasks', { projectDir: baseDir, id, updates });
   }
   deleteTask(baseDir: string, id: string): Promise<boolean> {
     return this.post('/project/tasks/delete', { projectDir: baseDir, id });
   }
-  loadTask(baseDir: string, id: string): Promise<void> {
-    return this.post('/project/tasks/load-messages', {
-      projectDir: baseDir,
-      id,
-    });
-  }
   getTasks(baseDir: string): Promise<TaskData[]> {
     return this.get('/project/tasks', { projectDir: baseDir });
   }
-  exportTaskToMarkdown(baseDir: string): Promise<void> {
+  loadTask(baseDir: string, id: string): Promise<TaskContextData> {
+    return this.post('/project/tasks/load', { projectDir: baseDir, id });
+  }
+  exportTaskToMarkdown(baseDir: string, taskId: string): Promise<void> {
     return this.post('/project/tasks/export-markdown', {
       projectDir: baseDir,
+      taskId,
     });
   }
   getRecentProjects(): Promise<string[]> {
@@ -400,21 +445,23 @@ export class BrowserApi implements ApplicationAPI {
   removeRecentProject(baseDir: string): Promise<void> {
     return this.post('/settings/remove-recent-project', { baseDir });
   }
-  interruptResponse(baseDir: string): void {
-    this.post('/project/interrupt', { projectDir: baseDir });
+  interruptResponse(baseDir: string, taskId: string): void {
+    this.post('/project/interrupt', { projectDir: baseDir, taskId });
   }
-  applyEdits(baseDir: string, edits: FileEdit[]): void {
-    this.post('/project/apply-edits', { projectDir: baseDir, edits });
+  applyEdits(baseDir: string, taskId: string, edits: FileEdit[]): void {
+    this.post('/project/apply-edits', { projectDir: baseDir, taskId, edits });
   }
-  clearContext(baseDir: string): void {
-    this.post('/project/clear-context', { projectDir: baseDir });
+
+  clearContext(baseDir: string, taskId: string): void {
+    this.post('/project/clear-context', { projectDir: baseDir, taskId });
   }
-  removeLastMessage(baseDir: string): void {
-    this.post('/project/remove-last-message', { projectDir: baseDir });
+  removeLastMessage(baseDir: string, taskId: string): void {
+    this.post('/project/remove-last-message', { projectDir: baseDir, taskId });
   }
-  compactConversation(baseDir: string, mode: Mode, customInstructions?: string): void {
+  compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructions?: string): void {
     this.post('/project/compact-conversation', {
       projectDir: baseDir,
+      taskId,
       mode,
       customInstructions,
     });
@@ -465,52 +512,52 @@ export class BrowserApi implements ApplicationAPI {
     return this.get('/system/env-var', { key, baseDir });
   }
   addSettingsUpdatedListener(callback: (data: SettingsData) => void): () => void {
-    return this.addListener('settings-updated', undefined, callback);
+    return this.addListener('settings-updated', callback);
   }
-  addResponseChunkListener(baseDir: string, callback: (data: ResponseChunkData) => void): () => void {
-    return this.addListener('response-chunk', baseDir, callback);
+  addResponseChunkListener(baseDir: string, taskId: string, callback: (data: ResponseChunkData) => void): () => void {
+    return this.addListener('response-chunk', callback, baseDir, taskId);
   }
-  addResponseCompletedListener(baseDir: string, callback: (data: ResponseCompletedData) => void): () => void {
-    return this.addListener('response-completed', baseDir, callback);
+  addResponseCompletedListener(baseDir: string, taskId: string, callback: (data: ResponseCompletedData) => void): () => void {
+    return this.addListener('response-completed', callback, baseDir, taskId);
   }
-  addLogListener(baseDir: string, callback: (data: LogData) => void): () => void {
-    return this.addListener('log', baseDir, callback);
+  addLogListener(baseDir: string, taskId: string, callback: (data: LogData) => void): () => void {
+    return this.addListener('log', callback, baseDir, taskId);
   }
-  addContextFilesUpdatedListener(baseDir: string, callback: (data: ContextFilesUpdatedData) => void): () => void {
-    return this.addListener('context-files-updated', baseDir, callback);
+  addContextFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void): () => void {
+    return this.addListener('context-files-updated', callback, baseDir, taskId);
   }
   addCustomCommandsUpdatedListener(baseDir: string, callback: (data: CustomCommandsUpdatedData) => void): () => void {
-    return this.addListener('custom-commands-updated', baseDir, callback);
+    return this.addListener('custom-commands-updated', callback, baseDir);
   }
-  addUpdateAutocompletionListener(baseDir: string, callback: (data: AutocompletionData) => void): () => void {
-    return this.addListener('update-autocompletion', baseDir, callback);
+  addUpdateAutocompletionListener(baseDir: string, taskId: string, callback: (data: AutocompletionData) => void): () => void {
+    return this.addListener('update-autocompletion', callback, baseDir, taskId);
   }
-  addAskQuestionListener(baseDir: string, callback: (data: QuestionData) => void): () => void {
-    return this.addListener('ask-question', baseDir, callback);
+  addAskQuestionListener(baseDir: string, taskId: string, callback: (data: QuestionData) => void): () => void {
+    return this.addListener('ask-question', callback, baseDir, taskId);
   }
-  addUpdateAiderModelsListener(baseDir: string, callback: (data: ModelsData) => void): () => void {
-    return this.addListener('update-aider-models', baseDir, callback);
+  addUpdateAiderModelsListener(baseDir: string, taskId: string, callback: (data: ModelsData) => void): () => void {
+    return this.addListener('update-aider-models', callback, baseDir, taskId);
   }
-  addCommandOutputListener(baseDir: string, callback: (data: CommandOutputData) => void): () => void {
-    return this.addListener('command-output', baseDir, callback);
+  addCommandOutputListener(baseDir: string, taskId: string, callback: (data: CommandOutputData) => void): () => void {
+    return this.addListener('command-output', callback, baseDir, taskId);
   }
-  addTokensInfoListener(baseDir: string, callback: (data: TokensInfoData) => void): () => void {
-    return this.addListener('update-tokens-info', baseDir, callback);
+  addTokensInfoListener(baseDir: string, taskId: string, callback: (data: TokensInfoData) => void): () => void {
+    return this.addListener('update-tokens-info', callback, baseDir, taskId);
   }
-  addToolListener(baseDir: string, callback: (data: ToolData) => void): () => void {
-    return this.addListener('tool', baseDir, callback);
+  addToolListener(baseDir: string, taskId: string, callback: (data: ToolData) => void): () => void {
+    return this.addListener('tool', callback, baseDir, taskId);
   }
-  addUserMessageListener(baseDir: string, callback: (data: UserMessageData) => void): () => void {
-    return this.addListener('user-message', baseDir, callback);
+  addUserMessageListener(baseDir: string, taskId: string, callback: (data: UserMessageData) => void): () => void {
+    return this.addListener('user-message', callback, baseDir, taskId);
   }
   addInputHistoryUpdatedListener(baseDir: string, callback: (data: InputHistoryData) => void): () => void {
-    return this.addListener('input-history-updated', baseDir, callback);
+    return this.addListener('input-history-updated', callback, baseDir);
   }
-  addClearProjectListener(baseDir: string, callback: (data: ClearProjectData) => void): () => void {
-    return this.addListener('clear-project', baseDir, callback);
+  addClearTaskListener(baseDir: string, taskId: string, callback: (data: ClearTaskData) => void): () => void {
+    return this.addListener('clear-task', callback, baseDir, taskId);
   }
   addProjectStartedListener(baseDir: string, callback: (data: ProjectStartedData) => void): () => void {
-    return this.addListener('project-started', baseDir, callback);
+    return this.addListener('project-started', callback, baseDir);
   }
   addVersionsInfoUpdatedListener(callback: (data: VersionsInfo) => void): () => void {
     void callback;
@@ -518,11 +565,40 @@ export class BrowserApi implements ApplicationAPI {
   }
 
   addProviderModelsUpdatedListener(callback: (data: ProviderModelsData) => void): () => void {
-    return this.addListener('provider-models-updated', undefined, callback);
+    return this.addListener('provider-models-updated', callback);
   }
 
   addProvidersUpdatedListener(callback: (data: ProvidersUpdatedData) => void): () => void {
-    return this.addListener('providers-updated', undefined, callback);
+    return this.addListener('providers-updated', callback);
+  }
+
+  // Task lifecycle event listeners
+  addTaskCreatedListener(baseDir: string, callback: (data: TaskData) => void): () => void {
+    return this.addListener('task-created', callback, baseDir);
+  }
+
+  addTaskInitializedListener(baseDir: string, callback: (data: TaskData) => void): () => void {
+    return this.addListener('task-initialized', callback, baseDir);
+  }
+
+  addTaskUpdatedListener(baseDir: string, callback: (data: TaskData) => void): () => void {
+    return this.addListener('task-updated', callback, baseDir);
+  }
+
+  addTaskStartedListener(baseDir: string, callback: (data: TaskData) => void): () => void {
+    return this.addListener('task-started', callback, baseDir);
+  }
+
+  addTaskCompletedListener(baseDir: string, callback: (data: TaskData) => void): () => void {
+    return this.addListener('task-completed', callback, baseDir);
+  }
+
+  addTaskCancelledListener(baseDir: string, callback: (data: TaskData) => void): () => void {
+    return this.addListener('task-cancelled', callback, baseDir);
+  }
+
+  addTaskDeletedListener(baseDir: string, callback: (data: TaskData) => void): () => void {
+    return this.addListener('task-deleted', callback, baseDir);
   }
   addTerminalDataListener(baseDir: string, callback: (data: TerminalData) => void): () => void {
     void baseDir;
@@ -545,9 +621,10 @@ export class BrowserApi implements ApplicationAPI {
   getCustomCommands(baseDir: string): Promise<CustomCommand[]> {
     return this.get('/project/custom-commands', { projectDir: baseDir });
   }
-  runCustomCommand(baseDir: string, commandName: string, args: string[], mode: Mode): Promise<void> {
+  runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void> {
     return this.post('/project/custom-commands', {
       projectDir: baseDir,
+      taskId,
       commandName,
       args,
       mode,
@@ -556,8 +633,9 @@ export class BrowserApi implements ApplicationAPI {
   isTerminalSupported(): boolean {
     return false;
   }
-  createTerminal(baseDir: string, cols?: number, rows?: number): Promise<string> {
+  createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {
     void baseDir;
+    void taskId;
     void cols;
     void rows;
     throw new UnsupportedError('createTerminal not supported yet.');
@@ -577,13 +655,13 @@ export class BrowserApi implements ApplicationAPI {
     void terminalId;
     throw new UnsupportedError('closeTerminal not supported yet.');
   }
-  getTerminalForProject(baseDir: string): Promise<string | null> {
+  getTerminalForTask(baseDir: string): Promise<string | null> {
     void baseDir;
-    throw new UnsupportedError('getTerminalForProject not supported yet.');
+    throw new UnsupportedError('getTerminalForTask not supported yet.');
   }
-  getAllTerminalsForProject(baseDir: string): Promise<Array<{ id: string; baseDir: string; cols: number; rows: number }>> {
-    void baseDir;
-    throw new UnsupportedError('getAllTerminalsForProject not supported yet.');
+  getAllTerminalsForTask(taskId: string): Promise<Array<{ id: string; taskId: string; cols: number; rows: number }>> {
+    void taskId;
+    throw new UnsupportedError('getAllTerminalsForTask not supported yet.');
   }
   isManageServerSupported(): boolean {
     return false;

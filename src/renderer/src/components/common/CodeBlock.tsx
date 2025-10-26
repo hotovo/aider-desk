@@ -10,7 +10,7 @@ import { CopyMessageButton } from '../message/CopyMessageButton';
 import { IconButton } from './IconButton';
 
 import { DiffViewer, UDiffViewer } from '@/components/common/DiffViewer';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 const SEARCH_MARKER = /^<{5,9} SEARCH[^\n]*$/m;
 const DIVIDER_MARKER = /^={5,9}\s*$/m;
@@ -56,6 +56,7 @@ const parseDiffContent = (content: string): { oldValue: string; newValue: string
 
 type Props = {
   baseDir: string;
+  taskId?: string;
   language: string;
   children?: string;
   file?: string;
@@ -64,7 +65,7 @@ type Props = {
   newValue?: string;
 };
 
-export const CodeBlock = ({ baseDir, language, children, file, isComplete = true, oldValue, newValue }: Props) => {
+export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplete = true, oldValue, newValue }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [changesReverted, setChangesReverted] = useState(false);
@@ -130,13 +131,15 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
 
   const handleRevertChanges = () => {
     if (file && displayAsDiff) {
-      api.applyEdits(baseDir, [
-        {
-          path: file!,
-          original: diffNewValue,
-          updated: diffOldValue,
-        },
-      ]);
+      if (taskId) {
+        api.applyEdits(baseDir, taskId, [
+          {
+            path: file!,
+            original: diffNewValue,
+            updated: diffOldValue,
+          },
+        ]);
+      }
       setChangesReverted(true);
     }
   };

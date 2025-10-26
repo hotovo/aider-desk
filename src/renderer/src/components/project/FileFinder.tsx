@@ -7,10 +7,11 @@ import { PiKeyReturn } from 'react-icons/pi';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   baseDir?: string;
+  taskId?: string;
   isReadOnly: boolean;
   selectedPaths: string[];
   onPathAdded: (path: string) => void;
@@ -24,6 +25,7 @@ type Props = {
 
 export const FileFinder = ({
   baseDir,
+  taskId,
   isReadOnly,
   selectedPaths,
   onPathAdded,
@@ -64,7 +66,7 @@ export const FileFinder = ({
         setSuggestions([]);
         return;
       }
-      const suggestionFiles = isReadOnly || !baseDir ? await api.getFilePathSuggestions(inputValue) : await api.getAddableFiles(baseDir);
+      const suggestionFiles = isReadOnly || !baseDir || !taskId ? await api.getFilePathSuggestions(inputValue) : await api.getAddableFiles(baseDir, taskId);
 
       const getParentDirectories = () => {
         const parentDirs = new Set<string>();
@@ -120,7 +122,7 @@ export const FileFinder = ({
     };
 
     void updateSuggestions();
-  }, [inputValue, showSuggestions, baseDir, isReadOnly, selectedPaths, allowFiles, allowDirectories, api]);
+  }, [inputValue, showSuggestions, baseDir, isReadOnly, selectedPaths, allowFiles, allowDirectories, api, taskId]);
 
   const handleInputSubmit = () => {
     if (inputValue && isValidInputValue && !selectedPaths.includes(inputValue)) {

@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
-import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, TaskContext, UsageReportData } from '@common/types';
+import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, TaskContext, ToolData, UsageReportData, UserMessageData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
 
@@ -12,13 +12,14 @@ import { Task } from '@/task';
 import { isDirectory, isFileIgnored } from '@/utils';
 import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG } from '@/agent/utils';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
+import { AIDER_DESK_TASKS_DIR } from '@/constants';
 
 const CURRENT_CONTEXT_VERSION = 2;
 
 export class ContextManager {
   private messages: ContextMessage[];
   private files: ContextFile[];
-  private autosaveEnabled = true;
+  private autosaveEnabled = false;
   private readonly storagePath: string;
 
   constructor(
@@ -31,7 +32,7 @@ export class ContextManager {
     this.files = initialFiles;
 
     // Task-specific storage path - single context per task
-    this.storagePath = path.join(task.project.baseDir, '.aider-desk', 'tasks', taskId, 'context.json');
+    this.storagePath = path.join(task.project.baseDir, AIDER_DESK_TASKS_DIR, taskId, 'context.json');
   }
 
   public enableAutosave() {
@@ -118,6 +119,14 @@ export class ContextManager {
       }
       return addedFiles;
     } else {
+      if (!(await fileExists(absolutePath))) {
+        logger.debug('Skipping non-existing file for task:', {
+          taskId: this.taskId,
+          path: contextFile.path,
+          absolutePath,
+        });
+        return [];
+      }
       if (await this.isFileIgnored(contextFile)) {
         logger.debug('Skipping ignored file for task:', {
           taskId: this.taskId,
@@ -125,7 +134,6 @@ export class ContextManager {
         });
         return [];
       }
-
       logger.debug('Adding file to task context:', {
         taskId: this.taskId,
         path: contextFile.path,
@@ -409,6 +417,18 @@ export class ContextManager {
     }
   }
 
+  private async cleanupContext(): Promise<void> {
+    // Filter out files that no longer exist
+    const existingFiles: ContextFile[] = [];
+    for (const file of this.files) {
+      const absolutePath = path.resolve(this.task.project.baseDir, file.path);
+      if (await fileExists(absolutePath)) {
+        existingFiles.push(file);
+      }
+    }
+    this.files = existingFiles;
+  }
+
   private async migrateContext(contextData: unknown): Promise<TaskContext> {
     let migratedContext = contextData as TaskContext;
     let contextVersion = migratedContext.version ?? 1;
@@ -455,8 +475,10 @@ export class ContextManager {
 
       const migratedData = await this.migrateContext(contextData);
 
-      await this.loadMessages(migratedData.contextMessages || []);
-      await this.loadFiles(migratedData.contextFiles || []);
+      this.messages = migratedData.contextMessages || [];
+      this.files = migratedData.contextFiles || [];
+
+      await this.cleanupContext();
 
       logger.info(`Task context loaded from ${this.storagePath}`, { taskId: this.taskId });
     } catch (error) {
@@ -473,9 +495,57 @@ export class ContextManager {
 
     this.messages = messages;
 
-    // Add messages to the UI
-    for (let i = 0; i < this.messages.length; i++) {
-      const message = this.messages[i];
+    // Get the messages data and send them to the UI
+    const messagesData = this.getContextMessagesData(messages);
+
+    for (const messageData of messagesData) {
+      if (messageData.type === 'user') {
+        // UserMessageData
+        this.task.sendUserMessage(messageData);
+      } else if (messageData.type === 'response-completed') {
+        // ResponseCompletedData
+        this.task.sendResponseCompleted(messageData);
+      } else if (messageData.type === 'tool') {
+        // ToolData
+        this.task.sendToolMessage(messageData);
+      }
+    }
+
+    // send messages to Connectors (Aider)
+    this.toConnectorMessages().forEach((message) => {
+      this.task.sendAddMessage(message.role, message.content, false);
+    });
+  }
+
+  async delete(): Promise<void> {
+    logger.info('Deleting task context:', { taskId: this.taskId });
+    try {
+      if (await fileExists(this.storagePath)) {
+        await fs.unlink(this.storagePath);
+        logger.info(`Task context deleted: ${this.storagePath}`, { taskId: this.taskId });
+      }
+    } catch (error) {
+      logger.error('Failed to delete task context:', { error, taskId: this.taskId });
+      throw error;
+    }
+  }
+
+  private debouncedAutosave = debounce(async () => {
+    if (this.autosaveEnabled) {
+      await this.save();
+    }
+  }, 1000);
+
+  private autosave() {
+    if (this.autosaveEnabled) {
+      void this.debouncedAutosave();
+    }
+  }
+
+  public getContextMessagesData(contextMessages: ContextMessage[] = this.messages): (UserMessageData | ResponseCompletedData | ToolData)[] {
+    const messagesData: (UserMessageData | ResponseCompletedData | ToolData)[] = [];
+
+    for (const message of contextMessages) {
       if (message.role === 'assistant') {
         if (Array.isArray(message.content)) {
           // Collect reasoning and text parts to combine them if both exist
@@ -503,17 +573,21 @@ export class ContextManager {
               finalContent = reasoningContent || textContent;
             }
 
-            this.task.processResponseMessage(
-              {
-                id: uuidv4(),
-                action: 'response',
-                content: finalContent.trim(),
-                finished: true,
-                reflectedMessage: message.reflectedMessage,
-                usageReport: message.usageReport,
-              },
-              false,
-            );
+            const responseCompletedData: ResponseCompletedData = {
+              type: 'response-completed',
+              messageId: message.id,
+              content: finalContent.trim(),
+              baseDir: this.task.project.baseDir,
+              taskId: this.taskId,
+              reflectedMessage: message.reflectedMessage,
+              editedFiles: message.editedFiles,
+              commitHash: message.commitHash,
+              commitMessage: message.commitMessage,
+              diff: message.diff,
+              usageReport: message.usageReport,
+              promptContext: message.promptContext,
+            };
+            messagesData.push(responseCompletedData);
           }
 
           // Process tool-call parts
@@ -526,21 +600,24 @@ export class ContextManager {
               }
 
               const [serverName, toolName] = extractServerNameToolName(toolCall.toolName);
-              this.task.addToolMessage(toolCall.toolCallId, serverName, toolName, toolCall.input, undefined, message.usageReport, message.promptContext, false);
-            } else if (part.type === 'tool-result') {
-              const toolResult = part;
-              const [serverName, toolName] = extractServerNameToolName(toolResult.toolName);
-              const promptContext = extractPromptContextFromToolResult(toolResult.output.value) ?? message.promptContext;
-              this.task.addToolMessage(
-                toolResult.toolCallId,
+              const toolData: ToolData = {
+                type: 'tool',
+                baseDir: this.task.project.baseDir,
+                taskId: this.taskId,
+                id: toolCall.toolCallId,
                 serverName,
                 toolName,
-                undefined,
-                JSON.stringify(toolResult.output.value),
-                message.usageReport,
-                promptContext,
-                false,
-              );
+                args: toolCall.input,
+                usageReport: message.usageReport,
+                promptContext: message.promptContext,
+              };
+              messagesData.push(toolData);
+            } else if (part.type === 'tool-result') {
+              const toolResult = part;
+              const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === toolResult.toolCallId) as ToolData | undefined;
+              if (toolMessage) {
+                toolMessage.response = JSON.stringify(toolResult.output.value);
+              }
             }
           }
         } else if (isTextContent(message.content)) {
@@ -549,45 +626,62 @@ export class ContextManager {
             continue;
           }
 
-          this.task.processResponseMessage(
-            {
-              id: uuidv4(),
-              action: 'response',
-              content: content,
-              finished: true,
-              usageReport: message.usageReport,
-              reflectedMessage: message.reflectedMessage,
-            },
-            false,
-          );
+          const responseCompletedData: ResponseCompletedData = {
+            type: 'response-completed',
+            messageId: message.id,
+            content: content,
+            baseDir: this.task.project.baseDir,
+            taskId: this.taskId,
+            reflectedMessage: message.reflectedMessage,
+            usageReport: message.usageReport,
+            promptContext: message.promptContext,
+          };
+          messagesData.push(responseCompletedData);
         }
       } else if (message.role === 'user') {
         const content = extractTextContent(message.content);
-        this.task.addUserMessage(content);
+        const userMessageData: UserMessageData = {
+          type: 'user',
+          id: message.id || uuidv4(),
+          baseDir: this.task.project.baseDir,
+          taskId: this.taskId,
+          content: content,
+          promptContext: message.promptContext,
+        };
+        messagesData.push(userMessageData);
       } else if (message.role === 'tool') {
         for (const part of message.content) {
           if (part.type === 'tool-result') {
             const [serverName, toolName] = extractServerNameToolName(part.toolName);
             const promptContext = extractPromptContextFromToolResult(part.output.value);
-            this.task.addToolMessage(
-              part.toolCallId,
-              serverName,
-              toolName,
-              undefined,
-              JSON.stringify(part.output.value),
-              message.usageReport,
-              promptContext,
-              false,
-            );
+            const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === part.toolCallId) as ToolData | undefined;
 
+            if (toolMessage) {
+              toolMessage.response = JSON.stringify(part.output.value);
+              toolMessage.promptContext = promptContext;
+            }
+
+            // Handle aider tool responses - create ResponseCompletedData for each response
             if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT) {
               // @ts-expect-error value is expected to have responses
               const responses = part.output?.value.responses;
               if (Array.isArray(responses)) {
                 responses.forEach((response: ResponseCompletedData) => {
-                  this.task.sendResponseCompleted({
-                    ...response,
-                  });
+                  const responseCompletedData: ResponseCompletedData = {
+                    type: 'response-completed',
+                    messageId: response.messageId,
+                    content: response.content,
+                    baseDir: this.task.project.baseDir,
+                    taskId: this.taskId,
+                    reflectedMessage: response.reflectedMessage,
+                    editedFiles: response.editedFiles,
+                    commitHash: response.commitHash,
+                    commitMessage: response.commitMessage,
+                    diff: response.diff,
+                    usageReport: response.usageReport,
+                    promptContext: message.promptContext,
+                  };
+                  messagesData.push(responseCompletedData);
                 });
               }
             }
@@ -625,64 +719,58 @@ export class ContextManager {
                           subFinalContent = subReasoningContent || subTextContent;
                         }
 
-                        this.task.processResponseMessage(
-                          {
-                            id: uuidv4(),
-                            action: 'response',
-                            content: subFinalContent,
-                            finished: true,
-                            usageReport: subMessage.usageReport,
-                            promptContext: subMessage.promptContext,
-                          },
-                          false,
-                        );
+                        const responseCompletedData: ResponseCompletedData = {
+                          type: 'response-completed',
+                          messageId: subMessage.id,
+                          content: subFinalContent,
+                          baseDir: this.task.project.baseDir,
+                          taskId: this.taskId,
+                          usageReport: subMessage.usageReport,
+                          promptContext: subMessage.promptContext,
+                        };
+                        messagesData.push(responseCompletedData);
                       }
 
                       // Process tool-call parts
                       for (const subPart of subMessage.content) {
                         if (subPart.type === 'tool-call' && subPart.toolCallId) {
                           const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
-                          this.task.addToolMessage(
-                            subPart.toolCallId,
-                            subServerName,
-                            subToolName,
-                            subPart.input,
-                            undefined,
-                            undefined,
-                            subMessage.promptContext,
-                            false,
-                          );
+                          const toolData: ToolData = {
+                            type: 'tool',
+                            baseDir: this.task.project.baseDir,
+                            taskId: this.taskId,
+                            id: subPart.toolCallId,
+                            serverName: subServerName,
+                            toolName: subToolName,
+                            args: subPart.input,
+                            usageReport: undefined,
+                            promptContext: subMessage.promptContext,
+                          };
+                          messagesData.push(toolData);
                         }
                       }
                     } else if (isTextContent(subMessage.content)) {
                       const content = extractTextContent(subMessage.content);
-                      this.task.processResponseMessage(
-                        {
-                          id: uuidv4(),
-                          action: 'response',
-                          content: content,
-                          finished: true,
-                          usageReport: subMessage.usageReport,
-                          promptContext: subMessage.promptContext,
-                        },
-                        false,
-                      );
+                      const responseCompletedData: ResponseCompletedData = {
+                        type: 'response-completed',
+                        messageId: subMessage.id,
+                        content: content,
+                        baseDir: this.task.project.baseDir,
+                        taskId: this.taskId,
+                        usageReport: subMessage.usageReport,
+                        promptContext: subMessage.promptContext,
+                      };
+                      messagesData.push(responseCompletedData);
                     }
                   } else if (subMessage.role === 'tool') {
                     for (const subPart of subMessage.content) {
                       if (subPart.type === 'tool-result') {
-                        const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
-                        const promptContext = extractPromptContextFromToolResult(subPart.output.value) ?? subMessage.promptContext;
-                        this.task.addToolMessage(
-                          subPart.toolCallId,
-                          subServerName,
-                          subToolName,
-                          undefined,
-                          JSON.stringify(subPart.output.value),
-                          subMessage.usageReport,
-                          promptContext,
-                          false,
-                        );
+                        const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === subPart.toolCallId) as
+                          | ToolData
+                          | undefined;
+                        if (toolMessage) {
+                          toolMessage.response = JSON.stringify(subPart.output.value);
+                        }
                       }
                     }
                   }
@@ -694,49 +782,7 @@ export class ContextManager {
       }
     }
 
-    // send messages to Connectors (Aider)
-    this.toConnectorMessages().forEach((message) => {
-      this.task.sendAddMessage(message.role, message.content, false);
-    });
-  }
-
-  async loadFiles(files: ContextFile[]): Promise<void> {
-    // Drop all current files
-    for (let i = 0; i < this.files.length; i++) {
-      const contextFile = this.files[i];
-      this.task.sendDropFile(contextFile.path, contextFile.readOnly, i !== this.files.length - 1);
-    }
-
-    this.files = files;
-    for (let i = 0; i < this.files.length; i++) {
-      const contextFile = this.files[i];
-      this.task.sendAddFile(contextFile, i !== this.files.length - 1);
-    }
-  }
-
-  async delete(): Promise<void> {
-    logger.info('Deleting task context:', { taskId: this.taskId });
-    try {
-      if (await fileExists(this.storagePath)) {
-        await fs.unlink(this.storagePath);
-        logger.info(`Task context deleted: ${this.storagePath}`, { taskId: this.taskId });
-      }
-    } catch (error) {
-      logger.error('Failed to delete task context:', { error, taskId: this.taskId });
-      throw error;
-    }
-  }
-
-  private debouncedAutosave = debounce(async () => {
-    if (this.autosaveEnabled) {
-      await this.save();
-    }
-  }, 1000);
-
-  private autosave() {
-    if (this.autosaveEnabled) {
-      void this.debouncedAutosave();
-    }
+    return messagesData;
   }
 
   async generateContextMarkdown(): Promise<string | null> {

@@ -8,16 +8,19 @@ import { ProjectManager } from '@/project';
 
 const ContextFileSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
   path: z.string().min(1, 'File path is required'),
   readOnly: z.boolean().optional(),
 });
 
 const GetContextFilesSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
 });
 
 const GetAddableFilesSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
   searchRegex: z.string().optional(),
 });
 
@@ -39,8 +42,8 @@ export class ContextApi extends BaseApi {
           return;
         }
 
-        const { projectDir, path, readOnly } = parsed;
-        await this.eventsHandler.addFile(projectDir, path, readOnly);
+        const { projectDir, taskId, path, readOnly } = parsed;
+        await this.eventsHandler.addFile(projectDir, taskId, path, readOnly);
         res.status(200).json({ message: 'File added to context' });
       }),
     );
@@ -54,8 +57,8 @@ export class ContextApi extends BaseApi {
           return;
         }
 
-        const { projectDir, path } = parsed;
-        this.eventsHandler.dropFile(projectDir, path);
+        const { projectDir, taskId, path } = parsed;
+        this.eventsHandler.dropFile(projectDir, taskId, path);
         res.status(200).json({ message: 'File dropped from context' });
       }),
     );
@@ -69,14 +72,14 @@ export class ContextApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
+        const { projectDir, taskId } = parsed;
         const project = this.projectManager.getProject(projectDir);
         const validatedProject = this.findProject(project, projectDir, res);
         if (!validatedProject) {
           return;
         }
 
-        const contextFiles = validatedProject.getAutosavedTask().getContextFiles();
+        const contextFiles = validatedProject.getTask(taskId)?.getContextFiles() || [];
         res.status(200).json(contextFiles);
       }),
     );
@@ -90,8 +93,8 @@ export class ContextApi extends BaseApi {
           return;
         }
 
-        const { projectDir, searchRegex } = parsed;
-        const addableFiles = await this.eventsHandler.getAddableFiles(projectDir, searchRegex);
+        const { projectDir, taskId, searchRegex } = parsed;
+        const addableFiles = await this.eventsHandler.getAddableFiles(projectDir, taskId, searchRegex);
         res.status(200).json(addableFiles);
       }),
     );

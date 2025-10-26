@@ -15,7 +15,7 @@ import { MessageBreakdownChart } from './MessageBreakdownChart';
 import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
 import { GroupBy } from './utils';
 
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 import { DatePicker } from '@/components/common/DatePicker';
 import { MultiSelect } from '@/components/common/MultiSelect';
 import { IconButton } from '@/components/common/IconButton';

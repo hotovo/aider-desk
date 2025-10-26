@@ -336,7 +336,7 @@ Emitted when input history is updated.
 
 ### Project Management Events
 
-#### `clear-project`
+#### `clear-task`
 Emitted when a project is cleared.
 
 **Data Structure:**

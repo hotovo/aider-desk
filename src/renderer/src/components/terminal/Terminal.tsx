@@ -7,7 +7,7 @@ import { clsx } from 'clsx';
 
 import '@xterm/xterm/css/xterm.css';
 import './Terminal.scss';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 export type TerminalRef = {
   focus: () => void;
@@ -18,11 +18,12 @@ export type TerminalRef = {
 
 type Props = {
   baseDir: string;
+  taskId: string;
   visible: boolean;
   className?: string;
 };
 
-export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, className }, ref) => {
+export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visible, className }, ref) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -147,7 +148,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
         // Always create a new terminal for each Terminal component instance
         const cols = xtermRef.current?.cols || 160;
         const rows = xtermRef.current?.rows || 10;
-        const id = await api.createTerminal(baseDir, cols, rows);
+        const id = await api.createTerminal(baseDir, taskId, cols, rows);
 
         // Handle terminal input
         xterm.onData((data) => {

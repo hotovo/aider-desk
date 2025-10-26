@@ -1,17 +1,19 @@
-import { TokensInfoData, Mode, ProjectSettings } from '@common/types';
+import { TokensInfoData, Mode, ProjectSettings, ContextFile } from '@common/types';
 
 import { ContextFiles } from '@/components/ContextFiles';
 import { CostInfo } from '@/components/CostInfo';
 
 type Props = {
   baseDir: string;
+  taskId: string;
   allFiles: string[];
+  contextFiles: ContextFile[];
   tokensInfo: TokensInfoData | null;
   aiderTotalCost: number;
   maxInputTokens: number;
   clearMessages: (clearContext?: boolean) => void;
   runCommand: (command: string) => void;
-  restartProject: () => void;
+  restartTask: () => void;
   mode: Mode;
   showFileDialog: () => void;
   projectSettings: ProjectSettings;
@@ -20,13 +22,15 @@ type Props = {
 
 export const SidebarContent = ({
   baseDir,
+  taskId,
   allFiles,
+  contextFiles,
   tokensInfo,
   aiderTotalCost,
   maxInputTokens,
   clearMessages,
   runCommand,
-  restartProject,
+  restartTask,
   mode,
   showFileDialog,
   projectSettings,
@@ -35,7 +39,14 @@ export const SidebarContent = ({
   return (
     <>
       <div className="flex-grow flex flex-col overflow-y-hidden">
-        <ContextFiles baseDir={baseDir} allFiles={allFiles} showFileDialog={showFileDialog} tokensInfo={tokensInfo} />
+        <ContextFiles
+          baseDir={baseDir}
+          taskId={taskId}
+          allFiles={allFiles}
+          contextFiles={contextFiles}
+          showFileDialog={showFileDialog}
+          tokensInfo={tokensInfo}
+        />
       </div>
       <CostInfo
         tokensInfo={tokensInfo}
@@ -43,7 +54,7 @@ export const SidebarContent = ({
         maxInputTokens={maxInputTokens}
         clearMessages={clearMessages}
         refreshRepoMap={() => runCommand('map-refresh')}
-        restartProject={restartProject}
+        restartTask={restartTask}
         mode={mode}
         projectSettings={projectSettings}
         saveProjectSettings={saveProjectSettings}

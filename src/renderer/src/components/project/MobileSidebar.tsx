@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { Mode, TokensInfoData, ProjectSettings } from '@common/types';
+import { Mode, TokensInfoData, ProjectSettings, ContextFile } from '@common/types';
 import { FiChevronDown } from 'react-icons/fi';
 
 import { SidebarContent } from '@/components/project/SidebarContent';
@@ -14,13 +14,15 @@ type Props = {
   showSidebar: boolean;
   setShowSidebar: (show: boolean) => void;
   baseDir: string;
+  taskId: string;
   allFiles: string[];
+  contextFiles: ContextFile[];
   tokensInfo: TokensInfoData | null;
   aiderTotalCost: number;
   maxInputTokens: number;
   clearMessages: (clearContext?: boolean) => void;
   runCommand: (command: string) => void;
-  restartProject: () => void;
+  restartTask: () => void;
   mode: Mode;
   setAddFileDialogOptions: React.Dispatch<React.SetStateAction<AddFileDialogOptions | null>>;
   projectSettings: ProjectSettings;
@@ -31,13 +33,15 @@ export const MobileSidebar = ({
   showSidebar,
   setShowSidebar,
   baseDir,
+  taskId,
   allFiles,
+  contextFiles,
   tokensInfo,
   aiderTotalCost,
   maxInputTokens,
   clearMessages,
   runCommand,
-  restartProject,
+  restartTask,
   mode,
   setAddFileDialogOptions,
   projectSettings,
@@ -55,13 +59,15 @@ export const MobileSidebar = ({
         </div>
         <SidebarContent
           baseDir={baseDir}
+          taskId={taskId}
           allFiles={allFiles}
+          contextFiles={contextFiles}
           tokensInfo={tokensInfo}
           aiderTotalCost={aiderTotalCost}
           maxInputTokens={maxInputTokens}
           clearMessages={clearMessages}
           runCommand={runCommand}
-          restartProject={restartProject}
+          restartTask={restartTask}
           mode={mode}
           showFileDialog={() =>
             setAddFileDialogOptions({

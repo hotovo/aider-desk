@@ -51,7 +51,7 @@ import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 const tools: Record<string, GenericTool[]> = {
   [AIDER_TOOL_GROUP_NAME]: [

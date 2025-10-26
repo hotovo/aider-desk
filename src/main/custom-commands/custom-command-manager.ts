@@ -131,7 +131,7 @@ export class CustomCommandManager {
   }
 
   private notifyCommandsUpdated(): void {
-    this.project.sendCustomCommandsUpdated(Array.from(this.commands.values()));
+    this.project.sendCustomCommandsUpdated('autosaved', Array.from(this.commands.values()));
   }
 
   private async loadCommandsFromDir(commandsDir: string, commands: Map<string, CustomCommand>): Promise<void> {

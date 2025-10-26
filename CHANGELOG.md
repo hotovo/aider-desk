@@ -4,6 +4,8 @@
 
 - improved API key handling from environment variables in Agent mode
 - added support for auto-compact of the conversation when token usage exceeds a configurable threshold
+- added task sidebar with task management
+- fixed weak model prefix not being set correctly when different from the main model
 
 ## [0.36.0]
 

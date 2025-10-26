@@ -1,13 +1,13 @@
-import { SettingsData, ProjectStartMode } from '@common/types';
+import { SettingsData } from '@common/types';
 import { useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { LlmProviderName } from '@common/agent';
 
 import { Settings } from '@/pages/Settings';
-import { useSettings } from '@/context/SettingsContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   onClose: () => void;
@@ -81,7 +81,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       ) {
         const openProjects = await api.getOpenProjects();
         openProjects.forEach((project) => {
-          api.restartProject(project.baseDir, ProjectStartMode.Last);
+          api.restartProject(project.baseDir);
         });
       }
       onClose();

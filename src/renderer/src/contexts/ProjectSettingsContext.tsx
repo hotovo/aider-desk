@@ -2,8 +2,8 @@ import { ProjectSettings } from '@common/types';
 import { createContext, useContext, useState, useEffect, ReactNode, useOptimistic, startTransition } from 'react';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 
-import { useSettings } from '@/context/SettingsContext';
-import { useApi } from '@/context/ApiContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type ProjectSettingsContextType = {
   projectSettings: ProjectSettings | null;

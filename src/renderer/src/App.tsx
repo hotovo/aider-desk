@@ -9,13 +9,13 @@ import { THEMES } from '@common/types';
 import { useResponsive } from '@/hooks/useResponsive';
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
-import { ContextMenuProvider, useContextMenu } from '@/context/ContextMenuContext';
-import { SettingsProvider, useSettings } from '@/context/SettingsContext';
+import { ContextMenuProvider, useContextMenu } from '@/contexts/ContextMenuContext';
+import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
 import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { ApiProvider } from '@/context/ApiContext';
+import { ApiProvider } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 
 const ThemeAndFontManager = () => {

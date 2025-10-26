@@ -24,12 +24,13 @@ const DEFAULT_TAB = {
 
 type Props = {
   baseDir: string;
+  taskId: string;
   visible: boolean;
   className?: string;
   onVisibilityChange: (visible: boolean) => void;
   onCopyOutput?: (output: string) => void;
 };
-export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, visible, className, onVisibilityChange, onCopyOutput }, ref) => {
+export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskId, visible, className, onVisibilityChange, onCopyOutput }, ref) => {
   const { t } = useTranslation();
   const [tabs, setTabs] = useState<TerminalTab[]>([DEFAULT_TAB]);
   const [activeTabId, setActiveTabId] = useState<string>('default');
@@ -145,6 +146,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, visib
                 terminalRefs.current[tab.id] = ref;
               }}
               baseDir={baseDir}
+              taskId={taskId}
               visible={activeTabId === tab.id && visible}
             />
           </div>

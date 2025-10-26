@@ -1,4 +1,4 @@
-import { Group, Mode, PromptContext, TokensInfoData, UsageReportData } from '@common/types';
+import { Group, PromptContext, TokensInfoData, UsageReportData } from '@common/types';
 
 export interface Message {
   id: string;
@@ -10,7 +10,6 @@ export interface Message {
 
 export interface UserMessage extends Message {
   type: 'user';
-  mode?: Mode;
 }
 
 export interface ResponseMessage extends Message {

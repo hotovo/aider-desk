@@ -15,11 +15,11 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { Accordion } from '@/components/common/Accordion';
-import { useSettings } from '@/context/SettingsContext';
-import { useProjectSettings } from '@/context/ProjectSettingsContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { Checkbox } from '@/components/common/Checkbox';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   isActive: boolean;

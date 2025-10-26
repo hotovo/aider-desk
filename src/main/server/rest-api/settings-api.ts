@@ -66,7 +66,7 @@ export class SettingsApi extends BaseApi {
     router.get(
       '/models-info',
       this.handleRequest(async (_, res) => {
-        const modelsInfo = await this.eventsHandler.loadModelsInfo();
+        const modelsInfo = await this.eventsHandler.getModelsInfo();
         res.status(200).json(modelsInfo);
       }),
     );

@@ -1,7 +1,7 @@
 import { OS } from '@common/types';
 import { useEffect, useState } from 'react';
 
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 export const useOS = (): OS | null => {
   const [os, setOS] = useState<OS | null>(null);

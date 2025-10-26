@@ -169,7 +169,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
             value={ProjectStartMode.Empty}
             checked={settings.startupMode === ProjectStartMode.Empty}
             onChange={handleStartupModeClick}
-            label={t('settings.startup.emptySession')}
+            label={t('settings.startup.emptyTask')}
           />
 
           <RadioButton
@@ -178,7 +178,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
             value={ProjectStartMode.Last}
             checked={settings.startupMode === ProjectStartMode.Last}
             onChange={handleStartupModeClick}
-            label={t('settings.startup.lastSession')}
+            label={t('settings.startup.lastTask')}
           />
         </div>
       </Section>

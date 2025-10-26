@@ -23,6 +23,7 @@ export class ApprovalManager {
 
     const questionData: QuestionData = {
       baseDir: this.task.project.baseDir,
+      taskId: this.task.taskId,
       text,
       subject,
       defaultAnswer: 'y',

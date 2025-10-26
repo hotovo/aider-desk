@@ -133,5 +133,6 @@ export default tseslint.config({ ignores: ['dist', 'node_modules', 'out'] }, {
 
     'react-hooks/purity': 'warn',
     'react-hooks/set-state-in-effect': 'warn',
+    'react-hooks/refs': 'warn',
   }
 });

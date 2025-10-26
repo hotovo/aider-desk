@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { DragEndEvent } from '@dnd-kit/core';
 
-import { MenuOption, useContextMenu } from '@/context/ContextMenuContext';
+import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 
 type ProjectOperations = {
   onCloseProject: (baseDir: string) => Promise<void>;

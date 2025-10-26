@@ -2,15 +2,15 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { v4 as uuidv4 } from 'uuid';
-import { ContextFile, ContextMessage, TaskContext, TaskSettings } from '@common/types';
+import { ContextFile, ContextMessage, TaskContext, TaskData } from '@common/types';
 import { fileExists } from '@common/utils';
 
-import { AIDER_DESK_DIR } from '@/constants';
+import { AIDER_DESK_DIR, AIDER_DESK_TASKS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Project } from '@/project';
 
 const SESSIONS_DIR = path.join(AIDER_DESK_DIR, 'sessions');
-const TASKS_DIR = path.join(AIDER_DESK_DIR, 'tasks');
+const TASKS_DIR = AIDER_DESK_TASKS_DIR;
 
 interface SessionData {
   version: number;
@@ -19,6 +19,8 @@ interface SessionData {
 }
 
 /**
+ * @deprecated this will be removed in 0.40.0
+ *
  * Migrates legacy sessions to the new task system.
  *
  * This function:
@@ -119,11 +121,14 @@ const migrateSessionFile = async (project: Project, sessionsDirPath: string, tas
     // Extract name from session file (without .json extension)
     const name = isAutosaved ? 'autosaved' : sessionFile.replace(/\.json$/, '');
 
-    const settings: TaskSettings = {
+    const settings: TaskData = {
       id: taskId,
+      baseDir: project.baseDir,
       name,
       createdAt: (await fs.stat(sessionFilePath)).mtime.toISOString(),
       updatedAt: (await fs.stat(sessionFilePath)).mtime.toISOString(),
+      agentTotalCost: 0,
+      aiderTotalCost: 0,
     };
 
     // Write settings.json file

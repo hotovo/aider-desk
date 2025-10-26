@@ -1,7 +1,7 @@
 import { EnvironmentVariable } from '@common/types';
 import { useEffect, useState } from 'react';
 
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type UseEffectiveEnvironmentVariableResult = {
   environmentVariable: EnvironmentVariable | null;

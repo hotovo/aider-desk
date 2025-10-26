@@ -10,6 +10,7 @@ import { EventManager } from '@/events';
 export interface TerminalInstance {
   id: string;
   baseDir: string;
+  taskId: string;
   ptyProcess: pty.IPty;
   cols: number;
   rows: number;
@@ -49,7 +50,7 @@ export class TerminalManager {
     return [];
   }
 
-  public createTerminal(baseDir: string, cols: number = 80, rows: number = 24): string {
+  public createTerminal(baseDir: string, taskId: string, cols: number = 80, rows: number = 24): string {
     const terminalId = uuidv4();
 
     try {
@@ -72,6 +73,7 @@ export class TerminalManager {
       const terminal: TerminalInstance = {
         id: terminalId,
         baseDir,
+        taskId,
         ptyProcess,
         cols,
         rows,
@@ -82,6 +84,7 @@ export class TerminalManager {
         this.eventManager.sendTerminalData({
           terminalId,
           baseDir,
+          taskId,
           data,
         });
       });
@@ -93,6 +96,7 @@ export class TerminalManager {
         this.eventManager.sendTerminalExit({
           terminalId,
           baseDir,
+          taskId,
           exitCode,
           signal,
         });
@@ -175,12 +179,12 @@ export class TerminalManager {
     }
   }
 
-  public getTerminalForProject(baseDir: string): TerminalInstance | undefined {
-    return Array.from(this.terminals.values()).find((terminal) => terminal.baseDir === baseDir);
+  public getTerminalForTask(taskId: string): TerminalInstance | undefined {
+    return Array.from(this.terminals.values()).find((terminal) => terminal.taskId === taskId);
   }
 
-  public getTerminalsForProject(baseDir: string): TerminalInstance[] {
-    return Array.from(this.terminals.values()).filter((terminal) => terminal.baseDir === baseDir);
+  public getTerminalsForTask(taskId: string): TerminalInstance[] {
+    return Array.from(this.terminals.values()).filter((terminal) => terminal.taskId === taskId);
   }
 
   public close(): void {

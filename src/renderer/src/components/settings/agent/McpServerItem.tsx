@@ -9,7 +9,7 @@ import { McpToolItem } from './McpToolItem';
 import { Accordion } from '@/components/common/Accordion';
 import { IconButton } from '@/components/common/IconButton';
 import { Checkbox } from '@/components/common/Checkbox';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   serverName: string;

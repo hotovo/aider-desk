@@ -37,6 +37,7 @@ export class AiderManager {
   ) {
     this.aiderTokensInfo = {
       baseDir: this.task.project.baseDir,
+      taskId: this.task.taskId,
       chatHistory: { cost: 0, tokens: 0 },
       files: {},
       repoMap: { cost: 0, tokens: 0 },
@@ -135,7 +136,11 @@ export class AiderManager {
       args.push(settings.aider.cachingEnabled ? '--cache-prompts' : '--no-cache-prompts');
     }
 
-    logger.info('Running Aider with args:', { args });
+    logger.info('Running Aider with args:', {
+      baseDir: this.task.project.baseDir,
+      taskId: this.task.task.id,
+      args,
+    });
 
     const env = {
       ...process.env,
@@ -157,7 +162,10 @@ export class AiderManager {
       env,
     });
 
-    logger.info('Starting Aider...', { baseDir: this.task.project.baseDir });
+    logger.info('Starting Aider...', {
+      baseDir: this.task.project.baseDir,
+      taskId: this.task.task.id,
+    });
     this.aiderProcess.stdout.on('data', (data) => {
       const output = data.toString();
       logger.debug('Aider output:', { output });
@@ -178,11 +186,19 @@ export class AiderManager {
         return;
       }
 
-      logger.error('Aider stderr:', { baseDir: this.task.project.baseDir, error: output });
+      logger.error('Aider stderr:', {
+        baseDir: this.task.project.baseDir,
+        taskId: this.task.task.id,
+        error: output,
+      });
     });
 
     this.aiderProcess.on('close', (code) => {
-      logger.info('Aider process exited:', { baseDir: this.task.project.baseDir, code });
+      logger.info('Aider process exited:', {
+        baseDir: this.task.project.baseDir,
+        taskId: this.task.task.id,
+        code,
+      });
     });
 
     void this.writeAiderProcessPidFile();
@@ -190,12 +206,19 @@ export class AiderManager {
 
   public async kill(): Promise<void> {
     if (this.aiderProcess) {
-      logger.info('Killing Aider...', { baseDir: this.task.project.baseDir });
+      logger.info('Killing Aider...', {
+        baseDir: this.task.project.baseDir,
+        taskId: this.task.task.id,
+      });
       try {
         await new Promise<void>((resolve, reject) => {
           treeKill(this.aiderProcess!.pid!, 'SIGKILL', (err) => {
             if (err) {
-              logger.error('Error killing Aider process:', { error: err });
+              logger.error('Error killing Aider process:', {
+                baseDir: this.task.project.baseDir,
+                taskId: this.task.task.id,
+                error: err,
+              });
               reject(err);
             } else {
               this.removeAiderProcessPidFile();
@@ -206,7 +229,11 @@ export class AiderManager {
 
         this.currentCommand = null;
       } catch (error: unknown) {
-        logger.error('Error killing Aider process:', { error });
+        logger.error('Error killing Aider process:', {
+          baseDir: this.task.project.baseDir,
+          taskId: this.task.task.id,
+          error,
+        });
         throw error;
       } finally {
         this.aiderProcess = null;
@@ -237,20 +264,23 @@ export class AiderManager {
   }
 
   private getAiderProcessPidFilePath(): string {
-    const hash = createHash('sha256').update(this.task.project.baseDir).digest('hex');
+    const hash = createHash('sha256').update(this.task.project.baseDir).update(this.task.task.id).digest('hex');
     return path.join(PID_FILES_DIR, `${hash}.pid`);
   }
 
   private async writeAiderProcessPidFile(): Promise<void> {
-    if (!this.aiderProcess?.pid) {
-      return;
-    }
-
     try {
       await fs.mkdir(PID_FILES_DIR, { recursive: true });
-      await fs.writeFile(this.getAiderProcessPidFilePath(), this.aiderProcess.pid.toString());
+
+      if (this.aiderProcess?.pid) {
+        await fs.writeFile(this.getAiderProcessPidFilePath(), this.aiderProcess.pid.toString());
+      }
     } catch (error) {
-      logger.error('Failed to write PID file:', { error });
+      logger.error('Failed to write PID file:', {
+        baseDir: this.task.project.baseDir,
+        taskId: this.task.task.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -259,7 +289,11 @@ export class AiderManager {
       unlinkSync(this.getAiderProcessPidFilePath());
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        logger.error('Failed to remove PID file:', { error });
+        logger.error('Failed to remove PID file:', {
+          baseDir: this.task.project.baseDir,
+          taskId: this.task.task.id,
+          error,
+        });
       }
     }
   }
@@ -281,7 +315,11 @@ export class AiderManager {
         await fs.unlink(pidFilePath);
       }
     } catch (error) {
-      logger.error('Error cleaning up old PID file:', { error });
+      logger.error('Error cleaning up old PID file:', {
+        baseDir: this.task.project.baseDir,
+        taskId: this.task.task.id,
+        error,
+      });
     }
   }
 
@@ -313,7 +351,7 @@ export class AiderManager {
     const architectModelParts = projectSettings.architectModel?.split('/') || modelsData.architectModel?.split('/');
 
     const getWeakModelProvider = () => {
-      if (modelsData.mainModel !== projectSettings.mainModel) {
+      if (modelsData.mainModel !== projectSettings.mainModel && weakModelParts?.[0] === modelsData.mainModel.split('/')[0]) {
         // use the provider prefix from the main model when Aider's provider prefix is different
         return mainModelParts[0];
       }
@@ -326,7 +364,15 @@ export class AiderManager {
       weakModel: weakModelParts ? `${getWeakModelProvider()}/${weakModelParts.slice(1).join('/')}` : null,
       architectModel: architectModelParts ? `${architectModelParts[0]}/${architectModelParts.slice(1).join('/')}` : null,
     };
-    this.eventManager.sendUpdateAiderModels(this.aiderModelsData);
+
+    this.sendUpdateAiderModels();
+  }
+
+  sendUpdateAiderModels() {
+    if (!this.aiderModelsData) {
+      return;
+    }
+    this.eventManager.sendUpdateAiderModels(this.task.project.baseDir, this.task.taskId, this.aiderModelsData);
   }
 
   public updateModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff'): void {
@@ -363,6 +409,7 @@ export class AiderManager {
     } else {
       this.updateAiderModels({
         baseDir: this.task.project.baseDir,
+        taskId: this.task.taskId,
         mainModel: mainModelName,
         weakModel: weakModelName || mainModelName,
         editFormat,
@@ -431,10 +478,14 @@ export class AiderManager {
     const prev = this.commandOutputs.get(command) || '';
     this.commandOutputs.set(command, prev + output);
 
-    this.eventManager.sendCommandOutput(this.task.project.baseDir, command, output);
+    this.eventManager.sendCommandOutput(this.task.project.baseDir, this.task.taskId, command, output);
   }
 
-  public closeCommandOutput(addToContext = true): { command: string; output: string | undefined; addToContext: boolean } | null {
+  public closeCommandOutput(addToContext = true): {
+    command: string;
+    output: string | undefined;
+    addToContext: boolean;
+  } | null {
     if (!this.currentCommand) {
       return null;
     }

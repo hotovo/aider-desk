@@ -13,10 +13,10 @@ import { ProjectView } from '@/components/project/ProjectView';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { useVersions } from '@/hooks/useVersions';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
-import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
+import { ProjectSettingsProvider } from '@/contexts/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 import { ModelLibrary } from '@/components/ModelLibrary';
 
 let hasShownUpdateNotification = false;

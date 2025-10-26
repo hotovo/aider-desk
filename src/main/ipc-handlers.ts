@@ -1,4 +1,4 @@
-import { EditFormat, FileEdit, ProviderProfile, McpServerConfig, Mode, Model, ProjectSettings, SettingsData, ProjectStartMode, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, Model, ProjectSettings, ProviderProfile, SettingsData, TaskData, TodoItem } from '@common/types';
 import { ipcMain } from 'electron';
 
 import { EventsHandler } from './events-handler';
@@ -14,32 +14,36 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.saveSettings(newSettings);
   });
 
-  ipcMain.on('run-prompt', async (_, baseDir: string, prompt: string, mode?: Mode) => {
-    eventsHandler.runPrompt(baseDir, prompt, mode);
+  ipcMain.on('run-prompt', async (_, baseDir: string, taskId: string, prompt: string, mode?: Mode) => {
+    eventsHandler.runPrompt(baseDir, taskId, prompt, mode);
   });
 
-  ipcMain.on('answer-question', (_, baseDir: string, answer: string) => {
-    eventsHandler.answerQuestion(baseDir, answer);
+  ipcMain.on('answer-question', (_, baseDir: string, taskId: string, answer: string) => {
+    eventsHandler.answerQuestion(baseDir, taskId, answer);
   });
 
-  ipcMain.on('drop-file', (_, baseDir: string, filePath: string) => {
-    void eventsHandler.dropFile(baseDir, filePath);
+  ipcMain.on('drop-file', (_, baseDir: string, taskId: string, filePath: string) => {
+    void eventsHandler.dropFile(baseDir, taskId, filePath);
   });
 
-  ipcMain.on('add-file', (_, baseDir: string, filePath: string, readOnly = false) => {
-    void eventsHandler.addFile(baseDir, filePath, readOnly);
+  ipcMain.on('add-file', (_, baseDir: string, taskId: string, filePath: string, readOnly = false) => {
+    void eventsHandler.addFile(baseDir, taskId, filePath, readOnly);
   });
 
-  ipcMain.on('start-project', (_, baseDir: string) => {
-    eventsHandler.startProject(baseDir);
+  ipcMain.handle('start-project', (_, baseDir: string) => {
+    return eventsHandler.startProject(baseDir);
   });
 
   ipcMain.on('stop-project', async (_, baseDir: string) => {
     await eventsHandler.stopProject(baseDir);
   });
 
-  ipcMain.on('restart-project', async (_, baseDir: string, startupMode?: ProjectStartMode) => {
-    await eventsHandler.restartProject(baseDir, startupMode);
+  ipcMain.on('restart-project', async (_, baseDir: string) => {
+    await eventsHandler.restartProject(baseDir);
+  });
+
+  ipcMain.on('restart-task', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.restartTask(baseDir, taskId);
   });
 
   ipcMain.handle('show-open-dialog', async (_, options: Electron.OpenDialogSyncOptions) => {
@@ -90,8 +94,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.patchProjectSettings(baseDir, settings);
   });
 
-  ipcMain.handle('get-addable-files', async (_, baseDir: string) => {
-    return await eventsHandler.getAddableFiles(baseDir);
+  ipcMain.handle('get-addable-files', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.getAddableFiles(baseDir, taskId);
   });
 
   ipcMain.handle('is-project-path', async (_, path: string) => {
@@ -122,56 +126,60 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     eventsHandler.updateEditFormats(baseDir, updatedFormats);
   });
 
-  ipcMain.on('run-command', (_, baseDir: string, command: string) => {
-    eventsHandler.runCommand(baseDir, command);
+  ipcMain.on('run-command', (_, baseDir: string, taskId: string, command: string) => {
+    eventsHandler.runCommand(baseDir, taskId, command);
   });
 
-  ipcMain.on('paste-image', async (_, baseDir: string) => {
-    await eventsHandler.pasteImage(baseDir);
+  ipcMain.on('paste-image', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.pasteImage(baseDir, taskId);
   });
 
-  ipcMain.on('interrupt-response', (_, baseDir: string) => {
-    eventsHandler.interruptResponse(baseDir);
+  ipcMain.on('interrupt-response', (_, baseDir: string, taskId: string) => {
+    eventsHandler.interruptResponse(baseDir, taskId);
   });
 
-  ipcMain.on('apply-edits', (_, baseDir: string, edits: FileEdit[]) => {
-    eventsHandler.applyEdits(baseDir, edits);
+  ipcMain.on('apply-edits', (_, baseDir: string, taskId: string, edits: FileEdit[]) => {
+    eventsHandler.applyEdits(baseDir, taskId, edits);
   });
 
-  ipcMain.on('clear-context', (_, baseDir: string) => {
-    eventsHandler.clearContext(baseDir);
+  ipcMain.on('clear-context', (_, baseDir: string, taskId: string) => {
+    eventsHandler.clearContext(baseDir, taskId);
   });
 
-  ipcMain.on('remove-last-message', (_, baseDir: string) => {
-    void eventsHandler.removeLastMessage(baseDir);
+  ipcMain.on('remove-last-message', (_, baseDir: string, taskId: string) => {
+    void eventsHandler.removeLastMessage(baseDir, taskId);
   });
 
-  ipcMain.on('redo-last-user-prompt', (_, baseDir: string, mode: Mode, updatedPrompt?: string) => {
-    void eventsHandler.redoLastUserPrompt(baseDir, mode, updatedPrompt);
+  ipcMain.on('redo-last-user-prompt', (_, baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string) => {
+    void eventsHandler.redoLastUserPrompt(baseDir, taskId, mode, updatedPrompt);
   });
 
-  ipcMain.handle('compact-conversation', async (_event, baseDir, mode: Mode, customInstructions?: string) => {
-    return await eventsHandler.compactConversation(baseDir, mode, customInstructions);
+  ipcMain.handle('compact-conversation', async (_event, baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => {
+    return await eventsHandler.compactConversation(baseDir, taskId, mode, customInstructions);
   });
 
-  ipcMain.handle('scrape-web', async (_, baseDir: string, url: string, filePath?: string) => {
-    await eventsHandler.scrapeWeb(baseDir, url, filePath);
+  ipcMain.handle('scrape-web', async (_, baseDir: string, taskId: string, url: string, filePath?: string) => {
+    await eventsHandler.scrapeWeb(baseDir, taskId, url, filePath);
   });
 
-  ipcMain.handle('save-task', async (_, baseDir: string, name: string, id?: string) => {
-    return await eventsHandler.saveTask(baseDir, name, id);
+  ipcMain.handle('create-new-task', async (_, baseDir: string) => {
+    return await eventsHandler.createNewTask(baseDir);
   });
 
-  ipcMain.handle('load-task', async (_, baseDir: string, name: string) => {
-    return await eventsHandler.loadTask(baseDir, name);
+  ipcMain.handle('update-task', async (_, baseDir: string, id: string, updates: Partial<TaskData>) => {
+    return await eventsHandler.updateTask(baseDir, id, updates);
   });
 
-  ipcMain.handle('delete-task', async (_, baseDir: string, name: string) => {
-    return await eventsHandler.deleteTask(baseDir, name);
+  ipcMain.handle('delete-task', async (_, baseDir: string, id: string) => {
+    return await eventsHandler.deleteTask(baseDir, id);
   });
 
   ipcMain.handle('get-tasks', async (_, baseDir: string) => {
     return await eventsHandler.getTasks(baseDir);
+  });
+
+  ipcMain.handle('load-task', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.loadTask(baseDir, taskId);
   });
 
   ipcMain.handle('load-mcp-server-tools', async (_, serverName: string, config?: McpServerConfig) => {
@@ -182,8 +190,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.reloadMcpServers(mcpServers, force);
   });
 
-  ipcMain.handle('export-session-to-markdown', async (_, baseDir: string) => {
-    return await eventsHandler.exportTaskToMarkdown(baseDir);
+  ipcMain.handle('export-task-to-markdown', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.exportTaskToMarkdown(baseDir, taskId);
   });
 
   ipcMain.handle('set-zoom-level', (_, zoomLevel: number) => {
@@ -211,31 +219,31 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.handle('load-models-info', async () => {
-    return await eventsHandler.loadModelsInfo();
+    return await eventsHandler.getModelsInfo();
   });
 
-  ipcMain.handle('init-project-rules-file', async (_, baseDir: string) => {
-    return await eventsHandler.initProjectRulesFile(baseDir);
+  ipcMain.handle('init-project-rules-file', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.initProjectRulesFile(baseDir, taskId);
   });
 
-  ipcMain.handle('get-todos', async (_, baseDir: string) => {
-    return await eventsHandler.getTodos(baseDir);
+  ipcMain.handle('get-todos', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.getTodos(baseDir, taskId);
   });
 
-  ipcMain.handle('add-todo', async (_, baseDir: string, name: string) => {
-    return await eventsHandler.addTodo(baseDir, name);
+  ipcMain.handle('add-todo', async (_, baseDir: string, taskId: string, name: string) => {
+    return await eventsHandler.addTodo(baseDir, taskId, name);
   });
 
-  ipcMain.handle('update-todo', async (_, baseDir: string, name: string, updates: Partial<TodoItem>) => {
-    return await eventsHandler.updateTodo(baseDir, name, updates);
+  ipcMain.handle('update-todo', async (_, baseDir: string, taskId: string, name: string, updates: Partial<TodoItem>) => {
+    return await eventsHandler.updateTodo(baseDir, taskId, name, updates);
   });
 
-  ipcMain.handle('delete-todo', async (_, baseDir: string, name: string) => {
-    return await eventsHandler.deleteTodo(baseDir, name);
+  ipcMain.handle('delete-todo', async (_, baseDir: string, taskId: string, name: string) => {
+    return await eventsHandler.deleteTodo(baseDir, taskId, name);
   });
 
-  ipcMain.handle('clear-all-todos', async (_, baseDir: string) => {
-    return await eventsHandler.clearAllTodos(baseDir);
+  ipcMain.handle('clear-all-todos', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.clearAllTodos(baseDir, taskId);
   });
 
   ipcMain.handle('query-usage-data', async (_, from: string, to: string) => {
@@ -254,13 +262,13 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getCustomCommands(baseDir);
   });
 
-  ipcMain.handle('run-custom-command', async (_, baseDir: string, commandName: string, args: string[], mode: Mode) => {
-    await eventsHandler.runCustomCommand(baseDir, commandName, args, mode);
+  ipcMain.handle('run-custom-command', async (_, baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode) => {
+    await eventsHandler.runCustomCommand(baseDir, taskId, commandName, args, mode);
   });
 
   // Terminal handlers
-  ipcMain.handle('terminal-create', async (_, baseDir: string, cols?: number, rows?: number) => {
-    return await eventsHandler.createTerminal(baseDir, cols, rows);
+  ipcMain.handle('terminal-create', async (_, baseDir: string, taskId: string, cols?: number, rows?: number) => {
+    return await eventsHandler.createTerminal(baseDir, taskId, cols, rows);
   });
 
   ipcMain.handle('terminal-write', async (_, terminalId: string, data: string) => {
@@ -275,12 +283,12 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.closeTerminal(terminalId);
   });
 
-  ipcMain.handle('terminal-get-for-project', async (_, baseDir: string) => {
-    return eventsHandler.getTerminalForProject(baseDir);
+  ipcMain.handle('terminal-get-for-task', async (_, taskId: string) => {
+    return eventsHandler.getTerminalForTask(taskId);
   });
 
-  ipcMain.handle('terminal-get-all-for-project', async (_, baseDir: string) => {
-    return eventsHandler.getTerminalsForProject(baseDir);
+  ipcMain.handle('terminal-get-all-for-task', async (_, taskId: string) => {
+    return eventsHandler.getTerminalsForTask(taskId);
   });
 
   // Server control handlers

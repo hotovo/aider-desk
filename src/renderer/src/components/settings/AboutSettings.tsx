@@ -6,7 +6,7 @@ import { Button } from '@/components/common/Button';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Section } from '@/components/common/Section';
 import { useVersions } from '@/hooks/useVersions';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   settings: SettingsData;

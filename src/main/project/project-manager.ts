@@ -43,11 +43,11 @@ export class ProjectManager {
     return project;
   }
 
-  public startProject(baseDir: string, startupMode?: ProjectStartMode) {
+  public async startProject(baseDir: string, startupMode?: ProjectStartMode) {
     logger.info('Starting project', { baseDir });
     const project = this.getProject(baseDir);
 
-    void project.start(startupMode);
+    await project.start(startupMode);
   }
 
   public async closeProject(baseDir: string) {
@@ -61,10 +61,12 @@ export class ProjectManager {
     await project.close();
   }
 
-  public async restartProject(baseDir: string, startupMode?: ProjectStartMode): Promise<void> {
+  public async restartProject(baseDir: string): Promise<void> {
     logger.info('Restarting project', { baseDir });
     await this.closeProject(baseDir);
-    this.startProject(baseDir, startupMode);
+
+    const project = this.getProject(baseDir);
+    project.forEachTask((task) => task.restart());
   }
 
   public async close(): Promise<void> {

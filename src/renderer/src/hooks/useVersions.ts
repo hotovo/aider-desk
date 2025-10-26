@@ -1,7 +1,7 @@
 import { VersionsInfo } from '@common/types';
 import { useCallback, useEffect, useState } from 'react';
 
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 export const useVersions = () => {
   const [versions, setVersions] = useState<VersionsInfo | null>(null);

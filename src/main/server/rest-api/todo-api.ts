@@ -7,15 +7,18 @@ import { EventsHandler } from '@/events-handler';
 
 const GetTodosSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
 });
 
 const AddTodoSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
   name: z.string().min(1, 'Todo name is required'),
 });
 
 const UpdateTodoSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
   name: z.string().min(1, 'Todo name is required'),
   updates: z.object({
     name: z.string().optional(),
@@ -25,11 +28,13 @@ const UpdateTodoSchema = z.object({
 
 const DeleteTodoSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
   name: z.string().min(1, 'Todo name is required'),
 });
 
 const ClearAllTodosSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
 });
 
 export class TodoApi extends BaseApi {
@@ -47,8 +52,8 @@ export class TodoApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
-        const todos = await this.eventsHandler.getTodos(projectDir);
+        const { projectDir, taskId } = parsed;
+        const todos = await this.eventsHandler.getTodos(projectDir, taskId);
         res.status(200).json(todos);
       }),
     );
@@ -62,8 +67,8 @@ export class TodoApi extends BaseApi {
           return;
         }
 
-        const { projectDir, name } = parsed;
-        const todos = await this.eventsHandler.addTodo(projectDir, name);
+        const { projectDir, taskId, name } = parsed;
+        const todos = await this.eventsHandler.addTodo(projectDir, taskId, name);
         res.status(200).json(todos);
       }),
     );
@@ -77,8 +82,8 @@ export class TodoApi extends BaseApi {
           return;
         }
 
-        const { projectDir, name, updates } = parsed;
-        const todos = await this.eventsHandler.updateTodo(projectDir, name, updates);
+        const { projectDir, taskId, name, updates } = parsed;
+        const todos = await this.eventsHandler.updateTodo(projectDir, taskId, name, updates);
         res.status(200).json(todos);
       }),
     );
@@ -92,8 +97,8 @@ export class TodoApi extends BaseApi {
           return;
         }
 
-        const { projectDir, name } = parsed;
-        const todos = await this.eventsHandler.deleteTodo(projectDir, name);
+        const { projectDir, taskId, name } = parsed;
+        const todos = await this.eventsHandler.deleteTodo(projectDir, taskId, name);
         res.status(200).json(todos);
       }),
     );
@@ -107,8 +112,8 @@ export class TodoApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
-        const todos = await this.eventsHandler.clearAllTodos(projectDir);
+        const { projectDir, taskId } = parsed;
+        const todos = await this.eventsHandler.clearAllTodos(projectDir, taskId);
         res.status(200).json(todos);
       }),
     );

@@ -12,7 +12,7 @@ type Props = {
   aiderTotalCost: number;
   clearMessages?: () => void;
   refreshRepoMap?: () => void;
-  restartProject?: () => void;
+  restartTask?: () => void;
   maxInputTokens?: number;
   mode: Mode;
   projectSettings: ProjectSettings;
@@ -24,7 +24,7 @@ export const CostInfo = ({
   aiderTotalCost,
   clearMessages,
   refreshRepoMap,
-  restartProject,
+  restartTask,
   maxInputTokens = 0,
   mode,
   projectSettings,
@@ -106,9 +106,9 @@ export const CostInfo = ({
         <div className="flex items-center h-[20px] mt-1">
           <div className="flex-1">{renderLabelValue('costInfo.total', `$${(aiderTotalCost + agentTotalCost).toFixed(5)}`)}</div>
           <div className="ml-0 max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 group-hover:px-1 group-hover:ml-1 transition-all duration-300 overflow-hidden">
-            {restartProject && (
+            {restartTask && (
               <button
-                onClick={restartProject}
+                onClick={restartTask}
                 data-tooltip-id="restart-project-tooltip"
                 className="p-0.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-tertiary transition-colors"
                 data-tooltip-content={t('costInfo.restartSession')}

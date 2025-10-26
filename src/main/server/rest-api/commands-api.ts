@@ -11,6 +11,7 @@ const GetCustomCommandsSchema = z.object({
 
 const RunCustomCommandSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
   commandName: z.string().min(1, 'Command name is required'),
   args: z.array(z.string()),
   mode: z.enum(['code', 'ask', 'architect', 'context']),
@@ -46,8 +47,8 @@ export class CommandsApi extends BaseApi {
           return;
         }
 
-        const { projectDir, commandName, args, mode } = parsed;
-        await this.eventsHandler.runCustomCommand(projectDir, commandName, args, mode);
+        const { projectDir, taskId, commandName, args, mode } = parsed;
+        await this.eventsHandler.runCustomCommand(projectDir, taskId, commandName, args, mode);
         res.status(200).json({ message: 'Custom command executed' });
       }),
     );

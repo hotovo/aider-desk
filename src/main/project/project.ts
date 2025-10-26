@@ -1,8 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { CustomCommand, InputHistoryData, ProjectStartMode, SettingsData, TaskData } from '@common/types';
+import { CustomCommand, ProjectStartMode, SettingsData, TaskData } from '@common/types';
 import { fileExists } from '@common/utils';
+import { v4 as uuidv4 } from 'uuid';
+
+const INTERNAL_TASK_ID = 'internal';
 
 import { getAllFiles } from '@/utils/file-system';
 import { McpManager } from '@/agent';
@@ -19,9 +22,9 @@ import { migrateSessionsToTasks } from '@/project/migrations';
 
 export class Project {
   private readonly customCommandManager: CustomCommandManager;
+  private readonly tasksLoadingPromise: Promise<void> | null = null;
   private readonly tasks = new Map<string, Task>();
 
-  private initialized = false;
   private connectors: Connector[] = [];
   private inputHistoryFile = '.aider.input.history';
 
@@ -35,57 +38,33 @@ export class Project {
     private readonly modelManager: ModelManager,
   ) {
     this.customCommandManager = new CustomCommandManager(this);
+    // initialize global task
+    this.prepareTask(INTERNAL_TASK_ID);
+    this.tasksLoadingPromise = this.loadTasks();
   }
 
-  public async start(startupMode?: ProjectStartMode) {
-    // Migrate sessions to tasks before starting
-    await migrateSessionsToTasks(this);
-
-    const settings = this.store.getSettings();
-    const mode = startupMode ?? settings.startupMode;
-
-    if (!this.initialized) {
-      await this.loadTasks();
-      this.initialized = true;
-    }
-
+  public async start(_startupMode?: ProjectStartMode) {
     await this.customCommandManager.start();
-
-    await this.initAutosavedTask(mode);
     await this.sendInputHistoryUpdatedEvent();
 
     this.eventManager.sendProjectStarted(this.baseDir);
   }
 
-  // TODO: temporary solution for backward compatibility
-  private async initAutosavedTask(mode?: ProjectStartMode) {
-    if (!this.tasks.has('autosaved')) {
-      await this.createTask('autosaved');
-    }
-
-    const task = this.tasks.get('autosaved')!;
+  public async createNewTask() {
+    const task = this.prepareTask();
+    this.eventManager.sendTaskCreated(task.task);
     await task.init();
 
-    try {
-      // Handle different startup modes
-      switch (mode) {
-        case ProjectStartMode.Empty:
-          // Don't load any session, start fresh
-          logger.info('Starting with empty session');
-          break;
+    this.getTask(INTERNAL_TASK_ID)
+      ?.getContextFiles()
+      ?.forEach((file) => {
+        task.addFile(file);
+      });
 
-        case ProjectStartMode.Last:
-          // Load the autosaved session
-          logger.info('Loading autosaved session');
-          await task.loadContext();
-          break;
-      }
-    } catch (error) {
-      logger.error('Error loading session:', { error });
-    }
+    return task.task;
   }
 
-  private async createTask(taskId: string) {
+  private prepareTask(taskId: string = uuidv4()) {
     const task = new Task(
       this,
       taskId,
@@ -98,21 +77,14 @@ export class Project {
       this.modelManager,
     );
     this.tasks.set(taskId, task);
-    this.eventManager.sendTaskCreated(task.task);
-  }
 
-  public async saveTask(name: string, id?: string): Promise<TaskData> {
-    const savedTaskData = await this.getAutosavedTask().saveAs(name, id);
-
-    // If a new task was created (id was not autosaved), add it to the project's task map
-    if (savedTaskData.id !== 'autosaved' && !this.tasks.has(savedTaskData.id)) {
-      await this.createTask(savedTaskData.id);
-    }
-
-    return savedTaskData;
+    return task;
   }
 
   private async loadTasks() {
+    // Migrate sessions to tasks before starting
+    await migrateSessionsToTasks(this);
+
     const tasksDir = path.join(this.baseDir, '.aider-desk', 'tasks');
 
     try {
@@ -125,7 +97,10 @@ export class Project {
       }
 
       const taskFolders = await fs.readdir(tasksDir, { withFileTypes: true });
-      const taskDirs = taskFolders.filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name);
+      const taskDirs = taskFolders
+        .filter((dirent) => dirent.isDirectory())
+        .map((dirent) => dirent.name)
+        .filter((taskId) => taskId !== INTERNAL_TASK_ID);
 
       logger.info(`Loading ${taskDirs.length} tasks from directory`, {
         baseDir: this.baseDir,
@@ -134,7 +109,7 @@ export class Project {
       });
 
       for (const taskId of taskDirs) {
-        await this.createTask(taskId);
+        this.prepareTask(taskId);
       }
 
       logger.info('Successfully loaded tasks', {
@@ -150,12 +125,15 @@ export class Project {
     }
   }
 
-  public getTask(taskId: string = 'autosaved') {
-    return this.tasks.get(taskId) || null;
-  }
-
-  public getAutosavedTask() {
-    return this.getTask('autosaved')!;
+  public getTask(taskId: string = INTERNAL_TASK_ID) {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      logger.warn('Task not found', {
+        baseDir: this.baseDir,
+        taskId,
+      });
+    }
+    return task || null;
   }
 
   public getProjectSettings() {
@@ -183,6 +161,10 @@ export class Project {
 
   public removeConnector(connector: Connector) {
     this.connectors = this.connectors.filter((c) => c !== connector);
+
+    if (connector.taskId) {
+      this.tasks.get(connector.taskId)?.removeConnector(connector);
+    }
   }
 
   public async loadInputHistory(): Promise<string[]> {
@@ -247,15 +229,11 @@ export class Project {
 
   private async sendInputHistoryUpdatedEvent() {
     const history = await this.loadInputHistory();
-    const inputHistoryData: InputHistoryData = {
-      baseDir: this.baseDir,
-      messages: history,
-    };
-    this.eventManager.sendInputHistoryUpdated(inputHistoryData);
+    this.eventManager.sendInputHistoryUpdated(this.baseDir, INTERNAL_TASK_ID, history);
   }
 
-  public async updateAutocompletionData(words: string[], models: string[]) {
-    this.eventManager.sendUpdateAutocompletion(this.baseDir, words, await getAllFiles(this.baseDir), models);
+  public async updateAutocompletionData(taskId: string, words: string[], models: string[]) {
+    this.eventManager.sendUpdateAutocompletion(this.baseDir, taskId, words, await getAllFiles(this.baseDir), models);
   }
 
   public async getAddableFiles(searchRegex?: string): Promise<string[]> {
@@ -280,31 +258,8 @@ export class Project {
     return this.customCommandManager.getAllCommands();
   }
 
-  public sendCustomCommandsUpdated(commands: CustomCommand[]) {
-    this.eventManager.sendCustomCommandsUpdated(this.baseDir, commands);
-  }
-
-  public async loadTask(taskId: string): Promise<void> {
-    const sourceContextPath = path.join(this.baseDir, '.aider-desk', 'tasks', taskId, 'context.json');
-    const targetContextPath = path.join(this.baseDir, '.aider-desk', 'tasks', 'autosaved', 'context.json');
-
-    try {
-      // Ensure the target directory exists
-      await fs.mkdir(path.dirname(targetContextPath), { recursive: true });
-
-      // Copy the context.json file
-      await fs.copyFile(sourceContextPath, targetContextPath);
-
-      // Load the context in the autosaved task
-      await this.getAutosavedTask().loadContext();
-    } catch (error) {
-      logger.error('Failed to load task:', {
-        baseDir: this.baseDir,
-        taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
+  public sendCustomCommandsUpdated(taskId: string, commands: CustomCommand[]) {
+    this.eventManager.sendCustomCommandsUpdated(this.baseDir, taskId, commands);
   }
 
   public async deleteTask(taskId: string): Promise<void> {
@@ -314,8 +269,9 @@ export class Project {
       // Close the task if it's loaded
       const task = this.tasks.get(taskId);
       if (task) {
-        await task.close(taskId === 'autosaved');
+        await task.close();
         this.tasks.delete(taskId);
+        this.eventManager.sendTaskDeleted(task.task);
       }
 
       // Delete the task directory
@@ -335,16 +291,21 @@ export class Project {
     }
   }
 
-  getTasks(): TaskData[] {
+  async getTasks(): Promise<TaskData[]> {
+    await this.tasksLoadingPromise;
+
     return Array.from(this.tasks.values())
       .map((task) => task.task)
-      .filter((task) => task.id !== 'autosaved');
+      .filter((task) => task.id !== INTERNAL_TASK_ID);
   }
 
-  // TODO: should be on task level
+  forEachTask(callback: (task: Task) => void) {
+    this.tasks.forEach(callback);
+  }
+
   async close() {
     this.customCommandManager.dispose();
-    await this.getAutosavedTask().close();
+    await Promise.all(Array.from(this.tasks.values()).map((task) => task.close()));
   }
 
   settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {

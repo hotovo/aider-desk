@@ -1,7 +1,7 @@
 import { CustomCommand } from '@common/types';
 import { useEffect, useState } from 'react';
 
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 export const useCustomCommands = (baseDir: string) => {
   const [customCommands, setCustomCommands] = useState<CustomCommand[]>([]);

@@ -7,6 +7,7 @@ import { EventsHandler } from '@/events-handler';
 
 const RunPromptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
   prompt: z.string().min(1, 'Prompt is required'),
   mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']).optional(),
 });
@@ -27,7 +28,7 @@ export class PromptApi extends BaseApi {
           return;
         }
 
-        const { projectDir, prompt, mode } = parsed;
+        const { projectDir, taskId, prompt, mode } = parsed;
 
         // Check if another prompt is already running
         if (this.isPromptRunning) {
@@ -41,7 +42,7 @@ export class PromptApi extends BaseApi {
         try {
           this.isPromptRunning = true;
 
-          const responses = await this.eventsHandler.runPrompt(projectDir, prompt, mode);
+          const responses = await this.eventsHandler.runPrompt(projectDir, taskId, prompt, mode);
 
           res.status(200).json(responses);
         } finally {

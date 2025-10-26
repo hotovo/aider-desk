@@ -21,8 +21,8 @@ import {
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  TaskContextData,
   TaskData,
-  TaskSettings,
   TodoItem,
   TokensInfoData,
   ToolData,
@@ -38,7 +38,7 @@ import type { SimpleGit } from 'simple-git';
 
 import { getAllFiles } from '@/utils/file-system';
 import { getCompactConversationPrompt, getInitProjectPrompt, getSystemPrompt } from '@/agent/prompts';
-import { AIDER_DESK_TODOS_FILE } from '@/constants';
+import { AIDER_DESK_TASKS_DIR, AIDER_DESK_TODOS_FILE } from '@/constants';
 import { Agent, McpManager } from '@/agent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
@@ -55,6 +55,7 @@ import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
 
 export class Task {
+  private initialized = false;
   private connectors: Connector[] = [];
   private currentQuestion: QuestionData | null = null;
   private currentQuestionResolves: ((answer: [string, string | undefined]) => void)[] = [];
@@ -64,6 +65,7 @@ export class Task {
   private currentPromptResponses: ResponseCompletedData[] = [];
   private runPromptResolves: ((value: ResponseCompletedData[]) => void)[] = [];
 
+  private readonly taskDataPath: string;
   private readonly contextManager: ContextManager;
   private readonly agent: Agent;
   private readonly aiderManager: AiderManager;
@@ -73,7 +75,7 @@ export class Task {
 
   constructor(
     public readonly project: Project,
-    private readonly taskId: string,
+    public readonly taskId: string,
     private readonly store: Store,
     private readonly mcpManager: McpManager,
     private readonly customCommandManager: CustomCommandManager,
@@ -88,129 +90,111 @@ export class Task {
       name: '',
       aiderTotalCost: 0,
       agentTotalCost: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
+    this.taskDataPath = path.join(this.project.baseDir, AIDER_DESK_TASKS_DIR, this.taskId, 'settings.json');
     this.contextManager = new ContextManager(this, this.taskId);
     this.agent = new Agent(this.store, this.mcpManager, this.modelManager, this.telemetryManager);
     this.git = simpleGit(this.project.baseDir);
     this.aiderManager = new AiderManager(this, this.store, this.modelManager, this.eventManager, () => this.connectors);
 
-    void this.loadTaskSettings();
+    void this.loadTaskData();
   }
 
-  private async loadTaskSettings() {
-    const settingsFilePath = path.join(this.project.baseDir, '.aider-desk', 'tasks', this.taskId, 'settings.json');
+  private async loadTaskData() {
+    logger.debug('Loading task data', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+    });
+    if (await fileExists(this.taskDataPath)) {
+      const content = await fs.readFile(this.taskDataPath, 'utf8');
+      const data = JSON.parse(content) as TaskData;
 
-    if (await fileExists(settingsFilePath)) {
-      const content = await fs.readFile(settingsFilePath, 'utf8');
-      const settings = JSON.parse(content) as TaskSettings;
-      this.task.name = settings.name;
-      this.task.createdAt = settings.createdAt;
-      this.task.updatedAt = settings.updatedAt;
-      this.task.startedAt = settings.startedAt;
-      this.task.completedAt = settings.completedAt;
+      logger.info('Loaded task data', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        data,
+      });
+
+      for (const key of Object.keys(data)) {
+        this.task[key] = data[key];
+      }
     }
+  }
+
+  public async saveTask(updates?: Partial<TaskData>) {
+    logger.debug('Saving task data', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      updates,
+    });
+    if (updates) {
+      logger.debug('Saving task data updates', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        updates,
+      });
+      for (const key of Object.keys(updates)) {
+        this.task[key] = updates[key];
+      }
+    }
+    if (!this.task.createdAt) {
+      this.task.createdAt = new Date().toISOString();
+    }
+    this.task.updatedAt = new Date().toISOString();
+
+    await fs.mkdir(path.dirname(this.taskDataPath), { recursive: true });
+    await fs.writeFile(this.taskDataPath, JSON.stringify(this.task, null, 2), 'utf8');
+
+    this.eventManager.sendTaskUpdated(this.task);
+
+    logger.info('Saved task data', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+    });
+
+    return this.task;
   }
 
   public async init() {
-    this.contextManager.getContextFiles().forEach((contextFile) => {
-      this.eventManager.sendFileAdded(this.project.baseDir, contextFile);
-    });
+    if (this.initialized) {
+      logger.debug('Task already initialized, skipping', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+      });
+      this.aiderManager.sendUpdateAiderModels();
+      return;
+    }
 
-    this.currentPromptContext = null;
-    this.currentResponseMessageId = null;
-
-    this.currentQuestion = null;
-    this.currentQuestionResolves = [];
-    this.storedQuestionAnswers.clear();
-
-    await this.updateAutocompletionData([], []);
-    this.sendContextFilesUpdated();
-
+    await this.loadContext();
     await Promise.all([this.aiderManager.start(), this.updateContextInfo()]);
 
     this.eventManager.sendTaskInitialized(this.task);
+
+    this.initialized = true;
   }
 
-  public async loadContext() {
-    await this.contextManager.load();
-    this.sendContextFilesUpdated();
-  }
-
-  public async saveAs(name: string, newTaskId?: string): Promise<TaskData> {
-    const targetTaskId = newTaskId || uuidv4();
-    const sourceTaskDir = path.join(this.project.baseDir, '.aider-desk', 'tasks', this.taskId);
-    const targetTaskDir = path.join(this.project.baseDir, '.aider-desk', 'tasks', targetTaskId);
-
-    logger.info('Saving task as new task', {
+  public async load(): Promise<TaskContextData> {
+    logger.info('Loading task', {
       baseDir: this.project.baseDir,
-      sourceTaskId: this.taskId,
-      targetTaskId,
-      name,
+      taskId: this.taskId,
     });
 
-    try {
-      // Ensure target directory exists
-      await fs.mkdir(targetTaskDir, { recursive: true });
+    await this.init();
 
-      // Copy context.json
-      const sourceContextPath = path.join(sourceTaskDir, 'context.json');
-      const targetContextPath = path.join(targetTaskDir, 'context.json');
-      if (await fileExists(sourceContextPath)) {
-        await fs.copyFile(sourceContextPath, targetContextPath);
-      } else {
-        // If the source context.json doesn't exist, create an empty one in the new task dir
-        await fs.writeFile(targetContextPath, JSON.stringify([]), 'utf8');
-      }
+    return {
+      messages: this.contextManager.getContextMessagesData(),
+      files: this.contextManager.getContextFiles(),
+    };
+  }
 
-      // Create or update settings.json
-      const settings: TaskSettings = {
-        id: targetTaskId,
-        name: name,
-        createdAt: this.task.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        startedAt: this.task.startedAt,
-        completedAt: this.task.completedAt,
-      };
-      const settingsFilePath = path.join(targetTaskDir, 'settings.json');
-      await fs.writeFile(settingsFilePath, JSON.stringify(settings, null, 2), 'utf8');
+  private async loadContext() {
+    logger.info('Loading context for task', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+    });
 
-      // Update the current task's properties if it's being saved to itself
-      if (this.taskId === targetTaskId) {
-        this.task.name = name;
-        this.task.updatedAt = settings.updatedAt;
-      }
-
-      const newTaskData: TaskData = {
-        id: targetTaskId,
-        baseDir: this.project.baseDir,
-        name: name,
-        aiderTotalCost: this.task.aiderTotalCost,
-        agentTotalCost: this.task.agentTotalCost,
-        createdAt: settings.createdAt,
-        updatedAt: settings.updatedAt,
-        startedAt: settings.startedAt,
-        completedAt: settings.completedAt,
-      };
-
-      logger.info('Task saved successfully', {
-        baseDir: this.project.baseDir,
-        taskId: targetTaskId,
-        name,
-      });
-
-      return newTaskData;
-    } catch (error) {
-      logger.error('Failed to save task:', {
-        baseDir: this.project.baseDir,
-        sourceTaskId: this.taskId,
-        targetTaskId,
-        name,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
+    await this.contextManager.load();
+    this.sendContextFilesUpdated();
   }
 
   public addConnector(connector: Connector) {
@@ -268,10 +252,6 @@ export class Task {
     return normalizedPath;
   }
 
-  public isStarted() {
-    return this.aiderManager.isStarted();
-  }
-
   public async close(clearContext = false) {
     logger.info('Closing task...', {
       baseDir: this.project.baseDir,
@@ -280,7 +260,34 @@ export class Task {
     if (clearContext) {
       this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, true);
     }
+    this.interruptResponse();
+
     await this.aiderManager.kill();
+    await this.cleanUpEmptyTask();
+    this.initialized = false;
+  }
+
+  private async cleanUpEmptyTask() {
+    if (!(await fileExists(this.taskDataPath))) {
+      logger.info('Removing empty task folder', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+      });
+      try {
+        const taskDir = path.dirname(this.taskDataPath);
+
+        if (!(await fileExists(taskDir))) {
+          return;
+        }
+        await fs.rm(taskDir, { recursive: true });
+      } catch (error) {
+        logger.error('Failed to remove empty task folder', {
+          baseDir: this.project.baseDir,
+          taskId: this.taskId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
   }
 
   private findMessageConnectors(action: MessageAction): Connector[] {
@@ -314,15 +321,15 @@ export class Task {
 
     await this.project.addToInputHistory(prompt);
 
-    this.addUserMessage(prompt, mode);
-    this.addLogMessage('loading');
-
-    this.telemetryManager.captureRunPrompt(mode);
-
-    // Generate promptContext for this run
     const promptContext: PromptContext = {
       id: uuidv4(),
     };
+
+    this.addUserMessage(promptContext.id, prompt);
+    this.addLogMessage('loading');
+
+    this.telemetryManager.captureRunPrompt(mode);
+    // Generate promptContext for this run
 
     if (mode === 'agent') {
       const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.project.baseDir));
@@ -340,6 +347,11 @@ export class Task {
 
   public async runPromptInAider(prompt: string, promptContext: PromptContext, mode?: Mode): Promise<ResponseCompletedData[]> {
     await this.aiderManager.waitForStart();
+
+    await this.saveTask({
+      name: this.task.name || this.getTaskNameFromPrompt(prompt),
+      startedAt: new Date().toISOString(),
+    });
 
     const responses = await this.sendPrompt(prompt, promptContext, mode);
     logger.debug('Responses:', { responses });
@@ -374,6 +386,10 @@ export class Task {
     this.sendRequestContextInfo();
     this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
 
+    await this.saveTask({
+      completedAt: new Date().toISOString(),
+    });
+
     return responses;
   }
 
@@ -385,6 +401,11 @@ export class Task {
     contextFiles?: ContextFile[],
     systemPrompt?: string,
   ): Promise<ResponseCompletedData[]> {
+    await this.saveTask({
+      name: this.task.name || this.getTaskNameFromPrompt(prompt),
+      startedAt: new Date().toISOString(),
+    });
+
     const agentMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt);
     if (agentMessages.length > 0) {
       agentMessages.forEach((message) => this.contextManager.addContextMessage(message));
@@ -398,7 +419,15 @@ export class Task {
     this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
     this.sendRequestContextInfo();
 
+    await this.saveTask({
+      completedAt: new Date().toISOString(),
+    });
+
     return [];
+  }
+
+  private getTaskNameFromPrompt(prompt: string) {
+    return prompt.trim().split(' ').slice(0, 5).join(' ');
   }
 
   public async runSubagent(
@@ -451,8 +480,10 @@ export class Task {
 
     if (this.currentResponseMessageId) {
       this.eventManager.sendResponseCompleted({
+        type: 'response-completed',
         messageId: this.currentResponseMessageId,
         baseDir: this.project.baseDir,
+        taskId: this.taskId,
         content: '',
       });
       this.currentResponseMessageId = null;
@@ -478,6 +509,7 @@ export class Task {
       const data: ResponseChunkData = {
         messageId: message.id,
         baseDir: this.project.baseDir,
+        taskId: this.taskId,
         chunk: message.content,
         reflectedMessage: message.reflectedMessage,
         promptContext: message.promptContext,
@@ -502,10 +534,12 @@ export class Task {
         this.updateTotalCosts(usageReport);
       }
       const data: ResponseCompletedData = {
+        type: 'response-completed',
         messageId: message.id,
         content: message.content,
         reflectedMessage: message.reflectedMessage,
         baseDir: this.project.baseDir,
+        taskId: this.taskId,
         editedFiles: message.editedFiles,
         commitHash: message.commitHash,
         commitMessage: message.commitMessage,
@@ -607,7 +641,7 @@ export class Task {
 
   public async addFile(contextFile: ContextFile) {
     const normalizedPath = this.normalizeFilePath(contextFile.path);
-    logger.info('Adding file or folder:', {
+    logger.debug('Adding file or folder:', {
       path: normalizedPath,
       readOnly: contextFile.readOnly,
     });
@@ -656,7 +690,7 @@ export class Task {
   }
 
   private sendContextFilesUpdated() {
-    this.eventManager.sendContextFilesUpdated(this.project.baseDir, this.contextManager.getContextFiles());
+    this.eventManager.sendContextFilesUpdated(this.project.baseDir, this.taskId, this.contextManager.getContextFiles());
   }
 
   public async runCommand(command: string, addToHistory = true) {
@@ -789,10 +823,6 @@ export class Task {
     });
   }
 
-  public async updateAutocompletionData(words: string[], models: string[]) {
-    this.eventManager.sendUpdateAutocompletion(this.project.baseDir, words, await getAllFiles(this.project.baseDir), models);
-  }
-
   public updateAiderModels(modelsData: ModelsData) {
     this.aiderManager.updateAiderModels(modelsData);
   }
@@ -851,6 +881,7 @@ export class Task {
   public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext) {
     const data: LogData = {
       baseDir: this.project.baseDir,
+      taskId: this.taskId,
       level,
       message,
       finished,
@@ -885,6 +916,42 @@ export class Task {
     this.findMessageConnectors('add-message').forEach((connector) => connector.sendAddMessageMessage(role, content, acknowledge));
   }
 
+  public sendUserMessage(data: UserMessageData) {
+    logger.debug('Sending user message:', {
+      baseDir: this.project.baseDir,
+      content: data.content.substring(0, 100),
+    });
+    this.eventManager.sendUserMessage(data);
+  }
+
+  public sendToolMessage(data: ToolData) {
+    logger.debug('Sending tool message:', {
+      id: data.id,
+      baseDir: this.project.baseDir,
+      serverName: data.serverName,
+      name: data.toolName,
+      args: data.args,
+      response: typeof data.response === 'string' ? data.response.substring(0, 100) : data.response,
+      usageReport: data.usageReport,
+      promptContext: data.promptContext,
+    });
+
+    if (data.response && data.usageReport) {
+      this.dataManager.saveMessage(data.id, 'tool', this.project.baseDir, data.usageReport.model, data.usageReport, {
+        toolName: data.toolName,
+        args: data.args,
+        response: data.response,
+      });
+    }
+
+    // Update total costs when adding the tool message
+    if (data.usageReport) {
+      this.updateTotalCosts(data.usageReport);
+    }
+
+    this.eventManager.sendTool(data);
+  }
+
   public async clearContext(addToHistory = false, updateContextInfo = true) {
     logger.info('Clearing context:', {
       baseDir: this.project.baseDir,
@@ -909,7 +976,7 @@ export class Task {
     }
 
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
-    this.agent.interrupt(this.project.baseDir);
+    this.agent.interrupt();
     this.promptFinished();
   }
 
@@ -934,12 +1001,14 @@ export class Task {
       serverName,
       name: toolName,
       args,
-      response,
+      response: typeof response === 'string' ? response.substring(0, 100) : response,
       usageReport,
       promptContext,
     });
     const data: ToolData = {
+      type: 'tool',
       baseDir: this.project.baseDir,
+      taskId: this.taskId,
       id,
       serverName,
       toolName,
@@ -981,17 +1050,18 @@ export class Task {
     }
   }
 
-  public addUserMessage(content: string, mode?: Mode, promptContext?: PromptContext) {
+  private addUserMessage(id: string, content: string, promptContext?: PromptContext) {
     logger.info('Adding user message:', {
       baseDir: this.project.baseDir,
       content: content.substring(0, 100),
-      mode,
     });
 
     const data: UserMessageData = {
+      type: 'user',
+      id,
       baseDir: this.project.baseDir,
+      taskId: this.taskId,
       content,
-      mode,
       promptContext,
     };
 
@@ -1017,7 +1087,7 @@ export class Task {
 
     if (promptToRun) {
       logger.info('Found message content to run, reloading and re-running prompt.');
-      await this.reloadConnectorMessages(); // This sends 'clear-project' which truncates UI messages
+      await this.reloadConnectorMessages(); // This sends 'clear-task' which truncates UI messages
       await this.updateContextInfo();
 
       // No need to await runPrompt here, let it run in the background
@@ -1111,7 +1181,9 @@ export class Task {
   }
 
   public async generateContextMarkdown(): Promise<string | null> {
-    logger.info('Exporting context to Markdown:', { baseDir: this.project.baseDir });
+    logger.info('Exporting context to Markdown:', {
+      baseDir: this.project.baseDir,
+    });
     return await this.contextManager.generateContextMarkdown();
   }
 
@@ -1332,6 +1404,7 @@ export class Task {
         // Ask the user if they want to add this file to .aider.conf.yml
         const [answer] = await this.askQuestion({
           baseDir: this.project.baseDir,
+          taskId: this.taskId,
           text: 'Do you want to add AGENTS.md as read-only file for Aider (in .aider.conf.yml)?',
           defaultAnswer: 'y',
           internal: false,
@@ -1400,7 +1473,7 @@ export class Task {
     const command = this.customCommandManager.getCommand(commandName);
     if (!command) {
       this.addLogMessage('error', `Custom command '${commandName}' not found.`);
-      this.eventManager.sendCustomCommandError(this.project.baseDir, `Invalid command: ${commandName}`);
+      this.eventManager.sendCustomCommandError(this.project.baseDir, this.taskId, `Invalid command: ${commandName}`);
       return;
     }
 
@@ -1410,9 +1483,11 @@ export class Task {
     if (args.length < command.arguments.filter((arg) => arg.required !== false).length) {
       this.addLogMessage(
         'error',
-        `Not enough arguments for command '${commandName}'. Expected arguments:\n${command.arguments.map((arg, idx) => `${idx + 1}: ${arg.description}${arg.required === false ? ' (optional)' : ''}`).join('\n')}`,
+        `Not enough arguments for command '${commandName}'. Expected arguments:\n${command.arguments
+          .map((arg, idx) => `${idx + 1}: ${arg.description}${arg.required === false ? ' (optional)' : ''}`)
+          .join('\n')}`,
       );
-      this.eventManager.sendCustomCommandError(this.project.baseDir, `Argument mismatch for command: ${commandName}`);
+      this.eventManager.sendCustomCommandError(this.project.baseDir, this.taskId, `Argument mismatch for command: ${commandName}`);
       return;
     }
 
@@ -1438,7 +1513,11 @@ ${error.stderr}`,
 
     await this.project.addToInputHistory(`/${commandName}${args.length > 0 ? ' ' + args.join(' ') : ''}`);
 
-    this.addUserMessage(prompt, mode);
+    const promptContext: PromptContext = {
+      id: uuidv4(),
+    };
+
+    this.addUserMessage(promptContext.id, prompt);
     this.addLogMessage('loading');
 
     try {
@@ -1459,17 +1538,31 @@ ${error.stderr}`,
 
         const messages = command.includeContext === false ? [] : undefined;
         const contextFiles = command.includeContext === false ? [] : undefined;
-        await this.runPromptInAgent(profile, prompt, undefined, messages, contextFiles, systemPrompt);
+        await this.runPromptInAgent(profile, prompt, promptContext, messages, contextFiles, systemPrompt);
       } else {
         // All other modes (code, ask, architect)
-        const promptContext: PromptContext = {
-          id: uuidv4(),
-        };
         await this.runPromptInAider(prompt, promptContext, mode);
       }
     } finally {
       // Clear loading message after execution completes (success or failure)
       this.addLogMessage('loading', '', true);
     }
+  }
+
+  async restart() {
+    if (!this.initialized) {
+      return;
+    }
+
+    this.interruptResponse();
+    await this.close();
+    await this.init();
+    if (this.task.createdAt) {
+      await this.saveTask({
+        aiderTotalCost: 0,
+        agentTotalCost: 0,
+      });
+    }
+    await this.updateContextInfo();
   }
 }

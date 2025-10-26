@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { twMerge } from 'tailwind-merge';
 
 type ButtonVariant = 'contained' | 'text' | 'outline';
-type ButtonColor = 'primary' | 'secondary' | 'danger';
+type ButtonColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'xs';
 
 type Props = {
@@ -28,8 +28,13 @@ const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
     text: 'text-button-secondary hover:bg-button-secondary-subtle',
     outline: 'border-button-secondary text-button-secondary hover:bg-button-secondary-subtle',
   },
+  tertiary: {
+    contained: 'bg-bg-primary hover:bg-bg-primary-light text-text-primary',
+    text: 'text-text-primary hover:bg-bg-secondary',
+    outline: 'border-text-primary text-text-primary hover:bg-bg-secondary',
+  },
   danger: {
-    contained: 'bg-button-danger hover:bg-button-danger-light text-button-danger-text',
+    contained: 'bg-button-danger hover:bg-button-danger-emphasis text-button-danger-text',
     text: 'text-button-danger hover:bg-button-danger-subtle',
     outline: 'border-button-danger text-button-danger hover:bg-button-danger-subtle',
   },
@@ -37,8 +42,8 @@ const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
 
 const sizeClasses: Record<ButtonSize, string> = {
   md: 'px-4 py-2 text-base',
-  sm: 'px-2.5 py-1.5 text-sm',
-  xs: 'px-2 py-1 text-xs',
+  sm: 'px-2.5 py-1.5 text-sm rounded-md',
+  xs: 'px-2 py-1 text-xs rounded',
 };
 
 export const Button = ({

@@ -1,6 +1,6 @@
 import {
   AutocompletionData,
-  ClearProjectData,
+  ClearTaskData,
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
@@ -21,7 +21,6 @@ import {
   ProjectData,
   ProjectSettings,
   ProjectStartedData,
-  ProjectStartMode,
   ProviderModelsData,
   ProviderProfile,
   ProvidersUpdatedData,
@@ -29,6 +28,7 @@ import {
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  TaskContextData,
   TaskData,
   TerminalData,
   TerminalExitData,
@@ -51,12 +51,13 @@ export interface ApplicationAPI {
   startCloudflareTunnel: () => Promise<boolean>;
   stopCloudflareTunnel: () => Promise<void>;
   getCloudflareTunnelStatus: () => Promise<CloudflareTunnelStatus>;
-  startProject: (baseDir: string) => void;
+  startProject: (baseDir: string) => Promise<void>;
   stopProject: (baseDir: string) => void;
-  restartProject: (baseDir: string, startupMode?: ProjectStartMode) => void;
-  runPrompt: (baseDir: string, prompt: string, mode?: Mode) => void;
-  redoLastUserPrompt: (baseDir: string, mode: Mode, updatedPrompt?: string) => void;
-  answerQuestion: (baseDir: string, answer: string) => void;
+  restartProject: (baseDir: string) => void;
+  restartTask: (baseDir: string, taskId: string) => void;
+  runPrompt: (baseDir: string, taskId: string, prompt: string, mode?: Mode) => void;
+  redoLastUserPrompt: (baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string) => void;
+  answerQuestion: (baseDir: string, taskId: string, answer: string) => void;
   loadInputHistory: (baseDir: string) => Promise<string[]>;
   isOpenDialogSupported: () => boolean;
   showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
@@ -73,39 +74,40 @@ export interface ApplicationAPI {
   getProjectSettings: (baseDir: string) => Promise<ProjectSettings>;
   patchProjectSettings: (baseDir: string, settings: Partial<ProjectSettings>) => Promise<ProjectSettings>;
   getFilePathSuggestions: (currentPath: string, directoriesOnly?: boolean) => Promise<string[]>;
-  getAddableFiles: (baseDir: string) => Promise<string[]>;
-  addFile: (baseDir: string, filePath: string, readOnly?: boolean) => void;
+  getAddableFiles: (baseDir: string, taskId: string) => Promise<string[]>;
+  addFile: (baseDir: string, taskId: string, filePath: string, readOnly?: boolean) => void;
   isValidPath: (baseDir: string, path: string) => Promise<boolean>;
   isProjectPath: (path: string) => Promise<boolean>;
-  dropFile: (baseDir: string, path: string) => void;
-  runCommand: (baseDir: string, command: string) => void;
-  pasteImage: (baseDir: string) => void;
-  scrapeWeb: (baseDir: string, url: string, filePath?: string) => Promise<string>;
-  initProjectRulesFile: (baseDir: string) => Promise<void>;
+  dropFile: (baseDir: string, taskId: string, path: string) => void;
+  runCommand: (baseDir: string, taskId: string, command: string) => void;
+  pasteImage: (baseDir: string, taskId: string) => void;
+  scrapeWeb: (baseDir: string, taskId: string, url: string, filePath?: string) => Promise<void>;
+  initProjectRulesFile: (baseDir: string, taskId: string) => Promise<void>;
 
   // Todo operations
-  getTodos: (baseDir: string) => Promise<TodoItem[]>;
-  addTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
-  updateTodo: (baseDir: string, name: string, updates: Partial<TodoItem>) => Promise<TodoItem[]>;
-  deleteTodo: (baseDir: string, name: string) => Promise<TodoItem[]>;
-  clearAllTodos: (baseDir: string) => Promise<TodoItem[]>;
+  getTodos: (baseDir: string, taskId: string) => Promise<TodoItem[]>;
+  addTodo: (baseDir: string, taskId: string, name: string) => Promise<TodoItem[]>;
+  updateTodo: (baseDir: string, taskId: string, name: string, updates: Partial<TodoItem>) => Promise<TodoItem[]>;
+  deleteTodo: (baseDir: string, taskId: string, name: string) => Promise<TodoItem[]>;
+  clearAllTodos: (baseDir: string, taskId: string) => Promise<TodoItem[]>;
 
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
 
-  saveTask: (baseDir: string, name: string, id?: string) => Promise<boolean>;
-  deleteTask: (baseDir: string, name: string) => Promise<boolean>;
-  loadTask: (baseDir: string, id: string) => Promise<void>;
+  createNewTask: (baseDir: string) => Promise<TaskData>;
+  updateTask: (baseDir: string, id: string, updates: Partial<TaskData>) => Promise<boolean>;
+  deleteTask: (baseDir: string, id: string) => Promise<boolean>;
   getTasks: (baseDir: string) => Promise<TaskData[]>;
-  exportTaskToMarkdown: (baseDir: string) => Promise<void>;
+  loadTask: (baseDir: string, taskId: string) => Promise<TaskContextData>;
+  exportTaskToMarkdown: (baseDir: string, taskId: string) => Promise<void>;
   getRecentProjects: () => Promise<string[]>;
   addRecentProject: (baseDir: string) => Promise<void>;
   removeRecentProject: (baseDir: string) => Promise<void>;
-  interruptResponse: (baseDir: string) => void;
-  applyEdits: (baseDir: string, edits: FileEdit[]) => void;
-  clearContext: (baseDir: string) => void;
-  removeLastMessage: (baseDir: string) => void;
-  compactConversation: (baseDir: string, mode: Mode, customInstructions?: string) => void;
+  interruptResponse: (baseDir: string, taskId: string) => void;
+  applyEdits: (baseDir: string, taskId: string, edits: FileEdit[]) => void;
+  clearContext: (baseDir: string, taskId: string) => void;
+  removeLastMessage: (baseDir: string, taskId: string) => void;
+  compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
   getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
@@ -124,20 +126,20 @@ export interface ApplicationAPI {
   deleteModel: (providerId: string, modelId: string) => Promise<ProviderModelsData>;
 
   addSettingsUpdatedListener: (callback: (data: SettingsData) => void) => () => void;
-  addResponseChunkListener: (baseDir: string, callback: (data: ResponseChunkData) => void) => () => void;
-  addResponseCompletedListener: (baseDir: string, callback: (data: ResponseCompletedData) => void) => () => void;
-  addLogListener: (baseDir: string, callback: (data: LogData) => void) => () => void;
-  addContextFilesUpdatedListener: (baseDir: string, callback: (data: ContextFilesUpdatedData) => void) => () => void;
+  addResponseChunkListener: (baseDir: string, taskId: string, callback: (data: ResponseChunkData) => void) => () => void;
+  addResponseCompletedListener: (baseDir: string, taskId: string, callback: (data: ResponseCompletedData) => void) => () => void;
+  addLogListener: (baseDir: string, taskId: string, callback: (data: LogData) => void) => () => void;
+  addContextFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void) => () => void;
   addCustomCommandsUpdatedListener: (baseDir: string, callback: (data: CustomCommandsUpdatedData) => void) => () => void;
-  addUpdateAutocompletionListener: (baseDir: string, callback: (data: AutocompletionData) => void) => () => void;
-  addAskQuestionListener: (baseDir: string, callback: (data: QuestionData) => void) => () => void;
-  addUpdateAiderModelsListener: (baseDir: string, callback: (data: ModelsData) => void) => () => void;
-  addCommandOutputListener: (baseDir: string, callback: (data: CommandOutputData) => void) => () => void;
-  addTokensInfoListener: (baseDir: string, callback: (data: TokensInfoData) => void) => () => void;
-  addToolListener: (baseDir: string, callback: (data: ToolData) => void) => () => void;
-  addUserMessageListener: (baseDir: string, callback: (data: UserMessageData) => void) => () => void;
+  addUpdateAutocompletionListener: (baseDir: string, taskId: string, callback: (data: AutocompletionData) => void) => () => void;
+  addAskQuestionListener: (baseDir: string, taskId: string, callback: (data: QuestionData) => void) => () => void;
+  addUpdateAiderModelsListener: (baseDir: string, taskId: string, callback: (data: ModelsData) => void) => () => void;
+  addCommandOutputListener: (baseDir: string, taskId: string, callback: (data: CommandOutputData) => void) => () => void;
+  addTokensInfoListener: (baseDir: string, taskId: string, callback: (data: TokensInfoData) => void) => () => void;
+  addToolListener: (baseDir: string, taskId: string, callback: (data: ToolData) => void) => () => void;
+  addUserMessageListener: (baseDir: string, taskId: string, callback: (data: UserMessageData) => void) => () => void;
   addInputHistoryUpdatedListener: (baseDir: string, callback: (data: InputHistoryData) => void) => () => void;
-  addClearProjectListener: (baseDir: string, callback: (data: ClearProjectData) => void) => () => void;
+  addClearTaskListener: (baseDir: string, taskId: string, callback: (data: ClearTaskData) => void) => () => void;
   addProjectStartedListener: (baseDir: string, callback: (data: ProjectStartedData) => void) => () => void;
   addVersionsInfoUpdatedListener: (callback: (data: VersionsInfo) => void) => () => void;
   addProviderModelsUpdatedListener: (callback: (data: ProviderModelsData) => void) => () => void;
@@ -147,15 +149,24 @@ export interface ApplicationAPI {
   addContextMenuListener: (callback: (params: Electron.ContextMenuParams) => void) => () => void;
   addOpenSettingsListener: (callback: (tabIndex: number) => void) => () => void;
 
+  // Task lifecycle event listeners
+  addTaskCreatedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
+  addTaskInitializedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
+  addTaskUpdatedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
+  addTaskStartedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
+  addTaskCompletedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
+  addTaskCancelledListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
+  addTaskDeletedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
+
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
-  runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
+  runCustomCommand: (baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
 
   // Terminal operations
   isTerminalSupported: () => boolean;
-  createTerminal: (baseDir: string, cols?: number, rows?: number) => Promise<string>;
+  createTerminal: (baseDir: string, taskId: string, cols?: number, rows?: number) => Promise<string>;
   writeToTerminal: (terminalId: string, data: string) => Promise<boolean>;
   resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;
   closeTerminal: (terminalId: string) => Promise<boolean>;
-  getTerminalForProject: (baseDir: string) => Promise<string | null>;
-  getAllTerminalsForProject: (baseDir: string) => Promise<Array<{ id: string; baseDir: string; cols: number; rows: number }>>;
+  getTerminalForTask: (taskId: string) => Promise<string | null>;
+  getAllTerminalsForTask: (taskId: string) => Promise<Array<{ id: string; taskId: string; cols: number; rows: number }>>;
 }

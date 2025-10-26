@@ -44,14 +44,17 @@ export enum ContextMemoryMode {
 export interface ResponseChunkData {
   messageId: string;
   baseDir: string;
+  taskId: string;
   chunk: string;
   reflectedMessage?: string;
   promptContext?: PromptContext;
 }
 
 export interface ResponseCompletedData {
+  type: 'response-completed';
   messageId: string;
   baseDir: string;
+  taskId: string;
   content: string;
   reflectedMessage?: string;
   editedFiles?: string[];
@@ -65,6 +68,7 @@ export interface ResponseCompletedData {
 
 export interface CommandOutputData {
   baseDir: string;
+  taskId: string;
   command: string;
   output: string;
 }
@@ -73,6 +77,7 @@ export type LogLevel = 'info' | 'warning' | 'error' | 'loading';
 
 export interface LogData {
   baseDir: string;
+  taskId: string;
   level: LogLevel;
   message?: string;
   finished?: boolean;
@@ -80,7 +85,9 @@ export interface LogData {
 }
 
 export interface ToolData {
+  type: 'tool';
   baseDir: string;
+  taskId: string;
   id: string;
   serverName: string;
   toolName: string;
@@ -92,16 +99,19 @@ export interface ToolData {
 
 export interface ContextFilesUpdatedData {
   baseDir: string;
+  taskId: string;
   files: ContextFile[];
 }
 
 export interface CustomCommandsUpdatedData {
   baseDir: string;
+  taskId: string;
   commands: CustomCommand[];
 }
 
 export interface AutocompletionData {
   baseDir: string;
+  taskId: string;
   words: string[];
   allFiles: string[];
   models: string[];
@@ -121,6 +131,7 @@ export interface Answer {
 
 export interface QuestionData {
   baseDir: string;
+  taskId: string;
   text: string;
   subject?: string;
   isGroupQuestion?: boolean;
@@ -226,6 +237,7 @@ export interface RawModelInfo {
 
 export interface ModelsData {
   baseDir: string;
+  taskId: string;
   mainModel: string;
   weakModel?: string | null;
   architectModel?: string | null;
@@ -426,7 +438,7 @@ export interface ProjectStartedData {
   baseDir: string;
 }
 
-export interface ClearProjectData {
+export interface ClearTaskData {
   baseDir: string;
   taskId: string;
   clearMessages: boolean;
@@ -452,6 +464,7 @@ export interface TokensCost {
 
 export interface TokensInfoData {
   baseDir: string;
+  taskId: string;
   chatHistory: TokensCost;
   files: Record<string, TokensCost>;
   repoMap: TokensCost;
@@ -461,13 +474,16 @@ export interface TokensInfoData {
 
 export interface InputHistoryData {
   baseDir: string;
-  messages: string[];
+  taskId: string;
+  inputHistory: string[];
 }
 
 export interface UserMessageData {
+  type: 'user';
+  id: string;
   baseDir: string;
+  taskId: string;
   content: string;
-  mode?: Mode;
   promptContext?: PromptContext;
 }
 
@@ -529,31 +545,29 @@ export interface ModelInfo {
 }
 
 export interface TaskContext {
-  version: number;
+  version?: number;
   contextMessages: ContextMessage[];
   contextFiles: ContextFile[];
 }
 
-export interface TaskSettings {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-  startedAt?: string;
-  completedAt?: string;
+export interface TaskContextData {
+  messages: (ResponseCompletedData | UserMessageData | ToolData)[];
+  files: ContextFile[];
 }
 
-export interface TaskData {
-  id: string;
-  baseDir: string;
-  name: string;
-  aiderTotalCost: number;
-  agentTotalCost: number;
-  createdAt: string;
-  updatedAt: string;
-  startedAt?: string;
-  completedAt?: string;
-}
+export const TaskDataSchema = z.object({
+  id: z.string(),
+  baseDir: z.string(),
+  name: z.string(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  startedAt: z.string().optional(),
+  completedAt: z.string().optional(),
+  aiderTotalCost: z.number(),
+  agentTotalCost: z.number(),
+});
+
+export type TaskData = z.infer<typeof TaskDataSchema>;
 
 export interface TodoItem {
   name: string;
@@ -615,12 +629,14 @@ export interface CustomCommand {
 export interface TerminalData {
   terminalId: string;
   baseDir: string;
+  taskId: string;
   data: string;
 }
 
 export interface TerminalExitData {
   terminalId: string;
   baseDir: string;
+  taskId: string;
   exitCode: number;
   signal?: number;
 }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { ProjectStartMode, ProjectSettingsSchema } from '@common/types';
+import { ProjectSettingsSchema, TaskDataSchema } from '@common/types';
 
 import { BaseApi } from './base-api';
 
@@ -8,7 +8,11 @@ import { EventsHandler } from '@/events-handler';
 
 const RestartProjectSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
-  startupMode: z.enum(['ask', 'architect', 'context']).optional(),
+});
+
+const RestartTaskSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
 });
 
 const GetProjectSettingsSchema = z.object({
@@ -23,14 +27,17 @@ const PatchProjectSettingsSchema = ProjectSettingsSchema.partial().and(
 
 const InterruptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
 });
 
 const ClearContextSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
 });
 
 const AnswerQuestionSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
   answer: z.string().min(1, 'Answer is required'),
 });
 
@@ -84,6 +91,7 @@ const LoadInputHistorySchema = z.object({
 
 const RedoLastUserPromptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
   mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']),
   updatedPrompt: z.string().optional(),
 });
@@ -104,10 +112,12 @@ const GetFilePathSuggestionsSchema = z.object({
 
 const PasteImageSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
 });
 
 const ApplyEditsSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
   edits: z.array(
     z.object({
       path: z.string(),
@@ -119,17 +129,23 @@ const ApplyEditsSchema = z.object({
 
 const RunCommandSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
   command: z.string().min(1, 'Command is required'),
 });
 
 const InitProjectRulesFileSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
 });
 
-const SaveTaskSchema = z.object({
+const CreateNewTaskSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
-  name: z.string().min(1, 'Task name is required'),
-  id: z.string().optional(),
+});
+
+const UpdateTaskSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  id: z.string().min(1, 'Task id is required'),
+  updates: TaskDataSchema.partial(),
 });
 
 const LoadTaskSchema = z.object({
@@ -146,23 +162,32 @@ const DeleteTaskSchema = z.object({
   id: z.string().min(1, 'Task id is required'),
 });
 
+const GetTaskContextDataSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  id: z.string().min(1, 'Task id is required'),
+});
+
 const ExportSessionToMarkdownSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
 });
 
 const RemoveLastMessageSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
 });
 
 const CompactConversationSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
   mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']),
   customInstructions: z.string().optional(),
 });
 
 const ScrapeWebSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
-  url: z.string().url('Invalid URL format').min(1, 'URL is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  url: z.url('Invalid URL format').min(1, 'URL is required'),
   filePath: z.string().optional(),
 });
 
@@ -205,8 +230,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, mode, updatedPrompt } = parsed;
-        await this.eventsHandler.redoLastUserPrompt(projectDir, mode, updatedPrompt);
+        const { projectDir, taskId, mode, updatedPrompt } = parsed;
+        await this.eventsHandler.redoLastUserPrompt(projectDir, taskId, mode, updatedPrompt);
         res.status(200).json({ message: 'Redo last user prompt initiated' });
       }),
     );
@@ -265,8 +290,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
-        await this.eventsHandler.pasteImage(projectDir);
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.pasteImage(projectDir, taskId);
         res.status(200).json({ message: 'Image pasted' });
       }),
     );
@@ -280,8 +305,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, edits } = parsed;
-        this.eventsHandler.applyEdits(projectDir, edits);
+        const { projectDir, taskId, edits } = parsed;
+        this.eventsHandler.applyEdits(projectDir, taskId, edits);
         res.status(200).json({ message: 'Edits applied' });
       }),
     );
@@ -295,8 +320,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, command } = parsed;
-        this.eventsHandler.runCommand(projectDir, command);
+        const { projectDir, taskId, command } = parsed;
+        this.eventsHandler.runCommand(projectDir, taskId, command);
         res.status(200).json({ message: 'Command executed' });
       }),
     );
@@ -310,9 +335,24 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
-        await this.eventsHandler.initProjectRulesFile(projectDir);
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.initProjectRulesFile(projectDir, taskId);
         res.status(200).json({ message: 'Project rules file initialized' });
+      }),
+    );
+
+    // Create new task
+    router.post(
+      '/project/tasks/new',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(CreateNewTaskSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir } = parsed;
+        const task = await this.eventsHandler.createNewTask(projectDir);
+        res.status(200).json(task);
       }),
     );
 
@@ -320,13 +360,13 @@ export class ProjectApi extends BaseApi {
     router.post(
       '/project/tasks',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(SaveTaskSchema, req.body, res);
+        const parsed = this.validateRequest(UpdateTaskSchema, req.body, res);
         if (!parsed) {
           return;
         }
 
-        const { projectDir, name, id } = parsed;
-        const savedTask = await this.eventsHandler.saveTask(projectDir, name, id);
+        const { projectDir, id, updates } = parsed;
+        const savedTask = await this.eventsHandler.updateTask(projectDir, id, updates);
         res.status(200).json(savedTask);
       }),
     );
@@ -341,8 +381,8 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, id } = parsed;
-        await this.eventsHandler.loadTask(projectDir, id);
-        res.status(200).json({ message: 'Task loaded' });
+        const taskContextData = await this.eventsHandler.loadTask(projectDir, id);
+        res.status(200).json(taskContextData);
       }),
     );
 
@@ -376,6 +416,36 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
+    // Restart task
+    router.post(
+      '/project/tasks/restart',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RestartTaskSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.restartTask(projectDir, taskId);
+        res.status(200).json({ message: 'Task restarted' });
+      }),
+    );
+
+    // Load task data
+    router.post(
+      '/project/tasks/load',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GetTaskContextDataSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, id } = parsed;
+        const contextData = await this.eventsHandler.loadTask(projectDir, id);
+        res.status(200).json(contextData);
+      }),
+    );
+
     // Export session to markdown
     router.post(
       '/project/tasks/export-markdown',
@@ -385,8 +455,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
-        await this.eventsHandler.exportTaskToMarkdown(projectDir);
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.exportTaskToMarkdown(projectDir, taskId);
         res.status(200).json({ message: 'Session exported to markdown' });
       }),
     );
@@ -400,8 +470,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
-        await this.eventsHandler.removeLastMessage(projectDir);
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.removeLastMessage(projectDir, taskId);
         res.status(200).json({ message: 'Last message removed' });
       }),
     );
@@ -415,8 +485,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, mode, customInstructions } = parsed;
-        await this.eventsHandler.compactConversation(projectDir, mode, customInstructions);
+        const { projectDir, taskId, mode, customInstructions } = parsed;
+        await this.eventsHandler.compactConversation(projectDir, taskId, mode, customInstructions);
         res.status(200).json({ message: 'Conversation compacted' });
       }),
     );
@@ -430,8 +500,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, url, filePath } = parsed;
-        await this.eventsHandler.scrapeWeb(projectDir, url, filePath);
+        const { projectDir, taskId, url, filePath } = parsed;
+        await this.eventsHandler.scrapeWeb(projectDir, taskId, url, filePath);
         res.status(200).json({ message: 'Web content scraped and added to context' });
       }),
     );
@@ -490,8 +560,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, startupMode } = parsed;
-        await this.eventsHandler.restartProject(projectDir, startupMode as ProjectStartMode);
+        const { projectDir } = parsed;
+        await this.eventsHandler.restartProject(projectDir);
         res.status(200).json({ message: 'Project restarted' });
       }),
     );
@@ -535,8 +605,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
-        this.eventsHandler.interruptResponse(projectDir);
+        const { projectDir, taskId } = parsed;
+        this.eventsHandler.interruptResponse(projectDir, taskId);
         res.status(200).json({ message: 'Interrupt signal sent' });
       }),
     );
@@ -550,8 +620,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir } = parsed;
-        this.eventsHandler.clearContext(projectDir);
+        const { projectDir, taskId } = parsed;
+        this.eventsHandler.clearContext(projectDir, taskId);
         res.status(200).json({ message: 'Context cleared' });
       }),
     );
@@ -565,8 +635,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, answer } = parsed;
-        this.eventsHandler.answerQuestion(projectDir, answer);
+        const { projectDir, taskId, answer } = parsed;
+        this.eventsHandler.answerQuestion(projectDir, taskId, answer);
         res.status(200).json({ message: 'Answer submitted' });
       }),
     );
@@ -641,7 +711,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir } = parsed;
-        this.eventsHandler.startProject(projectDir);
+        await this.eventsHandler.startProject(projectDir);
         res.status(200).json({ message: 'Project started' });
       }),
     );

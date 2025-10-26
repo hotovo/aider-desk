@@ -1,4 +1,4 @@
-import { ContextFile, ContextFilesUpdatedData, OS, TokensInfoData } from '@common/types';
+import { ContextFile, OS, TokensInfoData } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
@@ -7,11 +7,12 @@ import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { LuFolderTree } from 'react-icons/lu';
 import { TbPencilOff } from 'react-icons/tb';
 import { useTranslation } from 'react-i18next';
+import { usePrevious } from '@reactuses/core';
 
 import { StyledTooltip } from '../common/StyledTooltip';
 
 import { useOS } from '@/hooks/useOS';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 import './ContextFiles.css';
 
@@ -85,21 +86,23 @@ const createFileTree = (files: ContextFile[]) => {
 
 type Props = {
   baseDir: string;
+  taskId: string;
   allFiles: string[];
+  contextFiles: ContextFile[];
   showFileDialog: () => void;
   tokensInfo?: TokensInfoData | null;
 };
 
-export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: Props) => {
-  const [files, setFiles] = useState<ContextFile[]>([]);
+export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFileDialog, tokensInfo }: Props) => {
+  const { t } = useTranslation();
+  const os = useOS();
+  const api = useApi();
+  const prevContextFiles = usePrevious(contextFiles);
+
   const [newlyAddedFiles, setNewlyAddedFiles] = useState<string[]>([]);
   const [showAllFiles, setShowAllFiles] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-
-  const { t } = useTranslation();
-  const os = useOS();
-  const api = useApi();
 
   const handleFileDrop = useCallback(
     async (event: React.DragEvent<HTMLDivElement>) => {
@@ -119,39 +122,31 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
           if (isInsideProject) {
             filePath = filePath.slice(baseDir.length + 1);
           }
-          api.addFile(baseDir, filePath, !isInsideProject);
+          api.addFile(baseDir, taskId, filePath, !isInsideProject);
         }
       }
     },
-    [baseDir, api],
+    [api, baseDir, taskId],
   );
 
   const sortedFiles = useMemo(() => {
-    return [...files].sort((a, b) => a.path.localeCompare(b.path));
-  }, [files]);
+    return [...contextFiles].sort((a, b) => a.path.localeCompare(b.path));
+  }, [contextFiles]);
 
   const sortedAllFiles = useMemo(() => {
     return [...allFiles].sort((a, b) => a.localeCompare(b));
   }, [allFiles]);
 
   useEffect(() => {
-    const removeListener = api.addContextFilesUpdatedListener(baseDir, ({ files: updatedFiles }: ContextFilesUpdatedData) => {
-      setFiles(updatedFiles);
-
-      // Handle highlighting of new files
-      const newFiles = updatedFiles.filter((file) => !files.some((f) => normalizePath(f.path) === normalizePath(file.path)));
-      if (newFiles.length > 0) {
-        setNewlyAddedFiles((prev) => [...prev, ...newFiles.map((f) => f.path)]);
-        setTimeout(() => {
-          setNewlyAddedFiles((prev) => prev.filter((path) => !newFiles.some((f) => normalizePath(f.path) === normalizePath(path))));
-        }, 2000);
-      }
-    });
-
-    return () => {
-      removeListener();
-    };
-  }, [baseDir, files, api]);
+    const newFiles = contextFiles.filter((file) => !prevContextFiles?.some((prevFile) => normalizePath(prevFile.path) === normalizePath(file.path)));
+    if (newFiles.length > 0) {
+      setNewlyAddedFiles((prev) => [...prev, ...newFiles.map((f) => f.path)]);
+      setTimeout(() => {
+        setNewlyAddedFiles((prev) => prev.filter((path) => !newFiles.some((f) => normalizePath(f.path) === normalizePath(path))));
+      }, 2000);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextFiles, taskId]);
 
   const treeKey = useMemo(() => {
     if (showAllFiles) {
@@ -186,7 +181,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
           return false;
         }
         if (!childNode.isFolder) {
-          return files.some((f) => normalizePath(f.path) === normalizePath(childNode.file?.path || ''));
+          return contextFiles.some((f) => normalizePath(f.path) === normalizePath(childNode.file?.path || ''));
         }
         return childNode.children.some(checkChild);
       };
@@ -198,7 +193,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
     setExpandedItems((expandedItems) => {
       return Array.from(new Set([...expandedItems, ...foldersToExpand]));
     });
-  }, [treeData, files]);
+  }, [treeData, contextFiles]);
 
   const handleExpandAll = () => {
     setExpandedItems(Object.keys(treeData));
@@ -209,7 +204,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
   };
 
   const handleDropAllFiles = () => {
-    api.runCommand(baseDir, 'drop');
+    api.runCommand(baseDir, taskId, 'drop');
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -230,9 +225,9 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
       if (pathToDrop.startsWith(baseDir + '/') || pathToDrop.startsWith(baseDir + '\\') || pathToDrop === baseDir) {
         pathToDrop = pathToDrop.slice(baseDir.length + 1);
       }
-      api.dropFile(baseDir, pathToDrop);
+      api.dropFile(baseDir, taskId, pathToDrop);
     } else if (item.isFolder) {
-      api.dropFile(baseDir, item.index as string);
+      api.dropFile(baseDir, taskId, item.index as string);
     }
   };
 
@@ -242,9 +237,9 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
     const pathToAdd = item.file ? item.file.path : item.index;
 
     if (shouldBeReadOnly) {
-      api.addFile(baseDir, pathToAdd, true);
+      api.addFile(baseDir, taskId, pathToAdd, true);
     } else {
-      api.addFile(baseDir, pathToAdd);
+      api.addFile(baseDir, taskId, pathToAdd);
     }
 
     if (item.isFolder) {
@@ -268,21 +263,21 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
 
   return (
     <div
-      className={`context-files-root flex-grow w-full h-full flex flex-col pb-2 overflow-hidden ${isDragging ? 'drag-over' : ''}`}
+      className={`context-files-root flex-grow w-full h-full flex flex-col pb-2 overflow-hidden bg-bg-primary-light-strong ${isDragging ? 'drag-over' : ''}`}
       onDrop={handleFileDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
       <StyledTooltip id="context-files-tooltip" />
-      <div className="flex items-center mb-2 flex-shrink-0 p-2">
-        <h3 className="text-md font-semibold uppercase pl-1 flex-grow">{t('contextFiles.title')}</h3>
+      <div className="flex items-center mb-2 flex-shrink-0 p-2 bg-bg-primary-light border-b border-border-dark-light h-10">
+        <h3 className="text-sm font-semibold uppercase pl-1 flex-grow h-5">{t('contextFiles.title')}</h3>
         <button
           onClick={handleDropAllFiles}
           className="p-1.5 hover:bg-bg-tertiary rounded-md disabled:text-text-muted-dark disabled:hover:bg-transparent"
           data-tooltip-id="context-files-tooltip"
           data-tooltip-content={t('contextFiles.dropAll')}
           data-tooltip-delay-show={500}
-          disabled={files.length === 0}
+          disabled={contextFiles.length === 0}
         >
           <HiOutlineTrash className="w-4 h-4" />
         </button>
@@ -336,7 +331,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
             const treeItem = item as TreeItem;
             const filePath = treeItem.file?.path;
             const isNewlyAdded = filePath && newlyAddedFiles.includes(filePath);
-            const isContextFile = filePath ? files.some((f) => normalizePath(f.path) === normalizePath(filePath)) : false;
+            const isContextFile = filePath ? contextFiles.some((f) => normalizePath(f.path) === normalizePath(filePath)) : false;
             const dimmed = showAllFiles && filePath && !isContextFile;
 
             return (
@@ -409,7 +404,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog, tokensInfo }: 
                       />
                     )}
                     {showAllFiles ? (
-                      files.some((f) => normalizePath(f.path) === normalizePath((item as TreeItem).file?.path || '')) ? (
+                      contextFiles.some((f) => normalizePath(f.path) === normalizePath((item as TreeItem).file?.path || '')) ? (
                         <button
                           onClick={dropFile(item as TreeItem)}
                           className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-error-dark"

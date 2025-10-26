@@ -19,6 +19,7 @@
     "loading": "加载中...",
     "startingUp": "正在启动...",
     "loadingProjectSettings": "正在加载项目设置...",
+    "loadingTask": "正在加载任务...",
     "error": "错误",
     "success": "成功",
     "warning": "警告",
@@ -332,9 +333,8 @@
     "gui": "GUI",
     "startup": {
       "title": "启动",
-      "emptySession": "以空会话启动",
-      "lastSession": "加载上次会话",
-      "specificSession": "加载特定会话"
+      "emptyTask": "启动时创建新任务",
+      "lastTask": "加载上次任务"
     },
     "language": "语言",
     "notifications": {
@@ -677,21 +677,6 @@
     "contextCompactingThresholdTooltip": "当令牌使用量超过此阈值时，对话将自动压缩以节省空间。",
     "thresholdTokens": "阈值令牌数"
   },
-  "sessions": {
-    "title": "会话",
-    "empty": "无保存的会话",
-    "loadMessages": "加载条消息",
-    "loadFiles": "加载个文件",
-    "saveAsNew": "另存为新",
-    "exportAsMarkdown": "导出为Markdown",
-    "exportAsImage": "导出为图片",
-    "deleteTitle": "删除会话",
-    "deleteConfirm": "确定要删除会话\"{{name}}\"?",
-    "deleteWarning": "此操作无法撤销。",
-    "save": "保存会话",
-    "add": "添加新会话",
-    "newSessionPlaceholder": "输入会话名称"
-  },
   "commandOutput": {
     "command": "命令"
   },
@@ -995,5 +980,14 @@
     "close": "关闭",
     "closeOtherTabs": "关闭其他标签页",
     "closeAllTabs": "关闭所有标签页"
+  },
+  "taskSidebar": {
+    "title": "任务",
+    "noTasks": "没有可用的任务",
+    "deleteTask": "删除任务",
+    "deleteConfirm": "您确定要删除这个任务吗？",
+    "createTask": "创建新任务",
+    "editTask": "编辑任务",
+    "taskNamePlaceholder": "输入任务名称..."
   }
 }

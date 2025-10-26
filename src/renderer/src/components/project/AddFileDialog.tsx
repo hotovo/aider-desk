@@ -5,16 +5,17 @@ import { FileFinder } from '@/components/project/FileFinder';
 import { FileChip } from '@/components/common/FileChip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Checkbox } from '@/components/common/Checkbox';
-import { useApi } from '@/context/ApiContext';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   baseDir: string;
+  taskId: string;
   onClose: () => void;
   onAddFiles: (filePaths: string[], readOnly?: boolean) => void;
   initialReadOnly?: boolean;
 };
 
-export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = false }: Props) => {
+export const AddFileDialog = ({ onClose, onAddFiles, baseDir, taskId, initialReadOnly = false }: Props) => {
   const { t } = useTranslation();
   const [selectedPaths, setSelectedPaths] = useState<string[]>([]);
   const [isReadOnly, setIsReadOnly] = useState(initialReadOnly);
@@ -117,6 +118,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
       <div ref={dropZoneRef} className="p-4 border border-transparent rounded-md" data-testid="add-file-dialog-dropzone">
         <FileFinder
           baseDir={baseDir}
+          taskId={taskId}
           isReadOnly={isReadOnly}
           selectedPaths={selectedPaths}
           onPathAdded={(path) => {

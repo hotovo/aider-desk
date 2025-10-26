@@ -109,17 +109,32 @@ export class ConnectorManager {
           return;
         }
         logger.info('Adding file in project', { baseDir: connector.baseDir });
-        this.projectManager.getProject(connector.baseDir).getTask(connector.taskId)?.addFile({
-          path: message.path,
-          readOnly: message.readOnly,
-        });
+        const project = this.projectManager.getProject(connector.baseDir);
+        if (connector.taskId) {
+          project.getTask(connector.taskId)?.addFile({
+            path: message.path,
+            readOnly: message.readOnly,
+          });
+        } else {
+          project.forEachTask((task) =>
+            task.addFile({
+              path: message.path,
+              readOnly: message.readOnly,
+            }),
+          );
+        }
       } else if (isDropFileMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
           return;
         }
         logger.info('Dropping file in project', { baseDir: connector.baseDir });
-        void this.projectManager.getProject(connector.baseDir).getTask(connector.taskId)?.dropFile(message.path);
+        const project = this.projectManager.getProject(connector.baseDir);
+        if (connector.taskId) {
+          project.getTask(connector.taskId)?.dropFile(message.path);
+        } else {
+          project.forEachTask((task) => task.dropFile(message.path));
+        }
       } else if (isUpdateAutocompletionMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
@@ -127,14 +142,19 @@ export class ConnectorManager {
         }
 
         logger.debug('Updating autocompletion', { baseDir: connector.baseDir });
-        void this.projectManager.getProject(connector.baseDir).updateAutocompletionData(message.words, message.models);
+        void this.projectManager.getProject(connector.baseDir).updateAutocompletionData(connector.taskId!, message.words, message.models);
       } else if (isAskQuestionMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
           return;
         }
+        if (!connector.taskId) {
+          logger.error('Connector taskId is undefined, cannot ask question', { baseDir: connector.baseDir });
+          return;
+        }
         const questionData: QuestionData = {
           baseDir: connector.baseDir,
+          taskId: connector.taskId,
           text: message.question,
           subject: message.subject,
           defaultAnswer: message.defaultAnswer,
@@ -148,6 +168,7 @@ export class ConnectorManager {
         }
         const modelsData: ModelsData = {
           baseDir: connector.baseDir,
+          taskId: connector.taskId!,
           ...message,
         };
 
@@ -179,6 +200,7 @@ export class ConnectorManager {
 
         const data: TokensInfoData = {
           baseDir: connector.baseDir,
+          taskId: connector.taskId!,
           ...message.info,
         };
         this.projectManager.getProject(connector.baseDir).getTask(connector.taskId)?.updateTokensInfo(data);

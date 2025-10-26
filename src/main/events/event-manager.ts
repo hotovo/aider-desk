@@ -21,7 +21,7 @@ import {
   ProvidersUpdatedData,
   SettingsData,
   TaskData,
-  ClearProjectData,
+  ClearTaskData,
 } from '@common/types';
 
 import logger from '@/logger';
@@ -48,29 +48,31 @@ export class EventManager {
   }
 
   sendClearTask(baseDir: string, taskId: string, clearMessages: boolean, clearFiles: boolean): void {
-    const data: ClearProjectData = {
+    const data: ClearTaskData = {
       baseDir,
       taskId,
       clearMessages,
       clearSession: clearFiles,
     };
-    this.sendToMainWindow('clear-project', data);
-    this.broadcastToEventConnectors('clear-project', data);
+    this.sendToMainWindow('clear-task', data);
+    this.broadcastToEventConnectors('clear-task', data);
   }
 
   // File management events
-  sendFileAdded(baseDir: string, file: ContextFile): void {
+  sendFileAdded(baseDir: string, taskId: string, file: ContextFile): void {
     const data = {
       baseDir,
+      taskId,
       file,
     };
     this.sendToMainWindow('file-added', data);
     this.broadcastToEventConnectors('file-added', data);
   }
 
-  sendContextFilesUpdated(baseDir: string, files: ContextFile[]): void {
+  sendContextFilesUpdated(baseDir: string, taskId: string, files: ContextFile[]): void {
     const data = {
       baseDir,
+      taskId,
       files,
     };
     this.sendToMainWindow('context-files-updated', data);
@@ -95,9 +97,10 @@ export class EventManager {
   }
 
   // Autocompletion events
-  sendUpdateAutocompletion(baseDir: string, words: string[], allFiles: string[], models: string[]): void {
+  sendUpdateAutocompletion(baseDir: string, taskId: string, words: string[], allFiles: string[], models: string[]): void {
     const data: AutocompletionData = {
       baseDir,
+      taskId,
       words,
       allFiles,
       models,
@@ -107,15 +110,17 @@ export class EventManager {
   }
 
   // Aider models events
-  sendUpdateAiderModels(modelsData: ModelsData): void {
-    this.sendToMainWindow('update-aider-models', modelsData);
-    this.broadcastToEventConnectors('update-aider-models', modelsData);
+  sendUpdateAiderModels(_baseDir: string, _taskId: string, modelsData: ModelsData): void {
+    const data = modelsData;
+    this.sendToMainWindow('update-aider-models', data);
+    this.broadcastToEventConnectors('update-aider-models', data);
   }
 
   // Command events
-  sendCommandOutput(baseDir: string, command: string, output: string): void {
+  sendCommandOutput(baseDir: string, taskId: string, command: string, output: string): void {
     const data = {
       baseDir,
+      taskId,
       command,
       output,
     };
@@ -148,24 +153,31 @@ export class EventManager {
   }
 
   // Input history events
-  sendInputHistoryUpdated(inputHistoryData: InputHistoryData): void {
-    this.sendToMainWindow('input-history-updated', inputHistoryData);
-    this.broadcastToEventConnectors('input-history-updated', inputHistoryData);
+  sendInputHistoryUpdated(baseDir: string, taskId: string, inputHistory: string[]): void {
+    const data: InputHistoryData = {
+      baseDir,
+      taskId,
+      inputHistory,
+    };
+    this.sendToMainWindow('input-history-updated', data);
+    this.broadcastToEventConnectors('input-history-updated', data);
   }
 
   // Custom commands events
-  sendCustomCommandsUpdated(baseDir: string, commands: CustomCommand[]): void {
+  sendCustomCommandsUpdated(baseDir: string, taskId: string, commands: CustomCommand[]): void {
     const data = {
       baseDir,
+      taskId,
       commands,
     };
     this.sendToMainWindow('custom-commands-updated', data);
     this.broadcastToEventConnectors('custom-commands-updated', data);
   }
 
-  sendCustomCommandError(baseDir: string, error: string): void {
+  sendCustomCommandError(baseDir: string, taskId: string, error: string): void {
     const data = {
       baseDir,
+      taskId,
       error,
     };
     this.sendToMainWindow('custom-command-error', data);
@@ -219,6 +231,11 @@ export class EventManager {
     this.broadcastToEventConnectors('task-initialized', task);
   }
 
+  sendTaskUpdated(task: TaskData): void {
+    this.sendToMainWindow('task-updated', task);
+    this.broadcastToEventConnectors('task-updated', task);
+  }
+
   sendTaskStarted(task: TaskData): void {
     this.sendToMainWindow('task-started', task);
     this.broadcastToEventConnectors('task-started', task);
@@ -232,6 +249,11 @@ export class EventManager {
   sendTaskCancelled(task: TaskData): void {
     this.sendToMainWindow('task-cancelled', task);
     this.broadcastToEventConnectors('task-cancelled', task);
+  }
+
+  sendTaskDeleted(task: TaskData): void {
+    this.sendToMainWindow('task-deleted', task);
+    this.broadcastToEventConnectors('task-deleted', task);
   }
 
   subscribe(socket: Socket, config: EventsConnectorConfig): void {

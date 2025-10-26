@@ -4,7 +4,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { Button } from '@/components/common/Button';
 import { Checkbox } from '@/components/common/Checkbox';
-import { useSettings } from '@/context/SettingsContext';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export const TelemetryInfoDialog = () => {
   const { t } = useTranslation();
