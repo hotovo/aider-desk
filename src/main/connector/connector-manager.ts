@@ -142,7 +142,12 @@ export class ConnectorManager {
         }
 
         logger.debug('Updating autocompletion', { baseDir: connector.baseDir });
-        void this.projectManager.getProject(connector.baseDir).updateAutocompletionData(connector.taskId!, message.words, message.models);
+        if (connector.taskId) {
+          void this.projectManager.getProject(connector.baseDir).updateAutocompletionData(connector.taskId, message.words, message.models);
+        } else {
+          // Handle the case where taskId is not available, e.g., log an error or apply to all tasks
+          logger.warn('Received update-autocompletion message from a connector without a taskId.');
+        }
       } else if (isAskQuestionMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
