@@ -117,7 +117,7 @@ export const createGeminiLlm = (profile: ProviderProfile, model: Model, settings
 
   const googleProvider = createGoogleGenerativeAI({
     apiKey,
-    baseURL: baseUrl,
+    baseURL: baseUrl || undefined,
     headers: profile.headers,
   });
   return googleProvider(model.id);
