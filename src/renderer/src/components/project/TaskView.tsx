@@ -1,6 +1,6 @@
 import { Mode, Model, ModelsData, ProjectData, TaskData, TodoItem } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
 import { clsx } from 'clsx';
@@ -45,10 +45,10 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
   const { isMobile } = useResponsive();
   const api = useApi();
   const { models } = useModelProviders();
-  const { getTaskState, clearSession, restartTask, addInterruptedMessage, setMessages, setQuestion, setTodoItems } = useTask();
-  const [aiderModelsData, setAiderModelsData] = useState<ModelsData | null>(null);
+  const { getTaskState, clearSession, restartTask, addInterruptedMessage, setMessages, setQuestion, setTodoItems, setAiderModelsData } = useTask();
 
   const taskState = getTaskState(task.id);
+  const aiderModelsData = taskState?.aiderModelsData || null;
 
   const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
@@ -59,8 +59,11 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
   const projectTopBarRef = useRef<ProjectTopBarRef>(null);
   const messagesRef = useRef<MessagesRef | VirtualizedMessagesRef>(null);
   const terminalViewRef = useRef<TerminalViewRef | null>(null);
+  const [messagesPending, startMessagesTransition] = useTransition();
+  const [transitionMessages, setTransitionMessages] = useState<Message[]>([]);
 
   const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
+
   const currentModel = useMemo(() => {
     let model: Model | undefined;
     if (projectSettings?.currentMode === 'agent') {
@@ -74,24 +77,13 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
 
     return model;
   }, [projectSettings, settings, models, aiderModelsData?.mainModel]);
-
   const maxInputTokens = currentModel?.maxInputTokens || 0;
 
   useEffect(() => {
-    const handleUpdateAiderModels = (data: ModelsData) => {
-      setAiderModelsData(data);
-      if (data.error) {
-        // eslint-disable-next-line no-console
-        console.error('Models data error:', data.error);
-      }
-    };
-
-    const removeUpdateAiderModelsListener = api.addUpdateAiderModelsListener(project.baseDir, task.id, handleUpdateAiderModels);
-
-    return () => {
-      removeUpdateAiderModelsListener();
-    };
-  }, [api, project.baseDir, task.id]);
+    startMessagesTransition(() => {
+      setTransitionMessages(taskState?.messages || []);
+    });
+  }, [taskState?.messages]);
 
   const todoListVisible = useMemo(() => {
     return projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
@@ -99,8 +91,8 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
 
   const renderLoading = (message: string) => (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-bg-primary to-bg-primary-light z-10">
-      <CgSpinner className="animate-spin w-10 h-10" />
-      <div className="mt-2 text-sm text-center text-text-primary">{message}</div>
+      <CgSpinner className="animate-spin w-8 h-8" />
+      <div className="mt-2 text-xs text-center text-text-primary">{message}</div>
     </div>
   );
 
@@ -108,7 +100,9 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
     return renderLoading(t('common.loadingTask'));
   }
 
-  const { loading, loaded, messages, processing, allFiles, contextFiles, autocompletionWords, aiderTotalCost, tokensInfo, question, todoItems } = taskState;
+  const { loading, loaded, processing, allFiles, contextFiles, autocompletionWords, aiderTotalCost, tokensInfo, question, todoItems, messages } = taskState;
+
+  const displayedMessages = processing ? messages : transitionMessages;
 
   const handleAddFiles = (filePaths: string[], readOnly = false) => {
     for (const filePath of filePaths) {
@@ -165,7 +159,7 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
   };
 
   const handleModelChange = (modelsData: ModelsData | null) => {
-    setAiderModelsData(modelsData);
+    setAiderModelsData(task.id, modelsData);
     promptFieldRef.current?.focus();
   };
 
@@ -196,7 +190,7 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
 
   const handleEditLastUserMessage = (content?: string) => {
     let contentToEdit = content;
-    const messageIndex = messages.findLastIndex(isUserMessage);
+    const messageIndex = displayedMessages.findLastIndex(isUserMessage);
 
     if (messageIndex === -1) {
       // eslint-disable-next-line no-console
@@ -205,7 +199,7 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
     }
 
     if (contentToEdit === undefined) {
-      const lastUserMessage = messages[messageIndex];
+      const lastUserMessage = displayedMessages[messageIndex];
       contentToEdit = lastUserMessage.content;
     }
     if (contentToEdit === undefined) {
@@ -223,7 +217,7 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
 
   const handleRestartTask = () => {
     restartTask(task.id);
-    setAiderModelsData(null);
+    setAiderModelsData(task.id, null);
   };
 
   const exportMessagesToImage = () => {
@@ -247,7 +241,7 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
   };
 
   const handleRemoveMessage = (messageToRemove: Message) => {
-    const isLastMessage = messages[messages.length - 1] === messageToRemove;
+    const isLastMessage = displayedMessages[displayedMessages.length - 1] === messageToRemove;
 
     if (isLastMessage && (isToolMessage(messageToRemove) || isUserMessage(messageToRemove) || isResponseMessage(messageToRemove))) {
       api.removeLastMessage(project.baseDir, task.id);
@@ -352,7 +346,7 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
               <VirtualizedMessages
                 ref={messagesRef}
                 baseDir={project.baseDir}
-                messages={messages}
+                messages={displayedMessages}
                 allFiles={allFiles}
                 renderMarkdown={settings.renderMarkdown}
                 removeMessage={handleRemoveMessage}
@@ -363,7 +357,7 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
               <Messages
                 ref={messagesRef}
                 baseDir={project.baseDir}
-                messages={messages}
+                messages={displayedMessages}
                 allFiles={allFiles}
                 renderMarkdown={settings.renderMarkdown}
                 removeMessage={handleRemoveMessage}
@@ -371,6 +365,7 @@ export const TaskView = ({ project, task, inputHistory, isActive = false }: Prop
                 editLastUserMessage={handleEditLastUserMessage}
               />
             )}
+            {messagesPending && transitionMessages.length === 0 && renderLoading(t('common.loadingMessages'))}
           </div>
           <ResizableBox
             className="flex flex-col flex-shrink-0"

@@ -20,6 +20,7 @@
     "startingUp": "正在启动...",
     "loadingProjectSettings": "正在加载项目设置...",
     "loadingTask": "正在加载任务...",
+    "loadingMessages": "正在加载消息...",
     "error": "错误",
     "success": "成功",
     "warning": "警告",

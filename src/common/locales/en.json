@@ -20,6 +20,7 @@
     "startingUp": "Starting up...",
     "loadingProjectSettings": "Loading project settings...",
     "loadingTask": "Loading task...",
+    "loadingMessages": "Loading messages...",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",

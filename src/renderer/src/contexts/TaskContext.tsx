@@ -6,6 +6,7 @@ import {
   ContextFile,
   ContextFilesUpdatedData,
   LogData,
+  ModelsData,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -46,6 +47,7 @@ interface TaskState {
   autocompletionWords: string[];
   aiderTotalCost: number;
   contextFiles: ContextFile[];
+  aiderModelsData: ModelsData | null;
 }
 
 const EMPTY_TASK_STATE: TaskState = {
@@ -61,6 +63,7 @@ const EMPTY_TASK_STATE: TaskState = {
   autocompletionWords: [],
   aiderTotalCost: 0,
   contextFiles: [],
+  aiderModelsData: null,
 };
 
 const processingResponseMessageMap = new Map<string, ResponseMessage>();
@@ -75,6 +78,7 @@ interface TaskContextType {
   setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
   // TODO: add question answer, clear question events and listeners and remove
   setQuestion: (taskId: string, question: QuestionData | null) => void;
+  setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
 }
 
 const TaskContext = createContext<TaskContextType | null>(null);
@@ -234,6 +238,13 @@ export const TaskProvider: React.FC<{
   const setQuestion = useCallback(
     (taskId: string, question: QuestionData | null) => {
       updateTaskState(taskId, { question });
+    },
+    [updateTaskState],
+  );
+
+  const setAiderModelsData = useCallback(
+    (taskId: string, modelsData: ModelsData | null) => {
+      updateTaskState(taskId, { aiderModelsData: modelsData });
     },
     [updateTaskState],
   );
@@ -635,6 +646,14 @@ export const TaskProvider: React.FC<{
         updateTaskState(taskId, { contextFiles: files });
       };
 
+      const handleUpdateAiderModels = (data: ModelsData) => {
+        updateTaskState(taskId, { aiderModelsData: data });
+        if (data.error) {
+          // eslint-disable-next-line no-console
+          console.error('Models data error:', data.error);
+        }
+      };
+
       const removeAutocompletionListener = api.addUpdateAutocompletionListener(baseDir, taskId, handleUpdateAutocompletion);
       const removeCommandOutputListener = api.addCommandOutputListener(baseDir, taskId, handleCommandOutput);
       const removeResponseChunkListener = api.addResponseChunkListener(baseDir, taskId, handleResponseChunk);
@@ -646,6 +665,7 @@ export const TaskProvider: React.FC<{
       const removeUserMessageListener = api.addUserMessageListener(baseDir, taskId, handleUserMessage);
       const removeClearProjectListener = api.addClearTaskListener(baseDir, taskId, handleClearProject);
       const removeContextFilesListener = api.addContextFilesUpdatedListener(baseDir, taskId, handleContextFilesUpdated);
+      const removeUpdateAiderModelsListener = api.addUpdateAiderModelsListener(baseDir, taskId, handleUpdateAiderModels);
 
       return () => {
         removeAutocompletionListener();
@@ -659,6 +679,7 @@ export const TaskProvider: React.FC<{
         removeUserMessageListener();
         removeClearProjectListener();
         removeContextFilesListener();
+        removeUpdateAiderModelsListener();
       };
     };
 
@@ -691,6 +712,7 @@ export const TaskProvider: React.FC<{
         setTodoItems,
         setQuestion,
         setMessages,
+        setAiderModelsData,
       }}
     >
       {children}

@@ -235,7 +235,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             left: isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
           }}
         >
-          {activeTask && <TaskView project={project} task={activeTask} inputHistory={inputHistory} isActive={isActive} />}
+          {activeTask && <TaskView key={activeTask.id} project={project} task={activeTask} inputHistory={inputHistory} isActive={isActive} />}
         </div>
       </div>
     </TaskProvider>
