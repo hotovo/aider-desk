@@ -60,7 +60,7 @@
     "@probelabs/probe": "0.6.0-rc128",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
-    "@requesty/ai-sdk": "^2.0.2",
+    "@requesty/ai-sdk": "^2.0.4",
     "@smithy/eventstream-codec": "^2.0.0",
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",

@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- fixed issue with no responses when using Requesty provider
+
 ## [0.37.0]
 
 - improved API key handling from environment variables in Agent mode
