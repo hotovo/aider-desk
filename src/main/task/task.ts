@@ -184,6 +184,7 @@ export class Task {
     return {
       messages: this.contextManager.getContextMessagesData(),
       files: this.contextManager.getContextFiles(),
+      todoItems: await this.getTodos(),
     };
   }
 
@@ -1273,7 +1274,7 @@ export class Task {
   }
 
   private getTodoFilePath(): string {
-    return path.resolve(this.project.baseDir, AIDER_DESK_TODOS_FILE);
+    return path.join(this.project.baseDir, AIDER_DESK_TASKS_DIR, this.taskId, AIDER_DESK_TODOS_FILE);
   }
 
   public async readTodoFile(): Promise<{

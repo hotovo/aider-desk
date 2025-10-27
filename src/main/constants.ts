@@ -32,7 +32,7 @@ export const PID_FILES_DIR = path.join(AIDER_DESK_DATA_DIR, 'aider-processes');
 // constants for project directory files
 export const AIDER_DESK_DIR = '.aider-desk';
 export const AIDER_DESK_TASKS_DIR = path.join(AIDER_DESK_DIR, 'tasks');
-export const AIDER_DESK_TODOS_FILE = path.join(AIDER_DESK_DIR, 'todos.json');
+export const AIDER_DESK_TODOS_FILE = 'todos.json';
 export const AIDER_DESK_PROJECT_RULES_DIR = path.join(AIDER_DESK_DIR, 'rules');
 export const AIDER_DESK_COMMANDS_DIR = path.join(AIDER_DESK_DIR, 'commands');
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');

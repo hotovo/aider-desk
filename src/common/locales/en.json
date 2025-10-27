@@ -656,8 +656,8 @@
     "servers": "MCP servers",
     "tools": "Tools"
   },
-  "tasks": {
-    "title": "Tasks",
+  "todo": {
+    "title": "Todos",
     "addTodo": "Add Todo",
     "editTodo": "Edit Todo",
     "deleteTodo": "Delete Todo",
@@ -667,7 +667,7 @@
     "cancelTodo": "Cancel",
     "noTodos": "No todo items",
     "confirmDelete": "Are you sure you want to delete this todo item?",
-    "clearAllTodos": "Clear all tasks"
+    "clearAllTodos": "Clear all todo items"
   },
   "tool": {
     "noDescription": "No description",

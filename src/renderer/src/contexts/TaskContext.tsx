@@ -136,6 +136,10 @@ export const TaskProvider: React.FC<{
           };
           messages.push(userMessage);
         } else if (message.type === 'tool') {
+          if (message.serverName === TODO_TOOL_GROUP_NAME) {
+            return messages;
+          }
+
           const toolMessage: ToolMessage = {
             type: 'tool',
             id: message.id,
@@ -160,6 +164,7 @@ export const TaskProvider: React.FC<{
           loaded: true,
           messages,
           contextFiles: contextData.files,
+          todoItems: contextData.todoItems || [],
         });
         return newMap;
       });
@@ -457,7 +462,7 @@ export const TaskProvider: React.FC<{
                 try {
                   const parsedResponse = JSON.parse(response);
                   if (parsedResponse.items && Array.isArray(parsedResponse.items)) {
-                    setTodoItems(taskId, parsedResponse.items);
+                    setTodoItems(taskId, () => parsedResponse.items);
                   }
                 } catch {
                   // If response is not JSON, it might be a message like "No todo items found"

@@ -485,6 +485,7 @@ export class EventsHandler {
       this.projectManager.getProject(baseDir).getTask(taskId)?.load() || {
         messages: [],
         files: [],
+        todoItems: [],
       }
     );
   }

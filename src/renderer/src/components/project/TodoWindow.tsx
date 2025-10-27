@@ -74,20 +74,20 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
             <div className="flex items-center gap-2 rounded-md transition-colors flex-1">
               <MdOutlineChecklist className="w-4 h-4 text-agent-todo-tools" />
               <span className="text-xs font-medium text-text-secondary">
-                {t('tasks.title')} ({completedCount}/{totalCount})
+                {t('todo.title')} ({completedCount}/{totalCount})
               </span>
             </div>
             <div className="flex items-center">
               <IconButton
                 icon={<MdPlaylistRemove className="w-4 h-4" />}
                 onClick={onClearAllTodos}
-                tooltip={t('tasks.clearAllTodos')}
+                tooltip={t('todo.clearAllTodos')}
                 className="text-text-muted-light hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
               />
               <IconButton
                 icon={<MdAdd className="w-4 h-4" />}
                 onClick={handleAddTodo}
-                tooltip={t('tasks.addTodo')}
+                tooltip={t('todo.addTodo')}
                 className="text-text-muted-light hover:text-text-secondary hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
               />
               <IconButton
@@ -109,16 +109,16 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
                     value={newTodoName}
                     onChange={(e) => setNewTodoName(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder={t('tasks.todoNamePlaceholder')}
+                    placeholder={t('todo.todoNamePlaceholder')}
                     className="bg-transparent text-xs text-text-secondary placeholder-text-muted border-none outline-none py-0 px-1"
                     autoFocus
                   />
                   <div className="flex items-center justify-end gap-2 mt-2">
                     <Button onClick={handleCancelAdd} variant="text" size="sm" className="text-xs h-6 px-2">
-                      {t('tasks.cancelTodo')}
+                      {t('todo.cancelTodo')}
                     </Button>
                     <Button onClick={handleSaveTodo} variant="contained" size="sm" className="text-xs h-6 px-2" disabled={!newTodoName.trim()}>
-                      {t('tasks.saveTodo')}
+                      {t('todo.saveTodo')}
                     </Button>
                   </div>
                 </div>
@@ -132,7 +132,7 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
                   ))}
                 </div>
               ) : (
-                !isAddingTodo && <div className="text-sm text-text-muted text-center py-4">{t('tasks.noTodos')}</div>
+                !isAddingTodo && <div className="text-sm text-text-muted text-center py-4">{t('todo.noTodos')}</div>
               )}
             </div>
           </div>
@@ -143,7 +143,7 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
           <IconButton
             icon={<MdOutlineChecklist className="w-4 h-4 text-agent-todo-tools" />}
             onClick={handleToggleExpand}
-            tooltip={`${t('tasks.title')} (${completedCount}/${totalCount})`}
+            tooltip={`${t('todo.title')} (${completedCount}/${totalCount})`}
             className="hover:bg-bg-secondary-light rounded-md p-2 transition-colors"
           />
         </div>

@@ -631,7 +631,7 @@
     },
     "tools": "工具"
   },
-  "tasks": {
+  "todo": {
     "title": "任务",
     "addTodo": "添加待办",
     "editTodo": "编辑待办",

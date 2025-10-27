@@ -554,6 +554,7 @@ export interface TaskContext {
 export interface TaskContextData {
   messages: (ResponseCompletedData | UserMessageData | ToolData)[];
   files: ContextFile[];
+  todoItems: TodoItem[];
 }
 
 export const TaskDataSchema = z.object({
