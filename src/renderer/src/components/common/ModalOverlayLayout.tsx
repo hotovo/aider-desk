@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoMdClose } from 'react-icons/io';
 
@@ -12,6 +12,21 @@ type Props = {
 
 export const ModalOverlayLayout = ({ title, onClose, children }: Props) => {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' || ((event.ctrlKey || event.metaKey) && event.key === 'w')) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   return (
     <div className="absolute inset-0 bg-bg-primary-light z-50 flex flex-col overflow-hidden">
       <div className="flex items-center border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light min-h-[40px] pl-4">
