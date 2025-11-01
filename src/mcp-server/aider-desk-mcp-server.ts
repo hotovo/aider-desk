@@ -1,8 +1,8 @@
 /* eslint-disable func-style,@typescript-eslint/no-explicit-any */
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio';
 import axios from 'axios';
-import { z } from 'zod/v3';
+import { z } from 'zod';
 
 // Get project directory from command line arguments or use default
 const projectDir = process.argv[2] || '.';
