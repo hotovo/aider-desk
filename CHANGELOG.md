@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.38.0]
 
 - performance improvements related to rendered messages
 - omit showing empty Thinking block when there is no thinking content
