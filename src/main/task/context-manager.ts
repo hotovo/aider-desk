@@ -324,7 +324,7 @@ export class ContextManager {
             content,
           },
         ];
-      } else if (message.role === 'tool') {
+      } else if (message.role === 'tool' && Array.isArray(message.content)) {
         return message.content.flatMap((part) => {
           const [serverName, toolName] = extractServerNameToolName(part.toolName);
           if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT && aiderPrompt) {
@@ -649,7 +649,7 @@ export class ContextManager {
           promptContext: message.promptContext,
         };
         messagesData.push(userMessageData);
-      } else if (message.role === 'tool') {
+      } else if (message.role === 'tool' && Array.isArray(message.content)) {
         for (const part of message.content) {
           if (part.type === 'tool-result') {
             const [serverName, toolName] = extractServerNameToolName(part.toolName);
