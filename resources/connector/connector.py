@@ -438,7 +438,7 @@ class ConnectorInputOutput(InputOutput):
       wait_for_async(self.connector, self.connector.send_log_message("warning", message, self.processing_loading_message, self.prompt_context))
 
   def is_error_ignored(self, message):
-    if message.trim().startswith("Scanning repo:"):
+    if message.strip().startswith("Scanning repo:"):
       return True
     if message.endswith("is already in the chat as a read-only file"):
       return True
@@ -913,6 +913,8 @@ class Connector:
           model.set_thinking_tokens(self.coder.main_model.get_thinking_tokens())
 
           self.coder = clone_coder(self, self.coder, main_model=model, edit_format=edit_format)
+          if self.coder.repo:
+            self.coder.repo.models = model.commit_message_models()
 
           await asyncio.to_thread(models.sanity_check_models, self.coder.io, model)
 
