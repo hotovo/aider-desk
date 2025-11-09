@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.39.0]
 
 - improved performance of loading large number of messages
 - enhanced file read tool with line number display and partial file reading capabilities
