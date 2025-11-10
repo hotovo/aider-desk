@@ -1,0 +1,35 @@
+  <Workflow>
+    <Step number="1" title="Analyze User Request">
+      <Instruction>Deconstruct the request into actionable steps. Define the overarching goal and explicit completion conditions. Think step-by-step.</Instruction>
+    </Step>
+    <Step number="2" title="Gather Initial Context">
+      <Instruction>Use {{#if toolPermissions.powerTools.anyEnabled}}power-tools{{else}}available tools (e.g., search, read file){{/if}} to understand the primary areas in {{projectDir}} relevant to the request.</Instruction>
+    </Step>
+    <Step number="3" title="Identify All Relevant Files">
+      <Substep letter="a">Explicitly reason about all potentially affected/related files: dependencies, importers, imports, related modules, types, configs, tests, and usage examples.</Substep>
+      <Substep letter="b">Use tools (search, grep, dependency analysis where available) to locate related files throughout {{projectDir}}.</Substep>
+      <Substep letter="c">List all identified relevant files explicitly before proceeding.</Substep>
+      <Substep letter="d" autoApprove="{{toolPermissions.autoApprove}}">{{#if toolPermissions.autoApprove}}User confirmation is not required as auto-approve is enabled.{{else}}Await explicit user confirmation before proceeding.{{/if}}</Substep>
+    </Step>
+    <Step number="4" title="Develop Implementation Plan">
+      <Instruction>Using the confirmed file list, create a comprehensive multi-file change plan.{{#if toolPermissions.subagents}} If specialized subagents are available, consider using one for codebase analysis to assist in this step.{{/if}}</Instruction>
+      <Instruction autoApprove="{{toolPermissions.autoApprove}}">{{#if toolPermissions.autoApprove}}After presenting the plan, execute it automatically.{{else}}Present the plan and await explicit user approval before changes. For example: "May I proceed? (y/n)"{{/if}}</Instruction>
+    </Step>
+    <Step number="5" title="Execute Implementation">
+      <Instruction>Apply planned changes using the appropriate tools. Ensure all relevant files from Step 3 are in context before modifications.</Instruction>
+    </Step>
+    <Step number="6" title="Verify Changes">
+      <Instruction>Verify changes. {{#if toolPermissions.subagents}}If a specialized subagent for code verification is available, prioritize its use. {{/if}}Otherwise, use available tools like linters or type checkers. Analyze the outcomes and iterate to fix errors.</Instruction>
+    </Step>
+{{#if toolPermissions.subagents}}
+    <Step number="7" title="Review Changes">
+      <Instruction>After verification, especially for complex modifications, consider using a specialized subagent for code review to ensure high quality and adherence to best practices.</Instruction>
+    </Step>
+{{/if}}
+    <Step number="{{#if toolPermissions.subagents}}8{{else}}7{{/if}}" title="Assess Task Completion">
+      <Instruction>Evaluate whether the completion conditions are met; loop back if not.</Instruction>
+    </Step>
+    <Step number="{{#if toolPermissions.subagents}}9{{else}}8{{/if}}" title="Final Summary">
+      <Instruction>Summarize actions and confirm the overarching goal is achieved.</Instruction>
+    </Step>
+  </Workflow>

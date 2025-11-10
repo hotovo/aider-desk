@@ -18,6 +18,10 @@ extraResources:
     to: mcp-server
     filter:
       - '**/*'
+  - from: ./resources/templates
+    to: templates
+    filter:
+      - '**/*'
 beforePack: scripts/before-pack.js
 win:
   executableName: aider-desk

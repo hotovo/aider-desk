@@ -1227,7 +1227,7 @@ export class Task {
 
   public async compactConversation(
     mode: Mode,
-    customInstructions?: string,
+    _customInstructions?: string,
     profile: AgentProfile | null = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.project.baseDir)),
     contextMessages: ContextMessage[] = this.contextManager.getContextMessages(),
     promptContext?: PromptContext,
@@ -1253,21 +1253,25 @@ export class Task {
       return content;
     };
 
+    // Define compactConversationAgentProfile here so it's accessible in both branches
+    const compactConversationAgentProfile: AgentProfile | null = profile
+      ? {
+          ...COMPACT_CONVERSATION_AGENT_PROFILE,
+          provider: profile.provider,
+          model: profile.model,
+        }
+      : null;
+
     if (mode === 'agent') {
       // Agent mode logic
       if (!profile) {
         throw new Error('No active Agent profile found');
       }
 
-      const compactConversationAgentProfile: AgentProfile = {
-        ...COMPACT_CONVERSATION_AGENT_PROFILE,
-        provider: profile.provider,
-        model: profile.model,
-      };
       const agentMessages = await this.agent.runAgent(
         this,
-        compactConversationAgentProfile,
-        getCompactConversationPrompt(customInstructions),
+        compactConversationAgentProfile!,
+        await getCompactConversationPrompt(this, compactConversationAgentProfile!),
         promptContext,
         contextMessages,
         [],
@@ -1285,7 +1289,7 @@ export class Task {
         await this.contextManager.loadMessages(this.contextManager.getContextMessages());
       }
     } else {
-      const responses = await this.sendPrompt(getCompactConversationPrompt(customInstructions), undefined, 'ask', undefined, []);
+      const responses = await this.sendPrompt(await getCompactConversationPrompt(this, compactConversationAgentProfile!), undefined, 'ask', undefined, []);
 
       // add messages to session
       this.contextManager.setContextMessages([userMessage], false);
@@ -1522,7 +1526,7 @@ export class Task {
       };
 
       // Run the agent with the modified profile
-      await this.runPromptInAgent(initProjectRulesAgentProfile, getInitProjectPrompt());
+      await this.runPromptInAgent(initProjectRulesAgentProfile, await getInitProjectPrompt(this, initProjectRulesAgentProfile));
 
       // Check if the AGENTS.md file was created
       const projectAgentsPath = path.join(this.project.baseDir, 'AGENTS.md');
