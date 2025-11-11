@@ -1328,10 +1328,10 @@ export class Task {
   }
 
   public async updateAutocompletionData(words?: string[], force = false) {
-    logger.info('Updating autocompletion data', {
+    logger.debug('Updating autocompletion data', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
-      words,
+      words: words?.length,
     });
     if (words) {
       this.eventManager.sendUpdateAutocompletion(this.project.baseDir, this.taskId, words);
