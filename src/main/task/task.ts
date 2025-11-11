@@ -34,6 +34,7 @@ import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport
 import { COMPACT_CONVERSATION_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
+import { isEqual } from 'lodash';
 
 import type { SimpleGit } from 'simple-git';
 
@@ -66,6 +67,7 @@ export class Task {
   private currentPromptContext: PromptContext | null = null;
   private currentPromptResponses: ResponseCompletedData[] = [];
   private runPromptResolves: ((value: ResponseCompletedData[]) => void)[] = [];
+  private autocompletionAllFiles: string[] | null = null;
 
   private readonly taskDataPath: string;
   private readonly contextManager: ContextManager;
@@ -195,6 +197,7 @@ export class Task {
       });
       this.eventManager.sendTaskInitialized(this.task);
       this.aiderManager.sendUpdateAiderModels();
+      await this.updateAutocompletionData(undefined, true);
       return;
     }
 
@@ -234,6 +237,7 @@ export class Task {
 
     await this.loadContext();
     await Promise.all([this.aiderManager.start(), this.updateContextInfo()]);
+    await this.updateAutocompletionData();
 
     this.eventManager.sendTaskInitialized(this.task);
 
@@ -1321,6 +1325,23 @@ export class Task {
     this.findMessageConnectors('request-context-info').forEach((connector) =>
       connector.sendRequestTokensInfoMessage(this.contextManager.toConnectorMessages(), this.getContextFiles()),
     );
+  }
+
+  public async updateAutocompletionData(words?: string[], force = false) {
+    logger.info('Updating autocompletion data', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      words,
+    });
+    if (words) {
+      this.eventManager.sendUpdateAutocompletion(this.project.baseDir, this.taskId, words);
+    }
+
+    const allFiles = await getAllFiles(this.getTaskDir());
+    if (force || !this.autocompletionAllFiles || !isEqual(this.autocompletionAllFiles, allFiles)) {
+      this.eventManager.sendUpdateAutocompletion(this.project.baseDir, this.taskId, words, allFiles);
+    }
+    this.autocompletionAllFiles = allFiles;
   }
 
   async updateAgentEstimatedTokens(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {

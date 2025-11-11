@@ -161,6 +161,7 @@ export const TaskProvider: React.FC<{
           const newMap = new Map(prev);
           newMap.set(taskId, {
             ...EMPTY_TASK_STATE,
+            ...newMap.get(taskId),
             loading: false,
             loaded: true,
             messages,
@@ -194,6 +195,7 @@ export const TaskProvider: React.FC<{
           loading: true,
         };
       }
+      console.log('getTaskState', taskId, taskState);
 
       return taskState;
     },
@@ -300,6 +302,7 @@ export const TaskProvider: React.FC<{
       };
 
       const setAllFiles = (allFiles: string[]) => {
+        console.log('setAllFiles', taskId, allFiles);
         updateTaskState(taskId, { allFiles });
       };
 
@@ -628,6 +631,7 @@ export const TaskProvider: React.FC<{
       };
 
       const handleUpdateAutocompletion = ({ allFiles, words }: AutocompletionData) => {
+        console.log('handleUpdateAutocompletion', taskId, allFiles, words);
         if (allFiles) {
           setAllFiles(allFiles);
         }

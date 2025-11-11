@@ -143,7 +143,11 @@ export class ConnectorManager {
 
         logger.debug('Updating autocompletion', { baseDir: connector.baseDir });
         if (connector.taskId) {
-          void this.projectManager.getProject(connector.baseDir).updateAutocompletionData(connector.taskId, message.words);
+          const project = this.projectManager.getProject(connector.baseDir);
+          const task = project.getTask(connector.taskId);
+          if (task) {
+            void task.updateAutocompletionData(message.words);
+          }
         } else {
           // Handle the case where taskId is not available, e.g., log an error or apply to all tasks
           logger.warn('Received update-autocompletion message from a connector without a taskId.');

@@ -4,9 +4,7 @@ import path from 'path';
 import { CustomCommand, ProjectStartMode, SettingsData, TaskData } from '@common/types';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
-import { isEqual } from 'lodash';
 
-import { getAllFiles } from '@/utils/file-system';
 import { McpManager } from '@/agent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
@@ -27,7 +25,6 @@ export class Project {
   private readonly tasksLoadingPromise: Promise<void> | null = null;
   private readonly tasks = new Map<string, Task>();
 
-  private autocompletionAllFiles: string[] | null = null;
   private connectors: Connector[] = [];
   private inputHistoryFile = '.aider.input.history';
 
@@ -235,21 +232,6 @@ export class Project {
   private async sendInputHistoryUpdatedEvent() {
     const history = await this.loadInputHistory();
     this.eventManager.sendInputHistoryUpdated(this.baseDir, INTERNAL_TASK_ID, history);
-  }
-
-  public async updateAutocompletionData(taskId: string, words: string[]) {
-    const task = this.tasks.get(taskId);
-    if (!task) {
-      return;
-    }
-
-    this.eventManager.sendUpdateAutocompletion(this.baseDir, taskId, words);
-
-    const allFiles = await getAllFiles(task.getTaskDir());
-    if (!this.autocompletionAllFiles || !isEqual(this.autocompletionAllFiles, allFiles)) {
-      this.eventManager.sendUpdateAutocompletion(this.baseDir, taskId, words, allFiles);
-    }
-    this.autocompletionAllFiles = allFiles;
   }
 
   public getCustomCommands() {
