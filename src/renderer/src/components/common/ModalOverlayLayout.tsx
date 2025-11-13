@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoMdClose } from 'react-icons/io';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 import { IconButton } from './IconButton';
 
@@ -12,6 +13,18 @@ type Props = {
 
 export const ModalOverlayLayout = ({ title, onClose, children }: Props) => {
   const { t } = useTranslation();
+
+  useHotkeys(
+    'escape',
+    () => {
+      if (document.querySelector('[data-dialog-open="true"]')) {
+        return;
+      }
+      onClose();
+    },
+    { scopes: 'modal', enableOnFormTags: true, enableOnContentEditable: true },
+  );
+
   return (
     <div className="absolute inset-0 bg-bg-primary-light z-50 flex flex-col overflow-hidden">
       <div className="flex items-center border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light min-h-[40px] pl-4">

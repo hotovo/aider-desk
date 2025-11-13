@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FaFolder } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 import { ProjectData } from '@common/types';
+import { useHotkeys } from 'react-hotkeys-hook';
 
+import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { Accordion } from '@/components/common/Accordion';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -18,6 +20,7 @@ type Props = {
 
 export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props) => {
   const { t } = useTranslation();
+  const { DIALOG_HOTKEYS } = useConfiguredHotkeys();
   const [projectPath, setProjectPath] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isValidPath, setIsValidPath] = useState(false);
@@ -25,6 +28,35 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
   const api = useApi();
   const isProjectAlreadyOpen = openProjects.some((project) => project.baseDir === projectPath);
+
+  const handleSelectProject = useCallback(async () => {
+    try {
+      const result = await api.showOpenDialog({
+        properties: ['openDirectory'],
+      });
+
+      if (!result.canceled && result.filePaths.length > 0) {
+        setShowSuggestions(false);
+        setProjectPath(result.filePaths[0]);
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error selecting project:', error);
+    }
+  }, [api]);
+
+  // Browse for folder
+  useHotkeys(
+    DIALOG_HOTKEYS.BROWSE_FOLDER,
+    (e) => {
+      e.preventDefault();
+      if (api.isOpenDialogSupported()) {
+        void handleSelectProject();
+      }
+    },
+    { enableOnFormTags: ['input'], enableOnContentEditable: true },
+    [api, handleSelectProject],
+  );
 
   useEffect(() => {
     const loadRecentProjects = async () => {
@@ -54,22 +86,6 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
     void updateSuggestions();
   }, [projectPath, showSuggestions, openProjects, api]);
 
-  const handleSelectProject = async () => {
-    try {
-      const result = await api.showOpenDialog({
-        properties: ['openDirectory'],
-      });
-
-      if (!result.canceled && result.filePaths.length > 0) {
-        setShowSuggestions(false);
-        setProjectPath(result.filePaths[0]);
-      }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error selecting project:', error);
-    }
-  };
-
   const handleAddProject = () => {
     if (projectPath && isValidPath && !isProjectAlreadyOpen) {
       onAddProject(projectPath);
@@ -85,6 +101,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
       confirmButtonText={t('common.open')}
       disabled={!projectPath || !isValidPath || isProjectAlreadyOpen}
       width={600}
+      closeOnEscape={true}
     >
       <StyledTooltip id="browseTooltipId" />
       <AutocompletionInput

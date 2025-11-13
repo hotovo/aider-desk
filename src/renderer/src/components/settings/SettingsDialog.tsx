@@ -1,7 +1,8 @@
 import { SettingsData } from '@common/types';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isEqual } from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { useHotkeysContext } from 'react-hotkeys-hook';
 import { LlmProviderName } from '@common/agent';
 
 import { Settings } from '@/pages/Settings';
@@ -19,9 +20,34 @@ type Props = {
 export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t, i18n } = useTranslation();
   const api = useApi();
+  const hotkeys = useHotkeysContext();
+  const appliedRef = useRef(false);
 
   const { settings: originalSettings, saveSettings, setTheme, setFont, setFontSize } = useSettings();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
+
+  useEffect(() => {
+    if (appliedRef.current) {
+      return;
+    }
+    appliedRef.current = true;
+
+    try {
+      hotkeys.disableScope('home');
+      hotkeys.disableScope('task');
+      hotkeys.enableScope('dialog');
+    } catch {
+      // Hotkey scopes may be unavailable in some contexts; ignore errors.
+    }
+    return () => {
+      try {
+        hotkeys.enableScope('home');
+        hotkeys.enableScope('task');
+      } catch {
+        // Hotkey scopes may already be restored; ignore errors.
+      }
+    };
+  }, [hotkeys]);
 
   useEffect(() => {
     if (originalSettings) {
@@ -30,41 +56,44 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
     }
   }, [originalSettings]);
 
-  const hasChanges = useMemo(() => {
-    return localSettings && originalSettings && !isEqual(localSettings, originalSettings);
-  }, [localSettings, originalSettings]);
-
-  const handleCancel = () => {
-    if (originalSettings && localSettings?.language !== originalSettings.language) {
-      void i18n.changeLanguage(originalSettings.language);
-    }
-    if (originalSettings && localSettings?.zoomLevel !== originalSettings.zoomLevel) {
-      void api.setZoomLevel(originalSettings.zoomLevel ?? 1);
-    }
-    if (originalSettings && originalSettings.theme && localSettings?.theme !== originalSettings.theme) {
-      setTheme(originalSettings.theme);
+  useEffect(() => {
+    if (!localSettings || !originalSettings) {
+      return;
     }
 
-    if (originalSettings && originalSettings.font && localSettings?.font !== originalSettings.font) {
-      setFont(originalSettings.font);
+    if (isEqual(localSettings, originalSettings)) {
+      return;
     }
 
-    if (originalSettings && originalSettings.fontSize && localSettings?.fontSize !== originalSettings.fontSize) {
-      setFontSize(originalSettings.fontSize);
+    const handle = setTimeout(() => {
+      void saveSettings(localSettings);
+    }, 400);
+
+    return () => {
+      clearTimeout(handle);
+    };
+  }, [localSettings, originalSettings, saveSettings]);
+
+  useEffect(() => {
+    if (!localSettings || !originalSettings) {
+      return;
     }
 
-    // Updated to use settings.mcpServers directly
-    if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
-      void api.reloadMcpServers(originalSettings.mcpServers || {});
+    if (isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
+      return;
     }
+
+    const handle = setTimeout(() => {
+      void api.reloadMcpServers(localSettings.mcpServers || {});
+    }, 400);
+
+    return () => {
+      clearTimeout(handle);
+    };
+  }, [api, localSettings, originalSettings]);
+
+  const handleClose = () => {
     onClose();
-  };
-
-  const handleSave = async () => {
-    if (localSettings) {
-      await saveSettings(localSettings);
-      onClose();
-    }
   };
 
   const handleLanguageChange = (language: string) => {
@@ -90,11 +119,11 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
   return (
     <ConfirmDialog
       title={t('settings.title')}
-      onCancel={handleCancel}
-      onConfirm={handleSave}
-      confirmButtonText={t('common.save')}
+      onCancel={handleClose}
+      onConfirm={handleClose}
+      confirmButtonText={t('common.done', { defaultValue: 'Done' })}
       width={1000}
-      disabled={!hasChanges}
+      closeOnEscape={true}
     >
       {localSettings && (
         <Settings
