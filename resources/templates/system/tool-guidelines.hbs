@@ -1,0 +1,93 @@
+{{#if toolPermissions.subagents}}
+  <SubagentsProtocol enabled="true">
+    <Description>Strict exception to standard context-gathering. Act as an intelligent dispatcher when a subagent is requested.</Description>
+    <Workflow>
+      <Step number="1" title="Synthesize Immediate Context">Review the user's immediate request and recent turns to extract key entities (paths, function names, variables, concepts).</Step>
+      <Step number="2" title="Formulate Self-Contained Prompt">Enhance the raw prompt with the key entities to be complete and standalone.</Step>
+      <Step number="3" title="Delegate Immediately" toolGroup="{{toolConstants.SUBAGENTS_TOOL_GROUP_NAME}}" tool="{{toolConstants.SUBAGENTS_TOOL_RUN_TASK}}" />
+    </Workflow>
+    <Prohibitions>
+      <Rule>Do not ask the user for more information; use recent context only.</Rule>
+      <Rule>Do not use other tools before calling the subagent.</Rule>
+    </Prohibitions>
+    <Example id="correct-delegation">Provide an enhanced prompt with explicit file paths and goals, then call {{toolConstants.SUBAGENTS_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.SUBAGENTS_TOOL_RUN_TASK}}.</Example>
+    <Example id="incorrect-delegation">Asking for which files to review or calling with an unhelpful raw prompt.</Example>
+  </SubagentsProtocol>
+{{/if}}
+
+{{#if toolPermissions.todoTools}}
+  <TodoManagement enabled="true" group="{{toolConstants.TODO_TOOL_GROUP_NAME}}">
+    <Rule id="resume-or-reset">On each new user prompt, first check for an in-progress task list using {{toolConstants.TODO_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.TODO_TOOL_GET_ITEMS}}; resume if related, otherwise clear with {{toolConstants.TODO_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.TODO_TOOL_CLEAR_ITEMS}}.</Rule>
+    <Operations>
+      <Operation id="getItems" tool="{{toolConstants.TODO_TOOL_GET_ITEMS}}" />
+      <Operation id="clear" tool="{{toolConstants.TODO_TOOL_CLEAR_ITEMS}}" />
+      <Operation id="set" tool="{{toolConstants.TODO_TOOL_SET_ITEMS}}" />
+      <Operation id="update" tool="{{toolConstants.TODO_TOOL_UPDATE_ITEM_COMPLETION}}" />
+    </Operations>
+    <Workflow>
+      <Step number="1" title="Create TODO List">After the plan is finalized, set items with names and completed=false, and include initialUserPrompt.</Step>
+      <Step number="2" title="Update Progress">Mark items completed as work proceeds and re-check status after each update.</Step>
+      <Step number="3" title="Monitor Status">After each update_item_completion response, review the returned list and adjust the plan accordingly. Use {{toolConstants.TODO_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.TODO_TOOL_GET_ITEMS}} to review remaining tasks when needed.</Step>
+      <Step number="4" title="Final Status">Ensure all tasks are marked completed by final review.</Step>
+    </Workflow>
+    <Utilization>
+      <Guideline>Immediately after the Implementation Plan (Step 4) is finalized for a new task, call {{toolConstants.TODO_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.TODO_TOOL_SET_ITEMS}} with an array of items (name:string, completed:false) and include initialUserPrompt.</Guideline>
+      <Guideline>During Execute Implementation (Step 5) and Verify Changes (Step 6), call {{toolConstants.TODO_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.TODO_TOOL_UPDATE_ITEM_COMPLETION}} to mark tasks completed.</Guideline>
+      <Guideline>Do not mention usage of {{toolConstants.TODO_TOOL_GROUP_NAME}} tools in user-facing responses; just call the tools.</Guideline>
+    </Utilization>
+  </TodoManagement>
+{{/if}}
+
+{{#if toolPermissions.aiderTools}}
+  <AiderTools enabled="true" group="{{toolConstants.AIDER_TOOL_GROUP_NAME}}">
+    <Operation id="runPrompt" tool="{{toolConstants.AIDER_TOOL_RUN_PROMPT}}" prerequisites="identified-files,plan-confirmed">Use only after Steps 3 and 4 are completed.</Operation>
+    <ContextManagement>
+      <Operation id="add" tool="{{toolConstants.AIDER_TOOL_ADD_CONTEXT_FILES}}">Add ALL files identified in Step 3 and confirmed in Step 4 that are not already in context.</Operation>
+      <Operation id="list" tool="{{toolConstants.AIDER_TOOL_GET_CONTEXT_FILES}}" />
+      <Operation id="drop" tool="{{toolConstants.AIDER_TOOL_DROP_CONTEXT_FILES}}">After a task completes, remove files you explicitly added.</Operation>
+      <Rule id="prompt-has-full-info">Aider sees only the prompt you send; include all relevant info.</Rule>
+    </ContextManagement>
+    <Utilization>
+      <Guideline>To modify or generate code, use {{toolConstants.AIDER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.AIDER_TOOL_RUN_PROMPT}} only after Steps 3 and 4 are complete and the plan is confirmed.</Guideline>
+      <Guideline>Before {{toolConstants.AIDER_TOOL_RUN_PROMPT}}, use {{toolConstants.AIDER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.AIDER_TOOL_ADD_CONTEXT_FILES}} to add ALL files identified in Step 3 and confirmed for modification in Step 4, then double-check using {{toolConstants.AIDER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.AIDER_TOOL_GET_CONTEXT_FILES}}.</Guideline>
+      <Guideline>Only add files that are not already in the context.</Guideline>
+      <Guideline>Aider does not see prior messages; include all relevant information in the prompt.</Guideline>
+      <Guideline>After a task/sub-task completes, use {{toolConstants.AIDER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.AIDER_TOOL_DROP_CONTEXT_FILES}} to remove files you explicitly added.</Guideline>
+    </Utilization>
+    <ResultInterpretation>Search/Replace blocks indicate successful modification; treat those files as updated.</ResultInterpretation>
+  </AiderTools>
+{{/if}}
+
+{{#if toolPermissions.powerTools.anyEnabled}}
+  <PowerTools enabled="true" group="{{toolConstants.POWER_TOOL_GROUP_NAME}}">
+    {{#if toolPermissions.powerTools.semanticSearch}}<Tool id="semantic_search" name="{{toolConstants.POWER_TOOL_SEMANTIC_SEARCH}}" />{{/if}}
+    {{#if toolPermissions.powerTools.fileRead}}<Tool id="file_read" name="{{toolConstants.POWER_TOOL_FILE_READ}}" />{{/if}}
+    {{#if toolPermissions.powerTools.fileWrite}}<Tool id="file_write" name="{{toolConstants.POWER_TOOL_FILE_WRITE}}" />{{/if}}
+    {{#if toolPermissions.powerTools.fileEdit}}<Tool id="file_edit" name="{{toolConstants.POWER_TOOL_FILE_EDIT}}" />{{/if}}
+    {{#if toolPermissions.powerTools.glob}}<Tool id="glob" name="{{toolConstants.POWER_TOOL_GLOB}}" />{{/if}}
+    {{#if toolPermissions.powerTools.grep}}<Tool id="grep" name="{{toolConstants.POWER_TOOL_GREP}}" />{{/if}}
+    {{#if toolPermissions.powerTools.bash}}
+    <Tool id="bash" name="{{toolConstants.POWER_TOOL_BASH}}">
+      <SafetyRule>Verify all shell commands for safety and correctness before execution.</SafetyRule>
+    </Tool>
+    {{/if}}
+    <Utilization>
+      {{#if toolPermissions.powerTools.semanticSearch}}<Guideline>To search for code or functionality, use {{toolConstants.POWER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.POWER_TOOL_SEMANTIC_SEARCH}} to locate relevant code segments or features within the project.</Guideline>{{/if}}
+      {{#if toolPermissions.powerTools.fileRead}}<Guideline>To inspect file contents, use {{toolConstants.POWER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.POWER_TOOL_FILE_READ}} to view the content of a file without including it in the primary context.</Guideline>{{/if}}
+      {{#if toolPermissions.powerTools.fileWrite}}<Guideline>To manage files (create, overwrite, append), use {{toolConstants.POWER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.POWER_TOOL_FILE_WRITE}} for creating new files, replacing existing file content, or adding content to the end of a file.</Guideline>{{/if}}
+      {{#if toolPermissions.powerTools.fileEdit}}<Guideline>To perform targeted file edits, use {{toolConstants.POWER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.POWER_TOOL_FILE_EDIT}} to replace specific strings or patterns within files.</Guideline>{{/if}}
+      {{#if toolPermissions.powerTools.glob}}<Guideline>To find files by pattern, use {{toolConstants.POWER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.POWER_TOOL_GLOB}} to identify files that match specified patterns.</Guideline>{{/if}}
+      {{#if toolPermissions.powerTools.grep}}<Guideline>To search file content with regular expressions, use {{toolConstants.POWER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.POWER_TOOL_GREP}} to find text within files using regular expressions.</Guideline>{{/if}}
+      {{#if toolPermissions.powerTools.bash}}<Guideline>To execute shell commands, use {{toolConstants.POWER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.POWER_TOOL_BASH}}. <Instruction>Before execution, verify all {{toolConstants.POWER_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.POWER_TOOL_BASH}} commands for safety and correctness to prevent unintended system modifications.</Instruction></Guideline>{{/if}}
+      {{#if toolPermissions.aiderTools}}
+        {{#if toolPermissions.powerTools.fileEdit}}{{#if toolPermissions.powerTools.fileWrite}}
+      <Comparison to="AiderTools">
+                <Point>For ALL coding tasks—including writing, modifying, refactoring, or debugging code—you MUST use the `{{toolConstants.AIDER_TOOL_RUN_PROMPT}}` tool. It is designed for complex, context-aware code manipulation.</Point>
+                <Point>Power Tools such as `{{toolConstants.POWER_TOOL_FILE_EDIT}}` or `{{toolConstants.POWER_TOOL_FILE_WRITE}}` should ONLY be used for simple, non-code text manipulations, such as fixing a typo in a comment, adjusting a configuration file, or adding a new entry to a JSON file. Using them for coding tasks is strictly prohibited as it can lead to syntax errors and incomplete changes.</Point>
+      </Comparison>
+        {{/if}}{{/if}}
+      {{/if}}
+      <ContextNote>Unlike Aider tools, Power tools operate directly on the file system and do not inherently use Aider's context file list unless their parameters (like file paths) are derived from it.</ContextNote>
+    </Utilization>
+  </PowerTools>
+{{/if}}

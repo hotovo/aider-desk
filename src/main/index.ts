@@ -9,7 +9,7 @@ import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 import icon from '../../resources/icon.png?asset';
 
 import { ProgressWindow } from '@/progress-window';
-import { McpManager } from '@/agent';
+import { McpManager, initializeTemplates } from '@/agent';
 import { CloudflareTunnelManager, ServerController } from '@/server';
 import { ConnectorManager } from '@/connector';
 import { setupIpcHandlers } from '@/ipc-handlers';
@@ -148,6 +148,9 @@ const initManagers = async (
   // Initialize telemetry manager
   const telemetryManager = new TelemetryManager(store);
   await telemetryManager.init();
+
+  // Initialize templates
+  await initializeTemplates();
 
   // Initialize MCP manager
   const mcpManager = new McpManager();
