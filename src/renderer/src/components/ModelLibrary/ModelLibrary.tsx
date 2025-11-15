@@ -5,7 +5,7 @@ import { LlmProviderName } from '@common/agent';
 
 import { ModelDialog } from './ModelDialog';
 import { ProviderSelection } from './ProviderSelection';
-import { ProviderProfileForm } from './ProviderProfileForm';
+import { ProviderProfileDialog } from './ProviderProfileDialog';
 import { ProviderHeader } from './ProviderHeader';
 import { ModelTableSection } from './ModelTableSection';
 
@@ -26,6 +26,7 @@ export const ModelLibrary = ({ onClose }: Props) => {
   const [editingModel, setEditingModel] = useState<Model | undefined>(undefined);
   const [showModelDialog, setShowModelDialog] = useState(false);
   const hasProfiles = providers.length > 0;
+  const shouldShowProviderSelection = showProviderSelection || (!hasProfiles && !configuringProvider);
 
   const handleToggleProviderSelect = (profileId: string) => {
     setSelectedProviderIds((prev) => (prev.includes(profileId) ? prev.filter((id) => id !== profileId) : [...prev, profileId]));
@@ -93,27 +94,12 @@ export const ModelLibrary = ({ onClose }: Props) => {
   };
 
   // Show provider selection when adding new provider
-  if (showProviderSelection || (!hasProfiles && !configuringProvider)) {
+  if (shouldShowProviderSelection) {
     return (
       <ModalOverlayLayout title={t('modelLibrary.title')} onClose={onClose}>
         <div className="p-10">
           <ProviderSelection onSelectProvider={handleSelectProvider} onCancel={handleCancelConfigure} />
         </div>
-      </ModalOverlayLayout>
-    );
-  }
-
-  // Show provider configuration form
-  if (configuringProvider) {
-    return (
-      <ModalOverlayLayout title={t('modelLibrary.title')} onClose={onClose}>
-        <ProviderProfileForm
-          provider={configuringProvider}
-          editProfile={editingProfile}
-          providers={providers}
-          onSave={handleSaveProfile}
-          onCancel={handleCancelConfigure}
-        />
       </ModalOverlayLayout>
     );
   }
@@ -129,6 +115,17 @@ export const ModelLibrary = ({ onClose }: Props) => {
             setShowModelDialog(false);
             setEditingModel(undefined);
           }}
+          onAutoSave={(modelData) => upsertModel(modelData.providerId, modelData.id, modelData)}
+        />
+      )}
+      {configuringProvider && (
+        <ProviderProfileDialog
+          provider={configuringProvider}
+          editProfile={editingProfile}
+          providers={providers}
+          onSave={handleSaveProfile}
+          onCancel={handleCancelConfigure}
+          onAutoSave={(profile) => saveProvider(profile)}
         />
       )}
       <div className="flex flex-col h-full overflow-hidden">

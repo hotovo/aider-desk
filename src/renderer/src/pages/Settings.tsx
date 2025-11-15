@@ -10,6 +10,8 @@ import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
 import { ServerSettings } from '@/components/settings/ServerSettings';
+import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
+import { DEFAULT_HOTKEY_CONFIG } from '@/utils/hotkeys';
 
 type Props = {
   settings: SettingsData;
@@ -70,6 +72,7 @@ export const Settings = ({
         {renderTab(t('settings.tabs.general'))}
         {renderTab(t('settings.tabs.aider'))}
         {renderTab(t('settings.tabs.agent'))}
+        {renderTab(t('settings.tabs.hotkeys'))}
         {isServerManagementSupported && renderTab(t('settings.tabs.server'))}
         {renderTab(t('settings.tabs.about'))}
       </TabList>
@@ -87,6 +90,12 @@ export const Settings = ({
         )}
         {renderTabPanel(<AiderSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<AgentSettings settings={settings} setSettings={updateSettings} initialProfileId={initialAgentProfileId} />)}
+        {renderTabPanel(
+          <HotkeysSettings
+            hotkeyConfig={settings.hotkeyConfig || DEFAULT_HOTKEY_CONFIG}
+            onSave={(config) => updateSettings({ ...settings, hotkeyConfig: config })}
+          />,
+        )}
         {isServerManagementSupported && renderTabPanel(<ServerSettings settings={settings} setSettings={updateSettings} />)}
         {renderTabPanel(<AboutSettings settings={settings} setSettings={updateSettings} />)}
       </TabPanels>
