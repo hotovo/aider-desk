@@ -19,6 +19,11 @@ import { initManagers } from '@/managers';
 
 const setupCustomMenu = (): void => {
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [
+    // File menu
+    {
+      label: 'File',
+      submenu: [{ role: 'quit', label: 'Quit', accelerator: 'CmdOrCtrl+Q' }],
+    },
     // Edit menu (without Select All)
     {
       label: 'Edit',

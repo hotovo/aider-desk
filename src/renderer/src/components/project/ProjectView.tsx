@@ -2,6 +2,7 @@ import { InputHistoryData, ProjectData, ProjectStartMode, TaskData } from '@comm
 import { useTranslation } from 'react-i18next';
 import { startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useLocalStorage } from '@reactuses/core';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { CgSpinner } from 'react-icons/cg';
 
 import { useSettings } from '@/contexts/SettingsContext';
@@ -10,7 +11,9 @@ import { TaskView, TaskViewRef } from '@/components/project/TaskView';
 import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from '@/components/project/TaskSidebar';
 import { useApi } from '@/contexts/ApiContext';
 import { TaskProvider } from '@/contexts/TaskContext';
+import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { showInfoNotification } from '@/utils/notifications';
+import { getSortedVisibleTasks } from '@/utils/taskUtils';
 
 type Props = {
   project: ProjectData;
@@ -22,6 +25,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
   const { settings } = useSettings();
   const { projectSettings } = useProjectSettings();
   const api = useApi();
+  const { TASK_HOTKEYS } = useConfiguredHotkeys();
 
   const [inputHistory, setInputHistory] = useState<string[]>([]);
   const [starting, setStarting] = useState(true);
@@ -30,14 +34,20 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [optimisticTasks, setOptimisticTasks] = useOptimistic(tasks);
   const [isCollapsed, setIsCollapsed] = useLocalStorage(`task-sidebar-collapsed-${project.baseDir}`, false);
+  const [shouldFocusNewTask, setShouldFocusNewTask] = useState(false);
   const taskViewRef = useRef<TaskViewRef>(null);
   const activeTask = activeTaskId ? optimisticTasks.find((task) => task.id === activeTaskId) : null;
+
+  const focusActiveTaskPrompt = useCallback(() => {
+    taskViewRef.current?.focusPromptField();
+  }, []);
 
   const createNewTask = useCallback(async () => {
     const existingNewTask = tasks.find((task) => !task.createdAt);
     if (existingNewTask) {
       // when there is active task and is new we don't need to create new one
       setActiveTaskId(existingNewTask.id);
+      focusActiveTaskPrompt();
       return;
     }
 
@@ -45,11 +55,22 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
       const newTask = await api.createNewTask(project.baseDir);
       // Task will be automatically added via the existing listener
       setActiveTaskId(newTask.id);
+      setShouldFocusNewTask(true);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to create new task:', error);
     }
-  }, [api, project.baseDir, tasks]);
+  }, [api, project.baseDir, focusActiveTaskPrompt, tasks]);
+
+  useHotkeys(
+    TASK_HOTKEYS.NEW_TASK,
+    (e) => {
+      e.preventDefault();
+      void createNewTask();
+    },
+    { scopes: 'task', enabled: isActive, enableOnFormTags: true, enableOnContentEditable: true },
+    [TASK_HOTKEYS.NEW_TASK, createNewTask, isActive],
+  );
 
   useEffect(() => {
     const handleStartupMode = async (tasks: TaskData[]) => {
@@ -163,6 +184,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
 
   const handleTaskSelect = useCallback((taskId: string) => {
     setActiveTaskId(taskId);
+    setShouldFocusNewTask(false);
   }, []);
 
   const handleToggleCollapse = () => {
@@ -198,10 +220,35 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
   const handleDeleteTask = useCallback(
     async (taskId: string) => {
       try {
+        let nextTaskId: string | null = null;
+
+        if (activeTaskId === taskId) {
+          const sortedTasks = getSortedVisibleTasks(optimisticTasks, false, '');
+          const currentIndex = sortedTasks.findIndex((task) => task.id === taskId);
+
+          if (currentIndex !== -1) {
+            if (currentIndex + 1 < sortedTasks.length) {
+              nextTaskId = sortedTasks[currentIndex + 1].id;
+            } else if (currentIndex - 1 >= 0) {
+              nextTaskId = sortedTasks[currentIndex - 1].id;
+            }
+          }
+        }
+
         setOptimisticTasks((prev) => prev.filter((task) => task.id !== taskId));
         await api.deleteTask(project.baseDir, taskId);
+
         if (activeTaskId === taskId) {
-          await createNewTask();
+          if (nextTaskId && nextTaskId !== taskId) {
+            handleTaskSelect(nextTaskId);
+            focusActiveTaskPrompt();
+          } else {
+            await createNewTask();
+            focusActiveTaskPrompt();
+          }
+        } else {
+          // If we deleted a non-active task, focus the current active task's prompt
+          focusActiveTaskPrompt();
         }
         // Task will be automatically removed via the existing handleTaskDeleted listener
       } catch (error) {
@@ -209,7 +256,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
         console.error('Failed to delete task:', error);
       }
     },
-    [activeTaskId, api, createNewTask, project.baseDir, setOptimisticTasks],
+    [activeTaskId, api, createNewTask, focusActiveTaskPrompt, handleTaskSelect, optimisticTasks, project.baseDir, setOptimisticTasks],
   );
 
   const handleExportTaskToImage = useCallback(() => {
@@ -305,6 +352,11 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
               updateTask={(updates, useOptimistic) => handleUpdateTask(activeTask.id, updates, useOptimistic)}
               inputHistory={inputHistory}
               isActive={isActive}
+              shouldFocusPrompt={shouldFocusNewTask}
+              allTasks={optimisticTasks}
+              onTaskSelect={handleTaskSelect}
+              onCreateNewTask={createNewTask}
+              onDeleteTask={handleDeleteTask}
             />
           )}
         </div>

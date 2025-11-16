@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Model, ProviderProfile } from '@common/types';
 import { DEFAULT_MODEL_TEMPERATURE } from '@common/agent';
@@ -17,9 +17,10 @@ type Props = {
   providers: ProviderProfile[];
   onSave: (model: Model) => void;
   onCancel: () => void;
+  onAutoSave?: (model: Model) => void;
 };
 
-export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
+export const ModelDialog = ({ model, providers, onSave, onCancel, onAutoSave }: Props) => {
   const { t } = useTranslation();
   const [formData, setFormData] = useState<Partial<Model>>({
     id: '',
@@ -30,33 +31,142 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [providerOverrides, setProviderOverrides] = useState<Record<string, unknown>>(model?.providerOverrides || {});
+  const initialModelRef = useRef(model);
+  const initialProvidersRef = useRef(providers);
   const selectedProvider = providers.find((p) => p.id === formData.providerId);
+  const lastSavedJsonRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (model) {
-      setFormData({
-        id: model.id,
-        providerId: model.providerId,
-        maxInputTokens: model.maxInputTokens,
-        maxOutputTokens: model.maxOutputTokens,
-        temperature: model.temperature ?? DEFAULT_MODEL_TEMPERATURE,
-        inputCostPerToken: model.inputCostPerToken,
-        outputCostPerToken: model.outputCostPerToken,
-        cacheReadInputTokenCost: model.cacheReadInputTokenCost,
-        cacheWriteInputTokenCost: model.cacheWriteInputTokenCost,
-        supportsTools: model.supportsTools,
-        isHidden: model.isHidden,
-      });
-      setProviderOverrides(model.providerOverrides || {});
-    } else {
-      setFormData({
-        id: '',
-        providerId: providers[0]?.id || '',
-      });
-      setProviderOverrides({});
-    }
+    const existingModel = initialModelRef.current;
+    const providerList = initialProvidersRef.current;
+
+    const initialData: Partial<Model> = existingModel
+      ? {
+          id: existingModel.id,
+          providerId: existingModel.providerId,
+          maxInputTokens: existingModel.maxInputTokens,
+          maxOutputTokens: existingModel.maxOutputTokens,
+          temperature: existingModel.temperature ?? DEFAULT_MODEL_TEMPERATURE,
+          inputCostPerToken: existingModel.inputCostPerToken,
+          outputCostPerToken: existingModel.outputCostPerToken,
+          cacheReadInputTokenCost: existingModel.cacheReadInputTokenCost,
+          cacheWriteInputTokenCost: existingModel.cacheWriteInputTokenCost,
+          supportsTools: existingModel.supportsTools,
+          isHidden: existingModel.isHidden,
+        }
+      : {
+          id: '',
+          providerId: providerList[0]?.id || '',
+          temperature: DEFAULT_MODEL_TEMPERATURE,
+        };
+
+    setFormData(initialData);
+    setProviderOverrides(existingModel?.providerOverrides ? { ...existingModel.providerOverrides } : {});
+    lastSavedJsonRef.current = existingModel
+      ? JSON.stringify({
+          ...existingModel,
+          providerOverrides: existingModel.providerOverrides || {},
+        })
+      : null;
     setErrors({});
-  }, [model, providers]);
+  }, []);
+
+  const modelData = useMemo<Model>(
+    () => ({
+      id: (formData.id || '').trim(),
+      providerId: formData.providerId || '',
+      maxInputTokens: formData.maxInputTokens,
+      maxOutputTokens: formData.maxOutputTokens,
+      temperature: formData.temperature,
+      inputCostPerToken: formData.inputCostPerToken,
+      outputCostPerToken: formData.outputCostPerToken,
+      cacheReadInputTokenCost: formData.cacheReadInputTokenCost,
+      cacheWriteInputTokenCost: formData.cacheWriteInputTokenCost,
+      supportsTools: formData.supportsTools,
+      isHidden: formData.isHidden,
+      isCustom: model?.isCustom || !model,
+      providerOverrides,
+    }),
+    [formData, providerOverrides, model],
+  );
+
+  const isModelDataValid = (data: Model) => {
+    if (!data.id) {
+      return false;
+    }
+
+    if (!data.providerId) {
+      return false;
+    }
+
+    if (data.maxInputTokens !== undefined && data.maxInputTokens !== null && data.maxInputTokens <= 0) {
+      return false;
+    }
+
+    if (data.maxOutputTokens !== undefined && data.maxOutputTokens !== null && data.maxOutputTokens <= 0) {
+      return false;
+    }
+
+    if (data.temperature !== undefined && data.temperature !== null && (data.temperature < 0 || data.temperature > 2)) {
+      return false;
+    }
+
+    if (data.inputCostPerToken !== undefined && data.inputCostPerToken !== null && data.inputCostPerToken < 0) {
+      return false;
+    }
+
+    if (data.outputCostPerToken !== undefined && data.outputCostPerToken !== null && data.outputCostPerToken < 0) {
+      return false;
+    }
+
+    if (data.cacheReadInputTokenCost !== undefined && data.cacheReadInputTokenCost !== null && data.cacheReadInputTokenCost < 0) {
+      return false;
+    }
+
+    if (data.cacheWriteInputTokenCost !== undefined && data.cacheWriteInputTokenCost !== null && data.cacheWriteInputTokenCost < 0) {
+      return false;
+    }
+
+    return true;
+  };
+
+  useEffect(() => {
+    lastSavedJsonRef.current = model
+      ? JSON.stringify({
+          ...model,
+          providerOverrides: model.providerOverrides || {},
+        })
+      : null;
+  }, [model]);
+
+  useEffect(() => {
+    if (!onAutoSave) {
+      return;
+    }
+
+    const handle = setTimeout(() => {
+      if (!isModelDataValid(modelData)) {
+        return;
+      }
+
+      const modelJson = JSON.stringify(modelData);
+      if (modelJson === lastSavedJsonRef.current) {
+        return;
+      }
+
+      lastSavedJsonRef.current = modelJson;
+      void onAutoSave(modelData);
+    }, 400);
+
+    return () => {
+      clearTimeout(handle);
+    };
+  }, [modelData, onAutoSave]);
+
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.debug('ModelDialog: formData changed', formData);
+  }, [formData]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -98,23 +208,8 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
       return;
     }
 
-    const modelData: Model = {
-      id: formData.id!.trim(),
-      providerId: formData.providerId!,
-      maxInputTokens: formData.maxInputTokens,
-      maxOutputTokens: formData.maxOutputTokens,
-      temperature: formData.temperature,
-      inputCostPerToken: formData.inputCostPerToken,
-      outputCostPerToken: formData.outputCostPerToken,
-      cacheReadInputTokenCost: formData.cacheReadInputTokenCost,
-      cacheWriteInputTokenCost: formData.cacheWriteInputTokenCost,
-      supportsTools: formData.supportsTools,
-      isHidden: formData.isHidden,
-      isCustom: model?.isCustom || !model,
-      providerOverrides,
-    };
-
     onSave(modelData);
+    lastSavedJsonRef.current = JSON.stringify(modelData);
   };
 
   const handleInputChange = (field: keyof Model, value: unknown) => {
@@ -131,6 +226,8 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
       contentClass="bg-bg-secondary"
       onCancel={onCancel}
       onConfirm={handleSubmit}
+      confirmButtonText={t('common.done', { defaultValue: 'Done' })}
+      closeOnEscape={true}
       width={700}
     >
       <div className="space-y-3">
@@ -166,7 +263,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
             <Input
               label={t('modelLibrary.maxInputTokens')}
               type="number"
-              value={formData.maxInputTokens !== undefined && formData.maxInputTokens !== null ? formData.maxInputTokens : ''}
+              value={formData.maxInputTokens ?? ''}
               onChange={(e) => handleInputChange('maxInputTokens', e.target.value !== '' ? parseInt(e.target.value) : undefined)}
             />
             {errors.maxInputTokens && <p className="text-error text-2xs mt-1">{errors.maxInputTokens}</p>}
@@ -176,7 +273,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
             <Input
               label={t('modelLibrary.maxOutputTokens')}
               type="number"
-              value={formData.maxOutputTokens !== undefined && formData.maxOutputTokens !== null ? formData.maxOutputTokens : ''}
+              value={formData.maxOutputTokens ?? ''}
               onChange={(e) => handleInputChange('maxOutputTokens', e.target.value !== '' ? parseInt(e.target.value) : undefined)}
             />
             {errors.maxOutputTokens && <p className="text-error text-2xs mt-1">{errors.maxOutputTokens}</p>}
@@ -189,7 +286,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
               label={t('modelLibrary.inputTokenCost')}
               type="number"
               step="0.01"
-              value={formData.inputCostPerToken !== undefined && formData.inputCostPerToken !== null ? (formData.inputCostPerToken * 1000000).toFixed(4) : ''}
+              value={formData.inputCostPerToken != null ? (formData.inputCostPerToken * 1000000).toFixed(4) : ''}
               onChange={(e) => {
                 const perMillionValue = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
                 const perTokenValue = perMillionValue !== undefined ? perMillionValue / 1000000 : undefined;
@@ -204,9 +301,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
               label={t('modelLibrary.outputTokenCost')}
               type="number"
               step="0.01"
-              value={
-                formData.outputCostPerToken !== undefined && formData.outputCostPerToken !== null ? (formData.outputCostPerToken * 1000000).toFixed(4) : ''
-              }
+              value={formData.outputCostPerToken != null ? (formData.outputCostPerToken * 1000000).toFixed(4) : ''}
               onChange={(e) => {
                 const perMillionValue = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
                 const perTokenValue = perMillionValue !== undefined ? perMillionValue / 1000000 : undefined;
@@ -223,11 +318,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
               label={t('modelLibrary.cacheReadInputTokenCost')}
               type="number"
               step="0.01"
-              value={
-                formData.cacheReadInputTokenCost !== undefined && formData.cacheReadInputTokenCost !== null
-                  ? (formData.cacheReadInputTokenCost * 1000000).toFixed(4)
-                  : ''
-              }
+              value={formData.cacheReadInputTokenCost != null ? (formData.cacheReadInputTokenCost * 1000000).toFixed(4) : ''}
               onChange={(e) => {
                 const perMillionValue = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
                 const perTokenValue = perMillionValue !== undefined ? perMillionValue / 1000000 : undefined;
@@ -241,11 +332,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
               label={t('modelLibrary.cacheWriteInputTokenCost')}
               type="number"
               step="0.01"
-              value={
-                formData.cacheWriteInputTokenCost !== undefined && formData.cacheWriteInputTokenCost !== null
-                  ? (formData.cacheWriteInputTokenCost * 1000000).toFixed(4)
-                  : ''
-              }
+              value={formData.cacheWriteInputTokenCost != null ? (formData.cacheWriteInputTokenCost * 1000000).toFixed(4) : ''}
               onChange={(e) => {
                 const perMillionValue = e.target.value !== '' ? parseFloat(e.target.value) : undefined;
                 const perTokenValue = perMillionValue !== undefined ? perMillionValue / 1000000 : undefined;
