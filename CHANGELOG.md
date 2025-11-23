@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.41.0]
 
 - added resize functionality to todo window
 - added multiselect to task sidebar
