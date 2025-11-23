@@ -9,6 +9,7 @@
 - corrected parameter name for internal helper tool when LLM uses invalid tool arguments
 - added missing parameters to providers when Disable streaming is used
 - added line and limit info to the read file tool message
+- added new Fresh color theme
 
 ## [0.40.0]
 

@@ -375,6 +375,7 @@ export const THEMES = [
   'midnight',
   'serenity',
   'cappuccino',
+  'fresh',
 ] as const;
 export type Theme = (typeof THEMES)[number];
 
