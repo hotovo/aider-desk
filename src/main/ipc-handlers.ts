@@ -1,6 +1,5 @@
 import { EditFormat, FileEdit, McpServerConfig, Mode, Model, ProjectSettings, ProviderProfile, SettingsData, TaskData, TodoItem } from '@common/types';
 import { ipcMain } from 'electron';
-import { LlmProviderBase } from '@common/agent';
 
 import { EventsHandler } from './events-handler';
 
@@ -8,7 +7,7 @@ import { ServerController } from '@/server';
 
 export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) => {
   // Voice handlers
-  ipcMain.handle('create-voice-session', async (_, provider: LlmProviderBase) => {
+  ipcMain.handle('create-voice-session', async (_, provider: ProviderProfile) => {
     return await eventsHandler.createVoiceSession(provider);
   });
 

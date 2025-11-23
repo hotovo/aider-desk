@@ -40,7 +40,6 @@ import {
   VersionsInfo,
   VoiceSession,
 } from '@common/types';
-import { LlmProvider } from '@common/agent';
 
 export interface ApplicationAPI {
   isOpenLogsDirectorySupported: () => boolean;
@@ -124,7 +123,7 @@ export interface ApplicationAPI {
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
 
   // Voice API
-  createVoiceSession: (provider: LlmProvider) => Promise<VoiceSession>;
+  createVoiceSession: (provider: ProviderProfile) => Promise<VoiceSession>;
 
   getProviderModels: (reload?: boolean) => Promise<ProviderModelsData>;
   getProviders: () => Promise<ProviderProfile[]>;

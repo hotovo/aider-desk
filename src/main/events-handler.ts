@@ -26,7 +26,6 @@ import {
   VoiceSession,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { LlmProviderBase } from '@common/agent';
 
 import type { BrowserWindow } from 'electron';
 
@@ -100,13 +99,7 @@ export class EventsHandler {
     await this.projectManager.restartProject(baseDir);
   }
 
-  async createVoiceSession(provider: LlmProviderBase): Promise<VoiceSession> {
-    // Find the provider profile from the store
-    const providers = this.store.getProviders();
-    const providerProfile = providers.find((p) => p.provider.name === provider.name);
-    if (!providerProfile) {
-      throw new Error(`Provider profile not found for ${provider.name}`);
-    }
+  async createVoiceSession(providerProfile: ProviderProfile): Promise<VoiceSession> {
     return await this.modelManager.createVoiceSession(providerProfile);
   }
 

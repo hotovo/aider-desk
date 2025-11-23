@@ -99,7 +99,7 @@ export const useAudioRecorder = (): UseAudioRecorderType => {
       setMediaStream(stream);
 
       // Create voice session
-      const session = await api.createVoiceSession(voiceProviderProfile.provider);
+      const session = await api.createVoiceSession(voiceProviderProfile);
 
       // Create and configure voice provider
       const voiceProvider = createVoiceProvider(voiceProviderProfile.provider.name);

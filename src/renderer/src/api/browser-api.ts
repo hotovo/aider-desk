@@ -40,7 +40,6 @@ import {
   VersionsInfo,
   VoiceSession,
 } from '@common/types';
-import { LlmProvider } from '@common/agent';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
 import { io, Socket } from 'socket.io-client';
@@ -525,7 +524,7 @@ export class BrowserApi implements ApplicationAPI {
   }
 
   // Voice API
-  createVoiceSession(provider: LlmProvider): Promise<VoiceSession> {
+  createVoiceSession(provider: ProviderProfile): Promise<VoiceSession> {
     void provider;
     throw new UnsupportedError('createVoiceSession not supported in browser mode');
   }
