@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.42.0]
 
 - redesign settings interface with sidebar navigation
 - agent profiles are now file based for better extensibility
