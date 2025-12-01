@@ -87,6 +87,7 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
     'boto3==1.38.25',
     'opentelemetry-api==1.35.0',
     'opentelemetry-sdk==1.35.0',
+    'portalocker==3.2.0',
     ...extraPackages,
   ];
 

@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 import nest_asyncio
 import litellm
 import types
-import fcntl
+import portalocker
 
 class PromptContext:
   def __init__(self, id: str, group=None, auto_approve=False, deny_commands=False):
@@ -566,7 +566,7 @@ class ConnectorInputOutput(InputOutput):
         lock_file = open(lock_file_path, 'w')
         try:
           # Try to acquire exclusive lock (non-blocking)
-          fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+          portalocker.lock(lock_file, portalocker.LOCK_EX | portalocker.LOCK_NB)
 
           # Successfully acquired lock, proceed with processing
           await self.connector.send_log_message("loading", "Processing request...", False, prompt_context)
@@ -585,7 +585,7 @@ class ConnectorInputOutput(InputOutput):
               await self.connector.send_log_message("loading", "", True, prompt_context)
               self.connector.file_watcher.start()
 
-        except (IOError, BlockingIOError):
+        except (IOError, BlockingIOError, OSError, portalocker.LockException):
           # Lock is held by another process, skip processing
           self.connector.coder.io.tool_output("File changes already being processed by another task, skipping...")
           return
