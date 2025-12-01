@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.42.1]
 
 - fixed issue with Aider not loading on Windows
 
