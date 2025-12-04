@@ -373,7 +373,7 @@ export class EventsHandler {
 
   async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {
     try {
-      return this.terminalManager.createTerminal(baseDir, taskId, cols, rows);
+      return await this.terminalManager.createTerminal(baseDir, taskId, cols, rows);
     } catch (error) {
       logger.error('Failed to create terminal:', { baseDir, error });
       throw error;
@@ -397,14 +397,14 @@ export class EventsHandler {
     return terminal ? terminal.id : null;
   }
 
-  getTerminalsForTask(baseDir: string): {
+  getTerminalsForTask(taskId: string): {
     id: string;
     taskId: string;
     baseDir: string;
     cols: number;
     rows: number;
   }[] {
-    const terminals = this.terminalManager.getTerminalsForTask(baseDir);
+    const terminals = this.terminalManager.getTerminalsForTask(taskId);
     return terminals.map((terminal) => ({
       id: terminal.id,
       baseDir: terminal.baseDir,

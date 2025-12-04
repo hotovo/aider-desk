@@ -695,8 +695,8 @@ export class BrowserApi implements ApplicationAPI {
     void terminalId;
     throw new UnsupportedError('closeTerminal not supported yet.');
   }
-  getTerminalForTask(baseDir: string): Promise<string | null> {
-    void baseDir;
+  getTerminalForTask(taskId: string): Promise<string | null> {
+    void taskId;
     throw new UnsupportedError('getTerminalForTask not supported yet.');
   }
   getAllTerminalsForTask(taskId: string): Promise<Array<{ id: string; taskId: string; cols: number; rows: number }>> {

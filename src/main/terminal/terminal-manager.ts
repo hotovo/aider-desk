@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
+import { WorktreeManager } from '@/worktrees/worktree-manager';
 
 export interface TerminalInstance {
   id: string;
@@ -21,6 +22,7 @@ export class TerminalManager {
 
   constructor(
     private readonly eventManager: EventManager,
+    private readonly worktreeManager: WorktreeManager,
     private readonly telemetryManager?: TelemetryManager,
   ) {}
 
@@ -50,20 +52,22 @@ export class TerminalManager {
     return [];
   }
 
-  public createTerminal(baseDir: string, taskId: string, cols: number = 80, rows: number = 24): string {
+  public async createTerminal(baseDir: string, taskId: string, cols: number = 80, rows: number = 24): Promise<string> {
     const terminalId = uuidv4();
 
     try {
+      const worktree = await this.worktreeManager.getTaskWorktree(baseDir, taskId);
+      const cwd = worktree ? worktree.path : baseDir;
       const shell = this.getShellCommand();
       const args = this.getShellArgs();
 
-      logger.info('Creating terminal:', { terminalId, baseDir, shell, args, cols, rows });
+      logger.info('Creating terminal:', { terminalId, baseDir, cwd, shell, args, cols, rows });
 
       const ptyProcess = pty.spawn(shell, args, {
         name: 'xterm-color',
         cols,
         rows,
-        cwd: baseDir,
+        cwd,
         env: {
           ...process.env,
           TERM: 'xterm-256color',

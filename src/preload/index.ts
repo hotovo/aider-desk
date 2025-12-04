@@ -522,12 +522,12 @@ const api: ApplicationAPI = {
 
   // Terminal operations
   isTerminalSupported: () => true,
-  createTerminal: (baseDir, cols, rows) => ipcRenderer.invoke('terminal-create', baseDir, cols, rows),
+  createTerminal: (baseDir, taskId, cols, rows) => ipcRenderer.invoke('terminal-create', baseDir, taskId, cols, rows),
   writeToTerminal: (terminalId, data) => ipcRenderer.invoke('terminal-write', terminalId, data),
   resizeTerminal: (terminalId, cols, rows) => ipcRenderer.invoke('terminal-resize', terminalId, cols, rows),
   closeTerminal: (terminalId) => ipcRenderer.invoke('terminal-close', terminalId),
-  getTerminalForTask: (baseDir) => ipcRenderer.invoke('terminal-get-for-task', baseDir),
-  getAllTerminalsForTask: (baseDir) => ipcRenderer.invoke('terminal-get-all-for-task', baseDir),
+  getTerminalForTask: (taskId) => ipcRenderer.invoke('terminal-get-for-task', taskId),
+  getAllTerminalsForTask: (taskId) => ipcRenderer.invoke('terminal-get-all-for-task', taskId),
 
   // Worktree merge operations
   mergeWorktreeToMain: (baseDir, taskId, squash) => ipcRenderer.invoke('merge-worktree-to-main', baseDir, taskId, squash),

@@ -55,7 +55,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   const projectManager = new ProjectManager(store, mcpManager, telemetryManager, dataManager, eventManager, modelManager, worktreeManager, agentProfileManager);
 
   // Initialize terminal manager
-  const terminalManager = new TerminalManager(eventManager, telemetryManager);
+  const terminalManager = new TerminalManager(eventManager, worktreeManager, telemetryManager);
 
   // Initialize Versions Manager
   const versionsManager = new VersionsManager(eventManager, store);
