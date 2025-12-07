@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.43.0]
 
 - selected agent profile and models are now stored per task
 - recent projects are now correctly added when closing a project
