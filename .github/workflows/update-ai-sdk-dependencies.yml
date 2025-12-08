@@ -48,11 +48,44 @@ jobs:
             "ollama-ai-provider-v2"
           )
 
+          # Create changelog file
+          echo "# AI SDK Dependencies Update" > changelog.md
+          echo "" >> changelog.md
+          echo "| Package | From | To |" >> changelog.md
+          echo "|---------|------|----|" >> changelog.md
+
           # Update each package to latest stable version
           for package in "${packages[@]}"; do
-            echo "Updating $package to latest stable version..."
-            npm install $package@latest
+            echo "Checking $package..."
+            
+            # Get current version from package.json
+            current_version=$(cat package.json | jq -r ".dependencies[\"$package\"] // empty")
+            if [ -z "$current_version" ]; then
+              echo "Package $package not found in dependencies, skipping..."
+              continue
+            fi
+            
+            # Get latest version
+            latest_version=$(npm view $package version)
+            
+            echo "Current: $current_version, Latest: $latest_version"
+            
+            # Update if different
+            if [ "$current_version" != "$latest_version" ]; then
+              echo "Updating $package from $current_version to $latest_version"
+              npm install $package@$latest_version
+              
+              # Add to changelog
+              echo "| $package | $current_version | $latest_version |" >> changelog.md
+            else
+              echo "$package is already up to date"
+            fi
           done
+
+          # Save changelog to environment variable for PR
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          cat changelog.md >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Check for changes
         id: verify-changed-files
@@ -73,24 +106,9 @@ jobs:
           body: |
             ## Automated AI SDK Dependencies Update
             
-            This PR updates the following AI SDK packages to their latest versions while maintaining the same major version:
+            This PR updates AI SDK packages to their latest stable versions.
             
-            - `ai` - Main Vercel AI SDK package
-            - `@ai-sdk/provider` - Base provider package
-            - `@ai-sdk/amazon-bedrock` - AWS Bedrock provider
-            - `@ai-sdk/anthropic` - Anthropic Claude provider
-            - `@ai-sdk/azure` - Azure OpenAI provider
-            - `@ai-sdk/cerebras` - Cerebras provider
-            - `@ai-sdk/deepseek` - DeepSeek provider
-            - `@ai-sdk/google` - Google AI provider
-            - `@ai-sdk/google-vertex` - Google Vertex AI provider
-            - `@ai-sdk/groq` - Groq provider
-            - `@ai-sdk/openai` - OpenAI provider
-            - `@openrouter/ai-sdk-provider` - OpenRouter provider
-            - `@requesty/ai-sdk` - Requesty provider
-            - `ollama-ai-provider-v2` - Ollama provider
-            
-            The updates respect the current major version to ensure compatibility.
+            ${{ env.CHANGELOG }}
             
             ---
             
