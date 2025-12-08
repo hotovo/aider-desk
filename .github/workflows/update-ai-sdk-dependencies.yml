@@ -48,11 +48,9 @@ jobs:
             "ollama-ai-provider-v2"
           )
 
-          # Create changelog file
-          echo "# AI SDK Dependencies Update" > changelog.md
-          echo "" >> changelog.md
-          echo "| Package | From | To |" >> changelog.md
-          echo "|---------|------|----|" >> changelog.md
+          # Create changelog in memory (not as file)
+          changelog="# AI SDK Dependencies Update\n\n| Package | From | To |\n|---------|------|----|"
+          has_updates=false
 
           # Update each package to latest stable version
           for package in "${packages[@]}"; do
@@ -70,22 +68,33 @@ jobs:
             
             echo "Current: $current_version, Latest: $latest_version"
             
+            # Normalize versions for comparison (remove caret)
+            current_clean=$(echo $current_version | sed 's/\^//')
+            latest_clean=$(echo $latest_version | sed 's/\^//')
+            
             # Update if different
-            if [ "$current_version" != "$latest_version" ]; then
+            if [ "$current_clean" != "$latest_clean" ]; then
               echo "Updating $package from $current_version to $latest_version"
               npm install $package@$latest_version
               
               # Add to changelog
-              echo "| $package | $current_version | $latest_version |" >> changelog.md
+              changelog="$changelog\n| $package | $current_version | $latest_version |"
+              has_updates=true
             else
               echo "$package is already up to date"
             fi
           done
 
-          # Save changelog to environment variable for PR
-          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
-          cat changelog.md >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          # Save changelog to environment variable for PR (only if there are updates)
+          if [ "$has_updates" = true ]; then
+            echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+            echo -e "$changelog" >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          else
+            echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+            echo "No AI SDK dependencies needed updates." >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
 
       - name: Check for changes
         id: verify-changed-files
