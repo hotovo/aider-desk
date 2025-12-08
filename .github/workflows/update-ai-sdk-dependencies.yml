@@ -48,47 +48,10 @@ jobs:
             "ollama-ai-provider-v2"
           )
 
-          # Function to get latest version respecting major version
-          get_latest_version_same_major() {
-            local package=$1
-            local current_major=$2
-            # Get all versions and filter by major version, then get the latest
-            npm view $package versions --json | jq -r ".[] | select(startswith(\"$current_major\"))" | sort -V | tail -1
-          }
-
-          # Update each package
+          # Update each package to latest stable version
           for package in "${packages[@]}"; do
-            echo "Checking $package..."
-            
-            # Get current version from package.json
-            current_version=$(cat package.json | jq -r ".dependencies[\"$package\"] // empty")
-            if [ -z "$current_version" ]; then
-              echo "Package $package not found in dependencies, skipping..."
-              continue
-            fi
-            
-            # Remove caret (^) and get major version
-            clean_version=$(echo $current_version | sed 's/\^//')
-            current_major=$(echo $clean_version | cut -d. -f1)
-            echo "Current version: $current_version (clean: $clean_version, major: $current_major)"
-            
-            # Get latest version with same major
-            latest_version=$(get_latest_version_same_major "$package" "$current_major")
-            
-            if [ -z "$latest_version" ]; then
-              echo "Could not find latest version for $package with major $current_major"
-              continue
-            fi
-            
-            echo "Latest version with same major: $latest_version"
-            
-            # Compare clean versions (without caret)
-            if [ "$latest_version" != "$clean_version" ]; then
-              echo "Updating $package from $current_version to $latest_version"
-              npm install $package@$latest_version
-            else
-              echo "$package is already up to date"
-            fi
+            echo "Updating $package to latest stable version..."
+            npm install $package@latest
           done
 
       - name: Check for changes
