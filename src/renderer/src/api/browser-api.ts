@@ -43,6 +43,8 @@ import {
   AgentProfile,
   MemoryEntry,
   MemoryEmbeddingProgress,
+  WorktreeIntegrationStatus,
+  WorktreeIntegrationStatusUpdatedData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -71,6 +73,7 @@ type EventDataMap = {
   'provider-models-updated': ProviderModelsData;
   'providers-updated': ProvidersUpdatedData;
   'project-settings-updated': { baseDir: string; settings: ProjectSettings };
+  'worktree-integration-status-updated': WorktreeIntegrationStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
   'task-created': TaskData;
   'task-initialized': TaskData;
@@ -130,6 +133,7 @@ export class BrowserApi implements ApplicationAPI {
       'input-history-updated': new Map(),
       'clear-task': new Map(),
       'project-started': new Map(),
+      'worktree-integration-status-updated': new Map(),
       'provider-models-updated': new Map(),
       'providers-updated': new Map(),
       'project-settings-updated': new Map(),
@@ -616,6 +620,10 @@ export class BrowserApi implements ApplicationAPI {
     return this.addListener('project-settings-updated', callback, baseDir);
   }
 
+  addWorktreeIntegrationStatusUpdatedListener(baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void): () => void {
+    return this.addListener('worktree-integration-status-updated', callback, baseDir, taskId);
+  }
+
   // Task lifecycle event listeners
   addTaskCreatedListener(baseDir: string, callback: (data: TaskData) => void): () => void {
     return this.addListener('task-created', callback, baseDir);
@@ -736,23 +744,69 @@ export class BrowserApi implements ApplicationAPI {
   }
 
   // Worktree merge operations
-  mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean): Promise<void> {
+  mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void> {
     return this.post('/project/worktree/merge-to-main', {
       projectDir: baseDir,
       taskId,
       squash,
+      targetBranch,
+      commitMessage,
     });
   }
 
-  applyUncommittedChanges(baseDir: string, taskId: string): Promise<void> {
+  applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
     return this.post('/project/worktree/apply-uncommitted', {
       projectDir: baseDir,
       taskId,
+      targetBranch,
     });
   }
 
   revertLastMerge(baseDir: string, taskId: string): Promise<void> {
     return this.post('/project/worktree/revert-last-merge', {
+      projectDir: baseDir,
+      taskId,
+    });
+  }
+
+  listBranches(baseDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
+    return this.get('/project/worktree/branches', {
+      projectDir: baseDir,
+    });
+  }
+
+  getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus> {
+    return this.get('/project/worktree/status', {
+      projectDir: baseDir,
+      taskId,
+      targetBranch,
+    });
+  }
+
+  rebaseWorktreeFromBranch(baseDir: string, taskId: string, fromBranch?: string): Promise<void> {
+    return this.post('/project/worktree/rebase-from-branch', {
+      projectDir: baseDir,
+      taskId,
+      fromBranch,
+    });
+  }
+
+  abortWorktreeRebase(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/worktree/abort-rebase', {
+      projectDir: baseDir,
+      taskId,
+    });
+  }
+
+  continueWorktreeRebase(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/worktree/continue-rebase', {
+      projectDir: baseDir,
+      taskId,
+    });
+  }
+
+  resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/worktree/resolve-conflicts-with-agent', {
       projectDir: baseDir,
       taskId,
     });

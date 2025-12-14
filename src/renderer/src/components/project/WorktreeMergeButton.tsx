@@ -2,23 +2,58 @@ import { useState, useRef } from 'react';
 import { FaDownload } from 'react-icons/fa6';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import { WorktreeIntegrationStatus } from '@common/types';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 
 type Props = {
-  onMerge: () => void;
-  onSquash: () => void;
-  onOnlyUncommitted: () => void;
+  baseDir: string;
+  defaultBranch?: string;
+  onMerge: (targetBranch?: string) => void;
+  onSquash: (targetBranch?: string, commitMessage?: string) => void;
+  onOnlyUncommitted: (targetBranch?: string) => void;
+  onRebaseFromBranch: (fromBranch?: string) => void;
+  onAbortRebase: () => void;
+  onContinueRebase: () => void;
+  onResolveConflictsWithAgent: () => void;
   disabled?: boolean;
+  canAbortRebase?: boolean;
+  canContinueRebase?: boolean;
+  canResolveConflictsWithAgent?: boolean;
+  status?: WorktreeIntegrationStatus | null;
+  taskName?: string;
 };
 
-export const WorktreeMergeButton = ({ onMerge, onSquash, onOnlyUncommitted, disabled }: Props) => {
+export const WorktreeMergeButton = ({
+  baseDir,
+  defaultBranch,
+  onMerge,
+  onSquash,
+  onOnlyUncommitted,
+  onRebaseFromBranch,
+  onAbortRebase,
+  onContinueRebase,
+  onResolveConflictsWithAgent,
+  disabled,
+  canAbortRebase,
+  canContinueRebase,
+  canResolveConflictsWithAgent,
+  status,
+  taskName,
+}: Props) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [showMergeConfirm, setShowMergeConfirm] = useState(false);
-  const [showSquashConfirm, setShowSquashConfirm] = useState(false);
-  const [showOnlyUncommittedConfirm, setShowOnlyUncommittedConfirm] = useState(false);
+  const [showAbortRebaseConfirm, setShowAbortRebaseConfirm] = useState(false);
+  const [showContinueRebaseConfirm, setShowContinueRebaseConfirm] = useState(false);
+  const [showResolveWithAgentConfirm, setShowResolveWithAgentConfirm] = useState(false);
+
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [showSquashDialog, setShowSquashDialog] = useState(false);
+  const [showOnlyUncommittedDialog, setShowOnlyUncommittedDialog] = useState(false);
+  const [showRebaseDialog, setShowRebaseDialog] = useState(false);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(dropdownRef, () => setIsOpen(false));
@@ -31,32 +66,52 @@ export const WorktreeMergeButton = ({ onMerge, onSquash, onOnlyUncommitted, disa
 
   const handleMergeClick = () => {
     setIsOpen(false);
-    setShowMergeConfirm(true);
+    setShowMergeDialog(true);
   };
 
   const handleSquashClick = () => {
     setIsOpen(false);
-    setShowSquashConfirm(true);
+    setShowSquashDialog(true);
   };
 
   const handleOnlyUncommittedClick = () => {
     setIsOpen(false);
-    setShowOnlyUncommittedConfirm(true);
+    setShowOnlyUncommittedDialog(true);
   };
 
-  const handleMergeConfirm = () => {
-    setShowMergeConfirm(false);
-    onMerge();
+  const handleRebaseClick = () => {
+    setIsOpen(false);
+    setShowRebaseDialog(true);
   };
 
-  const handleSquashConfirm = () => {
-    setShowSquashConfirm(false);
-    onSquash();
+  const handleAbortRebaseClick = () => {
+    setIsOpen(false);
+    setShowAbortRebaseConfirm(true);
   };
 
-  const handleOnlyUncommittedConfirm = () => {
-    setShowOnlyUncommittedConfirm(false);
-    onOnlyUncommitted();
+  const handleContinueRebaseClick = () => {
+    setIsOpen(false);
+    setShowContinueRebaseConfirm(true);
+  };
+
+  const handleResolveWithAgentClick = () => {
+    setIsOpen(false);
+    setShowResolveWithAgentConfirm(true);
+  };
+
+  const handleAbortRebaseConfirm = () => {
+    setShowAbortRebaseConfirm(false);
+    onAbortRebase();
+  };
+
+  const handleContinueRebaseConfirm = () => {
+    setShowContinueRebaseConfirm(false);
+    onContinueRebase();
+  };
+
+  const handleResolveWithAgentConfirm = () => {
+    setShowResolveWithAgentConfirm(false);
+    onResolveConflictsWithAgent();
   };
 
   return (
@@ -73,7 +128,7 @@ export const WorktreeMergeButton = ({ onMerge, onSquash, onOnlyUncommitted, disa
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded shadow-lg z-50 min-w-[150px]">
+        <div className="absolute top-full right-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded shadow-lg z-50 min-w-[175px]">
           <button onClick={handleMergeClick} className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
             {t('worktree.merge')}
           </button>
@@ -86,43 +141,134 @@ export const WorktreeMergeButton = ({ onMerge, onSquash, onOnlyUncommitted, disa
           >
             {t('worktree.onlyUncommitted')}
           </button>
+
+          <div className="border-t border-border-default-dark my-1" />
+
+          <button onClick={handleRebaseClick} className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
+            {t('worktree.rebaseFromBranch')}
+          </button>
+          <button
+            onClick={handleAbortRebaseClick}
+            disabled={!canAbortRebase}
+            className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t('worktree.abortRebase')}
+          </button>
+          <button
+            onClick={handleContinueRebaseClick}
+            disabled={!canContinueRebase}
+            className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t('worktree.continueRebase')}
+          </button>
+          <button
+            onClick={handleResolveWithAgentClick}
+            disabled={!canResolveConflictsWithAgent}
+            className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {t('worktree.resolveConflictsWithAgent')}
+          </button>
         </div>
       )}
 
-      {showMergeConfirm && (
+      {showAbortRebaseConfirm && (
         <ConfirmDialog
+          title={t('worktree.confirmAbortRebaseTitle')}
+          onConfirm={handleAbortRebaseConfirm}
+          onCancel={() => setShowAbortRebaseConfirm(false)}
+          confirmButtonText={t('worktree.abortRebase')}
+          closeOnEscape
+        >
+          <p className="text-sm mb-3">{t('worktree.confirmAbortRebaseMessage')}</p>
+        </ConfirmDialog>
+      )}
+
+      {showContinueRebaseConfirm && (
+        <ConfirmDialog
+          title={t('worktree.confirmContinueRebaseTitle')}
+          onConfirm={handleContinueRebaseConfirm}
+          onCancel={() => setShowContinueRebaseConfirm(false)}
+          confirmButtonText={t('worktree.continueRebase')}
+          closeOnEscape
+        >
+          <p className="text-sm mb-3">{t('worktree.confirmContinueRebaseMessage')}</p>
+        </ConfirmDialog>
+      )}
+
+      {showResolveWithAgentConfirm && (
+        <ConfirmDialog
+          title={t('worktree.confirmResolveConflictsWithAgentTitle')}
+          onConfirm={handleResolveWithAgentConfirm}
+          onCancel={() => setShowResolveWithAgentConfirm(false)}
+          confirmButtonText={t('worktree.resolveConflictsWithAgent')}
+          closeOnEscape
+        >
+          <p className="text-sm mb-3">{t('worktree.confirmResolveConflictsWithAgentMessage')}</p>
+        </ConfirmDialog>
+      )}
+
+      {showMergeDialog && (
+        <WorktreeActionDialog
+          baseDir={baseDir}
           title={t('worktree.confirmMergeTitle')}
-          onConfirm={handleMergeConfirm}
-          onCancel={() => setShowMergeConfirm(false)}
+          message={t('worktree.confirmMergeMessage')}
           confirmButtonText={t('worktree.merge')}
-          closeOnEscape
-        >
-          <p className="text-sm mb-3">{t('worktree.confirmMergeMessage')}</p>
-        </ConfirmDialog>
+          defaultBranch={defaultBranch}
+          onCancel={() => setShowMergeDialog(false)}
+          onConfirm={(branch) => {
+            setShowMergeDialog(false);
+            onMerge(branch);
+          }}
+        />
       )}
 
-      {showSquashConfirm && (
-        <ConfirmDialog
+      {showSquashDialog && (
+        <WorktreeActionDialog
+          baseDir={baseDir}
           title={t('worktree.confirmSquashTitle')}
-          onConfirm={handleSquashConfirm}
-          onCancel={() => setShowSquashConfirm(false)}
+          message={t('worktree.confirmSquashMessage')}
           confirmButtonText={t('worktree.squash')}
-          closeOnEscape
-        >
-          <p className="text-sm mb-3">{t('worktree.confirmSquashMessage')}</p>
-        </ConfirmDialog>
+          defaultBranch={defaultBranch}
+          showCommitMessage
+          initialCommitMessage={
+            status?.aheadCommits.commits && status.aheadCommits.commits.length > 0 ? status.aheadCommits.commits[0].split(' ').slice(1).join(' ') : taskName
+          }
+          onCancel={() => setShowSquashDialog(false)}
+          onConfirm={(branch, commitMessage) => {
+            setShowSquashDialog(false);
+            onSquash(branch, commitMessage);
+          }}
+        />
       )}
 
-      {showOnlyUncommittedConfirm && (
-        <ConfirmDialog
+      {showOnlyUncommittedDialog && (
+        <WorktreeActionDialog
+          baseDir={baseDir}
           title={t('worktree.confirmOnlyUncommittedTitle')}
-          onConfirm={handleOnlyUncommittedConfirm}
-          onCancel={() => setShowOnlyUncommittedConfirm(false)}
+          message={t('worktree.confirmOnlyUncommittedMessage')}
           confirmButtonText={t('worktree.onlyUncommitted')}
-          closeOnEscape
-        >
-          <p className="text-sm mb-3">{t('worktree.confirmOnlyUncommittedMessage')}</p>
-        </ConfirmDialog>
+          defaultBranch={defaultBranch}
+          onCancel={() => setShowOnlyUncommittedDialog(false)}
+          onConfirm={(branch) => {
+            setShowOnlyUncommittedDialog(false);
+            onOnlyUncommitted(branch);
+          }}
+        />
+      )}
+
+      {showRebaseDialog && (
+        <WorktreeActionDialog
+          baseDir={baseDir}
+          title={t('worktree.confirmRebaseTitle')}
+          message={t('worktree.confirmRebaseMessage')}
+          confirmButtonText={t('worktree.rebaseFromBranch')}
+          defaultBranch={defaultBranch}
+          onCancel={() => setShowRebaseDialog(false)}
+          onConfirm={(branch) => {
+            setShowRebaseDialog(false);
+            onRebaseFromBranch(branch);
+          }}
+        />
       )}
     </div>
   );

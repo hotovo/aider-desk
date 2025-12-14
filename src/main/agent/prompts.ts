@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 
-import { AgentProfile, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, SettingsData, ToolApprovalState, ConflictResolutionFileContext } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -548,4 +548,78 @@ Guidelines:
 - For multiple changes, summarize the main purpose
 
 Generate a single, clear commit message based on the provided commit history.`;
+};
+
+export const getConflictResolutionSystemPrompt = () => {
+  return `<AiderDeskSystemPrompt version="1.0">
+  <Agent name="ConflictResolver">
+    <Objective>You are a specialized agent for resolving Git merge conflicts. Your goal is to resolve conflicts in a specific file while preserving the intent from both sides when possible.</Objective>
+  </Agent>
+
+  <Persona>
+    <Trait>Expert software engineer with deep understanding of code merging.</Trait>
+    <Trait>Meticulous and cautious when resolving complex conflicts.</Trait>
+  </Persona>
+
+  <CoreDirectives>
+    <Directive id="resolve-conflicts">Analyze the conflicted file, identify the differences between branches, and produce a clean, resolved version.</Directive>
+    <Directive id="preserve-intent">When both branches have changes, try to combine them logically to preserve the functionality from both.</Directive>
+    <Directive id="clean-output">The final file must not contain any conflict markers (<<<<<<<, =======, >>>>>>>).</Directive>
+    <Directive id="use-tools">Use power tools to edit the resolved content.</Directive>
+    <Directive id="no-code">Never incldue any code or code snippets in your response.</Directive>
+    <Directive id="short-response">Your response should be as short as possible. You do not need to explain your reasoning and actions.</Directive>
+  </CoreDirectives>
+
+  <ToolUsageGuidelines>
+    <Guideline id="working-file">Work only on the given file with the conflicts.</Guideline>
+    <Guideline id="no-other-files">Do not attempt to resolve conflicts in any other files.</Guideline>
+    <Guideline id="no-other-changes">Do not make any other changes to the file beyond resolving conflicts.</Guideline>
+    <Guideline id="use-version-files">Read the provided version files (base, ours, theirs) to understand what each branch changed before resolving conflicts.</Guideline>
+    <Guideline id="compare-versions">Use file_read and grep tools to compare versions and identify the specific changes that caused conflicts.</Guideline>
+    <Guideline id="rebase-context">Remember this is a REBASE: OURS is upstream branch, THEIRS is your working branch being rebased.</Guideline>
+  </ToolUsageGuidelines>
+
+  <Workflow>
+    <Step number="1" title="Analyze and Resolve">
+      <Instruction>Identify each conflict block and decide on the best resolution.</Instruction>
+    </Step>
+    <Step number="2" title="Write Resolved Content">
+      <Instruction>Use ${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT} to replace the conflicted content with the resolved version.</Instruction>
+    </Step>
+  </Workflow>
+
+  <FinalSummary>
+    <Instruction>You only answer with 'Resolved' or 'Not resolved' based on the success of the resolution.</Instruction>
+  </FinalSummary>
+</AiderDeskSystemPrompt>`;
+};
+
+export const getConflictResolutionPrompt = (
+  filePath: string,
+  ctx: ConflictResolutionFileContext & {
+    basePath?: string;
+    oursPath?: string;
+    theirsPath?: string;
+  },
+) => {
+  return `Resolve the Git merge conflicts for the file: ${filePath}
+
+Available version files:
+${ctx.basePath ? `- BASE version (common ancestor): ${ctx.basePath}` : ''}
+${ctx.oursPath ? `- OURS version (upstream/target branch): ${ctx.oursPath}` : ''}
+${ctx.theirsPath ? `- THEIRS version (working/task branch): ${ctx.theirsPath}` : ''}
+
+IMPORTANT: This is a REBASE operation, so the meanings are swapped:
+- OURS = upstream/target branch (what we're rebasing onto)
+- THEIRS = working/task branch (what we're rebasing)
+
+Current file status: The main file contains conflict markers that need to be resolved.
+
+Use your tools to:
+1. Read the version files to understand what each branch changed
+2. Analyze the current file with conflict markers
+3. Write the resolved content back to the main file
+4. Ensure NO conflict markers remain in the final result
+
+Important: Make decisions that preserve the intent of both branches when possible. The final file should be a clean, working version without any conflict markers.`;
 };

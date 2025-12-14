@@ -170,7 +170,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
     };
 
     void createTerminal();
-  }, [baseDir, terminalId, visible, api]);
+  }, [baseDir, terminalId, visible, api, taskId]);
 
   // Handle terminal data
   useEffect(() => {

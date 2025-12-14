@@ -1107,7 +1107,7 @@ export class Agent {
 
   private processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning }: StepResult<TOOLS>,
+    { reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
     task: Task,
     profile: AgentProfile,
     provider: ProviderProfile,
@@ -1119,6 +1119,7 @@ export class Agent {
       text: text?.substring(0, 100), // Log truncated text
       toolCalls: toolCalls?.map((tc) => tc.toolName),
       toolResults: toolResults?.map((tr) => tr.toolName),
+      files: files?.map((f) => f.mediaType),
       usage,
       providerMetadata,
       promptContext,

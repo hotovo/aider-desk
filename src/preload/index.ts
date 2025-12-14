@@ -26,6 +26,7 @@ import {
   ToolData,
   UserMessageData,
   VersionsInfo,
+  WorktreeIntegrationStatusUpdatedData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -502,6 +503,19 @@ const api: ApplicationAPI = {
     };
   },
 
+  addWorktreeIntegrationStatusUpdatedListener: (baseDir, taskId, callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: WorktreeIntegrationStatusUpdatedData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir) || data.taskId !== taskId) {
+        return;
+      }
+      callback(data);
+    };
+    ipcRenderer.on('worktree-integration-status-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('worktree-integration-status-updated', listener);
+    };
+  },
+
   addContextMenuListener: (callback) => {
     const listener = (_: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(params);
     ipcRenderer.on('context-menu', listener);
@@ -531,9 +545,16 @@ const api: ApplicationAPI = {
   getAllTerminalsForTask: (taskId) => ipcRenderer.invoke('terminal-get-all-for-task', taskId),
 
   // Worktree merge operations
-  mergeWorktreeToMain: (baseDir, taskId, squash) => ipcRenderer.invoke('merge-worktree-to-main', baseDir, taskId, squash),
-  applyUncommittedChanges: (baseDir, taskId) => ipcRenderer.invoke('apply-uncommitted-changes', baseDir, taskId),
+  mergeWorktreeToMain: (baseDir, taskId, squash, targetBranch, commitMessage) =>
+    ipcRenderer.invoke('merge-worktree-to-main', baseDir, taskId, squash, targetBranch, commitMessage),
+  applyUncommittedChanges: (baseDir, taskId, targetBranch) => ipcRenderer.invoke('apply-uncommitted-changes', baseDir, taskId, targetBranch),
   revertLastMerge: (baseDir, taskId) => ipcRenderer.invoke('revert-last-merge', baseDir, taskId),
+  listBranches: (baseDir) => ipcRenderer.invoke('list-branches', baseDir),
+  getWorktreeIntegrationStatus: (baseDir, taskId, targetBranch) => ipcRenderer.invoke('get-worktree-integration-status', baseDir, taskId, targetBranch),
+  rebaseWorktreeFromBranch: (baseDir, taskId, fromBranch) => ipcRenderer.invoke('rebase-worktree-from-branch', baseDir, taskId, fromBranch),
+  abortWorktreeRebase: (baseDir, taskId) => ipcRenderer.invoke('abort-worktree-rebase', baseDir, taskId),
+  continueWorktreeRebase: (baseDir, taskId) => ipcRenderer.invoke('continue-worktree-rebase', baseDir, taskId),
+  resolveWorktreeConflictsWithAgent: (baseDir, taskId) => ipcRenderer.invoke('resolve-worktree-conflicts-with-agent', baseDir, taskId),
 
   // Agent profile operations
   getAllAgentProfiles: () => ipcRenderer.invoke('get-agent-profiles'),

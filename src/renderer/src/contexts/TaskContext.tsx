@@ -586,7 +586,7 @@ export const TaskProvider: React.FC<{
         }
       };
 
-      const handleLog = ({ level, message, finished, promptContext }: LogData) => {
+      const handleLog = ({ level, message, finished, promptContext, actionIds }: LogData) => {
         if (level === 'loading') {
           if (finished) {
             // Mark all messages in the same group as finished before removing loading messages
@@ -648,6 +648,7 @@ export const TaskProvider: React.FC<{
             level,
             content: message || '',
             promptContext,
+            actionIds,
           };
           setMessages(taskId, (prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), logMessage]);
 

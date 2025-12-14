@@ -70,6 +70,7 @@ import {
 
 type Props = {
   baseDir: string;
+  taskId: string;
   message: Message;
   allFiles: string[];
   renderMarkdown: boolean;
@@ -79,7 +80,7 @@ type Props = {
   edit?: (content: string) => void;
 };
 
-const MessageBlockComponent = ({ baseDir, message, allFiles, renderMarkdown, compact = false, remove, redo, edit }: Props) => {
+const MessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, compact = false, remove, redo, edit }: Props) => {
   const { t } = useTranslation();
 
   if (isLoadingMessage(message)) {
@@ -87,7 +88,7 @@ const MessageBlockComponent = ({ baseDir, message, allFiles, renderMarkdown, com
   }
 
   if (isLogMessage(message)) {
-    return <LogMessageBlock message={message} onRemove={remove} compact={compact} />;
+    return <LogMessageBlock baseDir={baseDir} taskId={taskId} message={message} onRemove={remove} compact={compact} />;
   }
 
   if (isReflectedMessage(message)) {
@@ -200,7 +201,7 @@ const MessageBlockComponent = ({ baseDir, message, allFiles, renderMarkdown, com
           id: toolMessage.id,
           content: logMessageContent,
         };
-        return <LogMessageBlock message={logMessage} onRemove={remove} compact={compact} />;
+        return <LogMessageBlock baseDir={baseDir} taskId={taskId} message={logMessage} onRemove={remove} compact={compact} />;
       }
       default:
         break;
@@ -215,6 +216,7 @@ const MessageBlockComponent = ({ baseDir, message, allFiles, renderMarkdown, com
 const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
   if (
     prevProps.baseDir !== nextProps.baseDir ||
+    prevProps.taskId !== nextProps.taskId ||
     prevProps.allFiles.length !== nextProps.allFiles.length ||
     prevProps.renderMarkdown !== nextProps.renderMarkdown ||
     prevProps.compact !== nextProps.compact ||

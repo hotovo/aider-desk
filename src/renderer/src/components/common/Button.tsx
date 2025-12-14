@@ -1,9 +1,9 @@
 import { ReactNode } from 'react';
 import { twMerge } from 'tailwind-merge';
 
-type ButtonVariant = 'contained' | 'text' | 'outline';
-type ButtonColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
-type ButtonSize = 'sm' | 'md' | 'xs';
+export type ButtonVariant = 'contained' | 'text' | 'outline';
+export type ButtonColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'xs';
 
 type Props = {
   children: ReactNode;

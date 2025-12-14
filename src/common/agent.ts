@@ -425,6 +425,34 @@ export const INIT_PROJECT_AGENTS_PROFILE: AgentProfile = {
   },
 };
 
+export const CONFLICT_RESOLUTION_PROFILE: AgentProfile = {
+  ...DEFAULT_AGENT_PROFILE,
+  id: 'conflict-resolution',
+  maxIterations: 20,
+  includeRepoMap: false,
+  includeContextFiles: false,
+  usePowerTools: true,
+  useAiderTools: false,
+  useTodoTools: false,
+  useSubagents: false,
+  useTaskTools: false,
+  useMemoryTools: false,
+  useSkillsTools: false,
+  isSubagent: true,
+  toolApprovals: {
+    ...DEFAULT_AGENT_PROFILE.toolApprovals,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Always,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`]: ToolApprovalState.Always,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}`]: ToolApprovalState.Always,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FETCH}`]: ToolApprovalState.Never,
+    [`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`]: ToolApprovalState.Never,
+  },
+};
+
 export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   ...DEFAULT_AGENT_PROFILE,
   id: 'compact',
@@ -438,6 +466,7 @@ export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   useTaskTools: false,
   useMemoryTools: false,
   useSkillsTools: false,
+  isSubagent: true,
   toolApprovals: {
     ...DEFAULT_AGENT_PROFILE.toolApprovals,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,

@@ -3,17 +3,20 @@ import { MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 
 import { CopyMessageButton } from './CopyMessageButton';
+import { MessageActions } from './MessageActions';
 
 import { LogMessage } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 
 type Props = {
+  baseDir: string;
+  taskId: string;
   message: LogMessage;
   onRemove?: () => void;
   compact?: boolean;
 };
 
-export const LogMessageBlock = ({ message, onRemove, compact = false }: Props) => {
+export const LogMessageBlock = ({ baseDir, taskId, message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
   const baseClasses = 'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs border';
 
@@ -52,6 +55,11 @@ export const LogMessageBlock = ({ message, onRemove, compact = false }: Props) =
   return (
     <div className={`${baseClasses} ${config.levelClasses} relative group`}>
       {renderMessage()}
+      {message.actionIds && (
+        <div className="flex flex-wrap justify-end">
+          <MessageActions actionIds={message.actionIds} baseDir={baseDir} taskId={taskId} />
+        </div>
+      )}
       <div className="absolute top-2 right-2 flex items-center space-x-1">
         <CopyMessageButton content={t(message.content)} className={config.tooltipClass} />
         {onRemove && (

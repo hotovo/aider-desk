@@ -438,22 +438,22 @@ export class EventsHandler {
     }));
   }
 
-  async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean): Promise<void> {
+  async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);
     }
 
-    await task.mergeWorktreeToMain(squash);
+    await task.mergeWorktreeToMain(squash, targetBranch, commitMessage);
   }
 
-  async applyUncommittedChanges(baseDir: string, taskId: string): Promise<void> {
+  async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);
     }
 
-    await task.applyUncommittedChanges();
+    await task.applyUncommittedChanges(targetBranch);
   }
 
   async revertLastMerge(baseDir: string, taskId: string): Promise<void> {
@@ -463,6 +463,55 @@ export class EventsHandler {
     }
 
     await task.revertLastMerge();
+  }
+
+  async listBranches(projectDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
+    return await this.projectManager.worktreeManager.listBranches(projectDir);
+  }
+
+  async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string) {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    return await task.getWorktreeIntegrationStatus(targetBranch);
+  }
+
+  async rebaseWorktreeFromBranch(baseDir: string, taskId: string, fromBranch?: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.rebaseWorktreeFromBranch(fromBranch);
+  }
+
+  async abortWorktreeRebase(baseDir: string, taskId: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.abortWorktreeRebase();
+  }
+
+  async continueWorktreeRebase(baseDir: string, taskId: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.continueWorktreeRebase();
+  }
+
+  async resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.resolveWorktreeConflictsWithAgent();
   }
 
   async scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void> {

@@ -13,6 +13,7 @@ import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage,
 
 type Props = {
   baseDir: string;
+  taskId: string;
   message: GroupMessage;
   allFiles: string[];
   renderMarkdown: boolean;
@@ -21,7 +22,7 @@ type Props = {
   edit?: (content: string) => void;
 };
 
-const GroupMessageBlockComponent = ({ baseDir, message, allFiles, renderMarkdown, remove, redo, edit }: Props) => {
+const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, remove, redo, edit }: Props) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -113,6 +114,7 @@ const GroupMessageBlockComponent = ({ baseDir, message, allFiles, renderMarkdown
             <MessageBlock
               key={child.id || index}
               baseDir={baseDir}
+              taskId={taskId}
               message={child}
               allFiles={allFiles}
               renderMarkdown={renderMarkdown}
@@ -140,7 +142,7 @@ const GroupMessageBlockComponent = ({ baseDir, message, allFiles, renderMarkdown
               transition={{ duration: 0.5 }}
               className="absolute top-0.5 left-6 right-6"
             >
-              <MessageBlock baseDir={baseDir} message={previewMessage} allFiles={allFiles} renderMarkdown={renderMarkdown} compact={true} />
+              <MessageBlock baseDir={baseDir} taskId={taskId} message={previewMessage} allFiles={allFiles} renderMarkdown={renderMarkdown} compact={true} />
             </motion.div>
             <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-bg-secondary via-bg-secondary to-transparent pointer-events-none" />
           </motion.div>

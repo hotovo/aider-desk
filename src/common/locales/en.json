@@ -38,7 +38,8 @@
     "collapse": "Collapse",
     "expand": "Expand",
     "enabled": "Enabled",
-    "noFiles": "No files"
+    "noFiles": "No files",
+    "clickToRefresh": "Click to refresh"
   },
   "search": {
     "placeholder": "Search...",
@@ -1064,7 +1065,10 @@
   "workingMode": {
     "local": "Local",
     "worktree": "Worktree",
-    "switching": "Switching..."
+    "switching": "Switching...",
+    "confirmLocalTitle": "Switch to Local Mode",
+    "confirmLocalMessage": "Warning: This worktree has unsaved work:\n{{warnings}}\n\nRemoving the worktree will delete this work. If you want to keep this work, use Merge action to merge it to the main branch first.\n\nAre you sure you want to continue and remove the worktree?",
+    "confirmLocalAction": "Remove and switch"
   },
   "workingModeTooltip": {
     "local": "Make changes directly in the local project directory for this task",
@@ -1215,23 +1219,50 @@
     "unarchiveSelectedConfirm": "Are you sure you want to unarchive {{count}} selected tasks?"
   },
   "worktree": {
+    "aheadCommits": "↑ {{count}} commits",
+    "uncommittedFiles": "{{count}} files",
+    "conflicts": "conflicts",
+    "conflictsPredicted": "Conflicts predicted",
+    "conflictsPresent": "Conflicts present",
     "merge": "Merge",
     "squash": "Squash & Merge",
     "onlyUncommitted": "Only uncommitted",
-    "mergeTooltip": "Merge worktree changes to main branch",
+    "rebaseFromBranch": "Rebase from branch",
+    "abortRebase": "Abort rebase",
+    "continueRebase": "Continue rebase",
+    "rebaseConflicts": "Rebase failed due to conflicts. Please resolve them manually or use the AI agent to help.",
+    "confirmRebaseTitle": "Rebase worktree",
+    "confirmRebaseMessage": "This will rebase your worktree onto the selected branch. If there are conflicts, you will need to resolve them.",
+    "confirmAbortRebaseTitle": "Abort rebase",
+    "confirmAbortRebaseMessage": "This will abort the in-progress rebase and restore the worktree to its pre-rebase state.",
+    "confirmContinueRebaseTitle": "Continue rebase",
+    "confirmContinueRebaseMessage": "This will try to continue the rebase. Make sure all conflicts are resolved and staged.",
+    "resolveConflictsWithAgent": "Resolve conflicts with agent",
+    "confirmResolveConflictsWithAgentTitle": "Resolve conflicts with agent",
+    "confirmResolveConflictsWithAgentMessage": "This will try to automatically resolve all conflicted files and stage them. Review results carefully before continuing the rebase.",
+    "commitMessage": "Commit message",
+    "commitMessagePlaceholder": "Enter commit message...",
+    "selectBranch": "Select branch",
+    "selectTargetBranchTitle": "Select target branch",
+    "selectSourceBranchTitle": "Select source branch",
+    "branchHasWorktree": "has worktree",
+    "mergeTooltip": "Merge worktree changes to a branch",
     "revertTooltip": "Revert the last merged changes",
     "confirmMerge": "Are you sure you want to {{action}} the worktree changes to the main branch? This will include any uncommitted changes.",
     "confirmRevert": "Are you sure you want to revert the last merge? This will reset the main branch to its previous state.",
     "confirmMergeTitle": "Confirm Merge",
     "confirmSquashTitle": "Confirm Squash",
     "confirmOnlyUncommittedTitle": "Confirm Apply Uncommitted Changes",
-    "confirmMergeMessage": "Are you sure you want to merge the worktree changes to the main branch?",
-    "confirmSquashMessage": "Are you sure you want to squash and merge the worktree changes to the main branch?",
-    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to main branch? No git merge will be performed.",
+    "confirmMergeMessage": "Are you sure you want to merge the worktree changes to the selected branch?",
+    "confirmSquashMessage": "Are you sure you want to squash and merge the worktree changes to the selected branch?",
+    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to the selected branch? No git merge will be performed.",
+    "mergeConflicts": "Merge failed due to conflicts between your worktree and the target branch. Please rebase your worktree first to resolve them.",
+    "applyUncommittedConflicts": "Failed to apply uncommitted changes due to conflicts with the target branch. Please rebase your worktree first to align your changes.",
     "dontAskAgain": "Don't ask me again",
     "confirmRevertTitle": "Confirm Revert",
     "confirmRevertMessage": "Are you sure you want to revert the last merge? This will undo the changes that were merged from the worktree back to the main branch.",
-    "revert": "Revert"
+    "revert": "Revert",
+    "noChanges": "No changes"
   },
   "welcomeMessage": {
     "title": "AiderDesk",

@@ -22,6 +22,7 @@ export type MessagesRef = {
 
 type Props = {
   baseDir: string;
+  taskId: string;
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
@@ -32,7 +33,7 @@ type Props = {
 };
 
 export const Messages = forwardRef<MessagesRef, Props>(
-  ({ baseDir, messages, allFiles = [], renderMarkdown, removeMessage, redoLastUserPrompt, editLastUserMessage, processing }, ref) => {
+  ({ baseDir, taskId, messages, allFiles = [], renderMarkdown, removeMessage, redoLastUserPrompt, editLastUserMessage, processing }, ref) => {
     const { t } = useTranslation();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -108,6 +109,7 @@ export const Messages = forwardRef<MessagesRef, Props>(
               <GroupMessageBlock
                 key={message.id || index}
                 baseDir={baseDir}
+                taskId={taskId}
                 message={message}
                 allFiles={allFiles}
                 renderMarkdown={renderMarkdown}
@@ -121,6 +123,7 @@ export const Messages = forwardRef<MessagesRef, Props>(
             <MessageBlock
               key={message.id || index}
               baseDir={baseDir}
+              taskId={taskId}
               message={message}
               allFiles={allFiles}
               renderMarkdown={renderMarkdown}

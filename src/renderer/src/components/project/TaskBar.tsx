@@ -267,14 +267,14 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     };
 
     const handleMerge = useCallback(
-      async (squash: boolean) => {
+      async (squash: boolean, targetBranch?: string, commitMessage?: string) => {
         if (!task.worktree) {
           return;
         }
 
         setIsMerging(true);
         try {
-          await api.mergeWorktreeToMain(baseDir, task.id, squash);
+          await api.mergeWorktreeToMain(baseDir, task.id, squash, targetBranch, commitMessage);
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error('Failed to merge worktree:', error);
@@ -285,21 +285,91 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
       [api, baseDir, task.id, task.worktree],
     );
 
-    const handleOnlyUncommitted = useCallback(async () => {
+    const handleRebaseFromBranch = useCallback(
+      async (fromBranch?: string) => {
+        if (!task.worktree) {
+          return;
+        }
+
+        setIsMerging(true);
+        try {
+          await api.rebaseWorktreeFromBranch(baseDir, task.id, fromBranch);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to rebase worktree:', error);
+        } finally {
+          setIsMerging(false);
+        }
+      },
+      [api, baseDir, task.id, task.worktree],
+    );
+
+    const handleAbortRebase = useCallback(async () => {
       if (!task.worktree) {
         return;
       }
 
       setIsMerging(true);
       try {
-        await api.applyUncommittedChanges(baseDir, task.id);
+        await api.abortWorktreeRebase(baseDir, task.id);
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error('Failed to apply uncommitted changes:', error);
+        console.error('Failed to abort rebase:', error);
       } finally {
         setIsMerging(false);
       }
     }, [api, baseDir, task.id, task.worktree]);
+
+    const handleContinueRebase = useCallback(async () => {
+      if (!task.worktree) {
+        return;
+      }
+
+      setIsMerging(true);
+      try {
+        await api.continueWorktreeRebase(baseDir, task.id);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to continue rebase:', error);
+      } finally {
+        setIsMerging(false);
+      }
+    }, [api, baseDir, task.id, task.worktree]);
+
+    const handleResolveConflictsWithAgent = useCallback(async () => {
+      if (!task.worktree) {
+        return;
+      }
+
+      setIsMerging(true);
+      try {
+        await api.resolveWorktreeConflictsWithAgent(baseDir, task.id);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to resolve conflicts with agent:', error);
+      } finally {
+        setIsMerging(false);
+      }
+    }, [api, baseDir, task.id, task.worktree]);
+
+    const handleOnlyUncommitted = useCallback(
+      async (targetBranch?: string) => {
+        if (!task.worktree) {
+          return;
+        }
+
+        setIsMerging(true);
+        try {
+          await api.applyUncommittedChanges(baseDir, task.id, targetBranch);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to apply uncommitted changes:', error);
+        } finally {
+          setIsMerging(false);
+        }
+      },
+      [api, baseDir, task.id, task.worktree],
+    );
 
     const handleRevert = useCallback(async () => {
       setIsMerging(true);
@@ -473,9 +543,13 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
           <div className="flex items-center space-x-1 mr-2">
             <TaskWorkingMode
               task={task}
-              onMerge={() => handleMerge(false)}
-              onSquash={() => handleMerge(true)}
+              onMerge={(branch) => handleMerge(false, branch)}
+              onSquash={(branch, commitMessage) => handleMerge(true, branch, commitMessage)}
               onOnlyUncommitted={handleOnlyUncommitted}
+              onRebaseFromBranch={handleRebaseFromBranch}
+              onAbortRebase={handleAbortRebase}
+              onContinueRebase={handleContinueRebase}
+              onResolveConflictsWithAgent={handleResolveConflictsWithAgent}
               onRevert={handleRevert}
               isMerging={isMerging}
             />

@@ -42,6 +42,8 @@ import {
   VoiceSession,
   AgentProfile,
   MemoryEntry,
+  WorktreeIntegrationStatusUpdatedData,
+  BranchInfo,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -158,6 +160,7 @@ export interface ApplicationAPI {
   addProvidersUpdatedListener: (callback: (data: ProvidersUpdatedData) => void) => () => void;
   addAgentProfilesUpdatedListener: (callback: (data: AgentProfilesUpdatedData) => void) => () => void;
   addProjectSettingsUpdatedListener: (baseDir: string, callback: (data: { baseDir: string; settings: ProjectSettings }) => void) => () => void;
+  addWorktreeIntegrationStatusUpdatedListener: (baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (params: Electron.ContextMenuParams) => void) => () => void;
@@ -185,9 +188,15 @@ export interface ApplicationAPI {
   getAllTerminalsForTask: (taskId: string) => Promise<Array<{ id: string; taskId: string; cols: number; rows: number }>>;
 
   // Worktree merge operations
-  mergeWorktreeToMain: (baseDir: string, taskId: string, squash: boolean) => Promise<void>;
-  applyUncommittedChanges: (baseDir: string, taskId: string) => Promise<void>;
+  mergeWorktreeToMain: (baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string) => Promise<void>;
+  applyUncommittedChanges: (baseDir: string, taskId: string, targetBranch?: string) => Promise<void>;
   revertLastMerge: (baseDir: string, taskId: string) => Promise<void>;
+  listBranches: (baseDir: string) => Promise<BranchInfo[]>;
+  getWorktreeIntegrationStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<import('@common/types').WorktreeIntegrationStatus>;
+  rebaseWorktreeFromBranch: (baseDir: string, taskId: string, fromBranch?: string) => Promise<void>;
+  abortWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
+  continueWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
+  resolveWorktreeConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
 
   // Agent profile operations
   getAllAgentProfiles: () => Promise<AgentProfile[]>;

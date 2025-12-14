@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { BaseDialog } from './BaseDialog';
-import { Button } from './Button';
+import { Button, ButtonColor } from './Button';
 
 type Props = {
   title: string;
@@ -14,6 +14,7 @@ type Props = {
   children: ReactNode;
   disabled?: boolean;
   confirmButtonClass?: string;
+  confirmButtonColor?: ButtonColor;
   width?: number;
   closeOnEscape?: boolean;
 };
@@ -28,6 +29,7 @@ export const ConfirmDialog = ({
   children,
   disabled = false,
   confirmButtonClass,
+  confirmButtonColor,
   width,
   closeOnEscape = false,
 }: Props) => {
@@ -45,7 +47,7 @@ export const ConfirmDialog = ({
           <Button onClick={onCancel} variant="text">
             {resolvedCancelText}
           </Button>
-          <Button onClick={onConfirm} autoFocus={true} disabled={disabled} variant="contained" className={confirmButtonClass}>
+          <Button onClick={onConfirm} autoFocus={true} disabled={disabled} variant="contained" className={confirmButtonClass} color={confirmButtonColor}>
             {resolvedConfirmText}
           </Button>
         </>

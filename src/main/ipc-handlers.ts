@@ -317,16 +317,40 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   // Worktree merge handlers
-  ipcMain.handle('merge-worktree-to-main', async (_, baseDir: string, taskId: string, squash: boolean) => {
-    await eventsHandler.mergeWorktreeToMain(baseDir, taskId, squash);
+  ipcMain.handle('merge-worktree-to-main', async (_, baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string) => {
+    await eventsHandler.mergeWorktreeToMain(baseDir, taskId, squash, targetBranch, commitMessage);
   });
 
-  ipcMain.handle('apply-uncommitted-changes', async (_, baseDir: string, taskId: string) => {
-    await eventsHandler.applyUncommittedChanges(baseDir, taskId);
+  ipcMain.handle('apply-uncommitted-changes', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
+    await eventsHandler.applyUncommittedChanges(baseDir, taskId, targetBranch);
   });
 
   ipcMain.handle('revert-last-merge', async (_, baseDir: string, taskId: string) => {
     await eventsHandler.revertLastMerge(baseDir, taskId);
+  });
+
+  ipcMain.handle('list-branches', async (_, baseDir: string) => {
+    return await eventsHandler.listBranches(baseDir);
+  });
+
+  ipcMain.handle('get-worktree-integration-status', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
+    return await eventsHandler.getWorktreeIntegrationStatus(baseDir, taskId, targetBranch);
+  });
+
+  ipcMain.handle('rebase-worktree-from-branch', async (_, baseDir: string, taskId: string, fromBranch?: string) => {
+    await eventsHandler.rebaseWorktreeFromBranch(baseDir, taskId, fromBranch);
+  });
+
+  ipcMain.handle('abort-worktree-rebase', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.abortWorktreeRebase(baseDir, taskId);
+  });
+
+  ipcMain.handle('continue-worktree-rebase', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.continueWorktreeRebase(baseDir, taskId);
+  });
+
+  ipcMain.handle('resolve-worktree-conflicts-with-agent', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.resolveWorktreeConflictsWithAgent(baseDir, taskId);
   });
 
   // Server control handlers

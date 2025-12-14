@@ -26,6 +26,7 @@ export interface ReflectedMessage extends Message {
 export interface LogMessage extends Message {
   type: 'log';
   level: 'info' | 'warning' | 'error';
+  actionIds?: string[];
 }
 
 export interface LoadingMessage extends Message {

@@ -387,6 +387,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(({ project, task, updateT
                       }
                     }}
                     baseDir={project.baseDir}
+                    taskId={task.id}
                     messages={displayedMessages}
                     allFiles={allFiles}
                     renderMarkdown={settings.renderMarkdown}
@@ -404,6 +405,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(({ project, task, updateT
                       }
                     }}
                     baseDir={project.baseDir}
+                    taskId={task.id}
                     messages={displayedMessages}
                     allFiles={allFiles}
                     renderMarkdown={settings.renderMarkdown}

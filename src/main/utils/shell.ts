@@ -630,13 +630,14 @@ export const findExecutableInPath = (executable: string): string | null => {
 };
 
 // Wrapper for execAsync that includes enhanced PATH
-export const execWithShellPath = async (command: string, options?: { cwd?: string }): Promise<{ stdout: string; stderr: string }> => {
+export const execWithShellPath = async (command: string, options?: { cwd?: string; env?: NodeJS.ProcessEnv }): Promise<{ stdout: string; stderr: string }> => {
   const shellPath = getShellPath();
   return execAsync(command, {
     ...options,
     env: {
       ...process.env,
       PATH: shellPath,
+      ...options?.env,
     },
   });
 };

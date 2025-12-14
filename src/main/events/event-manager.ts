@@ -25,6 +25,7 @@ import {
   ProjectSettings,
   AgentProfile,
   AgentProfilesUpdatedData,
+  WorktreeIntegrationStatus,
 } from '@common/types';
 
 import type { BrowserWindow } from 'electron';
@@ -198,6 +199,17 @@ export class EventManager {
     };
     this.sendToMainWindow('custom-command-error', data);
     this.broadcastToEventConnectors('custom-command-error', data);
+  }
+
+  sendWorktreeIntegrationStatusUpdated(baseDir: string, taskId: string, status: WorktreeIntegrationStatus): void {
+    const data = {
+      baseDir,
+      taskId,
+      status,
+    };
+    logger.debug('Sending worktree integration status updated', data);
+    this.sendToMainWindow('worktree-integration-status-updated', data);
+    this.broadcastToEventConnectors('worktree-integration-status-updated', data);
   }
 
   // Terminal events

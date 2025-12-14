@@ -13,6 +13,7 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 
 export class ProjectManager {
+  public readonly worktreeManager: WorktreeManager;
   private projects: Project[] = [];
 
   constructor(
@@ -22,10 +23,12 @@ export class ProjectManager {
     private readonly dataManager: DataManager,
     private readonly eventManager: EventManager,
     private readonly modelManager: ModelManager,
-    private readonly worktreeManager: WorktreeManager,
+    worktreeManager: WorktreeManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
-  ) {}
+  ) {
+    this.worktreeManager = worktreeManager;
+  }
 
   private findProject(baseDir: string): Project | undefined {
     return this.projects.find((project) => normalizeBaseDir(project.baseDir) === normalizeBaseDir(baseDir));

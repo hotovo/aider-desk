@@ -34,15 +34,62 @@ export const MergeStateSchema = z.object({
   beforeMergeCommitHash: z.string(),
   worktreeBranchCommitHash: z.string(),
   mainOriginalStashId: z.string().optional(),
+  targetBranch: z.string().optional(),
   timestamp: z.number(),
 });
 
 export type MergeState = z.infer<typeof MergeStateSchema>;
 
-export type LocalizedString = {
+export interface WorktreeAheadCommits {
+  count: number;
+  commits: string[];
+}
+
+export interface WorktreeUncommittedFiles {
+  count: number;
+  files: string[];
+}
+
+export interface RebaseState {
+  inProgress: boolean;
+  hasUnmergedPaths: boolean;
+  unmergedFiles?: string[];
+}
+
+export interface ConflictResolutionFileContext {
+  filePath: string;
+  base?: string | null;
+  ours?: string | null;
+  theirs?: string | null;
+  current?: string;
+}
+
+export interface WorktreeIntegrationStatus {
+  targetBranch: string;
+  aheadCommits: WorktreeAheadCommits;
+  uncommittedFiles: WorktreeUncommittedFiles;
+  predictedConflicts: {
+    hasConflicts: boolean;
+    conflictingFiles?: string[];
+    conflictingCommits?: {
+      ours: string[];
+      theirs: string[];
+    };
+    canAutoMerge?: boolean;
+  };
+  rebaseState: RebaseState;
+}
+
+export interface WorktreeIntegrationStatusUpdatedData {
+  baseDir: string;
+  taskId: string;
+  status: WorktreeIntegrationStatus;
+}
+
+export interface LocalizedString {
   key: string;
   params?: Record<string, unknown>;
-};
+}
 
 export type Mode = 'code' | 'ask' | 'architect' | 'context' | 'agent';
 
@@ -108,6 +155,7 @@ export interface LogData {
   message?: string;
   finished?: boolean;
   promptContext?: PromptContext;
+  actionIds?: string[];
 }
 
 export interface ToolData {
@@ -773,4 +821,17 @@ export interface MemoryEntry {
   taskId?: string;
   projectId?: string;
   timestamp: number;
+}
+
+export interface BranchInfo {
+  name: string;
+  isCurrent: boolean;
+  hasWorktree: boolean;
+}
+
+export interface Test {
+  name: string;
+  description: string;
+  status: 'todo' | 'in_progress' | 'done';
+  message: string;
 }

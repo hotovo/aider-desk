@@ -34,7 +34,7 @@ import {
   ModelInfo,
 } from '@common/types';
 import { extractTextContent, fileExists, parseUsageReport } from '@common/utils';
-import { COMPACT_CONVERSATION_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
+import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
@@ -42,8 +42,22 @@ import { isEqual } from 'lodash';
 import type { SimpleGit } from 'simple-git';
 
 import { getAllFiles } from '@/utils/file-system';
-import { getCompactConversationPrompt, getGenerateCommitMessagePrompt, getInitProjectPrompt, getSystemPrompt } from '@/agent/prompts';
-import { AIDER_DESK_TASKS_DIR, AIDER_DESK_TODOS_FILE, WORKTREE_BRANCH_PREFIX, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_GLOBAL_RULES_DIR } from '@/constants';
+import {
+  getCompactConversationPrompt,
+  getConflictResolutionPrompt,
+  getConflictResolutionSystemPrompt,
+  getGenerateCommitMessagePrompt,
+  getInitProjectPrompt,
+  getSystemPrompt,
+} from '@/agent/prompts';
+import {
+  AIDER_DESK_TASKS_DIR,
+  AIDER_DESK_TODOS_FILE,
+  WORKTREE_BRANCH_PREFIX,
+  AIDER_DESK_PROJECT_RULES_DIR,
+  AIDER_DESK_GLOBAL_RULES_DIR,
+  AIDER_DESK_TMP_DIR,
+} from '@/constants';
 import { Agent, AgentProfileManager, McpManager } from '@/agent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
@@ -54,11 +68,11 @@ import { ModelManager } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { getEnvironmentVariablesForAider } from '@/utils';
+import { getEnvironmentVariablesForAider, execWithShellPath } from '@/utils';
 import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
-import { WorktreeManager } from '@/worktrees';
+import { WorktreeManager, GitError } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 
@@ -606,7 +620,8 @@ export class Task {
       }
     }
 
-    this.sendRequestContextInfo();
+    void this.sendRequestContextInfo();
+    void this.sendWorktreeIntegrationStatusUpdated();
     this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
 
     await this.saveTask({
@@ -623,13 +638,16 @@ export class Task {
     contextMessages?: ContextMessage[],
     contextFiles?: ContextFile[],
     systemPrompt?: string,
+    waitForCurrentAgentToFinish = true,
   ): Promise<ResponseCompletedData[]> {
     await this.saveTask({
       name: this.task.name || this.getTaskNameFromPrompt(prompt),
       startedAt: new Date().toISOString(),
     });
 
-    await this.waitForCurrentAgentToFinish();
+    if (waitForCurrentAgentToFinish) {
+      await this.waitForCurrentAgentToFinish();
+    }
     const agentMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt);
     this.resolveAgentRunPromises();
     if (agentMessages.length > 0) {
@@ -641,8 +659,9 @@ export class Task {
       });
     }
 
-    this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
-    this.sendRequestContextInfo();
+    void this.sendRequestContextInfo();
+    void this.sendWorktreeIntegrationStatusUpdated();
+    this.notifyIfEnabled('Prompt finished', 'Your Agent has finished the task.');
 
     await this.saveTask({
       completedAt: new Date().toISOString(),
@@ -992,6 +1011,10 @@ export class Task {
 
         // Reset --soft HEAD~1
         await gitRootDir.reset(['--soft', 'HEAD~1']);
+        if (this.task.worktree) {
+          void this.sendWorktreeIntegrationStatusUpdated();
+        }
+
         logger.info(`Reverted: ${commitMessage} (${commitHash.substring(0, 7)})`);
         this.addLogMessage('info', `Reverted ${commitHash.substring(0, 7)}: ${commitMessage}`);
       } catch (error) {
@@ -1319,7 +1342,7 @@ export class Task {
     this.aiderManager.closeCommandOutput(addToContext);
   }
 
-  public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext) {
+  public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext, actionIds?: string[]) {
     const data: LogData = {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
@@ -1327,6 +1350,7 @@ export class Task {
       message,
       finished,
       promptContext,
+      actionIds,
     };
 
     this.eventManager.sendLog(data);
@@ -2095,6 +2119,10 @@ ${error.stderr}`,
     return this.saveTask(updates);
   }
 
+  private async sendWorktreeIntegrationStatusUpdated() {
+    this.eventManager.sendWorktreeIntegrationStatusUpdated(this.project.baseDir, this.taskId, await this.getWorktreeIntegrationStatus());
+  }
+
   private async applyWorkingMode(mode: WorkingMode) {
     logger.info('Applying workingMode configuration', {
       baseDir: this.project.baseDir,
@@ -2113,43 +2141,10 @@ ${error.stderr}`,
       this.task.workingMode = mode;
     } else if (mode === 'local') {
       if (currentWorktree) {
-        // Check for unsaved work before removing worktree
-        const workStatus = await this.worktreeManager.checkWorktreeForUnmergedWork(this.project.baseDir, currentWorktree.path);
-
-        if (workStatus.hasUncommittedChanges || workStatus.hasUnmergedCommits) {
-          // Build warning message
-          const warnings: string[] = [];
-          if (workStatus.hasUncommittedChanges) {
-            warnings.push('- Uncommitted changes');
-          }
-          if (workStatus.hasUnmergedCommits) {
-            warnings.push(`- ${workStatus.unmergedCommitCount} commit${workStatus.unmergedCommitCount > 1 ? 's' : ''} not merged to main branch`);
-          }
-
-          const warningMessage = `Warning: This worktree has unsaved work:\n${warnings.join('\n')}\n\nRemoving the worktree will delete this work. If you want to keep this work, use Merge action to merge it to the main branch first.\n\nAre you sure you want to continue and remove the worktree?`;
-
-          const [answer] = await this.askQuestion(
-            {
-              baseDir: this.project.baseDir,
-              taskId: this.taskId,
-              text: warningMessage,
-              defaultAnswer: 'n',
-              internal: true,
-            },
-            true,
-          );
-
-          if (answer !== 'y') {
-            logger.info('User cancelled worktree removal due to unsaved work');
-            // Revert the mode change
-            this.task.workingMode = 'worktree';
-            return false;
-          }
-        }
-
         await this.worktreeManager.removeWorktree(this.project.baseDir, currentWorktree);
       }
       this.task.worktree = undefined;
+      this.task.lastMergeState = undefined;
       this.task.workingMode = mode;
     }
 
@@ -2159,12 +2154,12 @@ ${error.stderr}`,
     return true;
   }
 
-  public async mergeWorktreeToMain(squash: boolean): Promise<void> {
+  public async mergeWorktreeToMain(squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void> {
     if (!this.task.worktree) {
       throw new Error('No worktree exists for this task');
     }
 
-    logger.info('Merging worktree to main', {
+    logger.info('Merging worktree', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       squash,
@@ -2173,37 +2168,42 @@ ${error.stderr}`,
     await this.waitForCurrentPromptToFinish();
 
     try {
-      this.addLogMessage('loading', squash ? 'Squashing and merging worktree to main branch...' : 'Merging worktree to main branch...');
+      const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+
+      this.addLogMessage(
+        'loading',
+        squash ? `Squashing and merging worktree to ${effectiveTargetBranch} branch...` : `Merging worktree to ${effectiveTargetBranch} branch...`,
+      );
 
       // For squash merge, we need a commit message
-      let commitMessage: string | undefined;
-      if (squash) {
+      let effectiveCommitMessage = commitMessage;
+      if (squash && !effectiveCommitMessage) {
         // Get changes information for AI generation
-        const changesDiff = await this.worktreeManager.getChangesDiff(this.project.baseDir, this.task.worktree.path);
+        const changesDiff = await this.worktreeManager.getChangesDiff(this.project.baseDir, this.task.worktree.path, targetBranch);
 
         if (changesDiff) {
           // Try to generate commit message using AI
           const agentProfile = await this.getTaskAgentProfile();
           if (agentProfile) {
             try {
-              commitMessage = await this.agent.generateText(
+              effectiveCommitMessage = await this.agent.generateText(
                 agentProfile,
                 getGenerateCommitMessagePrompt(),
                 `Generate a concise conventional commit message for these changes:\n\n${changesDiff}\n\nOnly answer with the commit message, nothing else.`,
               );
-              logger.info('Generated commit message:', { commitMessage });
+              logger.info('Generated commit message:', { commitMessage: effectiveCommitMessage });
             } catch (error) {
               logger.warn('Failed to generate AI commit message, falling back to task name:', error);
               // Fallback to task name if AI generation fails
-              commitMessage = this.task.name || `Task ${this.taskId} changes`;
+              effectiveCommitMessage = this.task.name || `Task ${this.taskId} changes`;
             }
           } else {
             logger.warn('No active agent profile found, using task name for commit message');
-            commitMessage = this.task.name || `Task ${this.taskId} changes`;
+            effectiveCommitMessage = this.task.name || `Task ${this.taskId} changes`;
           }
         } else {
           // No commits to merge, use default message
-          commitMessage = this.task.name || `Task ${this.taskId} changes`;
+          effectiveCommitMessage = this.task.name || `Task ${this.taskId} changes`;
         }
       }
 
@@ -2212,26 +2212,46 @@ ${error.stderr}`,
         this.task.id,
         this.task.worktree.path,
         squash,
-        commitMessage,
+        effectiveCommitMessage,
+        targetBranch,
       );
 
       // Store merge state for potential revert
       await this.saveTask({ lastMergeState: mergeState });
 
-      this.addLogMessage('info', squash ? 'Successfully squashed and merged worktree to main branch' : 'Successfully merged worktree to main branch', true);
-    } catch (error) {
-      logger.error('Failed to merge worktree:', { error });
       this.addLogMessage(
-        'error',
-        // @ts-expect-error checking keys in error
-        `${'gitOutput' in error ? error.gitOutput : error instanceof Error ? error.message : String(error)}`,
+        'info',
+        squash
+          ? `Successfully squashed and merged worktree to ${effectiveTargetBranch} branch`
+          : `Successfully merged worktree to ${effectiveTargetBranch} branch`,
         true,
       );
-      throw error;
+    } catch (error) {
+      logger.error('Failed to merge worktree:', { error });
+
+      const isConflict =
+        error instanceof GitError &&
+        (error.gitOutput?.toLowerCase().includes('resolve all conflicts') ||
+          error.message?.toLowerCase().includes('conflicts must be resolved first') ||
+          error.gitOutput?.toLowerCase().includes('conflicts must be resolved first'));
+
+      this.addLogMessage(
+        'error',
+        isConflict
+          ? 'worktree.mergeConflicts'
+          : error instanceof GitError
+            ? error.getErrorDetails()
+            : `Failed to merge worktree: ${error instanceof Error ? error.message : String(error)}`,
+        true,
+        undefined,
+        isConflict ? ['rebase-worktree'] : undefined,
+      );
     }
+
+    await this.sendWorktreeIntegrationStatusUpdated();
   }
 
-  public async applyUncommittedChanges(): Promise<void> {
+  public async applyUncommittedChanges(targetBranch?: string): Promise<void> {
     if (!this.task.worktree) {
       throw new Error('No worktree exists for this task');
     }
@@ -2244,16 +2264,37 @@ ${error.stderr}`,
     await this.waitForCurrentPromptToFinish();
 
     try {
-      this.addLogMessage('loading', 'Applying uncommitted changes to main branch...');
+      const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
 
-      await this.worktreeManager.applyUncommittedChangesToMain(this.project.baseDir, this.task.id, this.task.worktree.path);
+      this.addLogMessage('loading', `Applying uncommitted changes to ${effectiveTargetBranch} branch...`);
 
-      this.addLogMessage('info', 'Successfully applied uncommitted changes to main branch', true);
+      await this.worktreeManager.applyUncommittedChangesToMain(this.project.baseDir, this.task.id, this.task.worktree.path, effectiveTargetBranch);
+
+      this.addLogMessage('info', `Successfully applied uncommitted changes to ${effectiveTargetBranch} branch`, true);
     } catch (error) {
       logger.error('Failed to apply uncommitted changes:', error);
-      this.addLogMessage('error', `Failed to apply uncommitted changes: ${error instanceof Error ? error.message : String(error)}`, true);
-      throw error;
+
+      const isConflict =
+        error instanceof GitError &&
+        (error.gitOutput?.toLowerCase().includes('conflict') ||
+          error.message?.toLowerCase().includes('conflict') ||
+          error.gitOutput?.toLowerCase().includes('conflicts must be resolved first') ||
+          error.message?.toLowerCase().includes('conflicts must be resolved first'));
+
+      this.addLogMessage(
+        'error',
+        isConflict
+          ? 'worktree.applyUncommittedConflicts'
+          : error instanceof GitError
+            ? error.getErrorDetails()
+            : `Failed to apply uncommitted changes: ${error instanceof Error ? error.message : String(error)}`,
+        true,
+        undefined,
+        isConflict ? ['rebase-worktree'] : undefined,
+      );
     }
+
+    await this.sendWorktreeIntegrationStatusUpdated();
   }
 
   public async revertLastMerge(): Promise<void> {
@@ -2283,9 +2324,241 @@ ${error.stderr}`,
       this.addLogMessage('info', 'Successfully reverted last merge', true);
     } catch (error) {
       logger.error('Failed to revert merge:', error);
-      this.addLogMessage('error', `Failed to revert merge: ${error instanceof Error ? error.message : String(error)}`, true);
-      throw error;
+      this.addLogMessage(
+        'error',
+        error instanceof GitError ? error.getErrorDetails() : `Failed to revert merge: ${error instanceof Error ? error.message : String(error)}`,
+        true,
+      );
     }
+
+    await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  public async getWorktreeIntegrationStatus(targetBranch?: string) {
+    if (!this.task.worktree) {
+      throw new Error('No worktree exists for this task');
+    }
+
+    const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+    const worktreePath = this.task.worktree.path;
+
+    const [unmergedWork, predictedConflicts, rebaseState] = await Promise.all([
+      this.worktreeManager.checkWorktreeForUnmergedWork(this.project.baseDir, worktreePath, effectiveTargetBranch),
+      this.worktreeManager.checkForRebaseConflicts(worktreePath, effectiveTargetBranch),
+      this.worktreeManager.getRebaseState(worktreePath),
+    ]);
+
+    return {
+      targetBranch: effectiveTargetBranch,
+      aheadCommits: {
+        count: unmergedWork.unmergedCommitCount,
+        commits: unmergedWork.unmergedCommits,
+      },
+      uncommittedFiles: {
+        count: unmergedWork.uncommittedFiles?.length || 0,
+        files: unmergedWork.uncommittedFiles || [],
+      },
+      predictedConflicts,
+      rebaseState,
+    };
+  }
+
+  public async rebaseWorktreeFromBranch(fromBranch?: string): Promise<void> {
+    if (!this.task.worktree) {
+      throw new Error('No worktree exists for this task');
+    }
+
+    const effectiveFromBranch = fromBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+
+    logger.info('Rebasing worktree from branch', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      fromBranch: effectiveFromBranch,
+    });
+
+    await this.waitForCurrentPromptToFinish();
+
+    try {
+      this.addLogMessage('loading', `Rebasing worktree from ${effectiveFromBranch}...`);
+      await this.worktreeManager.rebaseMainIntoWorktree(this.task.worktree.path, effectiveFromBranch);
+      this.addLogMessage('info', 'Worktree rebased successfully', true);
+    } catch (error) {
+      logger.error('Failed to rebase worktree:', error);
+
+      const isConflict = error instanceof GitError && error.gitOutput?.includes('Resolve all conflicts');
+
+      this.addLogMessage(
+        'error',
+        isConflict
+          ? 'worktree.rebaseConflicts'
+          : error instanceof GitError
+            ? error.getErrorDetails()
+            : `Failed to rebase worktree: ${error instanceof Error ? error.message : String(error)}`,
+        true,
+        undefined,
+        isConflict ? ['abort-rebase', 'resolve-conflicts-with-agent'] : undefined,
+      );
+    }
+
+    await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  public async abortWorktreeRebase(): Promise<void> {
+    if (!this.task.worktree) {
+      throw new Error('No worktree exists for this task');
+    }
+
+    await this.waitForCurrentPromptToFinish();
+
+    try {
+      this.addLogMessage('loading', 'Aborting rebase...');
+      await this.worktreeManager.abortRebase(this.task.worktree.path);
+      this.addLogMessage('info', 'Rebase aborted', true);
+    } catch (error) {
+      logger.error('Failed to abort rebase:', error);
+      this.addLogMessage(
+        'error',
+        error instanceof GitError ? error.getErrorDetails() : `Failed to abort rebase: ${error instanceof Error ? error.message : String(error)}`,
+        true,
+      );
+    }
+
+    await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  public async resolveWorktreeConflictsWithAgent(): Promise<void> {
+    if (!this.task.worktree) {
+      throw new Error('No worktree exists for this task');
+    }
+
+    await this.waitForCurrentPromptToFinish();
+
+    const worktreePath = this.task.worktree.path;
+    const activeProfile = await this.getTaskAgentProfile();
+    if (!activeProfile) {
+      throw new Error('No active agent profile found');
+    }
+
+    try {
+      this.addLogMessage('loading', 'Resolving conflicts with agent...');
+
+      const files = await this.worktreeManager.listConflictedFiles(worktreePath);
+      if (files.length === 0) {
+        this.addLogMessage('info', 'No conflicted files found', true);
+        return;
+      }
+
+      const conflictProfile: AgentProfile = {
+        ...CONFLICT_RESOLUTION_PROFILE,
+        provider: activeProfile.provider,
+        model: activeProfile.model,
+      };
+
+      const resolutionPromises = files.map(async (filePath) => {
+        const promptContext: PromptContext = {
+          id: uuidv4(),
+          group: {
+            id: uuidv4(),
+            color: 'var(--color-agent-conflict-resolution)',
+            name: `Resolving ${filePath}...`,
+            finished: false,
+          },
+        };
+
+        this.addLogMessage('loading', `Resolving ${filePath}...`, false, promptContext);
+
+        const ctx = await this.worktreeManager.collectConflictContext(worktreePath, filePath);
+
+        // Create temp directory structure for conflict files
+        const conflictsDir = path.join(this.project.baseDir, AIDER_DESK_TMP_DIR, 'conflicts');
+        const conflictFileDir = path.join(conflictsDir, filePath);
+        await fs.mkdir(path.dirname(conflictFileDir), { recursive: true });
+
+        // Create version files using the relative path structure
+        const basePath = `${conflictFileDir}.base`;
+        const oursPath = `${conflictFileDir}.ours`;
+        const theirsPath = `${conflictFileDir}.theirs`;
+
+        // Write version files
+        await Promise.all([
+          ctx.base ? fs.writeFile(basePath, ctx.base, 'utf8') : Promise.resolve(),
+          ctx.ours ? fs.writeFile(oursPath, ctx.ours, 'utf8') : Promise.resolve(),
+          ctx.theirs ? fs.writeFile(theirsPath, ctx.theirs, 'utf8') : Promise.resolve(),
+        ]);
+
+        try {
+          const prompt = getConflictResolutionPrompt(filePath, {
+            ...ctx,
+            basePath: ctx.base ? basePath : undefined,
+            oursPath: ctx.ours ? oursPath : undefined,
+            theirsPath: ctx.theirs ? theirsPath : undefined,
+          });
+          const systemPrompt = getConflictResolutionSystemPrompt();
+
+          await this.agent.runAgent(this, conflictProfile, prompt, promptContext, [], [{ path: filePath }], systemPrompt);
+
+          // Update context to "Resolved"
+          if (promptContext.group) {
+            promptContext.group.name = `Resolved ${filePath}`;
+            promptContext.group.finished = true;
+          }
+          this.addLogMessage('info', `Resolved ${filePath}`, true, promptContext);
+
+          // Stage the file
+          await execWithShellPath(`git add -- "${filePath}"`, { cwd: worktreePath });
+        } finally {
+          // Clean up temp files
+          await Promise.allSettled([fs.unlink(basePath).catch(() => {}), fs.unlink(oursPath).catch(() => {}), fs.unlink(theirsPath).catch(() => {})]);
+        }
+      });
+
+      await Promise.all(resolutionPromises);
+
+      this.addLogMessage('info', 'Conflicts resolved and staged. You can now continue the rebase.', true, undefined, ['continue-rebase', 'abort-rebase']);
+    } catch (error) {
+      logger.error('Failed to resolve conflicts with agent:', error);
+      this.addLogMessage(
+        'error',
+        error instanceof GitError
+          ? error.getErrorDetails()
+          : `Failed to resolve conflicts with agent: ${error instanceof Error ? error.message : String(error)}`,
+        true,
+      );
+    }
+
+    await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  public async continueWorktreeRebase(): Promise<void> {
+    if (!this.task.worktree) {
+      throw new Error('No worktree exists for this task');
+    }
+
+    await this.waitForCurrentPromptToFinish();
+
+    try {
+      this.addLogMessage('loading', 'Continuing rebase...');
+      await this.worktreeManager.continueRebase(this.task.worktree.path);
+      this.addLogMessage('info', 'Rebase continued', true);
+    } catch (error) {
+      logger.error('Failed to continue rebase:', error);
+
+      const isConflict = error instanceof GitError && error.gitOutput?.includes('Resolve all conflicts manually');
+
+      this.addLogMessage(
+        'error',
+        isConflict
+          ? 'worktree.rebaseConflicts'
+          : error instanceof GitError
+            ? error.getErrorDetails()
+            : `Failed to continue rebase: ${error instanceof Error ? error.message : String(error)}`,
+        true,
+        undefined,
+        isConflict ? ['abort-rebase', 'resolve-conflicts-with-agent'] : undefined,
+      );
+    }
+
+    await this.sendWorktreeIntegrationStatusUpdated();
   }
 
   public async duplicateFrom(sourceTask: Task): Promise<void> {

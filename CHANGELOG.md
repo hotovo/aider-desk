@@ -1,5 +1,13 @@
 # Changelog
 
+## [UNRELEASED]
+
+- improved worktree merge functionality with support for custom target branches and commit messages
+- added visual status indicators for worktrees (ahead commits, uncommitted changes, conflict predictions)
+- added rebase support for worktrees with manual and AI-assisted conflict resolution
+- added specialized Conflict Resolution agent for automated merge conflict fixing in worktrees
+- moved worktree safety confirmation dialogs to the UI for better user experience
+
 ## [0.44.0]
 
 - fixed issue with missing reasoning_content field when using deepseek-reasoner

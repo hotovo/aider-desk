@@ -38,7 +38,8 @@
     "collapse": "收起",
     "expand": "展开",
     "enabled": "已启用",
-    "noFiles": "没有找到文件"
+    "noFiles": "没有找到文件",
+    "clickToRefresh": "点击刷新"
   },
   "search": {
     "placeholder": "查找...",
@@ -1034,7 +1035,10 @@
   "workingMode": {
     "local": "本地",
     "worktree": "工作树",
-    "switching": "切换中..."
+    "switching": "切换中...",
+    "confirmLocalTitle": "切换到本地模式",
+    "confirmLocalMessage": "警告：此工作树有未保存的工作：\n{{warnings}}\n\n删除工作树将删除这些工作。如果您想保留这些工作，请先使用合并操作将其合并到主分支。\n\n您确定要继续并删除工作树吗？",
+    "confirmLocalAction": "删除并切换"
   },
   "workingModeTooltip": {
     "local": "在此任务中直接在本地项目目录中进行更改",
@@ -1222,23 +1226,50 @@
     "unarchiveSelectedConfirm": "您确定要取消归档 {{count}} 个选中的任务吗？"
   },
   "worktree": {
+    "aheadCommits": "↑ {{count}} 次提交",
+    "uncommittedFiles": "{{count}} 个文件",
+    "conflicts": "冲突",
+    "conflictsPredicted": "预计会发生冲突",
+    "conflictsPresent": "存在冲突",
     "merge": "合并",
     "squash": "压缩合并",
     "onlyUncommitted": "仅未提交的更改",
-    "mergeTooltip": "将工作树更改合并到主分支",
+    "rebaseFromBranch": "从分支变基",
+    "abortRebase": "中止变基",
+    "continueRebase": "继续变基",
+    "rebaseConflicts": "变基由于冲突失败。请手动解决冲突或使用 AI 代理协助。",
+    "confirmRebaseTitle": "变基工作树",
+    "confirmRebaseMessage": "这将把工作树变基到所选分支上。如有冲突，需要你进行解决。",
+    "confirmAbortRebaseTitle": "中止变基",
+    "confirmAbortRebaseMessage": "这将中止正在进行的变基并把工作树恢复到变基前的状态。",
+    "confirmContinueRebaseTitle": "继续变基",
+    "confirmContinueRebaseMessage": "这将尝试继续变基。请确保所有冲突已解决并已暂存。",
+    "resolveConflictsWithAgent": "使用智能体解决冲突",
+    "confirmResolveConflictsWithAgentTitle": "使用智能体解决冲突",
+    "confirmResolveConflictsWithAgentMessage": "这将尝试自动解决所有冲突文件并将其暂存。继续变基前请仔细检查结果。",
+    "commitMessage": "提交说明",
+    "commitMessagePlaceholder": "输入提交说明...",
+    "selectBranch": "选择分支",
+    "selectTargetBranchTitle": "选择目标分支",
+    "selectSourceBranchTitle": "选择源分支",
+    "branchHasWorktree": "已有工作树",
+    "mergeTooltip": "将工作树更改合并到分支",
     "revertTooltip": "撤销最后一次合并的更改",
     "confirmMerge": "您确定要{{action}}工作树更改到主分支吗？这将包含任何未提交的更改。",
     "confirmRevert": "您确定要撤销最后一次合并吗？这将把主分支重置到之前的状态。",
     "confirmMergeTitle": "确认合并",
     "confirmSquashTitle": "确认压缩合并",
     "confirmOnlyUncommittedTitle": "确认应用未提交的更改",
-    "confirmMergeMessage": "您确定要将工作树更改合并到主分支吗？",
-    "confirmSquashMessage": "您确定要压缩并合并工作树更改到主分支吗？",
-    "confirmOnlyUncommittedMessage": "您确定要将工作树中的未提交更改应用到主分支吗？不会执行 git 合并操作。",
+    "confirmMergeMessage": "您确定要将工作树更改合并到所选分支吗？",
+    "confirmSquashMessage": "您确定要压缩并合并工作树更改到所选分支吗？",
+    "confirmOnlyUncommittedMessage": "您确定要将工作树中的未提交更改应用到所选分支吗？不会执行 git 合并操作。",
+    "mergeConflicts": "由于工作树与目标分支之间存在冲突，合并失败。请先对工作树进行变基以解决冲突。",
+    "applyUncommittedConflicts": "由于与目标分支存在冲突，无法应用未提交的更改。请先对工作树进行变基以对齐您的更改。",
     "dontAskAgain": "不再询问",
     "confirmRevertTitle": "确认撤销",
     "confirmRevertMessage": "您确定要撤销最后一次合并吗？这将撤销从工作树合并回主分支的更改。",
-    "revert": "撤销"
+    "revert": "撤销",
+    "noChanges": "没有更改"
   },
   "welcomeMessage": {
     "title": "AiderDesk",

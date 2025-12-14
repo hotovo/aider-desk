@@ -203,14 +203,48 @@ const MergeWorktreeToMainSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
   squash: z.boolean(),
+  targetBranch: z.string().optional(),
+  commitMessage: z.string().optional(),
 });
 
 const ApplyUncommittedChangesSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
+  targetBranch: z.string().optional(),
 });
 
 const RevertLastMergeSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+});
+
+const ListBranchesSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+});
+
+const WorktreeStatusSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  targetBranch: z.string().optional(),
+});
+
+const RebaseWorktreeFromBranchSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  fromBranch: z.string().optional(),
+});
+
+const AbortWorktreeRebaseSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+});
+
+const ContinueWorktreeRebaseSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+});
+
+const ResolveWorktreeConflictsWithAgentSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
 });
@@ -554,9 +588,9 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, squash } = parsed;
-        await this.eventsHandler.mergeWorktreeToMain(projectDir, taskId, squash);
-        res.status(200).json({ message: 'Worktree merged to main' });
+        const { projectDir, taskId, squash, targetBranch, commitMessage } = parsed;
+        await this.eventsHandler.mergeWorktreeToMain(projectDir, taskId, squash, targetBranch, commitMessage);
+        res.status(200).json({ message: 'Worktree merged' });
       }),
     );
 
@@ -569,8 +603,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId } = parsed;
-        await this.eventsHandler.applyUncommittedChanges(projectDir, taskId);
+        const { projectDir, taskId, targetBranch } = parsed;
+        await this.eventsHandler.applyUncommittedChanges(projectDir, taskId, targetBranch);
         res.status(200).json({ message: 'Uncommitted changes applied' });
       }),
     );
@@ -587,6 +621,96 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId } = parsed;
         await this.eventsHandler.revertLastMerge(projectDir, taskId);
         res.status(200).json({ message: 'Last merge reverted' });
+      }),
+    );
+
+    // List branches
+    router.get(
+      '/project/worktree/branches',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ListBranchesSchema, req.query, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir } = parsed;
+        const branches = await this.eventsHandler.listBranches(projectDir);
+        res.status(200).json(branches);
+      }),
+    );
+
+    // Worktree status
+    router.get(
+      '/project/worktree/status',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(WorktreeStatusSchema, req.query, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, targetBranch } = parsed;
+        const status = await this.eventsHandler.getWorktreeIntegrationStatus(projectDir, taskId, targetBranch);
+        res.status(200).json(status);
+      }),
+    );
+
+    // Rebase worktree from branch
+    router.post(
+      '/project/worktree/rebase-from-branch',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RebaseWorktreeFromBranchSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, fromBranch } = parsed;
+        await this.eventsHandler.rebaseWorktreeFromBranch(projectDir, taskId, fromBranch);
+        res.status(200).json({ message: 'Worktree rebased' });
+      }),
+    );
+
+    // Abort worktree rebase
+    router.post(
+      '/project/worktree/abort-rebase',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(AbortWorktreeRebaseSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.abortWorktreeRebase(projectDir, taskId);
+        res.status(200).json({ message: 'Rebase aborted' });
+      }),
+    );
+
+    // Continue worktree rebase
+    router.post(
+      '/project/worktree/continue-rebase',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ContinueWorktreeRebaseSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.continueWorktreeRebase(projectDir, taskId);
+        res.status(200).json({ message: 'Rebase continued' });
+      }),
+    );
+
+    // Resolve worktree conflicts with agent
+    router.post(
+      '/project/worktree/resolve-conflicts-with-agent',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ResolveWorktreeConflictsWithAgentSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.resolveWorktreeConflictsWithAgent(projectDir, taskId);
+        res.status(200).json({ message: 'Conflicts resolved' });
       }),
     );
 

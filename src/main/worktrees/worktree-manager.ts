@@ -1,17 +1,42 @@
 import path, { join } from 'path';
-import { mkdir, rm } from 'fs/promises';
+import fs, { mkdir, rm } from 'fs/promises';
+
+import { MergeState, Worktree, WorktreeUncommittedFiles, WorktreeAheadCommits, RebaseState, ConflictResolutionFileContext } from '@common/types';
 
 import { execWithShellPath, withLock } from '@/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import logger from '@/logger';
-import { MergeState, Worktree } from '@/worktrees/types';
 
-export interface GitError extends Error {
+export class GitError extends Error {
+  name = 'GitError';
+
   gitCommands?: string[];
   gitOutput?: string;
   workingDirectory?: string;
   projectPath?: string;
   originalError?: Error;
+
+  getErrorDetails() {
+    let details = this.message;
+
+    if (this.gitCommands) {
+      details += `\n\nGit Commands: ${this.gitCommands.join('\n')}`;
+    }
+    if (this.gitOutput) {
+      details += `\n\nGit Output: ${this.gitOutput}`;
+    }
+    if (this.workingDirectory) {
+      details += `\n\nWorking Directory: ${this.workingDirectory}`;
+    }
+    if (this.projectPath) {
+      details += `\n\nProject Path: ${this.projectPath}`;
+    }
+    if (this.originalError) {
+      details += `\n\nOriginal Error: ${this.originalError.message}`;
+    }
+
+    return details;
+  }
 }
 
 // Interface for raw commit data
@@ -479,7 +504,7 @@ export class WorktreeManager {
         logger.error(`Failed to rebase ${mainBranch} into worktree:`, err);
 
         // Create detailed error with git command output
-        const gitError: GitError = new Error(`Failed to rebase ${mainBranch} into worktree`);
+        const gitError = new GitError(`Failed to rebase ${mainBranch} into worktree`);
         gitError.gitCommands = executedCommands;
         gitError.gitOutput = err.stderr || err.stdout || lastOutput || err.message || '';
         gitError.workingDirectory = worktreePath;
@@ -508,6 +533,34 @@ export class WorktreeManager {
       logger.error('Error aborting rebase:', err);
       throw new Error(`Failed to abort rebase: ${err.message}`);
     }
+  }
+
+  async continueRebase(worktreePath: string): Promise<void> {
+    return await withLock(`git-rebase-continue-${worktreePath}`, async () => {
+      const executedCommands: string[] = [];
+      let lastOutput = '';
+
+      try {
+        const command = 'git rebase --continue';
+        executedCommands.push(`${command} (in ${worktreePath})`);
+        const result = await execWithShellPath(command, {
+          cwd: worktreePath,
+          env: { GIT_EDITOR: 'true' },
+        });
+        lastOutput = result.stdout || result.stderr || '';
+      } catch (error: unknown) {
+        const err = error as Error & { stderr?: string; stdout?: string };
+        logger.error(`Failed to continue rebase in ${worktreePath}:`, err);
+
+        const gitError = new GitError('Failed to continue rebase');
+        gitError.gitCommands = executedCommands;
+        gitError.gitOutput = err.stderr || err.stdout || lastOutput || err.message || '';
+        gitError.workingDirectory = worktreePath;
+        gitError.originalError = err;
+
+        throw gitError;
+      }
+    });
   }
 
   private async squashAndMergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string, commitMessage: string): Promise<void> {
@@ -548,10 +601,13 @@ export class WorktreeManager {
           // Ignore abort errors
         }
 
-        throw new Error(
-          `Failed to rebase worktree onto ${mainBranch} before squashing. Conflicts must be resolved first.\n\n` +
-            `Git output: ${err.stderr || err.stdout || err.message}`,
-        );
+        const gitError = new GitError(`Failed to rebase worktree onto ${mainBranch} before squashing. Conflicts must be resolved first.`);
+        gitError.gitCommands = executedCommands;
+        gitError.gitOutput = err.stderr || err.stdout || err.message || '';
+        gitError.workingDirectory = worktreePath;
+        gitError.originalError = err;
+
+        throw gitError;
       }
 
       // Get the HEAD commit hash from worktree AFTER rebase (but before squashing)
@@ -611,7 +667,7 @@ export class WorktreeManager {
       logger.error(`Failed to squash and merge worktree to ${mainBranch}:`, err);
 
       // Create detailed error with git command output
-      const gitError: GitError = new Error(`Failed to squash and merge worktree to ${mainBranch}`);
+      const gitError = new GitError(`Failed to squash and merge worktree to ${mainBranch}`);
       gitError.gitCommands = executedCommands;
       // Prioritize actual error messages over lastOutput (which may contain unrelated data like commit counts)
       gitError.gitOutput = err.stderr || err.stdout || err.message || lastOutput || '';
@@ -661,9 +717,13 @@ export class WorktreeManager {
           // Ignore abort errors
         }
 
-        throw new Error(
-          `Failed to rebase worktree onto ${mainBranch}. Conflicts must be resolved first.\n\n` + `Git output: ${err.stderr || err.stdout || err.message}`,
-        );
+        const gitError = new GitError(`Failed to rebase worktree onto ${mainBranch}. Conflicts must be resolved first.`);
+        gitError.gitCommands = executedCommands;
+        gitError.gitOutput = err.stderr || err.stdout || err.message || '';
+        gitError.workingDirectory = worktreePath;
+        gitError.originalError = err;
+
+        throw gitError;
       }
 
       // Get the HEAD commit hash from worktree AFTER rebase
@@ -703,7 +763,7 @@ export class WorktreeManager {
       logger.error(`Failed to merge worktree to ${mainBranch}:`, err);
 
       // Create detailed error with git command output
-      const gitError: GitError = new Error(`Failed to merge worktree to ${mainBranch}`);
+      const gitError = new GitError(`Failed to merge worktree to ${mainBranch}`);
       gitError.gitCommands = executedCommands;
       // Prioritize actual error messages over lastOutput (which may contain unrelated data like commit counts)
       gitError.gitOutput = err.stderr || err.stdout || err.message || lastOutput || '';
@@ -750,7 +810,7 @@ export class WorktreeManager {
       return { output };
     } catch (error: unknown) {
       const err = error as Error & { stderr?: string; stdout?: string };
-      const gitError: GitError = new Error(err.message || 'Git pull failed');
+      const gitError = new GitError(err.message || 'Git pull failed');
       gitError.gitOutput = err.stderr || err.stdout || err.message || '';
       gitError.workingDirectory = worktreePath;
       throw gitError;
@@ -765,7 +825,7 @@ export class WorktreeManager {
       return { output };
     } catch (error: unknown) {
       const err = error as Error & { stderr?: string; stdout?: string };
-      const gitError: GitError = new Error(err.message || 'Git push failed');
+      const gitError = new GitError(err.message || 'Git push failed');
       gitError.gitOutput = err.stderr || err.stdout || err.message || '';
       gitError.workingDirectory = worktreePath;
       throw gitError;
@@ -819,16 +879,16 @@ export class WorktreeManager {
       return commits;
     } catch (error: unknown) {
       const err = error as Error & { stderr?: string; stdout?: string };
-      const gitError: GitError = new Error(err.message || 'Failed to get commits');
+      const gitError = new GitError(err.message || 'Failed to get commits');
       gitError.gitOutput = err.stderr || err.stdout || err.message || '';
       gitError.workingDirectory = worktreePath;
       throw gitError;
     }
   }
 
-  async getChangesDiff(projectPath: string, worktreePath: string): Promise<string> {
+  async getChangesDiff(projectPath: string, worktreePath: string, targetBranch?: string): Promise<string> {
     try {
-      const mainBranch = await this.getProjectMainBranch(projectPath);
+      const mainBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
 
       // Check if there are any commits in worktree that are not in main
       const { stdout: commits } = await execWithShellPath(`git log --oneline ${mainBranch}..HEAD`, { cwd: worktreePath });
@@ -848,7 +908,7 @@ export class WorktreeManager {
       return stdout.trim();
     } catch (error: unknown) {
       const err = error as Error & { stderr?: string; stdout?: string };
-      const gitError: GitError = new Error(err.message || 'Failed to get changes diff');
+      const gitError = new GitError(err.message || 'Failed to get changes diff');
       gitError.gitOutput = err.stderr || err.stdout || err.message || '';
       gitError.workingDirectory = worktreePath;
       throw gitError;
@@ -976,6 +1036,7 @@ export class WorktreeManager {
     worktreePath: string,
     squash: boolean,
     commitMessage?: string,
+    targetBranch?: string,
   ): Promise<MergeState> {
     return await withLock(`git-merge-worktree-${worktreePath}`, async () => {
       const timestamp = Date.now();
@@ -985,7 +1046,7 @@ export class WorktreeManager {
       let worktreeBranchCommitHash = '';
       let mainOriginalStashId: string | undefined;
 
-      const mainBranch = await this.getProjectMainBranch(projectPath);
+      const mainBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
 
       try {
         logger.info(`Starting ${squash ? 'squash' : 'merge'} operation with uncommitted changes support`);
@@ -1044,6 +1105,7 @@ export class WorktreeManager {
           beforeMergeCommitHash,
           worktreeBranchCommitHash,
           mainOriginalStashId,
+          targetBranch: mainBranch,
           timestamp,
         };
 
@@ -1086,25 +1148,28 @@ export class WorktreeManager {
   async checkWorktreeForUnmergedWork(
     projectPath: string,
     worktreePath: string,
+    targetBranch?: string,
   ): Promise<{
     hasUncommittedChanges: boolean;
     hasUnmergedCommits: boolean;
     unmergedCommitCount: number;
     unmergedCommits: string[];
+    uncommittedFiles?: string[];
   }> {
     try {
       // 1. Check for uncommitted changes
       const hasUncommittedChanges = await this.hasUncommittedChanges(worktreePath);
+      const { files: uncommittedFiles } = await this.getUncommittedFiles(worktreePath);
 
-      // 2. Get the main branch name
-      const mainBranch = await this.getProjectMainBranch(projectPath);
+      // 2. Get the target branch name
+      const effectiveTargetBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
 
-      // 3. Check for commits in worktree that are not in main branch
+      // 3. Check for commits in worktree that are not in target branch
       let unmergedCommitCount = 0;
       let unmergedCommits: string[] = [];
 
       try {
-        const { stdout: commits } = await execWithShellPath(`git log --oneline ${mainBranch}..HEAD`, { cwd: worktreePath });
+        const { stdout: commits } = await execWithShellPath(`git log --oneline ${effectiveTargetBranch}..HEAD`, { cwd: worktreePath });
         const commitLines = commits
           .trim()
           .split('\n')
@@ -1124,6 +1189,7 @@ export class WorktreeManager {
         hasUnmergedCommits,
         unmergedCommitCount,
         unmergedCommits,
+        uncommittedFiles,
       };
     } catch (error) {
       logger.error('Failed to check worktree for unmerged work:', error);
@@ -1133,15 +1199,140 @@ export class WorktreeManager {
         hasUnmergedCommits: false,
         unmergedCommitCount: 0,
         unmergedCommits: [],
+        uncommittedFiles: [],
       };
     }
+  }
+
+  async getAheadCommits(worktreePath: string, targetBranch: string): Promise<WorktreeAheadCommits> {
+    const { stdout } = await execWithShellPath(`git log --oneline ${targetBranch}..HEAD`, { cwd: worktreePath });
+    const commits = stdout
+      .trim()
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    return {
+      count: commits.length,
+      commits,
+    };
+  }
+
+  async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles> {
+    const { stdout } = await execWithShellPath('git status --porcelain=v1', { cwd: worktreePath });
+    const files = stdout
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0)
+      .map((l) => l.slice(3).trim())
+      .filter((l) => l.length > 0);
+
+    return {
+      count: files.length,
+      files: Array.from(new Set(files)),
+    };
+  }
+
+  async getRebaseState(worktreePath: string): Promise<RebaseState> {
+    try {
+      const { stdout } = await execWithShellPath('git status --porcelain=v1', { cwd: worktreePath });
+      const lines = stdout
+        .split('\n')
+        .map((l) => l.trimEnd())
+        .filter((l) => l.length > 0);
+
+      const unmergedFiles = lines
+        .filter((l) => {
+          const status = l.slice(0, 2);
+          return ['UU', 'AA', 'DD', 'AU', 'UA', 'DU', 'UD'].includes(status);
+        })
+        .map((l) => l.slice(3).trim())
+        .filter((l) => l.length > 0);
+
+      let inProgress = false;
+      try {
+        const { stdout: rebaseDir } = await execWithShellPath('git rev-parse --git-path rebase-merge', { cwd: worktreePath });
+        if (rebaseDir.trim().length > 0) {
+          await execWithShellPath(`test -e "${rebaseDir.trim()}"`, { cwd: worktreePath });
+          inProgress = true;
+        }
+      } catch {
+        // ignore
+      }
+
+      if (!inProgress) {
+        try {
+          const { stdout: rebaseDir } = await execWithShellPath('git rev-parse --git-path rebase-apply', { cwd: worktreePath });
+          if (rebaseDir.trim().length > 0) {
+            await execWithShellPath(`test -e "${rebaseDir.trim()}"`, { cwd: worktreePath });
+            inProgress = true;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      return {
+        inProgress,
+        hasUnmergedPaths: unmergedFiles.length > 0,
+        unmergedFiles: unmergedFiles.length > 0 ? unmergedFiles : undefined,
+      };
+    } catch {
+      return {
+        inProgress: false,
+        hasUnmergedPaths: false,
+      };
+    }
+  }
+
+  async getUnmergedFiles(worktreePath: string): Promise<string[]> {
+    const { stdout } = await execWithShellPath('git diff --name-only --diff-filter=U', { cwd: worktreePath });
+    return stdout
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+  }
+
+  async getStageFileContent(worktreePath: string, stage: 1 | 2 | 3, filePath: string): Promise<string | null> {
+    try {
+      const { stdout } = await execWithShellPath(`git show :${stage}:${filePath}`, { cwd: worktreePath });
+      return stdout;
+    } catch {
+      return null;
+    }
+  }
+
+  async collectConflictContext(worktreePath: string, filePath: string): Promise<ConflictResolutionFileContext> {
+    const [base, ours, theirs, current] = await Promise.all([
+      this.getStageFileContent(worktreePath, 1, filePath),
+      this.getStageFileContent(worktreePath, 2, filePath),
+      this.getStageFileContent(worktreePath, 3, filePath),
+      fs.readFile(`${worktreePath}/${filePath}`, 'utf8').catch(() => ''),
+    ]);
+
+    return {
+      filePath,
+      base,
+      ours,
+      theirs,
+      current,
+    };
+  }
+
+  async stageResolvedFile(worktreePath: string, filePath: string, content: string): Promise<void> {
+    await fs.writeFile(`${worktreePath}/${filePath}`, content, 'utf8');
+    await execWithShellPath(`git add -- "${filePath}"`, { cwd: worktreePath });
+  }
+
+  async listConflictedFiles(worktreePath: string): Promise<string[]> {
+    return await this.getUnmergedFiles(worktreePath);
   }
 
   /**
    * Apply uncommitted changes from worktree to main branch without merging commits
    * This transfers work-in-progress changes while keeping them uncommitted in both branches
    */
-  async applyUncommittedChangesToMain(projectPath: string, taskId: string, worktreePath: string): Promise<void> {
+  async applyUncommittedChangesToMain(projectPath: string, taskId: string, worktreePath: string, targetBranch?: string): Promise<void> {
     return await withLock(`git-apply-uncommitted-${worktreePath}`, async () => {
       const timestamp = Date.now();
       const worktreeStashId = `worktree-${taskId.length > 24 ? taskId.substring(24) : taskId}-uncommitted-${timestamp}`;
@@ -1163,18 +1354,23 @@ export class WorktreeManager {
           return;
         }
 
-        // 3. Apply stash to main branch (keeping uncommitted)
-        logger.info('Applying uncommitted changes to main branch');
+        const effectiveTargetBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
+
+        // 3. Switch main repo to target branch
+        await execWithShellPath(`git checkout ${effectiveTargetBranch}`, { cwd: projectPath });
+
+        // 4. Apply stash to target branch (keeping uncommitted)
+        logger.info(`Applying uncommitted changes to ${effectiveTargetBranch} branch`);
         await this.applyStash(projectPath, worktreeStashId);
 
-        // 4. Apply stash back to worktree (keeping uncommitted)
+        // 5. Apply stash back to worktree (keeping uncommitted)
         logger.info('Applying uncommitted changes back to worktree');
         await this.applyStash(worktreePath, worktreeStashId);
 
-        // 5. Clean up stash
+        // 6. Clean up stash
         await this.dropStash(worktreePath, worktreeStashId);
 
-        logger.info('Successfully applied uncommitted changes to main branch');
+        logger.info(`Successfully applied uncommitted changes to ${effectiveTargetBranch} branch`);
       } catch (error) {
         logger.error('Failed to apply uncommitted changes:', error);
 
@@ -1201,22 +1397,33 @@ export class WorktreeManager {
     return await withLock(`git-revert-merge-${worktreePath}`, async () => {
       const timestamp = Date.now();
       const currentWorktreeStashId = `worktree-${taskId.length > 24 ? taskId.substring(24) : taskId}-revert-${timestamp}`;
+      const currentMainStashId = `main-${taskId.length > 24 ? taskId.substring(24) : taskId}-revert-${timestamp}`;
+
+      let worktreeRevertStashId: string | null = null;
+      let mainRevertStashId: string | null = null;
 
       try {
         logger.info('Starting merge revert operation', { mergeState });
 
         // 1. Stash current uncommitted changes in worktree
-        await this.stashUncommittedChanges(currentWorktreeStashId, worktreePath, 'Current uncommitted changes before revert');
+        worktreeRevertStashId = await this.stashUncommittedChanges(currentWorktreeStashId, worktreePath, 'Current uncommitted changes before revert');
 
-        // 2. Reset main branch to previous state (this removes worktree-originated uncommitted changes)
-        logger.info(`Resetting main branch to ${mergeState.beforeMergeCommitHash}`);
+        // 2. Stash current uncommitted changes in main repo to clean the working directory
+        // This is crucial to avoid conflicts with untracked files when applying the original stash
+        mainRevertStashId = await this.stashUncommittedChanges(currentMainStashId, projectPath, 'Current uncommitted changes before revert');
+
+        // 3. Switch to the branch we merged into, then reset it to previous state
+        const targetBranch = mergeState.targetBranch || (await this.getProjectMainBranch(projectPath));
+        await execWithShellPath(`git checkout ${targetBranch}`, { cwd: projectPath });
+
+        logger.info(`Resetting ${targetBranch} branch to ${mergeState.beforeMergeCommitHash}`);
         await execWithShellPath(`git reset --hard ${mergeState.beforeMergeCommitHash}`, { cwd: projectPath });
 
-        // 3. Reset worktree branch to previous state
+        // 4. Reset worktree branch to previous state
         logger.info(`Resetting worktree branch to ${mergeState.worktreeBranchCommitHash}`);
         await execWithShellPath(`git reset --hard ${mergeState.worktreeBranchCommitHash}`, { cwd: worktreePath });
 
-        // 4. Restore main's original uncommitted changes if they were preserved
+        // 5. Restore main's original uncommitted changes if they were preserved
         if (mergeState.mainOriginalStashId) {
           logger.info('Restoring main branch original uncommitted changes');
           await this.applyStash(projectPath, mergeState.mainOriginalStashId);
@@ -1224,24 +1431,40 @@ export class WorktreeManager {
           await this.dropStash(projectPath, mergeState.mainOriginalStashId);
         }
 
-        // 5. Restore uncommitted changes in worktree
-        if (currentWorktreeStashId) {
+        // 6. Restore uncommitted changes in worktree
+        if (worktreeRevertStashId) {
           logger.info('Restoring uncommitted changes in worktree');
           await this.applyStash(worktreePath, currentWorktreeStashId);
           await this.dropStash(worktreePath, currentWorktreeStashId);
+        }
+
+        // 7. Clean up temporary main stash
+        // We don't apply it back because we want to revert to the state BEFORE the merge (with original changes)
+        // Applying it back would re-introduce the changes that were just merged
+        if (mainRevertStashId) {
+          await this.dropStash(projectPath, currentMainStashId);
         }
 
         logger.info('Merge revert completed successfully');
       } catch (error) {
         logger.error('Failed to revert merge:', error);
 
-        // Recovery: try to restore worktree stash
-        if (currentWorktreeStashId) {
+        // Recovery: try to restore stashes
+        if (worktreeRevertStashId) {
           try {
             await this.applyStash(worktreePath, currentWorktreeStashId);
             await this.dropStash(worktreePath, currentWorktreeStashId);
           } catch (recoveryError) {
             logger.error('Failed to recover worktree stash:', recoveryError);
+          }
+        }
+
+        if (mainRevertStashId) {
+          try {
+            await this.applyStash(projectPath, currentMainStashId);
+            await this.dropStash(projectPath, currentMainStashId);
+          } catch (recoveryError) {
+            logger.error('Failed to recover main branch stash:', recoveryError);
           }
         }
 
