@@ -110,11 +110,21 @@ jobs:
           npm install js-yaml
           node combine-yml.js
 
-      - name: Upload combined yml artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: latest-linux-combined-yml
-          path: latest-linux.yml
+      - name: Find draft release tag
+        id: find-release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Get the draft release tag
+          RELEASE_TAG=$(gh release list --limit 1 --json tagName,isDraft --jq '.[] | select(.isDraft == true) | .tagName')
+          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Upload combined yml to release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Upload the combined latest-linux.yml to the GitHub release
+          gh release upload ${{ steps.find-release.outputs.release_tag }} latest-linux.yml --clobber
 
   release-win:
     name: Release Windows packages
@@ -274,5 +284,3 @@ jobs:
         run: |
           # Upload the combined latest-mac.yml to the GitHub release
           gh release upload ${{ steps.find-release.outputs.release_tag }} latest-mac.yml --clobber
-          # Upload combined latest-linux.yml to GitHub release
-          gh release upload ${{ steps.find-release.outputs.release_tag }} latest-linux.yml --clobber
