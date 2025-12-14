@@ -15,6 +15,7 @@ const RESOURCES_DIR = './resources';
 
 const TARGET_PLATFORMS = [
     { platform: 'linux', arch: 'x64', filename: `probe-${PROBE_VERSION}-x86_64-unknown-linux-musl.tar.gz`, extractSubdir: 'linux', probeExeName: 'probe', sourceExeName: 'probe' },
+    { platform: 'linux', arch: 'arm64', filename: `probe-${PROBE_VERSION}-aarch64-unknown-linux-gnu.tar.gz`, extractSubdir: 'linux-arm64', probeExeName: 'probe', sourceExeName: 'probe' },
     { platform: 'darwin', arch: 'x64', filename: `probe-${PROBE_VERSION}-x86_64-apple-darwin.tar.gz`, extractSubdir: 'macos-x64', probeExeName: 'probe', sourceExeName: 'probe' },
     { platform: 'darwin', arch: 'arm64', filename: `probe-${PROBE_VERSION}-aarch64-apple-darwin.tar.gz`, extractSubdir: 'macos-arm64', probeExeName: 'probe', sourceExeName: 'probe' },
     { platform: 'win32', arch: 'x64', filename: `probe-${PROBE_VERSION}-x86_64-pc-windows-msvc.zip`, extractSubdir: 'win', probeExeName: 'probe.exe', sourceExeName: 'probe.exe' }

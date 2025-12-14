@@ -25,6 +25,97 @@ jobs:
       - name: Release Linux
         run: npm run build:linux -- -p always
 
+      - name: Upload latest-linux.yml artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-linux-yml
+          path: dist/latest-linux.yml
+
+  release-linux-arm64:
+    name: Release Linux ARM64 packages
+    runs-on: ubuntu-latest
+    container:
+      image: electronuserland/builder:wine
+      env:
+        TAR_OPTIONS: "--format=ustar"
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - uses: "actions/checkout@v1"
+
+      - uses: "actions/setup-node@v4"
+        with:
+          node-version: '22.17.0'
+
+      - run: npm install
+
+      - name: Release Linux ARM64
+        run: npm run build:linux-arm64 -- -p always
+
+      - name: Upload latest-linux-arm64.yml artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-linux-arm64-yml
+          path: dist/latest-linux.yml
+
+  combine-linux-yml:
+    name: Combine Linux yml files
+    runs-on: ubuntu-latest
+    needs: [release-linux, release-linux-arm64]
+
+    steps:
+      - uses: "actions/checkout@v1"
+
+      - uses: "actions/setup-node@v4"
+        with:
+          node-version: '22.17.0'
+
+      - name: Download x64 yml artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: latest-linux-yml
+          path: artifacts/x64/
+
+      - name: Download arm64 yml artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: latest-linux-arm64-yml
+          path: artifacts/arm64/
+
+      - name: Combine yml files
+        run: |
+          cat > combine-yml.js << 'EOF'
+          const fs = require('fs');
+          const yaml = require('js-yaml');
+
+          // Read both yml files
+          const x64Content = fs.readFileSync('artifacts/x64/latest-linux.yml', 'utf8');
+          const arm64Content = fs.readFileSync('artifacts/arm64/latest-linux.yml', 'utf8');
+
+          // Parse yml content
+          const x64Data = yaml.load(x64Content);
+          const arm64Data = yaml.load(arm64Content);
+
+          // Combine files arrays
+          const combinedData = {
+            ...arm64Data,
+            files: [...x64Data.files, ...arm64Data.files]
+          };
+
+          // Write combined yml
+          fs.writeFileSync('latest-linux.yml', yaml.dump(combinedData));
+          console.log('Combined Linux yml file created successfully');
+          EOF
+
+          npm install js-yaml
+          node combine-yml.js
+
+      - name: Upload combined yml artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-linux-combined-yml
+          path: latest-linux.yml
+
   release-win:
     name: Release Windows packages
     runs-on: windows-latest
@@ -183,3 +274,5 @@ jobs:
         run: |
           # Upload the combined latest-mac.yml to the GitHub release
           gh release upload ${{ steps.find-release.outputs.release_tag }} latest-mac.yml --clobber
+          # Upload combined latest-linux.yml to GitHub release
+          gh release upload ${{ steps.find-release.outputs.release_tag }} latest-linux.yml --clobber

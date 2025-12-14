@@ -22,6 +22,7 @@ asarUnpack:
   - '**/node_modules/sharp/**/*'
   - '**/node_modules/@img/**/*'
 beforePack: scripts/before-pack.js
+afterPack: scripts/after-pack.js
 win:
   executableName: aider-desk
   icon: resources/icon.png
@@ -57,9 +58,18 @@ dmg:
   artifactName: ${name}-${version}-macos-${arch}.${ext}
 linux:
   target:
-    - AppImage
-    - deb
-    - rpm
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+    - target: deb
+      arch:
+        - x64
+        - arm64
+    - target: rpm
+      arch:
+        - x64
+        - arm64
   maintainer: Hotovo
   category: Utility
   extraResources:
