@@ -521,6 +521,7 @@ src/
         agents.ts
         indexedDB.ts
         notifications.ts
+        path-utils.ts
         routes.ts
         string-utils.ts
       voice/
@@ -3834,7 +3835,6 @@ export interface LlmProviderBase {
 export interface VoiceControlSettings {
   idleTimeoutMs: number;
   systemInstructions: string;
-  inputDeviceId?: string;
 }
 ⋮----
 export interface OllamaProvider extends LlmProviderBase {
@@ -3877,7 +3877,7 @@ export interface AnthropicProvider extends LlmProviderBase {
 export const isAnthropicProvider = (provider: LlmProviderBase): provider is AnthropicProvider
 ⋮----
 export enum GeminiVoiceModel {
-  GeminiLive25FlashNativeAudio = 'gemini-live-2.5-flash-native-audio',
+  GeminiLive25FlashNativeAudio = 'gemini-2.5-flash-native-audio-preview-12-2025',
 }
 ⋮----
 export interface GeminiVoiceControlSettings extends VoiceControlSettings {
@@ -6637,13 +6637,17 @@ File: src/main/events/index.ts
 ================
 File: src/main/memory/memory-manager.ts
 ================
-import { FeatureExtractionPipeline, pipeline } from '@huggingface/transformers';
 import { MemoryConfig, MemoryEmbeddingProgress, MemoryEmbeddingProgressPhase, MemoryEntry, MemoryEntryType, SettingsData } from '@common/types';
 import { v4 as uuidv4 } from 'uuid';
+⋮----
+import type { FeatureExtractionPipeline } from '@huggingface/transformers';
 ⋮----
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_MEMORY_FILE } from '@/constants';
 import logger from '@/logger';
 import { Store } from '@/store';
+⋮----
+type LanceDbModule = typeof import('@lancedb/lancedb');
+type TransformersModule = typeof import('@huggingface/transformers');
 ⋮----
 export class MemoryManager
 ⋮----
@@ -17329,6 +17333,7 @@ import { GenericToolGroupItem } from './GenericToolGroupItem';
 import { AgentRules } from './AgentRules';
 import { SortableAgentProfileItem } from './SortableAgentProfileItem';
 ⋮----
+import { getPathBasename } from '@/utils/path-utils';
 import { IconButton } from '@/components/common/IconButton';
 import { Button } from '@/components/common/Button';
 import { ModelSelector } from '@/components/ModelSelector';
@@ -18003,6 +18008,7 @@ const handleZoomChange = (zoomLevel: number) =>
 File: src/renderer/src/components/settings/VoiceSettings.tsx
 ================
 import { useEffect, useMemo, useState } from 'react';
+import { useLocalStorage } from '@reactuses/core';
 import { ProviderProfile } from '@common/types';
 import {
   DEFAULT_VOICE_SYSTEM_INSTRUCTIONS,
@@ -18935,7 +18941,6 @@ const handleUpdateAiderModels = (data: ModelsData) =>
 File: src/renderer/src/hooks/useAudioRecorder.ts
 ================
 import { useCallback, useRef, useState } from 'react';
-import { isGeminiProvider, isOpenAiProvider } from '@common/agent';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
@@ -19837,6 +19842,7 @@ import { clsx } from 'clsx';
 import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone } from 'react-icons/fa';
 import { MdTerminal } from 'react-icons/md';
 ⋮----
+import { getPathBasename } from '@/utils/path-utils';
 import { useApi } from '@/contexts/ApiContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
@@ -21902,6 +21908,11 @@ export const showInfoNotification = (message: string) =>
 export const showWarningNotification = (message: string) =>
 
 ================
+File: src/renderer/src/utils/path-utils.ts
+================
+export const getPathBasename = (inputPath: string): string =>
+
+================
 File: src/renderer/src/utils/routes.ts
 ================
 
@@ -22307,6 +22318,9 @@ extraResources:
     to: mcp-server
     filter:
       - '**/*'
+asarUnpack:
+  - '**/node_modules/sharp/**/*'
+  - '**/node_modules/@img/**/*'
 beforePack: scripts/before-pack.js
 win:
   executableName: aider-desk
@@ -22439,6 +22453,7 @@ File: package.json
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.22.3",
     "@openrouter/ai-sdk-provider": "^1.5.3",
+    "apache-arrow": "18.1.0",
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
@@ -22516,6 +22531,7 @@ File: package.json
     "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "simple-git": "^3.27.0",
+    "sharp": "0.34.5",
     "slugify": "^1.6.6",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",

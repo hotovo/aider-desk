@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.44.0]
 
 - fixed issue with missing reasoning_content field when using deepseek-reasoner
 - added memory management system with agent integration
