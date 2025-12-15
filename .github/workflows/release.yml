@@ -33,7 +33,7 @@ jobs:
 
   release-linux-arm64:
     name: Release Linux ARM64 packages
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04-arm
     container:
       image: electronuserland/builder:wine
       env:
