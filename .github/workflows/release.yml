@@ -20,10 +20,10 @@ jobs:
         with:
           node-version: '22.17.0'
 
-      - run: npm install
+      - run: npm install --arch=x64
 
       - name: Release Linux
-        run: npm run build:linux -- -p always
+        run: npm run build:linux -- --x64 -p always
 
       - name: Upload latest-linux.yml artifact
         uses: actions/upload-artifact@v4
@@ -47,10 +47,10 @@ jobs:
         with:
           node-version: '22.17.0'
 
-      - run: npm install
+      - run: npm install --arch=arm64
 
       - name: Release Linux ARM64
-        run: npm run build:linux-arm64 -- -p always
+        run: npm run build:linux-arm64 -- --arm64 -p always
 
       - name: Upload latest-linux-arm64.yml artifact
         uses: actions/upload-artifact@v4
