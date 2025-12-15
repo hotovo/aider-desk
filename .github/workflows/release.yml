@@ -35,7 +35,7 @@ jobs:
     name: Release Linux ARM64 packages
     runs-on: ubuntu-22.04-arm
     container:
-      image: electronuserland/builder:wine
+      image: electronuserland/builder
       env:
         TAR_OPTIONS: "--format=ustar"
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -126,161 +126,161 @@ jobs:
           # Upload the combined latest-linux.yml to the GitHub release
           gh release upload ${{ steps.find-release.outputs.release_tag }} latest-linux.yml --clobber
 
-  release-win:
-    name: Release Windows packages
-    runs-on: windows-latest
-
-    steps:
-      - name: Preserve $HOME set in the container
-        run: echo HOME=/root >> "$GITHUB_ENV"
-
-      - uses: "actions/checkout@v1"
-
-      - uses: "actions/setup-node@v4"
-        with:
-          node-version: '22.17.0'
-
-      - run: npm install
-
-      - name: Release Windows
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build && npx electron-builder --win -p always
-
-  release-macos-x64:
-    name: Release macOS x64 packages
-    runs-on: macos-latest
-
-    steps:
-      - uses: "actions/checkout@v1"
-
-      - uses: "actions/setup-node@v4"
-        with:
-          node-version: '22.17.0'
-
-      - run: npm install --arch=x64
-
-      - name: Create certificate.p12
-        run: echo "$encoded_p12" | base64 --decode > certificate.p12
-        env:
-          encoded_p12: ${{ secrets.CSC_BASE64 }}
-
-      - name: Release macOS x64
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: "./certificate.p12"
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-        run: npm run build:mac -- --x64 -p always
-
-      - name: Upload latest-mac.yml artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: latest-mac-x64-yml
-          path: dist/latest-mac.yml
-
-  release-macos-arm64:
-    name: Release macOS arm64 packages
-    runs-on: macos-14
-
-    steps:
-      - uses: "actions/checkout@v1"
-
-      - uses: "actions/setup-node@v4"
-        with:
-          node-version: '22.17.0'
-
-      - run: npm install --arch=arm64
-
-      - name: Create certificate.p12
-        run: echo "$encoded_p12" | base64 --decode > certificate.p12
-        env:
-          encoded_p12: ${{ secrets.CSC_BASE64 }}
-
-      - name: Release macOS arm64
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          CSC_LINK: "./certificate.p12"
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-        run: npm run build:mac -- --arm64 -p always
-
-      - name: Upload latest-mac.yml artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: latest-mac-arm64-yml
-          path: dist/latest-mac.yml
-
-  combine-macos-yml:
-    name: Combine macOS yml files
-    runs-on: ubuntu-latest
-    needs: [release-macos-x64, release-macos-arm64]
-
-    steps:
-      - uses: "actions/checkout@v1"
-
-      - uses: "actions/setup-node@v4"
-        with:
-          node-version: '22.17.0'
-
-      - name: Download x64 yml artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: latest-mac-x64-yml
-          path: artifacts/x64/
-
-      - name: Download arm64 yml artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: latest-mac-arm64-yml
-          path: artifacts/arm64/
-
-      - name: Combine yml files
-        run: |
-          cat > combine-yml.js << 'EOF'
-          const fs = require('fs');
-          const yaml = require('js-yaml');
-
-          // Read both yml files
-          const x64Content = fs.readFileSync('artifacts/x64/latest-mac.yml', 'utf8');
-          const arm64Content = fs.readFileSync('artifacts/arm64/latest-mac.yml', 'utf8');
-
-          // Parse yml content
-          const x64Data = yaml.load(x64Content);
-          const arm64Data = yaml.load(arm64Content);
-
-          // Combine files arrays
-          const combinedData = {
-            ...arm64Data,
-            files: [...x64Data.files, ...arm64Data.files]
-          };
-
-          // Write combined yml
-          fs.writeFileSync('latest-mac.yml', yaml.dump(combinedData));
-          console.log('Combined yml file created successfully');
-          EOF
-
-          npm install js-yaml
-          node combine-yml.js
-
-      - name: Find draft release tag
-        id: find-release
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          # Get the draft release tag
-          RELEASE_TAG=$(gh release list --limit 1 --json tagName,isDraft --jq '.[] | select(.isDraft == true) | .tagName')
-          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Upload combined yml to release
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          # Upload the combined latest-mac.yml to the GitHub release
-          gh release upload ${{ steps.find-release.outputs.release_tag }} latest-mac.yml --clobber
+#  release-win:
+#    name: Release Windows packages
+#    runs-on: windows-latest
+#
+#    steps:
+#      - name: Preserve $HOME set in the container
+#        run: echo HOME=/root >> "$GITHUB_ENV"
+#
+#      - uses: "actions/checkout@v1"
+#
+#      - uses: "actions/setup-node@v4"
+#        with:
+#          node-version: '22.17.0'
+#
+#      - run: npm install
+#
+#      - name: Release Windows
+#        env:
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#        run: npm run build && npx electron-builder --win -p always
+#
+#  release-macos-x64:
+#    name: Release macOS x64 packages
+#    runs-on: macos-latest
+#
+#    steps:
+#      - uses: "actions/checkout@v1"
+#
+#      - uses: "actions/setup-node@v4"
+#        with:
+#          node-version: '22.17.0'
+#
+#      - run: npm install --arch=x64
+#
+#      - name: Create certificate.p12
+#        run: echo "$encoded_p12" | base64 --decode > certificate.p12
+#        env:
+#          encoded_p12: ${{ secrets.CSC_BASE64 }}
+#
+#      - name: Release macOS x64
+#        env:
+#          APPLE_ID: ${{ secrets.APPLE_ID }}
+#          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+#          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+#          CSC_LINK: "./certificate.p12"
+#          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#
+#        run: npm run build:mac -- --x64 -p always
+#
+#      - name: Upload latest-mac.yml artifact
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: latest-mac-x64-yml
+#          path: dist/latest-mac.yml
+#
+#  release-macos-arm64:
+#    name: Release macOS arm64 packages
+#    runs-on: macos-14
+#
+#    steps:
+#      - uses: "actions/checkout@v1"
+#
+#      - uses: "actions/setup-node@v4"
+#        with:
+#          node-version: '22.17.0'
+#
+#      - run: npm install --arch=arm64
+#
+#      - name: Create certificate.p12
+#        run: echo "$encoded_p12" | base64 --decode > certificate.p12
+#        env:
+#          encoded_p12: ${{ secrets.CSC_BASE64 }}
+#
+#      - name: Release macOS arm64
+#        env:
+#          APPLE_ID: ${{ secrets.APPLE_ID }}
+#          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+#          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+#          CSC_LINK: "./certificate.p12"
+#          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#
+#        run: npm run build:mac -- --arm64 -p always
+#
+#      - name: Upload latest-mac.yml artifact
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: latest-mac-arm64-yml
+#          path: dist/latest-mac.yml
+#
+#  combine-macos-yml:
+#    name: Combine macOS yml files
+#    runs-on: ubuntu-latest
+#    needs: [release-macos-x64, release-macos-arm64]
+#
+#    steps:
+#      - uses: "actions/checkout@v1"
+#
+#      - uses: "actions/setup-node@v4"
+#        with:
+#          node-version: '22.17.0'
+#
+#      - name: Download x64 yml artifact
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: latest-mac-x64-yml
+#          path: artifacts/x64/
+#
+#      - name: Download arm64 yml artifact
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: latest-mac-arm64-yml
+#          path: artifacts/arm64/
+#
+#      - name: Combine yml files
+#        run: |
+#          cat > combine-yml.js << 'EOF'
+#          const fs = require('fs');
+#          const yaml = require('js-yaml');
+#
+#          // Read both yml files
+#          const x64Content = fs.readFileSync('artifacts/x64/latest-mac.yml', 'utf8');
+#          const arm64Content = fs.readFileSync('artifacts/arm64/latest-mac.yml', 'utf8');
+#
+#          // Parse yml content
+#          const x64Data = yaml.load(x64Content);
+#          const arm64Data = yaml.load(arm64Content);
+#
+#          // Combine files arrays
+#          const combinedData = {
+#            ...arm64Data,
+#            files: [...x64Data.files, ...arm64Data.files]
+#          };
+#
+#          // Write combined yml
+#          fs.writeFileSync('latest-mac.yml', yaml.dump(combinedData));
+#          console.log('Combined yml file created successfully');
+#          EOF
+#
+#          npm install js-yaml
+#          node combine-yml.js
+#
+#      - name: Find draft release tag
+#        id: find-release
+#        env:
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#        run: |
+#          # Get the draft release tag
+#          RELEASE_TAG=$(gh release list --limit 1 --json tagName,isDraft --jq '.[] | select(.isDraft == true) | .tagName')
+#          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
+#
+#      - name: Upload combined yml to release
+#        env:
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#        run: |
+#          # Upload the combined latest-mac.yml to the GitHub release
+#          gh release upload ${{ steps.find-release.outputs.release_tag }} latest-mac.yml --clobber
