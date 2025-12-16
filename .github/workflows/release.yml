@@ -34,11 +34,9 @@ jobs:
   release-linux-arm64:
     name: Release Linux ARM64 packages
     runs-on: ubuntu-22.04-arm
-    container:
-      image: electronuserland/builder
-      env:
-        TAR_OPTIONS: "--format=ustar"
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    env:
+      TAR_OPTIONS: "--format=ustar"
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
     steps:
       - uses: "actions/checkout@v1"
@@ -46,6 +44,28 @@ jobs:
       - uses: "actions/setup-node@v4"
         with:
           node-version: '22.17.0'
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libarchive-tools \
+            rpm \
+            libgtk-3-0 \
+            libnss3 \
+            libxss1 \
+            libasound2 \
+            libgbm1 \
+            libx11-xcb1 \
+            libdrm2 \
+            libxkbcommon0 \
+            libxrandr2 \
+            libxcomposite1 \
+            libxcursor1 \
+            libxdamage1 \
+            libxi6 \
+            libxtst6 \
+            xdg-utils
 
       - run: npm install --arch=arm64
 
