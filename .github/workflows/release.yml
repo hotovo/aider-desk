@@ -91,9 +91,17 @@ jobs:
             libxtst6 \
             xdg-utils
 
+      - name: Install FPM
+        run: |
+          sudo apt-get update
+          sudo apt-get install ruby ruby-dev build-essential
+          sudo gem install --no-document fpm
+
       - run: npm install --arch=arm64
 
       - name: Release Linux ARM64
+        env:
+          USE_SYSTEM_FPM: true
         run: npm run build:linux -- --arm64 -p always
 
       - name: Upload latest-linux-arm64.yml artifact
