@@ -22,7 +22,6 @@ asarUnpack:
   - '**/node_modules/sharp/**/*'
   - '**/node_modules/@img/**/*'
 beforePack: scripts/before-pack.js
-afterPack: scripts/after-pack.js
 win:
   executableName: aider-desk
   icon: resources/icon.png
