@@ -25,6 +25,11 @@ jobs:
       - name: Release Linux
         run: npm run build:linux -- --x64 -p always
 
+      - name: Install GitHub CLI
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends gh ca-certificates
+
       - name: Upload backwards compatible x64 AppImage (no x64 suffix)
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
