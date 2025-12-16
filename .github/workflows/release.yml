@@ -25,18 +25,20 @@ jobs:
       - name: Release Linux
         run: npm run build:linux -- --x64 -p always
 
-      - name: Upload backwards compatible x64 AppImage (no -x64 suffix)
+      - name: Upload backwards compatible x64 AppImage (no x64 suffix)
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          APPIMAGE_ARCH=$(ls -1 dist/*.AppImage | grep -E -- '-x64\.AppImage$' | head -n 1)
+          APPIMAGE_ARCH=$(ls -1 dist/*.AppImage | grep -E -- '-(x64|x86_64)\.AppImage$' | head -n 1)
           if [ -z "$APPIMAGE_ARCH" ]; then
-            echo "Could not find -x64 AppImage in dist/" >&2
+            echo "Could not find x64 AppImage in dist/" >&2
             ls -la dist
             exit 1
           fi
 
-          APPIMAGE_COMPAT="${APPIMAGE_ARCH%-x64.AppImage}.AppImage"
+          APPIMAGE_COMPAT="$APPIMAGE_ARCH"
+          APPIMAGE_COMPAT="${APPIMAGE_COMPAT%-x64.AppImage}"
+          APPIMAGE_COMPAT="${APPIMAGE_COMPAT%-x86_64.AppImage}.AppImage"
           cp "$APPIMAGE_ARCH" "$APPIMAGE_COMPAT"
 
           echo "Created compat AppImage: $APPIMAGE_COMPAT"
@@ -153,7 +155,7 @@ jobs:
             throw new Error('Could not find x64 AppImage entry in latest-linux.yml');
           }
 
-          const compatAppImageUrl = x64AppImage.url.replace(/-x64\.AppImage$/, '.AppImage');
+          const compatAppImageUrl = x64AppImage.url.replace(/-(x64|x86_64)\.AppImage$/, '.AppImage');
           const compatAppImageEntry = {
             ...x64AppImage,
             url: compatAppImageUrl,
