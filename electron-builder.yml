@@ -69,7 +69,7 @@ linux:
       filter:
         - '**/*'
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-${arch}.${ext}
 deb:
   compression: 'gz'
 npmRebuild: true

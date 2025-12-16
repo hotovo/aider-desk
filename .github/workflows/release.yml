@@ -25,10 +25,34 @@ jobs:
       - name: Release Linux
         run: npm run build:linux -- --x64 -p always
 
+      - name: Upload backwards compatible x64 AppImage (no -x64 suffix)
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          APPIMAGE_ARCH=$(ls -1 dist/*.AppImage | grep -E -- '-x64\.AppImage$' | head -n 1)
+          if [ -z "$APPIMAGE_ARCH" ]; then
+            echo "Could not find -x64 AppImage in dist/" >&2
+            ls -la dist
+            exit 1
+          fi
+
+          APPIMAGE_COMPAT="${APPIMAGE_ARCH%-x64.AppImage}.AppImage"
+          cp "$APPIMAGE_ARCH" "$APPIMAGE_COMPAT"
+
+          echo "Created compat AppImage: $APPIMAGE_COMPAT"
+
+          RELEASE_TAG=$(gh release list --limit 1 --json tagName,isDraft --jq '.[] | select(.isDraft == true) | .tagName')
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "Could not find draft release tag" >&2
+            exit 1
+          fi
+
+          gh release upload "$RELEASE_TAG" "$APPIMAGE_COMPAT" --clobber
+
       - name: Upload latest-linux.yml artifact
         uses: actions/upload-artifact@v4
         with:
-          name: latest-linux-yml
+          name: latest-linux-x64-yml
           path: dist/latest-linux.yml
 
   release-linux-arm64:
@@ -93,7 +117,7 @@ jobs:
       - name: Download x64 yml artifact
         uses: actions/download-artifact@v4
         with:
-          name: latest-linux-yml
+          name: latest-linux-x64-yml
           path: artifacts/x64/
 
       - name: Download arm64 yml artifact
@@ -108,18 +132,32 @@ jobs:
           const fs = require('fs');
           const yaml = require('js-yaml');
 
-          // Read both yml files
           const x64Content = fs.readFileSync('artifacts/x64/latest-linux.yml', 'utf8');
           const arm64Content = fs.readFileSync('artifacts/arm64/latest-linux.yml', 'utf8');
 
-          // Parse yml content
           const x64Data = yaml.load(x64Content);
           const arm64Data = yaml.load(arm64Content);
 
-          // Combine files arrays
+          const findAppImageEntry = (data) => (data.files || []).find((f) => typeof f?.url === 'string' && f.url.endsWith('.AppImage'));
+
+          const x64AppImage = findAppImageEntry(x64Data);
+          if (!x64AppImage) {
+            throw new Error('Could not find x64 AppImage entry in latest-linux.yml');
+          }
+
+          const compatAppImageUrl = x64AppImage.url.replace(/-x64\.AppImage$/, '.AppImage');
+          const compatAppImageEntry = {
+            ...x64AppImage,
+            url: compatAppImageUrl,
+          };
+
+          const combinedFiles = [...x64Data.files, ...arm64Data.files, compatAppImageEntry];
+
           const combinedData = {
             ...arm64Data,
-            files: [...x64Data.files, ...arm64Data.files]
+            files: combinedFiles,
+            path: compatAppImageUrl,
+            sha512: compatAppImageEntry.sha512,
           };
 
           // Write combined yml
