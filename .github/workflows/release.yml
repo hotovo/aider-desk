@@ -64,11 +64,61 @@ jobs:
 
           gh release upload "$RELEASE_TAG" "$APPIMAGE_COMPAT" --clobber
 
+      - name: Add compat AppImage entry to latest-linux.yml
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const yaml = require('js-yaml');
+
+          const ymlPath = 'dist/latest-linux.yml';
+          const data = yaml.load(fs.readFileSync(ymlPath, 'utf8'));
+
+          const files = Array.isArray(data.files) ? data.files : [];
+          const appImageIdx = files.findIndex((f) => typeof f?.url === 'string' && f.url.endsWith('.AppImage'));
+          if (appImageIdx === -1) {
+            throw new Error('Could not find AppImage entry in dist/latest-linux.yml');
+          }
+
+          const appImage = files[appImageIdx];
+          const compatUrl = appImage.url.replace(/-(x64|x86_64)\.AppImage$/, '.AppImage');
+
+          if (compatUrl === appImage.url) {
+            throw new Error(`AppImage url did not match expected x64 suffix: ${appImage.url}`);
+          }
+
+          files.push({ ...appImage, url: compatUrl });
+
+          data.files = files;
+          data.path = compatUrl;
+          data.sha512 = appImage.sha512;
+
+          fs.writeFileSync(ymlPath, yaml.dump(data));
+          console.log('Updated latest-linux.yml with compat AppImage entry (last)');
+          NODE
+
       - name: Upload latest-linux.yml artifact
         uses: actions/upload-artifact@v4
         with:
           name: latest-linux-x64-yml
           path: dist/latest-linux.yml
+
+      - name: Upload updated latest-linux.yml to release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          REPO="${GITHUB_REPOSITORY}"
+          RELEASE_TAG=$(curl -fsSL \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s).find(x=>x.draft); if(!r){process.exit(1)}; console.log(r.tag_name)})")
+
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "Could not find draft release tag" >&2
+            exit 1
+          fi
+
+          gh release upload "$RELEASE_TAG" dist/latest-linux.yml --clobber
 
   release-linux-arm64:
     name: Release Linux ARM64 packages
@@ -124,88 +174,6 @@ jobs:
         with:
           name: latest-linux-arm64-yml
           path: dist/latest-linux.yml
-
-  combine-linux-yml:
-    name: Combine Linux yml files
-    runs-on: ubuntu-latest
-    needs: [release-linux, release-linux-arm64]
-
-    steps:
-      - uses: "actions/checkout@v1"
-
-      - uses: "actions/setup-node@v4"
-        with:
-          node-version: '22.17.0'
-
-      - name: Download x64 yml artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: latest-linux-x64-yml
-          path: artifacts/x64/
-
-      - name: Download arm64 yml artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: latest-linux-arm64-yml
-          path: artifacts/arm64/
-
-      - name: Combine yml files
-        run: |
-          cat > combine-yml.js << 'EOF'
-          const fs = require('fs');
-          const yaml = require('js-yaml');
-
-          const x64Content = fs.readFileSync('artifacts/x64/latest-linux.yml', 'utf8');
-          const arm64Content = fs.readFileSync('artifacts/arm64/latest-linux.yml', 'utf8');
-
-          const x64Data = yaml.load(x64Content);
-          const arm64Data = yaml.load(arm64Content);
-
-          const findAppImageEntry = (data) => (data.files || []).find((f) => typeof f?.url === 'string' && f.url.endsWith('.AppImage'));
-
-          const x64AppImage = findAppImageEntry(x64Data);
-          if (!x64AppImage) {
-            throw new Error('Could not find x64 AppImage entry in latest-linux.yml');
-          }
-
-          const compatAppImageUrl = x64AppImage.url.replace(/-(x64|x86_64)\.AppImage$/, '.AppImage');
-          const compatAppImageEntry = {
-            ...x64AppImage,
-            url: compatAppImageUrl,
-          };
-
-          const combinedFiles = [...x64Data.files, ...arm64Data.files, compatAppImageEntry];
-
-          const combinedData = {
-            ...arm64Data,
-            files: combinedFiles,
-            path: compatAppImageUrl,
-            sha512: compatAppImageEntry.sha512,
-          };
-
-          // Write combined yml
-          fs.writeFileSync('latest-linux.yml', yaml.dump(combinedData));
-          console.log('Combined Linux yml file created successfully');
-          EOF
-
-          npm install js-yaml
-          node combine-yml.js
-
-      - name: Find draft release tag
-        id: find-release
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          # Get the draft release tag
-          RELEASE_TAG=$(gh release list --limit 1 --json tagName,isDraft --jq '.[] | select(.isDraft == true) | .tagName')
-          echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Upload combined yml to release
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          # Upload the combined latest-linux.yml to the GitHub release
-          gh release upload ${{ steps.find-release.outputs.release_tag }} latest-linux.yml --clobber
 
 #  release-win:
 #    name: Release Windows packages
