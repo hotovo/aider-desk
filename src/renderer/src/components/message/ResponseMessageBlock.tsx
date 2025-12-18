@@ -3,6 +3,7 @@ import { RiRobot2Line } from 'react-icons/ri';
 
 import { MessageBar } from './MessageBar';
 
+import santaHat from '@/icons/santa-hat.png';
 import { useParsedContent } from '@/hooks/useParsedContent';
 import { ResponseMessage } from '@/types/message';
 
@@ -34,8 +35,9 @@ export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdow
       )}
     >
       <div className="flex items-start gap-2">
-        <div className="mt-[1px]">
+        <div className="mt-[1px] relative">
           <RiRobot2Line className="text-text-muted w-4 h-4" />
+          <img src={santaHat} alt="santa-hat" className="absolute top-[-4px] right-[-2px] w-[16px]" />
         </div>
         <div className="flex-grow-1 w-full overflow-hidden">{parsedContent}</div>
       </div>
