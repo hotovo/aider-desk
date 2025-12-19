@@ -203,7 +203,6 @@ src/
       VoiceService.ts
     worktrees/
       index.ts
-      types.ts
       worktree-manager.ts
     app.ts
     constants.ts
@@ -293,6 +292,7 @@ src/
           ListTasksToolMessage.tsx
           LoadingMessageBlock.tsx
           LogMessageBlock.tsx
+          MessageActions.tsx
           MessageBar.tsx
           MessageBlock.tsx
           Messages.tsx
@@ -375,8 +375,10 @@ src/
           TodoWindow.tsx
           useSidebarWidth.ts
           WelcomeMessage.tsx
+          WorktreeActionDialog.tsx
           WorktreeMergeButton.tsx
           WorktreeRevertButton.tsx
+          WorktreeStatusBadges.tsx
         PromptField/
           AudioAnalyzer.tsx
           AutoApprove.tsx
@@ -1288,7 +1290,8 @@ File: src/common/locales/en.json
     "collapse": "Collapse",
     "expand": "Expand",
     "enabled": "Enabled",
-    "noFiles": "No files"
+    "noFiles": "No files",
+    "clickToRefresh": "Click to refresh"
   },
   "search": {
     "placeholder": "Search...",
@@ -2314,7 +2317,10 @@ File: src/common/locales/en.json
   "workingMode": {
     "local": "Local",
     "worktree": "Worktree",
-    "switching": "Switching..."
+    "switching": "Switching...",
+    "confirmLocalTitle": "Switch to Local Mode",
+    "confirmLocalMessage": "Warning: This worktree has unsaved work:\n{{warnings}}\n\nRemoving the worktree will delete this work. If you want to keep this work, use Merge action to merge it to the main branch first.\n\nAre you sure you want to continue and remove the worktree?",
+    "confirmLocalAction": "Remove and switch"
   },
   "workingModeTooltip": {
     "local": "Make changes directly in the local project directory for this task",
@@ -2465,23 +2471,50 @@ File: src/common/locales/en.json
     "unarchiveSelectedConfirm": "Are you sure you want to unarchive {{count}} selected tasks?"
   },
   "worktree": {
+    "aheadCommits": "↑ {{count}} commits",
+    "uncommittedFiles": "{{count}} files",
+    "conflicts": "conflicts",
+    "conflictsPredicted": "Conflicts predicted",
+    "conflictsPresent": "Conflicts present",
     "merge": "Merge",
     "squash": "Squash & Merge",
     "onlyUncommitted": "Only uncommitted",
-    "mergeTooltip": "Merge worktree changes to main branch",
+    "rebaseFromBranch": "Rebase from branch",
+    "abortRebase": "Abort rebase",
+    "continueRebase": "Continue rebase",
+    "rebaseConflicts": "Rebase failed due to conflicts. Please resolve them manually or use the AI agent to help.",
+    "confirmRebaseTitle": "Rebase worktree",
+    "confirmRebaseMessage": "This will rebase your worktree onto the selected branch. If there are conflicts, you will need to resolve them.",
+    "confirmAbortRebaseTitle": "Abort rebase",
+    "confirmAbortRebaseMessage": "This will abort the in-progress rebase and restore the worktree to its pre-rebase state.",
+    "confirmContinueRebaseTitle": "Continue rebase",
+    "confirmContinueRebaseMessage": "This will try to continue the rebase. Make sure all conflicts are resolved and staged.",
+    "resolveConflictsWithAgent": "Resolve conflicts with agent",
+    "confirmResolveConflictsWithAgentTitle": "Resolve conflicts with agent",
+    "confirmResolveConflictsWithAgentMessage": "This will try to automatically resolve all conflicted files and stage them. Review results carefully before continuing the rebase.",
+    "commitMessage": "Commit message",
+    "commitMessagePlaceholder": "Enter commit message...",
+    "selectBranch": "Select branch",
+    "selectTargetBranchTitle": "Select target branch",
+    "selectSourceBranchTitle": "Select source branch",
+    "branchHasWorktree": "has worktree",
+    "mergeTooltip": "Merge worktree changes to a branch",
     "revertTooltip": "Revert the last merged changes",
     "confirmMerge": "Are you sure you want to {{action}} the worktree changes to the main branch? This will include any uncommitted changes.",
     "confirmRevert": "Are you sure you want to revert the last merge? This will reset the main branch to its previous state.",
     "confirmMergeTitle": "Confirm Merge",
     "confirmSquashTitle": "Confirm Squash",
     "confirmOnlyUncommittedTitle": "Confirm Apply Uncommitted Changes",
-    "confirmMergeMessage": "Are you sure you want to merge the worktree changes to the main branch?",
-    "confirmSquashMessage": "Are you sure you want to squash and merge the worktree changes to the main branch?",
-    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to main branch? No git merge will be performed.",
+    "confirmMergeMessage": "Are you sure you want to merge the worktree changes to the selected branch?",
+    "confirmSquashMessage": "Are you sure you want to squash and merge the worktree changes to the selected branch?",
+    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to the selected branch? No git merge will be performed.",
+    "mergeConflicts": "Merge failed due to conflicts between your worktree and the target branch. Please rebase your worktree first to resolve them.",
+    "applyUncommittedConflicts": "Failed to apply uncommitted changes due to conflicts with the target branch. Please rebase your worktree first to align your changes.",
     "dontAskAgain": "Don't ask me again",
     "confirmRevertTitle": "Confirm Revert",
     "confirmRevertMessage": "Are you sure you want to revert the last merge? This will undo the changes that were merged from the worktree back to the main branch.",
-    "revert": "Revert"
+    "revert": "Revert",
+    "noChanges": "No changes"
   },
   "welcomeMessage": {
     "title": "AiderDesk",
@@ -2547,7 +2580,8 @@ File: src/common/locales/zh.json
     "collapse": "收起",
     "expand": "展开",
     "enabled": "已启用",
-    "noFiles": "没有找到文件"
+    "noFiles": "没有找到文件",
+    "clickToRefresh": "点击刷新"
   },
   "search": {
     "placeholder": "查找...",
@@ -3543,7 +3577,10 @@ File: src/common/locales/zh.json
   "workingMode": {
     "local": "本地",
     "worktree": "工作树",
-    "switching": "切换中..."
+    "switching": "切换中...",
+    "confirmLocalTitle": "切换到本地模式",
+    "confirmLocalMessage": "警告：此工作树有未保存的工作：\n{{warnings}}\n\n删除工作树将删除这些工作。如果您想保留这些工作，请先使用合并操作将其合并到主分支。\n\n您确定要继续并删除工作树吗？",
+    "confirmLocalAction": "删除并切换"
   },
   "workingModeTooltip": {
     "local": "在此任务中直接在本地项目目录中进行更改",
@@ -3731,23 +3768,50 @@ File: src/common/locales/zh.json
     "unarchiveSelectedConfirm": "您确定要取消归档 {{count}} 个选中的任务吗？"
   },
   "worktree": {
+    "aheadCommits": "↑ {{count}} 次提交",
+    "uncommittedFiles": "{{count}} 个文件",
+    "conflicts": "冲突",
+    "conflictsPredicted": "预计会发生冲突",
+    "conflictsPresent": "存在冲突",
     "merge": "合并",
     "squash": "压缩合并",
     "onlyUncommitted": "仅未提交的更改",
-    "mergeTooltip": "将工作树更改合并到主分支",
+    "rebaseFromBranch": "从分支变基",
+    "abortRebase": "中止变基",
+    "continueRebase": "继续变基",
+    "rebaseConflicts": "变基由于冲突失败。请手动解决冲突或使用 AI 代理协助。",
+    "confirmRebaseTitle": "变基工作树",
+    "confirmRebaseMessage": "这将把工作树变基到所选分支上。如有冲突，需要你进行解决。",
+    "confirmAbortRebaseTitle": "中止变基",
+    "confirmAbortRebaseMessage": "这将中止正在进行的变基并把工作树恢复到变基前的状态。",
+    "confirmContinueRebaseTitle": "继续变基",
+    "confirmContinueRebaseMessage": "这将尝试继续变基。请确保所有冲突已解决并已暂存。",
+    "resolveConflictsWithAgent": "使用智能体解决冲突",
+    "confirmResolveConflictsWithAgentTitle": "使用智能体解决冲突",
+    "confirmResolveConflictsWithAgentMessage": "这将尝试自动解决所有冲突文件并将其暂存。继续变基前请仔细检查结果。",
+    "commitMessage": "提交说明",
+    "commitMessagePlaceholder": "输入提交说明...",
+    "selectBranch": "选择分支",
+    "selectTargetBranchTitle": "选择目标分支",
+    "selectSourceBranchTitle": "选择源分支",
+    "branchHasWorktree": "已有工作树",
+    "mergeTooltip": "将工作树更改合并到分支",
     "revertTooltip": "撤销最后一次合并的更改",
     "confirmMerge": "您确定要{{action}}工作树更改到主分支吗？这将包含任何未提交的更改。",
     "confirmRevert": "您确定要撤销最后一次合并吗？这将把主分支重置到之前的状态。",
     "confirmMergeTitle": "确认合并",
     "confirmSquashTitle": "确认压缩合并",
     "confirmOnlyUncommittedTitle": "确认应用未提交的更改",
-    "confirmMergeMessage": "您确定要将工作树更改合并到主分支吗？",
-    "confirmSquashMessage": "您确定要压缩并合并工作树更改到主分支吗？",
-    "confirmOnlyUncommittedMessage": "您确定要将工作树中的未提交更改应用到主分支吗？不会执行 git 合并操作。",
+    "confirmMergeMessage": "您确定要将工作树更改合并到所选分支吗？",
+    "confirmSquashMessage": "您确定要压缩并合并工作树更改到所选分支吗？",
+    "confirmOnlyUncommittedMessage": "您确定要将工作树中的未提交更改应用到所选分支吗？不会执行 git 合并操作。",
+    "mergeConflicts": "由于工作树与目标分支之间存在冲突，合并失败。请先对工作树进行变基以解决冲突。",
+    "applyUncommittedConflicts": "由于与目标分支存在冲突，无法应用未提交的更改。请先对工作树进行变基以对齐您的更改。",
     "dontAskAgain": "不再询问",
     "confirmRevertTitle": "确认撤销",
     "confirmRevertMessage": "您确定要撤销最后一次合并吗？这将撤销从工作树合并回主分支的更改。",
-    "revert": "撤销"
+    "revert": "撤销",
+    "noChanges": "没有更改"
   },
   "welcomeMessage": {
     "title": "AiderDesk",
@@ -4090,6 +4154,8 @@ import {
   VoiceSession,
   AgentProfile,
   MemoryEntry,
+  WorktreeIntegrationStatusUpdatedData,
+  BranchInfo,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -4206,6 +4272,7 @@ export interface ApplicationAPI {
   addProvidersUpdatedListener: (callback: (data: ProvidersUpdatedData) => void) => () => void;
   addAgentProfilesUpdatedListener: (callback: (data: AgentProfilesUpdatedData) => void) => () => void;
   addProjectSettingsUpdatedListener: (baseDir: string, callback: (data: { baseDir: string; settings: ProjectSettings }) => void) => () => void;
+  addWorktreeIntegrationStatusUpdatedListener: (baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (params: Electron.ContextMenuParams) => void) => () => void;
@@ -4233,9 +4300,15 @@ export interface ApplicationAPI {
   getAllTerminalsForTask: (taskId: string) => Promise<Array<{ id: string; taskId: string; cols: number; rows: number }>>;
 
   // Worktree merge operations
-  mergeWorktreeToMain: (baseDir: string, taskId: string, squash: boolean) => Promise<void>;
-  applyUncommittedChanges: (baseDir: string, taskId: string) => Promise<void>;
+  mergeWorktreeToMain: (baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string) => Promise<void>;
+  applyUncommittedChanges: (baseDir: string, taskId: string, targetBranch?: string) => Promise<void>;
   revertLastMerge: (baseDir: string, taskId: string) => Promise<void>;
+  listBranches: (baseDir: string) => Promise<BranchInfo[]>;
+  getWorktreeIntegrationStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<import('@common/types').WorktreeIntegrationStatus>;
+  rebaseWorktreeFromBranch: (baseDir: string, taskId: string, fromBranch?: string) => Promise<void>;
+  abortWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
+  continueWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
+  resolveWorktreeConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
 
   // Agent profile operations
   getAllAgentProfiles: () => Promise<AgentProfile[]>;
@@ -4302,10 +4375,56 @@ export type Worktree = z.infer<typeof WorktreeSchema>;
 ⋮----
 export type MergeState = z.infer<typeof MergeStateSchema>;
 ⋮----
-export type LocalizedString = {
+export interface WorktreeAheadCommits {
+  count: number;
+  commits: string[];
+}
+⋮----
+export interface WorktreeUncommittedFiles {
+  count: number;
+  files: string[];
+}
+⋮----
+export interface RebaseState {
+  inProgress: boolean;
+  hasUnmergedPaths: boolean;
+  unmergedFiles?: string[];
+}
+⋮----
+export interface ConflictResolutionFileContext {
+  filePath: string;
+  base?: string | null;
+  ours?: string | null;
+  theirs?: string | null;
+  current?: string;
+}
+⋮----
+export interface WorktreeIntegrationStatus {
+  targetBranch: string;
+  aheadCommits: WorktreeAheadCommits;
+  uncommittedFiles: WorktreeUncommittedFiles;
+  predictedConflicts: {
+    hasConflicts: boolean;
+    conflictingFiles?: string[];
+    conflictingCommits?: {
+      ours: string[];
+      theirs: string[];
+    };
+    canAutoMerge?: boolean;
+  };
+  rebaseState: RebaseState;
+}
+⋮----
+export interface WorktreeIntegrationStatusUpdatedData {
+  baseDir: string;
+  taskId: string;
+  status: WorktreeIntegrationStatus;
+}
+⋮----
+export interface LocalizedString {
   key: string;
   params?: Record<string, unknown>;
-};
+}
 ⋮----
 export type Mode = 'code' | 'ask' | 'architect' | 'context' | 'agent';
 ⋮----
@@ -4371,6 +4490,7 @@ export interface LogData {
   message?: string;
   finished?: boolean;
   promptContext?: PromptContext;
+  actionIds?: string[];
 }
 ⋮----
 export interface ToolData {
@@ -4963,6 +5083,19 @@ export interface MemoryEntry {
   taskId?: string;
   projectId?: string;
   timestamp: number;
+}
+⋮----
+export interface BranchInfo {
+  name: string;
+  isCurrent: boolean;
+  hasWorktree: boolean;
+}
+⋮----
+export interface Test {
+  name: string;
+  description: string;
+  status: 'todo' | 'in_progress' | 'done';
+  message: string;
 }
 
 ================
@@ -5880,7 +6013,7 @@ isRunning()
 ⋮----
 private processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning }: StepResult<TOOLS>,
+    { reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
     task: Task,
     profile: AgentProfile,
     provider: ProviderProfile,
@@ -6121,7 +6254,7 @@ import path from 'path';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 ⋮----
-import { AgentProfile, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, SettingsData, ToolApprovalState, ConflictResolutionFileContext } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -6186,6 +6319,17 @@ export const getInitProjectPrompt = () =>
 export const getCompactConversationPrompt = (customInstructions?: string) =>
 ⋮----
 export const getGenerateCommitMessagePrompt = () =>
+⋮----
+export const getConflictResolutionSystemPrompt = () =>
+⋮----
+export const getConflictResolutionPrompt = (
+  filePath: string,
+  ctx: ConflictResolutionFileContext & {
+    basePath?: string;
+    oursPath?: string;
+    theirsPath?: string;
+  },
+) =>
 
 ================
 File: src/main/agent/utils.ts
@@ -6512,6 +6656,7 @@ import {
   ProjectSettings,
   AgentProfile,
   AgentProfilesUpdatedData,
+  WorktreeIntegrationStatus,
 } from '@common/types';
 ⋮----
 import type { BrowserWindow } from 'electron';
@@ -6579,6 +6724,8 @@ sendInputHistoryUpdated(baseDir: string, taskId: string, inputHistory: string[])
 sendCustomCommandsUpdated(baseDir: string, taskId: string, commands: CustomCommand[]): void
 ⋮----
 sendCustomCommandError(baseDir: string, taskId: string, error: string): void
+⋮----
+sendWorktreeIntegrationStatusUpdated(baseDir: string, taskId: string, status: WorktreeIntegrationStatus): void
 ⋮----
 // Terminal events
 sendTerminalData(data: TerminalData): void
@@ -8180,6 +8327,16 @@ import { MemoryManager } from '@/memory/memory-manager';
 export class ProjectManager
 ⋮----
 constructor(
+    private readonly store: Store,
+    private readonly mcpManager: McpManager,
+    private readonly telemetryManager: TelemetryManager,
+    private readonly dataManager: DataManager,
+    private readonly eventManager: EventManager,
+    private readonly modelManager: ModelManager,
+    worktreeManager: WorktreeManager,
+    private readonly agentProfileManager: AgentProfileManager,
+    private readonly memoryManager: MemoryManager,
+)
 ⋮----
 private findProject(baseDir: string): Project | undefined
 ⋮----
@@ -8526,6 +8683,18 @@ registerRoutes(router: Router): void
 // Apply uncommitted changes
 ⋮----
 // Revert last merge
+⋮----
+// List branches
+⋮----
+// Worktree status
+⋮----
+// Rebase worktree from branch
+⋮----
+// Abort worktree rebase
+⋮----
+// Continue worktree rebase
+⋮----
+// Resolve worktree conflicts with agent
 ⋮----
 // Update open projects order
 ⋮----
@@ -9488,7 +9657,7 @@ import {
   ModelInfo,
 } from '@common/types';
 import { extractTextContent, fileExists, parseUsageReport } from '@common/utils';
-import { COMPACT_CONVERSATION_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
+import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
@@ -9496,8 +9665,22 @@ import { isEqual } from 'lodash';
 import type { SimpleGit } from 'simple-git';
 ⋮----
 import { getAllFiles } from '@/utils/file-system';
-import { getCompactConversationPrompt, getGenerateCommitMessagePrompt, getInitProjectPrompt, getSystemPrompt } from '@/agent/prompts';
-import { AIDER_DESK_TASKS_DIR, AIDER_DESK_TODOS_FILE, WORKTREE_BRANCH_PREFIX, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_GLOBAL_RULES_DIR } from '@/constants';
+import {
+  getCompactConversationPrompt,
+  getConflictResolutionPrompt,
+  getConflictResolutionSystemPrompt,
+  getGenerateCommitMessagePrompt,
+  getInitProjectPrompt,
+  getSystemPrompt,
+} from '@/agent/prompts';
+import {
+  AIDER_DESK_TASKS_DIR,
+  AIDER_DESK_TODOS_FILE,
+  WORKTREE_BRANCH_PREFIX,
+  AIDER_DESK_PROJECT_RULES_DIR,
+  AIDER_DESK_GLOBAL_RULES_DIR,
+  AIDER_DESK_TMP_DIR,
+} from '@/constants';
 import { Agent, AgentProfileManager, McpManager } from '@/agent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
@@ -9508,11 +9691,11 @@ import { ModelManager } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { getEnvironmentVariablesForAider } from '@/utils';
+import { getEnvironmentVariablesForAider, execWithShellPath } from '@/utils';
 import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
-import { WorktreeManager } from '@/worktrees';
+import { WorktreeManager, GitError } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 ⋮----
@@ -9637,6 +9820,7 @@ public async runPromptInAgent(
     contextMessages?: ContextMessage[],
     contextFiles?: ContextFile[],
     systemPrompt?: string,
+    waitForCurrentAgentToFinish = true,
 ): Promise<ResponseCompletedData[]>
 ⋮----
 // send messages to connectors
@@ -9798,7 +9982,7 @@ public openCommandOutput(command: string)
 ⋮----
 public closeCommandOutput(addToContext = true)
 ⋮----
-public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext)
+public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext, actionIds?: string[])
 ⋮----
 public getContextMessages()
 ⋮----
@@ -9964,15 +10148,11 @@ public async updateTask(updates: Partial<TaskData>): Promise<TaskData>
 ⋮----
 // if this task is new empty task update should not trigger save
 ⋮----
+private async sendWorktreeIntegrationStatusUpdated()
+⋮----
 private async applyWorkingMode(mode: WorkingMode)
 ⋮----
-// Check for unsaved work before removing worktree
-⋮----
-// Build warning message
-⋮----
-// Revert the mode change
-⋮----
-public async mergeWorktreeToMain(squash: boolean): Promise<void>
+public async mergeWorktreeToMain(squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
 // For squash merge, we need a commit message
 ⋮----
@@ -9986,13 +10166,33 @@ public async mergeWorktreeToMain(squash: boolean): Promise<void>
 ⋮----
 // Store merge state for potential revert
 ⋮----
-// @ts-expect-error checking keys in error
-⋮----
-public async applyUncommittedChanges(): Promise<void>
+public async applyUncommittedChanges(targetBranch?: string): Promise<void>
 ⋮----
 public async revertLastMerge(): Promise<void>
 ⋮----
 // Clear merge state after successful revert
+⋮----
+public async getWorktreeIntegrationStatus(targetBranch?: string)
+⋮----
+public async rebaseWorktreeFromBranch(fromBranch?: string): Promise<void>
+⋮----
+public async abortWorktreeRebase(): Promise<void>
+⋮----
+public async resolveWorktreeConflictsWithAgent(): Promise<void>
+⋮----
+// Create temp directory structure for conflict files
+⋮----
+// Create version files using the relative path structure
+⋮----
+// Write version files
+⋮----
+// Update context to "Resolved"
+⋮----
+// Stage the file
+⋮----
+// Clean up temp files
+⋮----
+public async continueWorktreeRebase(): Promise<void>
 ⋮----
 public async duplicateFrom(sourceTask: Task): Promise<void>
 ⋮----
@@ -10760,28 +10960,20 @@ File: src/main/worktrees/index.ts
 
 
 ================
-File: src/main/worktrees/types.ts
-================
-// Re-export Worktree types from common
-
-================
 File: src/main/worktrees/worktree-manager.ts
 ================
 import path, { join } from 'path';
-import { mkdir, rm } from 'fs/promises';
+import fs, { mkdir, rm } from 'fs/promises';
+⋮----
+import { MergeState, Worktree, WorktreeUncommittedFiles, WorktreeAheadCommits, RebaseState, ConflictResolutionFileContext } from '@common/types';
 ⋮----
 import { execWithShellPath, withLock } from '@/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import logger from '@/logger';
-import { MergeState, Worktree } from '@/worktrees/types';
 ⋮----
-export interface GitError extends Error {
-  gitCommands?: string[];
-  gitOutput?: string;
-  workingDirectory?: string;
-  projectPath?: string;
-  originalError?: Error;
-}
+export class GitError extends Error
+⋮----
+getErrorDetails()
 ⋮----
 // Interface for raw commit data
 interface RawCommitData {
@@ -10933,6 +11125,8 @@ async abortRebase(worktreePath: string): Promise<void>
 ⋮----
 // Abort the rebase
 ⋮----
+async continueRebase(worktreePath: string): Promise<void>
+⋮----
 private async squashAndMergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string, commitMessage: string): Promise<void>
 ⋮----
 // Get current branch name in worktree (for logging purposes)
@@ -10996,7 +11190,7 @@ async gitPush(worktreePath: string): Promise<
 ⋮----
 async getLastCommits(worktreePath: string, count: number = 20): Promise<RawCommitData[]>
 ⋮----
-async getChangesDiff(projectPath: string, worktreePath: string): Promise<string>
+async getChangesDiff(projectPath: string, worktreePath: string, targetBranch?: string): Promise<string>
 ⋮----
 // Check if there are any commits in worktree that are not in main
 ⋮----
@@ -11055,6 +11249,7 @@ async mergeWorktreeToMainWithUncommitted(
     worktreePath: string,
     squash: boolean,
     commitMessage?: string,
+    targetBranch?: string,
 ): Promise<MergeState>
 ⋮----
 // 1. Track initial state
@@ -11083,33 +11278,56 @@ async mergeWorktreeToMainWithUncommitted(
 async checkWorktreeForUnmergedWork(
     projectPath: string,
     worktreePath: string,
+    targetBranch?: string,
 ): Promise<
 ⋮----
 // 1. Check for uncommitted changes
 ⋮----
-// 2. Get the main branch name
+// 2. Get the target branch name
 ⋮----
-// 3. Check for commits in worktree that are not in main branch
+// 3. Check for commits in worktree that are not in target branch
 ⋮----
 // If we can't get commits, log but don't fail
 ⋮----
 // On error, return safe defaults (assume there might be work)
 ⋮----
+async getAheadCommits(worktreePath: string, targetBranch: string): Promise<WorktreeAheadCommits>
+⋮----
+async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles>
+⋮----
+async getRebaseState(worktreePath: string): Promise<RebaseState>
+⋮----
+// ignore
+⋮----
+// ignore
+⋮----
+async getUnmergedFiles(worktreePath: string): Promise<string[]>
+⋮----
+async getStageFileContent(worktreePath: string, stage: 1 | 2 | 3, filePath: string): Promise<string | null>
+⋮----
+async collectConflictContext(worktreePath: string, filePath: string): Promise<ConflictResolutionFileContext>
+⋮----
+async stageResolvedFile(worktreePath: string, filePath: string, content: string): Promise<void>
+⋮----
+async listConflictedFiles(worktreePath: string): Promise<string[]>
+⋮----
 /**
    * Apply uncommitted changes from worktree to main branch without merging commits
    * This transfers work-in-progress changes while keeping them uncommitted in both branches
    */
-async applyUncommittedChangesToMain(projectPath: string, taskId: string, worktreePath: string): Promise<void>
+async applyUncommittedChangesToMain(projectPath: string, taskId: string, worktreePath: string, targetBranch?: string): Promise<void>
 ⋮----
 // 1. Check if there are uncommitted changes in worktree
 ⋮----
 // 2. Stash uncommitted changes from worktree
 ⋮----
-// 3. Apply stash to main branch (keeping uncommitted)
+// 3. Switch main repo to target branch
 ⋮----
-// 4. Apply stash back to worktree (keeping uncommitted)
+// 4. Apply stash to target branch (keeping uncommitted)
 ⋮----
-// 5. Clean up stash
+// 5. Apply stash back to worktree (keeping uncommitted)
+⋮----
+// 6. Clean up stash
 ⋮----
 // Recovery: try to restore stash to worktree
 ⋮----
@@ -11121,17 +11339,24 @@ async revertMerge(projectPath: string, taskId: string, worktreePath: string, mer
 ⋮----
 // 1. Stash current uncommitted changes in worktree
 ⋮----
-// 2. Reset main branch to previous state (this removes worktree-originated uncommitted changes)
+// 2. Stash current uncommitted changes in main repo to clean the working directory
+// This is crucial to avoid conflicts with untracked files when applying the original stash
 ⋮----
-// 3. Reset worktree branch to previous state
+// 3. Switch to the branch we merged into, then reset it to previous state
 ⋮----
-// 4. Restore main's original uncommitted changes if they were preserved
+// 4. Reset worktree branch to previous state
+⋮----
+// 5. Restore main's original uncommitted changes if they were preserved
 ⋮----
 // Clean up the stash after successful revert
 ⋮----
-// 5. Restore uncommitted changes in worktree
+// 6. Restore uncommitted changes in worktree
 ⋮----
-// Recovery: try to restore worktree stash
+// 7. Clean up temporary main stash
+// We don't apply it back because we want to revert to the state BEFORE the merge (with original changes)
+// Applying it back would re-introduce the changes that were just merged
+⋮----
+// Recovery: try to restore stashes
 ⋮----
 private async pruneDeleted(projectDir: string): Promise<void>
 ⋮----
@@ -11320,11 +11545,23 @@ getTerminalForTask(taskId: string): string | null
 ⋮----
 getTerminalsForTask(taskId: string):
 ⋮----
-async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean): Promise<void>
+async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
-async applyUncommittedChanges(baseDir: string, taskId: string): Promise<void>
+async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
 async revertLastMerge(baseDir: string, taskId: string): Promise<void>
+⋮----
+async listBranches(projectDir: string): Promise<Array<
+⋮----
+async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string)
+⋮----
+async rebaseWorktreeFromBranch(baseDir: string, taskId: string, fromBranch?: string): Promise<void>
+⋮----
+async abortWorktreeRebase(baseDir: string, taskId: string): Promise<void>
+⋮----
+async continueWorktreeRebase(baseDir: string, taskId: string): Promise<void>
+⋮----
+async resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void>
 ⋮----
@@ -12037,6 +12274,7 @@ import {
   ToolData,
   UserMessageData,
   VersionsInfo,
+  WorktreeIntegrationStatusUpdatedData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -12107,6 +12345,8 @@ import {
   AgentProfile,
   MemoryEntry,
   MemoryEmbeddingProgress,
+  WorktreeIntegrationStatus,
+  WorktreeIntegrationStatusUpdatedData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -12135,6 +12375,7 @@ type EventDataMap = {
   'provider-models-updated': ProviderModelsData;
   'providers-updated': ProvidersUpdatedData;
   'project-settings-updated': { baseDir: string; settings: ProjectSettings };
+  'worktree-integration-status-updated': WorktreeIntegrationStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
   'task-created': TaskData;
   'task-initialized': TaskData;
@@ -12294,6 +12535,8 @@ addAgentProfilesUpdatedListener(callback: (data: AgentProfilesUpdatedData) => vo
 ⋮----
 addProjectSettingsUpdatedListener(baseDir: string, callback: (data:
 ⋮----
+addWorktreeIntegrationStatusUpdatedListener(baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void): () => void
+⋮----
 // Task lifecycle event listeners
 addTaskCreatedListener(baseDir: string, callback: (data: TaskData) => void): () => void
 ⋮----
@@ -12338,11 +12581,23 @@ stopCloudflareTunnel(): Promise<void>
 getCloudflareTunnelStatus(): Promise<CloudflareTunnelStatus>
 ⋮----
 // Worktree merge operations
-mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean): Promise<void>
+mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
-applyUncommittedChanges(baseDir: string, taskId: string): Promise<void>
+applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
 revertLastMerge(baseDir: string, taskId: string): Promise<void>
+⋮----
+listBranches(baseDir: string): Promise<Array<
+⋮----
+getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus>
+⋮----
+rebaseWorktreeFromBranch(baseDir: string, taskId: string, fromBranch?: string): Promise<void>
+⋮----
+abortWorktreeRebase(baseDir: string, taskId: string): Promise<void>
+⋮----
+continueWorktreeRebase(baseDir: string, taskId: string): Promise<void>
+⋮----
+resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
 ⋮----
 // Memory operations
 listAllMemories(): Promise<MemoryEntry[]>
@@ -12624,9 +12879,9 @@ File: src/renderer/src/components/common/Button.tsx
 import { ReactNode } from 'react';
 import { twMerge } from 'tailwind-merge';
 ⋮----
-type ButtonVariant = 'contained' | 'text' | 'outline';
-type ButtonColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
-type ButtonSize = 'sm' | 'md' | 'xs';
+export type ButtonVariant = 'contained' | 'text' | 'outline';
+export type ButtonColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'xs';
 ⋮----
 type Props = {
   children: ReactNode;
@@ -12748,7 +13003,7 @@ import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { BaseDialog } from './BaseDialog';
-import { Button } from './Button';
+import { Button, ButtonColor } from './Button';
 ⋮----
 type Props = {
   title: string;
@@ -12760,6 +13015,7 @@ type Props = {
   children: ReactNode;
   disabled?: boolean;
   confirmButtonClass?: string;
+  confirmButtonColor?: ButtonColor;
   width?: number;
   closeOnEscape?: boolean;
 };
@@ -12774,6 +13030,7 @@ export const ConfirmDialog = ({
   children,
   disabled = false,
   confirmButtonClass,
+  confirmButtonColor,
   width,
   closeOnEscape = false,
 }: Props) =>
@@ -13816,6 +14073,7 @@ import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage,
 ⋮----
 type Props = {
   baseDir: string;
+  taskId: string;
   message: GroupMessage;
   allFiles: string[];
   renderMarkdown: boolean;
@@ -13939,11 +14197,14 @@ import { MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
+import { MessageActions } from './MessageActions';
 ⋮----
 import { LogMessage } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 ⋮----
 type Props = {
+  baseDir: string;
+  taskId: string;
   message: LogMessage;
   onRemove?: () => void;
   compact?: boolean;
@@ -13957,6 +14218,28 @@ const renderMessage = () => (
   );
 ⋮----
 <CopyMessageButton content=
+
+================
+File: src/renderer/src/components/message/MessageActions.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
+⋮----
+import { Button } from '../common/Button';
+⋮----
+type Props = {
+  actionIds: string[];
+  baseDir: string;
+  taskId: string;
+};
+⋮----
+const handleAbortRebase = () =>
+⋮----
+const handleContinueRebase = () =>
+⋮----
+const handleResolveConflictsWithAgent = () =>
+⋮----
+const handleRebaseWorktree = () =>
 
 ================
 File: src/renderer/src/components/message/MessageBar.tsx
@@ -14069,6 +14352,7 @@ import {
 ⋮----
 type Props = {
   baseDir: string;
+  taskId: string;
   message: Message;
   allFiles: string[];
   renderMarkdown: boolean;
@@ -14109,6 +14393,7 @@ export type MessagesRef = {
 ⋮----
 type Props = {
   baseDir: string;
+  taskId: string;
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
@@ -14563,6 +14848,7 @@ export type VirtualizedMessagesRef = {
 ⋮----
 type Props = {
   baseDir: string;
+  taskId: string;
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
@@ -16391,6 +16677,14 @@ if (!settings)
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
 // Two-row layout for Agent mode with Aider tools
 ⋮----
 {/* Row 1: AGENT */}
@@ -16827,21 +17121,70 @@ import { FiCode, FiFile, FiLayers, FiZap, FiTerminal } from 'react-icons/fi';
 import icon from '../../../../../resources/icon.png?asset';
 
 ================
+File: src/renderer/src/components/project/WorktreeActionDialog.tsx
+================
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { BranchInfo } from '@common/types';
+⋮----
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { useApi } from '@/contexts/ApiContext';
+import Select from '@/components/common/Select';
+import { Input } from '@/components/common/Input';
+⋮----
+type Props = {
+  baseDir: string;
+  title: string;
+  message?: string;
+  confirmButtonText: string;
+  defaultBranch?: string;
+  showCommitMessage?: boolean;
+  initialCommitMessage?: string;
+  onCancel: () => void;
+  onConfirm: (branch: string, commitMessage?: string) => void;
+};
+⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
+const load = async () =>
+⋮----
+const handleConfirm = () =>
+⋮----
+const handleBranchChange = (value: string) =>
+⋮----
+const handleCommitMessageChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+
+================
 File: src/renderer/src/components/project/WorktreeMergeButton.tsx
 ================
 import { useState, useRef } from 'react';
 import { FaDownload } from 'react-icons/fa6';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import { WorktreeIntegrationStatus } from '@common/types';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 ⋮----
 type Props = {
-  onMerge: () => void;
-  onSquash: () => void;
-  onOnlyUncommitted: () => void;
+  baseDir: string;
+  defaultBranch?: string;
+  onMerge: (targetBranch?: string) => void;
+  onSquash: (targetBranch?: string, commitMessage?: string) => void;
+  onOnlyUncommitted: (targetBranch?: string) => void;
+  onRebaseFromBranch: (fromBranch?: string) => void;
+  onAbortRebase: () => void;
+  onContinueRebase: () => void;
+  onResolveConflictsWithAgent: () => void;
   disabled?: boolean;
+  canAbortRebase?: boolean;
+  canContinueRebase?: boolean;
+  canResolveConflictsWithAgent?: boolean;
+  status?: WorktreeIntegrationStatus | null;
+  taskName?: string;
 };
 ⋮----
 const handleToggle = () =>
@@ -16852,15 +17195,25 @@ const handleSquashClick = () =>
 ⋮----
 const handleOnlyUncommittedClick = () =>
 ⋮----
-const handleMergeConfirm = () =>
+const handleRebaseClick = () =>
 ⋮----
-const handleSquashConfirm = () =>
+const handleAbortRebaseClick = () =>
 ⋮----
-const handleOnlyUncommittedConfirm = () =>
+const handleContinueRebaseClick = () =>
+⋮----
+const handleResolveWithAgentClick = () =>
+⋮----
+const handleAbortRebaseConfirm = () =>
+⋮----
+const handleContinueRebaseConfirm = () =>
+⋮----
+const handleResolveWithAgentConfirm = () =>
 ⋮----
 title=
 ⋮----
 confirmButtonText=
+⋮----
+onConfirm=
 
 ================
 File: src/renderer/src/components/project/WorktreeRevertButton.tsx
@@ -16888,6 +17241,28 @@ tooltip=
 title=
 ⋮----
 confirmButtonText=
+
+================
+File: src/renderer/src/components/project/WorktreeStatusBadges.tsx
+================
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { TiWarning } from 'react-icons/ti';
+⋮----
+import type { WorktreeIntegrationStatus } from '@common/types';
+⋮----
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
+const formatTruncatedList = (items: string[]) =>
+⋮----
+type Props = {
+  status: WorktreeIntegrationStatus;
+  onRefresh: () => void;
+};
+⋮----
+export const WorktreeStatusBadges = (
+⋮----
+data-tooltip-content=
 
 ================
 File: src/renderer/src/components/PromptField/AudioAnalyzer.tsx
@@ -17185,29 +17560,47 @@ onClose=
 File: src/renderer/src/components/PromptField/TaskWorkingMode.tsx
 ================
 import { TaskData, WorkingMode } from '@common/types';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
+⋮----
+import type { WorktreeIntegrationStatus } from '@common/types';
 ⋮----
 import { ItemConfig, ItemSelector } from '@/components/common/ItemSelector';
 import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
 import { useApi } from '@/contexts/ApiContext';
+import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 ⋮----
 type Props = {
   task: TaskData;
-  onMerge: () => void;
-  onSquash: () => void;
-  onOnlyUncommitted: () => void;
+  onMerge: (targetBranch?: string) => void;
+  onSquash: (targetBranch?: string, commitMessage?: string) => void;
+  onOnlyUncommitted: (targetBranch?: string) => void;
+  onRebaseFromBranch: (fromBranch?: string) => void;
+  onAbortRebase: () => void;
+  onContinueRebase: () => void;
+  onResolveConflictsWithAgent: () => void;
   onRevert: () => void;
   isMerging: boolean;
 };
 ⋮----
+const handleRefresh = () =>
+⋮----
 const handleWorkingModeChanged = async (mode: WorkingMode) =>
 ⋮----
+const performSwitch = async (mode: WorkingMode) =>
+⋮----
 // eslint-disable-next-line no-console
+⋮----
+const getWarningMessage = () =>
+⋮----
+title=
+⋮----
+onCancel=
 
 ================
 File: src/renderer/src/components/PromptField/usePromptFieldText.ts
@@ -21770,6 +22163,7 @@ export interface ReflectedMessage extends Message {
 export interface LogMessage extends Message {
   type: 'log';
   level: 'info' | 'warning' | 'error';
+  actionIds?: string[];
 }
 ⋮----
 export interface LoadingMessage extends Message {
