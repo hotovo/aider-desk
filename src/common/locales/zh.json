@@ -470,6 +470,11 @@
         "on-demand": "仅在明确请求时按需使用",
         "automatic": "在适当时自动使用"
       },
+      "skills": {
+        "activating": "正在激活 {{name}} 技能...",
+        "activated": "已激活 {{name}} 技能",
+        "skill": "技能"
+      },
       "profileContext": "配置上下文",
       "globalProfiles": "全局配置",
       "projectProfiles": "项目配置: {{projectName}}",

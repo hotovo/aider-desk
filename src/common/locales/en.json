@@ -472,6 +472,11 @@
         "on-demand": "Used as subagent on user demand",
         "automatic": "Used as subagent automatically"
       },
+      "skills": {
+        "activating": "Activating {{name}} skill...",
+        "activated": "Activated {{name}} skill",
+        "skill": "Skill"
+      },
       "profileContext": "Profile Context",
       "globalProfiles": "Global Profiles",
       "projectProfiles": "Project Profiles: {{projectName}}",

@@ -18,6 +18,8 @@ import {
   POWER_TOOL_GREP,
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
+  SKILLS_TOOL_ACTIVATE_SKILL,
+  SKILLS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_RUN_TASK,
   TASKS_TOOL_GROUP_NAME,
@@ -53,6 +55,7 @@ import { StoreMemoryToolMessage } from './StoreMemoryToolMessage';
 import { RetrieveMemoryToolMessage } from './RetrieveMemoryToolMessage';
 import { DeleteMemoryToolMessage } from './DeleteMemoryToolMessage';
 import { ListMemoriesToolMessage } from './ListMemoriesToolMessage';
+import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
 import { areMessagesEqual } from './utils';
 
 import {
@@ -178,6 +181,14 @@ const MessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkd
             return <DeleteMemoryToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           case MEMORY_TOOL_LIST:
             return <ListMemoriesToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
+          default:
+            break;
+        }
+        break;
+      case SKILLS_TOOL_GROUP_NAME:
+        switch (toolMessage.toolName) {
+          case SKILLS_TOOL_ACTIVATE_SKILL:
+            return <ActivateSkillToolMessage message={toolMessage} onRemove={remove} compact={compact} />;
           default:
             break;
         }
