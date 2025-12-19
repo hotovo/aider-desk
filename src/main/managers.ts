@@ -132,6 +132,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
         mcpManager.close(),
         telemetryManager.destroy(),
         agentProfileManager.dispose(),
+        hookManager.dispose(),
       ]);
     } catch (error) {
       logger.error('Error during cleanup:', {

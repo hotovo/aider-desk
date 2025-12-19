@@ -514,7 +514,7 @@ export class Task {
     }
   }
 
-  public async runPrompt(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
+  public async runPrompt(prompt: string, mode: Mode = 'code'): Promise<ResponseCompletedData[]> {
     if (this.currentQuestion) {
       if (this.answerQuestion('n', prompt)) {
         logger.debug('Processed by the answerQuestion function.');
@@ -524,7 +524,7 @@ export class Task {
 
     await this.waitForCurrentPromptToFinish();
 
-    const hookResult = await this.hookManager.trigger('onPromptSubmitted', { prompt, mode: mode || 'code' }, this, this.project);
+    const hookResult = await this.hookManager.trigger('onPromptSubmitted', { prompt, mode }, this, this.project);
     if (hookResult.blocked) {
       logger.info('Prompt blocked by hook');
       return [];
@@ -2398,7 +2398,7 @@ ${error.stderr}`,
 
   public async getWorktreeIntegrationStatus(targetBranch?: string) {
     if (!this.task.worktree) {
-      throw new Error('No worktree exists for this task');
+      return null;
     }
 
     const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));

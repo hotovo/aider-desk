@@ -26,6 +26,7 @@ import {
   AgentProfile,
   AgentProfilesUpdatedData,
   WorktreeIntegrationStatus,
+  WorktreeIntegrationStatusUpdatedData,
 } from '@common/types';
 
 import type { BrowserWindow } from 'electron';
@@ -201,8 +202,8 @@ export class EventManager {
     this.broadcastToEventConnectors('custom-command-error', data);
   }
 
-  sendWorktreeIntegrationStatusUpdated(baseDir: string, taskId: string, status: WorktreeIntegrationStatus): void {
-    const data = {
+  sendWorktreeIntegrationStatusUpdated(baseDir: string, taskId: string, status: WorktreeIntegrationStatus | null): void {
+    const data: WorktreeIntegrationStatusUpdatedData = {
       baseDir,
       taskId,
       status,

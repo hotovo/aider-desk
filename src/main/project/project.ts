@@ -372,6 +372,7 @@ export class Project {
   async close() {
     this.customCommandManager.dispose();
     this.agentProfileManager.removeProject(this.baseDir);
+    await this.hookManager.stopWatchingProject(this.baseDir);
     await Promise.all(Array.from(this.tasks.values()).map((task) => task.close()));
     await this.worktreeManager.close(this.baseDir);
 

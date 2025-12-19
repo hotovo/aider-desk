@@ -44,6 +44,8 @@ import {
   MemoryEntry,
   WorktreeIntegrationStatusUpdatedData,
   BranchInfo,
+  WorktreeIntegrationStatus,
+  MemoryEmbeddingProgress,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -192,7 +194,7 @@ export interface ApplicationAPI {
   applyUncommittedChanges: (baseDir: string, taskId: string, targetBranch?: string) => Promise<void>;
   revertLastMerge: (baseDir: string, taskId: string) => Promise<void>;
   listBranches: (baseDir: string) => Promise<BranchInfo[]>;
-  getWorktreeIntegrationStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<import('@common/types').WorktreeIntegrationStatus>;
+  getWorktreeIntegrationStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<WorktreeIntegrationStatus | null>;
   rebaseWorktreeFromBranch: (baseDir: string, taskId: string, fromBranch?: string) => Promise<void>;
   abortWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
   continueWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
@@ -209,5 +211,5 @@ export interface ApplicationAPI {
   listAllMemories: () => Promise<MemoryEntry[]>;
   deleteMemory: (id: string) => Promise<boolean>;
   deleteProjectMemories: (projectId: string) => Promise<number>;
-  getMemoryEmbeddingProgress: () => Promise<import('@common/types').MemoryEmbeddingProgress>;
+  getMemoryEmbeddingProgress: () => Promise<MemoryEmbeddingProgress>;
 }

@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import { FSWatcher, watch } from 'chokidar';
+import debounce from 'lodash/debounce';
 import { Mode, ResponseCompletedData, ContextFile, TaskData, QuestionData } from '@common/types';
 
 import { HookContext, HookContextImpl } from './hook-context';
@@ -45,6 +47,9 @@ export class HookManager {
   private projectHooksCache: Map<string, HookFunctions[]> = new Map();
   private globalInitialized = false;
 
+  private globalWatcher: FSWatcher | null = null;
+  private projectWatchers: Map<string, FSWatcher> = new Map();
+
   constructor() {}
 
   public async init() {
@@ -52,14 +57,81 @@ export class HookManager {
       return;
     }
     this.globalHooks = await this.loadHooksFromDir(AIDER_DESK_GLOBAL_HOOKS_DIR);
+    await this.setupGlobalWatcher();
     this.globalInitialized = true;
+  }
+
+  private async setupGlobalWatcher() {
+    if (this.globalWatcher) {
+      await this.globalWatcher.close();
+    }
+
+    this.globalWatcher = await this.setupWatcherForDir(AIDER_DESK_GLOBAL_HOOKS_DIR, async () => {
+      logger.info('Global hooks changed, reloading...');
+      this.globalHooks = await this.loadHooksFromDir(AIDER_DESK_GLOBAL_HOOKS_DIR);
+    });
   }
 
   public async reloadProjectHooks(projectDir: string) {
     const projectHooksDir = path.join(projectDir, AIDER_DESK_HOOKS_DIR);
     const hooks = await this.loadHooksFromDir(projectHooksDir);
     this.projectHooksCache.set(projectDir, hooks);
+
+    if (!this.projectWatchers.has(projectDir)) {
+      const watcher = await this.setupWatcherForDir(projectHooksDir, async () => {
+        logger.info(`Project hooks changed for ${projectDir}, reloading...`);
+        const updatedHooks = await this.loadHooksFromDir(projectHooksDir);
+        this.projectHooksCache.set(projectDir, updatedHooks);
+      });
+      if (watcher) {
+        this.projectWatchers.set(projectDir, watcher);
+      }
+    }
+
     logger.info(`Reloaded hooks for project: ${projectDir}`);
+  }
+
+  public async stopWatchingProject(projectDir: string) {
+    const watcher = this.projectWatchers.get(projectDir);
+    if (watcher) {
+      await watcher.close();
+      this.projectWatchers.delete(projectDir);
+    }
+    this.projectHooksCache.delete(projectDir);
+    logger.info(`Stopped watching hooks for project: ${projectDir}`);
+  }
+
+  private async setupWatcherForDir(dir: string, onChange: () => Promise<void>): Promise<FSWatcher | null> {
+    try {
+      const dirExists = await fs
+        .access(dir)
+        .then(() => true)
+        .catch(() => false);
+      if (!dirExists) {
+        await fs.mkdir(dir, { recursive: true });
+      }
+
+      const debouncedOnChange = debounce(onChange, 1000);
+
+      const watcher = watch(dir, {
+        persistent: true,
+        usePolling: true,
+        ignoreInitial: true,
+      });
+
+      watcher
+        .on('add', debouncedOnChange)
+        .on('change', debouncedOnChange)
+        .on('unlink', debouncedOnChange)
+        .on('error', (error) => {
+          logger.error(`Watcher error for hooks directory ${dir}:`, error);
+        });
+
+      return watcher;
+    } catch (error) {
+      logger.error(`Failed to setup watcher for hooks directory ${dir}:`, error);
+      return null;
+    }
   }
 
   private async loadHooksFromDir(dir: string): Promise<HookFunctions[]> {
@@ -119,10 +191,27 @@ export class HookManager {
     let hookResult: unknown = undefined;
 
     for (const hook of allHooks) {
+      logger.debug(`Executing hook ${hookName}`, {
+        hookName,
+        event,
+        hook,
+      });
       const hookFn = hook[hookName];
       if (typeof hookFn === 'function') {
+        logger.debug(`Hook function found for ${hookName}`, {
+          hookName,
+          event,
+          hook,
+        });
+
         try {
           const result = await hookFn(currentEvent, context);
+          logger.debug(`Hook function result for ${hookName}`, {
+            hookName,
+            event,
+            hook,
+            result,
+          });
 
           if (result === false) {
             if (hookName === 'onHandleApproval') {
@@ -157,5 +246,18 @@ export class HookManager {
     }
 
     return { event: currentEvent, blocked, result: hookResult };
+  }
+
+  public async dispose() {
+    if (this.globalWatcher) {
+      await this.globalWatcher.close();
+      this.globalWatcher = null;
+    }
+    for (const watcher of this.projectWatchers.values()) {
+      await watcher.close();
+    }
+    this.projectWatchers.clear();
+    this.projectHooksCache.clear();
+    logger.info('HookManager disposed');
   }
 }

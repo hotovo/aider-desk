@@ -83,7 +83,7 @@ export interface WorktreeIntegrationStatus {
 export interface WorktreeIntegrationStatusUpdatedData {
   baseDir: string;
   taskId: string;
-  status: WorktreeIntegrationStatus;
+  status: WorktreeIntegrationStatus | null;
 }
 
 export interface LocalizedString {
