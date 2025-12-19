@@ -1,0 +1,110 @@
+---
+title: "Hooks"
+sidebar_label: "Hooks"
+---
+
+# Hooks
+
+Hooks allow you to extend AiderDesk's behavior by executing custom JavaScript code in response to various system events. You can use hooks to automate workflows, enforce rules, integrate with external tools, or modify the behavior of tasks and prompts.
+
+## Where to Create Hooks
+
+Hook files are JavaScript files (`.js`) that AiderDesk loads and executes. You can create them in two locations:
+
+1.  **Global Hooks:**
+    *   Location: `~/.aider-desk/hooks/` (your user home directory)
+    *   Hooks placed here are active across all your projects.
+
+2.  **Project-Specific Hooks:**
+    *   Location: `.aider-desk/hooks/` (within your current project's root directory)
+    *   Hooks placed here are only active for that specific project.
+
+AiderDesk monitors these directories and reloads hooks automatically when files are added, modified, or removed.
+
+## Hook File Format
+
+A hook file should export an object where keys are event names and values are functions that handle those events.
+
+```javascript
+module.exports = {
+  onTaskCreated: async (event, context) => {
+    context.addInfoMessage(`Task "${event.task.name}" was created!`);
+  },
+  
+  onPromptStarted: async (event, context) => {
+    if (event.prompt.includes('secret')) {
+      context.addWarningMessage('Prompt contains sensitive keywords.');
+      // Returning false blocks the action (where applicable)
+      return false; 
+    }
+  }
+};
+```
+
+### The `context` Object
+
+Every hook function receives a `context` object as its second argument, providing access to AiderDesk utilities and state:
+
+*   `context.addInfoMessage(message)`: Displays an info message in the task log.
+*   `context.addWarningMessage(message)`: Displays a warning message.
+*   `context.addErrorMessage(message)`: Displays an error message.
+*   `context.addLoadingMessage(message)`: Displays a loading/status message.
+*   `context.setTaskName(name)`: Updates the current task's name.
+*   `context.addContextMessage(role, content)`: Adds a message ('user' or 'assistant') to the chat history.
+*   `context.projectDir`: The absolute path to the current project.
+*   `context.taskData`: The current task's metadata.
+
+## Hook Events Reference
+
+Below is a list of available events you can listen to. Events marked with **(M)** allow you to modify the event data by returning an object with the updated properties.
+
+| Event Name | Description | Event Data |
+| :--- | :--- | :--- |
+| `onTaskCreated` **(M)** | Triggered when a new task is created. | `{ task: TaskData }` |
+| `onTaskInitialized` **(M)** | Triggered after a task is fully initialized. | `{ task: TaskData }` |
+| `onTaskClosed` **(M)** | Triggered when a task is closed. | `{ task: TaskData }` |
+| `onPromptSubmitted` **(M)** | Triggered when a prompt is submitted by the user. | `{ prompt: string, mode: Mode }` |
+| `onPromptStarted` **(M)** | Triggered just before a prompt is processed. Return `false` to block. | `{ prompt: string, mode: Mode }` |
+| `onPromptFinished` **(M)** | Triggered after a prompt has been fully processed. | `{ responses: ResponseCompletedData[] }` |
+| `onAgentStarted` **(M)** | Triggered when the Agent starts processing a prompt. | `{ prompt: string }` |
+| `onAgentFinished` **(M)** | Triggered when the Agent finishes its work. | `{ resultMessages: unknown[] }` |
+| `onAgentStepFinished` **(M)** | Triggered after each individual step of an Agent. | `{ stepResult: unknown }` |
+| `onToolCalled` **(M)** | Triggered when a tool (e.g., `read_file`) is called. | `{ toolName: string, args: object }` |
+| `onToolFinished` **(M)** | Triggered after a tool execution completes. | `{ toolName: string, args: object, result: unknown }` |
+| `onFileAdded` **(M)** | Triggered when a file is added to the chat context. | `{ file: ContextFile }` |
+| `onFileDropped` **(M)** | Triggered when a file is removed from the chat context. | `{ filePath: string }` |
+| `onCommandExecuted` **(M)** | Triggered when a slash command (e.g., `/help`) is executed. | `{ command: string }` |
+| `onAiderPromptStarted` **(M)** | Triggered before sending a prompt to Aider. | `{ prompt: string, mode: Mode }` |
+| `onAiderPromptFinished` **(M)** | Triggered after Aider finishes processing. | `{ responses: ResponseCompletedData[] }` |
+| `onQuestionAsked` | Triggered when Aider/Agent asks a question. Return a string to auto-answer. | `{ question: QuestionData }` |
+| `onQuestionAnswered` **(M)** | Triggered after a question is answered. | `{ question: QuestionData, answer: string }` |
+| `onHandleApproval` | Triggered for actions requiring approval. Return `true` to auto-approve, `false` to deny. | `{ key: string, text: string, subject?: string }` |
+| `onSubagentStarted` **(M)** | Triggered when a subagent is launched. | `{ subagentId: string, prompt: string }` |
+| `onSubagentFinished` **(M)** | Triggered when a subagent completes. | `{ subagentId: string, resultMessages: unknown[] }` |
+| `onResponseMessageProcessed` | Triggered after a message is processed. Return modified message to transform it. | `{ message: ResponseMessage }` |
+
+## Advanced Usage
+
+### Modifying Event Data
+For events marked with **(M)**, you can return an object to merge it into the event data. This updated data will be passed to subsequent hooks and used by the system.
+
+```javascript
+onPromptSubmitted: (event) => {
+  // Automatically append a suffix to every prompt
+  return { prompt: event.prompt + " --always-respond-in-markdown" };
+}
+```
+
+### Blocking Actions
+For events like `onPromptStarted` or `onHandleApproval`, returning `false` will cancel the action.
+
+
+### Auto-answering Questions
+You can use `onQuestionAsked` to automate responses to common questions:
+```javascript
+onQuestionAsked: (event) => {
+  if (event.question.text.includes("Proceed with changes?")) {
+    return "yes";
+  }
+}
+```
