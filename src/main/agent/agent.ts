@@ -370,7 +370,33 @@ export class Agent {
     const providerTools = await this.modelManager.getProviderTools(provider, profile.model);
     Object.assign(toolSet, providerTools);
 
-    return toolSet;
+    return this.wrapToolsWithHooks(task, toolSet);
+  }
+
+  private wrapToolsWithHooks(task: Task, toolSet: ToolSet): ToolSet {
+    const wrappedToolSet: ToolSet = {};
+
+    for (const [toolName, toolDef] of Object.entries(toolSet)) {
+      wrappedToolSet[toolName] = {
+        ...toolDef,
+        execute: async (args: Record<string, unknown> | undefined, options: ToolCallOptions) => {
+          const hookResult = await task.hookManager.trigger('onToolCalled', { toolName, args }, task, task.project);
+          if (hookResult.blocked) {
+            logger.warn(`Tool execution blocked by hook: ${toolName}`);
+            return 'Tool execution blocked by hook.';
+          }
+          const effectiveArgs = hookResult.event.args as Record<string, unknown> | undefined;
+
+          const result = await toolDef.execute!(effectiveArgs, options);
+
+          void task.hookManager.trigger('onToolFinished', { toolName, args: effectiveArgs, result }, task, task.project);
+
+          return result;
+        },
+      };
+    }
+
+    return wrappedToolSet;
   }
 
   private convertMpcToolToAiSdkTool(
@@ -518,6 +544,12 @@ export class Agent {
     systemPrompt?: string,
     abortSignal?: AbortSignal,
   ): Promise<ContextMessage[]> {
+    const hookResult = await task.hookManager.trigger('onAgentStarted', { prompt }, task, task.project);
+    if (hookResult.blocked) {
+      logger.info('Agent execution blocked by hook');
+      return [];
+    }
+    prompt = hookResult.event.prompt;
     // Set default values inside function body since await can't be used in parameter initializers
     const contextMessages = initialContextMessages ?? (await task.getContextMessages());
     const contextFiles = initialContextFiles ?? (await task.getContextFiles());
@@ -747,6 +779,7 @@ export class Agent {
           }
 
           responseMessages = this.processStep(currentResponseId, stepResult, task, profile, provider, promptContext, abortSignal);
+          void task.hookManager.trigger('onAgentStepFinished', { stepResult }, task, task.project);
           currentResponseId = uuidv4();
           hasReasoning = false;
         };
@@ -970,6 +1003,7 @@ export class Agent {
         finished: true,
         promptContext,
       });
+      void task.hookManager.trigger('onAgentFinished', { resultMessages }, task, task.project);
     }
 
     return resultMessages;

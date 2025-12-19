@@ -18,6 +18,7 @@ import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
 import logger from '@/logger';
 import { EventsHandler } from '@/events-handler';
+import { HookManager } from '@/hooks/hook-manager';
 
 export interface ManagersResult {
   eventsHandler: EventsHandler;
@@ -50,6 +51,9 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   const memoryManager = new MemoryManager(store);
   await memoryManager.init();
 
+  const hookManager = new HookManager();
+  await hookManager.init();
+
   const worktreeManager = new WorktreeManager();
 
   // Initialize agent profile manager
@@ -67,6 +71,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     worktreeManager,
     agentProfileManager,
     memoryManager,
+    hookManager,
   );
 
   // Initialize terminal manager

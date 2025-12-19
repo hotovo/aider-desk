@@ -11,6 +11,11 @@ export class ApprovalManager {
   ) {}
 
   public async handleApproval(key: string, text: string, subject?: string): Promise<[boolean, string | undefined]> {
+    const hookResult = await this.task.hookManager.trigger('onHandleApproval', { key, text, subject }, this.task, this.task.project);
+    if (typeof hookResult.result === 'boolean') {
+      return [hookResult.result, undefined];
+    }
+
     if (this.task.task.autoApprove) {
       return [true, undefined]; // Auto-approve
     }

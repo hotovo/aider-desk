@@ -18,6 +18,7 @@ import { INTERNAL_TASK_ID, Task } from '@/task';
 import { migrateSessionsToTasks } from '@/project/migrations';
 import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
+import { HookManager } from '@/hooks/hook-manager';
 import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { determineMainModel, determineWeakModel } from '@/utils';
 
@@ -40,6 +41,7 @@ export class Project {
     private readonly worktreeManager: WorktreeManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
+    private readonly hookManager: HookManager,
   ) {
     this.customCommandManager = new CustomCommandManager(this);
     // initialize global task
@@ -112,9 +114,12 @@ export class Project {
       this.modelManager,
       this.worktreeManager,
       this.memoryManager,
+      this.hookManager,
       initialTaskData,
     );
     this.tasks.set(taskId, task);
+
+    void task.hookManager.trigger('onTaskCreated', { task: task.task }, task, this);
 
     return task;
   }

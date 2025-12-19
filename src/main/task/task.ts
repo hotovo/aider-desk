@@ -75,6 +75,7 @@ import { AiderManager } from '@/task/aider-manager';
 import { WorktreeManager, GitError } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
+import { HookManager } from '@/hooks/hook-manager';
 
 export const INTERNAL_TASK_ID = 'internal';
 
@@ -100,7 +101,7 @@ export class Task {
   readonly task: TaskData;
 
   constructor(
-    private readonly project: Project,
+    public readonly project: Project,
     public readonly taskId: string,
     private readonly store: Store,
     private readonly mcpManager: McpManager,
@@ -112,6 +113,7 @@ export class Task {
     private readonly modelManager: ModelManager,
     private readonly worktreeManager: WorktreeManager,
     private readonly memoryManager: MemoryManager,
+    public readonly hookManager: HookManager,
     initialTaskData?: Partial<TaskData>,
   ) {
     this.task = {
@@ -341,6 +343,7 @@ export class Task {
     this.eventManager.sendTaskInitialized(this.task);
 
     this.initialized = true;
+    await this.hookManager.trigger('onTaskInitialized', { task: this.task }, this, this.project);
   }
 
   public async load(): Promise<TaskStateData> {
@@ -439,6 +442,7 @@ export class Task {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
     });
+    await this.hookManager.trigger('onTaskClosed', { task: this.task }, this, this.project);
     if (clearContext) {
       this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, true);
     }
@@ -520,6 +524,14 @@ export class Task {
 
     await this.waitForCurrentPromptToFinish();
 
+    const hookResult = await this.hookManager.trigger('onPromptSubmitted', { prompt, mode: mode || 'code' }, this, this.project);
+    if (hookResult.blocked) {
+      logger.info('Prompt blocked by hook');
+      return [];
+    }
+    prompt = hookResult.event.prompt;
+    mode = hookResult.event.mode;
+
     logger.info('Running prompt:', {
       baseDir: this.project.baseDir,
       prompt,
@@ -581,6 +593,14 @@ export class Task {
   }
 
   public async runPromptInAider(prompt: string, promptContext: PromptContext, mode?: Mode): Promise<ResponseCompletedData[]> {
+    await this.hookManager.trigger('onPromptStarted', { prompt, mode: mode || 'code' }, this, this.project);
+    const aiderHookResult = await this.hookManager.trigger('onAiderPromptStarted', { prompt, mode: mode || 'code' }, this, this.project);
+    if (aiderHookResult.blocked) {
+      logger.info('Aider prompt blocked by hook');
+      return [];
+    }
+    prompt = aiderHookResult.event.prompt;
+    mode = aiderHookResult.event.mode;
     await this.aiderManager.waitForStart();
 
     await this.saveTask({
@@ -624,6 +644,9 @@ export class Task {
     void this.sendWorktreeIntegrationStatusUpdated();
     this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
 
+    await this.hookManager.trigger('onAiderPromptFinished', { responses }, this, this.project);
+    await this.hookManager.trigger('onPromptFinished', { responses }, this, this.project);
+
     await this.saveTask({
       completedAt: new Date().toISOString(),
     });
@@ -640,6 +663,7 @@ export class Task {
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
   ): Promise<ResponseCompletedData[]> {
+    await this.hookManager.trigger('onPromptStarted', { prompt, mode: 'agent' }, this, this.project);
     await this.saveTask({
       name: this.task.name || this.getTaskNameFromPrompt(prompt),
       startedAt: new Date().toISOString(),
@@ -663,6 +687,8 @@ export class Task {
     void this.sendWorktreeIntegrationStatusUpdated();
     this.notifyIfEnabled('Prompt finished', 'Your Agent has finished the task.');
 
+    await this.hookManager.trigger('onPromptFinished', { responses: [] }, this, this.project);
+
     await this.saveTask({
       completedAt: new Date().toISOString(),
     });
@@ -683,7 +709,15 @@ export class Task {
     abortSignal?: AbortSignal,
     promptContext?: PromptContext,
   ): Promise<ContextMessage[]> {
-    return await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt, abortSignal);
+    const hookResult = await this.hookManager.trigger('onSubagentStarted', { subagentId: profile.id, prompt }, this, this.project);
+    if (hookResult.blocked) {
+      logger.info('Subagent execution blocked by hook');
+      return [];
+    }
+    prompt = hookResult.event.prompt;
+    const resultMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt, abortSignal);
+    await this.hookManager.trigger('onSubagentFinished', { subagentId: profile.id, resultMessages }, this, this.project);
+    return resultMessages;
   }
 
   public sendPromptToAider(
@@ -746,7 +780,12 @@ export class Task {
     }
   }
 
-  public processResponseMessage(message: ResponseMessage, saveToDb = true) {
+  public async processResponseMessage(message: ResponseMessage, saveToDb = true) {
+    const hookResult = await this.hookManager.trigger('onResponseMessageProcessed', { message }, this, this.project);
+    if (hookResult.result) {
+      message = { ...message, ...hookResult.result };
+    }
+
     if (!message.finished) {
       logger.debug(`Sending response chunk to ${this.project.baseDir}`);
       const data: ResponseChunkData = {
@@ -836,6 +875,8 @@ export class Task {
       return false;
     }
 
+    void this.hookManager.trigger('onQuestionAnswered', { question: this.currentQuestion, answer, userInput }, this, this.project);
+
     logger.info('Answering question:', {
       baseDir: this.project.baseDir,
       question: this.currentQuestion,
@@ -891,6 +932,13 @@ export class Task {
   }
 
   public async addFile(contextFile: ContextFile) {
+    const hookResult = await this.hookManager.trigger('onFileAdded', { file: contextFile }, this, this.project);
+    if (hookResult.blocked) {
+      logger.info('File addition blocked by hook');
+      return false;
+    }
+    contextFile = hookResult.event.file;
+
     const normalizedPath = this.normalizeFilePath(contextFile.path);
     logger.debug('Adding file or folder:', {
       path: normalizedPath,
@@ -918,6 +966,7 @@ export class Task {
   }
 
   public dropFile(filePath: string) {
+    void this.hookManager.trigger('onFileDropped', { filePath }, this, this.project);
     const normalizedPath = this.normalizeFilePath(filePath);
     logger.info('Dropping file or folder:', { path: normalizedPath });
     const droppedFiles = this.contextManager.dropContextFile(normalizedPath);
@@ -960,6 +1009,13 @@ export class Task {
   }
 
   public async runCommand(command: string, addToHistory = true) {
+    const hookResult = await this.hookManager.trigger('onCommandExecuted', { command }, this, this.project);
+    if (hookResult.blocked) {
+      logger.info('Command execution blocked by hook');
+      return;
+    }
+    command = hookResult.event.command;
+
     if (this.currentQuestion) {
       this.answerQuestion('n');
     }
@@ -1039,6 +1095,12 @@ export class Task {
   }
 
   public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promise<[string, string | undefined]> {
+    const hookResult = await this.hookManager.trigger('onQuestionAsked', { question: questionData }, this, this.project);
+    if (hookResult.result && typeof hookResult.result === 'string') {
+      logger.info('Question answered by hook', { question: questionData.text, answer: hookResult.result });
+      return [hookResult.result, undefined];
+    }
+
     if (this.currentQuestion) {
       // Wait if another question is already pending
       await new Promise((resolve) => {

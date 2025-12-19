@@ -7,6 +7,7 @@
 - added rebase support for worktrees with manual and AI-assisted conflict resolution
 - added specialized Conflict Resolution agent for automated merge conflict fixing in worktrees
 - moved worktree safety confirmation dialogs to the UI for better user experience
+- added a hook system for intercepting and reacting to application events (tasks, prompts, agents, tools, files, etc.)
 
 ## [0.44.0]
 
