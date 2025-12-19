@@ -151,18 +151,17 @@ export const McpServerForm = ({ onSave, onCancel, servers }: Props) => {
           </div>
         )}
       </div>
-      <div className="mb-2 flex-grow max-h-[600px]">
-        <TextArea
-          placeholder={t('mcpServer.pasteServerAs', {
-            example: MCP_SERVER_EXAMPLE_JSON,
-            exampleNoParent: MCP_SERVER_EXAMPLE_NO_PARENT,
-            exampleBare: MCP_SERVER_EXAMPLE_BARE,
-          })}
-          value={configJSON}
-          onChange={handleChange}
-          className={`w-full h-full p-2 resize-none ${configJSON && !isValidJson ? 'border-error-emphasis focus:border-error-emphasis' : ''}`}
-        />
-      </div>
+      <TextArea
+        placeholder={t('mcpServer.pasteServerAs', {
+          example: MCP_SERVER_EXAMPLE_JSON,
+          exampleNoParent: MCP_SERVER_EXAMPLE_NO_PARENT,
+          exampleBare: MCP_SERVER_EXAMPLE_BARE,
+        })}
+        value={configJSON}
+        onChange={handleChange}
+        wrapperClassName="mb-2 flex-grow max-h-[600px]"
+        className={`w-full h-full p-2 resize-none ${configJSON && !isValidJson ? 'border-error-emphasis focus:border-error-emphasis' : ''}`}
+      />
       <div className="flex justify-between items-center gap-2">
         <a href="https://modelcontextprotocol.io/examples" target="_blank" rel="noopener noreferrer" className="text-xs text-info-light hover:underline">
           {t('mcpServer.viewExamples')}
