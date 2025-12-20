@@ -11,6 +11,7 @@
 - fixed height of MCP server form
 - added custom skill activation tool message
 - added diff viewer type selector with side-by-side, unified and compact diff view
+- not switching mode when switching other parameters in browser
 
 ## [0.44.0]
 

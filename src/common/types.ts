@@ -306,7 +306,7 @@ export const ProjectSettingsSchema = z.object({
   currentMode: z.enum(['code', 'ask', 'architect', 'context', 'agent']),
   contextCompactingThreshold: z.number().optional(),
   weakModelLocked: z.boolean().optional(),
-  autoApproveLocked: z.boolean().default(false),
+  autoApproveLocked: z.boolean().optional(),
 });
 
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
@@ -716,7 +716,7 @@ export const TaskDataSchema = z.object({
   id: z.string(),
   baseDir: z.string(),
   name: z.string(),
-  archived: z.boolean().optional().default(false),
+  archived: z.boolean().optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
   startedAt: z.string().optional(),
@@ -735,9 +735,9 @@ export const TaskDataSchema = z.object({
   architectModel: z.string().nullable().optional(),
   reasoningEffort: z.string().optional(),
   thinkingTokens: z.string().optional(),
-  currentMode: z.enum(['code', 'ask', 'architect', 'context', 'agent']).default('code'),
+  currentMode: z.enum(['code', 'ask', 'architect', 'context', 'agent']).optional(),
   contextCompactingThreshold: z.number().optional(),
-  weakModelLocked: z.boolean().default(false),
+  weakModelLocked: z.boolean().optional(),
 });
 
 export type TaskData = z.infer<typeof TaskDataSchema>;
