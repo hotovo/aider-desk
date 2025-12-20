@@ -1,7 +1,7 @@
 import path, { join } from 'path';
 import fs, { mkdir, rm } from 'fs/promises';
 
-import { MergeState, Worktree, WorktreeUncommittedFiles, WorktreeAheadCommits, RebaseState, ConflictResolutionFileContext } from '@common/types';
+import { ConflictResolutionFileContext, MergeState, RebaseState, Worktree, WorktreeAheadCommits, WorktreeUncommittedFiles } from '@common/types';
 
 import { execWithShellPath, withLock } from '@/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
@@ -74,7 +74,9 @@ export class WorktreeManager {
       try {
         // 1. Initialize repository if necessary
         try {
-          await execWithShellPath('git rev-parse --is-inside-work-tree', { cwd: projectPath });
+          await execWithShellPath('git rev-parse --is-inside-work-tree', {
+            cwd: projectPath,
+          });
         } catch {
           // Initialize git repository
           await execWithShellPath('git init', { cwd: projectPath });
@@ -121,7 +123,11 @@ export class WorktreeManager {
             await execWithShellPath(`git worktree add "${worktreePath}" ${branch}`, { cwd: projectPath });
 
             // Get the base commit (the tip of the existing branch)
-            baseCommit = (await execWithShellPath(`git rev-parse ${branch}`, { cwd: projectPath })).stdout.trim();
+            baseCommit = (
+              await execWithShellPath(`git rev-parse ${branch}`, {
+                cwd: projectPath,
+              })
+            ).stdout.trim();
             actualBaseBranch = branch;
           } else {
             // A2. Create new branch from baseRef (which defaults to 'HEAD')
@@ -136,7 +142,11 @@ export class WorktreeManager {
             }
 
             // Capture the base commit before creating the worktree
-            baseCommit = (await execWithShellPath(`git rev-parse ${baseRef}`, { cwd: projectPath })).stdout.trim();
+            baseCommit = (
+              await execWithShellPath(`git rev-parse ${baseRef}`, {
+                cwd: projectPath,
+              })
+            ).stdout.trim();
 
             // Create the new branch and checkout the worktree
             await execWithShellPath(`git worktree add -b ${branch} "${worktreePath}" ${baseRef}`, { cwd: projectPath });
@@ -149,12 +159,20 @@ export class WorktreeManager {
           await execWithShellPath(`git worktree add "${worktreePath}" ${baseRef}`, { cwd: projectPath });
 
           // Capture the base commit (the commit it's detached at)
-          baseCommit = (await execWithShellPath(`git rev-parse ${baseRef}`, { cwd: projectPath })).stdout.trim();
+          baseCommit = (
+            await execWithShellPath(`git rev-parse ${baseRef}`, {
+              cwd: projectPath,
+            })
+          ).stdout.trim();
 
           // Use the baseRef for the branch name, or resolve the current branch if baseRef is 'HEAD'
           if (baseRef === 'HEAD') {
             try {
-              actualBaseBranch = (await execWithShellPath('git rev-parse --abbrev-ref HEAD', { cwd: projectPath })).stdout.trim();
+              actualBaseBranch = (
+                await execWithShellPath('git rev-parse --abbrev-ref HEAD', {
+                  cwd: projectPath,
+                })
+              ).stdout.trim();
               if (actualBaseBranch === 'HEAD') {
                 actualBaseBranch = 'DETACHED HEAD';
               }
@@ -169,7 +187,11 @@ export class WorktreeManager {
 
         logger.info(`Worktree created successfully at: ${worktreePath}`);
 
-        return { path: worktreePath, baseCommit, baseBranch: actualBaseBranch };
+        return {
+          path: worktreePath,
+          baseCommit,
+          baseBranch: actualBaseBranch,
+        };
       } catch (error) {
         logger.error('Failed to create worktree:', error);
         throw new Error(`Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`);
@@ -185,7 +207,9 @@ export class WorktreeManager {
         // Clean up the branch if it's a task branch (starts with "task-" or looks like generated from task name)
         if (worktree.baseBranch) {
           try {
-            await execWithShellPath(`git branch -D ${worktree.baseBranch}`, { cwd: projectDir });
+            await execWithShellPath(`git branch -D ${worktree.baseBranch}`, {
+              cwd: projectDir,
+            });
             logger.info(`Deleted task branch: ${worktree.baseBranch}`);
           } catch (error) {
             // Branch might not exist or be protected, don't fail the removal
@@ -267,13 +291,19 @@ export class WorktreeManager {
   async listBranches(projectPath: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
     try {
       // Get all local branches
-      const { stdout: branchOutput } = await execWithShellPath('git branch', { cwd: projectPath });
+      const { stdout: branchOutput } = await execWithShellPath('git branch', {
+        cwd: projectPath,
+      });
 
       // Get all worktrees to identify which branches have worktrees
       const worktrees = await this.listWorktrees(projectPath);
       const worktreeBranches = new Set(worktrees.map((w) => w.baseBranch));
 
-      const branches: Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }> = [];
+      const branches: Array<{
+        name: string;
+        isCurrent: boolean;
+        hasWorktree: boolean;
+      }> = [];
       const lines = branchOutput.split('\n').filter((line) => line.trim());
 
       for (const line of lines) {
@@ -488,17 +518,58 @@ export class WorktreeManager {
     }
   }
 
-  async rebaseMainIntoWorktree(worktreePath: string, mainBranch: string): Promise<void> {
+  async rebaseMainIntoWorktree(
+    worktreePath: string,
+    mainBranch: string,
+  ): Promise<{
+    success: boolean;
+    error?: GitError;
+    hasTempCommit?: boolean;
+  }> {
     return await withLock(`git-rebase-${worktreePath}`, async () => {
       const executedCommands: string[] = [];
       let lastOutput = '';
+      let hadUncommittedChanges = false;
 
       try {
-        // Rebase the current worktree branch onto local main branch
+        // 1. Check for uncommitted changes and create temporary commit if needed
+        const hasChanges = await this.hasUncommittedChanges(worktreePath);
+
+        if (hasChanges) {
+          hadUncommittedChanges = true;
+          // Stage all changes
+          const addCommand = 'git add -A';
+          executedCommands.push(`${addCommand} (in ${worktreePath})`);
+          await execWithShellPath(addCommand, { cwd: worktreePath });
+
+          // Create temporary commit with unique timestamp
+          const commitCommand = `git commit -m "TEMP_UNCOMMITTED_${Date.now()}"`;
+          executedCommands.push(`${commitCommand} (in ${worktreePath})`);
+          await execWithShellPath(commitCommand, {
+            cwd: worktreePath,
+          });
+
+          logger.info('Created temporary commit for uncommitted changes');
+        }
+
+        // 2. Rebase the current worktree branch onto local main branch
         const command = `git rebase ${mainBranch}`;
         executedCommands.push(`${command} (in ${worktreePath})`);
-        const rebaseResult = await execWithShellPath(command, { cwd: worktreePath });
+        const rebaseResult = await execWithShellPath(command, {
+          cwd: worktreePath,
+        });
         lastOutput = rebaseResult.stdout || rebaseResult.stderr || '';
+
+        // 3. If rebase succeeds AND we had uncommitted changes, reset to uncommitted state
+        if (hadUncommittedChanges) {
+          await this.resetTempCommitIfExists(worktreePath);
+          logger.info('Successfully reset temporary commit back to uncommitted changes');
+        }
+
+        return {
+          success: true,
+          hasTempCommit: false,
+        };
       } catch (error: unknown) {
         const err = error as Error & { stderr?: string; stdout?: string };
         logger.error(`Failed to rebase ${mainBranch} into worktree:`, err);
@@ -510,7 +581,11 @@ export class WorktreeManager {
         gitError.workingDirectory = worktreePath;
         gitError.originalError = err;
 
-        throw gitError;
+        return {
+          success: false,
+          hasTempCommit: hadUncommittedChanges,
+          error: gitError,
+        };
       }
     });
   }
@@ -523,11 +598,17 @@ export class WorktreeManager {
 
       // Abort the rebase
       const command = 'git rebase --abort';
-      const { stderr } = await execWithShellPath(command, { cwd: worktreePath });
+      const { stderr } = await execWithShellPath(command, {
+        cwd: worktreePath,
+      });
 
       if (stderr && !stderr.includes('No rebase in progress')) {
         throw new Error(`Failed to abort rebase: ${stderr}`);
       }
+
+      // Always try to reset temporary commit if it exists
+      await this.resetTempCommitIfExists(worktreePath);
+      logger.info('Successfully handled temporary commit after abort rebase');
     } catch (error: unknown) {
       const err = error as Error;
       logger.error('Error aborting rebase:', err);
@@ -548,6 +629,10 @@ export class WorktreeManager {
           env: { GIT_EDITOR: 'true' },
         });
         lastOutput = result.stdout || result.stderr || '';
+
+        // Always try to reset temporary commit if it exists after successful continue
+        await this.resetTempCommitIfExists(worktreePath);
+        logger.info('Successfully handled temporary commit after continue rebase');
       } catch (error: unknown) {
         const err = error as Error & { stderr?: string; stdout?: string };
         logger.error(`Failed to continue rebase in ${worktreePath}:`, err);
@@ -589,7 +674,9 @@ export class WorktreeManager {
       command = `git rebase ${mainBranch}`;
       executedCommands.push(`git rebase ${mainBranch} (in ${worktreePath})`);
       try {
-        const rebaseWorktreeResult = await execWithShellPath(command, { cwd: worktreePath });
+        const rebaseWorktreeResult = await execWithShellPath(command, {
+          cwd: worktreePath,
+        });
         lastOutput = rebaseWorktreeResult.stdout || rebaseWorktreeResult.stderr || '';
         logger.debug(`Successfully rebased worktree onto ${mainBranch} before squashing`);
       } catch (error: unknown) {
@@ -621,7 +708,9 @@ export class WorktreeManager {
       // Switch to main branch in the main repository
       command = `git checkout ${mainBranch}`;
       executedCommands.push(`git checkout ${mainBranch} (in ${projectPath})`);
-      const checkoutResult = await execWithShellPath(command, { cwd: projectPath });
+      const checkoutResult = await execWithShellPath(command, {
+        cwd: projectPath,
+      });
       lastOutput = checkoutResult.stdout || checkoutResult.stderr || '';
 
       // SQUASH MERGE: Use git merge --squash to create a squashed staging of all changes
@@ -629,7 +718,9 @@ export class WorktreeManager {
       command = `git merge --squash ${worktreeCommitHash}`;
       executedCommands.push(`git merge --squash ${worktreeCommitHash} (in ${projectPath})`);
       try {
-        const squashResult = await execWithShellPath(command, { cwd: projectPath });
+        const squashResult = await execWithShellPath(command, {
+          cwd: projectPath,
+        });
         lastOutput = squashResult.stdout || squashResult.stderr || '';
         logger.debug(`Successfully squashed changes from ${branchName}`);
       } catch (error: unknown) {
@@ -639,7 +730,9 @@ export class WorktreeManager {
 
       // Check if there are staged changes to commit
       command = 'git diff --cached --quiet';
-      const hasStagedChanges = await execWithShellPath(command, { cwd: projectPath })
+      const hasStagedChanges = await execWithShellPath(command, {
+        cwd: projectPath,
+      })
         .then(() => false)
         .catch(() => true);
 
@@ -653,7 +746,9 @@ export class WorktreeManager {
       command = `git commit -m "${escapedMessage}"`;
       executedCommands.push(`git commit -m "..." (in ${projectPath})`);
       try {
-        const commitResult = await execWithShellPath(command, { cwd: projectPath });
+        const commitResult = await execWithShellPath(command, {
+          cwd: projectPath,
+        });
         lastOutput = commitResult.stdout || commitResult.stderr || '';
         logger.debug(`Successfully committed squashed changes to ${mainBranch}`);
       } catch (error: unknown) {
@@ -705,7 +800,9 @@ export class WorktreeManager {
       command = `git rebase ${mainBranch}`;
       executedCommands.push(`git rebase ${mainBranch} (in ${worktreePath})`);
       try {
-        const rebaseWorktreeResult = await execWithShellPath(command, { cwd: worktreePath });
+        const rebaseWorktreeResult = await execWithShellPath(command, {
+          cwd: worktreePath,
+        });
         lastOutput = rebaseWorktreeResult.stdout || rebaseWorktreeResult.stderr || '';
         logger.debug(`Successfully rebased worktree onto ${mainBranch}`);
       } catch (error: unknown) {
@@ -736,7 +833,9 @@ export class WorktreeManager {
       // Switch to main branch in the main repository
       command = `git checkout ${mainBranch}`;
       executedCommands.push(`git checkout ${mainBranch} (in ${projectPath})`);
-      const checkoutResult = await execWithShellPath(command, { cwd: projectPath });
+      const checkoutResult = await execWithShellPath(command, {
+        cwd: projectPath,
+      });
       lastOutput = checkoutResult.stdout || checkoutResult.stderr || '';
 
       // SAFETY CHECK 2: Use --ff-only merge to prevent history rewriting
@@ -744,7 +843,9 @@ export class WorktreeManager {
       command = `git merge --ff-only ${worktreeCommitHash}`;
       executedCommands.push(`git merge --ff-only ${worktreeCommitHash} (in ${projectPath})`);
       try {
-        const mergeResult = await execWithShellPath(command, { cwd: projectPath });
+        const mergeResult = await execWithShellPath(command, {
+          cwd: projectPath,
+        });
         lastOutput = mergeResult.stdout || mergeResult.stderr || '';
         logger.debug(`Successfully fast-forwarded ${mainBranch} to ${branchName} (${worktreeCommitHash})`);
       } catch (error: unknown) {
@@ -804,7 +905,9 @@ export class WorktreeManager {
 
   async gitPull(worktreePath: string): Promise<{ output: string }> {
     try {
-      const { stdout, stderr } = await execWithShellPath('git pull', { cwd: worktreePath });
+      const { stdout, stderr } = await execWithShellPath('git pull', {
+        cwd: worktreePath,
+      });
       const output = stdout || stderr || 'Pull completed successfully';
 
       return { output };
@@ -819,7 +922,9 @@ export class WorktreeManager {
 
   async gitPush(worktreePath: string): Promise<{ output: string }> {
     try {
-      const { stdout, stderr } = await execWithShellPath('git push', { cwd: worktreePath });
+      const { stdout, stderr } = await execWithShellPath('git push', {
+        cwd: worktreePath,
+      });
       const output = stdout || stderr || 'Push completed successfully';
 
       return { output };
@@ -917,7 +1022,9 @@ export class WorktreeManager {
 
   async getOriginBranch(worktreePath: string, branch: string): Promise<string | null> {
     try {
-      await execWithShellPath(`git rev-parse --verify origin/${branch}`, { cwd: worktreePath });
+      await execWithShellPath(`git rev-parse --verify origin/${branch}`, {
+        cwd: worktreePath,
+      });
       return `origin/${branch}`;
     } catch {
       return null;
@@ -949,7 +1056,9 @@ export class WorktreeManager {
    */
   async hasUncommittedChanges(path: string): Promise<boolean> {
     try {
-      const { stdout } = await execWithShellPath('git status --porcelain=v1', { cwd: path });
+      const { stdout } = await execWithShellPath('git status --porcelain=v1', {
+        cwd: path,
+      });
       return stdout.trim().length > 0;
     } catch (error) {
       logger.error('Failed to check for uncommitted changes:', error);
@@ -969,7 +1078,9 @@ export class WorktreeManager {
       }
 
       const fullMessage = `${stashId}: ${message}`;
-      await execWithShellPath(`git stash push -u -m "${fullMessage}"`, { cwd: path });
+      await execWithShellPath(`git stash push -u -m "${fullMessage}"`, {
+        cwd: path,
+      });
       logger.info(`Stashed changes with ID: ${stashId}`);
       return stashId;
     } catch (error) {
@@ -984,7 +1095,9 @@ export class WorktreeManager {
   async applyStash(path: string, stashId: string): Promise<void> {
     try {
       // Find the stash entry that matches our identifier
-      const { stdout: stashList } = await execWithShellPath('git stash list', { cwd: path });
+      const { stdout: stashList } = await execWithShellPath('git stash list', {
+        cwd: path,
+      });
       const stashEntry = stashList.split('\n').find((line) => line.includes(stashId));
 
       if (!stashEntry) {
@@ -1008,7 +1121,9 @@ export class WorktreeManager {
   async dropStash(path: string, stashId: string): Promise<void> {
     try {
       // Find the stash entry that matches our identifier
-      const { stdout: stashList } = await execWithShellPath('git stash list', { cwd: path });
+      const { stdout: stashList } = await execWithShellPath('git stash list', {
+        cwd: path,
+      });
       const stashEntry = stashList.split('\n').find((line) => line.includes(stashId));
 
       if (!stashEntry) {
@@ -1058,7 +1173,10 @@ export class WorktreeManager {
         const { stdout: worktreeCommit } = await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
         worktreeBranchCommitHash = worktreeCommit.trim();
 
-        logger.info('Initial state tracked', { beforeMergeCommitHash, worktreeBranchCommitHash });
+        logger.info('Initial state tracked', {
+          beforeMergeCommitHash,
+          worktreeBranchCommitHash,
+        });
 
         // 2. Stash uncommitted changes in worktree
         await this.stashUncommittedChanges(worktreeStashId, worktreePath, 'Worktree uncommitted changes before merge');
@@ -1219,7 +1337,9 @@ export class WorktreeManager {
   }
 
   async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles> {
-    const { stdout } = await execWithShellPath('git status --porcelain=v1', { cwd: worktreePath });
+    const { stdout } = await execWithShellPath('git status --porcelain=v1', {
+      cwd: worktreePath,
+    });
     const files = stdout
       .split('\n')
       .map((l) => l.trim())
@@ -1235,7 +1355,9 @@ export class WorktreeManager {
 
   async getRebaseState(worktreePath: string): Promise<RebaseState> {
     try {
-      const { stdout } = await execWithShellPath('git status --porcelain=v1', { cwd: worktreePath });
+      const { stdout } = await execWithShellPath('git status --porcelain=v1', {
+        cwd: worktreePath,
+      });
       const lines = stdout
         .split('\n')
         .map((l) => l.trimEnd())
@@ -1253,7 +1375,9 @@ export class WorktreeManager {
       try {
         const { stdout: rebaseDir } = await execWithShellPath('git rev-parse --git-path rebase-merge', { cwd: worktreePath });
         if (rebaseDir.trim().length > 0) {
-          await execWithShellPath(`test -e "${rebaseDir.trim()}"`, { cwd: worktreePath });
+          await execWithShellPath(`test -e "${rebaseDir.trim()}"`, {
+            cwd: worktreePath,
+          });
           inProgress = true;
         }
       } catch {
@@ -1264,7 +1388,9 @@ export class WorktreeManager {
         try {
           const { stdout: rebaseDir } = await execWithShellPath('git rev-parse --git-path rebase-apply', { cwd: worktreePath });
           if (rebaseDir.trim().length > 0) {
-            await execWithShellPath(`test -e "${rebaseDir.trim()}"`, { cwd: worktreePath });
+            await execWithShellPath(`test -e "${rebaseDir.trim()}"`, {
+              cwd: worktreePath,
+            });
             inProgress = true;
           }
         } catch {
@@ -1319,6 +1445,38 @@ export class WorktreeManager {
     };
   }
 
+  /**
+   * Reset a temporary commit back to uncommitted changes state
+   */
+  private async resetTempCommit(worktreePath: string): Promise<void> {
+    try {
+      await execWithShellPath('git reset --mixed HEAD^', { cwd: worktreePath });
+    } catch (error) {
+      logger.error('Failed to reset temp commit:', error);
+      throw new Error(`Failed to restore uncommitted changes: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Reset temporary commit if it exists by finding it by name pattern
+   */
+  private async resetTempCommitIfExists(worktreePath: string): Promise<void> {
+    try {
+      // Check if HEAD is a temporary commit
+      const { stdout: commitMessage } = await execWithShellPath('git log -1 --pretty=format:%s', {
+        cwd: worktreePath,
+      });
+
+      if (commitMessage.includes('TEMP_UNCOMMITTED_')) {
+        logger.info('Resetting temporary commit back to uncommitted changes');
+        await this.resetTempCommit(worktreePath);
+      }
+    } catch (error) {
+      logger.debug('Failed to check/reset temporary commit:', error);
+      // Don't throw - this is cleanup logic
+    }
+  }
+
   async stageResolvedFile(worktreePath: string, filePath: string, content: string): Promise<void> {
     await fs.writeFile(`${worktreePath}/${filePath}`, content, 'utf8');
     await execWithShellPath(`git add -- "${filePath}"`, { cwd: worktreePath });
@@ -1357,7 +1515,9 @@ export class WorktreeManager {
         const effectiveTargetBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
 
         // 3. Switch main repo to target branch
-        await execWithShellPath(`git checkout ${effectiveTargetBranch}`, { cwd: projectPath });
+        await execWithShellPath(`git checkout ${effectiveTargetBranch}`, {
+          cwd: projectPath,
+        });
 
         // 4. Apply stash to target branch (keeping uncommitted)
         logger.info(`Applying uncommitted changes to ${effectiveTargetBranch} branch`);
@@ -1414,7 +1574,9 @@ export class WorktreeManager {
 
         // 3. Switch to the branch we merged into, then reset it to previous state
         const targetBranch = mergeState.targetBranch || (await this.getProjectMainBranch(projectPath));
-        await execWithShellPath(`git checkout ${targetBranch}`, { cwd: projectPath });
+        await execWithShellPath(`git checkout ${targetBranch}`, {
+          cwd: projectPath,
+        });
 
         logger.info(`Resetting ${targetBranch} branch to ${mergeState.beforeMergeCommitHash}`);
         await execWithShellPath(`git reset --hard ${mergeState.beforeMergeCommitHash}`, { cwd: projectPath });
@@ -1485,7 +1647,9 @@ export class WorktreeManager {
       if (worktree.path.startsWith(path.join(projectDir, AIDER_DESK_TASKS_DIR)) && worktree.prunable) {
         try {
           logger.debug(`Pruning deleted worktree: ${worktree.path}`);
-          await execWithShellPath(`git worktree remove ${worktree.path}`, { cwd: projectDir });
+          await execWithShellPath(`git worktree remove ${worktree.path}`, {
+            cwd: projectDir,
+          });
         } catch (error) {
           logger.warn('Failed to prune worktree:', {
             worktree,

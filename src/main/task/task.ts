@@ -2442,24 +2442,28 @@ ${error.stderr}`,
 
     try {
       this.addLogMessage('loading', `Rebasing worktree from ${effectiveFromBranch}...`);
-      await this.worktreeManager.rebaseMainIntoWorktree(this.task.worktree.path, effectiveFromBranch);
-      this.addLogMessage('info', 'Worktree rebased successfully', true);
+      const { success, error } = await this.worktreeManager.rebaseMainIntoWorktree(this.task.worktree.path, effectiveFromBranch);
+
+      if (success) {
+        this.addLogMessage('info', 'Worktree rebased successfully', true);
+        return;
+      }
+
+      if (error) {
+        const isConflict = error.gitOutput?.includes('Resolve all conflicts');
+
+        this.addLogMessage(
+          'error',
+          isConflict ? 'worktree.rebaseConflicts' : error.getErrorDetails(),
+          true,
+          undefined,
+          isConflict ? ['abort-rebase', 'resolve-conflicts-with-agent'] : undefined,
+        );
+      }
     } catch (error) {
-      logger.error('Failed to rebase worktree:', error);
-
-      const isConflict = error instanceof GitError && error.gitOutput?.includes('Resolve all conflicts');
-
-      this.addLogMessage(
-        'error',
-        isConflict
-          ? 'worktree.rebaseConflicts'
-          : error instanceof GitError
-            ? error.getErrorDetails()
-            : `Failed to rebase worktree: ${error instanceof Error ? error.message : String(error)}`,
-        true,
-        undefined,
-        isConflict ? ['abort-rebase', 'resolve-conflicts-with-agent'] : undefined,
-      );
+      logger.error('Failed to rebase worktree:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     await this.sendWorktreeIntegrationStatusUpdated();
@@ -2601,6 +2605,10 @@ ${error.stderr}`,
     try {
       this.addLogMessage('loading', 'Continuing rebase...');
       await this.worktreeManager.continueRebase(this.task.worktree.path);
+
+      // Clear any remaining merge state after successful rebase continuation
+      await this.saveTask({ lastMergeState: undefined });
+
       this.addLogMessage('info', 'Rebase continued', true);
     } catch (error) {
       logger.error('Failed to continue rebase:', error);
