@@ -579,6 +579,7 @@
       "title": "消息显示",
       "display": "显示选项",
       "markdownRendering": "启用 Markdown 渲染",
+      "diffViewMode": "差异视图模式",
       "virtualizedRendering": "使用虚拟化渲染（实验性）",
       "virtualizedRenderingTooltip": "实验性功能，当您在对话历史中有大量消息时可以通过仅渲染可见消息来提高性能。"
     },
@@ -971,6 +972,9 @@
     "revertChanges": "撤销更改"
   },
   "diffViewer": {
+    "sideBySide": "并排",
+    "unified": "统一",
+    "compact": "紧凑",
     "noChanges": "没有进行任何更改。内容相同。"
   },
   "promptField": {

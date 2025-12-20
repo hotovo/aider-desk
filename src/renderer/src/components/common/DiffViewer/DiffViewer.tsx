@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Diff, Hunk, parseDiff } from 'react-diff-view';
 import { diffLines, formatLines } from 'unidiff';
 import { useDebounce } from '@reactuses/core';
+import { DiffViewMode } from '@common/types';
 
 import { createTokens } from './utils';
 
@@ -18,9 +19,10 @@ type Props = {
   newValue: string;
   language: string;
   isComplete?: boolean;
+  viewMode?: DiffViewMode;
 };
 
-export const DiffViewer = ({ oldValue, newValue, language, isComplete = false }: Props) => {
+export const DiffViewer = ({ oldValue, newValue, language, isComplete = false, viewMode = DiffViewMode.SideBySide }: Props) => {
   const { t } = useTranslation();
   const { isMobile } = useResponsive();
 
@@ -87,7 +89,7 @@ export const DiffViewer = ({ oldValue, newValue, language, isComplete = false }:
 
   return (
     <Diff
-      viewType={isMobile ? 'unified' : 'split'}
+      viewType={isMobile ? 'unified' : viewMode === DiffViewMode.Unified ? 'unified' : 'split'}
       diffType={diffFile.type}
       hunks={diffFile.hunks}
       className="diff-viewer"

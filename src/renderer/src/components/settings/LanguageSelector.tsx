@@ -9,9 +9,10 @@ type Props = {
   language: string;
   onChange: (language: string) => void;
   hideLabel?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 };
 
-export const LanguageSelector = ({ language, onChange, hideLabel }: Props) => {
+export const LanguageSelector = ({ language, onChange, hideLabel, size }: Props) => {
   const { t } = useTranslation();
   const languageOptions: Option[] = Object.entries(SUPPORTED_LANGUAGES).map(([code, { label, countryCode }]) => ({
     value: code,
@@ -23,5 +24,13 @@ export const LanguageSelector = ({ language, onChange, hideLabel }: Props) => {
     ),
   }));
 
-  return <Select label={!hideLabel && t('settings.language')} value={language} onChange={onChange} options={languageOptions} />;
+  return (
+    <Select
+      label={!hideLabel && <span className={size === 'sm' ? 'text-xs' : ''}>{t('settings.language')}</span>}
+      value={language}
+      onChange={onChange}
+      options={languageOptions}
+      size={size}
+    />
+  );
 };

@@ -622,6 +622,7 @@
       "title": "Message Display",
       "display": "Display Options",
       "markdownRendering": "Markdown rendering",
+      "diffViewMode": "Diff view mode",
       "virtualizedRendering": "Use virtualized rendering (experimental)",
       "virtualizedRenderingTooltip": "Experimental feature that can improve performance when you have many messages in your conversation history by only rendering visible messages."
     },
@@ -999,6 +1000,9 @@
     "revertChanges": "Revert changes"
   },
   "diffViewer": {
+    "sideBySide": "Side by Side",
+    "unified": "Unified",
+    "compact": "Compact",
     "noChanges": "No changes have been made. Content is identical."
   },
   "promptField": {

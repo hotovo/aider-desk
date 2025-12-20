@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES } from '@common/types';
+import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode } from '@common/types';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -58,7 +58,13 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
   const themeOptions: Option[] = THEMES.map((theme) => ({
     label: t(`settings.themeOptions.${theme}`, theme),
     value: theme,
-  })).sort((a, b) => a.label.localeCompare(b.label));
+  })).sort((a, b) => (a.label as string).localeCompare(b.label as string));
+
+  const diffViewOptions: Option[] = [
+    { label: t('diffViewer.sideBySide'), value: DiffViewMode.SideBySide },
+    { label: t('diffViewer.unified'), value: DiffViewMode.Unified },
+    { label: t('diffViewer.compact'), value: DiffViewMode.Compact },
+  ];
 
   const handleStartupModeChange = (mode: ProjectStartMode) => {
     setSettings({
@@ -110,6 +116,13 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     onFontSizeChange(newFontSize);
   };
 
+  const handleDiffViewModeChange = (value: string) => {
+    setSettings({
+      ...settings,
+      diffViewMode: value as DiffViewMode,
+    });
+  };
+
   const handleSuggestionModeChange = (mode: SuggestionMode) => {
     setSettings({
       ...settings,
@@ -151,13 +164,38 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     <div className="space-y-6">
       <Section id="general-gui" title={t('settings.gui')}>
         <div className="grid grid-cols-2 gap-4 pt-4 px-4">
-          <LanguageSelector language={settings.language} onChange={onLanguageChange} />
-          <Select label={t('settings.zoom')} options={ZOOM_OPTIONS} value={String(settings.zoomLevel ?? 1)} onChange={handleZoomChange} />
+          <LanguageSelector language={settings.language} onChange={onLanguageChange} size="sm" />
+          <Select
+            label={<span className="text-xs">{t('settings.zoom')}</span>}
+            options={ZOOM_OPTIONS}
+            value={String(settings.zoomLevel ?? 1)}
+            onChange={handleZoomChange}
+            size="sm"
+          />
         </div>
         <div className="grid grid-cols-3 gap-4 p-4">
-          <Select label={t('settings.theme')} options={themeOptions} value={settings.theme ?? 'dark'} onChange={handleThemeChange} className="col-span-3" />
-          <Select label={t('settings.font')} options={fontOptions} value={settings.font ?? 'sono'} onChange={handleFontChange} />
-          <Select label={t('settings.fontSize')} options={FONT_SIZE_OPTIONS} value={String(settings.fontSize ?? 16)} onChange={handleFontSizeChange} />
+          <Select
+            label={<span className="text-xs">{t('settings.theme')}</span>}
+            options={themeOptions}
+            value={settings.theme ?? 'dark'}
+            onChange={handleThemeChange}
+            className="col-span-3"
+            size="sm"
+          />
+          <Select
+            label={<span className="text-xs">{t('settings.font')}</span>}
+            options={fontOptions}
+            value={settings.font ?? 'sono'}
+            onChange={handleFontChange}
+            size="sm"
+          />
+          <Select
+            label={<span className="text-xs">{t('settings.fontSize')}</span>}
+            options={FONT_SIZE_OPTIONS}
+            value={String(settings.fontSize ?? 16)}
+            onChange={handleFontSizeChange}
+            size="sm"
+          />
         </div>
       </Section>
 
@@ -212,6 +250,15 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
                 <InfoIcon tooltip={t('settings.messages.virtualizedRenderingTooltip')} />
               </div>
             </div>
+          </div>
+          <div className="space-y-3">
+            <Select
+              label={<span className="text-xs">{t('settings.messages.diffViewMode')}</span>}
+              options={diffViewOptions}
+              value={settings.diffViewMode ?? DiffViewMode.SideBySide}
+              onChange={handleDiffViewModeChange}
+              size="sm"
+            />
           </div>
         </div>
       </Section>

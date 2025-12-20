@@ -1,16 +1,21 @@
-import Prism from 'prismjs';
-import { useMemo, useState } from 'react';
+import 'prismjs/themes/prism-tomorrow.css';
+import { startTransition, useMemo, useOptimistic, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { MdKeyboardArrowDown, MdUndo } from 'react-icons/md';
 import { VscCode } from 'react-icons/vsc';
+import { DiffViewMode } from '@common/types';
 
 import { CopyMessageButton } from '../message/CopyMessageButton';
 
 import { IconButton } from './IconButton';
+import { CompactSelect } from './CompactSelect';
 
-import { DiffViewer, UDiffViewer } from '@/components/common/DiffViewer';
+import { DiffViewer, UDiffViewer, CompactDiffViewer } from '@/components/common/DiffViewer';
 import { useApi } from '@/contexts/ApiContext';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useResponsive } from '@/hooks/useResponsive';
+import { highlightWithLowlight } from '@/utils/highlighter';
 
 const SEARCH_MARKER = /^<{5,9} SEARCH[^\n]*$/m;
 const DIVIDER_MARKER = /^={5,9}\s*$/m;
@@ -70,6 +75,27 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
   const [isExpanded, setIsExpanded] = useState(true);
   const [changesReverted, setChangesReverted] = useState(false);
   const api = useApi();
+  const { settings, saveSettings } = useSettings();
+  const [diffViewMode, setDiffViewMode] = useOptimistic(settings?.diffViewMode || DiffViewMode.SideBySide);
+  const { isMobile } = useResponsive();
+
+  const handleDiffViewModeChange = (value: string) => {
+    if (settings) {
+      startTransition(() => {
+        setDiffViewMode(value as DiffViewMode);
+        void saveSettings({
+          ...settings,
+          diffViewMode: value as DiffViewMode,
+        });
+      });
+    }
+  };
+
+  const diffViewOptions = [
+    { label: t('diffViewer.sideBySide'), value: DiffViewMode.SideBySide },
+    { label: t('diffViewer.unified'), value: DiffViewMode.Unified },
+    { label: t('diffViewer.compact'), value: DiffViewMode.Compact },
+  ];
 
   const isExplicitDiff = oldValue !== undefined && newValue !== undefined;
   const isCustomChildrenDiff = !isExplicitDiff && children ? isCustomDiffContent(children) : false;
@@ -99,25 +125,21 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
 
   const content = useMemo(() => {
     if (displayAsUdiff && children) {
-      return <UDiffViewer udiff={children} language={language} />;
-    } else if (displayAsDiff) {
-      return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} isComplete={isComplete} />;
-    } else if (codeForSyntaxHighlight && language) {
-      let html = codeForSyntaxHighlight;
-
-      const grammar = Prism.languages[language];
-      if (grammar) {
-        try {
-          html = Prism.highlight(codeForSyntaxHighlight, grammar, language);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('Failed to highlight code:', error);
-        }
+      if (diffViewMode === DiffViewMode.Compact) {
+        return <CompactDiffViewer udiff={children} fileName={file} language={language} />;
       }
-
+      return <UDiffViewer udiff={children} language={language} viewMode={diffViewMode} />;
+    } else if (displayAsDiff) {
+      if (diffViewMode === DiffViewMode.Compact) {
+        return <CompactDiffViewer oldValue={diffOldValue} newValue={diffNewValue} fileName={file} language={language} />;
+      }
+      return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} isComplete={isComplete} viewMode={diffViewMode} />;
+    } else if (codeForSyntaxHighlight && language) {
       return (
-        <pre>
-          <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: html }} />
+        <pre
+          className={`language-${language} !bg-transparent !border-none !shadow-none scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth focus:outline-none`}
+        >
+          <code className={`language-${language}`}>{highlightWithLowlight(codeForSyntaxHighlight, language)}</code>
         </pre>
       );
     } else {
@@ -127,7 +149,7 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
         </pre>
       );
     }
-  }, [displayAsUdiff, children, displayAsDiff, codeForSyntaxHighlight, language, diffOldValue, diffNewValue, isComplete]);
+  }, [displayAsUdiff, children, displayAsDiff, codeForSyntaxHighlight, language, diffViewMode, diffOldValue, diffNewValue, isComplete, file]);
 
   const handleRevertChanges = () => {
     if (file && displayAsDiff) {
@@ -169,6 +191,11 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
                 )}
                 <CopyMessageButton content={stringToCopy} className="opacity-0 group-hover:opacity-100" />
                 {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-text-muted" size={14} />}
+                {(displayAsDiff || displayAsUdiff) && !isMobile && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <CompactSelect options={diffViewOptions} value={diffViewMode} onChange={handleDiffViewModeChange} />
+                  </div>
+                )}
                 <span className="text-text-primary transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
                   <MdKeyboardArrowDown size={16} />
                 </span>
@@ -183,8 +210,11 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
           </>
         ) : (
           <div className="relative">
-            <div className="absolute right-0 top-1 flex items-center gap-2">
+            <div className="absolute right-0 top-1 flex items-center gap-2 z-10">
               <CopyMessageButton content={stringToCopy} />
+              {(displayAsDiff || displayAsUdiff) && !isMobile && (
+                <CompactSelect options={diffViewOptions} value={diffViewMode} onChange={handleDiffViewModeChange} />
+              )}
               {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-text-muted" size={14} />}
             </div>
             {content}

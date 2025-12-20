@@ -100,6 +100,12 @@ export interface AiderRunOptions {
 
 export type EditFormat = 'diff' | 'diff-fenced' | 'whole' | 'udiff' | 'udiff-simple' | 'patch';
 
+export enum DiffViewMode {
+  SideBySide = 'side-by-side',
+  Unified = 'unified',
+  Compact = 'compact',
+}
+
 export enum ReasoningEffort {
   High = 'high',
   Medium = 'medium',
@@ -501,6 +507,7 @@ export interface SettingsData {
   renderMarkdown: boolean;
   virtualizedRendering: boolean;
   aiderDeskAutoUpdate: boolean;
+  diffViewMode?: DiffViewMode;
   aider: {
     options: string;
     environmentVariables: string;

@@ -8,6 +8,7 @@ import {
   SuggestionMode,
   WindowState,
   MemoryEmbeddingProvider,
+  DiffViewMode,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 
@@ -42,6 +43,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   renderMarkdown: true,
   virtualizedRendering: false,
   aiderDeskAutoUpdate: true,
+  diffViewMode: DiffViewMode.SideBySide,
   aider: {
     options: '',
     environmentVariables: '',
@@ -317,14 +319,14 @@ export class Store {
   }
 
   getRecentProjects(): string[] {
-    const recentProjects = this.store.get('recentProjects') || [];
+    const recentProjects: string[] = this.store.get('recentProjects') || [];
     const openProjectBaseDirs = this.getOpenProjects().map((p) => p.baseDir);
 
     return recentProjects.filter((baseDir) => !openProjectBaseDirs.some((openProjectBaseDir) => compareBaseDirs(openProjectBaseDir, baseDir)));
   }
 
   addRecentProject(baseDir: string): void {
-    const recentProjects = this.store.get('recentProjects') || [];
+    const recentProjects: string[] = this.store.get('recentProjects') || [];
     const filtered = recentProjects.filter((recentProject) => !compareBaseDirs(recentProject, baseDir));
 
     filtered.unshift(baseDir);

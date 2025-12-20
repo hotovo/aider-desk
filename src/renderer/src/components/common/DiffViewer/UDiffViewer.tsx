@@ -1,17 +1,22 @@
 import { useMemo } from 'react';
 import { Diff, Hunk, parseDiff } from 'react-diff-view';
+import { DiffViewMode } from '@common/types';
 
 import { createTokens } from './utils';
 
 import 'react-diff-view/style/index.css';
 import './DiffViewer.scss';
 
+import { useResponsive } from '@/hooks/useResponsive';
+
 type Props = {
   udiff: string;
   language: string;
+  viewMode?: DiffViewMode;
 };
 
-export const UDiffViewer = ({ udiff, language }: Props) => {
+export const UDiffViewer = ({ udiff, language, viewMode = DiffViewMode.SideBySide }: Props) => {
+  const { isMobile } = useResponsive();
   const parsedFiles = useMemo(() => {
     try {
       return parseDiff(udiff, { nearbySequences: 'zip' });
@@ -42,7 +47,14 @@ export const UDiffViewer = ({ udiff, language }: Props) => {
                 <span>{file.newPath}</span>
               )}
             </div>
-            <Diff viewType="split" diffType={file.type} hunks={file.hunks} className="diff-viewer" optimizeSelection={true} tokens={tokens}>
+            <Diff
+              viewType={isMobile || viewMode === DiffViewMode.Unified ? 'unified' : 'split'}
+              diffType={file.type}
+              hunks={file.hunks}
+              className="diff-viewer"
+              optimizeSelection={true}
+              tokens={tokens}
+            >
               {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
             </Diff>
           </div>

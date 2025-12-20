@@ -10,6 +10,7 @@
 - added a hook system for intercepting and reacting to application events (tasks, prompts, agents, tools, files, etc.)
 - fixed height of MCP server form
 - added custom skill activation tool message
+- added diff viewer type selector with side-by-side, unified and compact diff view
 
 ## [0.44.0]
 
