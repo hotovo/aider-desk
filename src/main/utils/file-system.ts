@@ -147,24 +147,67 @@ const isGitRepository = async (baseDir: string): Promise<boolean> => {
   }
 };
 
-const getAllFilesFromFS = async (baseDir: string): Promise<string[]> => {
+const getAllFilesFromFS = async (baseDir: string, ignore: string[] = []): Promise<string[]> => {
   try {
     const pattern = path.join(baseDir, '**/*').replace(/\\/g, '/');
     const files = await glob(pattern, {
       nodir: true,
       absolute: false,
       dot: true,
+      ignore,
     });
 
     // Convert to relative paths
     const relativeFiles = files.map((file) => path.relative(baseDir, file).replace(/\\/g, '/'));
 
-    logger.debug('Retrieved files from filesystem', { count: relativeFiles.length, baseDir });
+    logger.info('Retrieved files from filesystem', { count: relativeFiles.length, baseDir, ignore });
     return relativeFiles;
   } catch (error) {
     logger.error('Failed to get files from filesystem', { error, baseDir });
     return [];
   }
+};
+
+const getIgnoreGlobPatterns = async (gitignorePath: string): Promise<string[]> => {
+  const ignore: string[] = [];
+
+  if (fs.existsSync(gitignorePath)) {
+    try {
+      const gitignoreContent = await fs.promises.readFile(gitignorePath, 'utf8');
+      const rawPatterns = gitignoreContent
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => Boolean(line) && !line.startsWith('#'))
+        .map((line) => line.replace(/\\/g, '/'));
+
+      const baseDir = path.dirname(gitignorePath);
+
+      for (const pattern of rawPatterns) {
+        if (pattern.endsWith('/')) {
+          ignore.push(`${pattern}**`);
+          continue;
+        }
+
+        const absCandidate = path.resolve(baseDir, pattern);
+
+        try {
+          const stats = await fs.promises.stat(absCandidate);
+          if (stats.isDirectory()) {
+            ignore.push(`${pattern}/**`);
+            continue;
+          }
+        } catch {
+          // ignore
+        }
+
+        ignore.push(pattern);
+      }
+    } catch (error) {
+      logger.warn('Failed to read .gitignore, continuing without it', { error, gitignorePath });
+    }
+  }
+
+  return ignore;
 };
 
 export const getAllFiles = async (baseDir: string, useGit = true): Promise<string[]> => {
@@ -183,7 +226,8 @@ export const getAllFiles = async (baseDir: string, useGit = true): Promise<strin
     }
 
     // use filesystem when useGit is false or git fails
-    const files = await getAllFilesFromFS(baseDir);
+    const gitignorePath = path.join(baseDir, '.gitignore');
+    const files = await getAllFilesFromFS(baseDir, [...(await getIgnoreGlobPatterns(gitignorePath)), '.git/**']);
 
     // If it's a git repo, filter out ignored files
     if (await isGitRepository(baseDir)) {

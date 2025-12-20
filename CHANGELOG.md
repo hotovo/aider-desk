@@ -13,6 +13,7 @@
 - added diff viewer type selector with side-by-side, unified and compact diff view
 - not switching mode when switching other parameters in browser
 - added automatic file detection from prompts with interactive confirmation to add detected files to context in Aider modes
+- improved project file listing to respect .gitignore patterns in non-git mode
 
 ## [0.44.0]
 
