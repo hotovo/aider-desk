@@ -14,7 +14,7 @@ const BASE_URL = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION
 const RESOURCES_DIR = './resources';
 
 const TARGET_PLATFORMS = [
-    { platform: 'linux', arch: 'x64', filename: 'uv-x86_64-unknown-linux-gnu.tar.gz', extractSubdir: 'linux', uvExeName: 'uv' },
+    { platform: 'linux', arch: 'x64', filename: 'uv-x86_64-unknown-linux-gnu.tar.gz', extractSubdir: 'linux-x64', uvExeName: 'uv' },
     { platform: 'linux', arch: 'arm64', filename: 'uv-aarch64-unknown-linux-gnu.tar.gz', extractSubdir: 'linux-arm64', uvExeName: 'uv' },
     { platform: 'darwin', arch: 'x64', filename: 'uv-x86_64-apple-darwin.tar.gz', extractSubdir: 'macos-x64', uvExeName: 'uv' },
     { platform: 'darwin', arch: 'arm64', filename: 'uv-aarch64-apple-darwin.tar.gz', extractSubdir: 'macos-arm64', uvExeName: 'uv' },
@@ -111,11 +111,12 @@ async function downloadAllUVs() {
     }
     console.log("All necessary uv executables processed.");
 
-    // After downloading all, copy the correct one for the current platform if it's macOS
-    if (process.platform === 'darwin') {
+    // After downloading all, copy the correct one for the current platform if it's macOS or Linux
+    if (process.platform === 'darwin' || process.platform === 'linux') {
+        const osDir = process.platform === 'darwin' ? 'macos' : 'linux';
         const arch = process.arch;
-        const sourceDir = join(RESOURCES_DIR, `macos-${arch}`);
-        const targetDir = join(RESOURCES_DIR, 'macos');
+        const sourceDir = join(RESOURCES_DIR, `${osDir}-${arch}`);
+        const targetDir = join(RESOURCES_DIR, osDir);
         const sourceFile = join(sourceDir, 'uv');
         const targetFile = join(targetDir, 'uv');
 
@@ -124,13 +125,13 @@ async function downloadAllUVs() {
         }
 
         if (existsSync(sourceFile)) {
-            console.log(`Copying uv for local development on macOS ${arch}...`);
+            console.log(`Copying uv for local development on ${osDir} ${arch}...`);
             fs.copyFileSync(sourceFile, targetFile);
             console.log('uv copied successfully for local development.');
         } else {
-            console.error(`uv binary for macOS ${arch} not found at ${sourceFile}, skipping copy for local development.`);
+            console.error(`uv binary for ${osDir} ${arch} not found at ${sourceFile}, skipping copy for local development.`);
         }
     }
 }
 
-downloadAllUVs();
+void downloadAllUVs();

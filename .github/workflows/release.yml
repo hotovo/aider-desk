@@ -64,8 +64,11 @@ jobs:
 
           gh release upload "$RELEASE_TAG" "$APPIMAGE_COMPAT" --clobber
 
-      - name: Add compat AppImage entry to latest-linux.yml
+      - name: Add compat AppImage entry to latest-linux.yml and upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          # Update latest-linux.yml with compat AppImage entry
           node - <<'NODE'
           const fs = require('fs');
           const yaml = require('js-yaml');
@@ -96,22 +99,13 @@ jobs:
           console.log('Updated latest-linux.yml with compat AppImage entry (last)');
           NODE
 
-      - name: Upload latest-linux.yml artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: latest-linux-x64-yml
-          path: dist/latest-linux.yml
-
-      - name: Upload updated latest-linux.yml to release
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
+          # Upload updated latest-linux.yml to release
           REPO="${GITHUB_REPOSITORY}"
           RELEASE_TAG=$(curl -fsSL \
             -H "Authorization: token ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${REPO}/releases" \
-            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s).find(x=>x.draft); if(!r){process.exit(1)}; console.log(r.tag_name)})")
+            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s).find(x=>x.draft); if(!r){process.exit(1)}; console.log(r.tag_name})")
 
           if [ -z "$RELEASE_TAG" ]; then
             echo "Could not find draft release tag" >&2
@@ -168,12 +162,6 @@ jobs:
         env:
           USE_SYSTEM_FPM: true
         run: npm run build:linux -- --arm64 -p always
-
-      - name: Upload latest-linux-arm64.yml artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: latest-linux-arm64-yml
-          path: dist/latest-linux.yml
 
   release-win:
     name: Release Windows packages

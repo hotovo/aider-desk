@@ -1,9 +1,9 @@
-const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { Arch } = require('electron-builder');
 
 exports.default = async function(context) {
-  const arch = context.arch === 1 ? 'x64' : context.arch === 3 ? 'arm64' : undefined;
+  const arch = context.arch === Arch.x64 ? 'x64' : context.arch === Arch.arm64 ? 'arm64' : undefined;
   const platform = context.packager.platform.name;
 
   if (platform === 'mac') {
@@ -35,7 +35,7 @@ exports.default = async function(context) {
   if (platform === 'linux') {
     console.log(`Preparing binaries for Linux ${arch}...`);
     if (arch === 'x64' || arch === 'arm64') {
-      const sourceDir = path.join(__dirname, '..', 'resources', `linux-${arch === 'arm64' ? 'arm64' : ''}`);
+      const sourceDir = path.join(__dirname, '..', 'resources', `linux-${arch}`);
       const targetDir = path.join(__dirname, '..', 'resources', 'linux');
 
       if (!fs.existsSync(targetDir)) {
@@ -57,6 +57,4 @@ exports.default = async function(context) {
       }
     }
   }
-
-
 };

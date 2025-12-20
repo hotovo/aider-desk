@@ -14,8 +14,8 @@ const BASE_URL = `https://github.com/probelabs/probe/releases/download/${PROBE_V
 const RESOURCES_DIR = './resources';
 
 const TARGET_PLATFORMS = [
-    { platform: 'linux', arch: 'x64', filename: `probe-${PROBE_VERSION}-x86_64-unknown-linux-musl.tar.gz`, extractSubdir: 'linux', probeExeName: 'probe', sourceExeName: 'probe' },
-    { platform: 'linux', arch: 'arm64', filename: `probe-${PROBE_VERSION}-aarch64-unknown-linux-gnu.tar.gz`, extractSubdir: 'linux-arm64', probeExeName: 'probe', sourceExeName: 'probe' },
+    { platform: 'linux', arch: 'x64', filename: `probe-${PROBE_VERSION}-x86_64-unknown-linux-musl.tar.gz`, extractSubdir: 'linux-x64', probeExeName: 'probe', sourceExeName: 'probe' },
+    { platform: 'linux', arch: 'arm64', filename: `probe-${PROBE_VERSION}-aarch64-unknown-linux-musl.tar.gz`, extractSubdir: 'linux-arm64', probeExeName: 'probe', sourceExeName: 'probe' },
     { platform: 'darwin', arch: 'x64', filename: `probe-${PROBE_VERSION}-x86_64-apple-darwin.tar.gz`, extractSubdir: 'macos-x64', probeExeName: 'probe', sourceExeName: 'probe' },
     { platform: 'darwin', arch: 'arm64', filename: `probe-${PROBE_VERSION}-aarch64-apple-darwin.tar.gz`, extractSubdir: 'macos-arm64', probeExeName: 'probe', sourceExeName: 'probe' },
     { platform: 'win32', arch: 'x64', filename: `probe-${PROBE_VERSION}-x86_64-pc-windows-msvc.zip`, extractSubdir: 'win', probeExeName: 'probe.exe', sourceExeName: 'probe.exe' }
@@ -125,11 +125,12 @@ async function downloadAllProbes() {
     }
     console.log("All necessary probe executables processed.");
 
-    // After downloading all, copy the correct one for the current platform if it's macOS
-    if (process.platform === 'darwin') {
+    // After downloading all, copy the correct one for the current platform if it's macOS or Linux
+    if (process.platform === 'darwin' || process.platform === 'linux') {
+        const osDir = process.platform === 'darwin' ? 'macos' : 'linux';
         const arch = process.arch;
-        const sourceDir = join(RESOURCES_DIR, `macos-${arch}`);
-        const targetDir = join(RESOURCES_DIR, 'macos');
+        const sourceDir = join(RESOURCES_DIR, `${osDir}-${arch}`);
+        const targetDir = join(RESOURCES_DIR, osDir);
         const sourceFile = join(sourceDir, 'probe');
         const targetFile = join(targetDir, 'probe');
 
@@ -138,13 +139,13 @@ async function downloadAllProbes() {
         }
 
         if (existsSync(sourceFile)) {
-            console.log(`Copying probe for local development on macOS ${arch}...`);
+            console.log(`Copying probe for local development on ${osDir} ${arch}...`);
             fs.copyFileSync(sourceFile, targetFile);
             console.log('probe copied successfully for local development.');
         } else {
-            console.error(`probe binary for macOS ${arch} not found at ${sourceFile}, skipping copy for local development.`);
+            console.error(`probe binary for ${osDir} ${arch} not found at ${sourceFile}, skipping copy for local development.`);
         }
     }
 }
 
-downloadAllProbes();
+void downloadAllProbes();
