@@ -99,6 +99,9 @@ src/
     events/
       event-manager.ts
       index.ts
+    hooks/
+      hook-context.ts
+      hook-manager.ts
     memory/
       memory-manager.ts
     models/
@@ -270,6 +273,7 @@ src/
           ContextFiles.tsx
           index.ts
         message/
+          ActivateSkillToolMessage.tsx
           BashToolMessage.tsx
           CommandOutputMessageBlock.tsx
           CopyMessageButton.tsx
@@ -493,6 +497,7 @@ src/
         OpenRouterIcon.tsx
         requesty.png
         RequestyIcon.tsx
+        santa-hat.png
         VertexAiIcon.tsx
         ZaiPlanIcon.tsx
       pages/
@@ -1723,6 +1728,11 @@ File: src/common/locales/en.json
         "descriptionRequiredForAutomatic": "Description needs to be set in order to use this subagent automatically, otherwise the subagent can only be used when explicitly requested by the user.",
         "on-demand": "Used as subagent on user demand",
         "automatic": "Used as subagent automatically"
+      },
+      "skills": {
+        "activating": "Activating {{name}} skill...",
+        "activated": "Activated {{name}} skill",
+        "skill": "Skill"
       },
       "profileContext": "Profile Context",
       "globalProfiles": "Global Profiles",
@@ -3012,6 +3022,11 @@ File: src/common/locales/zh.json
         "on-demand": "仅在明确请求时按需使用",
         "automatic": "在适当时自动使用"
       },
+      "skills": {
+        "activating": "正在激活 {{name}} 技能...",
+        "activated": "已激活 {{name}} 技能",
+        "skill": "技能"
+      },
       "profileContext": "配置上下文",
       "globalProfiles": "全局配置",
       "projectProfiles": "项目配置: {{projectName}}",
@@ -4156,6 +4171,8 @@ import {
   MemoryEntry,
   WorktreeIntegrationStatusUpdatedData,
   BranchInfo,
+  WorktreeIntegrationStatus,
+  MemoryEmbeddingProgress,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -4304,7 +4321,7 @@ export interface ApplicationAPI {
   applyUncommittedChanges: (baseDir: string, taskId: string, targetBranch?: string) => Promise<void>;
   revertLastMerge: (baseDir: string, taskId: string) => Promise<void>;
   listBranches: (baseDir: string) => Promise<BranchInfo[]>;
-  getWorktreeIntegrationStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<import('@common/types').WorktreeIntegrationStatus>;
+  getWorktreeIntegrationStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<WorktreeIntegrationStatus | null>;
   rebaseWorktreeFromBranch: (baseDir: string, taskId: string, fromBranch?: string) => Promise<void>;
   abortWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
   continueWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
@@ -4321,7 +4338,7 @@ export interface ApplicationAPI {
   listAllMemories: () => Promise<MemoryEntry[]>;
   deleteMemory: (id: string) => Promise<boolean>;
   deleteProjectMemories: (projectId: string) => Promise<number>;
-  getMemoryEmbeddingProgress: () => Promise<import('@common/types').MemoryEmbeddingProgress>;
+  getMemoryEmbeddingProgress: () => Promise<MemoryEmbeddingProgress>;
 }
 ⋮----
 // Todo operations
@@ -4418,7 +4435,7 @@ export interface WorktreeIntegrationStatus {
 export interface WorktreeIntegrationStatusUpdatedData {
   baseDir: string;
   taskId: string;
-  status: WorktreeIntegrationStatus;
+  status: WorktreeIntegrationStatus | null;
 }
 ⋮----
 export interface LocalizedString {
@@ -5897,6 +5914,8 @@ return; // Do not add the tool if it's never approved
 ⋮----
 // Add provider-specific tools
 ⋮----
+private wrapToolsWithHooks(task: Task, toolSet: ToolSet): ToolSet
+⋮----
 private convertMpcToolToAiSdkTool(
     providerName: LlmProviderName,
     serverName: string,
@@ -6657,6 +6676,7 @@ import {
   AgentProfile,
   AgentProfilesUpdatedData,
   WorktreeIntegrationStatus,
+  WorktreeIntegrationStatusUpdatedData,
 } from '@common/types';
 ⋮----
 import type { BrowserWindow } from 'electron';
@@ -6725,7 +6745,7 @@ sendCustomCommandsUpdated(baseDir: string, taskId: string, commands: CustomComma
 ⋮----
 sendCustomCommandError(baseDir: string, taskId: string, error: string): void
 ⋮----
-sendWorktreeIntegrationStatusUpdated(baseDir: string, taskId: string, status: WorktreeIntegrationStatus): void
+sendWorktreeIntegrationStatusUpdated(baseDir: string, taskId: string, status: WorktreeIntegrationStatus | null): void
 ⋮----
 // Terminal events
 sendTerminalData(data: TerminalData): void
@@ -6780,6 +6800,123 @@ private broadcastToEventConnectors(eventType: string, data: unknown): void
 File: src/main/events/index.ts
 ================
 
+
+================
+File: src/main/hooks/hook-context.ts
+================
+import { MessageRole, TaskData } from '@common/types';
+⋮----
+import { Task } from '@/task/task';
+import { Project } from '@/project/project';
+⋮----
+export interface HookContext {
+  addInfoMessage: (message: string) => void;
+  addWarningMessage: (message: string) => void;
+  addErrorMessage: (message: string) => void;
+  addLoadingMessage: (message: string) => void;
+  setTaskName: (name: string) => Promise<void>;
+  addContextMessage: (role: 'user' | 'assistant', content: string) => Promise<void>;
+  task: Task;
+  project: Project;
+  taskData: TaskData;
+  projectDir: string;
+}
+⋮----
+export class HookContextImpl implements HookContext
+⋮----
+constructor(
+⋮----
+addInfoMessage(message: string)
+⋮----
+addWarningMessage(message: string)
+⋮----
+addErrorMessage(message: string)
+⋮----
+addLoadingMessage(message: string)
+⋮----
+async setTaskName(name: string)
+⋮----
+async addContextMessage(role: 'user' | 'assistant', content: string)
+⋮----
+get taskData()
+⋮----
+get projectDir()
+
+================
+File: src/main/hooks/hook-manager.ts
+================
+import fs from 'fs/promises';
+import path from 'path';
+⋮----
+import { FSWatcher, watch } from 'chokidar';
+import debounce from 'lodash/debounce';
+import { Mode, ResponseCompletedData, ContextFile, TaskData, QuestionData } from '@common/types';
+⋮----
+import { HookContext, HookContextImpl } from './hook-context';
+⋮----
+import { Task } from '@/task/task';
+import { Project } from '@/project/project';
+import { AIDER_DESK_HOOKS_DIR, AIDER_DESK_GLOBAL_HOOKS_DIR } from '@/constants';
+import logger from '@/logger';
+import { ResponseMessage } from '@/messages';
+⋮----
+export interface HookEventMap {
+  onTaskCreated: { task: TaskData };
+  onTaskInitialized: { task: TaskData };
+  onTaskClosed: { task: TaskData };
+  onPromptSubmitted: { prompt: string; mode: Mode };
+  onPromptStarted: { prompt: string; mode: Mode };
+  onPromptFinished: { responses: ResponseCompletedData[] };
+  onAgentStarted: { prompt: string };
+  onAgentFinished: { resultMessages: unknown[] };
+  onAgentStepFinished: { stepResult: unknown };
+  onToolCalled: { toolName: string; args: Record<string, unknown> | undefined };
+  onToolFinished: { toolName: string; args: Record<string, unknown> | undefined; result: unknown };
+  onFileAdded: { file: ContextFile };
+  onFileDropped: { filePath: string };
+  onCommandExecuted: { command: string };
+  onAiderPromptStarted: { prompt: string; mode: Mode };
+  onAiderPromptFinished: { responses: ResponseCompletedData[] };
+  onQuestionAsked: { question: QuestionData };
+  onQuestionAnswered: { question: QuestionData; answer: string; userInput?: string };
+  onHandleApproval: { key: string; text: string; subject?: string };
+  onSubagentStarted: { subagentId: string; prompt: string };
+  onSubagentFinished: { subagentId: string; resultMessages: unknown[] };
+  onResponseMessageProcessed: { message: ResponseMessage };
+}
+⋮----
+export type HookFunctions = {
+  [K in keyof HookEventMap]?: (event: HookEventMap[K], context: HookContext) => Promise<unknown> | unknown;
+};
+⋮----
+export class HookManager
+⋮----
+constructor()
+⋮----
+public async init()
+⋮----
+private async setupGlobalWatcher()
+⋮----
+public async reloadProjectHooks(projectDir: string)
+⋮----
+public async stopWatchingProject(projectDir: string)
+⋮----
+private async setupWatcherForDir(dir: string, onChange: () => Promise<void>): Promise<FSWatcher | null>
+⋮----
+private async loadHooksFromDir(dir: string): Promise<HookFunctions[]>
+⋮----
+// Clear cache to allow reloading
+⋮----
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+⋮----
+public async trigger<K extends keyof HookEventMap>(
+    hookName: K,
+    event: HookEventMap[K],
+    task: Task,
+    project: Project,
+): Promise<
+⋮----
+public async dispose()
 
 ================
 File: src/main/memory/memory-manager.ts
@@ -8323,6 +8460,7 @@ import { EventManager } from '@/events';
 import { ModelManager } from '@/models';
 import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
+import { HookManager } from '@/hooks/hook-manager';
 ⋮----
 export class ProjectManager
 ⋮----
@@ -8336,6 +8474,7 @@ constructor(
     worktreeManager: WorktreeManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
+    private readonly hookManager: HookManager,
 )
 ⋮----
 private findProject(baseDir: string): Project | undefined
@@ -8385,6 +8524,7 @@ import { INTERNAL_TASK_ID, Task } from '@/task';
 import { migrateSessionsToTasks } from '@/project/migrations';
 import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
+import { HookManager } from '@/hooks/hook-manager';
 import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { determineMainModel, determineWeakModel } from '@/utils';
 ⋮----
@@ -8401,6 +8541,7 @@ constructor(
     private readonly worktreeManager: WorktreeManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
+    private readonly hookManager: HookManager,
 )
 ⋮----
 // initialize global task
@@ -9698,11 +9839,12 @@ import { AiderManager } from '@/task/aider-manager';
 import { WorktreeManager, GitError } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
+import { HookManager } from '@/hooks/hook-manager';
 ⋮----
 export class Task
 ⋮----
 constructor(
-    private readonly project: Project,
+    public readonly project: Project,
     public readonly taskId: string,
     private readonly store: Store,
     private readonly mcpManager: McpManager,
@@ -9714,6 +9856,7 @@ constructor(
     private readonly modelManager: ModelManager,
     private readonly worktreeManager: WorktreeManager,
     private readonly memoryManager: MemoryManager,
+    public readonly hookManager: HookManager,
     initialTaskData?: Partial<TaskData>,
 )
 ⋮----
@@ -9797,7 +9940,7 @@ private async waitForCurrentAgentToFinish()
 ⋮----
 private resolveAgentRunPromises()
 ⋮----
-public async runPrompt(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]>
+public async runPrompt(prompt: string, mode: Mode = 'code'): Promise<ResponseCompletedData[]>
 ⋮----
 // Generate promptContext for this run
 ⋮----
@@ -9852,7 +9995,7 @@ public promptFinished(promptId?: string)
 ⋮----
 // Notify waiting prompts with collected responses
 ⋮----
-public processResponseMessage(message: ResponseMessage, saveToDb = true)
+public async processResponseMessage(message: ResponseMessage, saveToDb = true)
 ⋮----
 // Collect the completed response
 ⋮----
@@ -11794,6 +11937,7 @@ import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
 import logger from '@/logger';
 import { EventsHandler } from '@/events-handler';
+import { HookManager } from '@/hooks/hook-manager';
 ⋮----
 export interface ManagersResult {
   eventsHandler: EventsHandler;
@@ -13692,6 +13836,31 @@ File: src/renderer/src/components/ContextFiles/index.ts
 
 
 ================
+File: src/renderer/src/components/message/ActivateSkillToolMessage.tsx
+================
+import { MdPsychology } from 'react-icons/md';
+import { CgSpinner } from 'react-icons/cg';
+import { useTranslation } from 'react-i18next';
+import { VscError } from 'react-icons/vsc';
+import { clsx } from 'clsx';
+⋮----
+import { CopyMessageButton } from './CopyMessageButton';
+import { ExpandableMessageBlock } from './ExpandableMessageBlock';
+import { parseToolContent } from './utils';
+⋮----
+import { ToolMessage } from '@/types/message';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+  compact?: boolean;
+};
+⋮----
+<div className=
+⋮----
+return <ExpandableMessageBlock title=
+
+================
 File: src/renderer/src/components/message/BashToolMessage.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -14300,6 +14469,8 @@ import {
   POWER_TOOL_GREP,
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
+  SKILLS_TOOL_ACTIVATE_SKILL,
+  SKILLS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_RUN_TASK,
   TASKS_TOOL_GROUP_NAME,
@@ -14335,6 +14506,7 @@ import { StoreMemoryToolMessage } from './StoreMemoryToolMessage';
 import { RetrieveMemoryToolMessage } from './RetrieveMemoryToolMessage';
 import { DeleteMemoryToolMessage } from './DeleteMemoryToolMessage';
 import { ListMemoriesToolMessage } from './ListMemoriesToolMessage';
+import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
 import { areMessagesEqual } from './utils';
 ⋮----
 import {
@@ -14438,6 +14610,7 @@ import { RiRobot2Line } from 'react-icons/ri';
 ⋮----
 import { MessageBar } from './MessageBar';
 ⋮----
+import santaHat from '@/icons/santa-hat.png';
 import { useParsedContent } from '@/hooks/useParsedContent';
 import { ResponseMessage } from '@/types/message';
 ⋮----
