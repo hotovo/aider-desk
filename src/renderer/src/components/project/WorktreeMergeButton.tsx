@@ -147,27 +147,34 @@ export const WorktreeMergeButton = ({
           <button onClick={handleRebaseClick} className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors">
             {t('worktree.rebaseFromBranch')}
           </button>
-          <button
-            onClick={handleAbortRebaseClick}
-            disabled={!canAbortRebase}
-            className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {t('worktree.abortRebase')}
-          </button>
-          <button
-            onClick={handleContinueRebaseClick}
-            disabled={!canContinueRebase}
-            className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {t('worktree.continueRebase')}
-          </button>
-          <button
-            onClick={handleResolveWithAgentClick}
-            disabled={!canResolveConflictsWithAgent}
-            className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {t('worktree.resolveConflictsWithAgent')}
-          </button>
+          {canAbortRebase && (
+            <button
+              onClick={handleAbortRebaseClick}
+              disabled={!canAbortRebase}
+              className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('worktree.abortRebase')}
+            </button>
+          )}
+
+          {canContinueRebase && (
+            <button
+              onClick={handleContinueRebaseClick}
+              disabled={!canContinueRebase}
+              className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('worktree.continueRebase')}
+            </button>
+          )}
+          {canResolveConflictsWithAgent && (
+            <button
+              onClick={handleResolveWithAgentClick}
+              disabled={!canResolveConflictsWithAgent}
+              className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('worktree.resolveConflictsWithAgent')}
+            </button>
+          )}
         </div>
       )}
 
