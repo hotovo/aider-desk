@@ -227,3 +227,21 @@ export const deriveDirName = (name: string, existingDirNames: Set<string>): stri
 
   return dirName;
 };
+
+/**
+ * Validate if a file path is potentially valid for the current project
+ *
+ * @param filePath - File path to validate
+ * @param taskDir - Task directory to check against
+ * @returns True if file path could be valid for project
+ */
+export const isValidProjectFile = (filePath: string, taskDir: string): boolean => {
+  // Convert to absolute path for validation
+  const absolutePath = path.resolve(taskDir, filePath);
+
+  // Check if resolved path is still within task directory
+  const normalizedTaskDir = path.resolve(taskDir);
+  const normalizedAbsolutePath = path.resolve(absolutePath);
+
+  return normalizedAbsolutePath.startsWith(normalizedTaskDir);
+};

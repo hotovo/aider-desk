@@ -41,7 +41,7 @@ import { isEqual } from 'lodash';
 
 import type { SimpleGit } from 'simple-git';
 
-import { getAllFiles } from '@/utils/file-system';
+import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import {
   getCompactConversationPrompt,
   getConflictResolutionPrompt,
@@ -607,6 +607,9 @@ export class Task {
       name: this.task.name || this.getTaskNameFromPrompt(prompt),
       startedAt: new Date().toISOString(),
     });
+
+    // Detect files in prompt and ask to add them to context (only for aider modes)
+    await this.detectAndAddFilesFromPrompt(prompt);
 
     // Persist user message to the task context before running Aider so it can be redone even if the first call fails.
     this.contextManager.addContextMessage({
@@ -1260,6 +1263,96 @@ export class Task {
     // Send to connectors that listen to 'update-models-info'
     this.findMessageConnectors('update-models-info').forEach((connector) => connector.sendUpdateModelsInfoMessage(modelsInfo));
     await this.sendRequestContextInfo();
+  }
+
+  private async detectAndAddFilesFromPrompt(prompt: string): Promise<void> {
+    try {
+      const contextFiles = await this.getContextFiles();
+      const contextFilePaths = new Set(contextFiles.map((file) => file.path.replace(/\\/g, '/')));
+      const allFiles = await getAllFiles(this.getTaskDir());
+      const addableFiles = allFiles.filter((file) => !contextFilePaths.has(file));
+
+      if (addableFiles.length === 0) {
+        return;
+      }
+
+      const normalizedPrompt = prompt.toLowerCase();
+
+      const matchedFiles: string[] = [];
+      const seen = new Set<string>();
+
+      for (const filePath of addableFiles) {
+        if (!isValidProjectFile(filePath, this.getTaskDir())) {
+          continue;
+        }
+
+        const normalizedPath = filePath.replace(/\\/g, '/');
+        const fileName = path.posix.basename(normalizedPath);
+
+        const isPathMatch = normalizedPrompt.includes(normalizedPath.toLowerCase());
+        const isNameMatch = fileName.length > 0 && normalizedPrompt.includes(fileName.toLowerCase());
+
+        if ((isPathMatch || isNameMatch) && !seen.has(normalizedPath)) {
+          matchedFiles.push(normalizedPath);
+          seen.add(normalizedPath);
+        }
+      }
+
+      if (matchedFiles.length === 0) {
+        return;
+      }
+
+      let addAllRemaining = false;
+      let skipAllRemaining = false;
+
+      for (const filePath of matchedFiles) {
+        if (skipAllRemaining) {
+          break;
+        }
+
+        if (addAllRemaining) {
+          await this.addFile({ path: filePath, readOnly: false });
+          continue;
+        }
+
+        const [answer] = await this.askQuestion({
+          baseDir: this.getProjectDir(),
+          taskId: this.taskId,
+          text: 'Add file from prompt to context?',
+          subject: filePath,
+          defaultAnswer: 'y',
+          answers: [
+            { text: '(Y)es', shortkey: 'y' },
+            { text: '(N)o', shortkey: 'n' },
+            { text: '(A)ll', shortkey: 'a' },
+            { text: '(S)kip all', shortkey: 's' },
+          ],
+          isGroupQuestion: true,
+          key: `detect-files-prompt_${filePath}`,
+        });
+
+        if (answer === 's') {
+          skipAllRemaining = true;
+          break;
+        }
+
+        if (answer === 'a') {
+          addAllRemaining = true;
+          await this.addFile({ path: filePath, readOnly: false });
+          continue;
+        }
+
+        if (answer === 'y') {
+          await this.addFile({ path: filePath, readOnly: false });
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Error during file detection from prompt', {
+        prompt,
+        error: errorMessage,
+      });
+    }
   }
 
   public async getAddableFiles(searchRegex?: string): Promise<string[]> {

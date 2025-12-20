@@ -6,7 +6,7 @@ Update the CHANGELOG.md file by adding a new entry under the [UNRELEASED] sectio
 
 First, let's read the current CHANGELOG.md to understand the structure:
 
-!head -n 100 CHANGELOG.md
+!head -n 20 CHANGELOG.md
 
 Now, let's get the git diff to see what changes were made:
 

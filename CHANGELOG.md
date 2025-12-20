@@ -12,6 +12,7 @@
 - added custom skill activation tool message
 - added diff viewer type selector with side-by-side, unified and compact diff view
 - not switching mode when switching other parameters in browser
+- added automatic file detection from prompts with interactive confirmation to add detected files to context in Aider modes
 
 ## [0.44.0]
 
