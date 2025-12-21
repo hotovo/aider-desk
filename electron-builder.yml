@@ -5,10 +5,14 @@ directories:
 files:
   - '!**/.vscode/*'
   - '!src/*'
+  - '!resources/*'
+  - '!docs-site/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!.aider-desk/*'
+  - '!llms.txt'
 extraResources:
   - from: ./resources/connector
     to: connector
