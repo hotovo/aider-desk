@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.45.0]
 
 - improved worktree merge functionality with support for custom target branches and commit messages
 - added visual status indicators for worktrees (ahead commits, uncommitted changes, conflict predictions)
