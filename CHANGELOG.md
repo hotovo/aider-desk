@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.45.1]
 
 - using ollama_chat/ prefix for ollama models in Aider modes to fix 'parsing chunk' issue with gpt-oss models
 
