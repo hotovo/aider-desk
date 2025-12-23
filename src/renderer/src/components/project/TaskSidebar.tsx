@@ -14,6 +14,7 @@ import { HiXMark } from 'react-icons/hi2';
 import { useDebounce, useLongPress } from '@reactuses/core';
 
 import { useTask } from '@/contexts/TaskContext';
+import { getSortedVisibleTasks } from '@/utils/taskUtils';
 import { Input } from '@/components/common/Input';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { Button } from '@/components/common/Button';
@@ -361,26 +362,7 @@ const TaskSidebarComponent = ({
     setIsMultiselectMenuOpen(false);
   });
 
-  const sortedTasks = tasks
-    .filter((task) => showArchived || !task.archived)
-    .filter((task) => {
-      if (!debouncedSearchQuery.trim()) {
-        return true;
-      }
-      const searchText = debouncedSearchQuery.toLowerCase();
-      return task.name.toLowerCase().includes(searchText);
-    })
-    .sort((a, b) => {
-      if (a.updatedAt && !b.updatedAt) {
-        return 1;
-      } else if (!a.updatedAt && b.updatedAt) {
-        return -1;
-      } else if (!a.updatedAt && !b.updatedAt) {
-        return 0;
-      } else {
-        return b.updatedAt!.localeCompare(a.updatedAt!);
-      }
-    });
+  const sortedTasks = getSortedVisibleTasks(tasks, showArchived, debouncedSearchQuery);
 
   const handleTaskClick = (e: MouseEvent, taskId: string) => {
     if (e.ctrlKey || e.metaKey) {

@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { Model, ProviderProfile } from '@common/types';
 import { LlmProviderName } from '@common/agent';
 
 import { ModelDialog } from './ModelDialog';
 import { ProviderSelection } from './ProviderSelection';
 import { ProviderProfileForm } from './ProviderProfileForm';
+import { ProviderProfileDialog } from './ProviderProfileDialog';
 import { ProviderHeader } from './ProviderHeader';
 import { ModelTableSection } from './ModelTableSection';
 
@@ -13,11 +15,13 @@ import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 
 type Props = {
+  isVisible: boolean;
   onClose: () => void;
 };
 
-export const ModelLibrary = ({ onClose }: Props) => {
+export const ModelLibrary = ({ isVisible, onClose }: Props) => {
   const { t } = useTranslation();
+  const containerRef = useRef<HTMLDivElement>(null);
   const {
     models,
     providers,
@@ -38,6 +42,37 @@ export const ModelLibrary = ({ onClose }: Props) => {
   const [showModelDialog, setShowModelDialog] = useState(false);
   const hasProfiles = providers.length > 0;
 
+  const handleCancelConfigure = () => {
+    setConfiguringProvider(null);
+    setEditingProfile(undefined);
+    setShowProviderSelection(false);
+  };
+
+  const handleClose = () => {
+    if (showModelDialog) {
+      setShowModelDialog(false);
+      setEditingModel(undefined);
+    } else if (editingProfile) {
+      setEditingProfile(undefined);
+    } else if (configuringProvider || showProviderSelection) {
+      handleCancelConfigure();
+    } else {
+      onClose();
+    }
+  };
+
+  useHotkeys('esc', handleClose, {
+    enabled: isVisible,
+    enableOnFormTags: true,
+    enableOnContentEditable: true,
+  });
+
+  useEffect(() => {
+    if (isVisible) {
+      containerRef.current?.focus();
+    }
+  }, [isVisible]);
+
   const handleToggleProviderSelect = (profileId: string) => {
     setSelectedProviderIds((prev) => (prev.includes(profileId) ? prev.filter((id) => id !== profileId) : [...prev, profileId]));
   };
@@ -54,18 +89,11 @@ export const ModelLibrary = ({ onClose }: Props) => {
 
   const handleEditProfile = (profile: ProviderProfile) => {
     setEditingProfile(profile);
-    setConfiguringProvider(profile.provider.name);
   };
 
   const handleDeleteProfile = async (profile: ProviderProfile) => {
     await deleteProvider(profile.id);
     setSelectedProviderIds((prev) => prev.filter((id) => id !== profile.id));
-  };
-
-  const handleCancelConfigure = () => {
-    setConfiguringProvider(null);
-    setEditingProfile(undefined);
-    setShowProviderSelection(false);
   };
 
   const handleSaveProfile = async (profile: ProviderProfile) => {
@@ -116,65 +144,81 @@ export const ModelLibrary = ({ onClose }: Props) => {
   // Show provider selection when adding new provider
   if (showProviderSelection || (!hasProfiles && !configuringProvider)) {
     return (
-      <ModalOverlayLayout title={t('modelLibrary.title')} onClose={onClose}>
-        <div className="p-10">
-          <ProviderSelection onSelectProvider={handleSelectProvider} onCancel={handleCancelConfigure} />
-        </div>
-      </ModalOverlayLayout>
+      <div ref={containerRef} tabIndex={-1} className="h-full outline-none">
+        <ModalOverlayLayout title={t('modelLibrary.title')} onClose={onClose}>
+          <div className="p-10">
+            <ProviderSelection onSelectProvider={handleSelectProvider} onCancel={handleCancelConfigure} />
+          </div>
+        </ModalOverlayLayout>
+      </div>
     );
   }
 
   // Show provider configuration form
   if (configuringProvider) {
     return (
-      <ModalOverlayLayout title={t('modelLibrary.title')} onClose={onClose}>
-        <ProviderProfileForm
-          provider={configuringProvider}
-          editProfile={editingProfile}
-          providers={providers}
-          onSave={handleSaveProfile}
-          onCancel={handleCancelConfigure}
-        />
-      </ModalOverlayLayout>
+      <div ref={containerRef} tabIndex={-1} className="h-full outline-none">
+        <ModalOverlayLayout title={t('modelLibrary.title')} onClose={onClose}>
+          <ProviderProfileForm
+            key={configuringProvider}
+            provider={configuringProvider}
+            editProfile={editingProfile}
+            providers={providers}
+            onSave={handleSaveProfile}
+            onCancel={handleCancelConfigure}
+          />
+        </ModalOverlayLayout>
+      </div>
     );
   }
 
   return (
-    <ModalOverlayLayout title={t('modelLibrary.title')} onClose={onClose}>
-      {showModelDialog && (
-        <ModelDialog
-          model={editingModel}
-          providers={providers}
-          onSave={handleSaveModel}
-          onCancel={() => {
-            setShowModelDialog(false);
-            setEditingModel(undefined);
-          }}
-        />
-      )}
-      <div className="flex flex-col h-full overflow-hidden">
-        <ProviderHeader
-          providers={providers}
-          providerErrors={providerErrors}
-          selectedProfileIds={selectedProviderIds}
-          onToggleSelect={handleToggleProviderSelect}
-          onAddProvider={handleAddProvider}
-          onEditProfile={handleEditProfile}
-          onDeleteProfile={handleDeleteProfile}
-        />
-        <ModelTableSection
-          models={models}
-          selectedProviderIds={selectedProviderIds}
-          providers={providers}
-          onAddModel={handleAddModel}
-          onEditModel={handleEditModel}
-          onDeleteModel={handleDeleteModel}
-          onToggleHidden={handleToggleHidden}
-          onBulkToggleHidden={handleBulkToggleHidden}
-          onRefreshModels={refresh}
-          modelsLoading={modelsLoading}
-        />
-      </div>
-    </ModalOverlayLayout>
+    <div ref={containerRef} tabIndex={-1} className="h-full outline-none">
+      <ModalOverlayLayout title={t('modelLibrary.title')} onClose={onClose}>
+        {showModelDialog && (
+          <ModelDialog
+            model={editingModel}
+            providers={providers}
+            onSave={handleSaveModel}
+            onCancel={() => {
+              setShowModelDialog(false);
+              setEditingModel(undefined);
+            }}
+          />
+        )}
+        {editingProfile && (
+          <ProviderProfileDialog
+            provider={editingProfile.provider.name}
+            editProfile={editingProfile}
+            providers={providers}
+            onSave={handleSaveProfile}
+            onCancel={() => setEditingProfile(undefined)}
+          />
+        )}
+        <div className="flex flex-col h-full overflow-hidden">
+          <ProviderHeader
+            providers={providers}
+            providerErrors={providerErrors}
+            selectedProfileIds={selectedProviderIds}
+            onToggleSelect={handleToggleProviderSelect}
+            onAddProvider={handleAddProvider}
+            onEditProfile={handleEditProfile}
+            onDeleteProfile={handleDeleteProfile}
+          />
+          <ModelTableSection
+            models={models}
+            selectedProviderIds={selectedProviderIds}
+            providers={providers}
+            onAddModel={handleAddModel}
+            onEditModel={handleEditModel}
+            onDeleteModel={handleDeleteModel}
+            onToggleHidden={handleToggleHidden}
+            onBulkToggleHidden={handleBulkToggleHidden}
+            onRefreshModels={refresh}
+            modelsLoading={modelsLoading}
+          />
+        </div>
+      </ModalOverlayLayout>
+    </div>
   );
 };

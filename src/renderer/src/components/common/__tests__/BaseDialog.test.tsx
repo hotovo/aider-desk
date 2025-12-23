@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import { HotkeysProvider } from 'react-hotkeys-hook';
 
 import { BaseDialog } from '../BaseDialog';
 
@@ -20,9 +21,11 @@ describe('BaseDialog', () => {
     const title = 'Test Dialog';
     const content = 'Dialog Content';
     render(
-      <BaseDialog title={title} onClose={vi.fn()}>
-        <div>{content}</div>
-      </BaseDialog>,
+      <HotkeysProvider initiallyActiveScopes={['dialog']}>
+        <BaseDialog title={title} onClose={vi.fn()}>
+          <div>{content}</div>
+        </BaseDialog>
+      </HotkeysProvider>,
     );
 
     expect(screen.getByText(title)).toBeInTheDocument();
@@ -32,9 +35,11 @@ describe('BaseDialog', () => {
   it('calls onClose when close button is clicked', () => {
     const onClose = vi.fn();
     render(
-      <BaseDialog title="Test" onClose={onClose}>
-        <div>Content</div>
-      </BaseDialog>,
+      <HotkeysProvider initiallyActiveScopes={['dialog']}>
+        <BaseDialog title="Test" onClose={onClose}>
+          <div>Content</div>
+        </BaseDialog>
+      </HotkeysProvider>,
     );
 
     fireEvent.click(screen.getByText('common.cancel'));
@@ -44,33 +49,39 @@ describe('BaseDialog', () => {
   it('calls onClose when Escape key is pressed', () => {
     const onClose = vi.fn();
     render(
-      <BaseDialog title="Test" onClose={onClose}>
-        <div>Content</div>
-      </BaseDialog>,
+      <HotkeysProvider initiallyActiveScopes={['dialog']}>
+        <BaseDialog title="Test" onClose={onClose}>
+          <div>Content</div>
+        </BaseDialog>
+      </HotkeysProvider>,
     );
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('does not call onClose when Escape key is pressed and closeOnEscape is false', () => {
     const onClose = vi.fn();
     render(
-      <BaseDialog title="Test" onClose={onClose} closeOnEscape={false}>
-        <div>Content</div>
-      </BaseDialog>,
+      <HotkeysProvider initiallyActiveScopes={['dialog']}>
+        <BaseDialog title="Test" onClose={onClose} closeOnEscape={false}>
+          <div>Content</div>
+        </BaseDialog>
+      </HotkeysProvider>,
     );
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(onClose).not.toHaveBeenCalled();
   });
 
   it('renders custom footer when provided', () => {
     const footer = <button data-testid="custom-footer">Custom Button</button>;
     render(
-      <BaseDialog title="Test" onClose={vi.fn()} footer={footer}>
-        <div>Content</div>
-      </BaseDialog>,
+      <HotkeysProvider initiallyActiveScopes={['dialog']}>
+        <BaseDialog title="Test" onClose={vi.fn()} footer={footer}>
+          <div>Content</div>
+        </BaseDialog>
+      </HotkeysProvider>,
     );
 
     expect(screen.getByTestId('custom-footer')).toBeInTheDocument();

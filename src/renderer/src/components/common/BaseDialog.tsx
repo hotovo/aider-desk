@@ -1,7 +1,8 @@
 import { FocusTrap } from 'focus-trap-react';
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 type Props = {
   title: string;
@@ -18,28 +19,22 @@ export const BaseDialog = ({ title, onClose, children, contentClass, footer, wid
   const { t } = useTranslation();
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!closeOnEscape) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose?.();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeOnEscape, onClose]);
+  useHotkeys(
+    'escape',
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClose?.();
+    },
+    { enabled: closeOnEscape, enableOnFormTags: true, enableOnContentEditable: true, scopes: 'dialog' },
+  );
 
   return (
-    <div className="fixed inset-0 top-0 bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <FocusTrap
-        focusTrapOptions={{
-          allowOutsideClick: true,
-        }}
-      >
+    <div
+      className="fixed inset-0 top-0 bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
+      data-dialog-open="true"
+    >
+      <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: false }}>
         <div
           style={{ width: `${width}px` }}
           className="bg-bg-secondary-light-strongest shadow-2xl rounded-xl border border-bg-tertiary-strong max-h-[90vh] flex flex-col"

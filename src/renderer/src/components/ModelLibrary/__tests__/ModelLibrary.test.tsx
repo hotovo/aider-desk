@@ -86,12 +86,12 @@ describe('ModelLibrary', () => {
   });
 
   it('renders ProviderSelection when no profiles are present', () => {
-    render(<ModelLibrary onClose={vi.fn()} />);
+    render(<ModelLibrary isVisible={true} onClose={vi.fn()} />);
     expect(screen.getByTestId('provider-selection')).toBeInTheDocument();
   });
 
   it('renders ProviderProfileForm when a provider is selected', () => {
-    render(<ModelLibrary onClose={vi.fn()} />);
+    render(<ModelLibrary isVisible={true} onClose={vi.fn()} />);
     fireEvent.click(screen.getByText('Select OpenAI'));
     expect(screen.getByTestId('provider-profile-form')).toBeInTheDocument();
   });
@@ -102,7 +102,7 @@ describe('ModelLibrary', () => {
       providers: [{ id: '1', name: 'OpenAI', provider: { name: 'openai' } } as unknown as ProviderProfile],
     });
 
-    render(<ModelLibrary onClose={vi.fn()} />);
+    render(<ModelLibrary isVisible={true} onClose={vi.fn()} />);
     expect(screen.queryByTestId('provider-selection')).not.toBeInTheDocument();
     expect(screen.getByText('modelLibrary.title')).toBeInTheDocument();
   });
@@ -113,7 +113,7 @@ describe('ModelLibrary', () => {
       providers: [{ id: '1', name: 'OpenAI', provider: { name: 'openai' } } as unknown as ProviderProfile],
     });
 
-    render(<ModelLibrary onClose={vi.fn()} />);
+    render(<ModelLibrary isVisible={true} onClose={vi.fn()} />);
 
     fireEvent.click(screen.getByText('Add Model'));
     expect(screen.getByTestId('model-dialog')).toBeInTheDocument();

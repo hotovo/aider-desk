@@ -3,7 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
 import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
+import { useHotkeys } from 'react-hotkeys-hook';
 
+import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
 import { IconButton } from '@/components/common/IconButton';
 import { NoProjectsOpen } from '@/components/project/NoProjectsOpen';
@@ -31,28 +33,17 @@ export const Home = () => {
   const { t } = useTranslation();
   const { versions } = useVersions();
   const api = useApi();
+  const { PROJECT_HOTKEYS } = useConfiguredHotkeys();
   const [openProjects, setOpenProjects] = useState<ProjectData[]>([]);
   const [previousProjectBaseDir, setPreviousProjectBaseDir] = useState<string | null>(null);
   const [isOpenProjectDialogVisible, setIsOpenProjectDialogVisible] = useState(false);
-  const [isCtrlPressed, setIsCtrlPressed] = useState(false);
-  const [isTabbing, setIsTabbing] = useState(false);
   const [showSettingsInfo, setShowSettingsInfo] = useState<ShowSettingsInfo | null>(null);
   const [releaseNotesContent, setReleaseNotesContent] = useState<string | null>(null);
   const [isUsageDashboardVisible, setIsUsageDashboardVisible] = useState(false);
   const [isModelLibraryVisible, setIsModelLibraryVisible] = useState(false);
+  const [isCtrlTabbing, setIsCtrlTabbing] = useState(false);
 
   const activeProject = openProjects.find((project) => project.active) || openProjects[0];
-
-  const handleShowSettingsPage = useCallback((pageId?: string, options?: Record<string, unknown>) => {
-    if (pageId) {
-      setShowSettingsInfo({
-        pageId,
-        options,
-      });
-    } else {
-      setShowSettingsInfo(null);
-    }
-  }, []);
 
   const handleReorderProjects = async (reorderedProjects: ProjectData[]) => {
     setOpenProjects(reorderedProjects);
@@ -124,55 +115,210 @@ export const Home = () => {
     [api],
   );
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Control') {
-        setIsCtrlPressed(true);
-      }
+  const handleCloseProject = useCallback(
+    async (projectBaseDir: string) => {
+      const updatedProjects = await api.removeOpenProject(projectBaseDir);
+      setOpenProjects(updatedProjects);
+    },
+    [api],
+  );
 
-      if (e.key === 'Tab' && isCtrlPressed && openProjects.length > 1) {
-        e.preventDefault();
-        setIsTabbing(true);
-        if (!isTabbing && previousProjectBaseDir && openProjects.some((project) => project.baseDir === previousProjectBaseDir)) {
-          // First TAB press - switch to previous tab
-          setPreviousProjectBaseDir(activeProject?.baseDir);
-          void setActiveProject(previousProjectBaseDir);
-        } else {
-          // Subsequent TAB presses - cycle through tabs
-          const currentIndex = openProjects.findIndex((project) => project.baseDir === activeProject?.baseDir);
-          const nextIndex = (currentIndex + 1) % openProjects.length;
-          void setActiveProject(openProjects[nextIndex].baseDir);
-          setPreviousProjectBaseDir(activeProject?.baseDir);
+  // Close current project tab
+  useHotkeys(
+    PROJECT_HOTKEYS.CLOSE_PROJECT,
+    (e) => {
+      e.preventDefault();
+      if (activeProject) {
+        void handleCloseProject(activeProject.baseDir);
+      }
+    },
+    { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
+    [activeProject, handleCloseProject, PROJECT_HOTKEYS.CLOSE_PROJECT],
+  );
+
+  // Open new project dialog
+  useHotkeys(
+    PROJECT_HOTKEYS.NEW_PROJECT,
+    (e) => {
+      e.preventDefault();
+      setIsOpenProjectDialogVisible(true);
+    },
+    { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
+    [PROJECT_HOTKEYS.NEW_PROJECT, setIsOpenProjectDialogVisible],
+  );
+
+  // Open usage dashboard
+  useHotkeys(
+    PROJECT_HOTKEYS.USAGE_DASHBOARD,
+    (e) => {
+      e.preventDefault();
+      setIsUsageDashboardVisible(true);
+    },
+    { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
+    [PROJECT_HOTKEYS.USAGE_DASHBOARD, setIsUsageDashboardVisible],
+  );
+
+  // Open model library
+  useHotkeys(
+    PROJECT_HOTKEYS.MODEL_LIBRARY,
+    (e) => {
+      e.preventDefault();
+      setIsModelLibraryVisible(true);
+    },
+    { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
+    [PROJECT_HOTKEYS.MODEL_LIBRARY, setIsModelLibraryVisible],
+  );
+
+  // Open settings
+  useHotkeys(
+    PROJECT_HOTKEYS.SETTINGS,
+    (e) => {
+      e.preventDefault();
+      setShowSettingsInfo({
+        pageId: 'general',
+      });
+    },
+    { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
+    [PROJECT_HOTKEYS.SETTINGS, setShowSettingsInfo],
+  );
+
+  // Close overlays on Escape
+  useHotkeys(
+    'esc',
+    (e) => {
+      e.preventDefault();
+      if (isUsageDashboardVisible) {
+        setIsUsageDashboardVisible(false);
+      } else if (isOpenProjectDialogVisible) {
+        setIsOpenProjectDialogVisible(false);
+      } else if (releaseNotesContent) {
+        void api.clearReleaseNotes();
+        setReleaseNotesContent(null);
+      }
+    },
+    {
+      enabled: !!(isUsageDashboardVisible || isOpenProjectDialogVisible || releaseNotesContent),
+      scopes: 'home',
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+    },
+    [isUsageDashboardVisible, isOpenProjectDialogVisible, releaseNotesContent, api],
+  );
+
+  const switchToProjectByIndex = useCallback(
+    (index: number) => {
+      if (index < openProjects.length) {
+        const targetProject = openProjects[index];
+        if (targetProject && targetProject.baseDir !== activeProject?.baseDir) {
+          void setActiveProject(targetProject.baseDir);
         }
       }
     },
-    [isCtrlPressed, activeProject?.baseDir, openProjects, previousProjectBaseDir, isTabbing, setActiveProject],
+    [openProjects, activeProject, setActiveProject],
   );
 
-  const handleKeyUp = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Control') {
-      setIsCtrlPressed(false);
-      setIsTabbing(false);
-    }
-  }, []);
+  // Switch to specific project tabs (Alt/Cmd + 1-9)
+  useHotkeys(
+    [
+      PROJECT_HOTKEYS.SWITCH_PROJECT_1,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_2,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_3,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_4,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_5,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_6,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_7,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_8,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_9,
+    ].join(','),
+    (e) => {
+      e.preventDefault();
+      const key = e.key;
+      const index = parseInt(key) - 1;
+      switchToProjectByIndex(index);
+    },
+    { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
+    [
+      openProjects,
+      activeProject,
+      setActiveProject,
+      switchToProjectByIndex,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_1,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_2,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_3,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_4,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_5,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_6,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_7,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_8,
+      PROJECT_HOTKEYS.SWITCH_PROJECT_9,
+    ],
+  );
 
+  // Ctrl+Tab cycling (forward)
+  useHotkeys(
+    PROJECT_HOTKEYS.CYCLE_NEXT_PROJECT,
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (openProjects.length <= 1) {
+        return;
+      }
+
+      setIsCtrlTabbing(true);
+      if (!isCtrlTabbing && previousProjectBaseDir && openProjects.some((project) => project.baseDir === previousProjectBaseDir)) {
+        setPreviousProjectBaseDir(activeProject?.baseDir || null);
+        void setActiveProject(previousProjectBaseDir);
+      } else {
+        const currentIndex = openProjects.findIndex((project) => project.baseDir === activeProject?.baseDir);
+        const nextIndex = (currentIndex + 1) % openProjects.length;
+        void setActiveProject(openProjects[nextIndex].baseDir);
+        setPreviousProjectBaseDir(activeProject?.baseDir || null);
+      }
+    },
+    { scopes: 'home', keydown: true, keyup: false, enableOnFormTags: true, enableOnContentEditable: true },
+    [openProjects, activeProject, previousProjectBaseDir, isCtrlTabbing, setActiveProject, PROJECT_HOTKEYS.CYCLE_NEXT_PROJECT],
+  );
+
+  // Ctrl+Shift+Tab cycling (backward)
+  useHotkeys(
+    PROJECT_HOTKEYS.CYCLE_PREV_PROJECT,
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (openProjects.length <= 1) {
+        return;
+      }
+
+      setIsCtrlTabbing(true);
+      if (!isCtrlTabbing && previousProjectBaseDir && openProjects.some((project) => project.baseDir === previousProjectBaseDir)) {
+        setPreviousProjectBaseDir(activeProject?.baseDir || null);
+        void setActiveProject(previousProjectBaseDir);
+      } else {
+        const currentIndex = openProjects.findIndex((project) => project.baseDir === activeProject?.baseDir);
+        const prevIndex = (currentIndex - 1 + openProjects.length) % openProjects.length;
+        void setActiveProject(openProjects[prevIndex].baseDir);
+        setPreviousProjectBaseDir(activeProject?.baseDir || null);
+      }
+    },
+    { scopes: 'home', keydown: true, keyup: false, enableOnFormTags: true, enableOnContentEditable: true },
+    [openProjects, activeProject, previousProjectBaseDir, isCtrlTabbing, setActiveProject, PROJECT_HOTKEYS.CYCLE_PREV_PROJECT],
+  );
+
+  // Reset Ctrl+Tab state on Control key up
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Control') {
+        setIsCtrlTabbing(false);
+      }
     };
-  }, [handleKeyDown, handleKeyUp]);
+
+    window.addEventListener('keyup', handleKeyUp);
+    return () => window.removeEventListener('keyup', handleKeyUp);
+  }, []);
 
   const handleAddProject = async (baseDir: string) => {
     const projects = await api.addOpenProject(baseDir);
     setOpenProjects(projects);
-  };
-
-  const handleCloseProject = async (projectBaseDir: string) => {
-    const updatedProjects = await api.removeOpenProject(projectBaseDir);
-    setOpenProjects(updatedProjects);
   };
 
   const handleCloseOtherProjects = async (baseDir: string) => {
@@ -203,7 +349,7 @@ export const Home = () => {
             display: activeProject?.baseDir === project.baseDir ? 'block' : 'none',
           }}
         >
-          <ProjectView project={project} isActive={activeProject?.baseDir === project.baseDir} showSettingsPage={handleShowSettingsPage} />
+          <ProjectView project={project} isActive={activeProject?.baseDir === project.baseDir} />
         </div>
       </ProjectSettingsProvider>
     ));
@@ -295,7 +441,7 @@ export const Home = () => {
           />
         )}
         {isUsageDashboardVisible && <UsageDashboard onClose={() => setIsUsageDashboardVisible(false)} />}
-        {isModelLibraryVisible && <ModelLibrary onClose={() => setIsModelLibraryVisible(false)} />}
+        {isModelLibraryVisible && <ModelLibrary isVisible={isModelLibraryVisible} onClose={() => setIsModelLibraryVisible(false)} />}
         {releaseNotesContent && versions && (
           <HtmlInfoDialog
             title={`${t('settings.about.releaseNotes')} - ${versions.aiderDeskCurrentVersion}`}

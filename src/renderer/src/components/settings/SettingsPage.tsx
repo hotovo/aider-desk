@@ -1,7 +1,8 @@
 import { ProjectData, ProviderProfile, SettingsData } from '@common/types';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 import { Settings } from '@/pages/Settings';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -61,7 +62,7 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
     return settingsChanged || agentProfilesChanged || providersChanged;
   }, [localSettings, originalSettings, agentProfiles, originalAgentProfiles, providers, originalProviders]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (originalSettings && localSettings?.language !== originalSettings.language) {
       void i18n.changeLanguage(originalSettings.language);
     }
@@ -88,7 +89,7 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
     setAgentProfiles(originalAgentProfiles);
     setProviders(originalProviders);
     onClose();
-  };
+  }, [originalSettings, localSettings, i18n, api, setTheme, setFont, setFontSize, originalAgentProfiles, originalProviders, onClose]);
 
   const handleSave = async () => {
     if (localSettings) {
@@ -149,6 +150,17 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
 
     onClose();
   };
+
+  useHotkeys(
+    'esc',
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleCancel();
+    },
+    { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
+    [handleCancel],
+  );
 
   const handleLanguageChange = (language: string) => {
     if (localSettings) {

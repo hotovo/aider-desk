@@ -11,6 +11,14 @@ vi.mock('@/contexts/ApiContext', () => ({
   useApi: vi.fn(),
 }));
 
+vi.mock('@/hooks/useConfiguredHotkeys', async () => {
+  const { getHotkeys } = await import('@/utils/hotkeys');
+
+  return {
+    useConfiguredHotkeys: () => getHotkeys(),
+  };
+});
+
 describe('OpenProjectDialog', () => {
   const mockApi = {
     getOpenProjects: vi.fn(() => Promise.resolve([])),

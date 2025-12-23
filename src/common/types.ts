@@ -467,6 +467,44 @@ export const FONTS = [
 ] as const;
 export type Font = (typeof FONTS)[number];
 
+export interface HotkeyConfig {
+  projectHotkeys: {
+    closeProject: string;
+    newProject: string;
+    usageDashboard: string;
+    modelLibrary: string;
+    settings: string;
+    cycleNextProject: string;
+    cyclePrevProject: string;
+    switchProject1: string;
+    switchProject2: string;
+    switchProject3: string;
+    switchProject4: string;
+    switchProject5: string;
+    switchProject6: string;
+    switchProject7: string;
+    switchProject8: string;
+    switchProject9: string;
+  };
+  taskHotkeys: {
+    switchTask1: string;
+    switchTask2: string;
+    switchTask3: string;
+    switchTask4: string;
+    switchTask5: string;
+    switchTask6: string;
+    switchTask7: string;
+    switchTask8: string;
+    switchTask9: string;
+    focusPrompt: string;
+    newTask: string;
+    closeTask: string;
+  };
+  dialogHotkeys: {
+    browseFolder: string;
+  };
+}
+
 export enum MemoryEmbeddingProvider {
   SentenceTransformers = 'sentence-transformers',
 }
@@ -547,6 +585,7 @@ export interface SettingsData {
     };
   };
   memory: MemoryConfig;
+  hotkeyConfig?: HotkeyConfig;
 }
 
 export interface ProviderProfile {
