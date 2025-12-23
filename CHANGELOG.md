@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- using ollama_chat/ prefix for ollama models in Aider modes to fix 'parsing chunk' issue with gpt-oss models
+
 ## [0.45.0]
 
 - improved worktree merge functionality with support for custom target branches and commit messages
