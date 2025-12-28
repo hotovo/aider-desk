@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.46.0]
 
 - added Vitest testing framework
 - added Writing Tests skill
