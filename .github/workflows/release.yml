@@ -266,8 +266,17 @@ jobs:
       - name: Find draft release tag
         id: find-release
         run: |
-          # Get the draft release tag
-          RELEASE_TAG=$(gh release list --limit 1 --json tagName,isDraft --jq '.[] | select(.isDraft == true) | .tagName')
+          # Get the draft release tag using REST API
+          REPO="${GITHUB_REPOSITORY}"
+          RELEASE_TAG=$(curl -fsSL \
+            -H "Authorization: token ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/releases" \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s).find(x=>x.draft); if(!r){process.exit(1)}; console.log(r.tag_name)})")
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "Could not find draft release tag" >&2
+            exit 1
+          fi
           echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
           echo "tag_name=${RELEASE_TAG#v}" >> $GITHUB_OUTPUT
 
