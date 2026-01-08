@@ -257,7 +257,6 @@ jobs:
   release-docker:
     name: Release Docker image
     runs-on: ubuntu-latest
-    needs: [release-linux]
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
