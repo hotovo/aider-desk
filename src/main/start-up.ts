@@ -43,7 +43,9 @@ const checkUvAvailable = async (): Promise<void> => {
 
 const createVirtualEnv = async (): Promise<void> => {
   const command = `"${UV_EXECUTABLE}" venv "${PYTHON_VENV_DIR}" --python 3.12`;
-  logger.info(`Creating virtual environment with uv: ${command}`);
+  logger.info(`Creating virtual environment with uv: ${command}`, {
+    virtualEnv: PYTHON_VENV_DIR,
+  });
 
   await execAsync(command, {
     windowsHide: true,
@@ -132,7 +134,9 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
         // If currentVersion is null, the package is not installed, so proceed with installation.
       }
 
-      logger.info(`Installing package: ${pkg}`);
+      logger.info(`Installing package: ${pkg}`, {
+        virtualEnv: PYTHON_VENV_DIR,
+      });
       const { stdout, stderr } = await execAsync(installCommand, {
         windowsHide: true,
         env: {

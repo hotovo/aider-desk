@@ -17,6 +17,10 @@ if (process.env.AIDER_DESK_DATA_DIR) {
 }
 
 export const getDataDir = (): string => {
+  if (process.env.AIDER_DESK_DATA_DIR) {
+    return process.env.AIDER_DESK_DATA_DIR;
+  }
+
   if (isElectron()) {
     return getElectronApp()!.getPath('userData');
   }
@@ -26,6 +30,10 @@ export const getDataDir = (): string => {
 };
 
 export const getResourceDir = (): string => {
+  if (process.env.AIDER_DESK_RESOURCES_DIR) {
+    return process.env.AIDER_DESK_RESOURCES_DIR;
+  }
+
   if (isElectron()) {
     return isDev() ? path.join(__dirname, '..', '..', 'resources') : process.resourcesPath;
   }

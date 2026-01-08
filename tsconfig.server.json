@@ -20,7 +20,8 @@
     }
   },
   "include": [
-    "src/main/**/*"
+    "src/main/**/*",
+    "src/common/**/*"
   ],
   "exclude": ["node_modules", "src/main/index.ts"]
 }

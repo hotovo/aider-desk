@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build outputs (except what we need)
+out
+dist
+!out/server
+!out/resources
+
+# Development files
+.git
+.gitignore
+.vscode
+.idea
+*.log
+.env
+.env.*
+
+# Test files
+coverage
+*.test.ts
+*.spec.ts
+__tests__
+vitest.config.*.ts
+
+# Documentation
+*.md
+docs
+AGENTS.md
+CONVENTIONS.md
+
+# Config files that aren't needed in Docker
+electron-builder.yml
+.prettierrc*
+.eslintrc*
+.husky
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Other
+.editorconfig
+.prettierrc
+.eslintignore
+.gitattributes

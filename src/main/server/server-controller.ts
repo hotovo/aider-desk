@@ -136,7 +136,9 @@ export class ServerController {
 
     // Serve static renderer files in production (for browser access)
     if (!isElectron() || !isDev()) {
-      logger.info(`Serving static renderer files on port ${SERVER_PORT}...`);
+      logger.info(`Serving static renderer files on port ${SERVER_PORT}...`, {
+        dirname: __dirname,
+      });
       this.app.use(express.static(join(__dirname, '../renderer')));
       // Handle SPA routing: serve index.html for non-API routes
       this.app.get('*', (_, res) => {
