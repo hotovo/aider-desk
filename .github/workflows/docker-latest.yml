@@ -1,0 +1,41 @@
+name: Docker Latest Tag
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  tag-latest:
+    name: Tag Docker image as latest
+    runs-on: ubuntu-latest
+    if: github.event.release.prerelease == false
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Pull versioned Docker image
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository }}
+          VERSION=${{ github.event.release.tag_name }}
+          
+          docker pull ${IMAGE_NAME}:${VERSION}
+          
+          echo "Pulled image: ${IMAGE_NAME}:${VERSION}"
+
+      - name: Tag image as latest
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository }}
+          VERSION=${{ github.event.release.tag_name }}
+          
+          docker tag ${IMAGE_NAME}:${VERSION} ${IMAGE_NAME}:latest
+          
+          echo "Tagged ${IMAGE_NAME}:${VERSION} as ${IMAGE_NAME}:latest"
+
+      - name: Push latest tag
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository }}
+          
+          docker push ${IMAGE_NAME}:latest
+          
+          echo "Pushed latest tag: ${IMAGE_NAME}:latest"

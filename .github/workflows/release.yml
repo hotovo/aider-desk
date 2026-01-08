@@ -279,20 +279,19 @@ jobs:
           IMAGE_NAME=ghcr.io/${{ github.repository }}
           VERSION=${{ steps.get-version.outputs.version }}
           
-          docker build -t ${IMAGE_NAME}:${VERSION} -t ${IMAGE_NAME}:latest .
+          docker build -t ${IMAGE_NAME}:${VERSION} .
           
           echo "Built images:"
           docker images | grep ${IMAGE_NAME}
 
-      - name: Push Docker images
+      - name: Push Docker image
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository }}
           VERSION=${{ steps.get-version.outputs.version }}
           
           docker push ${IMAGE_NAME}:${VERSION}
-          docker push ${IMAGE_NAME}:latest
           
-          echo "Pushed images to ghcr.io/${{ github.repository }}"
+          echo "Pushed image: ${IMAGE_NAME}:${VERSION}"
 
   combine-macos-yml:
     name: Combine macOS yml files
