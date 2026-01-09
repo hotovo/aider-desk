@@ -17,6 +17,7 @@ import { MemorySettings } from '@/components/settings/MemorySettings';
 import { VoiceSettings } from '@/components/settings/VoiceSettings';
 import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
 import { TaskSettings } from '@/components/settings/TaskSettings';
+import { TerminalSettings } from '@/components/settings/TerminalSettings';
 
 type Props = {
   settings: SettingsData;
@@ -35,7 +36,7 @@ type Props = {
   setProviders?: (providers: ProviderProfile[]) => void;
 };
 
-type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'about';
+type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'terminal' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'about';
 
 interface SidebarItem {
   id: string;
@@ -128,6 +129,12 @@ export const Settings = ({
       pageId: 'tasks',
       label: t('settings.tabs.tasks'),
       icon: <LuClipboardList className="w-4 h-4" />,
+    },
+    {
+      id: 'terminal',
+      pageId: 'terminal',
+      label: t('settings.tabs.terminal'),
+      icon: <MdTerminal className="w-4 h-4" />,
     },
     {
       id: 'memory',
@@ -248,6 +255,8 @@ export const Settings = ({
         return <MemorySettings settings={settings} setSettings={updateSettings} />;
       case 'tasks':
         return <TaskSettings settings={settings} setSettings={updateSettings} />;
+      case 'terminal':
+        return <TerminalSettings settings={settings} setSettings={updateSettings} />;
       case 'voice':
         return <VoiceSettings providers={providers} setProviders={setProviders} initialProviderId={initialOptions?.providerId as string | undefined} />;
       case 'hotkeys':

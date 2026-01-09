@@ -22,6 +22,7 @@ import {
   AgentProfile,
   MemoryEntry,
   MemoryEmbeddingProgress,
+  ShellInfo,
 } from '@common/types';
 
 /**
@@ -194,6 +195,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
 
     // Terminal operations
     isTerminalSupported: vi.fn((): boolean => true),
+    getAvailableShells: vi.fn((): Promise<ShellInfo[]> => Promise.resolve([])),
     createTerminal: vi.fn((): Promise<string> => Promise.resolve('mock-terminal-id')),
     writeToTerminal: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     resizeTerminal: vi.fn((): Promise<boolean> => Promise.resolve(true)),

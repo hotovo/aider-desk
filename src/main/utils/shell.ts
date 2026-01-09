@@ -12,7 +12,7 @@ const execAsync = promisify(exec);
 let cachedPath: string | null = null;
 let isFirstCall: boolean = true;
 
-interface ShellInfo {
+export interface ShellInfo {
   path: string;
   name: string;
   args?: string[];
@@ -204,6 +204,72 @@ class ShellDetector {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Get all available shells on the system
+   * @returns Array of available shells
+   */
+  static getAvailableShells(): ShellInfo[] {
+    const shells: ShellInfo[] = [];
+    const platform = process.platform;
+
+    if (platform === 'win32') {
+      const pwshPath = this.findExecutable('pwsh.exe');
+      if (pwshPath) shells.push({ path: pwshPath, name: 'pwsh' });
+
+      const powershellPath = this.findExecutable('powershell.exe');
+      if (powershellPath) shells.push({ path: powershellPath, name: 'powershell' });
+
+      const cmdPath = path.join(process.env.SYSTEMROOT || 'C:\\Windows', 'System32', 'cmd.exe');
+      if (fs.existsSync(cmdPath)) shells.push({ path: cmdPath, name: 'cmd' });
+
+      // Git Bash
+      const gitBashPath = path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'Git', 'bin', 'bash.exe');
+      if (fs.existsSync(gitBashPath)) shells.push({ path: gitBashPath, name: 'git-bash' });
+    } else {
+      const commonShells = [
+        '/usr/local/bin/zsh',
+        '/bin/zsh',
+        '/usr/bin/zsh',
+        '/usr/local/bin/fish',
+        '/usr/bin/fish',
+        '/usr/local/bin/bash',
+        '/bin/bash',
+        '/usr/bin/bash',
+        '/bin/sh',
+        '/usr/bin/sh',
+      ];
+
+      const seen = new Set<string>();
+      for (const shellPath of commonShells) {
+        if (fs.existsSync(shellPath) && !seen.has(shellPath)) {
+          const name = path.basename(shellPath);
+          shells.push({ path: shellPath, name, args: this.getShellArgs(name) });
+          seen.add(shellPath);
+        }
+      }
+
+      // Also check /etc/shells
+      try {
+        if (fs.existsSync('/etc/shells')) {
+          const content = fs.readFileSync('/etc/shells', 'utf8');
+          const lines = content.split('\n');
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed && !trimmed.startsWith('#') && fs.existsSync(trimmed) && !seen.has(trimmed)) {
+              const name = path.basename(trimmed);
+              shells.push({ path: trimmed, name, args: this.getShellArgs(name) });
+              seen.add(trimmed);
+            }
+          }
+        }
+      } catch {
+        // Ignore
+      }
+    }
+
+    return shells;
   }
 }
 
@@ -627,6 +693,10 @@ export const findExecutableInPath = (executable: string): string | null => {
     firstFewPaths: paths.slice(0, 5).join(', '),
   });
   return null;
+};
+
+export const getAvailableShells = (): ShellInfo[] => {
+  return ShellDetector.getAvailableShells();
 };
 
 // Wrapper for execAsync that includes enhanced PATH

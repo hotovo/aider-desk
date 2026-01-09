@@ -368,6 +368,7 @@
       "server": "服务器",
       "memory": "记忆",
       "tasks": "任务",
+      "terminal": "终端",
       "voice": "语音",
       "about": "关于"
     },
@@ -441,6 +442,14 @@
       "autoGenerateTaskNameTooltip": "启用后，模型会根据您的提示生成简洁的任务名称。禁用时，将使用提示的前5个词作为任务名称。",
       "showTaskStateActions": "显示任务状态操作",
       "showTaskStateActionsTooltip": "启用后，任务状态操作将显示在消息底部。禁用以隐藏这些操作。"
+    },
+    "terminal": {
+      "shell": "终端 Shell",
+      "shellPath": "Shell 路径",
+      "autoDetect": "自动检测",
+      "customShellPath": "自定义 Shell 路径",
+      "customShellPathPlaceholder": "例如 /bin/zsh 或 C:\\Program Files\\Git\\bin\\bash.exe",
+      "customShellPathDescription": "如果列表中没有您首选的 shell，请输入自定义 shell 路径。"
     },
     "language": "语言",
     "notifications": {

@@ -46,6 +46,7 @@ import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePath
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
 import { isElectron } from '@/app';
+import { getAvailableShells, ShellInfo } from '@/utils/shell';
 
 export class EventsHandler {
   constructor(
@@ -911,5 +912,9 @@ export class EventsHandler {
 
   getMemoryEmbeddingProgress() {
     return this.memoryManager.getProgress();
+  }
+
+  getAvailableShells(): ShellInfo[] {
+    return getAvailableShells();
   }
 }

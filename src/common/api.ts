@@ -46,6 +46,7 @@ import {
   BranchInfo,
   WorktreeIntegrationStatus,
   MemoryEmbeddingProgress,
+  ShellInfo,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -183,6 +184,7 @@ export interface ApplicationAPI {
 
   // Terminal operations
   isTerminalSupported: () => boolean;
+  getAvailableShells: () => Promise<ShellInfo[]>;
   createTerminal: (baseDir: string, taskId: string, cols?: number, rows?: number) => Promise<string>;
   writeToTerminal: (terminalId: string, data: string) => Promise<boolean>;
   resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;

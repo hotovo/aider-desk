@@ -45,6 +45,7 @@ import {
   MemoryEmbeddingProgress,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
+  ShellInfo,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -707,6 +708,9 @@ export class BrowserApi implements ApplicationAPI {
   }
   isTerminalSupported(): boolean {
     return false;
+  }
+  getAvailableShells(): Promise<ShellInfo[]> {
+    return this.get('/settings/available-shells');
   }
   createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {
     void baseDir;

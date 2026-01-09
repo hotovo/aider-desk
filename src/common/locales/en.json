@@ -366,6 +366,7 @@
       "aider": "Aider",
       "agents": "Agents",
       "tasks": "Tasks",
+      "terminal": "Terminal",
       "memory": "Memory",
       "voice": "Voice",
       "hotkeys": "Hotkeys",
@@ -442,6 +443,14 @@
       "autoGenerateTaskNameTooltip": "When enabled, the model generates a concise task name from your prompt. When disabled, the first 5 words of your prompt will be used as the task name.",
       "showTaskStateActions": "Show Task State Actions",
       "showTaskStateActionsTooltip": "When enabled, task state actions are displayed at the bottom of messages. Disable to hide these actions."
+    },
+    "terminal": {
+      "shell": "Terminal Shell",
+      "shellPath": "Shell Path",
+      "autoDetect": "Auto Detect",
+      "customShellPath": "Custom Shell Path",
+      "customShellPathPlaceholder": "e.g. /bin/zsh or C:\\Program Files\\Git\\bin\\bash.exe",
+      "customShellPathDescription": "Enter a custom shell path if your preferred shell is not in the list."
     },
     "language": "Language",
     "notifications": {

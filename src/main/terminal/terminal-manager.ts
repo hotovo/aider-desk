@@ -1,4 +1,5 @@
 import * as os from 'os';
+import * as path from 'path';
 
 import * as pty from '@homebridge/node-pty-prebuilt-multiarch';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,6 +8,7 @@ import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
 import { WorktreeManager } from '@/worktrees/worktree-manager';
+import { Store } from '@/store';
 
 export interface TerminalInstance {
   id: string;
@@ -23,10 +25,16 @@ export class TerminalManager {
   constructor(
     private readonly eventManager: EventManager,
     private readonly worktreeManager: WorktreeManager,
+    private readonly store: Store,
     private readonly telemetryManager?: TelemetryManager,
   ) {}
 
   private getShellCommand(): string {
+    const settings = this.store.getSettings();
+    if (settings.terminal?.shell) {
+      return settings.terminal.shell;
+    }
+
     const platform = os.platform();
 
     if (platform === 'win32') {
@@ -39,14 +47,15 @@ export class TerminalManager {
   }
 
   private getShellArgs(): string[] {
-    const platform = os.platform();
+    const shell = this.getShellCommand();
+    const shellName = path.basename(shell).toLowerCase();
 
-    if (platform === 'win32') {
-      const shell = this.getShellCommand();
-      if (shell.includes('powershell')) {
-        return ['-NoLogo'];
-      }
-      return [];
+    if (shellName.includes('powershell') || shellName.includes('pwsh')) {
+      return ['-NoLogo'];
+    }
+
+    if (shellName === 'bash' || shellName === 'zsh' || shellName === 'fish' || shellName === 'sh') {
+      return ['-i'];
     }
 
     return [];
