@@ -42,6 +42,7 @@ export type LlmProviderName =
   | 'gemini'
   | 'gpustack'
   | 'groq'
+  | 'litellm'
   | 'lmstudio'
   | 'minimax'
   | 'ollama'
@@ -80,6 +81,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'gemini',
   'gpustack',
   'groq',
+  'litellm',
   'lmstudio',
   'minimax',
   'ollama',
@@ -199,6 +201,13 @@ export interface OpenAiCompatibleProvider extends LlmProviderBase {
 }
 export const isOpenAiCompatibleProvider = (provider: LlmProviderBase): provider is OpenAiCompatibleProvider => provider.name === 'openai-compatible';
 
+export interface LitellmProvider extends LlmProviderBase {
+  name: 'litellm';
+  apiKey: string;
+  baseUrl: string;
+}
+export const isLitellmProvider = (provider: LlmProviderBase): provider is LitellmProvider => provider.name === 'litellm';
+
 export const isOllamaProvider = (provider: LlmProviderBase): provider is OllamaProvider => provider.name === 'ollama';
 
 export interface GpustackProvider extends LlmProviderBase {
@@ -262,6 +271,7 @@ export type LlmProvider =
   | GpustackProvider
   | CerebrasProvider
   | OpenAiCompatibleProvider
+  | LitellmProvider
   | OllamaProvider
   | OpenRouterProvider
   | RequestyProvider
@@ -590,6 +600,13 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         baseUrl: '',
         reasoningEffort: ReasoningEffort.None,
       } satisfies OpenAiCompatibleProvider;
+      break;
+    case 'litellm':
+      provider = {
+        name: 'litellm',
+        apiKey: '',
+        baseUrl: 'http://localhost:4000',
+      } satisfies LitellmProvider;
       break;
     case 'ollama':
       provider = {

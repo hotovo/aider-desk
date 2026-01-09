@@ -6,6 +6,7 @@ export { DeepseekIcon } from './DeepseekIcon';
 export { GeminiIcon } from './GeminiIcon';
 export { GpustackIcon } from './GpustackIcon';
 export { GroqIcon } from './GroqIcon';
+export { LitellmIcon } from './LitellmIcon';
 export { LmStudioIcon } from './LmStudioIcon';
 export { MinimaxIcon } from './MinimaxIcon';
 export { OllamaIcon } from './OllamaIcon';

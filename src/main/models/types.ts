@@ -1,30 +1,10 @@
 import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
-import { LlmProvider } from '@common/agent';
+import { LlmProvider, LlmProviderName } from '@common/agent';
 
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModelUsage, ToolSet } from 'ai';
 
 import { Task } from '@/task';
-
-export type LlmProviderName =
-  | 'anthropic'
-  | 'azure'
-  | 'bedrock'
-  | 'cerebras'
-  | 'deepseek'
-  | 'gemini'
-  | 'gpustack'
-  | 'groq'
-  | 'lmstudio'
-  | 'minimax'
-  | 'ollama'
-  | 'openai'
-  | 'openai-compatible'
-  | 'openrouter'
-  | 'requesty'
-  | 'synthetic'
-  | 'vertex-ai'
-  | 'zai-plan';
 
 export interface CacheControl {
   providerOptions: SharedV2ProviderOptions;
