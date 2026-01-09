@@ -25,10 +25,7 @@ __tests__
 vitest.config.*.ts
 
 # Documentation
-*.md
 docs
-AGENTS.md
-CONVENTIONS.md
 
 # Config files that aren't needed in Docker
 electron-builder.yml
@@ -42,6 +39,5 @@ Thumbs.db
 
 # Other
 .editorconfig
-.prettierrc
 .eslintignore
 .gitattributes

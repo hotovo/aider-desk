@@ -19,7 +19,7 @@ export default defineConfig({
       },
     },
     emptyOutDir: true,
-    target: 'node18',
+    target: 'node20',
     ssr: true,
   },
   plugins: [

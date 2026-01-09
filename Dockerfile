@@ -36,27 +36,22 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     gnupg \
-    lsb-release \
-    software-properties-common \
     curl \
     build-essential \
     python3-dev \
     git \
     procps \
-    && rm -rf /var/lib/apt/lists/*
-
-# Add deadsnakes PPA and install Python 3.12
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 || \
-    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys F23C5A6CF475977595C89F51BA6932366A755776 && \
-    echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/deadsnakes.list && \
-    echo "deb-src http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list.d/deadsnakes.list && \
-    apt-get update && \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -sSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF23C5A6CF475977595C89F51BA6932366A755776" | gpg --dearmor -o /etc/apt/keyrings/deadsnakes.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/deadsnakes.gpg] http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/deadsnakes.list \
+    && echo "deb-src [signed-by=/etc/apt/keyrings/deadsnakes.gpg] http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list.d/deadsnakes.list \
+    && apt-get update && \
     apt-get install -y --no-install-recommends \
     python3.12 \
     python3.12-venv \
     python3.12-dev \
     make \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get purge -y --auto-remove gnupg curl && rm -rf /var/lib/apt/lists/*
 
 # Set Python 3.12 as default
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 \
