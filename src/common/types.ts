@@ -905,5 +905,4 @@ export interface BranchInfo {
 export interface ShellInfo {
   path: string;
   name: string;
-  args?: string[];
 }

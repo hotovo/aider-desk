@@ -15,7 +15,6 @@ let isFirstCall: boolean = true;
 export interface ShellInfo {
   path: string;
   name: string;
-  args?: string[];
 }
 
 class ShellDetector {
@@ -74,7 +73,7 @@ class ShellDetector {
     const envShell = process.env.SHELL;
     if (envShell && fs.existsSync(envShell)) {
       const name = path.basename(envShell);
-      return { path: envShell, name, args: this.getShellArgs(name) };
+      return { path: envShell, name };
     }
 
     // On macOS, try to get the default shell from Directory Services
@@ -87,7 +86,7 @@ class ShellDetector {
           const shellPath = match[1].trim();
           if (fs.existsSync(shellPath)) {
             const name = path.basename(shellPath);
-            return { path: shellPath, name, args: this.getShellArgs(name) };
+            return { path: shellPath, name };
           }
         }
       } catch {
@@ -105,7 +104,7 @@ class ShellDetector {
         const shellPath = parts[6];
         if (shellPath && fs.existsSync(shellPath)) {
           const name = path.basename(shellPath);
-          return { path: shellPath, name, args: this.getShellArgs(name) };
+          return { path: shellPath, name };
         }
       }
     } catch {
@@ -129,12 +128,12 @@ class ShellDetector {
     for (const shellPath of commonShells) {
       if (fs.existsSync(shellPath)) {
         const name = path.basename(shellPath);
-        return { path: shellPath, name, args: this.getShellArgs(name) };
+        return { path: shellPath, name };
       }
     }
 
     // Last resort - use sh
-    return { path: '/bin/sh', name: 'sh', args: ['-i'] };
+    return { path: '/bin/sh', name: 'sh' };
   }
 
   private static findExecutable(name: string): string | null {
@@ -154,22 +153,6 @@ class ShellDetector {
     }
 
     return null;
-  }
-
-  private static getShellArgs(shellName: string): string[] {
-    // Return appropriate arguments for interactive shell sessions
-    switch (shellName) {
-      case 'bash':
-      case 'sh':
-      case 'zsh':
-      case 'fish':
-        return ['-i']; // Interactive mode
-      case 'pwsh':
-      case 'powershell':
-        return ['-NoExit']; // Keep PowerShell open
-      default:
-        return [];
-    }
   }
 
   /**
@@ -245,7 +228,7 @@ class ShellDetector {
       for (const shellPath of commonShells) {
         if (fs.existsSync(shellPath) && !seen.has(shellPath)) {
           const name = path.basename(shellPath);
-          shells.push({ path: shellPath, name, args: this.getShellArgs(name) });
+          shells.push({ path: shellPath, name });
           seen.add(shellPath);
         }
       }
@@ -259,13 +242,13 @@ class ShellDetector {
             const trimmed = line.trim();
             if (trimmed && !trimmed.startsWith('#') && fs.existsSync(trimmed) && !seen.has(trimmed)) {
               const name = path.basename(trimmed);
-              shells.push({ path: trimmed, name, args: this.getShellArgs(name) });
+              shells.push({ path: trimmed, name });
               seen.add(trimmed);
             }
           }
         }
-      } catch {
-        // Ignore
+      } catch (error) {
+        logger.warn('Failed to read /etc/shells, continuing without it.', { error: error instanceof Error ? error.message : String(error) });
       }
     }
 
