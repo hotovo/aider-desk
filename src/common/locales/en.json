@@ -268,22 +268,6 @@
     "baseUrl": "Base URL",
     "baseUrlPlaceholder": "e.g. http://localhost:11434/api"
   },
-  "lmstudio": {
-    "baseUrl": "Base URL",
-    "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
-  },
-  "gpustack": {
-    "name": "GPUStack",
-    "baseUrl": "Base URL",
-    "baseUrlPlaceholder": "http://localhost",
-    "apiKey": "API Key"
-  },
-  "synthetic": {
-    "apiKey": "API Key"
-  },
-  "zaiPlan": {
-    "apiKey": "API Key"
-  },
   "anthropic": {
     "apiKey": "API Key"
   },
@@ -330,6 +314,22 @@
     "autoCacheLabel": "Use Auto Cache",
     "autoCacheTooltip": "This will instruct the router to attempt to cache the response from the provider. If a similar request has been cached previously, it might be served from the cache (depending on the provider’s caching strategy and TTL)."
   },
+  "lmstudio": {
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
+  },
+  "gpustack": {
+    "name": "GPUStack",
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "http://localhost",
+    "apiKey": "API Key"
+  },
+  "synthetic": {
+    "apiKey": "API Key"
+  },
+  "zaiPlan": {
+    "apiKey": "API Key"
+  },
   "azure": {
     "apiKey": "API Key",
     "resourceName": "Resource Name",
@@ -344,9 +344,8 @@
     "gemini": "Gemini",
     "groq": "Groq",
     "gpustack": "GPUStack",
-    "litellm": "LiteLLM",
     "lmstudio": "LM Studio",
-    "minimax": "Minimax",
+    "minimax": "MiniMax",
     "ollama": "Ollama",
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
@@ -358,21 +357,19 @@
     "azure": "Azure"
   },
   "select": {
-    "placeholder": "Select an option",
-    "loadingTasks": "Loading tasks..."
+    "placeholder": "Select an option"
   },
   "settings": {
     "title": "Settings",
     "tabs": {
       "general": "General",
-      "providers": "Providers",
       "aider": "Aider",
       "agents": "Agents",
+      "tasks": "Tasks",
+      "memory": "Memory",
+      "voice": "Voice",
       "hotkeys": "Hotkeys",
       "server": "Server",
-      "memory": "Memory",
-      "tasks": "Tasks",
-      "voice": "Voice",
       "about": "About"
     },
     "hotkeys": {
@@ -455,14 +452,15 @@
       "provider": "Provider",
       "providerSettings": "Provider Settings",
       "context": "Context",
-      "addRuleFiles": "Add rule files from project's <file>.aider-desk/rules</file> directory as read-only files.",
       "runSettings": "Parameters",
       "maxIterations": "Max Iterations",
       "minTimeBetweenToolCalls": "Min Time Between Tool Calls (ms)",
       "maxTokens": "Max Tokens",
       "temperature": "Temperature",
+      "customInstructions": "Additional Rules",
       "rules": "Rules",
       "rulesInfo": "You can use Rules to add specific instructions for specific MCP servers or to control flow of the agent.",
+      "ruleFilesInfo": "Any file in your project's <file>.aider-desk/rules</file> directory is automatically included in the Rules. See example <a>here</a>.",
       "noServersConfigured": "No MCP servers configured.",
       "computationalResources": "Maximum number of iterations for the agent per run. Helps control computational resources.",
       "rateLimiting": "Sets the minimum time between tool calls to prevent rate limiting (e.g. for Brave or other API-constrained services).",
@@ -1032,9 +1030,41 @@
         "resultLabel": "Result {{index}}"
       },
       "fetch": {
-        "title": "Fetch",
-        "contentTruncated": "Content truncated. Full content available in copy."
+        "title": "Fetch"
       }
+    },
+    "memory": {
+      "group": "Memory",
+      "storingMemory": "Storing memory...",
+      "retrievingMemories": "Retrieving memories...",
+      "deletingMemory": "Deleting memory...",
+      "updatingMemory": "Updating memory...",
+      "listingMemories": "Listing memories...",
+      "memoryStored": "Memory stored.",
+      "memoryUpdated": "Memory updated.",
+      "memoryDeleted": "Memory deleted.",
+      "memoryId": "Memory ID",
+      "type": "Type",
+      "content": "Content",
+      "newContent": "New Content",
+      "query": "Query",
+      "limit": "Limit",
+      "foundMemories": "Found {{count}} memories.",
+      "noMemoriesFound": "No relevant memories have been found.",
+      "noRelevantMemories": "No relevant memories have been found",
+      "storedMemoryDetails": "Stored Memory Details",
+      "updatedMemoryDetails": "Updated Memory Details",
+      "deletedMemoryDetails": "Deleted Memory Details",
+      "retrievedMemories": "Retrieved Memories",
+      "memoryList": "Memory List",
+      "listedMemories": "Listing {{count}} memories.",
+      "ofType": "of type {{type}}",
+      "noMemoriesOfType": "No memories found of type: {{type}}",
+      "all": "All",
+      "delete": "Delete",
+      "memoryNotFound": "Not found",
+      "deleteDialogTitle": "Delete memory",
+      "deleteDialogText": "Are you sure you want to delete this memory?"
     },
     "subagents": {
       "groupRunning": "{{name}}: Subagent is working...",
@@ -1052,6 +1082,9 @@
     "revertChanges": "Revert changes"
   },
   "diffViewer": {
+    "sideBySide": "Side by Side",
+    "unified": "Unified",
+    "compact": "Compact",
     "noChanges": "No changes have been made. Content is identical."
   },
   "promptField": {
@@ -1062,6 +1095,7 @@
     "saveError": "Failed to save prompt: {{error}}",
     "autoApprove": "Auto Approve",
     "autoApproveTooltip": "When enabled, automatically approve tool executions without asking for confirmation",
+    "autoApproveLockTooltip": "Locking keeps Auto Approve enabled for newly created tasks",
     "placeholders": {
       "0": "Update the UserValidator class to add email format validation...",
       "1": "Fix the memory leak in DataProcessor.processBatch() by closing...",
@@ -1122,7 +1156,10 @@
   "workingMode": {
     "local": "Local",
     "worktree": "Worktree",
-    "switching": "Switching..."
+    "switching": "Switching...",
+    "confirmLocalTitle": "Switch to Local Mode",
+    "confirmLocalMessage": "Warning: This worktree has unsaved work:\n{{warnings}}\n\nRemoving the worktree will delete this work. If you want to keep this work, use Merge action to merge it to the main branch first.\n\nAre you sure you want to continue and remove the worktree?",
+    "confirmLocalAction": "Remove and switch"
   },
   "workingModeTooltip": {
     "local": "Make changes directly in the local project directory for this task",
@@ -1162,6 +1199,7 @@
     "reasoning-effort": "Set the reasoning effort level (values: minimal/low/medium/high depending on model)",
     "reset": "Drop all files and clear the chat history",
     "run": "Run a shell command and optionally add the output to the chat",
+    "task-info": "Show task information",
     "test": "Run a predefined test command and add the output to the chat on non-zero exit code",
     "think-tokens": "Set the thinking token budget (supports formats like 8096, 8k, 10.5k, 0.5M)",
     "tokens": "Report on the number of tokens used by the current chat context",
@@ -1187,22 +1225,180 @@
     "models": "Models",
     "dateRange": "Date Range",
     "total": "Total",
-    "cost": "Cost",
-    "tokens": "Tokens",
-    "inputTokens": "Input Tokens",
-    "outputTokens": "Output Tokens",
-    "cacheReadTokens": "Cache Read Tokens",
-    "cacheWriteTokens": "Cache Write Tokens",
-    "noData": "No usage data available for the selected period.",
-    "costOverTime": "Cost Over Time",
-    "tokensOverTime": "Tokens Over Time",
-    "modelUsage": "Model Usage",
-    "projectUsage": "Project Usage",
-    "costDistribution": "Cost Distribution",
-    "tokenDistribution": "Token Distribution",
-    "efficiency": "Efficiency",
-    "efficiencyTooltip": "Cost per 1M tokens (lower is better)",
-    "topModels": "Top Models by Cost",
-    "topProjects": "Top Projects by Cost"
+    "thisMonth": "This month",
+    "today": "Today",
+    "all": "All",
+    "groupBy": "Group by",
+    "periods": {
+      "hour": "Hour",
+      "day": "Day",
+      "month": "Month",
+      "year": "Year"
+    },
+    "tabs": {
+      "table": "Table View",
+      "charts": "Charts View"
+    },
+    "charts": {
+      "tokenUsageTrend": "Token Usage Trend",
+      "costBreakdown": "Cost Breakdown",
+      "messageBreakdown": "Message Breakdown",
+      "modelUsageDistribution": "Model Usage Distribution",
+      "inputTokens": "Input Tokens",
+      "outputTokens": "Output Tokens",
+      "noData": "No data available for the selected period",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "share": "Share",
+      "moreItems": "+{{count}} more"
+    },
+    "error": {
+      "fetch": "Failed to fetch usage data."
+    },
+    "table": {
+      "date": "Date",
+      "project": "Project",
+      "model": "Model",
+      "input": "Input",
+      "output": "Output",
+      "cacheRead": "Cache Read",
+      "cacheWrite": "Cache Write",
+      "totalTokens": "Total Tokens",
+      "cost": "Cost"
+    }
+  },
+  "terminal": {
+    "copyOutput": "Copy terminal output to prompt",
+    "minimize": "Minimize terminal",
+    "addTerminal": "Add new terminal"
+  },
+  "contextMenu": {
+    "copy": "Copy",
+    "paste": "Paste",
+    "close": "Close",
+    "closeOtherTabs": "Close other tabs",
+    "closeAllTabs": "Close all tabs"
+  },
+  "taskSidebar": {
+    "title": "Tasks",
+    "noTasks": "No tasks available",
+    "deleteTask": "Delete task",
+    "deleteConfirm": "Are you sure you want to delete this task?",
+    "createTask": "Create new task",
+    "rename": "Rename",
+    "pinTask": "Pin task",
+    "unpinTask": "Unpin task",
+    "taskNamePlaceholder": "Enter task name...",
+    "untitled": "[Untitled]",
+    "exportAsMarkdown": "Export as markdown",
+    "exportAsImage": "Export as image",
+    "taskIdCopied": "Task ID {{taskId}} copied to clipboard",
+    "duplicateTask": "Duplicate Task",
+    "search": "Search tasks",
+    "searchPlaceholder": "Search tasks...",
+    "archiveTask": "Archive Task",
+    "unarchiveTask": "Unarchive Task",
+    "showArchived": "Show archived",
+    "hideArchived": "Hide archived",
+    "archived": "Archived",
+    "multiselectMode": "Multiselect Mode",
+    "selectedCount": "{{count}} selected",
+    "closeMultiselect": "Exit multiselect",
+    "deleteSelected": "Delete selected",
+    "archiveSelected": "Archive selected",
+    "unarchiveSelected": "Unarchive selected",
+    "deleteSelectedConfirm": "Are you sure you want to delete {{count}} selected tasks?",
+    "archiveSelectedConfirm": "Are you sure you want to archive {{count}} selected tasks?",
+    "unarchiveSelectedConfirm": "Are you sure you want to unarchive {{count}} selected tasks?",
+    "generatingName": "Generating name..."
+  },
+  "taskInfo": {
+    "createdAt": "Created at",
+    "updatedAt": "Updated at",
+    "worktreeDirectory": "Worktree Directory",
+    "baseBranch": "Base Branch",
+    "baseCommit": "Base Commit",
+    "targetBranch": "Target Branch",
+    "lastMergeState": "Last Merge State",
+    "beforeMergeCommit": "Before Merge Commit",
+    "mergeTimestamp": "Merge Timestamp",
+    "openFolder": "Open Folder",
+    "taskId": "Task ID",
+    "state": "State",
+    "messageCount": "Message count"
+  },
+  "taskState": {
+    "TODO": "Todo",
+    "IN_PROGRESS": "In Progress",
+    "INTERRUPTED": "Interrupted",
+    "MORE_INFO_NEEDED": "More Info Needed",
+    "READY_FOR_REVIEW": "Ready for Review",
+    "READY_FOR_IMPLEMENTATION": "Ready for Implementation",
+    "DONE": "Done"
+  },
+  "worktree": {
+    "aheadCommits": "↑ {{count}} commits",
+    "uncommittedFiles": "{{count}} files",
+    "conflicts": "conflicts",
+    "conflictsPredicted": "Conflicts predicted",
+    "conflictsPresent": "Conflicts present",
+    "merge": "Merge",
+    "squash": "Squash & Merge",
+    "onlyUncommitted": "Only uncommitted",
+    "rebaseFromBranch": "Rebase from branch",
+    "abortRebase": "Abort rebase",
+    "continueRebase": "Continue rebase",
+    "rebaseConflicts": "Rebase failed due to conflicts. Please resolve them manually or use the AI agent to help.",
+    "confirmRebaseTitle": "Rebase worktree",
+    "confirmRebaseMessage": "This will rebase your worktree onto the selected branch. If there are conflicts, you will need to resolve them.",
+    "confirmAbortRebaseTitle": "Abort rebase",
+    "confirmAbortRebaseMessage": "This will abort the in-progress rebase and restore the worktree to its pre-rebase state.",
+    "confirmContinueRebaseTitle": "Continue rebase",
+    "confirmContinueRebaseMessage": "This will try to continue the rebase. Make sure all conflicts are resolved and staged.",
+    "resolveConflictsWithAgent": "Resolve conflicts with agent",
+    "confirmResolveConflictsWithAgentTitle": "Resolve conflicts with agent",
+    "confirmResolveConflictsWithAgentMessage": "This will try to automatically resolve all conflicted files and stage them. Review results carefully before continuing the rebase.",
+    "commitMessage": "Commit message",
+    "commitMessagePlaceholder": "Enter commit message...",
+    "selectBranch": "Select branch",
+    "selectTargetBranchTitle": "Select target branch",
+    "selectSourceBranchTitle": "Select source branch",
+    "branchHasWorktree": "has worktree",
+    "mergeTooltip": "Merge worktree changes to a branch",
+    "revertTooltip": "Revert the last merged changes",
+    "confirmMerge": "Are you sure you want to {{action}} the worktree changes to the main branch? This will include any uncommitted changes.",
+    "confirmRevert": "Are you sure you want to revert the last merge? This will reset the main branch to its previous state.",
+    "confirmMergeTitle": "Confirm Merge",
+    "confirmSquashTitle": "Confirm Squash",
+    "confirmOnlyUncommittedTitle": "Confirm Apply Uncommitted Changes",
+    "confirmMergeMessage": "Are you sure you want to merge the worktree changes to the selected branch?",
+    "confirmSquashMessage": "Are you sure you want to squash and merge the worktree changes to the selected branch?",
+    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to the selected branch? No git merge will be performed.",
+    "mergeConflicts": "Merge failed due to conflicts between your worktree and the target branch. Please rebase your worktree first to resolve them.",
+    "applyUncommittedConflicts": "Failed to apply uncommitted changes due to conflicts with the target branch. Please rebase your worktree first to align your changes.",
+    "dontAskAgain": "Don't ask me again",
+    "confirmRevertTitle": "Confirm Revert",
+    "confirmRevertMessage": "Are you sure you want to revert the last merge? This will undo the changes that were merged from the worktree back to the main branch.",
+    "revert": "Revert",
+    "noChanges": "No changes"
+  },
+  "welcomeMessage": {
+    "title": "AiderDesk",
+    "subtitle": "Your AI-powered coding assistant",
+    "features": {
+      "title": "What you can do:",
+      "aiCoding": "Generate and modify code with AI assistance",
+      "contextManagement": "Add files to context for better results",
+      "multiModel": "Choose from multiple AI models and providers",
+      "modes": "Switch between Agent and Aider modes",
+      "commands": "Execute commands and run tests"
+    },
+    "tips": {
+      "title": "Getting started:",
+      "addFiles": "Add files to context using the sidebar or /add command",
+      "askQuestion": "Type your request in the prompt field below",
+      "useCommands": "Use / commands for quick actions",
+      "switchMode": "Try Agent mode for autonomous task completion"
+    }
   }
 }
