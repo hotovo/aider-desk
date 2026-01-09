@@ -595,6 +595,9 @@ export interface SettingsData {
   };
   memory: MemoryConfig;
   taskSettings: TaskSettings;
+  terminal: {
+    shell: string;
+  };
   hotkeyConfig?: HotkeyConfig;
 }
 
@@ -897,4 +900,9 @@ export interface BranchInfo {
   name: string;
   isCurrent: boolean;
   hasWorktree: boolean;
+}
+
+export interface ShellInfo {
+  path: string;
+  name: string;
 }

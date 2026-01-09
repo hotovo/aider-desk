@@ -48,6 +48,15 @@ export class SettingsApi extends BaseApi {
       }),
     );
 
+    // Get available shells
+    router.get(
+      '/settings/available-shells',
+      this.handleRequest(async (_, res) => {
+        const shells = this.eventsHandler.getAvailableShells();
+        res.status(200).json(shells);
+      }),
+    );
+
     // Update settings
     router.post(
       '/settings',

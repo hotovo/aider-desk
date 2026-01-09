@@ -460,4 +460,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   ipcMain.handle('clipboard-write-text', async (_, text: string) => {
     clipboard.writeText(text);
   });
+
+  ipcMain.handle('get-available-shells', async () => {
+    return eventsHandler.getAvailableShells();
+  });
 };

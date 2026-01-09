@@ -538,6 +538,7 @@ const api: ApplicationAPI = {
 
   // Terminal operations
   isTerminalSupported: () => true,
+  getAvailableShells: () => ipcRenderer.invoke('get-available-shells'),
   createTerminal: (baseDir, taskId, cols, rows) => ipcRenderer.invoke('terminal-create', baseDir, taskId, cols, rows),
   writeToTerminal: (terminalId, data) => ipcRenderer.invoke('terminal-write', terminalId, data),
   resizeTerminal: (terminalId, cols, rows) => ipcRenderer.invoke('terminal-resize', terminalId, cols, rows),

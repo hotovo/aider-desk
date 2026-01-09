@@ -366,6 +366,7 @@
       "aider": "Aider",
       "agents": "Agents",
       "tasks": "Tasks",
+      "terminal": "Terminal",
       "memory": "Memory",
       "voice": "Voice",
       "hotkeys": "Hotkeys",
@@ -442,6 +443,17 @@
       "autoGenerateTaskNameTooltip": "When enabled, the model generates a concise task name from your prompt. When disabled, the first 5 words of your prompt will be used as the task name.",
       "showTaskStateActions": "Show Task State Actions",
       "showTaskStateActionsTooltip": "When enabled, task state actions are displayed at the bottom of messages. Disable to hide these actions."
+    },
+    "terminal": {
+      "shell": "Terminal Shell",
+      "shellPath": "Shell Path",
+      "autoDetect": "Auto Detect",
+      "autoDetectDescription": "Automatically use the system default shell",
+      "selectFromList": "Select from list",
+      "customPath": "Custom path",
+      "customShellPath": "Custom Shell Path",
+      "customShellPathPlaceholder": "e.g. /bin/zsh or C:\\Program Files\\Git\\bin\\bash.exe",
+      "customShellPathDescription": "Enter a custom shell path if your preferred shell is not in the list."
     },
     "language": "Language",
     "notifications": {
@@ -989,416 +1001,26 @@
       },
       "fileEdit": {
         "title": "Edit",
-        "searchTerm": "Search Term",
-        "regex": "Regex",
-        "replacementText": "Replacement Text",
-        "replaceAll": "Replace All"
+        "original": "Original",
+        "updated": "Updated"
       },
       "glob": {
-        "title": "Find files matching pattern:",
-        "foundFiles": "Found {{count}} files",
-        "noMatches": "No matches found.",
-        "for": "for",
-        "contextLines": "({{count}} lines of context)",
-        "matchesCount": "({{count}} matches)",
-        "lineLabel": "Line {{lineNumber}}:",
-        "contextLabel": "Context:"
+        "title": "Glob",
+        "pattern": "Pattern"
       },
       "grep": {
-        "title": "Search files matching",
-        "for": "for",
-        "foundMatches": "Found {{count}} matches",
-        "noMatches": "No matches found.",
-        "contextLines": "({{count}} lines of context)",
-        "matchesCount": "({{count}} matches)",
-        "lineLabel": "Line {{lineNumber}}:",
-        "contextLabel": "Context:"
-      },
-      "bash": {
-        "title": "Run command",
-        "exitCode": "Exit Code",
-        "stdout": "Stdout",
-        "stderr": "Stderr",
-        "commandFailed": "Command failed"
+        "title": "Grep",
+        "pattern": "Pattern",
+        "searchTerm": "Search term"
       },
       "semanticSearch": {
-        "title": "Semantic search:",
-        "in": "in",
-        "noMatches": "No matches found.",
-        "foundMatches": "Found {{count}} matches",
-        "score": " (score: {{score}})",
-        "resultLabel": "Result {{index}}"
+        "title": "Semantic Search",
+        "query": "Query"
       },
       "fetch": {
-        "title": "Fetch"
+        "title": "Fetch",
+        "url": "URL"
       }
-    },
-    "memory": {
-      "group": "Memory",
-      "storingMemory": "Storing memory...",
-      "retrievingMemories": "Retrieving memories...",
-      "deletingMemory": "Deleting memory...",
-      "updatingMemory": "Updating memory...",
-      "listingMemories": "Listing memories...",
-      "memoryStored": "Memory stored.",
-      "memoryUpdated": "Memory updated.",
-      "memoryDeleted": "Memory deleted.",
-      "memoryId": "Memory ID",
-      "type": "Type",
-      "content": "Content",
-      "newContent": "New Content",
-      "query": "Query",
-      "limit": "Limit",
-      "foundMemories": "Found {{count}} memories.",
-      "noMemoriesFound": "No relevant memories have been found.",
-      "noRelevantMemories": "No relevant memories have been found",
-      "storedMemoryDetails": "Stored Memory Details",
-      "updatedMemoryDetails": "Updated Memory Details",
-      "deletedMemoryDetails": "Deleted Memory Details",
-      "retrievedMemories": "Retrieved Memories",
-      "memoryList": "Memory List",
-      "listedMemories": "Listing {{count}} memories.",
-      "ofType": "of type {{type}}",
-      "noMemoriesOfType": "No memories found of type: {{type}}",
-      "all": "All",
-      "delete": "Delete",
-      "memoryNotFound": "Not found",
-      "deleteDialogTitle": "Delete memory",
-      "deleteDialogText": "Are you sure you want to delete this memory?"
-    },
-    "subagents": {
-      "groupRunning": "{{name}}: Subagent is working...",
-      "groupCompleted": "{{name}}: Subagent finished the task.",
-      "running": "Subagent is working...",
-      "completed": "Subagent finished the task.",
-      "prompt": "Prompt"
-    },
-    "errors": {
-      "noSuchTool": "Attempted to use unknown tool: {{toolName}}",
-      "invalidToolArguments": "Invalid arguments for tool: {{toolName}}"
-    }
-  },
-  "codeBlock": {
-    "revertChanges": "Revert changes"
-  },
-  "diffViewer": {
-    "sideBySide": "Side by Side",
-    "unified": "Unified",
-    "compact": "Compact",
-    "noChanges": "No changes have been made. Content is identical."
-  },
-  "promptField": {
-    "startRecording": "Start listening",
-    "stopRecording": "Stop listening",
-    "savePrompt": "Save Prompt",
-    "savePromptDescription": "Save prompt without executing",
-    "saveError": "Failed to save prompt: {{error}}",
-    "autoApprove": "Auto Approve",
-    "autoApproveTooltip": "When enabled, automatically approve tool executions without asking for confirmation",
-    "autoApproveLockTooltip": "Locking keeps Auto Approve enabled for newly created tasks",
-    "placeholders": {
-      "0": "Update the UserValidator class to add email format validation...",
-      "1": "Fix the memory leak in DataProcessor.processBatch() by closing...",
-      "2": "Add error handling to PaymentService.chargeCard() with proper...",
-      "3": "Create a React component UserProfileCard with props interface...",
-      "4": "Optimize the SQL query in UserRepository.findByEmail() by adding...",
-      "5": "Add unit tests for AuthController.login() using Jest and...",
-      "6": "Implement the missing handleResize() method in ChartComponent...",
-      "7": "Update package.json to add TypeScript dependency and configure...",
-      "8": "Add input validation to ContactForm's handleSubmit function...",
-      "9": "Fix the bug in calculateTotal() where decimal values are being...",
-      "10": "Add logging to API middleware using Winston for request...",
-      "11": "Create a Dockerfile for Node.js application with multi-stage...",
-      "12": "Add rate limiting middleware to /api/users endpoint using...",
-      "13": "Implement the missing deleteTodo() function in TodoService...",
-      "14": "Add TypeScript interfaces for API response objects in...",
-      "15": "Fix the CSS issue where mobile menu is not displaying...",
-      "16": "Add environment variable validation using dotenv and...",
-      "17": "Create database migration to add 'last_login' column to...",
-      "18": "Add error boundaries to React app to catch component...",
-      "19": "Implement pagination logic in ProductList's fetchProducts..."
-    },
-    "questionPlaceholder": "...or suggest something else",
-    "answers": {
-      "yes": "(Y)es",
-      "no": "(N)o",
-      "always": "(A)lways",
-      "dontAsk": "(D)on't ask again"
-    },
-    "invalidCommand": "Invalid command",
-    "stopResponse": "Stop response",
-    "sendMessage": "Send message (Enter)",
-    "clearChat": "Clear chat",
-    "agentModeOnly": "Available in Agent mode only"
-  },
-  "agentProfiles": {
-    "title": "Agents",
-    "profileSettings": "Agent Profile: {{profileName}}",
-    "newProfileName": "New Profile",
-    "manageProfiles": "Manage Profiles",
-    "createNew": "New Profile",
-    "profileName": "Name",
-    "profileDescription": "Description",
-    "profileDescriptionPlaceholder": "Describe this agent profile (purpose, tools, etc.)",
-    "tools": "Tools",
-    "model": "Model",
-    "selectProfile": "Select...",
-    "saveAsProjectDefault": "Save as project default"
-  },
-  "projectBar": {
-    "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
-    "aider": "Aider",
-    "toggleSidebar": "Toggle sidebar",
-    "modelLibrary": "Model Library",
-    "worktree": "Worktree",
-    "worktreeTooltip": "Toggle worktree for this task"
-  },
-  "workingMode": {
-    "local": "Local",
-    "worktree": "Worktree",
-    "switching": "Switching...",
-    "confirmLocalTitle": "Switch to Local Mode",
-    "confirmLocalMessage": "Warning: This worktree has unsaved work:\n{{warnings}}\n\nRemoving the worktree will delete this work. If you want to keep this work, use Merge action to merge it to the main branch first.\n\nAre you sure you want to continue and remove the worktree?",
-    "confirmLocalAction": "Remove and switch"
-  },
-  "workingModeTooltip": {
-    "local": "Make changes directly in the local project directory for this task",
-    "worktree": "Use git worktree to make isolated changes for this task"
-  },
-  "reasoningEffort": {
-    "label": "Reasoning effort",
-    "tooltip": "Reasoning effort determines how much the model will think before taking action. High reasoning effort means the model will think more before taking action, but will also take longer to respond.",
-    "none": "None",
-    "minimal": "Minimal",
-    "low": "Low",
-    "medium": "Medium",
-    "high": "High",
-    "max": "Max"
-  },
-  "commands": {
-    "add": "Add files to the context",
-    "agent": "Switch to agent mode. If already in agent mode, opens the agent model selector. Any text after the command is used as a prompt",
-    "architect": "Switch to architect mode. Architect mode is used to plan changes to the code base and execute them",
-    "ask": "Switch to ask mode. Ask questions about the code base without editing any files",
-    "clear": "Clear the chat history",
-    "clear-logs": "Remove only log messages from chat",
-    "code": "Switch to code mode. Ask for changes to your code",
-    "commit": "Commit unstaged changes to the repo",
-    "context": "Switch to context mode. Ask for changes and Aider will add relevant files to the context",
-    "compact": "Summarize the conversation",
-    "copy-context": "Copy the current chat context as markdown, suitable to paste into a web UI",
-    "drop": "Remove files from the context to free up context space",
-    "edit-last": "Edits the last user message",
-    "init": "Initializes AGENTS.md rule file with project information",
-    "agentModeOnly": "Agent mode only",
-    "map": "Print out the current repository map",
-    "map-refresh": "Force a refresh of the repository map",
-    "model": "Open the model selector",
-    "read-only": "Add files to the chat that are for reference only, or turn added files to read-only",
-    "redo": "Redoes the last user prompt.",
-    "reasoning-effort": "Set the reasoning effort level (values: minimal/low/medium/high depending on model)",
-    "reset": "Drop all files and clear the chat history",
-    "run": "Run a shell command and optionally add the output to the chat",
-    "task-info": "Show task information",
-    "test": "Run a predefined test command and add the output to the chat on non-zero exit code",
-    "think-tokens": "Set the thinking token budget (supports formats like 8096, 8k, 10.5k, 0.5M)",
-    "tokens": "Report on the number of tokens used by the current chat context",
-    "undo": "Undo the last git commit if it was done by Aider",
-    "web": "Scrape a webpage and save it to a file. Use /web url [file] with optional [file]."
-  },
-  "telemetry": {
-    "title": "Telemetry Information",
-    "message": "To help us improve AiderDesk, anonymous telemetry data is collected. This includes information like mode usage (agent, code, ask...) and some specifics when Agent mode is used. No personal data or prompts are ever collected.",
-    "fullInfo": "Full information about what is collected can be found <a>here</a>.",
-    "enabledLabel": "Enable anonymous telemetry"
-  },
-  "multiselect": {
-    "noneSelected": "None selected",
-    "allSelected": "All selected",
-    "someSelected": "{{count}} selected",
-    "selectAll": "Select All"
-  },
-  "usageDashboard": {
-    "title": "Usage Dashboard",
-    "refresh": "Refresh",
-    "projects": "Projects",
-    "models": "Models",
-    "dateRange": "Date Range",
-    "total": "Total",
-    "thisMonth": "This month",
-    "today": "Today",
-    "all": "All",
-    "groupBy": "Group by",
-    "periods": {
-      "hour": "Hour",
-      "day": "Day",
-      "month": "Month",
-      "year": "Year"
-    },
-    "tabs": {
-      "table": "Table View",
-      "charts": "Charts View"
-    },
-    "charts": {
-      "tokenUsageTrend": "Token Usage Trend",
-      "costBreakdown": "Cost Breakdown",
-      "messageBreakdown": "Message Breakdown",
-      "modelUsageDistribution": "Model Usage Distribution",
-      "inputTokens": "Input Tokens",
-      "outputTokens": "Output Tokens",
-      "noData": "No data available for the selected period",
-      "tokens": "Tokens",
-      "cost": "Cost",
-      "share": "Share",
-      "moreItems": "+{{count}} more"
-    },
-    "error": {
-      "fetch": "Failed to fetch usage data."
-    },
-    "table": {
-      "date": "Date",
-      "project": "Project",
-      "model": "Model",
-      "input": "Input",
-      "output": "Output",
-      "cacheRead": "Cache Read",
-      "cacheWrite": "Cache Write",
-      "totalTokens": "Total Tokens",
-      "cost": "Cost"
-    }
-  },
-  "terminal": {
-    "copyOutput": "Copy terminal output to prompt",
-    "minimize": "Minimize terminal",
-    "addTerminal": "Add new terminal"
-  },
-  "contextMenu": {
-    "copy": "Copy",
-    "paste": "Paste",
-    "close": "Close",
-    "closeOtherTabs": "Close other tabs",
-    "closeAllTabs": "Close all tabs"
-  },
-  "taskSidebar": {
-    "title": "Tasks",
-    "noTasks": "No tasks available",
-    "deleteTask": "Delete task",
-    "deleteConfirm": "Are you sure you want to delete this task?",
-    "createTask": "Create new task",
-    "rename": "Rename",
-    "pinTask": "Pin task",
-    "unpinTask": "Unpin task",
-    "taskNamePlaceholder": "Enter task name...",
-    "untitled": "[Untitled]",
-    "exportAsMarkdown": "Export as markdown",
-    "exportAsImage": "Export as image",
-    "taskIdCopied": "Task ID {{taskId}} copied to clipboard",
-    "duplicateTask": "Duplicate Task",
-    "search": "Search tasks",
-    "searchPlaceholder": "Search tasks...",
-    "archiveTask": "Archive Task",
-    "unarchiveTask": "Unarchive Task",
-    "showArchived": "Show archived",
-    "hideArchived": "Hide archived",
-    "archived": "Archived",
-    "multiselectMode": "Multiselect Mode",
-    "selectedCount": "{{count}} selected",
-    "closeMultiselect": "Exit multiselect",
-    "deleteSelected": "Delete selected",
-    "archiveSelected": "Archive selected",
-    "unarchiveSelected": "Unarchive selected",
-    "deleteSelectedConfirm": "Are you sure you want to delete {{count}} selected tasks?",
-    "archiveSelectedConfirm": "Are you sure you want to archive {{count}} selected tasks?",
-    "unarchiveSelectedConfirm": "Are you sure you want to unarchive {{count}} selected tasks?",
-    "generatingName": "Generating name..."
-  },
-  "taskInfo": {
-    "createdAt": "Created at",
-    "updatedAt": "Updated at",
-    "worktreeDirectory": "Worktree Directory",
-    "baseBranch": "Base Branch",
-    "baseCommit": "Base Commit",
-    "targetBranch": "Target Branch",
-    "lastMergeState": "Last Merge State",
-    "beforeMergeCommit": "Before Merge Commit",
-    "mergeTimestamp": "Merge Timestamp",
-    "openFolder": "Open Folder",
-    "taskId": "Task ID",
-    "state": "State",
-    "messageCount": "Message count"
-  },
-  "taskState": {
-    "TODO": "Todo",
-    "IN_PROGRESS": "In Progress",
-    "INTERRUPTED": "Interrupted",
-    "MORE_INFO_NEEDED": "More Info Needed",
-    "READY_FOR_REVIEW": "Ready for Review",
-    "READY_FOR_IMPLEMENTATION": "Ready for Implementation",
-    "DONE": "Done"
-  },
-  "worktree": {
-    "aheadCommits": "↑ {{count}} commits",
-    "uncommittedFiles": "{{count}} files",
-    "conflicts": "conflicts",
-    "conflictsPredicted": "Conflicts predicted",
-    "conflictsPresent": "Conflicts present",
-    "merge": "Merge",
-    "squash": "Squash & Merge",
-    "onlyUncommitted": "Only uncommitted",
-    "rebaseFromBranch": "Rebase from branch",
-    "abortRebase": "Abort rebase",
-    "continueRebase": "Continue rebase",
-    "rebaseConflicts": "Rebase failed due to conflicts. Please resolve them manually or use the AI agent to help.",
-    "confirmRebaseTitle": "Rebase worktree",
-    "confirmRebaseMessage": "This will rebase your worktree onto the selected branch. If there are conflicts, you will need to resolve them.",
-    "confirmAbortRebaseTitle": "Abort rebase",
-    "confirmAbortRebaseMessage": "This will abort the in-progress rebase and restore the worktree to its pre-rebase state.",
-    "confirmContinueRebaseTitle": "Continue rebase",
-    "confirmContinueRebaseMessage": "This will try to continue the rebase. Make sure all conflicts are resolved and staged.",
-    "resolveConflictsWithAgent": "Resolve conflicts with agent",
-    "confirmResolveConflictsWithAgentTitle": "Resolve conflicts with agent",
-    "confirmResolveConflictsWithAgentMessage": "This will try to automatically resolve all conflicted files and stage them. Review results carefully before continuing the rebase.",
-    "commitMessage": "Commit message",
-    "commitMessagePlaceholder": "Enter commit message...",
-    "selectBranch": "Select branch",
-    "selectTargetBranchTitle": "Select target branch",
-    "selectSourceBranchTitle": "Select source branch",
-    "branchHasWorktree": "has worktree",
-    "mergeTooltip": "Merge worktree changes to a branch",
-    "revertTooltip": "Revert the last merged changes",
-    "confirmMerge": "Are you sure you want to {{action}} the worktree changes to the main branch? This will include any uncommitted changes.",
-    "confirmRevert": "Are you sure you want to revert the last merge? This will reset the main branch to its previous state.",
-    "confirmMergeTitle": "Confirm Merge",
-    "confirmSquashTitle": "Confirm Squash",
-    "confirmOnlyUncommittedTitle": "Confirm Apply Uncommitted Changes",
-    "confirmMergeMessage": "Are you sure you want to merge the worktree changes to the selected branch?",
-    "confirmSquashMessage": "Are you sure you want to squash and merge the worktree changes to the selected branch?",
-    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to the selected branch? No git merge will be performed.",
-    "mergeConflicts": "Merge failed due to conflicts between your worktree and the target branch. Please rebase your worktree first to resolve them.",
-    "applyUncommittedConflicts": "Failed to apply uncommitted changes due to conflicts with the target branch. Please rebase your worktree first to align your changes.",
-    "dontAskAgain": "Don't ask me again",
-    "confirmRevertTitle": "Confirm Revert",
-    "confirmRevertMessage": "Are you sure you want to revert the last merge? This will undo the changes that were merged from the worktree back to the main branch.",
-    "revert": "Revert",
-    "noChanges": "No changes"
-  },
-  "welcomeMessage": {
-    "title": "AiderDesk",
-    "subtitle": "Your AI-powered coding assistant",
-    "features": {
-      "title": "What you can do:",
-      "aiCoding": "Generate and modify code with AI assistance",
-      "contextManagement": "Add files to context for better results",
-      "multiModel": "Choose from multiple AI models and providers",
-      "modes": "Switch between Agent and Aider modes",
-      "commands": "Execute commands and run tests"
-    },
-    "tips": {
-      "title": "Getting started:",
-      "addFiles": "Add files to context using the sidebar or /add command",
-      "askQuestion": "Type your request in the prompt field below",
-      "useCommands": "Use / commands for quick actions",
-      "switchMode": "Try Agent mode for autonomous task completion"
     }
   }
 }
