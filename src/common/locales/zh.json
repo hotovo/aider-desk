@@ -342,6 +342,7 @@
     "groq": "Groq",
     "gpustack": "GPUStack",
     "lmstudio": "LM Studio",
+    "litellm": "LiteLLM",
     "minimax": "Minimax",
     "ollama": "Ollama",
     "openai": "OpenAI",
