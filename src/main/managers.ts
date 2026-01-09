@@ -25,6 +25,8 @@ export interface ManagersResult {
   eventsHandler: EventsHandler;
   serverController: ServerController;
   cleanup: () => Promise<void>;
+  modelManager: ModelManager;
+  agentProfileManager: AgentProfileManager;
 }
 
 export const initManagers = async (store: Store, mainWindow: BrowserWindow | null = null): Promise<ManagersResult> => {
@@ -166,5 +168,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     eventsHandler,
     serverController,
     cleanup,
+    modelManager,
+    agentProfileManager,
   };
 };

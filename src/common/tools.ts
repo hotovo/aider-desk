@@ -63,7 +63,21 @@ export const MEMORY_TOOL_UPDATE = 'update_memory';
 
 export const MEMORY_TOOL_DESCRIPTIONS = {
   [MEMORY_TOOL_STORE]: 'Stores important information, patterns, or preferences into memory for future tasks',
-  [MEMORY_TOOL_RETRIEVE]: 'Searches and retrieves relevant memories based on a query',
+  [MEMORY_TOOL_RETRIEVE]: `Searches and retrieves relevant memories using semantic vector search.
+
+RETRIEVAL STRATEGY:
+1. Identify what type of information you need (user preferences, code patterns, architectural decisions, or stable project reference)
+2. Formulate a query with 3-7 descriptive words that includes key concepts and context
+3. Use natural language - describe what you're looking for as if explaining to another developer
+
+EFFECTIVE QUERY EXAMPLES:
+- "LLM provider integration patterns"
+- "Voice control implementation details"
+- "Testing framework configuration"
+- "Project architecture and component structure"
+- "User interface theming system"
+
+AVOID: Single words, generic terms, or overly brief queries that lack context`,
   [MEMORY_TOOL_DELETE]: 'Deletes a specific memory',
   [MEMORY_TOOL_LIST]: 'Lists all stored memories with optional filtering',
   [MEMORY_TOOL_UPDATE]: 'Updates an existing memory with new content',

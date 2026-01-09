@@ -11,11 +11,11 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci --ignore-scripts
 
-# Run patch-package for any patches
-RUN npx patch-package
-
 # Copy source code
 COPY . .
+
+# Run patch-package for any patches
+RUN npx patch-package
 
 # TEMPORARY: Remove postinstall script before moving to monorepo
 # TODO: Remove this after migrating to monorepo structure
@@ -41,6 +41,8 @@ RUN apt-get update && \
     curl \
     build-essential \
     python3-dev \
+    git \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Add deadsnakes PPA and install Python 3.12
@@ -101,6 +103,9 @@ RUN touch ${AIDER_DESK_DATA_DIR}/setup-complete
 ENV NODE_ENV=production
 ENV AIDER_DESK_HEADLESS=true
 
+# Configure Git to allow access to all directories (fixes Docker volume ownership issue)
+RUN git config --global --add safe.directory "*"
+
 # Optional: Set default port (can be overridden at runtime)
 ENV AIDER_DESK_PORT=24337
 
@@ -112,7 +117,7 @@ ENV AIDER_DESK_PORT=24337
 VOLUME ["/app/data"]
 
 # Expose the server port
-EXPOSE 24337
+EXPOSE ${AIDER_DESK_PORT}
 
 # Health check - check if server is responding
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \

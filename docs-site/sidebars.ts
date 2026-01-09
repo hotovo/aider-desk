@@ -87,7 +87,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Advanced',
       collapsed: true,
-      items: ['advanced/custom-aider-version', 'advanced/extra-python-packages', 'advanced/open-telemetry'],
+      items: ['advanced/docker', 'advanced/custom-aider-version', 'advanced/extra-python-packages', 'advanced/open-telemetry'],
     },
   ],
 };
