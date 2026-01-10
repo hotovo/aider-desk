@@ -59,11 +59,11 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
     // Fetch /model/info for detailed pricing and config
     // This is required for LiteLLM provider
     let modelInfos: LiteLLMModelInfo[] = [];
-    
+
     const infoResponse = await fetch(`${effectiveBaseUrl}/model/info`, {
       headers: { Authorization: `Bearer ${effectiveApiKey}` },
     });
-    
+
     if (!infoResponse.ok) {
       const errorMsg = `LiteLLM /model/info API response failed: ${infoResponse.status} ${infoResponse.statusText} ${await infoResponse.text()}`;
       logger.error(errorMsg);
@@ -72,14 +72,14 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
 
     const infoData = await infoResponse.json();
     if (infoData && typeof infoData === 'object') {
-       if ('data' in infoData && Array.isArray(infoData.data)) {
-         modelInfos = infoData.data;
-       } else if (Array.isArray(infoData)) {
-         modelInfos = infoData;
-       } else {
-         // Sometimes it might return a map directly
-         modelInfos = Object.values(infoData);
-       }
+      if ('data' in infoData && Array.isArray(infoData.data)) {
+        modelInfos = infoData.data;
+      } else if (Array.isArray(infoData)) {
+        modelInfos = infoData;
+      } else {
+        // Sometimes it might return a map directly
+        modelInfos = Object.values(infoData);
+      }
     }
 
     if (modelInfos.length === 0) {
@@ -89,7 +89,7 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
 
     // Group by model_name to handle load balancing
     const modelsByName: Record<string, LiteLLMModelInfo[]> = {};
-    
+
     modelInfos.forEach((info) => {
       const name = info.model_name;
       if (name) {
@@ -102,22 +102,21 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
 
     const models: Model[] = Object.entries(modelsByName).map(([name, infos]) => {
       // Helper to find value in multiple places for a single info object
-      const getValue = (info: LiteLLMModelInfo, key: 'context_window' | 'max_input_tokens' | 'max_output_tokens' | 'max_tokens' | 'input_cost_per_token' | 'output_cost_per_token') => {
-        return (
-          info[key] ??
-          info.model_info?.[key] ??
-          info.litellm_params?.[key]
-        );
+      const getValue = (
+        info: LiteLLMModelInfo,
+        key: 'context_window' | 'max_input_tokens' | 'max_output_tokens' | 'max_tokens' | 'input_cost_per_token' | 'output_cost_per_token',
+      ) => {
+        return info[key] ?? info.model_info?.[key] ?? info.litellm_params?.[key];
       };
 
       // Aggregate values across all backends for this model name
       // For limits (context window, max output), use MIN to be safe
       // For costs, use MAX to be safe/conservative
-      
-      const contextWindows = infos.map(i => getValue(i, 'context_window') || getValue(i, 'max_input_tokens')).filter(v => typeof v === 'number');
-      const maxOutputs = infos.map(i => getValue(i, 'max_output_tokens') || getValue(i, 'max_tokens')).filter(v => typeof v === 'number');
-      const inputCosts = infos.map(i => getValue(i, 'input_cost_per_token')).filter(v => typeof v === 'number');
-      const outputCosts = infos.map(i => getValue(i, 'output_cost_per_token')).filter(v => typeof v === 'number');
+
+      const contextWindows = infos.map((i) => getValue(i, 'context_window') || getValue(i, 'max_input_tokens')).filter((v) => typeof v === 'number');
+      const maxOutputs = infos.map((i) => getValue(i, 'max_output_tokens') || getValue(i, 'max_tokens')).filter((v) => typeof v === 'number');
+      const inputCosts = infos.map((i) => getValue(i, 'input_cost_per_token')).filter((v) => typeof v === 'number');
+      const outputCosts = infos.map((i) => getValue(i, 'output_cost_per_token')).filter((v) => typeof v === 'number');
 
       const maxInputTokens = contextWindows.length > 0 ? Math.min(...contextWindows) : undefined;
       const maxOutputTokens = maxOutputs.length > 0 ? Math.min(...maxOutputs) : undefined;
@@ -136,7 +135,6 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
 
     logger.info(`Loaded ${models.length} LiteLLM models from /model/info for profile ${profile.id}`);
     return { models, success: true };
-
   } catch (error) {
     const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading LiteLLM models';
     logger.error('Error loading LiteLLM models:', error);
@@ -178,9 +176,9 @@ export const createLitellmLlm = (profile: ProviderProfile, model: Model, setting
       apiKey = effectiveVar.value;
     }
   }
-  
+
   if (!apiKey) {
-     apiKey = 'sk-dummy'; // Dummy key for OpenAI-compatible client which expects a key.
+    apiKey = 'sk-dummy'; // Dummy key for OpenAI-compatible client which expects a key.
   }
 
   if (!baseUrl) {
