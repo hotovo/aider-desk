@@ -102,10 +102,10 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
 
     const models: Model[] = Object.entries(modelsByName).map(([name, infos]) => {
       // Helper to find value in multiple places for a single info object
-      const getValue = (info: LiteLLMModelInfo, key: string) => {
+      const getValue = (info: LiteLLMModelInfo, key: 'context_window' | 'max_input_tokens' | 'max_output_tokens' | 'max_tokens' | 'input_cost_per_token' | 'output_cost_per_token') => {
         return (
-          info[key] ||
-          info.model_info?.[key] ||
+          info[key] ??
+          info.model_info?.[key] ??
           info.litellm_params?.[key]
         );
       };
@@ -180,7 +180,7 @@ export const createLitellmLlm = (profile: ProviderProfile, model: Model, setting
   }
   
   if (!apiKey) {
-     apiKey = 'sk-dummy'; 
+     apiKey = 'sk-dummy'; // Dummy key for OpenAI-compatible client which expects a key.
   }
 
   if (!baseUrl) {
