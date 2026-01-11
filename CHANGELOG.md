@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.48.0]
 
 - added missing menu actions to the last user message
 - correctly handling copy actions on MacOS and mobile devices
