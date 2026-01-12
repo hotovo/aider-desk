@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.48.1]
+
+- passing the model info properly to Aider in the connector
+
 ## [0.48.0]
 
 - added missing menu actions to the last user message

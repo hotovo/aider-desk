@@ -12,7 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, Optional, Any, Coroutine
 from aider import models, utils
-from aider.models import model_info_manager, ModelSettings
+from aider.models import ModelSettings
 from aider.coders import Coder
 from aider.commands import Commands
 from aider.io import InputOutput, AutoCompleter
@@ -37,10 +37,44 @@ nest_asyncio.apply()
 confirmation_result = None
 
 def update_model_params(models_info, model):
-  model.info = model.get_model_info(model.name)
+  model_id = model.name
+
+  try:
+    from aider.models import model_info_manager
+    if model_id in model_info_manager.local_model_metadata:
+      sys.stdout.write(f"Model {model_id} is included in local models, skipping update.\n")
+      return
+  except ImportError:
+    sys.stderr.write(f"Failed to import model_info_manager, skipping update.\n")
+
+  if not model_id in models_info:
+    sys.stdout.write(f"Model {model_id} is not in models_info, skipping update.\n")
+    return
+
+  info = models_info[model_id]
+  max_input_tokens = info.get("maxInputTokens")
+  if max_input_tokens is None:
+    # skip models that don't have maxInputTokens defined
+    sys.stdout.write(f"Skipping model: {model_id} as it doesn't have maxInputTokens defined")
+    return
+
+  model_info = {
+    "max_tokens": info.get('maxOutputTokens') or 32000,
+    "max_input_tokens": max_input_tokens,
+    "max_output_tokens": info.get('maxOutputTokens') or 32000,
+    "input_cost_per_token": info.get('inputCostPerToken') or 0,
+    "output_cost_per_token": info.get('outputCostPerToken') or 0,
+    "cache_creation_input_token_cost": info.get('cacheWriteInputTokenCost'),
+    "cache_read_input_token_cost": info.get('cacheReadInputTokenCost'),
+    "litellm_provider": model_id.split("/")[0],
+    "mode": "chat"
+  }
+  model.info = model_info
+
   max_input_tokens = model.info.get('max_input_tokens') if model.info else None
   if max_input_tokens:
     model.max_chat_history_tokens = min(max(max_input_tokens / 16, 1024), 8192)
+
   max_output_tokens = model.info.get('max_output_tokens') if model.info else None
   if max_output_tokens is not None:
     if model.extra_params is None:
@@ -49,7 +83,8 @@ def update_model_params(models_info, model):
       model.extra_params["max_completion_tokens"] = max_output_tokens
     elif model.extra_params.get("max_completion_tokens") is None:
       model.extra_params["max_tokens"] = max_output_tokens
-  temperature = models_info.get(model.name, {}).get('temperature')
+
+  temperature = info.get('temperature')
   model.use_temperature = temperature if temperature is not None else False
 
 def wait_for_async(connector, coroutine):
@@ -711,7 +746,6 @@ class Connector:
     self.reasoning_effort = reasoning_effort
     self.thinking_tokens = thinking_tokens
     self.confirm_before_edit = confirm_before_edit
-    self.base_local_model_metadata = None
     self.models_info = None
 
     try:
@@ -1345,56 +1379,13 @@ class Connector:
 
   async def handle_models_info_update(self, models_info):
     """Handle models info update event"""
-    self.coder.io.tool_output(f"Received models info update: {len(models_info)} models")
-
-    # Initialize base_local_model_metadata if not set
-    if self.base_local_model_metadata is None:
-      self.base_local_model_metadata = model_info_manager.local_model_metadata.copy()
-
+    self.coder.io.tool_output(f"Received models info update: {models_info}")
     self.models_info = models_info
 
-    # Transform the model info data into the expected format
-    transformed_data = {}
-    for model_id, info in models_info.items():
-      if model_id in self.base_local_model_metadata:
-        # skip models that are configured by other means
-        self.coder.io.tool_output(f"Skipping model: {model_id} as it is configured by other means")
-        continue
-
-      max_input_tokens = info.get("maxInputTokens")
-      if max_input_tokens is None:
-        # skip models that don't have maxInputTokens defined
-        self.coder.io.tool_output(f"Skipping model: {model_id} as it doesn't have maxInputTokens defined")
-        continue
-
-      transformed_data[model_id] = {
-        "max_tokens": max_input_tokens,
-        "max_input_tokens": max_input_tokens,
-        "max_output_tokens": info.get('maxOutputTokens') or 32000,
-        "input_cost_per_token": info.get('inputCostPerToken') or 0,
-        "output_cost_per_token": info.get('outputCostPerToken') or 0,
-        "cache_creation_input_token_cost": info.get('cacheWriteInputTokenCost'),
-        "cache_read_input_token_cost": info.get('cacheReadInputTokenCost'),
-        "litellm_provider": model_id.split("/")[0],
-        "mode": "chat"
-      }
-      self.coder.io.tool_output(f"Updated model: {model_id} with {transformed_data[model_id]}")
-
-    # Update the model_info_manager.local_model_metadata
-    model_info_manager.local_model_metadata.update(transformed_data)
-
-    update_model_params(models_info, self.coder.main_model)
+    update_model_params(self.models_info, self.coder.main_model)
     if self.coder.main_model.weak_model:
-      update_model_params(models_info, self.coder.main_model.weak_model)
+      update_model_params(self.models_info, self.coder.main_model.weak_model)
 
-    # Log the updated models info
-    for model_id, info in transformed_data.items():
-      self.coder.io.tool_output(f"Updated model: {model_id}")
-      self.coder.io.tool_output(f"  Max Input Tokens: {info['max_input_tokens']}")
-      self.coder.io.tool_output(f"  Max Output Tokens: {info['max_output_tokens']}")
-      self.coder.io.tool_output(f"  Input Cost/Token: ${info['input_cost_per_token']}")
-      self.coder.io.tool_output(f"  Output Cost/Token: ${info['output_cost_per_token']}")
-      self.coder.io.tool_output(f"  LiteLLM Provider: {info['litellm_provider']}")
 
 def main(argv=None):
   try:
