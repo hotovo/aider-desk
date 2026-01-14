@@ -23,7 +23,7 @@ const setupCustomMenu = (): void => {
       label: 'File',
       submenu: [{ role: 'quit', label: 'Quit', accelerator: 'CmdOrCtrl+Q' }],
     },
-    // Edit menu (without Select All)
+    // Edit menu
     {
       label: 'Edit',
       submenu: [
@@ -33,6 +33,7 @@ const setupCustomMenu = (): void => {
         { role: 'cut', label: 'Cut' },
         { role: 'copy', label: 'Copy' },
         { role: 'paste', label: 'Paste' },
+        { role: 'selectall', label: 'Select All' },
       ],
     },
     // View menu
