@@ -26,10 +26,13 @@ RUN node scripts/download-uv.mjs && \
     node scripts/download-probe.mjs
 
 # Build the server and MCP server (includes resources copy) - prebuild:server builds renderer
-RUN npm run build:server
+ARG TARGETARCH=amd64
+RUN TARGETARCH=${TARGETARCH} npm run build:server
 
 # Production stage
+ARG TARGETARCH=amd64
 FROM node:24-slim
+
 ARG TARGETARCH=amd64
 
 # Install Python 3.12 and build tools using deadsnakes PPA
@@ -73,18 +76,15 @@ COPY --from=builder /app/out/renderer ./out/renderer
 COPY --from=builder /app/out/resources ./out/resources
 COPY --from=builder /app/out/mcp-server ./out/resources/mcp-server
 
-# Create symlink for amd64 -> x64 (Docker uses amd64, our resources use x64)
-RUN ln -sf /app/out/resources/linux-x64 /app/out/resources/linux-amd64
-
 # Set environment for Python package installation
 ENV AIDER_DESK_DATA_DIR=/app/data
 
 # Create data directory and Python virtual environment
 RUN mkdir -p ${AIDER_DESK_DATA_DIR} && \
-    ./out/resources/linux-${TARGETARCH}/uv venv ${AIDER_DESK_DATA_DIR}/python-venv --python 3.12
+    ./out/resources/linux/uv venv ${AIDER_DESK_DATA_DIR}/python-venv --python 3.12
 
 # Install Python packages into the virtual environment
-RUN ./out/resources/linux-${TARGETARCH}/uv pip install --upgrade --no-progress --no-cache-dir --link-mode=copy \
+RUN ./out/resources/linux/uv pip install --upgrade --no-progress --no-cache-dir --link-mode=copy \
         --python ${AIDER_DESK_DATA_DIR}/python-venv/bin/python \
         pip \
         aider-chat \
