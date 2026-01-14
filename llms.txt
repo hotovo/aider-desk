@@ -539,6 +539,8 @@ src/
         Home.tsx
         Onboarding.tsx
         Settings.tsx
+      stores/
+        taskStore.ts
       themes/
         theme-aurora.scss
         theme-botanical-garden-dark.scss
@@ -604,11 +606,20 @@ confirmation_result = None
 ⋮----
 def update_model_params(models_info, model)
 ⋮----
+model_id = model.name
+⋮----
+info = models_info[model_id]
+max_input_tokens = info.get("maxInputTokens")
+⋮----
+# skip models that don't have maxInputTokens defined
+⋮----
+model_info = {
+⋮----
 max_input_tokens = model.info.get('max_input_tokens') if model.info else None
 ⋮----
 max_output_tokens = model.info.get('max_output_tokens') if model.info else None
 ⋮----
-temperature = models_info.get(model.name, {}).get('temperature')
+temperature = info.get('temperature')
 ⋮----
 def wait_for_async(connector, coroutine)
 ⋮----
@@ -1181,21 +1192,6 @@ async def handle_models_info_update(self, models_info)
 ⋮----
 """Handle models info update event"""
 ⋮----
-# Initialize base_local_model_metadata if not set
-⋮----
-# Transform the model info data into the expected format
-transformed_data = {}
-⋮----
-# skip models that are configured by other means
-⋮----
-max_input_tokens = info.get("maxInputTokens")
-⋮----
-# skip models that don't have maxInputTokens defined
-⋮----
-# Update the model_info_manager.local_model_metadata
-⋮----
-# Log the updated models info
-⋮----
 def main(argv=None)
 ⋮----
 argv = sys.argv[1:]
@@ -1338,7 +1334,9 @@ File: src/common/locales/en.json
     "expand": "Expand",
     "enabled": "Enabled",
     "noFiles": "No files",
-    "clickToRefresh": "Click to refresh"
+    "clickToRefresh": "Click to refresh",
+    "closeTasks": "Close Tasks",
+    "toggleTasks": "Toggle Tasks"
   },
   "search": {
     "placeholder": "Search...",
@@ -2086,11 +2084,13 @@ File: src/common/locales/en.json
     "proceed": "Proceed",
     "archive": "Archive",
     "unarchive": "Unarchive",
-    "confirmDelete": "Confirm Delete"
+    "confirmDelete": "Confirm Delete",
+    "remove": "Remove message"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
-    "frozenMessage": "Aider process seems to be frozen. Would you like to restart the task?"
+    "frozenMessage": "Aider process seems to be frozen. Would you like to restart the task?",
+    "removeMessageFailed": "Failed to remove message - please try again"
   },
   "dialogs": {
     "confirm": "Confirm",
@@ -2792,7 +2792,9 @@ File: src/common/locales/zh.json
     "expand": "展开",
     "enabled": "已启用",
     "noFiles": "没有找到文件",
-    "clickToRefresh": "点击刷新"
+    "clickToRefresh": "点击刷新",
+    "closeTasks": "关闭任务",
+    "toggleTasks": "切换任务"
   },
   "search": {
     "placeholder": "查找...",
@@ -3497,11 +3499,13 @@ File: src/common/locales/zh.json
     "proceed": "继续",
     "archive": "归档",
     "unarchive": "取消归档",
-    "confirmDelete": "确认删除"
+    "confirmDelete": "确认删除",
+    "remove": "移除消息"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
-    "frozenMessage": "Aider进程似乎已冻结。您想重启任务吗?"
+    "frozenMessage": "Aider进程似乎已冻结。您想重启任务吗?",
+    "removeMessageFailed": "删除消息失败 - 请重试"
   },
   "dialogs": {
     "confirm": "确认",
@@ -4559,6 +4563,7 @@ import {
   BranchInfo,
   WorktreeIntegrationStatus,
   MemoryEmbeddingProgress,
+  MessageRemovedData,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -4632,6 +4637,7 @@ export interface ApplicationAPI {
   applyEdits: (baseDir: string, taskId: string, edits: FileEdit[]) => void;
   clearContext: (baseDir: string, taskId: string) => void;
   removeLastMessage: (baseDir: string, taskId: string) => void;
+  removeMessage: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
   compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
@@ -4670,6 +4676,7 @@ export interface ApplicationAPI {
   addUserMessageListener: (baseDir: string, taskId: string, callback: (data: UserMessageData) => void) => () => void;
   addInputHistoryUpdatedListener: (baseDir: string, callback: (data: InputHistoryData) => void) => () => void;
   addClearTaskListener: (baseDir: string, taskId: string, callback: (data: ClearTaskData) => void) => () => void;
+  addMessageRemovedListener: (baseDir: string, taskId: string, callback: (data: MessageRemovedData) => void) => () => void;
   addProjectStartedListener: (baseDir: string, callback: (data: ProjectStartedData) => void) => () => void;
   addVersionsInfoUpdatedListener: (callback: (data: VersionsInfo) => void) => () => void;
   addProviderModelsUpdatedListener: (callback: (data: ProviderModelsData) => void) => () => void;
@@ -5388,6 +5395,12 @@ export interface UserMessageData {
   taskId: string;
   content: string;
   promptContext?: PromptContext;
+}
+⋮----
+export interface MessageRemovedData {
+  baseDir: string;
+  taskId: string;
+  messageIds: string[];
 }
 ⋮----
 export interface FileEdit {
@@ -7122,6 +7135,7 @@ import {
   ToolData,
   TokensInfoData,
   UserMessageData,
+  MessageRemovedData,
   VersionsInfo,
   AutocompletionData,
   ProviderModelsData,
@@ -7238,6 +7252,8 @@ sendTaskCompleted(task: TaskData): void
 sendTaskCancelled(task: TaskData): void
 ⋮----
 sendTaskDeleted(task: TaskData): void
+⋮----
+sendTaskMessageRemoved(baseDir: string, taskId: string, messageIds: string[]): void
 ⋮----
 subscribe(socket: Socket, config: EventsConnectorConfig): void
 ⋮----
@@ -9647,6 +9663,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Remove last message
 ⋮----
+// Remove message by ID
+⋮----
 // Compact conversation
 ⋮----
 // Scrape web
@@ -10535,17 +10553,45 @@ clearContextFiles(save = true)
 ⋮----
 clearMessages(save = true)
 ⋮----
+removeMessageById(messageId: string): string[]
+⋮----
+// First, try to find a message with the exact ID
+⋮----
+// If it's an assistant message with array content
+⋮----
+// Check if it has mixed content (text/reasoning + tool calls)
+⋮----
+// Remove only text and reasoning parts, keep the message with tool calls
+⋮----
+// Otherwise, remove the whole message
+⋮----
+// If not found by ID, try to find by tool call ID
+⋮----
+private removeMessageByIndex(index: number, messageId: string): string[]
+⋮----
+private removeByToolCallId(toolCallId: string): string[]
+⋮----
+// Find tool message with matching toolCallId
+⋮----
+// Remove only the tool-result part from the tool message
+⋮----
+// If tool message is now empty, remove the whole message
+⋮----
+// Search backwards for assistant message with matching tool-call
+⋮----
+// If assistant message is now empty, remove the whole message
+⋮----
 removeLastMessage(): void
 ⋮----
 removeLastUserMessage(): string | null
 ⋮----
 toConnectorMessages(contextMessages: ContextMessage[] = this.messages):
 ⋮----
-// @ts-expect-error part.input contains the prompt in this case
+// @ts-expect-error part.input type is complex, 'prompt' check is safe in this context
 ⋮----
-// @ts-expect-error part.input contains the prompt in this case
+// @ts-expect-error part.input type is complex, 'prompt' check is safe in this context
 ⋮----
-// @ts-expect-error part.output.responses is expected to be in the output
+// @ts-expect-error part.output.value.responses type is complex, safe in this context
 ⋮----
 async save(): Promise<void>
 ⋮----
@@ -10597,11 +10643,11 @@ public getContextMessagesData(contextMessages: ContextMessage[] = this.messages)
 ⋮----
 // Handle aider tool responses - create ResponseCompletedData for each response
 ⋮----
-// @ts-expect-error value is expected to have responses
+// @ts-expect-error part.output.value.responses type is complex, safe in this context
 ⋮----
 // Handle agent tool results - process all messages from subagent
 ⋮----
-// @ts-expect-error value is expected to have messages
+// @ts-expect-error part.output.value.messages type is complex, safe in this context
 ⋮----
 // Collect reasoning and text parts to combine them if both exist
 ⋮----
@@ -10794,6 +10840,8 @@ public getTaskDir()
 ⋮----
 private normalizeFilePath(filePath: string): string
 ⋮----
+private cleanupChunkBuffers()
+⋮----
 public async close(clearContext = false, cleanupEmptyTask = true)
 ⋮----
 private async cleanUpEmptyTask()
@@ -10879,6 +10927,14 @@ public promptFinished(promptId?: string)
 // Notify waiting prompts with collected responses
 ⋮----
 public async processResponseMessage(message: ResponseMessage, saveToDb = true)
+⋮----
+const sendResponseChunk = (chunk: string) =>
+⋮----
+// First chunk: send immediately and create interval
+⋮----
+// No buffered chunk, stop interval
+⋮----
+// Subsequent chunks: append to buffer
 ⋮----
 // Collect the completed response
 ⋮----
@@ -11034,8 +11090,6 @@ public sendUserMessage(data: UserMessageData)
 ⋮----
 public sendToolMessage(data: ToolData)
 ⋮----
-// Update total costs when adding the tool message
-⋮----
 public async clearContext(addToHistory = false, updateContextInfo = true)
 ⋮----
 public interruptResponse()
@@ -11061,6 +11115,8 @@ private updateTotalCosts(usageReport: UsageReportData)
 private addUserMessage(id: string, content: string, promptContext?: PromptContext)
 ⋮----
 public async removeLastMessage()
+⋮----
+public async removeMessage(messageId: string): Promise<string[]>
 ⋮----
 public async redoLastUserPrompt(mode: Mode, updatedPrompt?: string)
 ⋮----
@@ -12602,6 +12658,8 @@ clearContext(baseDir: string, taskId: string, includeLastMessage = true): void
 ⋮----
 async removeLastMessage(baseDir: string, taskId: string): Promise<void>
 ⋮----
+async removeMessage(baseDir: string, taskId: string, messageId: string): Promise<void>
+⋮----
 async redoLastUserPrompt(baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string): Promise<void>
 ⋮----
 async resumeTask(baseDir: string, taskId: string): Promise<void>
@@ -13387,6 +13445,7 @@ import {
   InputHistoryData,
   LogData,
   McpServerConfig,
+  MessageRemovedData,
   ModelsData,
   OS,
   ProjectSettings,
@@ -13447,6 +13506,7 @@ import {
   LogData,
   McpServerConfig,
   McpTool,
+  MessageRemovedData,
   Mode,
   Model,
   ModelsData,
@@ -13515,6 +13575,7 @@ type EventDataMap = {
   'task-started': TaskData;
   'task-completed': TaskData;
   'task-cancelled': TaskData;
+  'message-removed': MessageRemovedData;
 };
 ⋮----
 type EventCallback<T> = (data: T) => void;
@@ -13552,6 +13613,8 @@ private async get<T>(endpoint: string, params?: Record<string, unknown>): Promis
 private async patch<B, R>(endpoint: string, body: B): Promise<R>
 ⋮----
 private async delete<T>(endpoint: string, params?: Record<string, unknown>): Promise<T>
+⋮----
+private async deleteWithBody<B, T>(endpoint: string, body: B): Promise<T>
 ⋮----
 private async put<B, R>(endpoint: string, body: B, params?: Record<string, unknown>): Promise<R>
 ⋮----
@@ -13619,6 +13682,8 @@ applyEdits(baseDir: string, taskId: string, edits: FileEdit[]): void
 ⋮----
 clearContext(baseDir: string, taskId: string): void
 removeLastMessage(baseDir: string, taskId: string): void
+⋮----
+async removeMessage(baseDir: string, taskId: string, messageId: string): Promise<void>
 compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructions?: string): void
 setZoomLevel(level: number): Promise<void>
 ⋮----
@@ -13658,6 +13723,8 @@ addToolListener(baseDir: string, taskId: string, callback: (data: ToolData) => v
 addUserMessageListener(baseDir: string, taskId: string, callback: (data: UserMessageData) => void): () => void
 addInputHistoryUpdatedListener(baseDir: string, callback: (data: InputHistoryData) => void): () => void
 addClearTaskListener(baseDir: string, taskId: string, callback: (data: ClearTaskData) => void): () => void
+⋮----
+addMessageRemovedListener(baseDir: string, taskId: string, callback: (data: MessageRemovedData) => void): () => void
 addProjectStartedListener(baseDir: string, callback: (data: ProjectStartedData) => void): () => void
 addVersionsInfoUpdatedListener(callback: (data: VersionsInfo) => void): () => void
 ⋮----
@@ -14515,12 +14582,14 @@ const handleItemSelect = (value: T) =>
 ================
 File: src/renderer/src/components/common/LoadingOverlay.tsx
 ================
+import { AnimatePresence, motion } from 'framer-motion';
 import { CgSpinner } from 'react-icons/cg';
 import { clsx } from 'clsx';
 ⋮----
 type Props = {
   message: string;
   spinnerSize?: 'sm' | 'md' | 'lg';
+  animateOpacity?: boolean;
 };
 ⋮----
 export const LoadingOverlay = (
@@ -15646,7 +15715,7 @@ File: src/renderer/src/components/message/MessageBar.tsx
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsageReportData } from '@common/types';
-import { MdDeleteForever, MdRedo, MdEdit } from 'react-icons/md';
+import { MdDeleteForever, MdEdit, MdRedo } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
 ⋮----
@@ -15779,7 +15848,7 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'rea
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { TaskData } from '@common/types';
+import { DefaultTaskState, TaskData } from '@common/types';
 import { TaskStateActions } from 'src/renderer/src/components/message/TaskStateActions';
 ⋮----
 import { MessageBlock } from './MessageBlock';
@@ -16355,7 +16424,7 @@ File: src/renderer/src/components/message/VirtualizedMessages.tsx
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { TaskData } from '@common/types';
+import { DefaultTaskState, TaskData } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import { TaskStateActions } from 'src/renderer/src/components/message/TaskStateActions';
 ⋮----
@@ -18251,6 +18320,7 @@ import { useTranslation } from 'react-i18next';
 import { startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { clsx } from 'clsx';
 ⋮----
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
@@ -18261,16 +18331,14 @@ import { useApi } from '@/contexts/ApiContext';
 import { TaskProvider } from '@/contexts/TaskContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useTaskStore } from '@/stores/taskStore';
 ⋮----
 type Props = {
   project: ProjectData;
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
 };
-⋮----
-// when there is active task and is new we don't need to create new one
-⋮----
-// Task will be automatically added via the existing listener
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -18310,6 +18378,8 @@ const initProject = async () =>
 ⋮----
 const handleToggleCollapse = () =>
 ⋮----
+const handleToggleTaskSidebar = () =>
+⋮----
 // eslint-disable-next-line no-console
 ⋮----
 // Task will be automatically removed via the existing handleTaskDeleted listener
@@ -18337,9 +18407,10 @@ import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
-import { RiRobot2Line } from 'react-icons/ri';
+import { RiRobot2Line, RiMenuUnfold4Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { getProviderModelId, AVAILABLE_PROVIDERS } from '@common/agent';
+import { clsx } from 'clsx';
 ⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
@@ -18367,6 +18438,7 @@ type Props = {
   onModelsChange?: (modelsData: ModelsData | null) => void;
   runCommand: (command: string) => void;
   onToggleSidebar: () => void;
+  onToggleTaskSidebar?: () => void;
   updateTask: (updates: Partial<TaskData>, useOptimistic?: boolean) => void;
 };
 ⋮----
@@ -18395,6 +18467,10 @@ if (!settings)
 // eslint-disable-next-line no-console
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+<div className=
+⋮----
+{/* Task sidebar toggle for mobile */}
 ⋮----
 // Two-row layout for Agent mode with Aider tools
 ⋮----
@@ -18428,7 +18504,6 @@ import { BiDuplicate, BiArchive, BiArchiveIn } from 'react-icons/bi';
 import { HiXMark } from 'react-icons/hi2';
 import { useDebounce, useLongPress } from '@reactuses/core';
 ⋮----
-import { useTask } from '@/contexts/TaskContext';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { Input } from '@/components/common/Input';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
@@ -18438,24 +18513,9 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LoadingText } from '@/components/common/LoadingText';
 import { getTaskStateLabel, TaskStateChip } from '@/components/common/TaskStateChip';
+import { useTaskState } from '@/stores/taskStore';
 ⋮----
-type TaskMenuButtonProps = {
-  task: TaskData;
-  onEdit: () => void;
-  onDelete?: () => void;
-  onExportToMarkdown?: () => void;
-  onExportToImage?: () => void;
-  onDuplicateTask?: () => void;
-  onArchiveTask?: () => void;
-  onUnarchiveTask?: () => void;
-  onTogglePin?: () => void;
-  onChangeState?: (newState: string) => void;
-  isPinned?: boolean;
-};
-⋮----
-const handleMenuClick = () =>
-⋮----
-const handleEditClick = (e: MouseEvent) =>
+return <span className=
 ⋮----
 const handleDeleteClick = (e: MouseEvent) =>
 ⋮----
@@ -18472,8 +18532,6 @@ const handleUnarchiveTaskClick = (e: MouseEvent) =>
 const handlePinClick = (e: MouseEvent) =>
 ⋮----
 const handleStateSubmenuToggle = () =>
-⋮----
-const handleStateChange = (e: MouseEvent, state: string) =>
 ⋮----
 <div className=
 ⋮----
@@ -18513,6 +18571,8 @@ const handleConfirmDelete = async (taskId: string) =>
 // eslint-disable-next-line no-console
 ⋮----
 const handleCancelDelete = () =>
+⋮----
+const handleEditClick = (taskId: string, taskName: string) =>
 ⋮----
 const handleConfirmEdit = async (taskId: string) =>
 ⋮----
@@ -18558,8 +18618,6 @@ const handleBulkDelete = async () =>
 const handleBulkArchive = async () =>
 ⋮----
 // eslint-disable-next-line no-console
-⋮----
-return <span className=
 ⋮----
 label=
 ⋮----
@@ -18610,7 +18668,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSidebarWidth } from './useSidebarWidth';
 ⋮----
 import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { isLogMessage, isResponseMessage, isToolMessage, isUserMessage, Message, TaskInfoMessage } from '@/types/message';
+import { isLogMessage, isUserMessage, Message, TaskInfoMessage } from '@/types/message';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -18634,6 +18692,8 @@ import { useTask } from '@/contexts/TaskContext';
 import { useAgents } from '@/contexts/AgentsContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
+import { useTaskMessages, useTaskState } from '@/stores/taskStore';
+import { showErrorNotification } from '@/utils/notifications';
 ⋮----
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -18656,6 +18716,7 @@ type Props = {
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
+  onToggleTaskSidebar?: () => void;
 };
 ⋮----
 // Focus prompt field
@@ -18705,7 +18766,9 @@ const handleUnarchiveTask = () =>
 ⋮----
 const handleDeleteTask = () =>
 ⋮----
-const handleRemoveMessage = (messageToRemove: Message) =>
+const handleRemoveMessage = async (messageToRemove: Message) =>
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 } catch (error)
 ⋮----
@@ -19061,6 +19124,7 @@ type Props = {
   locked: boolean;
   onChange?: (enabled: boolean) => void;
   onLockChange?: (locked: boolean) => void;
+  showLabel?: boolean;
 };
 ⋮----
 const handleClick = () =>
@@ -19201,6 +19265,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { AudioAnalyzer } from '@/components/PromptField/AudioAnalyzer';
 import { AutoApprove } from '@/components/PromptField/AutoApprove';
+import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 const isPathLike = (input: string): boolean =>
 ⋮----
@@ -19246,8 +19311,6 @@ type Props = {
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   showTaskInfo?: () => void;
 };
-⋮----
-const setTextWithDispatch = (newText: string) =>
 ⋮----
 // When recording stops, we reset after a short delay or immediately?
 // We want to keep the text.
@@ -19307,6 +19370,8 @@ className=
 paste(event)
 ⋮----
 data-tooltip-content=
+⋮----
+<div className=
 ⋮----
 onClose=
 
@@ -21079,16 +21144,16 @@ export const useSettings = () =>
 ================
 File: src/renderer/src/contexts/TaskContext.tsx
 ================
-import React, { createContext, ReactNode, startTransition, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect } from 'react';
 import { usePrevious } from '@reactuses/core';
 import {
   AutocompletionData,
   ClearTaskData,
   CommandOutputData,
-  ContextFile,
   ContextFilesUpdatedData,
   DefaultTaskState,
   LogData,
+  MessageRemovedData,
   ModelsData,
   QuestionData,
   ResponseChunkData,
@@ -21116,50 +21181,23 @@ import {
   UserMessage,
 } from '@/types/message';
 import { useApi } from '@/contexts/ApiContext';
-⋮----
-export interface TaskState {
-  loading: boolean;
-  loaded: boolean;
-  messages: Message[];
-  tokensInfo: TokensInfoData | null;
-  question: QuestionData | null;
-  todoItems: TodoItem[];
-  allFiles: string[];
-  autocompletionWords: string[];
-  aiderTotalCost: number;
-  contextFiles: ContextFile[];
-  aiderModelsData: ModelsData | null;
-}
+import { useTaskStore } from '@/stores/taskStore';
 ⋮----
 interface TaskEventSubscriberProps {
   baseDir: string;
   taskId: string;
   state?: string;
-  updateTaskState: (taskId: string, updates: Partial<TaskState>) => void;
-  clearSession: (taskId: string, messagesOnly: boolean) => void;
-  setQuestion: (taskId: string, question: QuestionData | null) => void;
-  setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
-  setMessages: (taskId: string, updateMessages: (prevState: Message[]) => Message[]) => void;
 }
 ⋮----
-const TaskEventSubscriber: React.FC<TaskEventSubscriberProps> = ({
-  baseDir,
-  taskId,
-  state,
-  updateTaskState,
-  clearSession,
-  setQuestion,
-  setTodoItems,
-  setMessages,
-}) =>
+const TaskEventSubscriber: React.FC<TaskEventSubscriberProps> = (
 ⋮----
-const setAiderTotalCost = (aiderTotalCost: number) =>
+const handleSetAiderTotalCost = (aiderTotalCost: number) =>
 ⋮----
-const setAllFiles = (allFiles: string[]) =>
+const handleSetAllFiles = (allFiles: string[]) =>
 ⋮----
-const setAutocompletionWords = (autocompletionWords: string[]) =>
+const handleSetAutocompletionWords = (autocompletionWords: string[]) =>
 ⋮----
-const setTokensInfo = (tokensInfo: TokensInfoData | null) =>
+const handleSetTokensInfo = (tokensInfo: TokensInfoData | null) =>
 ⋮----
 const handleResponseChunk = (
 ⋮----
@@ -21211,8 +21249,10 @@ const handleUpdateAiderModels = (data: ModelsData) =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+const handleMessageRemoved = (data: MessageRemovedData) =>
+⋮----
 export interface TaskContextType {
-  getTaskState: (taskId: string, loadIfNotLoaded?: boolean) => TaskState | null;
+  loadTask: (taskId: string) => void;
   clearSession: (taskId: string, messagesOnly: boolean) => void;
   resetTask: (taskId: string) => void;
   setMessages: (taskId: string, updateMessages: (prevState: Message[]) => Message[]) => void;
@@ -21226,7 +21266,7 @@ export interface TaskContextType {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-// setEditingMessageIndex(null);
+export const useTask = (): TaskContextType =>
 
 ================
 File: src/renderer/src/hooks/useAudioRecorder.ts
@@ -22420,6 +22460,52 @@ toggleExpand(item.id);
 {/* Children */}
 ⋮----
 {/* Content */}
+
+================
+File: src/renderer/src/stores/taskStore.ts
+================
+import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
+import { ContextFile, ModelsData, QuestionData, TodoItem, TokensInfoData } from '@common/types';
+⋮----
+import { Message } from '@/types/message';
+⋮----
+export interface TaskState {
+  loading: boolean;
+  loaded: boolean;
+  tokensInfo: TokensInfoData | null;
+  question: QuestionData | null;
+  todoItems: TodoItem[];
+  allFiles: string[];
+  autocompletionWords: string[];
+  aiderTotalCost: number;
+  contextFiles: ContextFile[];
+  aiderModelsData: ModelsData | null;
+  lastActiveAt: Date | null;
+}
+⋮----
+interface TaskStore {
+  taskStateMap: Map<string, TaskState>;
+  taskMessagesMap: Map<string, Message[]>;
+
+  ensureTask: (taskId: string) => void;
+  updateTaskState: (taskId: string, updates: Partial<TaskState>) => void;
+  setMessages: (taskId: string, updateMessages: (prev: Message[]) => Message[]) => void;
+  setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
+  setAllFiles: (taskId: string, allFiles: string[]) => void;
+  setAutocompletionWords: (taskId: string, autocompletionWords: string[]) => void;
+  setTokensInfo: (taskId: string, tokensInfo: TokensInfoData | null) => void;
+  setQuestion: (taskId: string, question: QuestionData | null) => void;
+  setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
+  setAiderTotalCost: (taskId: string, cost: number) => void;
+  clearSession: (taskId: string, messagesOnly: boolean) => void;
+}
+⋮----
+// we are already in a pending state, no need to update
+⋮----
+export const useTaskState = (taskId: string)
+⋮----
+export const useTaskMessages = (taskId: string)
 
 ================
 File: src/renderer/src/themes/theme-aurora.scss
@@ -25198,7 +25284,8 @@ File: package.json
     "ws": "^8.18.0",
     "yaml": "^2.8.0",
     "yaml-front-matter": "^4.1.1",
-    "zod": "^4.1.11"
+    "zod": "^4.1.11",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^2.0.0",
