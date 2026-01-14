@@ -2187,9 +2187,11 @@ export class Task {
         mode,
         error: error instanceof Error ? error.message : String(error),
       });
-      this.addLogMessage('error', 'Failed to compact conversation.');
-      // Prevent memory leaks by cleaning up pending prompt resources in aider mode
-      if (mode !== 'agent') {
+      this.addLogMessage('error', 'Failed to compact conversation. Original conversation preserved.');
+      // Prevent memory leaks by cleaning up pending prompt resources
+      if (mode === 'agent' && waitForAgentCompletion) {
+        this.resolveAgentRunPromises();
+      } else if (mode !== 'agent') {
         this.promptFinished();
       }
     }
