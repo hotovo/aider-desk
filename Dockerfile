@@ -29,11 +29,8 @@ RUN node scripts/download-uv.mjs && \
 RUN npm run build:server
 
 # Production stage
-ARG TARGETARCH
 FROM node:24-slim
-
-# Map Docker's amd64 architecture name to our x64 naming convention
-ENV ARCH_SUFFIX=${TARGETARCH}
+ARG TARGETARCH=amd64
 
 # Install Python 3.12 and build tools using deadsnakes PPA
 RUN apt-get update && \
