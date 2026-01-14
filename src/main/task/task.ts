@@ -2110,66 +2110,89 @@ export class Task {
       return content;
     };
 
-    if (mode === 'agent') {
-      // Agent mode logic
-      if (!profile) {
-        throw new Error('No active Agent profile found');
-      }
+    try {
+      if (mode === 'agent') {
+        // Agent mode logic
+        if (!profile) {
+          throw new Error('No active Agent profile found');
+        }
 
-      const compactConversationAgentProfile: AgentProfile = {
-        ...COMPACT_CONVERSATION_AGENT_PROFILE,
-        provider: profile.provider,
-        model: profile.model,
-      };
+        const compactConversationAgentProfile: AgentProfile = {
+          ...COMPACT_CONVERSATION_AGENT_PROFILE,
+          provider: profile.provider,
+          model: profile.model,
+        };
 
-      if (waitForAgentCompletion) {
-        await this.waitForCurrentAgentToFinish();
-      }
-      const agentMessages = await this.agent.runAgent(
-        this,
-        compactConversationAgentProfile,
-        this.promptsManager.getCompactConversationPrompt(this, customInstructions),
-        promptContext,
-        contextMessages,
-        [],
-        undefined,
-        abortSignal,
-      );
-      if (waitForAgentCompletion) {
-        this.resolveAgentRunPromises();
-      }
+        if (waitForAgentCompletion) {
+          await this.waitForCurrentAgentToFinish();
+        }
+        const agentMessages = await this.agent.runAgent(
+          this,
+          compactConversationAgentProfile,
+          this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          promptContext,
+          contextMessages,
+          [],
+          undefined,
+          abortSignal,
+        );
+        if (waitForAgentCompletion) {
+          this.resolveAgentRunPromises();
+        }
 
-      if (agentMessages.length > 0) {
-        // Clear existing context and add the summary
-        const summaryMessage = agentMessages[agentMessages.length - 1];
-        summaryMessage.content = extractSummary(extractTextContent(summaryMessage.content));
+        if (agentMessages.length > 0) {
+          // Clear existing context and add the summary
+          const summaryMessage = agentMessages[agentMessages.length - 1];
+          summaryMessage.content = extractSummary(extractTextContent(summaryMessage.content));
 
-        this.contextManager.setContextMessages([userMessage, summaryMessage]);
+          this.contextManager.setContextMessages([userMessage, summaryMessage]);
+
+          await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
+        }
+      } else {
+        const responses = await this.sendPromptToAider(
+          this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          undefined,
+          'ask',
+          undefined,
+          [],
+          undefined,
+        );
+
+        // Collect all new messages before setting the context
+        const newMessages: ContextMessage[] = [userMessage];
+        for (const response of responses) {
+          if (response.content) {
+            newMessages.push({
+              id: response.messageId,
+              role: MessageRole.Assistant,
+              content: extractSummary(response.content),
+              promptContext,
+            });
+          }
+        }
+
+        // Set all messages at once
+        this.contextManager.setContextMessages(newMessages);
 
         await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
       }
-    } else {
-      const responses = await this.sendPromptToAider(
-        this.promptsManager.getCompactConversationPrompt(this, customInstructions),
-        undefined,
-        'ask',
-        undefined,
-        [],
-        undefined,
-      );
 
-      // add messages to session
-      this.contextManager.setContextMessages([userMessage], false);
-      for (const response of responses) {
-        if (response.content) {
-          this.contextManager.addContextMessage(MessageRole.Assistant, extractSummary(response.content));
-        }
+      await this.updateContextInfo();
+      this.addLogMessage('info', 'Conversation compacted.');
+    } catch (error) {
+      logger.error('Failed to compact conversation', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        mode,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.addLogMessage('error', 'Failed to compact conversation.');
+      // Prevent memory leaks by cleaning up pending prompt resources in aider mode
+      if (mode !== 'agent') {
+        this.promptFinished();
       }
-      await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
     }
-
-    await this.updateContextInfo();
-    this.addLogMessage('info', 'Conversation compacted.');
   }
 
   public async generateContextMarkdown(): Promise<string | null> {
