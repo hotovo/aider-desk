@@ -6,6 +6,9 @@ import { clsx } from 'clsx';
 import './Terminal.scss';
 import { useApi } from '@/contexts/ApiContext';
 
+// Module-level promise to ensure ghostty-web init() is called only once globally
+let ghosttyInitPromise: Promise<void> | null = null;
+
 export type TerminalRef = {
   focus: () => void;
   clear: () => void;
@@ -63,7 +66,10 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
     }
 
     const initializeTerminal = async () => {
-      await init();
+      if (!ghosttyInitPromise) {
+        ghosttyInitPromise = init();
+      }
+      await ghosttyInitPromise;
 
       const ghostty = new GhosttyTerminal({
         theme: {
@@ -109,9 +115,8 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
 
     return () => {
       ghosttyTerminal?.dispose();
-      setGhosttyTerminal(null);
     };
-  }, [ghosttyTerminal]);
+  }, []);
 
   // Create terminal process
   useLayoutEffect(() => {
@@ -133,7 +138,8 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
 
         setTerminalId(id);
         setIsConnected(true);
-      } catch {
+      } catch (error) {
+        console.error('Failed to create terminal process:', error);
         ghosttyTerminal?.writeln('\\x1b[31mFailed to create terminal process\\x1b[0m');
       }
     };
