@@ -846,6 +846,7 @@ export class Agent {
           logger.debug('Streaming enabled, using streamText');
           const result = streamText({
             ...getBaseModelCallParams(),
+            streamOptions: { includeUsage: true },
             onError: ({ error }) => {
               if (effectiveAbortSignal?.aborted) {
                 return;
