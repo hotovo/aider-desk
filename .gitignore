@@ -30,3 +30,5 @@ start-docker.sh
 .claude-trace
 repomix-output.txt
 .eslintcache
+.tldr
+.tldrignore
