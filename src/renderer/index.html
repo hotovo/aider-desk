@@ -11,7 +11,7 @@
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:;"
+      content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss: data:;"
     />
     <link rel="stylesheet" href="/src/fonts.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">

@@ -5,3 +5,15 @@
 .xterm-screen {
   @apply px-3;
 }
+
+.terminal, .terminal * {
+  cursor: none !important;
+}
+
+.xterm, .xterm * {
+  cursor: none !important;
+}
+
+.terminal textarea {
+  caret-color: transparent;
+}
