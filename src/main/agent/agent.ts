@@ -30,6 +30,7 @@ import {
   type ToolSet,
   wrapLanguageModel,
 } from 'ai';
+import type { SharedV2ProviderOptions } from '@ai-sdk/provider';
 import { delay, extractServerNameToolName } from '@common/utils';
 import { LlmProviderName } from '@common/agent';
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
@@ -757,9 +758,30 @@ export class Agent {
         ...providerParameters,
       });
 
+      // Default provider options for specific providers
+      const defaultProviderOptions: SharedV2ProviderOptions = {
+        litellm: {
+          streamOptions: { include_usage: true },
+        },
+      };
+
+      // Merge default provider options with provider-specific options
+      const mergedProviderOptions: SharedV2ProviderOptions = {
+        ...defaultProviderOptions,
+        ...providerOptions,
+      };
+
+      // Deep merge for providers that have defaults
+      if (defaultProviderOptions.litellm && providerOptions?.litellm) {
+        mergedProviderOptions.litellm = {
+          ...defaultProviderOptions.litellm,
+          ...providerOptions.litellm,
+        };
+      }
+
       const getBaseModelCallParams = () => {
         return {
-          providerOptions,
+          providerOptions: mergedProviderOptions,
           model: wrapLanguageModel({
             model,
             middleware: extractReasoningMiddleware({
@@ -846,7 +868,6 @@ export class Agent {
           logger.debug('Streaming enabled, using streamText');
           const result = streamText({
             ...getBaseModelCallParams(),
-            streamOptions: { includeUsage: true },
             onError: ({ error }) => {
               if (effectiveAbortSignal?.aborted) {
                 return;
@@ -1072,6 +1093,27 @@ export class Agent {
     const providerOptions = this.modelManager.getProviderOptions(provider, agentProfile.model);
     const providerParameters = this.modelManager.getProviderParameters(provider, agentProfile.model);
 
+    // Default provider options for specific providers
+    const defaultProviderOptions: SharedV2ProviderOptions = {
+      litellm: {
+        streamOptions: { include_usage: true },
+      },
+    };
+
+    // Merge default provider options with provider-specific options
+    const mergedProviderOptions: SharedV2ProviderOptions = {
+      ...defaultProviderOptions,
+      ...providerOptions,
+    };
+
+    // Deep merge for providers that have defaults
+    if (defaultProviderOptions.litellm && providerOptions?.litellm) {
+      mergedProviderOptions.litellm = {
+        ...defaultProviderOptions.litellm,
+        ...providerOptions.litellm,
+      };
+    }
+
     logger.info('Generating text:', {
       providerId: provider.id,
       providerName: provider.provider.name,
@@ -1083,7 +1125,7 @@ export class Agent {
       model,
       system: systemPrompt,
       messages: [{ role: 'user', content: prompt }],
-      providerOptions,
+      providerOptions: mergedProviderOptions,
       ...providerParameters,
     });
 
