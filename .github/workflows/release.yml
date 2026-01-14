@@ -271,27 +271,26 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Using version: $VERSION"
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build Docker image
+      - name: Build and push multi-platform Docker images
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository }}
           VERSION=${{ steps.get-version.outputs.version }}
           
-          docker build -t ${IMAGE_NAME}:${VERSION} .
+          docker buildx build --platform linux/amd64,linux/arm64 \
+            -t ${IMAGE_NAME}:${VERSION} \
+            --push \
+            .
           
-          echo "Built images:"
-          docker images | grep ${IMAGE_NAME}
-
-      - name: Push Docker image
-        run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository }}
-          VERSION=${{ steps.get-version.outputs.version }}
-          
-          docker push ${IMAGE_NAME}:${VERSION}
-          
-          echo "Pushed image: ${IMAGE_NAME}:${VERSION}"
+          echo "Built and pushed multi-platform image: ${IMAGE_NAME}:${VERSION}"
 
   combine-macos-yml:
     name: Combine macOS yml files

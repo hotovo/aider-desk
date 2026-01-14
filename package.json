@@ -23,7 +23,7 @@
     "build:mcp": "esbuild src/mcp-server/aider-desk-mcp-server.ts --bundle --platform=node --outdir=out/mcp-server",
     "prebuild:server": "electron-vite build && npm run build:mcp",
     "build:server": "vite build --config vite.config.server.ts && cp -r resources/ out/resources",
-    "postbuild:server": "npm rebuild",
+    "postbuild:server": "npm rebuild && (cd out/resources && ln -sf linux-x64 linux-amd64 || true)",
     "build": "npm run typecheck && electron-vite build && npm run build:mcp",
     "postinstall": "electron-builder install-app-deps && node scripts/download-uv.mjs && node scripts/download-probe.mjs && patch-package",
     "build:unpack": "npm run build && electron-builder --dir",
