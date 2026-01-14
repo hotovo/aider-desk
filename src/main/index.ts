@@ -33,7 +33,7 @@ const setupCustomMenu = (): void => {
         { role: 'cut', label: 'Cut' },
         { role: 'copy', label: 'Copy' },
         { role: 'paste', label: 'Paste' },
-        { role: 'selectall', label: 'Select All' },
+        { role: 'selectAll', label: 'Select All' },
       ],
     },
     // View menu
