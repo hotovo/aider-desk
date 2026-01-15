@@ -91,6 +91,21 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
     }
   }, [activeTabId]);
 
+  // Resize terminals on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      Object.values(terminalRefs.current).forEach((terminalRef) => {
+        terminalRef?.resize();
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   // Handle copying terminal output
   const handleCopyOutput = () => {
     const activeRef = terminalRefs.current[activeTabId];

@@ -1,18 +1,20 @@
+.terminal {
+  cursor: text !important;
+}
+
+.terminal canvas {
+  cursor: text !important;
+}
+
 .xterm-viewport {
   @apply scrollbar-thin scrollbar-track-bg-primary scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary;
 }
 
 .xterm-screen {
-  @apply px-3;
+  @apply pl-3 pr-0;
 }
 
-.terminal, .terminal * {
-  cursor: none !important;
-}
 
-.xterm, .xterm * {
-  cursor: none !important;
-}
 
 .terminal textarea {
   caret-color: transparent;

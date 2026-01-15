@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
-import { Terminal as GhosttyTerminal, init } from 'ghostty-web';
+import { Terminal as GhosttyTerminal, FitAddon, init } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
 
@@ -26,6 +26,7 @@ type Props = {
 export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visible, className }, ref) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const [ghosttyTerminal, setGhosttyTerminal] = useState<GhosttyTerminal | null>(null);
+  const [fitAddon, setFitAddon] = useState<FitAddon | null>(null);
   const [terminalId, setTerminalId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const api = useApi();
@@ -38,7 +39,9 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       ghosttyTerminal?.clear();
     },
     resize: () => {
-      // Ghostty handles resizing automatically
+      if (fitAddon) {
+        fitAddon.fit();
+      }
     },
     getOutput: () => {
       if (!ghosttyTerminal) {
@@ -71,6 +74,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       }
       await ghosttyInitPromise;
 
+      const fitAddonInstance = new FitAddon();
       const ghostty = new GhosttyTerminal({
         theme: {
           background: '#0a0a0a',
@@ -102,13 +106,17 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
         scrollback: 1000,
       });
 
+      ghostty.loadAddon(fitAddonInstance);
+
       const container = terminalRef.current;
       if (!container) {
         return;
       }
       ghostty.open(container);
+      fitAddonInstance.fit();
 
       setGhosttyTerminal(ghostty);
+      setFitAddon(fitAddonInstance);
     };
 
     void initializeTerminal();
@@ -132,12 +140,16 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       }
       try {
         // Always create a new terminal for each Terminal component instance
+        if (fitAddon) {
+          fitAddon.fit();
+        }
         const cols = ghosttyTerminal?.cols || 160;
         const rows = ghosttyTerminal?.rows || 10;
         const id = await api.createTerminal(baseDir, taskId, cols, rows);
 
         setTerminalId(id);
         setIsConnected(true);
+        ghosttyTerminal?.focus();
       } catch (error) {
         console.error('Failed to create terminal process:', error);
         ghosttyTerminal?.writeln('\\x1b[31mFailed to create terminal process\\x1b[0m');
@@ -204,8 +216,8 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
   }, [terminalId, api]);
 
   return (
-    <div key="terminal" className={clsx('terminal absolute inset-0 overflow-hidden bg-[#0a0a0a]', visible ? 'visible' : 'invisible', className)}>
-      <div ref={terminalRef} className="absolute top-2 left-0 right-0 bottom-2" />
+    <div key="terminal" className={clsx('terminal absolute inset-0 cursor-text bg-[#0a0a0a]', visible ? 'visible' : 'invisible', className)}>
+      <div ref={terminalRef} className="absolute top-2 left-2 right-0 bottom-0" />
       {!isConnected && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-text-muted-light text-xs">Connecting to terminal...</div>
