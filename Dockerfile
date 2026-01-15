@@ -2,6 +2,9 @@
 # Python 3.12 is required for Aider connector
 FROM node:24-slim AS builder
 
+# These are set automatically by buildx - amd64, arm64
+ARG TARGETARCH=amd64
+
 # Set working directory
 WORKDIR /app
 
@@ -26,11 +29,9 @@ RUN node scripts/download-uv.mjs && \
     node scripts/download-probe.mjs
 
 # Build the server and MCP server (includes resources copy) - prebuild:server builds renderer
-ARG TARGETARCH=amd64
-RUN TARGETARCH=${TARGETARCH} npm run build:server
+RUN npm run build:server
 
 # Production stage
-ARG TARGETARCH=amd64
 FROM node:24-slim
 
 ARG TARGETARCH=amd64
