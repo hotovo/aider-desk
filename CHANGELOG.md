@@ -7,6 +7,8 @@
 - added flexible layout adjustments for model selectors and dropdowns to prevent overflow on small screens
 - added action to remove any message in the conversation
 - added tooltip to read and edit file power tools to show the file path on hover
+- added support for subtasks with worktree inheritance
+- updated task tools with the subtask capabilities
 
 ## [0.48.1]
 

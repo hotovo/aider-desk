@@ -26,7 +26,7 @@ type Props = {
   mode: Mode;
   setAddFileDialogOptions: React.Dispatch<React.SetStateAction<AddFileDialogOptions | null>>;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
 };
 

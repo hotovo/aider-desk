@@ -47,6 +47,7 @@ import {
   WorktreeIntegrationStatus,
   MemoryEmbeddingProgress,
   MessageRemovedData,
+  CreateTaskParams,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -106,7 +107,7 @@ export interface ApplicationAPI {
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
 
-  createNewTask: (baseDir: string) => Promise<TaskData>;
+  createNewTask: (baseDir: string, params?: CreateTaskParams) => Promise<TaskData>;
   updateTask: (baseDir: string, id: string, updates: Partial<TaskData>) => Promise<boolean>;
   deleteTask: (baseDir: string, id: string) => Promise<boolean>;
   duplicateTask: (baseDir: string, taskId: string) => Promise<TaskData>;

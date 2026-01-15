@@ -8,6 +8,7 @@ import {
   ProviderProfile,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TodoItem,
   AgentProfile,
 } from '@common/types';
@@ -196,8 +197,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.scrapeWeb(baseDir, taskId, url, filePath);
   });
 
-  ipcMain.handle('create-new-task', async (_, baseDir: string) => {
-    return await eventsHandler.createNewTask(baseDir);
+  ipcMain.handle('create-new-task', async (_, baseDir: string, params?: CreateTaskParams) => {
+    return await eventsHandler.createNewTask(baseDir, params);
   });
 
   ipcMain.handle('update-task', async (_, baseDir: string, id: string, updates: Partial<TaskData>) => {

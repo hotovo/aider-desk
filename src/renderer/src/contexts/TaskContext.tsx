@@ -586,7 +586,10 @@ export const TaskProvider: React.FC<{
           return messages;
         }, [] as Message[]);
 
-        setMessages(taskId, (existingMessages) => [...messages, ...existingMessages]);
+        setMessages(taskId, (existingMessages) => [
+          ...messages,
+          ...existingMessages.filter((existingMessage) => !messages.some((message) => message.id === existingMessage.id)),
+        ]);
         updateTaskState(taskId, {
           loading: false,
           loaded: true,

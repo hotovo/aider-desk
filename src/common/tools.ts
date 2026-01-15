@@ -141,7 +141,7 @@ export const TASKS_TOOL_DESCRIPTIONS = {
   [TASKS_TOOL_GET_TASK_MESSAGE]:
     "Retrieve a specific message from a task's conversation history by message index and task ID. The first message (index 0) is always the user's initial prompt, and subsequent messages alternate between user and assistant. Use this to examine the conversation flow, understand previous interactions, or extract specific information from the task history.",
   [TASKS_TOOL_CREATE_TASK]:
-    'Create a new task in the current project with an initial prompt. Optionally specify an agent profile ID to use different capabilities, or a model ID to override the default model. The new task will start with the provided prompt as its first user message. Use this to begin new work streams or separate different aspects of a project.',
+    'Create a new task in the current project with an initial prompt. Optionally specify an agent profile ID to use different capabilities, a model ID to override the default model, or a parentTaskId to create a subtask of another task. The parentTaskId parameter is only available for top-level tasks; if the current task is itself a subtask, you cannot create subtasks from it. The new task will start with the provided prompt as its first user message. Use this to begin new work streams, separate different aspects of a project, or break down complex tasks into manageable subtasks.',
   [TASKS_TOOL_DELETE_TASK]:
     'Permanently delete a task and all its associated data including messages, context files, and metadata. This action cannot be undone. Note that you cannot delete the currently active task. Use this to clean up completed or abandoned tasks, but be cautious as this removes all task history permanently.',
 } as const;

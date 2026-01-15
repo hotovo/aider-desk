@@ -349,7 +349,7 @@ export class Agent {
     }
 
     if (profile.useTaskTools) {
-      const taskTools = createTasksToolset(task, profile, promptContext);
+      const taskTools = createTasksToolset(this.store.getSettings(), task, profile, promptContext);
       Object.assign(toolSet, taskTools);
     }
 

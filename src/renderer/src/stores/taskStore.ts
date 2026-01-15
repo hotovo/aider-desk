@@ -40,7 +40,6 @@ interface TaskStore {
   taskStateMap: Map<string, TaskState>;
   taskMessagesMap: Map<string, Message[]>;
 
-  ensureTask: (taskId: string) => void;
   updateTaskState: (taskId: string, updates: Partial<TaskState>) => void;
   setMessages: (taskId: string, updateMessages: (prev: Message[]) => Message[]) => void;
   setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
@@ -56,18 +55,6 @@ interface TaskStore {
 export const useTaskStore = create<TaskStore>((set, get) => ({
   taskStateMap: new Map(),
   taskMessagesMap: new Map(),
-
-  ensureTask: (taskId) =>
-    set((state) => {
-      if (state.taskStateMap.has(taskId) && state.taskMessagesMap.has(taskId)) {
-        return state;
-      }
-      const newStateMap = new Map(state.taskStateMap);
-      const newMessagesMap = new Map(state.taskMessagesMap);
-      newStateMap.set(taskId, { ...EMPTY_TASK_STATE });
-      newMessagesMap.set(taskId, []);
-      return { taskStateMap: newStateMap, taskMessagesMap: newMessagesMap };
-    }),
 
   updateTaskState: (taskId, updates) =>
     set((state) => {

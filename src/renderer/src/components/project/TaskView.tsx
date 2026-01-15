@@ -53,7 +53,7 @@ const FILES_COLLAPSED_WIDTH = 36;
 type Props = {
   project: ProjectData;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
   inputHistory: string[];
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
@@ -249,11 +249,11 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     };
 
     const handleModeChange = (mode: Mode) => {
-      updateTask({ currentMode: mode });
+      updateTask(task.id, { currentMode: mode });
     };
 
     const handleMarkAsDone = () => {
-      updateTask({ state: DefaultTaskState.Done });
+      updateTask(task.id, { state: DefaultTaskState.Done });
     };
 
     const runPrompt = (prompt: string) => {
@@ -424,7 +424,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     };
 
     const handleAutoApproveChanged = (autoApprove: boolean) => {
-      updateTask({
+      updateTask(task.id, {
         autoApprove,
       });
     };

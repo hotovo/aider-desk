@@ -953,7 +953,10 @@
       "getTaskMessage": "获取任务消息",
       "createTask": "创建任务",
       "deleteTask": "删除任务",
+      "name": "名称",
+      "parentTaskId": "父任务ID",
       "execute": "执行",
+      "executeInBackground": "在后台执行",
       "yes": "是",
       "no": "否",
       "taskId": "任务ID",
@@ -1357,7 +1360,9 @@
     "archiveSelectedConfirm": "您确定要归档 {{count}} 个选中的任务吗？",
     "unarchiveSelectedConfirm": "您确定要取消归档 {{count}} 个选中的任务吗？",
     "generatingName": "正在生成名称...",
-    "changeState": "更改状态"
+    "changeState": "更改状态",
+    "createSubtask": "创建子任务",
+    "deleteConfirmWithSubtasks": "此任务有 {{count}} 个子任务。仍然要删除吗？"
   },
   "taskInfo": {
     "createdAt": "创建于",

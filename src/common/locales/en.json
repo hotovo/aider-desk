@@ -977,7 +977,10 @@
       "getTaskMessage": "Get task message",
       "createTask": "Create task",
       "deleteTask": "Delete task",
+      "name": "Name",
+      "parentTaskId": "Parent Task ID",
       "execute": "Execute",
+      "executeInBackground": "Execute in background",
       "yes": "Yes",
       "no": "No",
       "taskId": "Task ID",
@@ -1350,7 +1353,9 @@
     "archiveSelectedConfirm": "Are you sure you want to archive {{count}} selected tasks?",
     "unarchiveSelectedConfirm": "Are you sure you want to unarchive {{count}} selected tasks?",
     "generatingName": "Generating name...",
-    "changeState": "Change State"
+    "changeState": "Change State",
+    "createSubtask": "Create subtask",
+    "deleteConfirmWithSubtasks": "This task has {{count}} subtask(s). Delete anyway?"
   },
   "taskInfo": {
     "createdAt": "Created at",

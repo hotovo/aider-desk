@@ -37,7 +37,7 @@ type Props = {
   runCommand: (command: string) => void;
   onToggleSidebar: () => void;
   onToggleTaskSidebar?: () => void;
-  updateTask: (updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
 };
 
 export const TaskBar = React.forwardRef<TaskBarRef, Props>(
@@ -138,14 +138,14 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
           return;
         }
 
-        updateTask({
+        updateTask(task.id, {
           provider: provider.id,
           model: modelId,
         });
 
         updatePreferredModels(selectedModelId);
       },
-      [providers, updateTask, t, updatePreferredModels],
+      [providers, updateTask, task.id, updatePreferredModels, t],
     );
 
     useImperativeHandle(ref, () => ({
@@ -237,10 +237,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     );
 
     const toggleWeakModelLock = useCallback(() => {
-      updateTask({
+      updateTask(task.id, {
         weakModelLocked: !task.weakModelLocked,
       });
-    }, [task.weakModelLocked, updateTask]);
+    }, [task.id, task.weakModelLocked, updateTask]);
 
     const updateArchitectModel = useCallback(
       (architectModel: Model) => {

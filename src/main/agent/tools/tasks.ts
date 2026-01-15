@@ -10,23 +10,23 @@ import {
   TASKS_TOOL_LIST_TASKS,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, PromptContext, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
 
 import { ApprovalManager } from './approval-manager';
 
 import { Task } from '@/task';
 
-export const createTasksToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet => {
+export const createTasksToolset = (settings: SettingsData, task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet => {
   const approvalManager = new ApprovalManager(task, profile);
 
   const listTasksTool = tool({
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_LIST_TASKS],
     inputSchema: z.object({
       offset: z.number().optional().describe('The number of tasks to skip (for pagination)'),
-      limit: z.number().optional().default(20).describe('The maximum number of tasks to return (default: 20)'),
+      limit: z.number().optional().describe('The maximum number of tasks to return'),
       state: z.string().optional().describe('Filter tasks by state (e.g., TODO, IN_PROGRESS, DONE)'),
     }),
-    execute: async ({ offset = 0, limit = 20, state }, { toolCallId }) => {
+    execute: async ({ offset = 0, limit, state }, { toolCallId }) => {
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_LIST_TASKS, { offset, limit, state }, undefined, undefined, promptContext);
 
       const questionKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_LIST_TASKS}`;
@@ -49,17 +49,24 @@ export const createTasksToolset = (task: Task, profile: AgentProfile, promptCont
 
         // Apply pagination
         const startIndex = Math.max(0, offset);
-        const endIndex = startIndex + Math.max(0, limit);
+        const endIndex = startIndex + Math.max(0, limit || allTasks.length);
         const paginatedTasks = allTasks.slice(startIndex, endIndex);
 
-        return paginatedTasks.map((t) => ({
-          id: t.id,
-          name: t.name,
-          createdAt: t.createdAt,
-          updatedAt: t.updatedAt,
-          archived: t.archived,
-          state: t.state,
-        }));
+        return paginatedTasks.map((t) => {
+          // Count subtasks for this task
+          const subtaskIds = allTasks.filter((subtask) => subtask.parentId === t.id).map((s) => s.id);
+
+          return {
+            id: t.id,
+            name: t.name,
+            createdAt: t.createdAt,
+            updatedAt: t.updatedAt,
+            archived: t.archived,
+            state: t.state,
+            ...(t.parentId && { parentId: t.parentId }),
+            ...(subtaskIds.length > 0 && { subtaskIds }),
+          };
+        });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return `Error listing tasks: ${errorMessage}`;
@@ -94,8 +101,13 @@ export const createTasksToolset = (task: Task, profile: AgentProfile, promptCont
         const contextMessages = await targetTask.getContextMessages();
         const contextFiles = await targetTask.getContextFiles();
 
+        // Find subtasks of this task
+        const allTasks = await task.getProject().getTasks();
+        const subtaskIds = allTasks.filter((t) => t.parentId === taskId).map((t) => t.id);
+
         return {
           id: targetTask.task.id,
+          parentId: targetTask.task.parentId,
           name: targetTask.task.name,
           createdAt: targetTask.task.createdAt,
           updatedAt: targetTask.task.updatedAt,
@@ -107,6 +119,7 @@ export const createTasksToolset = (task: Task, profile: AgentProfile, promptCont
           mode: targetTask.task.currentMode,
           archived: targetTask.task.archived,
           state: targetTask.task.state,
+          ...(subtaskIds.length > 0 && { subtaskIds }),
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -172,30 +185,53 @@ export const createTasksToolset = (task: Task, profile: AgentProfile, promptCont
     },
   });
 
+  // Determine if parentTaskId should be available (only for top-level tasks)
+  const isSubtask = task.task.parentId !== null;
+
+  const autoGenerateTaskName = settings.taskSettings.autoGenerateTaskName;
+  const nameProperty = autoGenerateTaskName
+    ? z.string().optional().describe('Optional concise name for the new task. If not provided, the task name will be auto-generated from the prompt.')
+    : z.string().describe('Concise name for the new task.');
+  const CreateTaskInputSchema = z.object({
+    prompt: z.string().describe('The initial prompt for the new task'),
+    name: nameProperty,
+    agentProfileId: z.string().optional().describe('Optional agent profile ID to use for the task. Use only when explicitly requested by the user.'),
+    modelId: z.string().optional().describe('Optional model ID to use for the task. Use only when explicitly requested by the user.'),
+    execute: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe('If true, the task will be created and executed with the initial prompt. If false, only the task is created without executing.'),
+    executeInBackground: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe('If true, the task will be created and executed in the background. Only applicable if execute is true.'),
+  });
+
+  const CreateTaskWithParentInputSchema = CreateTaskInputSchema.extend({
+    parentTaskId: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        `Optional ID of the parent task. If provided, the new task will be created as a subtask of the specified parent. Use the current task's ID (${task.taskId}) to create a subtask of the current task. If not provided or null, creates a top-level task.`,
+      ),
+  });
+
   const createTaskTool = tool({
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_CREATE_TASK],
-    inputSchema: z.object({
-      prompt: z.string().describe('The initial prompt for the new task'),
-      agentProfileId: z.string().optional().describe('Optional agent profile ID to use for the task'),
-      modelId: z.string().optional().describe('Optional model ID to use for the task'),
-      execute: z
-        .boolean()
-        .optional()
-        .default(false)
-        .describe('If true, the task will be created and executed with the initial prompt. If false, only the task is created without executing.'),
-      executeInBackground: z
-        .boolean()
-        .optional()
-        .default(false)
-        .describe('If true, the task will be created and executed in the background. Only applicable if execute is true.'),
-    }),
+    inputSchema: isSubtask ? CreateTaskInputSchema : CreateTaskWithParentInputSchema,
     execute: async (args, { toolCallId }) => {
-      const { prompt, agentProfileId, modelId, execute: shouldExecute, executeInBackground } = args;
+      const { prompt, name, agentProfileId, modelId, execute: shouldExecute, executeInBackground } = args;
+      const parentTaskId: string | null | undefined = 'parentTaskId' in args ? (args.parentTaskId as string | null) : undefined;
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_CREATE_TASK, args, undefined, undefined, promptContext);
 
       const questionKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_CREATE_TASK}`;
       const questionText = 'Approve creating a new task?';
-      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${agentProfileId || 'default'}\nModel: ${modelId || 'default'}\nExecute: ${shouldExecute}`;
+      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${agentProfileId || 'default'}\nModel: ${modelId || 'default'}\nExecute: ${shouldExecute}${
+        parentTaskId !== undefined ? `\nParent Task ID: ${parentTaskId || 'none (top-level task)'}` : ''
+      }`;
 
       const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
 
@@ -204,7 +240,10 @@ export const createTasksToolset = (task: Task, profile: AgentProfile, promptCont
       }
 
       try {
-        const newTask = await task.getProject().createNewTask();
+        const newTask = await task.getProject().createNewTask({
+          parentId: parentTaskId || null,
+          name: name || '',
+        });
         const updates: Partial<TaskData> = {};
 
         if (agentProfileId) {
@@ -238,10 +277,13 @@ export const createTasksToolset = (task: Task, profile: AgentProfile, promptCont
           await taskInstance.savePromptOnly(prompt, false);
         }
 
+        const contextMessages = await taskInstance.getContextMessages();
+
         return {
           id: newTask.id,
           name: newTask.name,
-          message: shouldExecute ? 'Task created and executed successfully' : 'Task created successfully',
+          result: shouldExecute ? 'Task created and executed successfully' : 'Task created successfully',
+          ...(shouldExecute && contextMessages.length > 0 && { lastMessage: contextMessages[contextMessages.length - 1] }),
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

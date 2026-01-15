@@ -7,14 +7,14 @@ import { clsx } from 'clsx';
 import { formatHumanReadable } from '@/utils/string-utils';
 
 type Props = {
+  task: TaskData;
   tokensInfo?: TokensInfoData | null;
   maxInputTokens?: number;
   mode: Mode;
-  task: TaskData;
-  updateTask: (updates: Partial<TaskData>) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>) => void;
 };
 
-export const TokenUsageBar = ({ tokensInfo, maxInputTokens = 0, mode, task, updateTask }: Props) => {
+export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, updateTask }: Props) => {
   const { t } = useTranslation();
   const [localThreshold, setLocalThreshold] = useState(task.contextCompactingThreshold || 0);
   const [isDragging, setIsDragging] = useState(false);
@@ -25,9 +25,9 @@ export const TokenUsageBar = ({ tokensInfo, maxInputTokens = 0, mode, task, upda
 
   const onContextCompactingThreshold = useCallback(
     (value: number) => {
-      updateTask({ contextCompactingThreshold: value });
+      updateTask(task.id, { contextCompactingThreshold: value });
     },
-    [updateTask],
+    [task.id, updateTask],
   );
 
   const debouncedOnContextCompactingThreshold = debounce(onContextCompactingThreshold, 1000);

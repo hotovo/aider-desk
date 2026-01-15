@@ -31,6 +31,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TaskStateData,
   TerminalData,
   TerminalExitData,
@@ -453,8 +454,8 @@ export class BrowserApi implements ApplicationAPI {
   reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void> {
     return this.post('/mcp/reload', { mcpServers, force });
   }
-  createNewTask(baseDir: string): Promise<TaskData> {
-    return this.post('/project/tasks/new', { projectDir: baseDir });
+  createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData> {
+    return this.post('/project/tasks/new', { projectDir: baseDir, ...params });
   }
   updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<boolean> {
     return this.post('/project/tasks', { projectDir: baseDir, id, updates });

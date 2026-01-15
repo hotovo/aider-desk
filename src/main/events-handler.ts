@@ -19,6 +19,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TaskStateData,
   TodoItem,
   UsageDataRow,
@@ -585,8 +586,8 @@ export class EventsHandler {
     }
   }
 
-  async createNewTask(baseDir: string): Promise<TaskData> {
-    return await this.projectManager.getProject(baseDir).createNewTask();
+  async createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData> {
+    return await this.projectManager.getProject(baseDir).createNewTask(params);
   }
 
   async updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<TaskData | undefined> {

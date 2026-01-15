@@ -800,9 +800,15 @@ export const TaskDataSchema = z.object({
   currentMode: z.enum(['code', 'ask', 'architect', 'context', 'agent']).optional(),
   contextCompactingThreshold: z.number().optional(),
   weakModelLocked: z.boolean().optional(),
+  parentId: z.string().nullable().optional(),
 });
 
 export type TaskData = z.infer<typeof TaskDataSchema>;
+
+export interface CreateTaskParams {
+  parentId?: string | null;
+  name?: string;
+}
 
 export enum DefaultTaskState {
   Todo = 'TODO',

@@ -2272,7 +2272,10 @@ File: src/common/locales/en.json
       "getTaskMessage": "Get task message",
       "createTask": "Create task",
       "deleteTask": "Delete task",
+      "name": "Name",
+      "parentTaskId": "Parent Task ID",
       "execute": "Execute",
+      "executeInBackground": "Execute in background",
       "yes": "Yes",
       "no": "No",
       "taskId": "Task ID",
@@ -2645,7 +2648,9 @@ File: src/common/locales/en.json
     "archiveSelectedConfirm": "Are you sure you want to archive {{count}} selected tasks?",
     "unarchiveSelectedConfirm": "Are you sure you want to unarchive {{count}} selected tasks?",
     "generatingName": "Generating name...",
-    "changeState": "Change State"
+    "changeState": "Change State",
+    "createSubtask": "Create subtask",
+    "deleteConfirmWithSubtasks": "This task has {{count}} subtask(s). Delete anyway?"
   },
   "taskInfo": {
     "createdAt": "Created at",
@@ -3706,7 +3711,10 @@ File: src/common/locales/zh.json
       "getTaskMessage": "获取任务消息",
       "createTask": "创建任务",
       "deleteTask": "删除任务",
+      "name": "名称",
+      "parentTaskId": "父任务ID",
       "execute": "执行",
+      "executeInBackground": "在后台执行",
       "yes": "是",
       "no": "否",
       "taskId": "任务ID",
@@ -4110,7 +4118,9 @@ File: src/common/locales/zh.json
     "archiveSelectedConfirm": "您确定要归档 {{count}} 个选中的任务吗？",
     "unarchiveSelectedConfirm": "您确定要取消归档 {{count}} 个选中的任务吗？",
     "generatingName": "正在生成名称...",
-    "changeState": "更改状态"
+    "changeState": "更改状态",
+    "createSubtask": "创建子任务",
+    "deleteConfirmWithSubtasks": "此任务有 {{count}} 个子任务。仍然要删除吗？"
   },
   "taskInfo": {
     "createdAt": "创建于",
@@ -4564,6 +4574,7 @@ import {
   WorktreeIntegrationStatus,
   MemoryEmbeddingProgress,
   MessageRemovedData,
+  CreateTaskParams,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -4623,7 +4634,7 @@ export interface ApplicationAPI {
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
 
-  createNewTask: (baseDir: string) => Promise<TaskData>;
+  createNewTask: (baseDir: string, params?: CreateTaskParams) => Promise<TaskData>;
   updateTask: (baseDir: string, id: string, updates: Partial<TaskData>) => Promise<boolean>;
   deleteTask: (baseDir: string, id: string) => Promise<boolean>;
   duplicateTask: (baseDir: string, taskId: string) => Promise<TaskData>;
@@ -5480,6 +5491,11 @@ export type WorkingMode = z.infer<typeof WorkingModeSchema>;
 ⋮----
 export type TaskData = z.infer<typeof TaskDataSchema>;
 ⋮----
+export interface CreateTaskParams {
+  parentId?: string | null;
+  name?: string;
+}
+⋮----
 export enum DefaultTaskState {
   Todo = 'TODO',
   InProgress = 'IN_PROGRESS',
@@ -6048,21 +6064,27 @@ import {
   TASKS_TOOL_LIST_TASKS,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, PromptContext, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
 import { Task } from '@/task';
 ⋮----
-export const createTasksToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
+export const createTasksToolset = (settings: SettingsData, task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
 ⋮----
 // Filter by state if provided
 ⋮----
 // Apply pagination
 ⋮----
+// Count subtasks for this task
+⋮----
+// Find subtasks of this task
+⋮----
 // Handle negative indexing
 ⋮----
 actualIndex = contextMessages.length + messageIndex; // e.g., -1 becomes length-1
+⋮----
+// Determine if parentTaskId should be available (only for top-level tasks)
 ⋮----
 // Parse modelId to extract provider and model
 ⋮----
@@ -9122,7 +9144,7 @@ File: src/main/project/project.ts
 import fs from 'fs/promises';
 import path from 'path';
 ⋮----
-import { CustomCommand, ProjectSettings, SettingsData, TaskData } from '@common/types';
+import { CustomCommand, ProjectSettings, SettingsData, TaskData, CreateTaskParams } from '@common/types';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 ⋮----
@@ -9165,7 +9187,9 @@ constructor(
 ⋮----
 public async start()
 ⋮----
-public async createNewTask()
+public async createNewTask(params?: CreateTaskParams)
+⋮----
+// adding files from internal task that keeps track of files to new task
 ⋮----
 private prepareTask(taskId: string = uuidv4(), initialTaskData?: Partial<TaskData>)
 ⋮----
@@ -9197,11 +9221,17 @@ public getCustomCommands()
 ⋮----
 public sendCustomCommandsUpdated(commands: CustomCommand[])
 ⋮----
-public async deleteTask(taskId: string): Promise<void>
+private async deleteTaskInternal(taskId: string): Promise<void>
 ⋮----
 // Close the task if it's loaded
 ⋮----
 // Delete the task directory
+⋮----
+public async deleteTask(taskId: string): Promise<void>
+⋮----
+// First, find and delete all subtasks recursively
+⋮----
+// Then delete the parent task
 ⋮----
 public async duplicateTask(taskId: string): Promise<TaskData>
 ⋮----
@@ -10820,6 +10850,8 @@ private async initInternal()
 ⋮----
 // Check if worktree is enabled for this task
 ⋮----
+// Worktree is already set (e.g. inherited from parent)
+⋮----
 // Create a default worktree for this task
 ⋮----
 // Check if worktree exists and set worktreeEnabled accordingly
@@ -10860,9 +10892,9 @@ public async runPrompt(prompt: string, mode: Mode = 'code', addToInputHistory = 
 ⋮----
 public async savePromptOnly(prompt: string, addInputHistory = true): Promise<void>
 ⋮----
-// Add user message to context
-⋮----
 // Add to context manager
+⋮----
+// Add user message to context
 ⋮----
 public async runPromptInAider(prompt: string, promptContext: PromptContext, mode?: Mode): Promise<ResponseCompletedData[]>
 ⋮----
@@ -11153,7 +11185,11 @@ const extractSummary = (content: string): string =>
 ⋮----
 // Clear existing context and add the summary
 ⋮----
-// add messages to session
+// Collect all new messages before setting the context
+⋮----
+// Set all messages at once
+⋮----
+// Prevent memory leaks by cleaning up pending prompt resources
 ⋮----
 public async generateContextMarkdown(): Promise<string | null>
 ⋮----
@@ -12584,6 +12620,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TaskStateData,
   TodoItem,
   UsageDataRow,
@@ -12748,7 +12785,7 @@ async scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string)
 ⋮----
 // Check if path looks like a directory (ends with separator)
 ⋮----
-async createNewTask(baseDir: string): Promise<TaskData>
+async createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData>
 ⋮----
 async updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<TaskData | undefined>
 ⋮----
@@ -12871,7 +12908,7 @@ const setupCustomMenu = (): void =>
 ⋮----
 // File menu
 ⋮----
-// Edit menu (without Select All)
+// Edit menu
 ⋮----
 // View menu
 ⋮----
@@ -12919,6 +12956,7 @@ import {
   ProviderProfile,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TodoItem,
   AgentProfile,
 } from '@common/types';
@@ -13458,6 +13496,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TerminalData,
   TerminalExitData,
   TokensInfoData,
@@ -13523,6 +13562,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TaskStateData,
   TerminalData,
   TerminalExitData,
@@ -13665,7 +13705,7 @@ deleteTodo(baseDir: string, taskId: string, name: string): Promise<TodoItem[]>
 clearAllTodos(baseDir: string, taskId: string): Promise<TodoItem[]>
 loadMcpServerTools(serverName: string, config?: McpServerConfig): Promise<McpTool[] | null>
 reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void>
-createNewTask(baseDir: string): Promise<TaskData>
+createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData>
 updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<boolean>
 deleteTask(baseDir: string, id: string): Promise<boolean>
 duplicateTask(baseDir: string, taskId: string): Promise<TaskData>
@@ -18127,7 +18167,7 @@ type Props = {
   mode: Mode;
   showFileDialog: () => void;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
 };
 ⋮----
@@ -18180,7 +18220,7 @@ type Props = {
   mode: Mode;
   setAddFileDialogOptions: React.Dispatch<React.SetStateAction<AddFileDialogOptions | null>>;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
 };
 ⋮----
@@ -18332,7 +18372,6 @@ import { TaskProvider } from '@/contexts/TaskContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useTaskStore } from '@/stores/taskStore';
 ⋮----
 type Props = {
   project: ProjectData;
@@ -18394,7 +18433,6 @@ const handleToggleTaskSidebar = () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-onUnarchiveTask=
 onDeleteTask=
 
 ================
@@ -18439,7 +18477,7 @@ type Props = {
   runCommand: (command: string) => void;
   onToggleSidebar: () => void;
   onToggleTaskSidebar?: () => void;
-  updateTask: (updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
 };
 ⋮----
 // Use task provider/model first, fallback to active agent profile
@@ -18502,7 +18540,7 @@ import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BiDuplicate, BiArchive, BiArchiveIn } from 'react-icons/bi';
 import { HiXMark } from 'react-icons/hi2';
-import { useDebounce, useLongPress } from '@reactuses/core';
+import { useDebounce, useLocalStorage, useLongPress } from '@reactuses/core';
 ⋮----
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { Input } from '@/components/common/Input';
@@ -18535,8 +18573,6 @@ const handleStateSubmenuToggle = () =>
 ⋮----
 <div className=
 ⋮----
-data-tooltip-content=
-⋮----
 className={clsx(
             'transition-opacity p-1.5 rounded-md hover:bg-bg-tertiary text-text-muted hover:text-text-primary',
             !isMenuOpen && 'opacity-0 group-hover:opacity-100',
@@ -18563,6 +18599,10 @@ const handleMultiselectClose = () =>
 const handleKeyDown = (e: globalThis.KeyboardEvent) =>
 ⋮----
 // Handle click outside for multiselect menu
+⋮----
+// Automatically expand parent when activeTaskId is a subtask
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
 const handleTaskClick = (e: MouseEvent, taskId: string) =>
 ⋮----
@@ -18619,9 +18659,11 @@ const handleBulkArchive = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-label=
+const toggleExpand = (e: MouseEvent) =>
 ⋮----
-onTogglePin=
+const handleCreateSubtask = (e: MouseEvent) =>
+⋮----
+label=
 ⋮----
 onChangeState=
 ⋮----
@@ -18707,7 +18749,7 @@ export type TaskViewRef = {
 type Props = {
   project: ProjectData;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
   inputHistory: string[];
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
@@ -20857,7 +20899,7 @@ type Props = {
   maxInputTokens?: number;
   mode: Mode;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>) => void;
 };
 ⋮----
 onClick=
@@ -20941,11 +20983,11 @@ import { clsx } from 'clsx';
 import { formatHumanReadable } from '@/utils/string-utils';
 ⋮----
 type Props = {
+  task: TaskData;
   tokensInfo?: TokensInfoData | null;
   maxInputTokens?: number;
   mode: Mode;
-  task: TaskData;
-  updateTask: (updates: Partial<TaskData>) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>) => void;
 };
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -22488,7 +22530,6 @@ interface TaskStore {
   taskStateMap: Map<string, TaskState>;
   taskMessagesMap: Map<string, Message[]>;
 
-  ensureTask: (taskId: string) => void;
   updateTaskState: (taskId: string, updates: Partial<TaskState>) => void;
   setMessages: (taskId: string, updateMessages: (prev: Message[]) => Message[]) => void;
   setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
@@ -24581,9 +24622,11 @@ import { TaskData } from '@common/types';
 ⋮----
 export const getSortedVisibleTasks = (tasks: TaskData[], showArchived: boolean = false, searchQuery: string = ''): TaskData[] =>
 ⋮----
+const sortFn = (a: TaskData, b: TaskData) =>
+⋮----
 // Pinned tasks come first
 ⋮----
-// Then sort by updatedAt
+// Then sort by updatedAt (descending)
 
 ================
 File: src/renderer/src/voice/gemini.ts
