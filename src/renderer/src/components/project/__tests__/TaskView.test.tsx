@@ -93,7 +93,7 @@ vi.mock('../../PromptField', () => ({
     <div data-testid="prompt-field">
       <button onClick={() => runPrompt('hello')}>Run Prompt</button>
       <button onClick={() => addFiles(['file1.ts'], false)}>Add File</button>
-      {toggleTerminal && <button onClick={toggleTerminal}>Toggle Terminal</button>}
+      {toggleTerminal && <button data-testid="toggle-terminal" onClick={toggleTerminal}>Toggle Terminal</button>}
     </div>
   ),
 }));
@@ -318,29 +318,32 @@ describe('TaskView', () => {
     it('toggles terminal visibility and updates localStorage correctly', () => {
       render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
 
-      // Initially false
-      expect(localStorage.getItem(`terminal-visible-${mockProject.baseDir}-${mockTask.id}`)).toBeNull();
+      const key = `terminal-visible-${mockProject.baseDir}-${mockTask.id}`;
 
-      // Find the toggle button - it's in PromptField, which has toggleTerminal prop
-      // Since PromptField is mocked, I need to check if toggleTerminal is called
-      // But since it's mocked, perhaps I need to mock PromptField to expose the toggle
-      // For now, since the component has toggleTerminal, and it's passed to PromptField
-      // To test, I can assume the button is there, but since mocked, perhaps test the state change
+      // Assert localStorage is null initially for the key
+      expect(localStorage.getItem(key)).toBeNull();
 
-      // Since useLocalStorage is not mocked, and it uses localStorage, when setTerminalVisible is called, it should update localStorage
-      // But since the component is rendered, and toggle is not called yet, localStorage is not set
-      // When toggleTerminal is called, it calls setTerminalVisible(!terminalVisible)
-      // Since PromptField is mocked, I need to trigger the toggle somehow
+      const toggleButton = screen.getByTestId('toggle-terminal');
 
-      // Perhaps I need to unmock PromptField or mock it to call toggleTerminal
-      // Let's modify the PromptField mock to have a button that calls toggleTerminal
+      // Click the toggle button
+      fireEvent.click(toggleButton);
 
-      // Update the PromptField mock
-      // In the existing mock, add toggleTerminal to the props
-      // The mock is: PromptField: ({ runPrompt, addFiles }: { runPrompt: (prompt: string) => void; addFiles: (files: string[], readOnly: boolean) => void }) => (
-      // Add toggleTerminal?: () => void
+      // Assert localStorage is "true"
+      expect(localStorage.getItem(key)).toBe('true');
 
-      // Let's edit the mock
+      // Assert ResizableBox height is set for visible (200)
+      let resizableBox = document.querySelector('.react-resizable');
+      expect(resizableBox).toHaveAttribute('style', expect.stringContaining('height: 200px'));
+
+      // Click again
+      fireEvent.click(toggleButton);
+
+      // Assert localStorage is "false"
+      expect(localStorage.getItem(key)).toBe('false');
+
+      // Assert height is 0
+      resizableBox = document.querySelector('.react-resizable');
+      expect(resizableBox).toHaveAttribute('style', expect.stringContaining('height: 0px'));
     });
 
     it('maintains independent visibility state for different tasks', () => {
