@@ -197,6 +197,7 @@ export const createLitellmLlm = (profile: ProviderProfile, model: Model, setting
     apiKey,
     baseURL: baseUrl,
     headers: profile.headers,
+    includeUsage: true,
   });
 
   return compatibleProvider(model.id);

@@ -758,30 +758,11 @@ export class Agent {
         ...providerParameters,
       });
 
-      // Default provider options for specific providers
-      const defaultProviderOptions: SharedV2ProviderOptions = {
-        litellm: {
-          streamOptions: { include_usage: true },
-        },
-      };
 
-      // Merge default provider options with provider-specific options
-      const mergedProviderOptions: SharedV2ProviderOptions = {
-        ...defaultProviderOptions,
-        ...providerOptions,
-      };
-
-      // Deep merge for providers that have defaults
-      if (defaultProviderOptions.litellm && providerOptions?.litellm) {
-        mergedProviderOptions.litellm = {
-          ...defaultProviderOptions.litellm,
-          ...providerOptions.litellm,
-        };
-      }
 
       const getBaseModelCallParams = () => {
         return {
-          providerOptions: mergedProviderOptions,
+          providerOptions: providerOptions,
           model: wrapLanguageModel({
             model,
             middleware: extractReasoningMiddleware({
