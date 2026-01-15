@@ -151,15 +151,15 @@ export const getLitellmAiderMapping = (provider: ProviderProfile, modelId: strin
   const envVars: Record<string, string> = {};
 
   if (litellmProvider.apiKey) {
-    envVars.OPENAI_API_KEY = litellmProvider.apiKey;
+    envVars.LITELLM_API_KEY = litellmProvider.apiKey;
   }
   if (litellmProvider.baseUrl) {
     // Ensure no trailing slash to avoid double slashes if Aider appends paths
-    envVars.OPENAI_API_BASE = litellmProvider.baseUrl.replace(/\/$/, '');
+    envVars.LITELLM_API_BASE = litellmProvider.baseUrl.replace(/\/$/, '');
   }
 
   return {
-    modelName: `openai/${modelId}`,
+    modelName: `litellm/${modelId}`,
     environmentVariables: envVars,
   };
 };
