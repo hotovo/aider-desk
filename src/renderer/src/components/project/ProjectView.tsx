@@ -428,7 +428,7 @@ export const ProjectView = ({ project, isActive = false, showSettingsPage }: Pro
 
   return (
     <TaskProvider baseDir={project.baseDir} tasks={tasks}>
-      <div className="h-full w-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative">
+      <div className="h-full w-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative" style={{ contentVisibility: isActive ? 'visible' : 'hidden', zIndex: isActive ? 1 : 0 }}>
         {starting && <LoadingOverlay message={t('common.startingUp')} />}
 
         {(isTaskSidebarOpen || !isMobile) && (

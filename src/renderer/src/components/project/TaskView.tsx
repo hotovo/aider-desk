@@ -107,7 +107,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
-    const [terminalVisible, setTerminalVisible] = useState(false);
+    const [terminalVisible, setTerminalVisible] = useLocalStorage(`terminal-visible-${project.baseDir}-${task.id}`, false);
     const [showSidebar, setShowSidebar] = useState(isMobile);
     const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(project.baseDir, task.id);
     const [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed] = useLocalStorage(`files-sidebar-collapsed-${project.baseDir}-${task.id}`, false);
