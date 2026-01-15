@@ -757,11 +757,9 @@ export class Agent {
         ...providerParameters,
       });
 
-
-
       const getBaseModelCallParams = () => {
         return {
-          providerOptions: providerOptions,
+          providerOptions,
           model: wrapLanguageModel({
             model,
             middleware: extractReasoningMiddleware({
