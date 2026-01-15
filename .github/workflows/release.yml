@@ -262,7 +262,7 @@ jobs:
 
     steps:
       - name: Clear up space
-        run: rm -rf /usr/local/.ghcup /usr/local/lib/android /usr/share/dotnet /usr/share/swift
+        run: sudo rm -rf /usr/local/.ghcup /usr/local/lib/android /usr/share/dotnet /usr/share/swift
 
       - uses: "actions/checkout@v1"
 
