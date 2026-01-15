@@ -261,6 +261,9 @@ jobs:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
     steps:
+      - name: Clear up space
+        run: rm -rf /usr/local/.ghcup /usr/local/lib/android /usr/share/dotnet /usr/share/swift
+
       - uses: "actions/checkout@v1"
 
       - name: Get version from package.json
@@ -284,12 +287,12 @@ jobs:
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository }}
           VERSION=${{ steps.get-version.outputs.version }}
-          
+
           docker buildx build --platform linux/amd64,linux/arm64 \
             -t ${IMAGE_NAME}:${VERSION} \
             --push \
             .
-          
+
           echo "Built and pushed multi-platform image: ${IMAGE_NAME}:${VERSION}"
 
   combine-macos-yml:
