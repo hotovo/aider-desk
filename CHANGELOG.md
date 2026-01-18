@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.49.0]
 
 - improved responsiveness for small screen devices with mobile-first layouts for task sidebar, task bar, and prompt field components
 - added full-screen task sidebar on mobile with toggle button
