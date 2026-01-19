@@ -1,6 +1,6 @@
 import {defineConfig} from 'bunup';
 import {join} from 'path';
-import {existsSync, readdirSync, readFileSync, statSync} from 'fs';
+import {existsSync, readdirSync, statSync} from 'fs';
 
 const rootDir = process.cwd();
 

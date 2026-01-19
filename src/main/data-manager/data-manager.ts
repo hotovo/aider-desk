@@ -35,7 +35,7 @@ class DatabaseAdapter<T extends { exec(sql: string): void; prepare(sql: string):
   }
 
   prepare(sql: string): ISqliteStatement {
-    const stmt = this.db.prepare(sql) as { run(...params: unknown[]): void; all(...params: unknown[]): unknown[]; get(...params: unknown[]): unknown | undefined };
+    const stmt = this.db.prepare(sql) as ISqliteStatement;
     return new StatementAdapter(stmt);
   }
 
@@ -48,7 +48,7 @@ class DatabaseAdapter<T extends { exec(sql: string): void; prepare(sql: string):
  * Generic adapter for SQLite statement implementations
  * Works with any statement that has run, all, and get methods
  */
-class StatementAdapter<T extends { run(...params: unknown[]): void; all(...params: unknown[]): unknown[]; get(...params: unknown[]): unknown | undefined }> implements ISqliteStatement {
+class StatementAdapter<T extends ISqliteStatement> implements ISqliteStatement {
   constructor(private stmt: T) {}
 
   run(...params: unknown[]): void {
