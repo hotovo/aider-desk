@@ -1,6 +1,7 @@
 import path from 'path';
 
 import { getElectronApp, isDev, isElectron } from '@/app';
+import { isBunBinary } from '@/bun-resources';
 
 if (process.env.AIDER_DESK_DATA_DIR) {
   const app = getElectronApp();
@@ -37,5 +38,11 @@ export const getResourceDir = (): string => {
   if (isElectron()) {
     return isDev() ? path.join(__dirname, '..', '..', 'resources') : process.resourcesPath;
   }
+
+  // For Bun binaries, use the temp extraction directory
+  if (isBunBinary()) {
+    return path.join(process.env.TMPDIR || '/tmp', 'aider-desk-resources');
+  }
+
   return path.join(__dirname, '..', 'resources');
 };

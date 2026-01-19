@@ -7,6 +7,7 @@ import { delay } from '@common/utils';
 
 import logger from '@/logger';
 import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBinPath } from '@/utils';
+import { isBunBinary, readResource } from '@/bun-resources';
 import {
   AIDER_DESK_DATA_DIR,
   SETUP_COMPLETE_FILENAME,
@@ -15,6 +16,7 @@ import {
   RESOURCES_DIR,
   AIDER_DESK_MCP_SERVER_DIR,
   UV_EXECUTABLE,
+  MCP_SERVER_FILES,
 } from '@/constants';
 import { isDev } from '@/app';
 
@@ -58,9 +60,21 @@ const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: Updat
   }
 
   // Copy connector.py from resources
-  const sourceConnectorPath = path.join(RESOURCES_DIR, 'connector/connector.py');
   const destConnectorPath = path.join(AIDER_DESK_CONNECTOR_DIR, 'connector.py');
-  fs.copyFileSync(sourceConnectorPath, destConnectorPath);
+
+  if (isBunBinary()) {
+    // Use Bun's import mechanism for embedded resources
+    const connectorContent = await readResource('connector/connector.py');
+    if (connectorContent) {
+      fs.writeFileSync(destConnectorPath, connectorContent);
+    } else {
+      throw new Error('Failed to read connector.py from embedded resources');
+    }
+  } else {
+    // Use file system for non-Bun environments
+    const sourceConnectorPath = path.join(RESOURCES_DIR, 'connector/connector.py');
+    fs.copyFileSync(sourceConnectorPath, destConnectorPath);
+  }
 
   await installAiderConnectorRequirements(cleanInstall, updateProgress);
 };
@@ -191,20 +205,37 @@ const setupMcpServer = async () => {
   // Copy all files from the MCP server directory
   const sourceMcpServerDir = path.join(RESOURCES_DIR, 'mcp-server');
 
-  if (fs.existsSync(sourceMcpServerDir)) {
-    const files = fs.readdirSync(sourceMcpServerDir);
-
-    for (const file of files) {
-      const sourceFilePath = path.join(sourceMcpServerDir, file);
-      const destFilePath = path.join(AIDER_DESK_MCP_SERVER_DIR, file);
-
-      // Skip directories for now, only copy files
-      if (fs.statSync(sourceFilePath).isFile()) {
-        fs.copyFileSync(sourceFilePath, destFilePath);
+  if (isBunBinary()) {
+    // For Bun binaries, we need to know which files to copy
+    // This is a limitation - we can't dynamically list embedded files
+    for (const mcpFile of MCP_SERVER_FILES) {
+      try {
+        const content = await readResource(mcpFile);
+        if (content) {
+          const destFilePath = path.join(AIDER_DESK_MCP_SERVER_DIR, path.basename(mcpFile));
+          fs.writeFileSync(destFilePath, content);
+        }
+      } catch (error) {
+        logger.warn(`Could not copy MCP server file: ${mcpFile}`, { error });
       }
     }
   } else {
-    logger.error(`MCP server directory not found: ${sourceMcpServerDir}`);
+    // Use file system for non-Bun environments
+    if (fs.existsSync(sourceMcpServerDir)) {
+      const files = fs.readdirSync(sourceMcpServerDir);
+
+      for (const file of files) {
+        const sourceFilePath = path.join(sourceMcpServerDir, file);
+        const destFilePath = path.join(AIDER_DESK_MCP_SERVER_DIR, file);
+
+        // Skip directories for now, only copy files
+        if (fs.statSync(sourceFilePath).isFile()) {
+          fs.copyFileSync(sourceFilePath, destFilePath);
+        }
+      }
+    } else {
+      logger.error(`MCP server directory not found: ${sourceMcpServerDir}`);
+    }
   }
 };
 
