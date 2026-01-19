@@ -66,7 +66,8 @@ export async function readResource(resourcePath: string): Promise<string | null>
     const tempPath = path.join(process.env.AIDER_DESK_RESOURCES_DIR, resourcePath);
     try {
       return await Bun.file(tempPath).text();
-    } catch {
+    } catch (error) {
+      logger.debug('[Bun I/O] Failed to read resource from temp dir', { tempPath, error });
       return null;
     }
   }
