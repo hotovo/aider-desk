@@ -17,6 +17,9 @@ jobs:
         with:
           node-version: '22.17.0'
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install dependencies
         run: npm install
 
