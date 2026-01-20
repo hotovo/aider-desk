@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
+import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
 import { isZaiPlanProvider, LlmProvider, ZaiPlanProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -108,10 +108,11 @@ const getZaiPlanModelInfo = (_provider: ProviderProfile, modelId: string, allMod
   return allModelInfos[fullModelId];
 };
 
-const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model, profile?: AgentProfile): SharedV2ProviderOptions | undefined => {
   if (isZaiPlanProvider(llmProvider)) {
-    const providerOverrides = model.providerOverrides as Partial<ZaiPlanProvider> | undefined;
-    const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts ?? true;
+    const modelProviderOverrides = model.providerOverrides as Partial<ZaiPlanProvider> | undefined;
+
+    const includeThoughts = profile?.thinking ?? modelProviderOverrides?.includeThoughts ?? llmProvider.includeThoughts ?? true;
 
     return {
       'zai-plan': {

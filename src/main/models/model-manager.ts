@@ -662,10 +662,13 @@ export class ModelManager {
       return llmProvider.disableStreaming ?? false;
     }
 
-    return typeof profile?.providerOverrides?.disableStreaming === 'boolean'
-      ? profile.providerOverrides.disableStreaming
-      : typeof modelObj.providerOverrides?.disableStreaming === 'boolean'
-        ? modelObj.providerOverrides.disableStreaming
+    const agentOverrides = profile?.providerOverrides as Partial<{ disableStreaming: boolean }>;
+    const modelOverrides = modelObj.providerOverrides as Partial<{ disableStreaming: boolean }>;
+
+    return typeof agentOverrides?.disableStreaming === 'boolean'
+      ? agentOverrides.disableStreaming
+      : typeof modelOverrides?.disableStreaming === 'boolean'
+        ? modelOverrides.disableStreaming
         : (llmProvider.disableStreaming ?? false);
   }
 
