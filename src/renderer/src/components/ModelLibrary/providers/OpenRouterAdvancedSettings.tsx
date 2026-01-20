@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isEqual } from 'lodash';
 import { OpenRouterProvider } from '@common/agent';
+
+import { useArrayField } from './useArrayField';
 
 import { InfoIcon } from '@/components/common/InfoIcon';
 import { Input } from '@/components/common/Input';
@@ -16,93 +16,10 @@ type Props = {
 export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
-  const [orderValue, setOrderValue] = useState(provider.order?.join(',') || '');
-  const [onlyValue, setOnlyValue] = useState(provider.only?.join(',') || '');
-  const [ignoreValue, setIgnoreValue] = useState(provider.ignore?.join(',') || '');
-  const [quantizationsValue, setQuantizationsValue] = useState(provider.quantizations?.join(',') || '');
-
-  const routingRef = useRef<OpenRouterProvider | null>(null);
-  const isFirstRender = useRef(true);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      routingRef.current = provider;
-      isFirstRender.current = false;
-      return;
-    }
-
-    const routing = provider;
-    const prevRouting = routingRef.current;
-
-    if (
-      !isEqual(routing.order, prevRouting?.order) ||
-      !isEqual(routing.only, prevRouting?.only) ||
-      !isEqual(routing.ignore, prevRouting?.ignore) ||
-      !isEqual(routing.quantizations, prevRouting?.quantizations)
-    ) {
-      setOrderValue(routing.order?.join(',') || '');
-      setOnlyValue(routing.only?.join(',') || '');
-      setIgnoreValue(routing.ignore?.join(',') || '');
-      setQuantizationsValue(routing.quantizations?.join(',') || '');
-      routingRef.current = routing;
-    }
-  }, [provider]);
-
-  const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setOrderValue(e.target.value);
-  };
-
-  const handleOrderBlur = () => {
-    onChange({
-      ...provider,
-      order: orderValue
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-    });
-  };
-
-  const handleOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setOnlyValue(e.target.value);
-  };
-
-  const handleOnlyBlur = () => {
-    onChange({
-      ...provider,
-      only: onlyValue
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-    });
-  };
-
-  const handleIgnoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIgnoreValue(e.target.value);
-  };
-
-  const handleIgnoreBlur = () => {
-    onChange({
-      ...provider,
-      ignore: ignoreValue
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-    });
-  };
-
-  const handleQuantizationsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuantizationsValue(e.target.value);
-  };
-
-  const handleQuantizationsBlur = () => {
-    onChange({
-      ...provider,
-      quantizations: quantizationsValue
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-    });
-  };
+  const orderField = useArrayField(provider, 'order', onChange);
+  const onlyField = useArrayField(provider, 'only', onChange);
+  const ignoreField = useArrayField(provider, 'ignore', onChange);
+  const quantizationsField = useArrayField(provider, 'quantizations', onChange);
 
   const handleAllowFallbacksChange = (checked: boolean) => {
     onChange({
@@ -153,9 +70,8 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
             </div>
           }
           placeholder="e.g. anthropic, openai"
-          value={orderValue}
-          onChange={handleOrderChange}
-          onBlur={handleOrderBlur}
+          value={orderField.value}
+          onChange={orderField.onChange}
           className="flex-1"
         />
         <div className="flex items-center gap-2 mt-4">
@@ -200,9 +116,8 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
             </div>
           }
           placeholder="e.g. anthropic, openai"
-          value={onlyValue}
-          onChange={handleOnlyChange}
-          onBlur={handleOnlyBlur}
+          value={onlyField.value}
+          onChange={onlyField.onChange}
           className="flex-1"
         />
         <Input
@@ -223,9 +138,8 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
             </div>
           }
           placeholder="e.g. anthropic, openai"
-          value={ignoreValue}
-          onChange={handleIgnoreChange}
-          onBlur={handleIgnoreBlur}
+          value={ignoreField.value}
+          onChange={ignoreField.onChange}
           className="flex-1"
         />
       </div>
@@ -249,9 +163,8 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
             </div>
           }
           placeholder="e.g. int4, int8"
-          value={quantizationsValue}
-          onChange={handleQuantizationsChange}
-          onBlur={handleQuantizationsBlur}
+          value={quantizationsField.value}
+          onChange={quantizationsField.onChange}
         />
         <Checkbox
           label={

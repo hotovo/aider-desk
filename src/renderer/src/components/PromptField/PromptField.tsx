@@ -134,6 +134,25 @@ type Props = {
   handoffConversation?: (focus?: string) => Promise<void>;
 };
 
+const arePromptFieldPropsEqual = (prevProps: Props, nextProps: Props) => {
+  return (
+    prevProps.baseDir === nextProps.baseDir &&
+    prevProps.taskId === nextProps.taskId &&
+    prevProps.task === nextProps.task &&
+    prevProps.allFiles === nextProps.allFiles &&
+    prevProps.words === nextProps.words &&
+    prevProps.inputHistory === nextProps.inputHistory &&
+    prevProps.processing === nextProps.processing &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.mode === nextProps.mode &&
+    prevProps.disabled === nextProps.disabled &&
+    prevProps.promptBehavior === nextProps.promptBehavior &&
+    prevProps.terminalVisible === nextProps.terminalVisible &&
+    prevProps.question === nextProps.question
+    // Don't compare function props as they should be wrapped in useCallback
+  );
+};
+
 const PromptFieldImpl = forwardRef<PromptFieldRef, Props>(
   (
     {
@@ -1121,4 +1140,4 @@ const PromptFieldImpl = forwardRef<PromptFieldRef, Props>(
 
 PromptFieldImpl.displayName = 'PromptField';
 
-export const PromptField = memo(PromptFieldImpl);
+export const PromptField = memo(PromptFieldImpl, arePromptFieldPropsEqual);

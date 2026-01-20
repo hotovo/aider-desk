@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect, useLayoutEffect, ReactNode, ClipboardEvent } from 'react';
+import { useState, useRef, useLayoutEffect, ReactNode, ClipboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
+
+import { KeyboardKeys } from '@/constants/keyboardKeys';
 
 type Props = {
   value: string;
@@ -29,10 +31,12 @@ export const AutocompletionInput = ({
   onSubmit,
 }: Props) => {
   const { t } = useTranslation();
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [internalShowSuggestions, setInternalShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [suggestionsPosition, setSuggestionsPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const showSuggestions = internalShowSuggestions && suggestions.length > 0;
 
   useLayoutEffect(() => {
     if (showSuggestions && inputRef.current) {
@@ -47,24 +51,19 @@ export const AutocompletionInput = ({
     }
   }, [showSuggestions]);
 
-  useEffect(() => {
-    setShowSuggestions(suggestions.length > 0);
-    setSelectedIndex(-1);
-  }, [suggestions]);
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showSuggestions) {
-      if (e.key === 'Enter' && onSubmit) {
+      if (e.key === KeyboardKeys.Enter && onSubmit) {
         e.preventDefault();
         onSubmit();
-      } else if (e.key === 'Tab') {
+      } else if (e.key === KeyboardKeys.Tab) {
         e.preventDefault();
       }
       return;
     }
 
     switch (e.key) {
-      case 'ArrowDown':
+      case KeyboardKeys.ArrowDown:
         e.preventDefault();
         setSelectedIndex((prev) => {
           const newIndex = Math.min(prev + 1, suggestions.length - 1);
@@ -73,7 +72,7 @@ export const AutocompletionInput = ({
           return newIndex;
         });
         break;
-      case 'ArrowUp':
+      case KeyboardKeys.ArrowUp:
         e.preventDefault();
         setSelectedIndex((prev) => {
           const newIndex = Math.max(prev - 1, 0);
@@ -84,13 +83,13 @@ export const AutocompletionInput = ({
           return newIndex;
         });
         break;
-      case 'Enter':
+      case KeyboardKeys.Enter:
         if (selectedIndex >= 0) {
           e.preventDefault();
           const isMultiSelect = e.ctrlKey || e.metaKey;
           onChange(suggestions[selectedIndex], true, isMultiSelect);
           if (!isMultiSelect) {
-            setShowSuggestions(false);
+            setInternalShowSuggestions(false);
           }
           if (onSubmit) {
             onSubmit(isMultiSelect);
@@ -100,17 +99,17 @@ export const AutocompletionInput = ({
           onSubmit(e.ctrlKey || e.metaKey);
         }
         break;
-      case 'Tab':
+      case KeyboardKeys.Tab:
         if (suggestions.length > 0 || selectedIndex >= 0) {
           e.preventDefault();
           onChange(suggestions[selectedIndex >= 0 ? selectedIndex : 0], true);
-          setShowSuggestions(false);
+          setInternalShowSuggestions(false);
         }
         break;
-      case 'Escape':
+      case KeyboardKeys.Escape:
         e.preventDefault();
         e.stopPropagation();
-        setShowSuggestions(false);
+        setInternalShowSuggestions(false);
         break;
     }
   };
@@ -162,7 +161,7 @@ export const AutocompletionInput = ({
               }
               onChange(suggestion, true, isMultiSelect);
               if (!isMultiSelect) {
-                setShowSuggestions(false);
+                setInternalShowSuggestions(false);
               }
               if (onSubmit) {
                 onSubmit(isMultiSelect);
@@ -189,7 +188,7 @@ export const AutocompletionInput = ({
         value={value}
         onChange={(e) => onChange(e.target.value, false)}
         onKeyDown={handleKeyDown}
-        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+        onBlur={() => setTimeout(() => setInternalShowSuggestions(false), 200)}
         placeholder={placeholder ? t(placeholder) : undefined}
         autoFocus={autoFocus}
         onPaste={handleOnPaste}

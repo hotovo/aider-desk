@@ -41,6 +41,18 @@ type Props = {
   onInterrupt?: () => void;
 };
 
+const areMessagesPropsEqual = (prevProps: Props, nextProps: Props) => {
+  return (
+    prevProps.baseDir === nextProps.baseDir &&
+    prevProps.taskId === nextProps.taskId &&
+    prevProps.task === nextProps.task &&
+    prevProps.messages === nextProps.messages &&
+    prevProps.allFiles === nextProps.allFiles &&
+    prevProps.renderMarkdown === nextProps.renderMarkdown
+    // Don't compare function props as they should be wrapped in useCallback
+  );
+};
+
 const MessagesImpl = forwardRef<MessagesRef, Props>(
   (
     {
@@ -199,4 +211,4 @@ const MessagesImpl = forwardRef<MessagesRef, Props>(
 
 MessagesImpl.displayName = 'Messages';
 
-export const Messages = memo(MessagesImpl);
+export const Messages = memo(MessagesImpl, areMessagesPropsEqual);

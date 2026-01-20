@@ -87,8 +87,9 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
           todoItems: todoItems || [],
           question,
         });
-      } catch {
-        // error is silently caught
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to load task:', error);
       }
     },
     [api, baseDir, updateTaskState, setMessages],

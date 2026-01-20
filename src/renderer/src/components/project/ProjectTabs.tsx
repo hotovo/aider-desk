@@ -176,6 +176,15 @@ type SortableTabItemProps = {
   openProjectsNumber: number;
 };
 
+const areSortableTabItemPropsEqual = (prevProps: SortableTabItemProps, nextProps: SortableTabItemProps) => {
+  return (
+    prevProps.project === nextProps.project &&
+    prevProps.activeProject === nextProps.activeProject &&
+    prevProps.openProjectsNumber === nextProps.openProjectsNumber
+    // Don't compare function props as they should be wrapped in useCallback in parent
+  );
+};
+
 const SortableTabItem = memo(function SortableTabItem({
   project,
   activeProject,
@@ -255,4 +264,4 @@ const SortableTabItem = memo(function SortableTabItem({
       </Tab>
     </div>
   );
-});
+}, areSortableTabItemPropsEqual);

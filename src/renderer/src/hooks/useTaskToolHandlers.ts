@@ -57,8 +57,9 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
             break;
           }
         }
-      } catch {
-        // error is silently caught
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error handling TODO tool:', error);
       }
     },
     [taskId, setTodoItems],

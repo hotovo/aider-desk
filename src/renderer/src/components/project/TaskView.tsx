@@ -66,6 +66,17 @@ type Props = {
   onToggleTaskSidebar?: () => void;
 };
 
+const areTaskViewPropsEqual = (prevProps: Props, nextProps: Props) => {
+  return (
+    prevProps.project === nextProps.project &&
+    prevProps.task === nextProps.task &&
+    prevProps.inputHistory === nextProps.inputHistory &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.shouldFocusPrompt === nextProps.shouldFocusPrompt
+    // Don't compare function props as they should be wrapped in useCallback in parent
+  );
+};
+
 const TaskViewImpl = forwardRef<TaskViewRef, Props>(
   (
     {
@@ -179,15 +190,15 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
 
     const handleOpenModelSelector = useCallback(() => {
       projectTopBarRef.current?.openMainModelSelector();
-    }, []);
+    }, [projectTopBarRef]);
 
     const handleOpenAgentModelSelector = useCallback(() => {
       projectTopBarRef.current?.openAgentModelSelector();
-    }, []);
+    }, [projectTopBarRef]);
 
     const handleScrollToBottom = useCallback(() => {
       messagesRef.current?.scrollToBottom();
-    }, []);
+    }, [messagesRef]);
 
     const handleAddFiles = useCallback(
       (filePaths: string[], readOnly = false) => {
@@ -197,7 +208,7 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
         setAddFileDialogOptions(null);
         promptFieldRef.current?.focus();
       },
-      [api, project.baseDir, task.id],
+      [api, project.baseDir, task.id, setAddFileDialogOptions, promptFieldRef],
     );
 
     const showFileDialog = useCallback((readOnly: boolean) => {
@@ -246,10 +257,13 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
       [api, project.baseDir, task.id],
     );
 
-    const handleModelChange = (modelsData: ModelsData | null) => {
-      setAiderModelsData(task.id, modelsData);
-      promptFieldRef.current?.focus();
-    };
+    const handleModelChange = useCallback(
+      (modelsData: ModelsData | null) => {
+        setAiderModelsData(task.id, modelsData);
+        promptFieldRef.current?.focus();
+      },
+      [task.id, setAiderModelsData, promptFieldRef],
+    );
 
     const handleModeChange = useCallback(
       (mode: Mode) => {
@@ -258,9 +272,9 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
       [updateTask, task.id],
     );
 
-    const handleMarkAsDone = () => {
+    const handleMarkAsDone = useCallback(() => {
       updateTask(task.id, { state: DefaultTaskState.Done });
-    };
+    }, [updateTask, task.id]);
 
     const runPrompt = useCallback(
       (prompt: string) => {
@@ -338,10 +352,10 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [task.handoff, task.id, displayedMessages]);
 
-    const handleResetTask = () => {
+    const handleResetTask = useCallback(() => {
       resetTask(task.id);
       setAiderModelsData(task.id, null);
-    };
+    }, [resetTask, task.id, setAiderModelsData]);
 
     const handleRedoLastUserPrompt = useCallback(() => {
       const lastUserMessageIndex = displayedMessages.findLastIndex(isUserMessage);
@@ -352,88 +366,103 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
       api.redoLastUserPrompt(project.baseDir, task.id, currentMode);
     }, [displayedMessages, setMessages, task.id, updateOptimisticTaskState, api, project.baseDir, currentMode]);
 
-    const handleResumeTask = () => {
+    const handleResumeTask = useCallback(() => {
       api.resumeTask(project.baseDir, task.id);
-    };
+    }, [api, project.baseDir, task.id]);
 
-    const handleProceed = () => {
+    const handleProceed = useCallback(() => {
       onProceed?.();
-    };
+    }, [onProceed]);
 
-    const handleArchiveTask = () => {
+    const handleArchiveTask = useCallback(() => {
       onArchiveTask?.();
-    };
+    }, [onArchiveTask]);
 
-    const handleUnarchiveTask = () => {
+    const handleUnarchiveTask = useCallback(() => {
       onUnarchiveTask?.();
-    };
+    }, [onUnarchiveTask]);
 
-    const handleDeleteTask = () => {
+    const handleDeleteTask = useCallback(() => {
       onDeleteTask?.();
-    };
+    }, [onDeleteTask]);
 
-    const handleRemoveMessage = async (messageToRemove: Message) => {
-      const originalMessages = messages;
+    const handleRemoveMessage = useCallback(
+      async (messageToRemove: Message) => {
+        const originalMessages = messages;
 
-      setMessages(task.id, (prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
+        setMessages(task.id, (prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
 
-      if (isTaskInfoMessage(messageToRemove) || isLogMessage(messageToRemove)) {
-        return;
-      }
+        if (isTaskInfoMessage(messageToRemove) || isLogMessage(messageToRemove)) {
+          return;
+        }
 
-      try {
-        await api.removeMessage(project.baseDir, task.id, messageToRemove.id);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to remove message:', error);
-        setMessages(task.id, () => originalMessages);
-        showErrorNotification(t('errors.removeMessageFailed'));
-      }
-    };
+        try {
+          await api.removeMessage(project.baseDir, task.id, messageToRemove.id);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to remove message:', error);
+          setMessages(task.id, () => originalMessages);
+          showErrorNotification(t('errors.removeMessageFailed'));
+        }
+      },
+      [messages, setMessages, task.id, api, project.baseDir, t],
+    );
 
-    const handleAddTodo = async (name: string) => {
-      try {
-        const updatedTodos = await api.addTodo(project.baseDir, task.id, name);
-        setTodoItems(task.id, () => updatedTodos);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error adding todo:', error);
-      }
-    };
+    const handleAddTodo = useCallback(
+      async (name: string) => {
+        try {
+          const updatedTodos = await api.addTodo(project.baseDir, task.id, name);
+          setTodoItems(task.id, () => updatedTodos);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error adding todo:', error);
+        }
+      },
+      [api, project.baseDir, task.id, setTodoItems],
+    );
 
-    const handleToggleTodo = async (name: string, completed: boolean) => {
-      try {
-        const updatedTodos = await api.updateTodo(project.baseDir, task.id, name, {
-          completed,
-        });
-        setTodoItems(task.id, () => updatedTodos);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error toggling todo:', error);
-      }
-    };
+    const handleToggleTodo = useCallback(
+      async (name: string, completed: boolean) => {
+        try {
+          const updatedTodos = await api.updateTodo(project.baseDir, task.id, name, {
+            completed,
+          });
+          setTodoItems(task.id, () => updatedTodos);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error toggling todo:', error);
+        }
+      },
+      [api, project.baseDir, task.id, setTodoItems],
+    );
 
-    const handleUpdateTodo = async (name: string, updates: Partial<TodoItem>) => {
-      try {
-        const updatedTodos = await api.updateTodo(project.baseDir, task.id, name, updates);
-        setTodoItems(task.id, () => updatedTodos);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error updating todo:', error);
-      }
-    };
+    const handleUpdateTodo = useCallback(
+      async (name: string, updates: Partial<TodoItem>) => {
+        try {
+          const updatedTodos = await api.updateTodo(project.baseDir, task.id, name, updates);
+          setTodoItems(task.id, () => updatedTodos);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error updating todo:', error);
+        }
+      },
+      [api, project.baseDir, task.id, setTodoItems],
+    );
 
-    const handleDeleteTodo = async (name: string) => {
-      try {
-        const updatedTodos = await api.deleteTodo(project.baseDir, task.id, name);
-        setTodoItems(task.id, () => updatedTodos);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error deleting todo:', error);
-      }
-    };
+    const handleDeleteTodo = useCallback(
+      async (name: string) => {
+        try {
+          const updatedTodos = await api.deleteTodo(project.baseDir, task.id, name);
+          setTodoItems(task.id, () => updatedTodos);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error deleting todo:', error);
+        }
+      },
+      [api, project.baseDir, task.id, setTodoItems],
+    );
 
-    const handleClearAllTodos = async () => {
+    const handleClearAllTodos = useCallback(async () => {
       try {
         const updatedTodos = await api.clearAllTodos(project.baseDir, task.id);
         setTodoItems(task.id, () => updatedTodos);
@@ -441,7 +470,7 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
         // eslint-disable-next-line no-console
         console.error('Error clearing all todos:', error);
       }
-    };
+    }, [api, project.baseDir, task.id, setTodoItems]);
 
     const handleShowTaskInfo = useCallback(() => {
       const taskInfo: TaskInfoMessage = {
@@ -454,21 +483,27 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
       setMessages(task.id, (prevMessages) => [...prevMessages, taskInfo]);
     }, [task, messages, setMessages]);
 
-    const handleTerminalViewResize = () => {
+    const handleTerminalViewResize = useCallback(() => {
       terminalViewRef.current?.resize();
-    };
+    }, [terminalViewRef]);
 
-    const handleSidebarResize = async (_, data: ResizeCallbackData) => {
-      setSidebarWidth(data.size.width);
-    };
+    const handleSidebarResize = useCallback(
+      async (_, data: ResizeCallbackData) => {
+        setSidebarWidth(data.size.width);
+      },
+      [setSidebarWidth],
+    );
 
-    const handleToggleFilesSidebarCollapse = () => {
+    const handleToggleFilesSidebarCollapse = useCallback(() => {
       setIsFilesSidebarCollapsed(!isFilesSidebarCollapsed);
-    };
+    }, [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed]);
 
-    const handleCopyTerminalOutput = (output: string) => {
-      promptFieldRef.current?.appendText(output);
-    };
+    const handleCopyTerminalOutput = useCallback(
+      (output: string) => {
+        promptFieldRef.current?.appendText(output);
+      },
+      [promptFieldRef],
+    );
 
     const handleAutoApproveChanged = useCallback(
       (autoApprove: boolean) => {
@@ -778,4 +813,4 @@ const TaskViewImpl = forwardRef<TaskViewRef, Props>(
 
 TaskViewImpl.displayName = 'TaskView';
 
-export const TaskView = memo(TaskViewImpl);
+export const TaskView = memo(TaskViewImpl, areTaskViewPropsEqual);
