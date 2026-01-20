@@ -18,6 +18,7 @@ export * from './RequestyParameters';
 export * from './SyntheticParameters';
 export * from './VertexAIParameters';
 export * from './ZaiPlanParameters';
+export * from './ZaiPlanModelOverrides';
 
 // Advanced Settings
 export * from './OpenAiAdvancedSettings';

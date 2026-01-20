@@ -7,10 +7,38 @@ import { FaCheck, FaPlus, FaInfoCircle, FaExternalLinkAlt } from 'react-icons/fa
 import { useSettings } from '@/contexts/SettingsContext';
 import { Button } from '@/components/common/Button';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Checkbox } from '@/components/common/Checkbox';
+import { InfoIcon } from '@/components/common/InfoIcon';
 
 type Props = {
   provider: ZaiPlanProvider;
   onChange: (updated: ZaiPlanProvider) => void;
+};
+
+export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
+  const { t } = useTranslation();
+
+  const { includeThoughts } = provider;
+
+  const handleIncludeThoughtsChange = (checked: boolean) => {
+    onChange({ ...provider, includeThoughts: checked });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="border border-border-default-dark rounded-md p-4">
+        <div className="flex items-center space-x-2 mb-3">
+          <span className="text-sm font-medium">{t('zaiPlan.thinking.title')}</span>
+          <FaInfoCircle className="h-4 w-4 text-text-secondary" data-tooltip-id="zai-thinking-info" />
+          <StyledTooltip id="zai-thinking-info" content={t('zaiPlan.thinking.infoTooltip')} />
+        </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox label={t('zaiPlan.thinking.includeThoughts')} checked={includeThoughts ?? true} size="md" onChange={handleIncludeThoughtsChange} />
+          <InfoIcon tooltip={t('zaiPlan.thinking.includeThoughtsTooltip')} />
+        </div>
+      </div>
+    </div>
+  );
 };
 
 type McpServerInfo = {
@@ -21,7 +49,7 @@ type McpServerInfo = {
   documentationLink: string;
 };
 
-export const ZaiPlanAdvancedSettings = ({ provider }: Props) => {
+export const ZaiPlanMcpSettings = ({ provider }: Props) => {
   const { t } = useTranslation();
   const { settings, saveSettings } = useSettings();
   const [existingMcpServers, setExistingMcpServers] = useState<Record<string, McpServerConfig>>({});

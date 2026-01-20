@@ -357,6 +357,12 @@
       "add": "Add",
       "adding": "Adding...",
       "configured": "Configured"
+    },
+    "thinking": {
+      "title": "Thinking Mode",
+      "infoTooltip": "Control whether GLM-4.7 uses thinking mode for better reasoning on complex tasks.",
+      "includeThoughts": "Enable Thinking",
+      "includeThoughtsTooltip": "When enabled, the model will use thinking mode for deeper reasoning (default). Disable for faster responses on simple tasks."
     }
   },
   "azure": {

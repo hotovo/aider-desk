@@ -392,6 +392,7 @@ export class AgentProfileManager {
       minTimeBetweenToolCalls: loadedProfile.minTimeBetweenToolCalls ?? DEFAULT_AGENT_PROFILE.minTimeBetweenToolCalls,
       enabledServers: loadedProfile.enabledServers ?? [],
       customInstructions: loadedProfile.customInstructions ?? '',
+      thinking: loadedProfile.thinking,
       toolApprovals: {
         ...loadedProfile.toolApprovals,
       },

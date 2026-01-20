@@ -304,6 +304,12 @@
       "add": "添加",
       "adding": "添加中...",
       "configured": "已配置"
+    },
+    "thinking": {
+      "title": "思考模式",
+      "infoTooltip": "控制 GLM-4.7 是否在复杂任务中使用思考模式以获得更好的推理能力。",
+      "includeThoughts": "启用思考",
+      "includeThoughtsTooltip": "启用时，模型将使用思考模式进行更深入的推理（默认）。对于简单任务，可以禁用以获得更快的响应速度。"
     }
   },
   "anthropic": {

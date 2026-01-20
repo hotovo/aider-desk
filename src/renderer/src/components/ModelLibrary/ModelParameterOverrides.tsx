@@ -11,6 +11,7 @@ import { RequestyModelOverrides } from './providers/RequestyModelOverrides';
 import { AzureModelOverrides } from './providers/AzureModelOverrides';
 import { OpenAiCompatibleModelOverrides } from './providers/OpenAiCompatibleModelOverrides';
 import { DefaultModelOverrides } from './providers/DefaultModelOverrides';
+import { ZaiPlanModelOverrides } from './providers/ZaiPlanModelOverrides';
 
 import { Button } from '@/components/common/Button';
 import { Accordion } from '@/components/common/Accordion';
@@ -41,7 +42,7 @@ const PROVIDER_OVERRIDES_MAP: Partial<Record<LlmProviderName, ComponentType<Prov
   minimax: DefaultModelOverrides,
   ollama: DefaultModelOverrides,
   synthetic: DefaultModelOverrides,
-  'zai-plan': DefaultModelOverrides,
+  'zai-plan': ZaiPlanModelOverrides,
 };
 
 type Props = {

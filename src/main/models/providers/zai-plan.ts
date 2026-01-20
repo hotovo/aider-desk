@@ -1,10 +1,10 @@
 import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
-import { isZaiPlanProvider, ZaiPlanProvider } from '@common/agent';
+import { isZaiPlanProvider, LlmProvider, ZaiPlanProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { getDefaultUsageReport } from './default';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -27,7 +27,6 @@ const loadZaiPlanModels = async (profile: ProviderProfile, settings: SettingsDat
   }
 
   try {
-    // ZAI uses specific endpoint for model discovery
     const response = await fetch('https://api.z.ai/api/paas/v4/models', {
       headers: { Authorization: `Bearer ${effectiveApiKey}` },
     });
@@ -43,7 +42,7 @@ const loadZaiPlanModels = async (profile: ProviderProfile, settings: SettingsDat
         return {
           id: model.id,
           providerId: profile.id,
-          temperature: 0.7, // Default temperature for ZAI models
+          temperature: 0.7,
         } satisfies Model;
       }) || [];
 
@@ -71,17 +70,14 @@ const getZaiPlanAiderMapping = (provider: ProviderProfile, modelId: string, sett
     }
   }
 
-  // Set the base URL for ZAI Plan
   envVars.OPENAI_API_BASE = 'https://api.z.ai/api/coding/paas/v4';
 
-  // Use zai-plan prefix for ZAI providers
   return {
     modelName: `openai/${modelId}`,
     environmentVariables: envVars,
   };
 };
 
-// === LLM Creation Functions ===
 const createZaiPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
   const provider = profile.provider as ZaiPlanProvider;
   let apiKey = provider.apiKey;
@@ -98,8 +94,6 @@ const createZaiPlanLlm = (profile: ProviderProfile, model: Model, settings: Sett
     throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (ZAI_API_KEY).`);
   }
 
-  // Use createOpenAICompatible to get a provider instance, then get the model
-  // ZAI uses specific base URL for chat completions
   const compatibleProvider = createOpenAICompatible({
     name: provider.name,
     apiKey,
@@ -114,15 +108,31 @@ const getZaiPlanModelInfo = (_provider: ProviderProfile, modelId: string, allMod
   return allModelInfos[fullModelId];
 };
 
-// === Complete Strategy Implementation ===
+const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+  if (isZaiPlanProvider(llmProvider)) {
+    const providerOverrides = model.providerOverrides as Partial<ZaiPlanProvider> | undefined;
+    const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts ?? true;
+
+    return {
+      'zai-plan': {
+        thinking: {
+          type: includeThoughts ? 'enabled' : 'disabled',
+        },
+      },
+    } as SharedV2ProviderOptions;
+  }
+
+  return undefined;
+};
+
 export const zaiPlanProviderStrategy: LlmProviderStrategy = {
-  // Core LLM functions
   createLlm: createZaiPlanLlm,
   getUsageReport: getDefaultUsageReport,
 
-  // Model discovery functions
   loadModels: loadZaiPlanModels,
   hasEnvVars: hasZaiPlanEnvVars,
   getAiderMapping: getZaiPlanAiderMapping,
   getModelInfo: getZaiPlanModelInfo,
+
+  getProviderOptions: getZaiPlanProviderOptions,
 };

@@ -373,7 +373,7 @@ export class Agent {
     Object.assign(toolSet, helperTools);
 
     // Add provider-specific tools
-    const providerTools = await this.modelManager.getProviderTools(provider, profile.model);
+    const providerTools = await this.modelManager.getProviderTools(provider, profile.model, profile);
     Object.assign(toolSet, providerTools);
 
     return this.wrapToolsWithHooks(task, toolSet);
@@ -609,8 +609,8 @@ export class Agent {
     const effectiveAbortSignal = abortSignal || (controllerId ? this.abortControllers.get(controllerId)?.signal : undefined);
 
     const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
-    const providerOptions = this.modelManager.getProviderOptions(provider, profile.model);
-    const providerParameters = this.modelManager.getProviderParameters(provider, profile.model);
+    const providerOptions = this.modelManager.getProviderOptions(provider, profile.model, profile);
+    const providerParameters = this.modelManager.getProviderParameters(provider, profile.model, profile);
 
     const messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
     const initialUserRequestMessageIndex = messages.length - contextMessages.length;
@@ -840,7 +840,7 @@ export class Agent {
           effectiveAbortSignal,
         );
 
-        if (this.modelManager.isStreamingDisabled(provider, profile.model)) {
+        if (this.modelManager.isStreamingDisabled(provider, profile.model, profile)) {
           logger.debug('Streaming disabled, using generateText');
           await generateText({
             ...getBaseModelCallParams(),
@@ -1080,8 +1080,8 @@ export class Agent {
 
     const settings = this.store.getSettings();
     const model = this.modelManager.createLlm(provider, agentProfile.model, settings, '');
-    const providerOptions = this.modelManager.getProviderOptions(provider, agentProfile.model);
-    const providerParameters = this.modelManager.getProviderParameters(provider, agentProfile.model);
+    const providerOptions = this.modelManager.getProviderOptions(provider, agentProfile.model, agentProfile);
+    const providerParameters = this.modelManager.getProviderParameters(provider, agentProfile.model, agentProfile);
 
     const controllerId = uuidv4();
     const newController = abortable ? new AbortController() : null;

@@ -69,17 +69,17 @@ export interface LlmProviderStrategy {
   /**
    * Returns provider-specific options for model instantiation
    */
-  getProviderOptions?: (provider: LlmProvider, model: Model) => SharedV2ProviderOptions | undefined;
+  getProviderOptions?: (provider: LlmProvider, model: Model, profile?: AgentProfile) => SharedV2ProviderOptions | undefined;
 
   /**
    * Returns provider-specific tools that should be available to the agent
    */
-  getProviderTools?: (provider: LlmProvider, model: Model) => ToolSet | Promise<ToolSet>;
+  getProviderTools?: (provider: LlmProvider, model: Model, profile?: AgentProfile) => ToolSet | Promise<ToolSet>;
 
   /**
    * Returns provider-specific parameters for the given model
    */
-  getProviderParameters?: (provider: LlmProvider, model: Model) => Record<string, unknown>;
+  getProviderParameters?: (provider: LlmProvider, model: Model, profile?: AgentProfile) => Record<string, unknown>;
 
   /**
    * Returns model info for a specific model ID

@@ -648,7 +648,7 @@ export class ModelManager {
     return strategy.getCacheControl(profile, llmProvider);
   }
 
-  isStreamingDisabled(provider: ProviderProfile, modelId: string): boolean {
+  isStreamingDisabled(provider: ProviderProfile, modelId: string, profile?: AgentProfile): boolean {
     const llmProvider = provider.provider;
     const models = this.providerModels[provider.id] || [];
     const modelObj = models.find((m) => m.id === modelId);
@@ -662,12 +662,14 @@ export class ModelManager {
       return llmProvider.disableStreaming ?? false;
     }
 
-    return typeof modelObj.providerOverrides?.disableStreaming === 'boolean'
-      ? modelObj.providerOverrides.disableStreaming
-      : (llmProvider.disableStreaming ?? false);
+    return typeof profile?.providerOverrides?.disableStreaming === 'boolean'
+      ? profile.providerOverrides.disableStreaming
+      : typeof modelObj.providerOverrides?.disableStreaming === 'boolean'
+        ? modelObj.providerOverrides.disableStreaming
+        : (llmProvider.disableStreaming ?? false);
   }
 
-  getProviderOptions(provider: ProviderProfile, modelId: string): Record<string, Record<string, JSONValue>> | undefined {
+  getProviderOptions(provider: ProviderProfile, modelId: string, profile?: AgentProfile): Record<string, Record<string, JSONValue>> | undefined {
     const llmProvider = provider.provider;
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderOptions) {
@@ -688,17 +690,17 @@ export class ModelManager {
         id: modelId,
         providerId: provider.id,
       };
-      return strategy.getProviderOptions(llmProvider, fallbackModel);
+      return strategy.getProviderOptions(llmProvider, fallbackModel, profile);
     }
 
     logger.debug(`Found model object for ${modelId} in provider ${provider.id}`, {
       hasProviderOverrides: !!modelObj.providerOverrides,
     });
 
-    return strategy.getProviderOptions(llmProvider, modelObj);
+    return strategy.getProviderOptions(llmProvider, modelObj, profile);
   }
 
-  getProviderParameters(provider: ProviderProfile, modelId: string): Record<string, unknown> {
+  getProviderParameters(provider: ProviderProfile, modelId: string, profile?: AgentProfile): Record<string, unknown> {
     const llmProvider = provider.provider;
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderParameters) {
@@ -719,20 +721,20 @@ export class ModelManager {
         id: modelId,
         providerId: provider.id,
       };
-      return strategy.getProviderParameters(llmProvider, fallbackModel);
+      return strategy.getProviderParameters(llmProvider, fallbackModel, profile);
     }
 
     logger.debug(`Found model object for ${modelId} in provider ${provider.id}`, {
       hasProviderOverrides: !!modelObj.providerOverrides,
     });
 
-    return strategy.getProviderParameters(llmProvider, modelObj);
+    return strategy.getProviderParameters(llmProvider, modelObj, profile);
   }
 
   /**
    * Returns provider-specific tools for the given provider and model
    */
-  async getProviderTools(provider: ProviderProfile, modelId: string): Promise<ToolSet> {
+  async getProviderTools(provider: ProviderProfile, modelId: string, profile?: AgentProfile): Promise<ToolSet> {
     const llmProvider = provider.provider;
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderTools) {
@@ -746,7 +748,7 @@ export class ModelManager {
       return {};
     }
 
-    return strategy.getProviderTools(llmProvider, modelObj);
+    return strategy.getProviderTools(llmProvider, modelObj, profile);
   }
 
   /**
