@@ -1,7 +1,5 @@
-import React, { createContext, useContext, useMemo, ReactNode } from 'react';
+import React, { useMemo, ReactNode } from 'react';
 import { IconContext as ReactIconsIconContext } from 'react-icons';
-
-const IconProviderContext = createContext<React.ContextType<typeof ReactIconsIconContext> | undefined>(undefined);
 
 interface IconProviderProps {
   children: ReactNode;
@@ -24,13 +22,5 @@ export const IconProvider: React.FC<IconProviderProps> = ({ children, size = '1e
     [size, color, className, style, attr],
   );
 
-  return <IconProviderContext.Provider value={contextValue}>{children}</IconProviderContext.Provider>;
-};
-
-export const useIconContext = () => {
-  const context = useContext(IconProviderContext);
-  if (context === undefined) {
-    throw new Error('useIconContext must be used within an IconProvider');
-  }
-  return context;
+  return <ReactIconsIconContext.Provider value={contextValue}>{children}</ReactIconsIconContext.Provider>;
 };
