@@ -12,14 +12,7 @@ interface IconProviderProps {
   attr?: React.SVGAttributes<SVGElement>;
 }
 
-export const IconProvider: React.FC<IconProviderProps> = ({
-  children,
-  size = '1em',
-  color = 'currentColor',
-  className,
-  style,
-  attr,
-}) => {
+export const IconProvider: React.FC<IconProviderProps> = ({ children, size = '1em', color = 'currentColor', className, style, attr }) => {
   const contextValue = useMemo(
     () => ({
       size: typeof size === 'number' ? `${size}px` : size,
@@ -34,4 +27,10 @@ export const IconProvider: React.FC<IconProviderProps> = ({
   return <IconProviderContext.Provider value={contextValue}>{children}</IconProviderContext.Provider>;
 };
 
-export const useIconContext = () => useContext(IconProviderContext);
+export const useIconContext = () => {
+  const context = useContext(IconProviderContext);
+  if (context === undefined) {
+    throw new Error('useIconContext must be used within an IconProvider');
+  }
+  return context;
+};

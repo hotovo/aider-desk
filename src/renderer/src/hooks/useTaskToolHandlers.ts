@@ -1,16 +1,15 @@
 import { useCallback, useEffect } from 'react';
-
 import { TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION, TODO_TOOL_CLEAR_ITEMS } from '@common/tools';
-import type { ToolData, TodoItem } from '@common/types';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
 
+import type { ToolData, TodoItem } from '@common/types';
 import type { ToolMessage } from '@/types/message';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 import { useTaskStore } from '@/stores/taskStore';
 
-export function useTaskToolHandlers(baseDir: string, taskId: string) {
+export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
   const { setMessages, setAiderTotalCost, setTodoItems } = useStoreWithEqualityFn(
     useTaskStore,
@@ -58,8 +57,8 @@ export function useTaskToolHandlers(baseDir: string, taskId: string) {
             break;
           }
         }
-      } catch (error) {
-        console.error('Error handling TODO tool:', error);
+      } catch {
+        // error is silently caught
       }
     },
     [taskId, setTodoItems],
@@ -127,4 +126,4 @@ export function useTaskToolHandlers(baseDir: string, taskId: string) {
       removeListener();
     };
   }, [api, baseDir, taskId, handleTool]);
-}
+};

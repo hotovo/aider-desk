@@ -1,23 +1,20 @@
 import { useCallback, useEffect } from 'react';
-
 import { useTranslation } from 'react-i18next';
-
 import { v4 as uuidv4 } from 'uuid';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
 
 import type { LogData } from '@common/types';
-
 import type { LogMessage, LoadingMessage, Message } from '@/types/message';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 import { useTaskStore } from '@/stores/taskStore';
 
-function isLoadingMessage(message: Message): message is LoadingMessage {
+const isLoadingMessage = (message: Message): message is LoadingMessage => {
   return message.type === 'loading';
-}
+};
 
-export function useTaskLogHandlers(baseDir: string, taskId: string) {
+export const useTaskLogHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
   const { t } = useTranslation();
   const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
@@ -95,4 +92,4 @@ export function useTaskLogHandlers(baseDir: string, taskId: string) {
       removeListener();
     };
   }, [api, baseDir, taskId, handleLog]);
-}
+};

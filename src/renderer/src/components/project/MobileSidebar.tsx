@@ -51,14 +51,14 @@ export const MobileSidebar = ({
   return (
     <div
       className={clsx(
-        'fixed inset-0 bg-black bg-opacity-5 z-3 flex items-end justify-center transition-all duration- ease-out',
+        'fixed inset-0 bg-black bg-opacity-50 z-30 flex items-end justify-center transition-all duration-300 ease-out',
         !showSidebar && 'pointer-events-none opacity-0 translate-y-full',
-        showSidebar && 'opacity-1 translate-y-0',
+        showSidebar && 'opacity-100 translate-y-0',
       )}
     >
       <div className="bg-bg-primary w-full h-3/4 rounded-t-lg p-4 pt-2 flex flex-col">
         <div onClick={() => setShowSidebar(false)} className="w-full flex justify-center items-center p-1 cursor-pointer">
-          <FiChevronDown size={2} />
+          <FiChevronDown size={24} />
         </div>
         <FilesContextInfoContent
           baseDir={baseDir}

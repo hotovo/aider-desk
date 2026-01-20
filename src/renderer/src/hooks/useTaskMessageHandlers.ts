@@ -1,15 +1,14 @@
 import { useCallback, useEffect } from 'react';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
 
 import type { UserMessageData, MessageRemovedData } from '@common/types';
-
 import type { UserMessage } from '@/types/message';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 import { useTaskStore } from '@/stores/taskStore';
 
-export function useTaskMessageHandlers(baseDir: string, taskId: string) {
+export const useTaskMessageHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
   const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
@@ -47,4 +46,4 @@ export function useTaskMessageHandlers(baseDir: string, taskId: string) {
       removeMessageRemoved();
     };
   }, [api, baseDir, taskId, handleUserMessage, handleMessageRemoved]);
-}
+};

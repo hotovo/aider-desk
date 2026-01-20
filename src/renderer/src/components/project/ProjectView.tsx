@@ -499,10 +499,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
   }
 
   // Compare project object
-  if (
-    prevProps.project.baseDir !== nextProps.project.baseDir ||
-    prevProps.project.active !== nextProps.project.active
-  ) {
+  if (prevProps.project.baseDir !== nextProps.project.baseDir || prevProps.project.active !== nextProps.project.active) {
     return false;
   }
 

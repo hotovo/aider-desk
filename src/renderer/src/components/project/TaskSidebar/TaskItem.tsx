@@ -292,7 +292,7 @@ export const TaskItem = memo(
           </div>
         )}
         {visibleSubtasks.length > 0 && isExpanded && (
-          <div className="overflow-hidden transition-all duration- ease-out">
+          <div className="overflow-hidden transition-all duration-200 ease-out">
             {visibleSubtasks.map((subtask) => (
               <TaskItem
                 key={subtask.id}

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ReactNode, ClipboardEvent } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, ReactNode, ClipboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
@@ -31,7 +31,21 @@ export const AutocompletionInput = ({
   const { t } = useTranslation();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [suggestionsPosition, setSuggestionsPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useLayoutEffect(() => {
+    if (showSuggestions && inputRef.current) {
+      const inputRect = inputRef.current.getBoundingClientRect();
+      setSuggestionsPosition({
+        top: inputRect.bottom + window.scrollY,
+        left: inputRect.left + window.scrollX,
+        width: inputRect.width,
+      });
+    } else {
+      setSuggestionsPosition(null);
+    }
+  }, [showSuggestions]);
 
   useEffect(() => {
     setShowSuggestions(suggestions.length > 0);
@@ -119,21 +133,16 @@ export const AutocompletionInput = ({
   };
 
   const renderSuggestions = () => {
-    if (!showSuggestions || suggestions.length === 0) {
-      return null;
-    }
-
-    const inputRect = inputRef.current?.getBoundingClientRect();
-    if (!inputRect) {
+    if (!showSuggestions || suggestions.length === 0 || !suggestionsPosition) {
       return null;
     }
 
     const style = {
       position: 'absolute' as const,
-      top: `${inputRect.bottom + window.scrollY}px`,
-      left: `${inputRect.left + window.scrollX}px`,
-      width: `${inputRect.width}px`,
-      zIndex: 1000, // Ensure it's above other elements
+      top: `${suggestionsPosition.top}px`,
+      left: `${suggestionsPosition.left}px`,
+      width: `${suggestionsPosition.width}px`,
+      zIndex: 1000,
     };
 
     return createPortal(

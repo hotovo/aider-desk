@@ -61,7 +61,7 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
             </div>
           </div>
 
-          <div className={`grid transition-all duration- ease-in-out ${isThinkingExpanded ? 'grid-rows-[1fr] opacity-1' : 'grid-rows-[0fr] opacity-0'}`}>
+          <div className={`grid transition-all duration-200 ease-in-out ${isThinkingExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
             <div className="overflow-hidden">
               <div className={clsx('p-3 text-xs text-text-primary bg-bg-secondary', !renderMarkdown && 'whitespace-pre-wrap break-words')}>
                 {parsedThinking}

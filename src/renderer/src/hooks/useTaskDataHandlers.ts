@@ -1,13 +1,13 @@
 import { useCallback, useEffect } from 'react';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
 
 import type { TokensInfoData, QuestionData, AutocompletionData, ModelsData, ContextFilesUpdatedData } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 import { useTaskStore } from '@/stores/taskStore';
 
-export function useTaskDataHandlers(baseDir: string, taskId: string) {
+export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
   const updateTaskState = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.updateTaskState, shallow);
   const setQuestion = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setQuestion, shallow);
@@ -56,9 +56,6 @@ export function useTaskDataHandlers(baseDir: string, taskId: string) {
   const handleUpdateAiderModels = useCallback(
     (data: ModelsData) => {
       setAiderModelsData(taskId, data);
-      if (data.error) {
-        console.error('Models data error:', data.error);
-      }
     },
     [taskId, setAiderModelsData],
   );
@@ -79,5 +76,15 @@ export function useTaskDataHandlers(baseDir: string, taskId: string) {
       removeContextFiles();
       removeUpdateAiderModels();
     };
-  }, [api, baseDir, taskId, handleUpdateAutocompletion, handleTokensInfo, handleQuestion, handleQuestionAnswered, handleContextFilesUpdated, handleUpdateAiderModels]);
-}
+  }, [
+    api,
+    baseDir,
+    taskId,
+    handleUpdateAutocompletion,
+    handleTokensInfo,
+    handleQuestion,
+    handleQuestionAnswered,
+    handleContextFilesUpdated,
+    handleUpdateAiderModels,
+  ]);
+};

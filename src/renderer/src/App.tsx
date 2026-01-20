@@ -53,10 +53,7 @@ const AnimatedRoutes = () => {
 
   return (
     <div className="absolute inset-0">
-      <div
-        key={location.pathname}
-        className="absolute inset-0 w-full h-full transition-opacity duration- ease-out"
-      >
+      <div key={location.pathname} className="absolute inset-0 w-full h-full transition-opacity duration-300 ease-out">
         {settings && (
           <Routes location={location}>
             <Route path={ROUTES.Onboarding} element={<Onboarding />} />
@@ -82,20 +79,20 @@ const App = () => {
   }, []);
 
   return (
-    <div className={`transition-opacity duration-200 ease-in ${isVisible ? 'opacity-1' : 'opacity-0'}`}>
+    <div className={`transition-opacity duration-200 ease-in ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       <Router>
         <ApiProvider>
           <IconProvider>
             <ModelProviderProvider>
-            <SettingsProvider>
-              <AgentsProvider>
-                <ContextMenuProvider>
-                  <ThemeAndFontManager />
-                  <AnimatedRoutes />
-                  <ToastContainer />
-                </ContextMenuProvider>
-              </AgentsProvider>
-            </SettingsProvider>
+              <SettingsProvider>
+                <AgentsProvider>
+                  <ContextMenuProvider>
+                    <ThemeAndFontManager />
+                    <AnimatedRoutes />
+                    <ToastContainer />
+                  </ContextMenuProvider>
+                </AgentsProvider>
+              </SettingsProvider>
             </ModelProviderProvider>
           </IconProvider>
         </ApiProvider>

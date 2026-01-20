@@ -2,16 +2,10 @@ import { useCallback } from 'react';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 import { v4 as uuidv4 } from 'uuid';
-
-import {
-  Message,
-  ReflectedMessage,
-  ResponseMessage,
-  ToolMessage,
-  UserMessage,
-} from '@/types/message';
-import { useTaskStore } from '@/stores/taskStore';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
+
+import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@/types/message';
+import { useTaskStore } from '@/stores/taskStore';
 import { useApi } from '@/contexts/ApiContext';
 
 type UseTaskActionsParams = {
@@ -93,8 +87,8 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
           todoItems: todoItems || [],
           question,
         });
-      } catch (error) {
-        console.error('Failed to load task:', error);
+      } catch {
+        // error is silently caught
       }
     },
     [api, baseDir, updateTaskState, setMessages],

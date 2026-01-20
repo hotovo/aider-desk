@@ -1,21 +1,19 @@
 import { useCallback, useEffect } from 'react';
-
 import { v4 as uuidv4 } from 'uuid';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
 
 import type { CommandOutputData } from '@common/types';
-
 import type { CommandOutputMessage, Message } from '@/types/message';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 import { useTaskStore } from '@/stores/taskStore';
 
-function isCommandOutputMessage(message: Message): message is CommandOutputMessage {
+const isCommandOutputMessage = (message: Message): message is CommandOutputMessage => {
   return message.type === 'command-output';
-}
+};
 
-export function useTaskCommandHandlers(baseDir: string, taskId: string) {
+export const useTaskCommandHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
   const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
@@ -51,4 +49,4 @@ export function useTaskCommandHandlers(baseDir: string, taskId: string) {
       removeListener();
     };
   }, [api, baseDir, taskId, handleCommandOutput]);
-}
+};

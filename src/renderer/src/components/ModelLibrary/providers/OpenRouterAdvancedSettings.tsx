@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isEqual } from 'lodash';
 import { OpenRouterProvider } from '@common/agent';
 
 import { InfoIcon } from '@/components/common/InfoIcon';
@@ -20,21 +21,32 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
   const [ignoreValue, setIgnoreValue] = useState(provider.ignore?.join(',') || '');
   const [quantizationsValue, setQuantizationsValue] = useState(provider.quantizations?.join(',') || '');
 
-  useEffect(() => {
-    setOrderValue(provider.order?.join(',') || '');
-  }, [provider.order]);
+  const routingRef = useRef<OpenRouterProvider | null>(null);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    setOnlyValue(provider.only?.join(',') || '');
-  }, [provider.only]);
+    if (isFirstRender.current) {
+      routingRef.current = provider;
+      isFirstRender.current = false;
+      return;
+    }
 
-  useEffect(() => {
-    setIgnoreValue(provider.ignore?.join(',') || '');
-  }, [provider.ignore]);
+    const routing = provider;
+    const prevRouting = routingRef.current;
 
-  useEffect(() => {
-    setQuantizationsValue(provider.quantizations?.join(',') || '');
-  }, [provider.quantizations]);
+    if (
+      !isEqual(routing.order, prevRouting?.order) ||
+      !isEqual(routing.only, prevRouting?.only) ||
+      !isEqual(routing.ignore, prevRouting?.ignore) ||
+      !isEqual(routing.quantizations, prevRouting?.quantizations)
+    ) {
+      setOrderValue(routing.order?.join(',') || '');
+      setOnlyValue(routing.only?.join(',') || '');
+      setIgnoreValue(routing.ignore?.join(',') || '');
+      setQuantizationsValue(routing.quantizations?.join(',') || '');
+      routingRef.current = routing;
+    }
+  }, [provider]);
 
   const handleOrderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setOrderValue(e.target.value);

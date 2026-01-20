@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill, RiCloseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +28,6 @@ const formatName = (name: string): string => {
 export const FileWriteToolMessage = ({ message, onRemove, compact = false }: Props) => {
   const { t } = useTranslation();
   const expandableRef = useRef<ExpandableMessageBlockRef>(null);
-  const [hasClosedOnError, setHasClosedOnError] = useState(false);
 
   const contentToWrite = message.args.content as string;
   const filePath = (message.args.filePath as string) || '';
@@ -36,13 +35,13 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false }: Pro
   const content = message.content && JSON.parse(message.content);
   const isError = content && content.startsWith('Error:');
   const isDenied = content && content.startsWith('File write to');
+  const shouldCloseOnError = content && !content.startsWith('Successfully');
 
-  useEffect(() => {
-    if (content && !content.startsWith('Successfully') && !hasClosedOnError) {
-      expandableRef.current?.close();
-      setHasClosedOnError(true);
+  useLayoutEffect(() => {
+    if (shouldCloseOnError && expandableRef.current) {
+      expandableRef.current.close();
     }
-  }, [content, hasClosedOnError]);
+  }, [shouldCloseOnError]);
 
   const getToolName = (): string => {
     const mode = message.args.mode as FileWriteMode;

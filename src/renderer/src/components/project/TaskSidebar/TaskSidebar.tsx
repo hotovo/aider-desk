@@ -357,7 +357,7 @@ const TaskSidebarComponent = ({
           </button>
 
           {!isCollapsed && (
-            <div className="flex items-center justify-between w-full ml-2 opacity- transition-opacity duration- ease-out">
+            <div className="flex items-center justify-between w-full ml-2 opacity-100 transition-opacity duration-200 ease-out">
               {isMultiselectMode ? (
                 <>
                   <h3 className="text-sm font-semibold uppercase h-5">{t('taskSidebar.title')}</h3>
@@ -450,7 +450,7 @@ const TaskSidebarComponent = ({
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-bg-primary-light-strong scrollbar-thumb-border-default bg-bg-primary-light-strong py-0.5">
         {!isCollapsed && (
-          <div className="h-full opacity- transition-opacity duration- ease-out">
+          <div className="h-full opacity-100 transition-opacity duration-200 ease-out">
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <CgSpinner className="animate-spin w-6 h-6 text-text-primary" />
@@ -504,7 +504,7 @@ const TaskSidebarComponent = ({
         )}
 
         {isCollapsed && (
-          <div className="h-full flex items-start justify-center py-1 opacity- transition-opacity duration- ease-out">
+          <div className="h-full flex items-start justify-center py-1 opacity-100 transition-opacity duration-200 ease-out">
             {createNewTask && (
               <button
                 data-tooltip-id="task-sidebar-tooltip"
