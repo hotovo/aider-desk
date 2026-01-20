@@ -3,7 +3,6 @@ import { FaChevronRight } from 'react-icons/fa';
 import { TfiThought } from 'react-icons/tfi';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { AnimatePresence, motion } from 'framer-motion';
 
 import { CopyMessageButton } from './CopyMessageButton';
 
@@ -62,19 +61,13 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
             </div>
           </div>
 
-          <AnimatePresence initial={false}>
-            {isThinkingExpanded && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2, ease: 'easeInOut' }}
-                className={clsx('p-3 text-xs text-text-primary bg-bg-secondary overflow-hidden', !renderMarkdown && 'whitespace-pre-wrap break-words')}
-              >
+          <div className={`grid transition-all duration- ease-in-out ${isThinkingExpanded ? 'grid-rows-[1fr] opacity-1' : 'grid-rows-[0fr] opacity-0'}`}>
+            <div className="overflow-hidden">
+              <div className={clsx('p-3 text-xs text-text-primary bg-bg-secondary', !renderMarkdown && 'whitespace-pre-wrap break-words')}>
                 {parsedThinking}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       {/* Answer section - only show if we have an answer or we're streaming */}

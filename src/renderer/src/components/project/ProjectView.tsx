@@ -1,6 +1,6 @@
 import { InputHistoryData, ProjectData, ProjectStartMode, TaskCreatedData, TaskData } from '@common/types';
+import { memo, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
-import { startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
@@ -24,7 +24,7 @@ type Props = {
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
 };
 
-export const ProjectView = ({ project, isActive = false, showSettingsPage }: Props) => {
+const ProjectViewComponent = ({ project, isActive = false, showSettingsPage }: Props) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const { projectSettings } = useProjectSettings();
@@ -490,3 +490,23 @@ export const ProjectView = ({ project, isActive = false, showSettingsPage }: Pro
     </TaskProvider>
   );
 };
+
+// Custom comparison function for React.memo
+const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
+  // Compare primitive props
+  if (prevProps.isActive !== nextProps.isActive || prevProps.showSettingsPage !== nextProps.showSettingsPage) {
+    return false;
+  }
+
+  // Compare project object
+  if (
+    prevProps.project.baseDir !== nextProps.project.baseDir ||
+    prevProps.project.active !== nextProps.project.active
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+export const ProjectView = memo(ProjectViewComponent, arePropsEqual);

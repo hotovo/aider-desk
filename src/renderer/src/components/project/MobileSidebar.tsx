@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { ContextFile, Mode, TaskData, TokensInfoData } from '@common/types';
 import { FiChevronDown } from 'react-icons/fi';
@@ -50,14 +49,16 @@ export const MobileSidebar = ({
   refreshAllFiles,
 }: Props) => {
   return (
-    <motion.div
-      animate={showSidebar ? { opacity: 1, y: 0 } : { opacity: 0, y: 100 }}
-      transition={{ duration: 0.3 }}
-      className={clsx('fixed inset-0 bg-black bg-opacity-50 z-30 flex items-end justify-center', !showSidebar && 'pointer-events-none')}
+    <div
+      className={clsx(
+        'fixed inset-0 bg-black bg-opacity-5 z-3 flex items-end justify-center transition-all duration- ease-out',
+        !showSidebar && 'pointer-events-none opacity-0 translate-y-full',
+        showSidebar && 'opacity-1 translate-y-0',
+      )}
     >
       <div className="bg-bg-primary w-full h-3/4 rounded-t-lg p-4 pt-2 flex flex-col">
         <div onClick={() => setShowSidebar(false)} className="w-full flex justify-center items-center p-1 cursor-pointer">
-          <FiChevronDown size={24} />
+          <FiChevronDown size={2} />
         </div>
         <FilesContextInfoContent
           baseDir={baseDir}
@@ -81,6 +82,6 @@ export const MobileSidebar = ({
           refreshAllFiles={refreshAllFiles}
         />
       </div>
-    </motion.div>
+    </div>
   );
 };

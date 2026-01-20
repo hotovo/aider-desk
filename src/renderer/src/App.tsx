@@ -1,5 +1,4 @@
 import '@/themes/themes.scss';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
@@ -17,6 +16,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { ApiProvider } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
+import { IconProvider } from '@/contexts/IconProvider';
 
 const ThemeAndFontManager = () => {
   const { theme, font = 'Sono', fontSize = 16 } = useSettings();
@@ -53,31 +53,21 @@ const AnimatedRoutes = () => {
 
   return (
     <div className="absolute inset-0">
-      <AnimatePresence initial={true}>
-        <motion.div
-          key={location.pathname}
-          initial={{
-            opacity: 0,
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-          }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {settings && (
-            <Routes location={location}>
-              <Route path={ROUTES.Onboarding} element={<Onboarding />} />
-              <Route path={ROUTES.Home} element={<Home />} />
-              <Route path="/" element={settings.onboardingFinished ? <Navigate to={ROUTES.Home} replace /> : <Navigate to={ROUTES.Onboarding} replace />} />
-            </Routes>
-          )}
-          <StyledTooltip id="global-tooltip-sm" />
-          <StyledTooltip id="global-tooltip-md" maxWidth={600} />
-          <StyledTooltip id="global-tooltip-lg" maxWidth="90%" />
-        </motion.div>
-      </AnimatePresence>
+      <div
+        key={location.pathname}
+        className="absolute inset-0 w-full h-full transition-opacity duration- ease-out"
+      >
+        {settings && (
+          <Routes location={location}>
+            <Route path={ROUTES.Onboarding} element={<Onboarding />} />
+            <Route path={ROUTES.Home} element={<Home />} />
+            <Route path="/" element={settings.onboardingFinished ? <Navigate to={ROUTES.Home} replace /> : <Navigate to={ROUTES.Onboarding} replace />} />
+          </Routes>
+        )}
+        <StyledTooltip id="global-tooltip-sm" />
+        <StyledTooltip id="global-tooltip-md" maxWidth={600} />
+        <StyledTooltip id="global-tooltip-lg" maxWidth="90%" />
+      </div>
     </div>
   );
 };
@@ -92,10 +82,11 @@ const App = () => {
   }, []);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
+    <div className={`transition-opacity duration-200 ease-in ${isVisible ? 'opacity-1' : 'opacity-0'}`}>
       <Router>
         <ApiProvider>
-          <ModelProviderProvider>
+          <IconProvider>
+            <ModelProviderProvider>
             <SettingsProvider>
               <AgentsProvider>
                 <ContextMenuProvider>
@@ -105,10 +96,11 @@ const App = () => {
                 </ContextMenuProvider>
               </AgentsProvider>
             </SettingsProvider>
-          </ModelProviderProvider>
+            </ModelProviderProvider>
+          </IconProvider>
         </ApiProvider>
       </Router>
-    </motion.div>
+    </div>
   );
 };
 

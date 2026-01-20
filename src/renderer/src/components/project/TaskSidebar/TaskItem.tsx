@@ -6,7 +6,6 @@ import { IoGitBranch } from 'react-icons/io5';
 import { MdPushPin, MdChevronRight } from 'react-icons/md';
 import { clsx } from 'clsx';
 import { useLocalStorage, useLongPress } from '@reactuses/core';
-import { AnimatePresence, motion } from 'framer-motion';
 
 import { TaskStatusIcon } from './TaskStatusIcon';
 import { TaskMenuButton } from './TaskMenuButton';
@@ -292,50 +291,43 @@ export const TaskItem = memo(
             </div>
           </div>
         )}
-        <AnimatePresence>
-          {visibleSubtasks.length > 0 && isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            >
-              {visibleSubtasks.map((subtask) => (
-                <TaskItem
-                  key={subtask.id}
-                  task={subtask}
-                  tasks={tasks}
-                  level={level + 1}
-                  selectedTasks={selectedTasks}
-                  deleteConfirmTaskId={deleteConfirmTaskId}
-                  showArchived={showArchived}
-                  searchQuery={searchQuery}
-                  isMultiselectMode={isMultiselectMode}
-                  setIsMultiselectMode={setIsMultiselectMode}
-                  activeTaskId={activeTaskId}
-                  onTaskClick={onTaskClick}
-                  createNewTask={createNewTask}
-                  editingTaskId={editingTaskId}
-                  onEditClick={onEditClick}
-                  onEditConfirm={onEditConfirm}
-                  onEditCancel={onEditCancel}
-                  onDeleteClick={onDeleteClick}
-                  onArchiveTask={onArchiveTask}
-                  onUnarchiveTask={onUnarchiveTask}
-                  onTogglePin={onTogglePin}
-                  onChangeState={onChangeState}
-                  onExportToMarkdown={onExportToMarkdown}
-                  onExportToImage={onExportToImage}
-                  onDuplicateTask={onDuplicateTask}
-                  updateTask={updateTask}
-                  deleteTask={deleteTask}
-                  handleConfirmDelete={handleConfirmDelete}
-                  handleCancelDelete={handleCancelDelete}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {visibleSubtasks.length > 0 && isExpanded && (
+          <div className="overflow-hidden transition-all duration- ease-out">
+            {visibleSubtasks.map((subtask) => (
+              <TaskItem
+                key={subtask.id}
+                task={subtask}
+                tasks={tasks}
+                level={level + 1}
+                selectedTasks={selectedTasks}
+                deleteConfirmTaskId={deleteConfirmTaskId}
+                showArchived={showArchived}
+                searchQuery={searchQuery}
+                isMultiselectMode={isMultiselectMode}
+                setIsMultiselectMode={setIsMultiselectMode}
+                activeTaskId={activeTaskId}
+                onTaskClick={onTaskClick}
+                createNewTask={createNewTask}
+                editingTaskId={editingTaskId}
+                onEditClick={onEditClick}
+                onEditConfirm={onEditConfirm}
+                onEditCancel={onEditCancel}
+                onDeleteClick={onDeleteClick}
+                onArchiveTask={onArchiveTask}
+                onUnarchiveTask={onUnarchiveTask}
+                onTogglePin={onTogglePin}
+                onChangeState={onChangeState}
+                onExportToMarkdown={onExportToMarkdown}
+                onExportToImage={onExportToImage}
+                onDuplicateTask={onDuplicateTask}
+                updateTask={updateTask}
+                deleteTask={deleteTask}
+                handleConfirmDelete={handleConfirmDelete}
+                handleCancelDelete={handleCancelDelete}
+              />
+            ))}
+          </div>
+        )}
       </div>
     );
   },

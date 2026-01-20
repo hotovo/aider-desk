@@ -1,5 +1,6 @@
 import { ContextFile, OS, TokensInfoData } from '@common/types';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, memo, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
 import { HiChevronDown, HiChevronRight, HiOutlineTrash, HiPlus, HiX } from 'react-icons/hi';
@@ -11,7 +12,6 @@ import { VscFileCode } from 'react-icons/vsc';
 import { FaGitSquare } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
-import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 import { StyledTooltip } from '../common/StyledTooltip';
@@ -104,7 +104,19 @@ type Props = {
 
 type SectionType = 'project' | 'context' | 'rules';
 
-export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFileDialog, tokensInfo, refreshAllFiles }: Props) => {
+const arePropsEqual = (prevProps: Props, nextProps: Props) => {
+  return (
+    prevProps.baseDir === nextProps.baseDir &&
+    prevProps.taskId === nextProps.taskId &&
+    prevProps.allFiles === nextProps.allFiles &&
+    prevProps.contextFiles === nextProps.contextFiles &&
+    prevProps.tokensInfo === nextProps.tokensInfo &&
+    prevProps.refreshAllFiles === nextProps.refreshAllFiles
+    // Don't compare showFileDialog as it's a function reference that should be stable
+  );
+};
+
+export const ContextFiles = memo(function ContextFiles({ baseDir, taskId, allFiles, contextFiles, showFileDialog, tokensInfo, refreshAllFiles }: Props) {
   const { t } = useTranslation();
   const os = useOS();
   const api = useApi();
@@ -477,9 +489,9 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
           )}
           onClick={() => setActiveSection(section)}
         >
-          <motion.div initial={false} animate={{ rotate: isOpen ? 0 : -90 }} transition={{ duration: 0.1 }} className="mr-1">
+          <div className={`mr-1 transition-transform duration-100 ${isOpen ? 'rotate-0' : '-rotate-90'}`}>
             <HiChevronDown className="w-4 h-4 text-text-muted" />
-          </motion.div>
+          </div>
 
           <span className="text-xs font-semibold uppercase flex-grow text-text-secondary">{title}</span>
 
@@ -499,18 +511,12 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
           </div>
         )}
 
-        <AnimatePresence initial={false}>
-          {isOpen && (
-            <motion.div
-              className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded pl-1 py-1 bg-bg-primary-light-strong relative"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-            >
+        <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+          <div className="overflow-hidden">
+            <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded pl-1 py-1 bg-bg-primary-light-strong relative">
               {Object.keys(treeData).length > 1 ? (
                 <ControlledTreeEnvironment
-                  key={objectHash(treeData)} // Force re-render if data structure changes drastically
+                  key={objectHash(treeData)}
                   items={treeData}
                   getItemTitle={(item) => item.data}
                   renderItemTitle={({ title, item }) => {
@@ -525,7 +531,7 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
                       </div>
                     );
                   }}
-                  renderItemArrow={() => null} // Handled in renderItem
+                  renderItemArrow={() => null}
                   viewState={{
                     [treeId]: {
                       expandedItems,
@@ -543,9 +549,9 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-center text-text-muted text-2xs">{t('common.noFiles')}</div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        </div>
       </motion.div>
     );
   };
@@ -675,4 +681,4 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
       {renderSection('rules', t('contextFiles.rules'), rulesFiles.length, rulesTreeData, rulesExpandedItems, setRulesExpandedItems, undefined, false, true)}
     </div>
   );
-};
+}, arePropsEqual);

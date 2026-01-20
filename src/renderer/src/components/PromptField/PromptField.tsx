@@ -12,7 +12,7 @@ import { vim } from '@replit/codemirror-vim';
 import { Mode, PromptBehavior, QuestionData, SuggestionMode, TaskData } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Annotation, Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, memo, useRef, useState } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
@@ -134,7 +134,7 @@ type Props = {
   handoffConversation?: (focus?: string) => Promise<void>;
 };
 
-export const PromptField = forwardRef<PromptFieldRef, Props>(
+const PromptFieldImpl = forwardRef<PromptFieldRef, Props>(
   (
     {
       baseDir,
@@ -1119,4 +1119,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
   },
 );
 
-PromptField.displayName = 'PromptField';
+PromptFieldImpl.displayName = 'PromptField';
+
+export const PromptField = memo(PromptFieldImpl);

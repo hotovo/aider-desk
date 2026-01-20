@@ -1,5 +1,5 @@
 import { DefaultTaskState, Mode, Model, ModelsData, ProjectData, TaskData, TodoItem } from '@common/types';
-import { forwardRef, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, memo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import { clsx } from 'clsx';
@@ -66,7 +66,7 @@ type Props = {
   onToggleTaskSidebar?: () => void;
 };
 
-export const TaskView = forwardRef<TaskViewRef, Props>(
+const TaskViewImpl = forwardRef<TaskViewRef, Props>(
   (
     {
       project,
@@ -776,4 +776,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
   },
 );
 
-TaskView.displayName = 'TaskView';
+TaskViewImpl.displayName = 'TaskView';
+
+export const TaskView = memo(TaskViewImpl);

@@ -1,6 +1,6 @@
 import { ProjectData } from '@common/types';
 import { CSS } from '@dnd-kit/utilities';
-import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { MouseEvent, useEffect, useMemo, memo, useRef, useState } from 'react';
 import { Tab, TabGroup, TabList } from '@headlessui/react';
 import { clsx } from 'clsx';
 import { MdAdd, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md';
@@ -176,7 +176,14 @@ type SortableTabItemProps = {
   openProjectsNumber: number;
 };
 
-const SortableTabItem = ({ project, activeProject, onCloseProject, onCloseOtherProjects, onCloseAllProjects, openProjectsNumber }: SortableTabItemProps) => {
+const SortableTabItem = memo(function SortableTabItem({
+  project,
+  activeProject,
+  onCloseProject,
+  onCloseOtherProjects,
+  onCloseAllProjects,
+  openProjectsNumber,
+}: SortableTabItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.baseDir });
   const { showMenu } = useContextMenu();
   const { t } = useTranslation();
@@ -248,4 +255,4 @@ const SortableTabItem = ({ project, activeProject, onCloseProject, onCloseOtherP
       </Tab>
     </div>
   );
-};
+});

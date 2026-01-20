@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, memo, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +41,7 @@ type Props = {
   onInterrupt?: () => void;
 };
 
-export const Messages = forwardRef<MessagesRef, Props>(
+const MessagesImpl = forwardRef<MessagesRef, Props>(
   (
     {
       baseDir,
@@ -197,4 +197,6 @@ export const Messages = forwardRef<MessagesRef, Props>(
   },
 );
 
-Messages.displayName = 'Messages';
+MessagesImpl.displayName = 'Messages';
+
+export const Messages = memo(MessagesImpl);
