@@ -26,41 +26,40 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
 
         const { messages: stateMessages, files, todoItems, question } = await api.loadTask(baseDir, taskId);
 
-        const messages: Message[] = stateMessages.reduce((messages, message) => {
+        const messages: Message[] = stateMessages.flatMap((message): Message[] => {
           if (message.type === 'response-completed') {
+            const result: Message[] = [];
             if (message.reflectedMessage) {
-              const reflected: ReflectedMessage = {
+              result.push({
                 id: uuidv4(),
                 type: 'reflected-message',
                 content: message.reflectedMessage,
                 responseMessageId: message.messageId,
                 promptContext: message.promptContext,
-              };
-              messages.push(reflected);
+              } as ReflectedMessage);
             }
-
-            const responseMessage: ResponseMessage = {
+            result.push({
               id: message.messageId,
               type: 'response',
               content: message.content,
               usageReport: message.usageReport,
               promptContext: message.promptContext,
-            };
-            messages.push(responseMessage);
-          } else if (message.type === 'user') {
-            const userMessage: UserMessage = {
+            } as ResponseMessage);
+            return result;
+          }
+          if (message.type === 'user') {
+            return [{
               id: message.id,
               type: 'user',
               content: message.content,
               promptContext: message.promptContext,
-            };
-            messages.push(userMessage);
-          } else if (message.type === 'tool') {
+            } as UserMessage];
+          }
+          if (message.type === 'tool') {
             if (message.serverName === TODO_TOOL_GROUP_NAME) {
-              return messages;
+              return [];
             }
-
-            const toolMessage: ToolMessage = {
+            return [{
               type: 'tool',
               id: message.id,
               serverName: message.serverName,
@@ -69,12 +68,10 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
               content: message.response || '',
               promptContext: message.promptContext,
               usageReport: message.usageReport,
-            };
-            messages.push(toolMessage);
+            } as ToolMessage];
           }
-
-          return messages;
-        }, [] as Message[]);
+          return [];
+        });
 
         setMessages(taskId, (existingMessages) => [
           ...messages,
