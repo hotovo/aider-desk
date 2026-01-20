@@ -291,41 +291,43 @@ export const TaskItem = memo(
             </div>
           </div>
         )}
-        {visibleSubtasks.length > 0 && isExpanded && (
-          <div className="overflow-hidden transition-all duration-200 ease-out">
-            {visibleSubtasks.map((subtask) => (
-              <TaskItem
-                key={subtask.id}
-                task={subtask}
-                tasks={tasks}
-                level={level + 1}
-                selectedTasks={selectedTasks}
-                deleteConfirmTaskId={deleteConfirmTaskId}
-                showArchived={showArchived}
-                searchQuery={searchQuery}
-                isMultiselectMode={isMultiselectMode}
-                setIsMultiselectMode={setIsMultiselectMode}
-                activeTaskId={activeTaskId}
-                onTaskClick={onTaskClick}
-                createNewTask={createNewTask}
-                editingTaskId={editingTaskId}
-                onEditClick={onEditClick}
-                onEditConfirm={onEditConfirm}
-                onEditCancel={onEditCancel}
-                onDeleteClick={onDeleteClick}
-                onArchiveTask={onArchiveTask}
-                onUnarchiveTask={onUnarchiveTask}
-                onTogglePin={onTogglePin}
-                onChangeState={onChangeState}
-                onExportToMarkdown={onExportToMarkdown}
-                onExportToImage={onExportToImage}
-                onDuplicateTask={onDuplicateTask}
-                updateTask={updateTask}
-                deleteTask={deleteTask}
-                handleConfirmDelete={handleConfirmDelete}
-                handleCancelDelete={handleCancelDelete}
-              />
-            ))}
+        {visibleSubtasks.length > 0 && (
+          <div className={`grid transition-all duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+            <div className="overflow-hidden">
+              {visibleSubtasks.map((subtask) => (
+                <TaskItem
+                  key={subtask.id}
+                  task={subtask}
+                  tasks={tasks}
+                  level={level + 1}
+                  selectedTasks={selectedTasks}
+                  deleteConfirmTaskId={deleteConfirmTaskId}
+                  showArchived={showArchived}
+                  searchQuery={searchQuery}
+                  isMultiselectMode={isMultiselectMode}
+                  setIsMultiselectMode={setIsMultiselectMode}
+                  activeTaskId={activeTaskId}
+                  onTaskClick={onTaskClick}
+                  createNewTask={createNewTask}
+                  editingTaskId={editingTaskId}
+                  onEditClick={onEditClick}
+                  onEditConfirm={onEditConfirm}
+                  onEditCancel={onEditCancel}
+                  onDeleteClick={onDeleteClick}
+                  onArchiveTask={onArchiveTask}
+                  onUnarchiveTask={onUnarchiveTask}
+                  onTogglePin={onTogglePin}
+                  onChangeState={onChangeState}
+                  onExportToMarkdown={onExportToMarkdown}
+                  onExportToImage={onExportToImage}
+                  onDuplicateTask={onDuplicateTask}
+                  updateTask={updateTask}
+                  deleteTask={deleteTask}
+                  handleConfirmDelete={handleConfirmDelete}
+                  handleCancelDelete={handleCancelDelete}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

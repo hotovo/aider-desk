@@ -72,6 +72,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
           placeholder="e.g. anthropic, openai"
           value={orderField.value}
           onChange={orderField.onChange}
+          onBlur={orderField.onBlur}
           className="flex-1"
         />
         <div className="flex items-center gap-2 mt-4">
@@ -118,6 +119,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
           placeholder="e.g. anthropic, openai"
           value={onlyField.value}
           onChange={onlyField.onChange}
+          onBlur={onlyField.onBlur}
           className="flex-1"
         />
         <Input
@@ -140,6 +142,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
           placeholder="e.g. anthropic, openai"
           value={ignoreField.value}
           onChange={ignoreField.onChange}
+          onBlur={ignoreField.onBlur}
           className="flex-1"
         />
       </div>
@@ -165,6 +168,7 @@ export const OpenRouterAdvancedSettings = ({ provider, onChange }: Props) => {
           placeholder="e.g. int4, int8"
           value={quantizationsField.value}
           onChange={quantizationsField.onChange}
+          onBlur={quantizationsField.onBlur}
         />
         <Checkbox
           label={

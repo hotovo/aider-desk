@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect, ReactNode, ClipboardEvent } from 'react';
+import { useState, useRef, useLayoutEffect, useEffect, ReactNode, ClipboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
@@ -35,6 +35,11 @@ export const AutocompletionInput = ({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [suggestionsPosition, setSuggestionsPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setInternalShowSuggestions(suggestions.length > 0);
+    setSelectedIndex(-1);
+  }, [suggestions]);
 
   const showSuggestions = internalShowSuggestions && suggestions.length > 0;
 
