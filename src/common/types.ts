@@ -417,11 +417,9 @@ export interface AgentProfile {
   useMemoryTools: boolean;
   useSkillsTools: boolean;
   customInstructions: string;
-  thinking?: boolean;
   subagent: SubagentConfig;
   isSubagent?: boolean; // flag to indicate if this profile is being used as a subagent
   ruleFiles?: string[]; // Array of absolute paths to rule files for this agent profile
-  providerOverrides?: Record<string, unknown>;
 }
 
 export interface EnvironmentVariable {

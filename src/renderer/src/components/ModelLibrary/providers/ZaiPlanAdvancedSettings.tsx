@@ -18,10 +18,10 @@ type Props = {
 export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
-  const { includeThoughts } = provider;
+  const { thinkingEnabled } = provider;
 
-  const handleIncludeThoughtsChange = (checked: boolean) => {
-    onChange({ ...provider, includeThoughts: checked });
+  const handleThinkingEnabledChange = (checked: boolean) => {
+    onChange({ ...provider, thinkingEnabled: checked });
   };
 
   return (
@@ -33,7 +33,7 @@ export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
           <StyledTooltip id="zai-thinking-info" content={t('zaiPlan.thinking.infoTooltip')} />
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox label={t('zaiPlan.thinking.includeThoughts')} checked={includeThoughts ?? true} size="md" onChange={handleIncludeThoughtsChange} />
+          <Checkbox label={t('zaiPlan.thinking.includeThoughts')} checked={thinkingEnabled ?? true} size="md" onChange={handleThinkingEnabledChange} />
           <InfoIcon tooltip={t('zaiPlan.thinking.includeThoughtsTooltip')} />
         </div>
       </div>

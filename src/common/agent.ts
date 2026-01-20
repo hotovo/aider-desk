@@ -251,8 +251,7 @@ export const isOpenCodeProvider = (provider: LlmProviderBase): provider is OpenC
 export interface ZaiPlanProvider extends LlmProviderBase {
   name: 'zai-plan';
   apiKey: string;
-  includeThoughts?: boolean;
-  thinking?: boolean;
+  thinkingEnabled?: boolean;
 }
 export const isZaiPlanProvider = (provider: LlmProviderBase): provider is ZaiPlanProvider => provider.name === 'zai-plan';
 
@@ -693,7 +692,6 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
       provider = {
         name: 'zai-plan',
         apiKey: '',
-        includeThoughts: true,
       } satisfies ZaiPlanProvider;
       break;
     case 'minimax':

@@ -19,7 +19,7 @@ export const ZaiPlanModelOverrides = ({ provider, overrides, onChange }: Props) 
 
   const handleProviderChange = (updatedProvider: ZaiPlanProvider) => {
     const newOverrides = {
-      includeThoughts: updatedProvider.includeThoughts,
+      thinkingEnabled: updatedProvider.thinkingEnabled,
       disableStreaming: updatedProvider.disableStreaming,
     };
 

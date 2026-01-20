@@ -648,7 +648,7 @@ export class ModelManager {
     return strategy.getCacheControl(profile, llmProvider);
   }
 
-  isStreamingDisabled(provider: ProviderProfile, modelId: string, profile?: AgentProfile): boolean {
+  isStreamingDisabled(provider: ProviderProfile, modelId: string, _profile?: AgentProfile): boolean {
     const llmProvider = provider.provider;
     const models = this.providerModels[provider.id] || [];
     const modelObj = models.find((m) => m.id === modelId);
@@ -662,14 +662,9 @@ export class ModelManager {
       return llmProvider.disableStreaming ?? false;
     }
 
-    const agentOverrides = profile?.providerOverrides as Partial<{ disableStreaming: boolean }>;
-    const modelOverrides = modelObj.providerOverrides as Partial<{ disableStreaming: boolean }>;
+    const modelOverrides = modelObj.providerOverrides as Partial<{ disableStreaming: boolean }> | undefined;
 
-    return typeof agentOverrides?.disableStreaming === 'boolean'
-      ? agentOverrides.disableStreaming
-      : typeof modelOverrides?.disableStreaming === 'boolean'
-        ? modelOverrides.disableStreaming
-        : (llmProvider.disableStreaming ?? false);
+    return typeof modelOverrides?.disableStreaming === 'boolean' ? modelOverrides.disableStreaming : (llmProvider.disableStreaming ?? false);
   }
 
   getProviderOptions(provider: ProviderProfile, modelId: string, profile?: AgentProfile): Record<string, Record<string, JSONValue>> | undefined {
