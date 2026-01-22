@@ -4,6 +4,7 @@ import { ProjectData } from '@common/types';
 import logger from '@/logger';
 import { initManagers } from '@/managers';
 import { performStartUp } from '@/start-up';
+import { extractEmbeddedResources } from '@/bun-resources';
 import { Store } from '@/store';
 import { AIDER_DESK_DATA_DIR } from '@/constants';
 import { getDefaultProjectSettings } from '@/utils';
@@ -85,6 +86,7 @@ const main = async (): Promise<void> => {
   };
 
   try {
+    await extractEmbeddedResources();
     await performStartUp(updateProgress);
     logger.info('Startup complete');
 
