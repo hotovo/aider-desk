@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.50.0]
 
 - further improvement to the rendering performance
 - properly showing the Aider cost
