@@ -24,7 +24,7 @@ export const loadMinimaxModels = async (profile: ProviderProfile): Promise<LoadM
       id: 'MiniMax-M2',
       providerId: profile.id,
       maxInputTokens: 204800,
-      maxOutputTokens: 131072,
+      maxOutputTokensLimit: 131072,
       inputCostPerToken: 0.0000003, // 0.3 per 1M tokens
       outputCostPerToken: 0.0000012, // 1.2 per 1M tokens
       cacheReadInputTokenCost: 0.00000003, // 0.03 per 1M tokens
@@ -35,7 +35,7 @@ export const loadMinimaxModels = async (profile: ProviderProfile): Promise<LoadM
       id: 'MiniMax-M2-Stable',
       providerId: profile.id,
       maxInputTokens: 204800,
-      maxOutputTokens: 131072,
+      maxOutputTokensLimit: 131072,
       inputCostPerToken: 0.0000003, // 0.3 per 1M tokens
       outputCostPerToken: 0.0000012, // 1.2 per 1M tokens
       cacheReadInputTokenCost: 0.00000003, // 0.03 per 1M tokens

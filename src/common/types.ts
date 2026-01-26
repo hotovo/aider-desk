@@ -774,6 +774,7 @@ export type WorkingMode = z.infer<typeof WorkingModeSchema>;
 export const TaskDataSchema = z.object({
   id: z.string(),
   baseDir: z.string(),
+  parentId: z.string().nullable().optional(),
   name: z.string(),
   state: z.string().optional(),
   archived: z.boolean().optional(),
@@ -800,9 +801,27 @@ export const TaskDataSchema = z.object({
   currentMode: z.enum(['code', 'ask', 'architect', 'context', 'agent']).optional(),
   contextCompactingThreshold: z.number().optional(),
   weakModelLocked: z.boolean().optional(),
+  handoff: z.boolean().optional(),
+  lastAgentProviderMetadata: z.unknown().optional(),
 });
 
 export type TaskData = z.infer<typeof TaskDataSchema>;
+
+export interface CreateTaskParams {
+  parentId?: string | null;
+  name?: string;
+  autoApprove?: boolean;
+  activate?: boolean;
+  handoff?: boolean;
+  sendEvent?: boolean;
+}
+
+export interface TaskCreatedData {
+  baseDir: string;
+  task: TaskData;
+  activate?: boolean;
+  editLast?: boolean;
+}
 
 export enum DefaultTaskState {
   Todo = 'TODO',
@@ -813,6 +832,16 @@ export enum DefaultTaskState {
   ReadyForImplementation = 'READY_FOR_IMPLEMENTATION',
   Done = 'DONE',
 }
+
+export const TaskStateEmoji: Record<DefaultTaskState, string> = {
+  [DefaultTaskState.Todo]: '📋',
+  [DefaultTaskState.ReadyForImplementation]: '🚀',
+  [DefaultTaskState.InProgress]: '⚙️',
+  [DefaultTaskState.Interrupted]: '⏸️',
+  [DefaultTaskState.MoreInfoNeeded]: '💬',
+  [DefaultTaskState.ReadyForReview]: '👀',
+  [DefaultTaskState.Done]: '✅',
+};
 
 export interface TodoItem {
   name: string;
@@ -835,6 +864,7 @@ export interface Model {
   providerId: string;
   maxInputTokens?: number;
   maxOutputTokens?: number;
+  maxOutputTokensLimit?: number;
   temperature?: number;
   inputCostPerToken?: number;
   outputCostPerToken?: number;

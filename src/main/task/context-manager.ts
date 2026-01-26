@@ -7,6 +7,8 @@ import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, TaskCo
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
 
+import type { ToolResultPart } from 'ai';
+
 import logger from '@/logger';
 import { Task } from '@/task';
 import { isDirectory, isFileIgnored } from '@/utils';
@@ -439,29 +441,20 @@ export class ContextManager {
     this.autosave();
   }
 
-  removeLastUserMessage(): string | null {
-    let lastUserMessageContent: string | null = null;
-
-    while (this.messages.length > 0) {
-      const lastMessage = this.messages.pop();
-      if (!lastMessage) {
-        break;
-      }
-
-      logger.debug(`Task ${this.taskId}: Removing message during user message search: ${lastMessage.role}`);
-
-      if (lastMessage.role === MessageRole.User) {
-        lastUserMessageContent = extractTextContent(lastMessage.content);
-        logger.debug(`Task ${this.taskId}: Found and removed last user message. Content: ${lastUserMessageContent}`);
-        break;
-      }
+  removeMessagesUpToLastUserMessage(): ContextMessage[] {
+    const lastUserMessageIndex = this.messages.findLastIndex((msg) => msg.role === MessageRole.User);
+    if (lastUserMessageIndex === -1) {
+      logger.warn('No user message found to remove up to.', {
+        taskId: this.taskId,
+      });
+      return [];
     }
 
-    if (lastUserMessageContent !== null) {
-      this.autosave();
-    }
+    const removedMessages = this.messages.splice(lastUserMessageIndex);
+    logger.debug(`Task ${this.taskId}: Removed ${removedMessages.length} messages up to last user message. Total messages: ${this.messages.length}`);
+    this.autosave();
 
-    return lastUserMessageContent;
+    return removedMessages;
   }
 
   toConnectorMessages(contextMessages: ContextMessage[] = this.messages): { role: MessageRole; content: string }[] {
@@ -476,13 +469,23 @@ export class ContextManager {
           for (const part of message.content) {
             if (part.type === 'tool-call') {
               const [serverName, toolName] = extractServerNameToolName(part.toolName);
-              // @ts-expect-error part.input type is complex, 'prompt' check is safe in this context
-              if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT && part.input && 'prompt' in part.input) {
+              if (
+                serverName === AIDER_TOOL_GROUP_NAME &&
+                toolName === AIDER_TOOL_RUN_PROMPT &&
+                part.input &&
+                typeof part.input === 'object' &&
+                'prompt' in part.input
+              ) {
                 aiderPrompt = part.input.prompt as string;
                 break;
               }
-              // @ts-expect-error part.input type is complex, 'prompt' check is safe in this context
-              if (serverName === SUBAGENTS_TOOL_GROUP_NAME && toolName === SUBAGENTS_TOOL_RUN_TASK && part.input && 'prompt' in part.input) {
+              if (
+                serverName === SUBAGENTS_TOOL_GROUP_NAME &&
+                toolName === SUBAGENTS_TOOL_RUN_TASK &&
+                part.input &&
+                typeof part.input === 'object' &&
+                'prompt' in part.input
+              ) {
                 subAgentsPrompt = part.input.prompt as string;
                 break;
               }
@@ -516,9 +519,8 @@ export class ContextManager {
                 role: MessageRole.Assistant,
                 content: part.output.value,
               });
-            } else if (part.output?.type === 'json') {
-              // @ts-expect-error part.output.value.responses type is complex, safe in this context
-              const responses: ResponseCompletedData[] = part.output.value.responses;
+            } else if (part.output?.type === 'json' && part.output.value && typeof part.output.value === 'object' && 'responses' in part.output.value) {
+              const responses: ResponseCompletedData[] = part.output.value.responses as unknown as ResponseCompletedData[];
               if (responses) {
                 responses.forEach((response: ResponseCompletedData) => {
                   if (response.reflectedMessage) {
@@ -757,37 +759,162 @@ export class ContextManager {
     const messagesData: (UserMessageData | ResponseCompletedData | ToolData)[] = [];
 
     for (const message of contextMessages) {
+      const processToolResult = (part: ToolResultPart) => {
+        const [serverName, toolName] = extractServerNameToolName(part.toolName);
+        const promptContext = extractPromptContextFromToolResult(part.output.value);
+        const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === part.toolCallId) as ToolData | undefined;
+
+        if (toolMessage) {
+          toolMessage.response = JSON.stringify(part.output.value);
+          toolMessage.usageReport = message.usageReport || toolMessage.usageReport;
+          toolMessage.promptContext = promptContext;
+        }
+
+        // Handle aider tool responses - create ResponseCompletedData for each response
+        if (
+          serverName === AIDER_TOOL_GROUP_NAME &&
+          toolName === AIDER_TOOL_RUN_PROMPT &&
+          part.output?.value &&
+          typeof part.output.value === 'object' &&
+          'responses' in part.output.value
+        ) {
+          const responses = part.output.value.responses as unknown as ResponseCompletedData[];
+          if (Array.isArray(responses)) {
+            responses.forEach((response: ResponseCompletedData) => {
+              const responseCompletedData: ResponseCompletedData = {
+                type: 'response-completed',
+                messageId: response.messageId,
+                content: response.content,
+                baseDir: this.task.getProjectDir(),
+                taskId: this.taskId,
+                reflectedMessage: response.reflectedMessage,
+                editedFiles: response.editedFiles,
+                commitHash: response.commitHash,
+                commitMessage: response.commitMessage,
+                diff: response.diff,
+                usageReport: response.usageReport,
+                promptContext: message.promptContext,
+              };
+              messagesData.push(responseCompletedData);
+            });
+          }
+        }
+
+        // Handle agent tool results - process all messages from subagent
+        if (
+          serverName === SUBAGENTS_TOOL_GROUP_NAME &&
+          toolName === SUBAGENTS_TOOL_RUN_TASK &&
+          part.output?.value &&
+          typeof part.output.value === 'object' &&
+          'messages' in part.output.value
+        ) {
+          const messages = part.output.value.messages as unknown as ContextMessage[];
+          if (Array.isArray(messages)) {
+            messages.forEach((subMessage: ContextMessage) => {
+              if (subMessage.role === 'assistant') {
+                if (Array.isArray(subMessage.content)) {
+                  // Collect reasoning and text parts to combine them if both exist
+                  let subReasoningContent = '';
+                  let subTextContent = '';
+                  let subHasReasoning = false;
+                  let subHasText = false;
+
+                  for (const subPart of subMessage.content) {
+                    if (subPart.type === 'reasoning' && subPart.text?.trim()) {
+                      subReasoningContent = subPart.text.trim();
+                      subHasReasoning = true;
+                    } else if (subPart.type === 'text' && subPart.text) {
+                      subTextContent = subPart.text.trim();
+                      subHasText = true;
+                    }
+                  }
+
+                  // Process combined reasoning and text content
+                  if (subHasReasoning || subHasText) {
+                    let subFinalContent = '';
+                    if (subHasReasoning && subHasText) {
+                      subFinalContent = `${THINKING_RESPONSE_STAR_TAG}${subReasoningContent}${ANSWER_RESPONSE_START_TAG}${subTextContent}`;
+                    } else {
+                      subFinalContent = subReasoningContent || subTextContent;
+                    }
+
+                    const responseCompletedData: ResponseCompletedData = {
+                      type: 'response-completed',
+                      messageId: subMessage.id,
+                      content: subFinalContent,
+                      baseDir: this.task.getProjectDir(),
+                      taskId: this.taskId,
+                      usageReport: subMessage.usageReport,
+                      promptContext: subMessage.promptContext,
+                    };
+                    messagesData.push(responseCompletedData);
+                  }
+
+                  // Process tool-call parts
+                  for (const subPart of subMessage.content) {
+                    if (subPart.type === 'tool-call' && subPart.toolCallId) {
+                      const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
+                      const toolData: ToolData = {
+                        type: 'tool',
+                        baseDir: this.task.getProjectDir(),
+                        taskId: this.taskId,
+                        id: subPart.toolCallId,
+                        serverName: subServerName,
+                        toolName: subToolName,
+                        args: subPart.input,
+                        usageReport: undefined,
+                        promptContext: subMessage.promptContext,
+                      };
+                      messagesData.push(toolData);
+                    }
+                  }
+                } else if (isTextContent(subMessage.content)) {
+                  const content = extractTextContent(subMessage.content);
+                  const responseCompletedData: ResponseCompletedData = {
+                    type: 'response-completed',
+                    messageId: subMessage.id,
+                    content: content,
+                    baseDir: this.task.getProjectDir(),
+                    taskId: this.taskId,
+                    usageReport: subMessage.usageReport,
+                    promptContext: subMessage.promptContext,
+                  };
+                  messagesData.push(responseCompletedData);
+                }
+              } else if (subMessage.role === 'tool') {
+                for (const subPart of subMessage.content) {
+                  if (subPart.type === 'tool-result') {
+                    const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === subPart.toolCallId) as ToolData | undefined;
+                    if (toolMessage) {
+                      toolMessage.response = JSON.stringify(subPart.output.value);
+                    }
+                  }
+                }
+              }
+            });
+          }
+        }
+      };
+
       if (message.role === 'assistant') {
         if (Array.isArray(message.content)) {
-          // Collect reasoning and text parts to combine them if both exist
-          let reasoningContent = '';
-          let textContent = '';
-          let hasReasoning = false;
-          let hasText = false;
+          const toolResultsMap = new Map<string, { toolName: string; output: unknown }>();
+          let reasoning = '';
+          let responseMessageIndex = 0;
 
-          for (const part of message.content) {
-            if (part.type === 'reasoning' && part.text?.trim()) {
-              reasoningContent += `${part.text.trim()}\n\n`;
-              hasReasoning = true;
-            } else if (part.type === 'text' && part.text) {
-              textContent += `${part.text.trim()}\n\n`;
-              hasText = true;
-            }
-          }
-
-          // Process combined reasoning and text content
-          if (hasReasoning || hasText) {
+          const pushResponseCompletedData = (content = '') => {
             let finalContent = '';
-            if (hasReasoning) {
-              finalContent = `${THINKING_RESPONSE_STAR_TAG}${reasoningContent.trim()}${ANSWER_RESPONSE_START_TAG}${textContent.trim()}`;
+            if (reasoning) {
+              finalContent = `${THINKING_RESPONSE_STAR_TAG}${reasoning.trim()}${ANSWER_RESPONSE_START_TAG}${content.trim()}`;
             } else {
-              finalContent = textContent;
+              finalContent = content.trim();
             }
 
+            const messageId = responseMessageIndex === 0 ? message.id : `${message.id}-${responseMessageIndex}`;
             const responseCompletedData: ResponseCompletedData = {
               type: 'response-completed',
-              messageId: message.id,
-              content: finalContent.trim(),
+              messageId,
+              content: finalContent,
               baseDir: this.task.getProjectDir(),
               taskId: this.taskId,
               reflectedMessage: message.reflectedMessage,
@@ -799,13 +926,23 @@ export class ContextManager {
               promptContext: message.promptContext,
             };
             messagesData.push(responseCompletedData);
-          }
 
-          // Process tool-call parts
+            reasoning = '';
+            responseMessageIndex++;
+          };
+
           for (const part of message.content) {
-            if (part.type === 'tool-call') {
+            if (part.type === 'reasoning' && part.text?.trim()) {
+              reasoning = part.text.trim();
+            } else if (part.type === 'text' && part.text) {
+              pushResponseCompletedData(part.text);
+            } else if (part.type === 'tool-call') {
+              if (reasoning) {
+                pushResponseCompletedData();
+              }
+
+              // Create tool message for tool-call parts
               const toolCall = part;
-              // Ensure toolCall.toolCallId exists before proceeding
               if (!toolCall.toolCallId) {
                 continue;
               }
@@ -823,6 +960,26 @@ export class ContextManager {
                 promptContext: message.promptContext,
               };
               messagesData.push(toolData);
+            } else if (part.type === 'tool-result') {
+              processToolResult(part);
+            }
+          }
+
+          if (reasoning) {
+            pushResponseCompletedData();
+          }
+
+          // Now update tool messages with their responses from tool-results
+          for (const [toolCallId, toolResultData] of toolResultsMap.entries()) {
+            const toolMessage = messagesData.find((msg) => msg.type === 'tool' && msg.id === toolCallId) as ToolData | undefined;
+
+            if (toolMessage) {
+              toolMessage.response = JSON.stringify(toolResultData.output);
+              toolMessage.usageReport = message.usageReport || toolMessage.usageReport;
+              const promptContext = extractPromptContextFromToolResult(toolResultData.output);
+              if (promptContext) {
+                toolMessage.promptContext = promptContext;
+              }
             }
           }
         } else if (isTextContent(message.content)) {
@@ -857,132 +1014,7 @@ export class ContextManager {
       } else if (message.role === 'tool' && Array.isArray(message.content)) {
         for (const part of message.content) {
           if (part.type === 'tool-result') {
-            const [serverName, toolName] = extractServerNameToolName(part.toolName);
-            const promptContext = extractPromptContextFromToolResult(part.output.value);
-            const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === part.toolCallId) as ToolData | undefined;
-
-            if (toolMessage) {
-              toolMessage.response = JSON.stringify(part.output.value);
-              toolMessage.usageReport = message.usageReport || toolMessage.usageReport;
-              toolMessage.promptContext = promptContext;
-            }
-
-            // Handle aider tool responses - create ResponseCompletedData for each response
-            if (serverName === AIDER_TOOL_GROUP_NAME && toolName === AIDER_TOOL_RUN_PROMPT) {
-              // @ts-expect-error part.output.value.responses type is complex, safe in this context
-              const responses = part.output?.value.responses;
-              if (Array.isArray(responses)) {
-                responses.forEach((response: ResponseCompletedData) => {
-                  const responseCompletedData: ResponseCompletedData = {
-                    type: 'response-completed',
-                    messageId: response.messageId,
-                    content: response.content,
-                    baseDir: this.task.getProjectDir(),
-                    taskId: this.taskId,
-                    reflectedMessage: response.reflectedMessage,
-                    editedFiles: response.editedFiles,
-                    commitHash: response.commitHash,
-                    commitMessage: response.commitMessage,
-                    diff: response.diff,
-                    usageReport: response.usageReport,
-                    promptContext: message.promptContext,
-                  };
-                  messagesData.push(responseCompletedData);
-                });
-              }
-            }
-
-            // Handle agent tool results - process all messages from subagent
-            if (serverName === SUBAGENTS_TOOL_GROUP_NAME && toolName === SUBAGENTS_TOOL_RUN_TASK) {
-              // @ts-expect-error part.output.value.messages type is complex, safe in this context
-              const messages = part.output?.value.messages;
-              if (Array.isArray(messages)) {
-                messages.forEach((subMessage: ContextMessage) => {
-                  if (subMessage.role === 'assistant') {
-                    if (Array.isArray(subMessage.content)) {
-                      // Collect reasoning and text parts to combine them if both exist
-                      let subReasoningContent = '';
-                      let subTextContent = '';
-                      let subHasReasoning = false;
-                      let subHasText = false;
-
-                      for (const subPart of subMessage.content) {
-                        if (subPart.type === 'reasoning' && subPart.text?.trim()) {
-                          subReasoningContent = subPart.text.trim();
-                          subHasReasoning = true;
-                        } else if (subPart.type === 'text' && subPart.text) {
-                          subTextContent = subPart.text.trim();
-                          subHasText = true;
-                        }
-                      }
-
-                      // Process combined reasoning and text content
-                      if (subHasReasoning || subHasText) {
-                        let subFinalContent = '';
-                        if (subHasReasoning && subHasText) {
-                          subFinalContent = `${THINKING_RESPONSE_STAR_TAG}${subReasoningContent}${ANSWER_RESPONSE_START_TAG}${subTextContent}`;
-                        } else {
-                          subFinalContent = subReasoningContent || subTextContent;
-                        }
-
-                        const responseCompletedData: ResponseCompletedData = {
-                          type: 'response-completed',
-                          messageId: subMessage.id,
-                          content: subFinalContent,
-                          baseDir: this.task.getProjectDir(),
-                          taskId: this.taskId,
-                          usageReport: subMessage.usageReport,
-                          promptContext: subMessage.promptContext,
-                        };
-                        messagesData.push(responseCompletedData);
-                      }
-
-                      // Process tool-call parts
-                      for (const subPart of subMessage.content) {
-                        if (subPart.type === 'tool-call' && subPart.toolCallId) {
-                          const [subServerName, subToolName] = extractServerNameToolName(subPart.toolName);
-                          const toolData: ToolData = {
-                            type: 'tool',
-                            baseDir: this.task.getProjectDir(),
-                            taskId: this.taskId,
-                            id: subPart.toolCallId,
-                            serverName: subServerName,
-                            toolName: subToolName,
-                            args: subPart.input,
-                            usageReport: undefined,
-                            promptContext: subMessage.promptContext,
-                          };
-                          messagesData.push(toolData);
-                        }
-                      }
-                    } else if (isTextContent(subMessage.content)) {
-                      const content = extractTextContent(subMessage.content);
-                      const responseCompletedData: ResponseCompletedData = {
-                        type: 'response-completed',
-                        messageId: subMessage.id,
-                        content: content,
-                        baseDir: this.task.getProjectDir(),
-                        taskId: this.taskId,
-                        usageReport: subMessage.usageReport,
-                        promptContext: subMessage.promptContext,
-                      };
-                      messagesData.push(responseCompletedData);
-                    }
-                  } else if (subMessage.role === 'tool') {
-                    for (const subPart of subMessage.content) {
-                      if (subPart.type === 'tool-result') {
-                        const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === subPart.toolCallId) as
-                          | ToolData
-                          | undefined;
-                        if (toolMessage) {
-                          toolMessage.response = JSON.stringify(subPart.output.value);
-                        }
-                      }
-                    }
-                  }
-                });
-              }
-            }
+            processToolResult(part);
           }
         }
       }
@@ -1017,5 +1049,116 @@ export class ContextManager {
     }
 
     return markdown;
+  }
+
+  getMessagesUpTo(messageId: string): ContextMessage[] {
+    let messageIndex = this.messages.findIndex((msg) => msg.id === messageId);
+
+    // If not found as a message ID, check if it's a toolCallId
+    if (messageIndex === -1) {
+      for (let i = 0; i < this.messages.length; i++) {
+        const msg = this.messages[i];
+        if (msg.role === 'tool' && Array.isArray(msg.content)) {
+          const hasMatchingToolResult = msg.content.some((part) => part.type === 'tool-result' && part.toolCallId === messageId);
+          if (hasMatchingToolResult) {
+            messageIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    if (messageIndex === -1) {
+      const error = new Error(`Message with id ${messageId} not found`);
+      logger.error('Failed to get messages up to:', {
+        taskId: this.taskId,
+        messageId,
+      });
+      throw error;
+    }
+
+    const targetMessage = this.messages[messageIndex];
+
+    // If it's an assistant message with tool calls, we need to filter out tool calls
+    if (targetMessage.role === 'assistant' && Array.isArray(targetMessage.content)) {
+      const result = this.messages.slice(0, messageIndex + 1).map((msg) => ({ ...msg }));
+
+      // Filter the assistant message to keep only reasoning and text parts, exclude tool calls
+      const targetAssistant = result[messageIndex];
+      if (Array.isArray(targetAssistant.content)) {
+        targetAssistant.content = targetAssistant.content.filter((part) => part.type === 'reasoning' || part.type === 'text');
+      }
+
+      return result;
+    }
+
+    // If it's a tool message, we need to handle the assistant message with tool calls
+    if (targetMessage.role === 'tool' && Array.isArray(targetMessage.content)) {
+      // messageId might be a toolCallId passed directly, or the message ID
+      // Try to get the toolCallId from the message content
+      let toolCallId = targetMessage.content[0]?.toolCallId;
+
+      // If messageId is a toolCallId that doesn't match the first result, search for it
+      if (toolCallId !== messageId) {
+        const matchingToolResult = targetMessage.content.find((part) => part.type === 'tool-result' && part.toolCallId === messageId);
+        if (matchingToolResult) {
+          toolCallId = matchingToolResult.toolCallId;
+        }
+      }
+
+      if (toolCallId) {
+        // Find the assistant message that contains this tool call
+        for (let i = messageIndex - 1; i >= 0; i--) {
+          const message = this.messages[i];
+          if (message.role === 'assistant' && Array.isArray(message.content)) {
+            const toolCallIndex = message.content.findIndex((part) => part.type === 'tool-call' && part.toolCallId === toolCallId);
+
+            if (toolCallIndex !== -1) {
+              // Clone messages up to and including the assistant message
+              const result: ContextMessage[] = this.messages.slice(0, i + 1);
+
+              // Clone the assistant message and keep only tool calls up to and including the target
+              const assistantMessage: ContextMessage = {
+                ...message,
+                content: message.content.slice(0, toolCallIndex + 1),
+              };
+
+              result[result.length - 1] = assistantMessage;
+
+              // Add all tool messages up to and including the target
+              for (let j = i + 1; j <= messageIndex; j++) {
+                const msg = this.messages[j];
+
+                if (msg.role === 'tool' && Array.isArray(msg.content)) {
+                  const toolMsg = this.messages[j] as ContextMessage & {
+                    role: 'tool';
+                  };
+
+                  // Check if this tool message contains a tool-result for a tool-call we kept
+                  const toolResult = toolMsg.content.find((part) => part.type === 'tool-result');
+                  if (toolResult && toolResult.toolCallId) {
+                    // Check if this tool call is in the assistant message we kept
+                    const toolCallExists = (assistantMessage.content as Array<{ type: string; toolCallId: string }>).some(
+                      (part) => part.type === 'tool-call' && part.toolCallId === toolResult.toolCallId,
+                    );
+
+                    if (toolCallExists) {
+                      result.push({ ...toolMsg });
+                    }
+                  }
+                } else {
+                  result.push({ ...msg });
+                }
+              }
+
+              return result;
+            }
+          }
+        }
+      }
+    }
+
+    // For non-tool messages or if we couldn't find the assistant message, return all messages up to the target
+    return this.messages.slice(0, messageIndex + 1).map((msg) => ({ ...msg }));
   }
 }

@@ -236,11 +236,31 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
 
           <div>
             <Input
-              label={t('modelLibrary.maxOutputTokens')}
+              label={
+                <div className="flex justify-between items-center">
+                  {t('modelLibrary.maxOutputTokens')}
+                  {model?.maxOutputTokensLimit && (
+                    <span className="text-text-muted text-xs">
+                      {t('modelLibrary.limit')}: {model.maxOutputTokensLimit}
+                    </span>
+                  )}
+                </div>
+              }
               type="number"
               value={formData.maxOutputTokens !== undefined && formData.maxOutputTokens !== null ? formData.maxOutputTokens : ''}
-              onChange={(e) => handleInputChange('maxOutputTokens', e.target.value !== '' ? parseInt(e.target.value) : undefined)}
+              onChange={(e) =>
+                handleInputChange(
+                  'maxOutputTokens',
+                  e.target.value !== ''
+                    ? model?.maxOutputTokensLimit
+                      ? Math.min(model?.maxOutputTokensLimit, parseInt(e.target.value))
+                      : parseInt(e.target.value)
+                    : undefined,
+                )
+              }
+              max={model?.maxOutputTokensLimit || undefined}
             />
+
             {errors.maxOutputTokens && <p className="text-error text-2xs mt-1">{errors.maxOutputTokens}</p>}
           </div>
         </div>

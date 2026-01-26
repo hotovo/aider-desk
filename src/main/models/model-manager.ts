@@ -18,6 +18,7 @@ import { anthropicProviderStrategy } from './providers/anthropic';
 import { azureProviderStrategy } from './providers/azure';
 import { bedrockProviderStrategy } from './providers/bedrock';
 import { cerebrasProviderStrategy } from './providers/cerebras';
+import { claudeAgentSdkProviderStrategy } from './providers/claude-agent-sdk';
 import { deepseekProviderStrategy } from './providers/deepseek';
 import { geminiProviderStrategy } from './providers/gemini';
 import { gpustackProviderStrategy } from './providers/gpustack';
@@ -84,6 +85,7 @@ export class ModelManager {
     azure: azureProviderStrategy,
     bedrock: bedrockProviderStrategy,
     cerebras: cerebrasProviderStrategy,
+    'claude-agent-sdk': claudeAgentSdkProviderStrategy,
     deepseek: deepseekProviderStrategy,
     gemini: geminiProviderStrategy,
     gpustack: gpustackProviderStrategy,
@@ -322,7 +324,7 @@ export class ModelManager {
           logger.debug(`Enriching model ${model.id} with info`, modelInfo);
 
           model.maxInputTokens = model.maxInputTokens ?? modelInfo.maxInputTokens;
-          model.maxOutputTokens = model.maxOutputTokens ?? modelInfo.maxOutputTokens;
+          model.maxOutputTokensLimit = model.maxOutputTokensLimit ?? modelInfo.maxOutputTokens;
           model.inputCostPerToken = model.inputCostPerToken ?? modelInfo.inputCostPerToken;
           model.outputCostPerToken = model.outputCostPerToken ?? modelInfo.outputCostPerToken;
           model.cacheWriteInputTokenCost = model.cacheWriteInputTokenCost ?? modelInfo.cacheWriteInputTokenCost;
@@ -356,6 +358,9 @@ export class ModelManager {
         enrichedModels[existingIndex] = {
           ...enrichedModels[existingIndex],
           ...cleanedOverride,
+          // maxOutputTokens and temperature should be also overridden by undefined values
+          maxOutputTokens: cleanedOverride.maxOutputTokens,
+          temperature: cleanedOverride.temperature,
           isCustom: false,
           hasModelOverrides: Object.keys(cleanedOverride).length > 0,
         };
@@ -567,7 +572,7 @@ export class ModelManager {
     return strategy.getAiderMapping(provider, modelId, this.store.getSettings(), projectDir);
   }
 
-  getModel(providerId: string, modelId: string, useModelInfoFallback = false): Model | undefined {
+  getModelSettings(providerId: string, modelId: string, useModelInfoFallback = false): Model | undefined {
     let model: Model | undefined;
     const providerModels = this.providerModels[providerId];
     if (providerModels) {
@@ -588,7 +593,15 @@ export class ModelManager {
     return model;
   }
 
-  createLlm(provider: ProviderProfile, model: string | Model, settings: SettingsData, projectDir: string): LanguageModelV2 {
+  createLlm(
+    provider: ProviderProfile,
+    model: string | Model,
+    settings: SettingsData,
+    projectDir: string,
+    toolSet?: ToolSet,
+    systemPrompt?: string,
+    providerMetadata?: unknown,
+  ): LanguageModelV2 {
     const strategy = this.providerRegistry[provider.provider.name];
     if (!strategy) {
       throw new Error(`Unsupported LLM provider: ${provider.provider.name}`);
@@ -597,7 +610,7 @@ export class ModelManager {
     // Resolve Model object if string is provided
     let modelObj: Model | undefined;
     if (typeof model === 'string') {
-      modelObj = this.getModel(provider.id, model);
+      modelObj = this.getModelSettings(provider.id, model);
       if (!modelObj) {
         // Fallback to creating a minimal Model object if not found
         modelObj = {
@@ -613,7 +626,7 @@ export class ModelManager {
       throw new Error(`Model not found: ${model}`);
     }
 
-    return strategy.createLlm(provider, modelObj, settings, projectDir);
+    return strategy.createLlm(provider, modelObj, settings, projectDir, toolSet, systemPrompt, providerMetadata);
   }
 
   getUsageReport(task: Task, provider: ProviderProfile, model: string | Model, usage: LanguageModelUsage, providerMetadata?: unknown): UsageReportData {
@@ -625,7 +638,7 @@ export class ModelManager {
     // Resolve Model object
     let modelObj: Model | undefined;
     if (typeof model === 'string') {
-      modelObj = this.getModel(provider.id, model, true);
+      modelObj = this.getModelSettings(provider.id, model, true);
     } else {
       modelObj = model;
     }
@@ -737,7 +750,7 @@ export class ModelManager {
     }
 
     // Resolve Model object
-    const modelObj = this.getModel(provider.id, modelId);
+    const modelObj = this.getModelSettings(provider.id, modelId);
     if (!modelObj) {
       logger.warn(`Model ${modelId} not found in provider ${llmProvider.name}`);
       return {};

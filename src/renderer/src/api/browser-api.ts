@@ -31,6 +31,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TaskStateData,
   TerminalData,
   TerminalExitData,
@@ -46,6 +47,7 @@ import {
   MemoryEmbeddingProgress,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
+  TaskCreatedData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -76,7 +78,7 @@ type EventDataMap = {
   'project-settings-updated': { baseDir: string; settings: ProjectSettings };
   'worktree-integration-status-updated': WorktreeIntegrationStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
-  'task-created': TaskData;
+  'task-created': TaskCreatedData;
   'task-initialized': TaskData;
   'task-updated': TaskData;
   'task-deleted': TaskData;
@@ -84,6 +86,8 @@ type EventDataMap = {
   'task-completed': TaskData;
   'task-cancelled': TaskData;
   'message-removed': MessageRemovedData;
+  'terminal-data': TerminalData;
+  'terminal-exit': TerminalExitData;
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -148,6 +152,8 @@ export class BrowserApi implements ApplicationAPI {
       'task-cancelled': new Map(),
       'agent-profiles-updated': new Map(),
       'message-removed': new Map(),
+      'terminal-data': new Map(),
+      'terminal-exit': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -453,8 +459,8 @@ export class BrowserApi implements ApplicationAPI {
   reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void> {
     return this.post('/mcp/reload', { mcpServers, force });
   }
-  createNewTask(baseDir: string): Promise<TaskData> {
-    return this.post('/project/tasks/new', { projectDir: baseDir });
+  createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData> {
+    return this.post('/project/tasks/new', { projectDir: baseDir, ...params });
   }
   updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<boolean> {
     return this.post('/project/tasks', { projectDir: baseDir, id, updates });
@@ -466,6 +472,13 @@ export class BrowserApi implements ApplicationAPI {
     return this.post('/project/tasks/duplicate', {
       projectDir: baseDir,
       taskId,
+    });
+  }
+  forkTask(baseDir: string, taskId: string, messageId: string): Promise<TaskData> {
+    return this.post('/project/tasks/fork', {
+      projectDir: baseDir,
+      taskId,
+      messageId,
     });
   }
   getTasks(baseDir: string): Promise<TaskData[]> {
@@ -529,6 +542,15 @@ export class BrowserApi implements ApplicationAPI {
       customInstructions,
     });
   }
+
+  async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void> {
+    await this.post('/project/handoff-conversation', {
+      projectDir: baseDir,
+      taskId,
+      focus,
+    });
+  }
+
   setZoomLevel(level: number): Promise<void> {
     void level;
     // eslint-disable-next-line no-console
@@ -664,7 +686,7 @@ export class BrowserApi implements ApplicationAPI {
   }
 
   // Task lifecycle event listeners
-  addTaskCreatedListener(baseDir: string, callback: (data: TaskData) => void): () => void {
+  addTaskCreatedListener(baseDir: string, callback: (data: TaskCreatedData) => void): () => void {
     return this.addListener('task-created', callback, baseDir);
   }
 
@@ -692,14 +714,10 @@ export class BrowserApi implements ApplicationAPI {
     return this.addListener('task-deleted', callback, baseDir);
   }
   addTerminalDataListener(baseDir: string, callback: (data: TerminalData) => void): () => void {
-    void baseDir;
-    void callback;
-    return () => {};
+    return this.addListener('terminal-data', callback, baseDir);
   }
   addTerminalExitListener(baseDir: string, callback: (data: TerminalExitData) => void): () => void {
-    void baseDir;
-    void callback;
-    return () => {};
+    return this.addListener('terminal-exit', callback, baseDir);
   }
   addContextMenuListener(callback: (params: Electron.ContextMenuParams) => void): () => void {
     void callback;
@@ -722,37 +740,45 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
   isTerminalSupported(): boolean {
-    return false;
+    return true;
   }
-  createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {
-    void baseDir;
-    void taskId;
-    void cols;
-    void rows;
-    throw new UnsupportedError('createTerminal not supported yet.');
+  async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {
+    const response = await this.apiClient.post('/terminal/create', {
+      baseDir,
+      taskId,
+      cols,
+      rows,
+    });
+    return response.data.terminalId;
   }
-  writeToTerminal(terminalId: string, data: string): Promise<boolean> {
-    void terminalId;
-    void data;
-    throw new UnsupportedError('writeToTerminal not supported yet.');
+  async writeToTerminal(terminalId: string, data: string): Promise<boolean> {
+    await this.apiClient.post('/terminal/write', {
+      terminalId,
+      data,
+    });
+    return true;
   }
-  resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean> {
-    void terminalId;
-    void cols;
-    void rows;
-    throw new UnsupportedError('resizeTerminal not supported yet.');
+  async resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean> {
+    await this.apiClient.post('/terminal/resize', {
+      terminalId,
+      cols,
+      rows,
+    });
+    return true;
   }
-  closeTerminal(terminalId: string): Promise<boolean> {
-    void terminalId;
-    throw new UnsupportedError('closeTerminal not supported yet.');
+  async closeTerminal(terminalId: string): Promise<boolean> {
+    await this.apiClient.post('/terminal/close', {
+      terminalId,
+    });
+    return true;
   }
-  getTerminalForTask(taskId: string): Promise<string | null> {
-    void taskId;
-    throw new UnsupportedError('getTerminalForTask not supported yet.');
+  async getTerminalForTask(taskId: string): Promise<string | null> {
+    const response = await this.apiClient.get(`/terminal/${taskId}`);
+    return response.data.terminalId || null;
   }
-  getAllTerminalsForTask(taskId: string): Promise<Array<{ id: string; taskId: string; cols: number; rows: number }>> {
-    void taskId;
-    throw new UnsupportedError('getAllTerminalsForTask not supported yet.');
+  async getAllTerminalsForTask(taskId: string): Promise<Array<{ id: string; taskId: string; cols: number; rows: number; baseDir: string }>> {
+    const response = await this.apiClient.get(`/terminal/${taskId}/all`);
+    return response.data.terminals || [];
   }
   isManageServerSupported(): boolean {
     return false;

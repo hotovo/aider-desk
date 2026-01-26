@@ -12,9 +12,10 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 
-export const ListTasksToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const ListTasksToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
   const { t } = useTranslation();
 
   type Task = {
@@ -28,7 +29,7 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false }: Pro
   };
 
   const offset = (message.args.offset as number) ?? 0;
-  const limit = (message.args.limit as number) ?? 20;
+  const limit = message.args.limit as number | undefined;
   const state = (message.args.state as string) ?? undefined;
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Error listing tasks:');
@@ -93,9 +94,11 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false }: Pro
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="flex items-center gap-2 mb-2">
           <span className="font-semibold text-text-secondary">{t('toolMessage.power.glob.foundFiles', { count: content.length })}</span>
-          <span className="text-text-muted">
-            {t('toolMessage.power.glob.for')} offset={offset}, limit={limit}
-          </span>
+          {limit != null && (
+            <span className="text-text-muted">
+              {t('toolMessage.power.glob.for')} offset={offset}, limit={limit}
+            </span>
+          )}
         </div>
         <div className="space-y-2">
           {content.map((task: Task) => (
@@ -133,5 +136,5 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false }: Pro
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
+  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} onFork={onFork} />;
 };

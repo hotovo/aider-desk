@@ -3,15 +3,19 @@ import { useState } from 'react';
 
 import { Button } from '../common/Button';
 
+import { useApi } from '@/contexts/ApiContext';
+
 type Props = {
   actionIds: string[];
   baseDir: string;
   taskId: string;
+  onInterrupt?: () => void;
 };
 
-export const MessageActions = ({ actionIds, baseDir, taskId }: Props) => {
+export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt }: Props) => {
   const { t } = useTranslation();
   const [isExecuted, setIsExecuted] = useState(false);
+  const api = useApi();
 
   if (!actionIds || actionIds.length === 0 || isExecuted) {
     return null;
@@ -19,26 +23,32 @@ export const MessageActions = ({ actionIds, baseDir, taskId }: Props) => {
 
   const handleAbortRebase = () => {
     setIsExecuted(true);
-    window.api.abortWorktreeRebase(baseDir, taskId);
+    void api.abortWorktreeRebase(baseDir, taskId);
   };
 
   const handleContinueRebase = () => {
     setIsExecuted(true);
-    window.api.continueWorktreeRebase(baseDir, taskId);
+    void api.continueWorktreeRebase(baseDir, taskId);
   };
 
   const handleResolveConflictsWithAgent = () => {
     setIsExecuted(true);
-    window.api.resolveWorktreeConflictsWithAgent(baseDir, taskId);
+    void api.resolveWorktreeConflictsWithAgent(baseDir, taskId);
   };
 
   const handleRebaseWorktree = () => {
     setIsExecuted(true);
-    window.api.rebaseWorktreeFromBranch(baseDir, taskId);
+    void api.rebaseWorktreeFromBranch(baseDir, taskId);
   };
 
   const renderAction = (id: string) => {
     switch (id) {
+      case 'interrupt':
+        return (
+          <Button key={id} size="xs" variant="outline" color="danger" onClick={onInterrupt}>
+            {t('common.cancel')}
+          </Button>
+        );
       case 'abort-rebase':
         return (
           <Button key={id} size="xs" variant="outline" color="danger" onClick={handleAbortRebase}>
@@ -68,5 +78,5 @@ export const MessageActions = ({ actionIds, baseDir, taskId }: Props) => {
     }
   };
 
-  return <div className="flex flex-wrap gap-2 mt-4">{actionIds.map(renderAction)}</div>;
+  return <div className="flex flex-wrap gap-2">{actionIds.map(renderAction)}</div>;
 };

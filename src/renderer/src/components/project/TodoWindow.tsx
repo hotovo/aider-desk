@@ -140,7 +140,7 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
 
                 {/* Todo List */}
                 {todos.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-0.5">
                     {todos.map((todo, index) => (
                       <TodoListItem key={`${todo.name}-${index}`} item={todo} onToggle={onToggleTodo} onUpdate={onUpdateTodo} onDelete={onDeleteTodo} />
                     ))}

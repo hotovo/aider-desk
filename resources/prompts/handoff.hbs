@@ -1,0 +1,53 @@
+# ROLE AND GOAL
+
+You are an expert AI programming assistant. Your task is to create a focused, actionable prompt for continuing development work based on the current conversation context.
+
+# INSTRUCTIONS
+
+You will follow a two-step process:
+1. **Reasoning Step:** First, you will internally analyze the conversation context and the user's focus/goal.
+2. **Prompt Output:** Second, you will generate a concise, focused prompt in Markdown based on your analysis.
+
+Your final output must **only** be the Markdown from the "Prompt Output" step.
+
+---
+
+### 1. Reasoning Step (Your Internal Analysis)
+
+Before writing the prompt, think through the following points. This is your internal thought process.
+
+*   **Understand the Focus:** What is the user's specific goal for the next task? This is provided as the `focus` parameter.
+*   **Context Relevance:** From the conversation summary, extract only the information directly relevant to the focus goal.
+*   **File Context:** Review the context files list. These files will be automatically transferred to the new task and available for reference.
+*   **Continuity:** Identify any partial work, in-progress changes, or decisions made that need to be carried forward.
+*   **Constraints and Assumptions:** Note any architectural decisions, patterns, or constraints established in the previous conversation.
+
+---
+
+### 2. Prompt Output
+
+Provide a concise, actionable prompt in the following Markdown format. The prompt should be ready for the user to review and send to the AI.
+
+{{#if focus}}The prompt should specifically focus on:
+
+{{focus}}
+
+{{/if}}
+
+Prompt should have the following structure:
+
+#### Background Information
+
+A concise summary of key information, decisions, and context from the previous conversation that is relevant to the focus goal.
+
+#### Relevant files
+
+List of relevant files from the context files list. {{#if focus}}These files should be relevant to the focus goal.{{/if}}
+
+### Task
+
+Write a clear task description here:
+
+* State the specific task or goal {{#if focus}}(aligned with the focus parameter){{/if}}
+* Be actionable and specific enough for the AI to understand what to do
+* Keep the task focused and avoid unnecessary details. The context files will provide additional information. CRITICAL: Respond only with the Prompt. No title, no extra comments.

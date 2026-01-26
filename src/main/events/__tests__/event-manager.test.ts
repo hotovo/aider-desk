@@ -21,7 +21,6 @@ describe('EventManager - sendTaskMessageRemoved', () => {
     };
 
     mockMainWindow = {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       webContents: mockWebContents as any,
       isDestroyed: vi.fn(() => false),
     };

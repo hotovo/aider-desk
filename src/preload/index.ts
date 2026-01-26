@@ -21,6 +21,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TerminalData,
   TerminalExitData,
   TokensInfoData,
@@ -28,6 +29,7 @@ import {
   UserMessageData,
   VersionsInfo,
   WorktreeIntegrationStatusUpdatedData,
+  TaskCreatedData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -92,10 +94,11 @@ const api: ApplicationAPI = {
   loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),
 
-  createNewTask: (baseDir) => ipcRenderer.invoke('create-new-task', baseDir),
+  createNewTask: (baseDir, params?: CreateTaskParams) => ipcRenderer.invoke('create-new-task', baseDir, params),
   updateTask: (baseDir, id, updates) => ipcRenderer.invoke('update-task', baseDir, id, updates),
   deleteTask: (baseDir, id) => ipcRenderer.invoke('delete-task', baseDir, id),
   duplicateTask: (baseDir, taskId) => ipcRenderer.invoke('duplicate-task', baseDir, taskId),
+  forkTask: (baseDir, taskId, messageId) => ipcRenderer.invoke('fork-task', baseDir, taskId, messageId),
   getTasks: (baseDir) => ipcRenderer.invoke('get-tasks', baseDir),
   loadTask: (baseDir, taskId) => ipcRenderer.invoke('load-task', baseDir, taskId),
 
@@ -109,6 +112,7 @@ const api: ApplicationAPI = {
   removeLastMessage: (baseDir, taskId) => ipcRenderer.send('remove-last-message', baseDir, taskId),
   removeMessage: (baseDir, taskId, messageId) => ipcRenderer.invoke('remove-message', baseDir, taskId, messageId),
   compactConversation: (baseDir, taskId, mode, customInstructions) => ipcRenderer.invoke('compact-conversation', baseDir, taskId, mode, customInstructions),
+  handoffConversation: (baseDir, taskId, focus) => ipcRenderer.invoke('handoff-conversation', baseDir, taskId, focus),
   setZoomLevel: (level) => ipcRenderer.invoke('set-zoom-level', level),
   getVersions: (forceRefresh = false) => ipcRenderer.invoke('get-versions', forceRefresh),
   downloadLatestAiderDesk: () => ipcRenderer.invoke('download-latest-aiderdesk'),
@@ -403,7 +407,7 @@ const api: ApplicationAPI = {
 
   // Task lifecycle event listeners
   addTaskCreatedListener: (baseDir, callback) => {
-    const listener = (_: Electron.IpcRendererEvent, data: TaskData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: TaskCreatedData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SettingsData } from '@common/types';
 import { ApplicationAPI } from '@common/api';
@@ -87,7 +87,9 @@ describe('SettingsPage', () => {
   });
 
   it('renders and loads providers', async () => {
-    render(<SettingsPage onClose={vi.fn()} />);
+    await act(async () => {
+      render(<SettingsPage onClose={vi.fn()} />);
+    });
     expect(screen.getByText('settings.title')).toBeInTheDocument();
     expect(mockApi.getProviders).toHaveBeenCalled();
   });
@@ -108,11 +110,13 @@ describe('SettingsPage', () => {
     });
   });
 
-  it('calls onClose when Cancel is clicked', () => {
+  it('calls onClose when Cancel is clicked', async () => {
     const onClose = vi.fn();
     render(<SettingsPage onClose={onClose} />);
 
-    fireEvent.click(screen.getByText('common.cancel'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('common.cancel'));
+    });
     expect(onClose).toHaveBeenCalled();
   });
 });

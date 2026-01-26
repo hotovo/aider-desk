@@ -23,11 +23,13 @@ import {
   jsonSchema,
   type ModelMessage,
   NoSuchToolError,
+  smoothStream,
   type StepResult,
   streamText,
   type Tool,
   type ToolCallOptions,
   type ToolSet,
+  type TypedToolResult,
   wrapLanguageModel,
 } from 'ai';
 import { delay, extractServerNameToolName } from '@common/utils';
@@ -37,11 +39,11 @@ import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.j
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { fileTypeFromBuffer } from 'file-type';
-import { HELPERS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { HELPERS_TOOL_GROUP_NAME, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_SEARCH_PARENT_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
-import { createTasksToolset } from './tools/tasks';
+import { createSearchParentTaskTool, createTasksToolset } from './tools/tasks';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
 import { createMemoryToolset } from './tools/memory';
@@ -349,8 +351,13 @@ export class Agent {
     }
 
     if (profile.useTaskTools) {
-      const taskTools = createTasksToolset(task, profile, promptContext);
+      const taskTools = createTasksToolset(this.store.getSettings(), task, profile, promptContext);
       Object.assign(toolSet, taskTools);
+    }
+
+    // Add search parent task tool for subtasks
+    if (task.task.parentId !== null) {
+      toolSet[`${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_PARENT_TASK}`] = createSearchParentTaskTool(task, promptContext);
     }
 
     if (profile.useMemoryTools) {
@@ -585,7 +592,7 @@ export class Agent {
       promptContext,
       contextMessages,
       contextFiles,
-      systemPrompt,
+      systemPrompt: systemPrompt?.substring(0, 100),
     });
 
     // Create new abort controller for this run only if abortSignal is not provided
@@ -626,6 +633,10 @@ export class Agent {
       return resultMessages;
     }
 
+    if (!systemPrompt) {
+      systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
+    }
+
     const toolSet = await this.getAvailableTools(task, profile, provider, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
@@ -642,19 +653,21 @@ export class Agent {
         modelName: profile.model,
       });
 
-      const model = this.modelManager.createLlm(provider, profile.model, settings, task.getProjectDir());
+      const model = this.modelManager.createLlm(
+        provider,
+        profile.model,
+        settings,
+        task.getProjectDir(),
+        toolSet,
+        systemPrompt,
+        task.task.lastAgentProviderMetadata,
+      );
       logger.debug('LLM model created successfully', {
         model: model.modelId,
       });
 
-      if (!systemPrompt) {
-        systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
-      }
-
       // repairToolCall function that attempts to repair tool calls
       const repairToolCall = async ({ toolCall, tools, error, messages, system }) => {
-        logger.warn('Error during tool call:', { error, toolCall });
-
         if (NoSuchToolError.isInstance(error)) {
           // If the tool doesn't exist, return a call to the helper tool
           // to inform the LLM about the missing tool.
@@ -745,7 +758,7 @@ export class Agent {
       };
 
       // Get the model to use its temperature and max output tokens settings
-      const modelSettings = this.modelManager.getModel(profile.provider, profile.model);
+      const modelSettings = this.modelManager.getModelSettings(profile.provider, profile.model);
       const effectiveTemperature = profile.temperature ?? modelSettings?.temperature;
       const effectiveMaxOutputTokens = profile.maxTokens ?? modelSettings?.maxOutputTokens;
 
@@ -767,7 +780,7 @@ export class Agent {
             }),
           }),
           system: systemPrompt,
-          messages: optimizeMessages(task, profile, projectProfiles, initialUserRequestMessageIndex, messages, cacheControl),
+          messages: optimizeMessages(messages, cacheControl, task, profile, projectProfiles, initialUserRequestMessageIndex),
           tools: toolSet,
           abortSignal: effectiveAbortSignal,
           maxOutputTokens: effectiveMaxOutputTokens,
@@ -802,7 +815,7 @@ export class Agent {
         let hasReasoning: boolean = false;
         let finishReason: null | FinishReason = null;
         let responseMessages: ContextMessage[] = [];
-        let currentTextResponse = '';
+        let responseMessageIndex: number = 0;
 
         const onStepFinish = async (stepResult: StepResult<typeof toolSet>) => {
           finishReason = stepResult.finishReason;
@@ -820,6 +833,7 @@ export class Agent {
           responseMessages = await this.processStep(currentResponseId, stepResult, task, profile, provider, promptContext, abortSignal);
           void task.hookManager.trigger('onAgentStepFinished', { stepResult }, task, task.project);
           currentResponseId = uuidv4();
+          responseMessageIndex = 0;
           hasReasoning = false;
         };
 
@@ -846,6 +860,10 @@ export class Agent {
           logger.debug('Streaming enabled, using streamText');
           const result = streamText({
             ...getBaseModelCallParams(),
+            experimental_transform: smoothStream({
+              delayInMs: 20,
+              chunking: 'line',
+            }),
             onError: ({ error }) => {
               if (effectiveAbortSignal?.aborted) {
                 return;
@@ -864,61 +882,65 @@ export class Agent {
                 task.addLogMessage('error', JSON.stringify(error), false, promptContext);
               }
             },
-            onChunk: async ({ chunk }) => {
-              if (chunk.type === 'text-delta') {
-                if (hasReasoning) {
-                  await task.processResponseMessage({
-                    id: currentResponseId,
-                    action: 'response',
-                    content: ANSWER_RESPONSE_START_TAG,
-                    finished: false,
-                    promptContext,
-                  });
-                  hasReasoning = false;
-                }
+            onStepFinish,
+            experimental_repairToolCall: repairToolCall,
+          });
 
-                if (chunk.text.trim() || currentTextResponse.trim()) {
-                  await task.processResponseMessage({
-                    id: currentResponseId,
-                    action: 'response',
-                    content: chunk.text,
-                    finished: false,
-                    promptContext,
-                  });
-                  currentTextResponse += chunk.text;
-                }
-              } else if (chunk.type === 'reasoning-delta') {
-                if (!hasReasoning) {
-                  await task.processResponseMessage({
-                    id: currentResponseId,
-                    action: 'response',
-                    content: THINKING_RESPONSE_STAR_TAG,
-                    finished: false,
-                    promptContext,
-                  });
-                  hasReasoning = true;
-                }
+          for await (const chunk of result.fullStream) {
+            logger.debug('Chunk:', { chunk: chunk.type, responseMessageIndex });
 
+            const responseMessageId = responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId;
+            if (chunk.type === 'text-start') {
+              if (hasReasoning) {
                 await task.processResponseMessage({
-                  id: currentResponseId,
+                  id: responseMessageId,
+                  action: 'response',
+                  content: ANSWER_RESPONSE_START_TAG,
+                  finished: false,
+                  promptContext,
+                });
+                hasReasoning = false;
+              }
+            } else if (chunk.type === 'text-end') {
+              responseMessageIndex++;
+            } else if (chunk.type === 'text-delta') {
+              if (chunk.text.trim()) {
+                await task.processResponseMessage({
+                  id: responseMessageId,
                   action: 'response',
                   content: chunk.text,
                   finished: false,
                   promptContext,
                 });
-              } else if (chunk.type === 'tool-input-start') {
-                task.addLogMessage('loading', 'Preparing tool...', false, promptContext);
-              } else if (chunk.type === 'tool-call') {
-                task.addLogMessage('loading', 'Executing tool...', false, promptContext);
-              } else if (chunk.type === 'tool-result') {
-                task.addLogMessage('loading', undefined, false, promptContext);
               }
-            },
-            onStepFinish,
-            experimental_repairToolCall: repairToolCall,
-          });
-
-          await result.consumeStream();
+            } else if (chunk.type === 'reasoning-start') {
+              await task.processResponseMessage({
+                id: responseMessageId,
+                action: 'response',
+                content: THINKING_RESPONSE_STAR_TAG,
+                finished: false,
+                promptContext,
+              });
+              hasReasoning = true;
+            } else if (chunk.type === 'reasoning-delta') {
+              await task.processResponseMessage({
+                id: responseMessageId,
+                action: 'response',
+                content: chunk.text,
+                finished: false,
+                promptContext,
+              });
+            } else if (chunk.type === 'tool-input-start') {
+              task.addLogMessage('loading', 'Preparing tool...', false, promptContext);
+            } else if (chunk.type === 'tool-call') {
+              task.addLogMessage('loading', 'Executing tool...', false, promptContext);
+            } else if (chunk.type === 'tool-result') {
+              const [serverName, toolName] = extractServerNameToolName(chunk.toolName);
+              const toolPromptContext = extractPromptContextFromToolResult(chunk.output) ?? promptContext;
+              task.addToolMessage(chunk.toolCallId, serverName, toolName, chunk.input, JSON.stringify(chunk.output), undefined, toolPromptContext);
+              task.addLogMessage('loading', undefined, false, promptContext);
+            }
+          }
         }
 
         if (iterationError) {
@@ -992,14 +1014,6 @@ export class Agent {
         });
       }
 
-      // Always send a final "finished" message, regardless of whether there was text or tools
-      await task.processResponseMessage({
-        id: currentResponseId,
-        action: 'response',
-        content: '',
-        finished: true,
-        promptContext,
-      });
       void task.hookManager.trigger('onAgentFinished', { resultMessages }, task, task.project);
     }
 
@@ -1059,7 +1073,15 @@ export class Agent {
     return messages;
   }
 
-  async generateText(agentProfile: AgentProfile, systemPrompt: string, prompt: string): Promise<string> {
+  async generateText(
+    agentProfile: AgentProfile,
+    systemPrompt: string,
+    prompt: string,
+    projectDir: string,
+    messages: ContextMessage[] = [],
+    abortable = true,
+    abortSignal?: AbortSignal,
+  ): Promise<string | undefined> {
     const providers = this.store.getProviders();
     const provider = providers.find((p) => p.id === agentProfile.provider);
     if (!provider) {
@@ -1067,9 +1089,16 @@ export class Agent {
     }
 
     const settings = this.store.getSettings();
-    const model = this.modelManager.createLlm(provider, agentProfile.model, settings, '');
+    const model = this.modelManager.createLlm(provider, agentProfile.model, settings, projectDir, undefined, systemPrompt, undefined);
     const providerOptions = this.modelManager.getProviderOptions(provider, agentProfile.model);
     const providerParameters = this.modelManager.getProviderParameters(provider, agentProfile.model);
+
+    const controllerId = uuidv4();
+    const newController = abortable ? new AbortController() : null;
+    if (newController) {
+      this.abortControllers.set(controllerId, newController);
+    }
+    const effectiveAbortSignal = abortSignal || newController?.signal;
 
     logger.info('Generating text:', {
       providerId: provider.id,
@@ -1078,15 +1107,37 @@ export class Agent {
       systemPrompt: systemPrompt.substring(0, 100),
       prompt: prompt.substring(0, 100),
     });
-    const result = await generateText({
-      model,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: prompt }],
-      providerOptions,
-      ...providerParameters,
+
+    messages.push({
+      id: uuidv4(),
+      role: 'user',
+      content: prompt,
     });
 
-    return result.text;
+    try {
+      const result = await generateText({
+        model,
+        system: systemPrompt,
+        messages: optimizeMessages(messages),
+        abortSignal: effectiveAbortSignal,
+        providerOptions,
+        ...providerParameters,
+      });
+
+      return result.text;
+    } catch (error) {
+      if (effectiveAbortSignal?.aborted) {
+        logger.info('Generating text aborted by user');
+        return undefined;
+      }
+      logger.error('Error generating text:', error);
+      throw error;
+    } finally {
+      if (newController) {
+        logger.debug('Cleaned up abort controller', { controllerId });
+        this.abortControllers.delete(controllerId);
+      }
+    }
   }
 
   async estimateTokens(task: Task, profile: AgentProfile): Promise<number> {
@@ -1108,12 +1159,12 @@ export class Agent {
       const userRequestMessageIndex = lastUserIndex >= 0 ? lastUserIndex : 0;
 
       const optimizedMessages = optimizeMessages(
+        messages,
+        cacheControl,
         task,
         profile,
         this.agentProfileManager.getProjectProfiles(task.getProjectDir()),
         userRequestMessageIndex,
-        messages,
-        cacheControl,
       );
 
       // Format tools for the prompt
@@ -1159,7 +1210,7 @@ export class Agent {
 
   private async processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
+    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
     task: Task,
     profile: AgentProfile,
     provider: ProviderProfile,
@@ -1182,23 +1233,13 @@ export class Agent {
     const messages: ContextMessage[] = [];
     const usageReport: UsageReportData = this.modelManager.getUsageReport(task, provider, profile.model, usage, providerMetadata);
 
-    // Process text/reasoning content
-    if (reasoningText?.trim() || text?.trim()) {
-      const message: ResponseMessage = {
-        id: currentResponseId,
-        action: 'response',
-        content: reasoningText?.trim() ? `${THINKING_RESPONSE_STAR_TAG}${reasoningText.trim()}${ANSWER_RESPONSE_START_TAG}${text.trim()}` : text,
-        finished: true,
-        // only send usage report if there are no tool results
-        usageReport: toolResults?.length ? undefined : usageReport,
-        promptContext,
-      };
-      await task.processResponseMessage(message);
+    if (providerMetadata) {
+      await task.updateTask({ lastAgentProviderMetadata: providerMetadata });
     }
 
-    // Process successful tool results *after* sending text/reasoning and handling errors
-    for (let i = 0; i < toolResults.length; i++) {
-      const toolResult = toolResults[i];
+    let responseMessageIndex: number = 0;
+
+    const processToolResult = (toolResult: TypedToolResult<TOOLS>, isLast = true) => {
       const [serverName, toolName] = extractServerNameToolName(toolResult.toolName);
       const toolPromptContext = extractPromptContextFromToolResult(toolResult.output) ?? promptContext;
 
@@ -1209,9 +1250,51 @@ export class Agent {
         toolName,
         toolResult.input,
         JSON.stringify(toolResult.output),
-        i === toolResults.length - 1 ? usageReport : undefined, // Only add usage report to the last tool message
+        isLast ? usageReport : undefined, // Only add usage report to the last tool message
         toolPromptContext,
       );
+    };
+
+    for (let i = 0; i < content.length; i++) {
+      let part = content[i];
+      if (part.type === 'reasoning') {
+        reasoningText = part.text;
+        // move to the next one right away
+        part = content[++i];
+      }
+      if (part?.type === 'text') {
+        text = part.text;
+      }
+
+      if (text || reasoningText) {
+        const message: ResponseMessage = {
+          id: responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId,
+          action: 'response',
+          content: reasoningText?.trim() ? `${THINKING_RESPONSE_STAR_TAG}${reasoningText.trim()}${ANSWER_RESPONSE_START_TAG}${text.trim()}` : text,
+          finished: true,
+          usageReport: i === content.length - 1 && toolResults.length === 0 ? usageReport : undefined,
+          promptContext,
+        };
+        await task.processResponseMessage(message);
+
+        text = '';
+        reasoningText = undefined;
+        responseMessageIndex++;
+      }
+
+      if (part.type === 'tool-result') {
+        const toolResult = toolResults.find((toolResult) => toolResult.toolCallId === part.toolCallId);
+        if (toolResult) {
+          toolResults = toolResults.filter((toolResult) => toolResult.toolCallId !== part.toolCallId);
+          processToolResult(toolResult, i === content.length - 1 && toolResults.length === 0);
+        }
+      }
+    }
+
+    // Process successful tool results *after* sending text/reasoning and handling errors
+    for (let i = 0; i < toolResults.length; i++) {
+      const toolResult = toolResults[i];
+      processToolResult(toolResult, i === toolResults.length - 1);
     }
 
     if (!abortSignal?.aborted) {
@@ -1222,9 +1305,8 @@ export class Agent {
       if (message.role === 'assistant') {
         messages.push({
           ...message,
-          // @ts-expect-error the id is there
-          id: message.id || currentResponseId,
-          usageReport: toolResults?.length ? undefined : usageReport,
+          id: currentResponseId,
+          usageReport: toolResults?.length && responseMessageIndex === 0 ? undefined : usageReport,
           promptContext,
         });
       } else if (message.role === 'tool') {
@@ -1255,14 +1337,14 @@ export class Agent {
     const contextCompactingThreshold =
       task.task.contextCompactingThreshold ?? this.store.getProjectSettings(task.getProjectDir())?.contextCompactingThreshold ?? 0;
     const usageReport = resultMessages[resultMessages.length - 1]?.usageReport;
-    const maxTokens = this.modelManager.getModel(profile.provider, profile.model)?.maxInputTokens;
+    const maxTokens = this.modelManager.getModelSettings(profile.provider, profile.model)?.maxInputTokens;
 
     if (contextCompactingThreshold === 0 || !usageReport || !maxTokens) {
       return;
     }
 
     // Check for context compacting
-    const totalTokens = usageReport.sentTokens + usageReport.receivedTokens;
+    const totalTokens = usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0);
     if (maxTokens && totalTokens > (maxTokens * contextCompactingThreshold) / 100) {
       logger.info(`Token usage ${totalTokens} exceeds threshold of ${contextCompactingThreshold}%. Compacting conversation.`);
       task.addLogMessage('info', 'Token usage exceeds threshold. Compacting conversation...', false, promptContext);

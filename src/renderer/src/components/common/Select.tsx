@@ -1,9 +1,11 @@
-import { ReactNode, useRef, useState, useEffect } from 'react';
+import { ReactNode, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HiChevronUpDown, HiCheck } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useDropdownState } from '@/hooks/useDropdownState';
+import { KeyboardKeys } from '@/constants/keyboardKeys';
 
 export type Option = {
   label: ReactNode;
@@ -22,18 +24,21 @@ type Props = {
 };
 
 export const Select = ({ label, className = '', options = [], value, onChange, size = 'md', disabled = false }: Props) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLUListElement>(null); // Ref for the dropdown itself
+  const dropdownRef = useRef<HTMLUListElement>(null);
   const selectedOption = options.find((opt) => opt.value === value);
   const { t } = useTranslation();
 
-  // Pass both refs to useClickOutside
-  useClickOutside([containerRef, dropdownRef], () => setIsOpen(false));
+  const { isOpen, state, open, close, toggle, updateState } = useDropdownState({
+    initialState: { highlightedIndex: -1 },
+    onCloseReset: { highlightedIndex: -1 },
+  });
 
-  const handleToggleDropdown = () => {
+  // Pass both refs to useClickOutside
+  useClickOutside([containerRef, dropdownRef], close);
+
+  const handleToggleDropdown = useCallback(() => {
     if (!isOpen && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       setDropdownPosition({
@@ -41,20 +46,15 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
         left: rect.left + window.scrollX,
         width: rect.width,
       });
-      setHighlightedIndex(options.findIndex((opt) => opt.value === value));
+      open({ highlightedIndex: options.findIndex((opt) => opt.value === value) });
+    } else {
+      toggle();
     }
-    setIsOpen(!isOpen);
-  };
-
-  useEffect(() => {
-    if (!isOpen) {
-      setHighlightedIndex(-1);
-    }
-  }, [isOpen]);
+  }, [isOpen, open, toggle, options, value]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) {
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === KeyboardKeys.Enter || e.key === KeyboardKeys.Space) {
         e.preventDefault();
         handleToggleDropdown();
       }
@@ -62,32 +62,36 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
     }
 
     switch (e.key) {
-      case 'Escape':
+      case KeyboardKeys.Escape:
         e.preventDefault();
-        setIsOpen(false);
+        close();
         break;
-      case 'ArrowDown':
+      case KeyboardKeys.ArrowDown:
         e.preventDefault();
-        setHighlightedIndex((prev) => (prev >= options.length - 1 ? 0 : prev + 1));
+        updateState((prev) => ({
+          highlightedIndex: prev.highlightedIndex >= options.length - 1 ? 0 : prev.highlightedIndex + 1,
+        }));
         break;
-      case 'ArrowUp':
+      case KeyboardKeys.ArrowUp:
         e.preventDefault();
-        setHighlightedIndex((prev) => (prev <= 0 ? options.length - 1 : prev - 1));
+        updateState((prev) => ({
+          highlightedIndex: prev.highlightedIndex <= 0 ? options.length - 1 : prev.highlightedIndex - 1,
+        }));
         break;
-      case 'Enter':
+      case KeyboardKeys.Enter:
         e.preventDefault();
-        if (highlightedIndex >= 0 && highlightedIndex < options.length) {
-          handleOptionSelect(options[highlightedIndex]);
+        if (state.highlightedIndex >= 0 && state.highlightedIndex < options.length) {
+          handleOptionSelect(options[state.highlightedIndex]);
         }
         break;
-      case 'Tab':
-        setIsOpen(false);
+      case KeyboardKeys.Tab:
+        close();
         break;
     }
   };
 
   const handleOptionSelect = (option: Option) => {
-    setIsOpen(false);
+    close();
     onChange?.(option.value);
   };
 
@@ -138,7 +142,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
                 onClick={() => handleOptionSelect(opt)}
                 className={`relative cursor-default py-2 pr-9 pl-3 text-text-primary select-none text-sm ${sizeClasses[size]}
                 ${selectedOption?.value === opt.value ? 'bg-bg-tertiary' : ''}
-                ${highlightedIndex === index ? 'bg-bg-tertiary' : 'hover:bg-bg-tertiary'}`}
+                ${state.highlightedIndex === index ? 'bg-bg-tertiary' : 'hover:bg-bg-tertiary'}`}
                 aria-selected={selectedOption?.value === opt.value}
                 role="option"
               >

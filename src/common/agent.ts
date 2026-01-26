@@ -38,6 +38,7 @@ export type LlmProviderName =
   | 'azure'
   | 'bedrock'
   | 'cerebras'
+  | 'claude-agent-sdk'
   | 'deepseek'
   | 'gemini'
   | 'gpustack'
@@ -78,6 +79,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'azure',
   'bedrock',
   'cerebras',
+  'claude-agent-sdk',
   'deepseek',
   'gemini',
   'gpustack',
@@ -186,6 +188,13 @@ export interface CerebrasProvider extends LlmProviderBase {
 }
 export const isCerebrasProvider = (provider: LlmProviderBase): provider is CerebrasProvider => provider.name === 'cerebras';
 
+export interface ClaudeAgentSdkProvider extends LlmProviderBase {
+  name: 'claude-agent-sdk';
+  systemPrompt?: string;
+  mcpServers?: Record<string, unknown>;
+}
+export const isClaudeAgentSdkProvider = (provider: LlmProviderBase): provider is ClaudeAgentSdkProvider => provider.name === 'claude-agent-sdk';
+
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -251,6 +260,7 @@ export const isOpenCodeProvider = (provider: LlmProviderBase): provider is OpenC
 export interface ZaiPlanProvider extends LlmProviderBase {
   name: 'zai-plan';
   apiKey: string;
+  thinkingEnabled?: boolean;
 }
 export const isZaiPlanProvider = (provider: LlmProviderBase): provider is ZaiPlanProvider => provider.name === 'zai-plan';
 
@@ -274,6 +284,7 @@ export type LlmProvider =
   | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
+  | ClaudeAgentSdkProvider
   | DeepseekProvider
   | GroqProvider
   | GpustackProvider
@@ -293,6 +304,7 @@ export const DEFAULT_MODEL_TEMPERATURE = 0.0;
 export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> = {
   anthropic: 'claude-sonnet-4-5-20250929',
   cerebras: 'qwen-3-235b-a22b-instruct-2507',
+  'claude-agent-sdk': 'sonnet',
   deepseek: 'deepseek-chat',
   gemini: 'gemini-3-pro',
   groq: 'moonshotai/kimi-k2-instruct-0905',
@@ -488,6 +500,29 @@ export const CONFLICT_RESOLUTION_PROFILE: AgentProfile = {
 export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
   ...DEFAULT_AGENT_PROFILE,
   id: 'compact',
+  maxIterations: 5,
+  includeRepoMap: false,
+  includeContextFiles: false,
+  usePowerTools: false,
+  useAiderTools: false,
+  useTodoTools: false,
+  useSubagents: false,
+  useTaskTools: false,
+  useMemoryTools: false,
+  useSkillsTools: false,
+  isSubagent: true,
+  toolApprovals: {
+    ...DEFAULT_AGENT_PROFILE.toolApprovals,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
+    [`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`]: ToolApprovalState.Never,
+  },
+};
+
+export const HANDOFF_AGENT_PROFILE: AgentProfile = {
+  ...DEFAULT_AGENT_PROFILE,
+  id: 'handoff',
   maxIterations: 5,
   includeRepoMap: false,
   includeContextFiles: false,

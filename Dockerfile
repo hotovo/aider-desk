@@ -2,6 +2,9 @@
 # Python 3.12 is required for Aider connector
 FROM node:24-slim AS builder
 
+# These are set automatically by buildx - amd64, arm64
+ARG TARGETARCH=amd64
+
 # Set working directory
 WORKDIR /app
 
@@ -30,6 +33,8 @@ RUN npm run build:server
 
 # Production stage
 FROM node:24-slim
+
+ARG TARGETARCH=amd64
 
 # Install Python 3.12 and build tools using deadsnakes PPA
 RUN apt-get update && \

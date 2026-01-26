@@ -8,7 +8,7 @@ import { Input } from '@/components/common/Input';
 import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 
-export const useSearchText = (inElement: HTMLElement | null, className?: string) => {
+export const useSearchText = (inElement: HTMLElement | null, className?: string, enabled = true) => {
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentElementIndex, setCurrentElementIndex] = useState(-1);
@@ -65,6 +65,9 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string)
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
         event.preventDefault();
+        if (!enabled) {
+          return;
+        }
         setShowSearchInput((prev) => !prev);
         if (!showSearchInput) {
           // Clear previous search when opening
@@ -77,16 +80,25 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string)
         }
       } else if (event.key === 'F3' && event.shiftKey) {
         event.preventDefault();
+        if (!enabled) {
+          return;
+        }
         if (showSearchInput && foundElementsRef.current.size > 0) {
           navigateToPreviousFound();
         }
       } else if (event.key === 'F3') {
         event.preventDefault();
+        if (!enabled) {
+          return;
+        }
         if (showSearchInput && foundElementsRef.current.size > 0) {
           navigateToNextFound();
         }
       } else if (event.key === 'Escape' && showSearchInput) {
         event.preventDefault();
+        if (!enabled) {
+          return;
+        }
         resetSearch();
       }
     };
@@ -96,7 +108,7 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string)
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showSearchInput, navigateToNextFound, resetSearch, navigateToPreviousFound]);
+  }, [showSearchInput, navigateToNextFound, resetSearch, navigateToPreviousFound, enabled]);
 
   useLayoutEffect(() => {
     if (inElement) {

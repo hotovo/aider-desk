@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Tab, TabGroup, TabList } from '@headlessui/react';
 import { clsx } from 'clsx';
+import { CgSpinner } from 'react-icons/cg';
 import { MdAdd, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -11,10 +12,11 @@ import { useTranslation } from 'react-i18next';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
+import { useProjectProcessingState } from '@/stores/projectStore';
 
 type Props = {
   openProjects: ProjectData[];
-  activeProject: ProjectData | undefined;
+  activeProject: string | undefined;
   onAddProject: () => void;
   onSetActiveProject: (baseDir: string) => void;
   onCloseProject: (baseDir: string) => void;
@@ -115,7 +117,7 @@ export const ProjectTabs = ({
   return (
     <TabGroup
       className="overflow-x-hidden flex-1"
-      selectedIndex={openProjects.findIndex((p) => p.baseDir === activeProject?.baseDir)}
+      selectedIndex={openProjects.findIndex((p) => p.baseDir === activeProject)}
       onChange={(index) => {
         if (openProjects[index] && !dragging) {
           onSetActiveProject(openProjects[index].baseDir);
@@ -138,7 +140,7 @@ export const ProjectTabs = ({
                 <SortableTabItem
                   key={project.baseDir}
                   project={project}
-                  activeProject={activeProject}
+                  isActive={activeProject === project.baseDir}
                   onCloseProject={onCloseProject}
                   onCloseOtherProjects={onCloseOtherProjects}
                   onCloseAllProjects={onCloseAllProjects}
@@ -169,17 +171,18 @@ export const ProjectTabs = ({
 
 type SortableTabItemProps = {
   project: ProjectData;
-  activeProject: ProjectData | undefined;
+  isActive: boolean;
   onCloseProject: (baseDir: string) => void;
   onCloseOtherProjects: (baseDir: string) => void;
   onCloseAllProjects: () => void;
   openProjectsNumber: number;
 };
 
-const SortableTabItem = ({ project, activeProject, onCloseProject, onCloseOtherProjects, onCloseAllProjects, openProjectsNumber }: SortableTabItemProps) => {
+const SortableTabItem = ({ project, isActive, onCloseProject, onCloseOtherProjects, onCloseAllProjects, openProjectsNumber }: SortableTabItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.baseDir });
   const { showMenu } = useContextMenu();
   const { t } = useTranslation();
+  const isProcessing = useProjectProcessingState(project.baseDir);
 
   const handleRightClick = (event: MouseEvent) => {
     event.preventDefault();
@@ -224,7 +227,7 @@ const SortableTabItem = ({ project, activeProject, onCloseProject, onCloseOtherP
         onContextMenu={handleRightClick}
         className={({ selected }) =>
           clsx(
-            'text-sm pl-3 py-2 pr-1 border-r border-border-dark-light transition-all duration-200 ease-in-out flex items-center gap-3 relative whitespace-nowrap',
+            'text-sm pl-3 py-2 pr-1 border-r border-border-dark-light transition-all duration-200 ease-in-out flex items-center gap-3 relative whitespace-nowrap focus:outline-none',
             selected
               ? 'bg-gradient-to-b from-bg-secondary-light to-bg-secondary-light text-text-primary font-medium'
               : 'bg-gradient-to-b from-bg-primary to-bg-primary-light text-text-muted hover:bg-bg-secondary-light-strongest hover:text-text-tertiary',
@@ -235,15 +238,25 @@ const SortableTabItem = ({ project, activeProject, onCloseProject, onCloseOtherP
         <div
           className={clsx(
             'flex items-center justify-center rounded-full p-1 transition-colors duration-200 z-10',
-            activeProject?.baseDir === project.baseDir ? 'hover:bg-bg-fourth' : 'hover:bg-bg-tertiary-strong',
+            isActive ? 'hover:bg-bg-fourth' : 'hover:bg-bg-tertiary-strong',
+            isProcessing ? 'cursor-default' : '',
           )}
           onClick={(e) => {
+            if (isProcessing) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
             e.preventDefault();
             e.stopPropagation(); // Prevent tab selection/drag initiation
             onCloseProject(project.baseDir);
           }}
         >
-          <MdClose className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
+          {isProcessing ? (
+            <CgSpinner className="h-3.5 w-3.5 animate-spin text-text-primary" />
+          ) : (
+            <MdClose className="h-3.5 w-3.5 opacity-60 group-hover:opacity-100 transition-opacity duration-200" />
+          )}
         </div>
       </Tab>
     </div>

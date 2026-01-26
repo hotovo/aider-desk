@@ -19,6 +19,7 @@
     "loading": "加载中...",
     "startingUp": "正在启动...",
     "loadingProjectSettings": "正在加载项目设置...",
+    "loadingProject": "加载项目中...",
     "loadingTask": "正在加载任务...",
     "loadingMessages": "正在加载消息...",
     "error": "错误",
@@ -221,6 +222,7 @@
     "modelIdPlaceholder": "例如 custom-gpt-4-turbo",
     "maxInputTokens": "上下文窗口",
     "maxOutputTokens": "最大输出令牌数",
+    "limit": "限制",
     "temperature": "温度",
     "temperatureTooltip": "控制模型响应的随机性。较低的值（0.0-0.3）产生更专注和确定性的输出，而较高的值（0.7-1.0）生成更有创意和多样化的响应。当未设置时，使用模型的默认温度。",
     "cacheWrites": "缓存写入",
@@ -246,6 +248,8 @@
       "invalidTemperature": "温度必须在 0 到 2 之间",
       "duplicateId": "提供商 ID 已存在"
     },
+    "claudeAgentSdkAuthRequired": "此提供商需要安装和认证 Claude Code CLI。请从 https://claude.com/product/claude-code 安装并运行 `claude login` 进行认证。",
+    "claudeAgentSdkAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
     "overrides": {
       "title": "提供商覆盖",
       "resetToDefaults": "清除覆盖",
@@ -303,7 +307,9 @@
       "add": "添加",
       "adding": "添加中...",
       "configured": "已配置"
-    }
+    },
+    "thinkingEnabled": "启用思考",
+    "thinkingEnabledTooltip": "启用时，模型将使用思考模式进行更深入的推理（默认）。对于简单任务，可以禁用以获得更快的响应速度。"
   },
   "anthropic": {
     "apiKey": "API 密钥"
@@ -365,6 +371,7 @@
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
+    "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
@@ -726,6 +733,7 @@
     "delete": "删除",
     "redo": "重做",
     "edit": "编辑",
+    "forkFromHere": "从这里创建子任务",
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
     "group": "分组",
@@ -752,7 +760,8 @@
   "errors": {
     "frozenTitle": "AIDER冻结了?",
     "frozenMessage": "Aider进程似乎已冻结。您想重启任务吗?",
-    "removeMessageFailed": "删除消息失败 - 请重试"
+    "removeMessageFailed": "删除消息失败 - 请重试",
+    "forkTaskFailed": "从消息分叉任务失败 - 请重试"
   },
   "dialogs": {
     "confirm": "确认",
@@ -953,7 +962,16 @@
       "getTaskMessage": "获取任务消息",
       "createTask": "创建任务",
       "deleteTask": "删除任务",
+      "searchTask": "搜索任务:",
+      "inTask": "在",
+      "searchTaskNoMatches": "未找到匹配项。",
+      "searchParentTask": "搜索父任务:",
+      "inParentTask": "在",
+      "searchParentTaskNoMatches": "未找到匹配项。",
+      "name": "名称",
+      "parentTaskId": "父任务ID",
       "execute": "执行",
+      "executeInBackground": "在后台执行",
       "yes": "是",
       "no": "否",
       "taskId": "任务ID",
@@ -1138,7 +1156,8 @@
     "stopResponse": "停止响应",
     "sendMessage": "发送消息(Enter)",
     "clearChat": "清除聊天",
-    "agentModeOnly": "仅在代理模式下可用"
+    "agentModeOnly": "仅在代理模式下可用",
+    "handoffError": "交接失败：{{error}}"
   },
   "agentProfiles": {
     "title": "代理配置",
@@ -1213,7 +1232,8 @@
     "tokens": "报告当前聊天上下文使用的令牌数量",
     "undo": "撤消 Aider 完成的最后一次 git 提交",
     "task-info": "显示任务信息",
-    "web": "抓取网页内容并保存到文件。使用 /web url [文件] 格式，其中 [文件] 为可选参数"
+    "web": "抓取网页内容并保存到文件。使用 /web url [文件] 格式，其中 [文件] 为可选参数",
+    "handoff": "交接对话到新任务并聚焦"
   },
   "telemetry": {
     "title": "遥测信息",
@@ -1357,7 +1377,9 @@
     "archiveSelectedConfirm": "您确定要归档 {{count}} 个选中的任务吗？",
     "unarchiveSelectedConfirm": "您确定要取消归档 {{count}} 个选中的任务吗？",
     "generatingName": "正在生成名称...",
-    "changeState": "更改状态"
+    "changeState": "更改状态",
+    "createSubtask": "创建子任务",
+    "deleteConfirmWithSubtasks": "此任务有 {{count}} 个子任务。仍然要删除吗？"
   },
   "taskInfo": {
     "createdAt": "创建于",

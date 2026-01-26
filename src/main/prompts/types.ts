@@ -1,3 +1,5 @@
+import { ContextFile } from '@common/types';
+
 export interface ToolPermissions {
   aiderTools: boolean;
   powerTools: {
@@ -48,6 +50,11 @@ export interface CompactConversationPromptData {
   customInstructions?: string;
 }
 
+export interface HandoffPromptData {
+  focus?: string;
+  contextFiles?: ContextFile[];
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface CommitMessagePromptData {
   // Static for now
@@ -85,4 +92,5 @@ export type PromptTemplateName =
   | 'task-name'
   | 'conflict-resolution'
   | 'conflict-resolution-system'
-  | 'update-task-state';
+  | 'update-task-state'
+  | 'handoff';

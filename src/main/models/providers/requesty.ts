@@ -81,7 +81,7 @@ const loadRequestyModels = async (profile: ProviderProfile, settings: SettingsDa
           id: model.id,
           providerId: profile.id,
           maxInputTokens: model.context_window,
-          maxOutputTokens: model.max_output_tokens === 0 ? undefined : model.max_output_tokens,
+          maxOutputTokensLimit: model.max_output_tokens === 0 ? undefined : model.max_output_tokens,
           inputCostPerToken: model.input_price,
           outputCostPerToken: model.output_price,
           cacheWriteInputTokenCost: model.caching_price ? model.caching_price : undefined,

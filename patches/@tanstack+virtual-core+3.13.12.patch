@@ -1,0 +1,13 @@
+diff --git a/node_modules/@tanstack/virtual-core/dist/esm/index.js b/node_modules/@tanstack/virtual-core/dist/esm/index.js
+index 8acf35b..59b36a4 100644
+--- a/node_modules/@tanstack/virtual-core/dist/esm/index.js
++++ b/node_modules/@tanstack/virtual-core/dist/esm/index.js
+@@ -644,7 +644,7 @@ class Virtualizer {
+       }
+       index = Math.max(0, Math.min(index, this.options.count - 1));
+       let attempts = 0;
+-      const maxAttempts = 10;
++      const maxAttempts = 100;
+       const tryScroll = (currentAlign) => {
+         if (!this.targetWindow) return;
+         const offsetInfo = this.getOffsetForIndex(index, currentAlign);

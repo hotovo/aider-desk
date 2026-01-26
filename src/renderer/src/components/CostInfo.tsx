@@ -16,7 +16,7 @@ type Props = {
   maxInputTokens?: number;
   mode: Mode;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>) => void;
 };
 
 export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRepoMap, resetTask, maxInputTokens = 0, mode, task, updateTask }: Props) => {

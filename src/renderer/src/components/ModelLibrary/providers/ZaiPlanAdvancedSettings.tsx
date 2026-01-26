@@ -4,6 +4,8 @@ import { ZaiPlanProvider } from '@common/agent';
 import { SettingsData, McpServerConfig } from '@common/types';
 import { FaCheck, FaPlus, FaInfoCircle, FaExternalLinkAlt } from 'react-icons/fa';
 
+import { ZaiPlanThinkingSetting } from './ZaiPlanThinkingSetting';
+
 import { useSettings } from '@/contexts/SettingsContext';
 import { Button } from '@/components/common/Button';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
@@ -21,7 +23,7 @@ type McpServerInfo = {
   documentationLink: string;
 };
 
-export const ZaiPlanAdvancedSettings = ({ provider }: Props) => {
+export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
   const { settings, saveSettings } = useSettings();
   const [existingMcpServers, setExistingMcpServers] = useState<Record<string, McpServerConfig>>({});
@@ -116,6 +118,9 @@ export const ZaiPlanAdvancedSettings = ({ provider }: Props) => {
 
   return (
     <div className="space-y-4">
+      <div className="py-2">
+        <ZaiPlanThinkingSetting provider={provider} onChange={onChange} />
+      </div>
       <div className="border border-border-default-dark rounded-md p-4">
         <div className="flex items-center space-x-2 mb-3">
           <span className="text-sm font-medium">{t('zaiPlan.mcp.title')}</span>

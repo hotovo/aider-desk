@@ -9,6 +9,7 @@ interface UseUserMessageNavigationProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
   userMessageIds: string[];
   scrollToMessageByElement?: (element: HTMLElement) => void;
+  scrollToMessageById?: (id: string) => void;
   alwaysVisible?: boolean;
   buttonClassName?: string;
 }
@@ -27,12 +28,14 @@ export const useUserMessageNavigation = ({
   containerRef,
   userMessageIds,
   scrollToMessageByElement,
+  scrollToMessageById,
   alwaysVisible = false,
   buttonClassName = '',
 }: UseUserMessageNavigationProps) => {
   const { t } = useTranslation();
   const [hasPreviousUserMessage, setHasPreviousUserMessage] = useState(false);
   const [hasNextUserMessage, setHasNextUserMessage] = useState(false);
+  const userMessagesKey = userMessageIds.join(',');
 
   const updateNavigationButtons = useCallback(() => {
     const container = containerRef.current;
@@ -70,11 +73,12 @@ export const useUserMessageNavigation = ({
 
     setHasPreviousUserMessage(hasPrevious);
     setHasNextUserMessage(hasNext);
-  }, [containerRef, userMessageIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerRef, userMessagesKey]);
 
   const handleNavigateToPreviousUserMessage = useCallback(() => {
     const container = containerRef.current;
-    if (!container || !scrollToMessageByElement) {
+    if (!container || (!scrollToMessageByElement && !scrollToMessageById)) {
       return;
     }
 
@@ -90,15 +94,17 @@ export const useUserMessageNavigation = ({
 
       const msgRect = msgElement.getBoundingClientRect();
       if (msgRect.bottom < viewportTop) {
-        scrollToMessageByElement(msgElement);
+        scrollToMessageByElement?.(msgElement);
+        scrollToMessageById?.(msgId);
         break;
       }
     }
-  }, [containerRef, userMessageIds, scrollToMessageByElement]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerRef, scrollToMessageByElement, scrollToMessageById, userMessagesKey]);
 
   const handleNavigateToNextUserMessage = useCallback(() => {
     const container = containerRef.current;
-    if (!container || !scrollToMessageByElement) {
+    if (!container || (!scrollToMessageByElement && !scrollToMessageById)) {
       return;
     }
 
@@ -113,11 +119,13 @@ export const useUserMessageNavigation = ({
 
       const msgRect = msgElement.getBoundingClientRect();
       if (msgRect.top > viewportBottom) {
-        scrollToMessageByElement(msgElement);
+        scrollToMessageByElement?.(msgElement);
+        scrollToMessageById?.(msgId);
         break;
       }
     }
-  }, [containerRef, userMessageIds, scrollToMessageByElement]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerRef, scrollToMessageByElement, scrollToMessageById, userMessagesKey]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -178,7 +186,7 @@ export const useUserMessageNavigation = ({
     },
   ];
 
-  const renderGoToPrevious = () => {
+  const renderGoToPrevious = useCallback(() => {
     if (userMessageIds.length === 0) {
       return null;
     }
@@ -198,9 +206,10 @@ export const useUserMessageNavigation = ({
         disabled={button.disabled}
       />
     );
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigationButtons, userMessagesKey]);
 
-  const renderGoToNext = () => {
+  const renderGoToNext = useCallback(() => {
     if (userMessageIds.length === 0) {
       return null;
     }
@@ -220,9 +229,10 @@ export const useUserMessageNavigation = ({
         disabled={button.disabled}
       />
     );
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigationButtons, userMessagesKey]);
 
-  const renderButtons = () => {
+  const renderButtons = useCallback(() => {
     if (userMessageIds.length === 0) {
       return null;
     }
@@ -238,7 +248,8 @@ export const useUserMessageNavigation = ({
         disabled={button.disabled}
       />
     ));
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigationButtons, userMessagesKey]);
 
   return {
     hasPreviousUserMessage,

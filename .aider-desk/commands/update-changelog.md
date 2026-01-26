@@ -4,11 +4,11 @@ includeContext: false
 ---
 Update the CHANGELOG.md file by adding a new entry under the [UNRELEASED] section based on the current git diff.
 
-First, let's read the current CHANGELOG.md to understand the structure:
+This is the current CHANGELOG.md (first 20 lines):
 
 !head -n 20 CHANGELOG.md
 
-Now, let's get the git diff to see what changes were made:
+This is `git diff HEAD` to see what changes were made:
 
 !git diff HEAD
 
@@ -29,6 +29,6 @@ Examples of good entries:
 - improved performance of message rendering
 - updated dependencies to latest versions
 
-Now update the CHANGELOG.md file by inserting the generated entry as the last item under the [UNRELEASED] section. Read the current content, find the [UNRELEASED] section, and insert the new entry as the last bullet point under it, before the next version section or end of file.
+Now update the CHANGELOG.md file by inserting the generated entry as the last item under the [UNRELEASED] section. The changelog entry should be added to the end of the [UNRELEASED] section, after any existing entries in that section.
 
-The changelog entry should be added to the end of the [UNRELEASED] section, after any existing entries in that section.
+Do not read any files, just update based on given info.

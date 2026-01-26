@@ -1,5 +1,5 @@
-import { DefaultTaskState, Mode, Model, ModelsData, ProjectData, TaskData, TodoItem } from '@common/types';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from 'react';
+import { DefaultTaskState, Mode, Model, ModelsData, TaskData, TodoItem } from '@common/types';
+import { forwardRef, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import { clsx } from 'clsx';
@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSidebarWidth } from './useSidebarWidth';
 
 import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { isLogMessage, isUserMessage, Message, TaskInfoMessage } from '@/types/message';
+import { isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -27,7 +27,6 @@ import { MobileSidebar } from '@/components/project/MobileSidebar';
 import { FilesContextInfoContent } from '@/components/project/FilesContextInfoContent';
 import { WelcomeMessage } from '@/components/project/WelcomeMessage';
 import 'react-resizable/css/styles.css';
-import { useSearchText } from '@/hooks/useSearchText';
 import { useApi } from '@/contexts/ApiContext';
 import { resolveAgentProfile } from '@/utils/agents';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -38,6 +37,7 @@ import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useTaskMessages, useTaskState } from '@/stores/taskStore';
 import { showErrorNotification } from '@/utils/notifications';
+import { useSearchText } from '@/hooks/useSearchText';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -51,9 +51,10 @@ export type TaskViewRef = {
 const FILES_COLLAPSED_WIDTH = 36;
 
 type Props = {
-  project: ProjectData;
+  projectDir: string;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  updateOptimisticTaskState: (taskId: string, taskState: string) => void;
   inputHistory: string[];
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
@@ -68,13 +69,14 @@ type Props = {
 export const TaskView = forwardRef<TaskViewRef, Props>(
   (
     {
-      project,
+      projectDir,
       task,
       updateTask,
       inputHistory,
       isActive = false,
       showSettingsPage,
       shouldFocusPrompt = false,
+      updateOptimisticTaskState,
       onProceed,
       onArchiveTask,
       onUnarchiveTask,
@@ -94,36 +96,36 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const { getProfiles } = useAgents();
 
     const taskState = useTaskState(task.id);
+    const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData } = taskState;
+
     const messages = useTaskMessages(task.id);
+    const displayedMessages = useDeferredValue(messages, []);
+    const messagesPending = messages.length !== displayedMessages.length;
+
+    const currentMode = task.currentMode || 'agent';
+
+    const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
+    const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+    const [searchContainer, setSearchContainer] = useState<HTMLElement | null>(null);
+    const [terminalVisible, setTerminalVisible] = useLocalStorage(`terminal-visible-${project.baseDir}-${task.id}`, false);
+    const [showSidebar, setShowSidebar] = useState(isMobile);
+    const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(projectDir, task.id);
+    const [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed] = useLocalStorage(`files-sidebar-collapsed-${projectDir}-${task.id}`, false);
+    const { renderSearchInput } = useSearchText(searchContainer, 'absolute top-1 left-1', isActive);
+
+    const promptFieldRef = useRef<PromptFieldRef>(null);
+    const projectTopBarRef = useRef<TaskBarRef>(null);
+    const messagesRef = useRef<MessagesRef | VirtualizedMessagesRef>(null);
+    const terminalViewRef = useRef<TerminalViewRef | null>(null);
+    const activeAgentProfile = useMemo(() => {
+      return resolveAgentProfile(task, projectSettings?.agentProfileId, getProfiles(projectDir));
+    }, [task, projectSettings?.agentProfileId, getProfiles, projectDir]);
 
     useEffect(() => {
       if (isActive && !taskState.loaded && !taskState.loading) {
         loadTask(task.id);
       }
     }, [isActive, loadTask, task.id, taskState.loaded, taskState.loading]);
-
-    const aiderModelsData = taskState?.aiderModelsData || null;
-    const currentMode = task.currentMode || 'agent';
-
-    const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
-    const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
-    const [terminalVisible, setTerminalVisible] = useLocalStorage(`terminal-visible-${project.baseDir}-${task.id}`, false);
-    const [showSidebar, setShowSidebar] = useState(isMobile);
-    const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(project.baseDir, task.id);
-    const [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed] = useLocalStorage(`files-sidebar-collapsed-${project.baseDir}-${task.id}`, false);
-
-    const promptFieldRef = useRef<PromptFieldRef>(null);
-    const projectTopBarRef = useRef<TaskBarRef>(null);
-    const messagesRef = useRef<MessagesRef | VirtualizedMessagesRef>(null);
-    const terminalViewRef = useRef<TerminalViewRef | null>(null);
-    const [messagesPending, startMessagesTransition] = useTransition();
-    const [transitionMessages, setTransitionMessages] = useState<Message[]>([]);
-    const [searchContainer, setSearchContainer] = useState<HTMLElement | null>(null);
-    const activeAgentProfile = useMemo(() => {
-      return resolveAgentProfile(task, projectSettings?.agentProfileId, getProfiles(project.baseDir));
-    }, [task, projectSettings?.agentProfileId, getProfiles, project.baseDir]);
-
-    const { renderSearchInput } = useSearchText(searchContainer, 'absolute top-1 left-1');
 
     useImperativeHandle(ref, () => ({
       exportMessagesToImage: () => {
@@ -171,271 +173,398 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     }, [currentMode, activeAgentProfile, models, aiderModelsData?.mainModel]);
     const maxInputTokens = currentModel?.maxInputTokens || 0;
 
-    useEffect(() => {
-      startMessagesTransition(() => {
-        setTransitionMessages(messages);
-      });
-    }, [messages]);
-
     const todoListVisible = useMemo(() => {
       return currentMode === 'agent' && activeAgentProfile?.useTodoTools;
     }, [currentMode, activeAgentProfile?.useTodoTools]);
 
     const handleOpenModelSelector = useCallback(() => {
       projectTopBarRef.current?.openMainModelSelector();
-    }, []);
+    }, [projectTopBarRef]);
 
     const handleOpenAgentModelSelector = useCallback(() => {
       projectTopBarRef.current?.openAgentModelSelector();
-    }, []);
+    }, [projectTopBarRef]);
 
     const handleScrollToBottom = useCallback(() => {
       messagesRef.current?.scrollToBottom();
-    }, []);
+    }, [messagesRef]);
 
-    if (!taskState) {
-      return <LoadingOverlay message={t('common.loadingTask')} />;
-    }
+    const handleAddFiles = useCallback(
+      (filePaths: string[], readOnly = false) => {
+        for (const filePath of filePaths) {
+          api.addFile(projectDir, task.id, filePath, readOnly);
+        }
+        setAddFileDialogOptions(null);
+        promptFieldRef.current?.focus();
+      },
+      [api, projectDir, task.id, setAddFileDialogOptions, promptFieldRef],
+    );
 
-    const { loading, loaded, allFiles, contextFiles, autocompletionWords, aiderTotalCost, tokensInfo, question, todoItems } = taskState;
-
-    const displayedMessages = messages;
-
-    const handleAddFiles = (filePaths: string[], readOnly = false) => {
-      for (const filePath of filePaths) {
-        api.addFile(project.baseDir, task.id, filePath, readOnly);
-      }
-      setAddFileDialogOptions(null);
-      promptFieldRef.current?.focus();
-    };
-
-    const showFileDialog = (readOnly: boolean) => {
+    const showFileDialog = useCallback((readOnly: boolean) => {
       setAddFileDialogOptions({
         readOnly,
       });
-    };
+    }, []);
 
-    const clearMessages = (clearContext = true) => {
-      clearSession(task.id, true);
+    const clearMessages = useCallback(
+      (clearContext = true) => {
+        clearSession(task.id, true);
 
-      if (clearContext) {
-        api.clearContext(project.baseDir, task.id);
-      }
-    };
+        if (clearContext) {
+          api.clearContext(projectDir, task.id);
+        }
+      },
+      [clearSession, task.id, api, projectDir],
+    );
 
-    const toggleTerminal = () => {
+    const toggleTerminal = useCallback(() => {
       setTerminalVisible(!terminalVisible);
-    };
+    }, [terminalVisible]);
 
-    const clearLogMessages = () => {
+    const clearLogMessages = useCallback(() => {
       setMessages(task.id, (prevMessages) => prevMessages.filter((message) => !isLogMessage(message)));
-    };
+    }, [setMessages, task.id]);
 
-    const runCommand = (command: string) => {
-      api.runCommand(project.baseDir, task.id, command);
-    };
+    const runCommand = useCallback(
+      (command: string) => {
+        api.runCommand(projectDir, task.id, command);
+      },
+      [api, projectDir, task.id],
+    );
 
-    const runTests = (testCmd?: string) => {
-      runCommand(`test ${testCmd || ''}`);
-    };
+    const runTests = useCallback(
+      (testCmd?: string) => {
+        runCommand(`test ${testCmd || ''}`);
+      },
+      [runCommand],
+    );
 
-    const scrapeWeb = async (url: string, filePath?: string) => {
-      await api.scrapeWeb(project.baseDir, task.id, url, filePath);
-    };
+    const scrapeWeb = useCallback(
+      async (url: string, filePath?: string) => {
+        await api.scrapeWeb(projectDir, task.id, url, filePath);
+      },
+      [api, projectDir, task.id],
+    );
 
-    const handleModelChange = (modelsData: ModelsData | null) => {
-      setAiderModelsData(task.id, modelsData);
-      promptFieldRef.current?.focus();
-    };
-
-    const handleModeChange = (mode: Mode) => {
-      updateTask({ currentMode: mode });
-    };
-
-    const handleMarkAsDone = () => {
-      updateTask({ state: DefaultTaskState.Done });
-    };
-
-    const runPrompt = (prompt: string) => {
-      if (editingMessageIndex !== null) {
-        // This submission is an edit of a previous message
-        setEditingMessageIndex(null); // Clear editing state
-        setMessages(task.id, (prevMessages) => {
-          return prevMessages.slice(0, editingMessageIndex);
-        });
-        api.redoLastUserPrompt(project.baseDir, task.id, currentMode, prompt);
-      } else {
-        api.runPrompt(project.baseDir, task.id, prompt, currentMode);
-      }
-    };
-
-    const handleSavePrompt = async (prompt: string) => {
-      await api.savePrompt(project.baseDir, task.id, prompt);
-    };
-
-    const handleEditLastUserMessage = (content?: string) => {
-      let contentToEdit = content;
-      const messageIndex = displayedMessages.findLastIndex(isUserMessage);
-
-      if (messageIndex === -1) {
-        // eslint-disable-next-line no-console
-        console.warn('No user message found to edit.');
-        return;
-      }
-
-      if (contentToEdit === undefined) {
-        const lastUserMessage = displayedMessages[messageIndex];
-        contentToEdit = lastUserMessage.content;
-      }
-      if (contentToEdit === undefined) {
-        // eslint-disable-next-line no-console
-        console.warn('Could not determine content to edit.');
-        return;
-      }
-
-      setEditingMessageIndex(messageIndex);
-      setTimeout(() => {
-        promptFieldRef.current?.setText(contentToEdit);
+    const handleModelChange = useCallback(
+      (modelsData: ModelsData | null) => {
+        setAiderModelsData(task.id, modelsData);
         promptFieldRef.current?.focus();
-      }, 0);
-    };
+      },
+      [task.id, setAiderModelsData, promptFieldRef],
+    );
 
-    const handleResetTask = () => {
+    const handleModeChange = useCallback(
+      (mode: Mode) => {
+        updateTask(task.id, { currentMode: mode });
+      },
+      [updateTask, task.id],
+    );
+
+    const handleMarkAsDone = useCallback(() => {
+      updateTask(task.id, { state: DefaultTaskState.Done });
+    }, [updateTask, task.id]);
+
+    const runPrompt = useCallback(
+      (prompt: string) => {
+        updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
+        if (editingMessageIndex !== null) {
+          // This submission is an edit of a previous message
+          setEditingMessageIndex(null); // Clear editing state
+          setMessages(task.id, (prevMessages) => {
+            return prevMessages
+              .filter((_, index) => index <= editingMessageIndex)
+              .map((message, index) => {
+                if (index === editingMessageIndex) {
+                  return {
+                    ...message,
+                    content: prompt,
+                  };
+                } else {
+                  return message;
+                }
+              });
+          });
+          api.redoLastUserPrompt(projectDir, task.id, currentMode, prompt);
+        } else {
+          if (!question) {
+            // OPTIMISTIC: Add user message immediately before backend response
+            setMessages(task.id, (prevMessages) => [
+              ...prevMessages,
+              {
+                id: uuidv4(),
+                type: 'user',
+                content: prompt,
+                isOptimistic: true,
+              } satisfies UserMessage,
+            ]);
+          }
+          api.runPrompt(projectDir, task.id, prompt, currentMode);
+        }
+      },
+      [updateOptimisticTaskState, task.id, editingMessageIndex, setMessages, api, projectDir, currentMode, question],
+    );
+
+    const handleSavePrompt = useCallback(
+      async (prompt: string) => {
+        await api.savePrompt(projectDir, task.id, prompt);
+      },
+      [api, projectDir, task.id],
+    );
+
+    const handleEditLastUserMessage = useCallback(
+      (content?: string) => {
+        let contentToEdit = content;
+        const messageIndex = displayedMessages.findLastIndex(isUserMessage);
+
+        if (messageIndex === -1) {
+          // eslint-disable-next-line no-console
+          console.warn('No user message found to edit.');
+          return;
+        }
+
+        if (contentToEdit === undefined) {
+          const lastUserMessage = displayedMessages[messageIndex];
+          contentToEdit = lastUserMessage.content;
+        }
+        if (contentToEdit === undefined) {
+          // eslint-disable-next-line no-console
+          console.warn('Could not determine content to edit.');
+          return;
+        }
+
+        setEditingMessageIndex(messageIndex);
+        setTimeout(() => {
+          promptFieldRef.current?.setText(contentToEdit);
+          promptFieldRef.current?.focus();
+        }, 0);
+      },
+      [displayedMessages],
+    );
+
+    useEffect(() => {
+      if (task.handoff && displayedMessages.length > 0) {
+        setTimeout(() => {
+          handleEditLastUserMessage();
+        }, 0);
+
+        updateTask(task.id, { handoff: false });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [task.handoff, task.id, displayedMessages]);
+
+    const handleResetTask = useCallback(() => {
       resetTask(task.id);
       setAiderModelsData(task.id, null);
-    };
+    }, [resetTask, task.id, setAiderModelsData]);
 
-    const handleRedoLastUserPrompt = () => {
-      api.redoLastUserPrompt(project.baseDir, task.id, currentMode);
-    };
+    const handleRedoLastUserPrompt = useCallback(() => {
+      const lastUserMessageIndex = displayedMessages.findLastIndex(isUserMessage);
+      setMessages(task.id, (prevMessages) => {
+        return prevMessages.filter((_, index) => index <= lastUserMessageIndex);
+      });
+      updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
+      api.redoLastUserPrompt(projectDir, task.id, currentMode);
+    }, [displayedMessages, setMessages, task.id, updateOptimisticTaskState, api, projectDir, currentMode]);
 
-    const handleResumeTask = () => {
-      api.resumeTask(project.baseDir, task.id);
-    };
+    const handleResumeTask = useCallback(() => {
+      api.resumeTask(projectDir, task.id);
+    }, [api, projectDir, task.id]);
 
-    const handleProceed = () => {
+    const handleProceed = useCallback(() => {
       onProceed?.();
-    };
+    }, [onProceed]);
 
-    const handleArchiveTask = () => {
+    const handleArchiveTask = useCallback(() => {
       onArchiveTask?.();
-    };
+    }, [onArchiveTask]);
 
-    const handleUnarchiveTask = () => {
+    const handleUnarchiveTask = useCallback(() => {
       onUnarchiveTask?.();
-    };
+    }, [onUnarchiveTask]);
 
-    const handleDeleteTask = () => {
+    const handleDeleteTask = useCallback(() => {
       onDeleteTask?.();
-    };
+    }, [onDeleteTask]);
 
-    const handleRemoveMessage = async (messageToRemove: Message) => {
-      const originalMessages = messages;
+    const handleForkFromMessage = useCallback(
+      async (message: Message) => {
+        try {
+          await api.forkTask(projectDir, task.id, message.id);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to fork task:', error);
+          showErrorNotification(t('errors.forkTaskFailed'));
+        }
+      },
+      [api, projectDir, task.id, t],
+    );
 
-      setMessages(task.id, (prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
+    const handleRemoveMessage = useCallback(
+      async (messageToRemove: Message) => {
+        const originalMessages = displayedMessages;
 
+        setMessages(task.id, (prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
+
+        if (isTaskInfoMessage(messageToRemove) || isLogMessage(messageToRemove)) {
+          return;
+        }
+
+        try {
+          await api.removeMessage(projectDir, task.id, messageToRemove.id);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to remove message:', error);
+          setMessages(task.id, () => originalMessages);
+          showErrorNotification(t('errors.removeMessageFailed'));
+        }
+      },
+      [displayedMessages, setMessages, task.id, api, projectDir, t],
+    );
+
+    const handleAddTodo = useCallback(
+      async (name: string) => {
+        try {
+          const updatedTodos = await api.addTodo(projectDir, task.id, name);
+          setTodoItems(task.id, () => updatedTodos);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error adding todo:', error);
+        }
+      },
+      [api, projectDir, task.id, setTodoItems],
+    );
+
+    const handleToggleTodo = useCallback(
+      async (name: string, completed: boolean) => {
+        try {
+          const updatedTodos = await api.updateTodo(projectDir, task.id, name, {
+            completed,
+          });
+          setTodoItems(task.id, () => updatedTodos);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error toggling todo:', error);
+        }
+      },
+      [api, projectDir, task.id, setTodoItems],
+    );
+
+    const handleUpdateTodo = useCallback(
+      async (name: string, updates: Partial<TodoItem>) => {
+        try {
+          const updatedTodos = await api.updateTodo(projectDir, task.id, name, updates);
+          setTodoItems(task.id, () => updatedTodos);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error updating todo:', error);
+        }
+      },
+      [api, projectDir, task.id, setTodoItems],
+    );
+
+    const handleDeleteTodo = useCallback(
+      async (name: string) => {
+        try {
+          const updatedTodos = await api.deleteTodo(projectDir, task.id, name);
+          setTodoItems(task.id, () => updatedTodos);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error deleting todo:', error);
+        }
+      },
+      [api, projectDir, task.id, setTodoItems],
+    );
+
+    const handleClearAllTodos = useCallback(async () => {
       try {
-        await api.removeMessage(project.baseDir, task.id, messageToRemove.id);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to remove message:', error);
-        setMessages(task.id, () => originalMessages);
-        showErrorNotification(t('errors.removeMessageFailed'));
-      }
-    };
-
-    const handleAddTodo = async (name: string) => {
-      try {
-        const updatedTodos = await api.addTodo(project.baseDir, task.id, name);
-        setTodoItems(task.id, () => updatedTodos);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error adding todo:', error);
-      }
-    };
-
-    const handleToggleTodo = async (name: string, completed: boolean) => {
-      try {
-        const updatedTodos = await api.updateTodo(project.baseDir, task.id, name, {
-          completed,
-        });
-        setTodoItems(task.id, () => updatedTodos);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error toggling todo:', error);
-      }
-    };
-
-    const handleUpdateTodo = async (name: string, updates: Partial<TodoItem>) => {
-      try {
-        const updatedTodos = await api.updateTodo(project.baseDir, task.id, name, updates);
-        setTodoItems(task.id, () => updatedTodos);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error updating todo:', error);
-      }
-    };
-
-    const handleDeleteTodo = async (name: string) => {
-      try {
-        const updatedTodos = await api.deleteTodo(project.baseDir, task.id, name);
-        setTodoItems(task.id, () => updatedTodos);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error deleting todo:', error);
-      }
-    };
-
-    const handleClearAllTodos = async () => {
-      try {
-        const updatedTodos = await api.clearAllTodos(project.baseDir, task.id);
+        const updatedTodos = await api.clearAllTodos(projectDir, task.id);
         setTodoItems(task.id, () => updatedTodos);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Error clearing all todos:', error);
       }
-    };
+    }, [api, projectDir, task.id, setTodoItems]);
 
-    const handleShowTaskInfo = () => {
+    const handleShowTaskInfo = useCallback(() => {
       const taskInfo: TaskInfoMessage = {
         id: uuidv4(),
         type: 'task-info',
         content: '',
         task: JSON.parse(JSON.stringify(task)) as TaskData,
-        messageCount: messages.length || 0,
+        messageCount: displayedMessages.length || 0,
       };
       setMessages(task.id, (prevMessages) => [...prevMessages, taskInfo]);
-    };
+    }, [task, displayedMessages, setMessages]);
 
-    const handleTerminalViewResize = () => {
+    const handleTerminalViewResize = useCallback(() => {
       terminalViewRef.current?.resize();
-    };
+    }, [terminalViewRef]);
 
-    const handleSidebarResize = async (_, data: ResizeCallbackData) => {
-      setSidebarWidth(data.size.width);
-    };
+    const handleSidebarResize = useCallback(
+      async (_, data: ResizeCallbackData) => {
+        setSidebarWidth(data.size.width);
+      },
+      [setSidebarWidth],
+    );
 
-    const handleToggleFilesSidebarCollapse = () => {
+    const handleToggleFilesSidebarCollapse = useCallback(() => {
       setIsFilesSidebarCollapsed(!isFilesSidebarCollapsed);
-    };
+    }, [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed]);
 
-    const handleCopyTerminalOutput = (output: string) => {
-      promptFieldRef.current?.appendText(output);
-    };
+    const handleCopyTerminalOutput = useCallback(
+      (output: string) => {
+        promptFieldRef.current?.appendText(output);
+      },
+      [promptFieldRef],
+    );
 
-    const handleAutoApproveChanged = (autoApprove: boolean) => {
-      updateTask({
-        autoApprove,
-      });
-    };
+    const handleAutoApproveChanged = useCallback(
+      (autoApprove: boolean) => {
+        updateTask(task.id, {
+          autoApprove,
+        });
+      },
+      [updateTask, task.id],
+    );
 
-    const handleAnswerQuestion = (answer: string) => {
-      answerQuestion(task.id, answer);
-    };
+    const handleAnswerQuestion = useCallback(
+      (answer: string) => {
+        answerQuestion(task.id, answer);
+      },
+      [answerQuestion, task.id],
+    );
 
-    const handleInterruptResponse = () => {
+    const handleInterruptResponse = useCallback(() => {
       interruptResponse(task.id);
-    };
+      updateOptimisticTaskState(task.id, DefaultTaskState.Interrupted);
+    }, [interruptResponse, task.id, updateOptimisticTaskState]);
+
+    const handleHandoff = useCallback(
+      async (focus?: string) => {
+        try {
+          await api.handoffConversation(projectDir, task.id, focus);
+        } catch (error) {
+          showErrorNotification(error instanceof Error ? error.message : String(error));
+        }
+      },
+      [api, projectDir, task.id],
+    );
+
+    const handleShowFileDialog = useCallback(() => {
+      setAddFileDialogOptions({
+        readOnly: false,
+      });
+    }, []);
+
+    const setMessagesRef = useCallback((node: MessagesRef | VirtualizedMessagesRef | null) => {
+      messagesRef.current = node;
+      if (node?.container) {
+        setSearchContainer(node.container);
+      }
+    }, []);
+
+    const handleRefreshAllFiles = useCallback((useGit?: boolean) => refreshAllFiles(task.id, useGit), [refreshAllFiles, task.id]);
 
     if (!projectSettings || !settings) {
       return <LoadingOverlay message={t('common.loadingProjectSettings')} />;
@@ -444,11 +573,11 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     return (
       <div className={clsx('h-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative', isMobile ? 'flex flex-col' : 'flex')}>
         {!loaded && <LoadingOverlay message={t('common.loadingTask')} />}
-        {messagesPending && transitionMessages.length === 0 && <LoadingOverlay message={t('common.loadingMessages')} />}
+        {messagesPending && displayedMessages.length === 0 && <LoadingOverlay message={t('common.loadingMessages')} />}
         <div className="flex flex-col flex-grow overflow-hidden">
           <TaskBar
             ref={projectTopBarRef}
-            baseDir={project.baseDir}
+            baseDir={projectDir}
             task={task}
             modelsData={aiderModelsData}
             mode={currentMode}
@@ -477,13 +606,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 <>
                   {settings.virtualizedRendering ? (
                     <VirtualizedMessages
-                      ref={(node) => {
-                        messagesRef.current = node;
-                        if (node?.container) {
-                          setSearchContainer(node.container);
-                        }
-                      }}
-                      baseDir={project.baseDir}
+                      ref={setMessagesRef}
+                      baseDir={projectDir}
                       taskId={task.id}
                       task={task}
                       messages={displayedMessages}
@@ -498,16 +622,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       onArchiveTask={handleArchiveTask}
                       onUnarchiveTask={handleUnarchiveTask}
                       onDeleteTask={handleDeleteTask}
+                      onInterrupt={handleInterruptResponse}
                     />
                   ) : (
                     <Messages
-                      ref={(node) => {
-                        messagesRef.current = node;
-                        if (node?.container) {
-                          setSearchContainer(node.container);
-                        }
-                      }}
-                      baseDir={project.baseDir}
+                      ref={setMessagesRef}
+                      baseDir={projectDir}
                       taskId={task.id}
                       task={task}
                       messages={displayedMessages}
@@ -522,6 +642,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       onArchiveTask={handleArchiveTask}
                       onUnarchiveTask={handleUnarchiveTask}
                       onDeleteTask={handleDeleteTask}
+                      onInterrupt={handleInterruptResponse}
+                      onForkFromMessage={handleForkFromMessage}
                     />
                   )}
                 </>
@@ -539,7 +661,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
             >
               <TerminalView
                 ref={terminalViewRef}
-                baseDir={project.baseDir}
+                baseDir={projectDir}
                 taskId={task.id}
                 visible={terminalVisible}
                 className="border-t border-border-dark-light flex-grow"
@@ -567,7 +689,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               )}
               <PromptField
                 ref={promptFieldRef}
-                baseDir={project.baseDir}
+                baseDir={projectDir}
                 taskId={task.id}
                 task={task}
                 inputHistory={inputHistory}
@@ -600,6 +722,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 onAutoApproveChanged={handleAutoApproveChanged}
                 showSettingsPage={showSettingsPage}
                 showTaskInfo={handleShowTaskInfo}
+                handoffConversation={handleHandoff}
               />
             </div>
           </div>
@@ -640,25 +763,21 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               >
                 <div className="flex flex-col h-full">
                   <FilesContextInfoContent
-                    baseDir={project.baseDir}
+                    baseDir={projectDir}
                     taskId={task.id}
                     allFiles={allFiles}
                     contextFiles={contextFiles}
                     tokensInfo={tokensInfo}
-                    aiderTotalCost={aiderTotalCost}
+                    aiderTotalCost={task.aiderTotalCost}
                     maxInputTokens={currentModel?.maxInputTokens || 0}
                     clearMessages={clearMessages}
                     runCommand={runCommand}
                     resetTask={handleResetTask}
                     mode={currentMode}
-                    showFileDialog={() =>
-                      setAddFileDialogOptions({
-                        readOnly: false,
-                      })
-                    }
+                    showFileDialog={handleShowFileDialog}
                     task={task}
                     updateTask={updateTask}
-                    refreshAllFiles={(useGit) => refreshAllFiles(task.id, useGit)}
+                    refreshAllFiles={handleRefreshAllFiles}
                   />
                 </div>
               </ResizableBox>
@@ -668,7 +787,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
         {addFileDialogOptions && (
           <AddFileDialog
-            baseDir={project.baseDir}
+            baseDir={projectDir}
             taskId={task.id}
             onClose={() => {
               setAddFileDialogOptions(null);
@@ -682,12 +801,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           <MobileSidebar
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
-            baseDir={project.baseDir}
+            baseDir={projectDir}
             taskId={task.id}
             allFiles={allFiles}
             contextFiles={contextFiles}
             tokensInfo={tokensInfo}
-            aiderTotalCost={aiderTotalCost}
+            aiderTotalCost={task.aiderTotalCost}
             maxInputTokens={maxInputTokens}
             clearMessages={clearMessages}
             runCommand={runCommand}

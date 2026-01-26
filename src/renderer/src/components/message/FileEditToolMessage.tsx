@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill, RiCloseCircleFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
 import { CgSpinner } from 'react-icons/cg';
@@ -14,12 +14,12 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 
-export const FileEditToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
   const { t } = useTranslation();
   const expandableRef = useRef<ExpandableMessageBlockRef>(null);
-  const [hasClosedOnError, setHasClosedOnError] = useState(false);
 
   const filePath = (message.args.filePath as string) || '';
   const searchTerm = (message.args.searchTerm as string) || '';
@@ -30,13 +30,13 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false }: Prop
   const language = getLanguageFromPath(filePath);
 
   const isDenied = content && content.startsWith('File edit to');
+  const shouldCloseOnError = content && !content.startsWith('Successfully');
 
-  useEffect(() => {
-    if (content && !content.startsWith('Successfully') && !hasClosedOnError) {
-      expandableRef.current?.close();
-      setHasClosedOnError(true);
+  useLayoutEffect(() => {
+    if (shouldCloseOnError && expandableRef.current) {
+      expandableRef.current.close();
     }
-  }, [content, hasClosedOnError]);
+  }, [shouldCloseOnError]);
 
   const title = (
     <div className="flex items-center gap-2 w-full">
@@ -115,6 +115,7 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false }: Prop
       usageReport={message.usageReport}
       onRemove={onRemove}
       initialExpanded={true}
+      onFork={onFork}
     />
   );
 };

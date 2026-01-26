@@ -28,6 +28,7 @@ import {
   AgentProfilesUpdatedData,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
+  TaskCreatedData,
 } from '@common/types';
 
 import type { BrowserWindow } from 'electron';
@@ -266,9 +267,14 @@ export class EventManager {
   }
 
   // Task lifecycle events
-  sendTaskCreated(task: TaskData): void {
-    this.sendToMainWindow('task-created', task);
-    this.broadcastToEventConnectors('task-created', task);
+  sendTaskCreated(task: TaskData, activate?: boolean): void {
+    const eventData: TaskCreatedData = {
+      baseDir: task.baseDir,
+      task,
+      activate,
+    };
+    this.sendToMainWindow('task-created', eventData);
+    this.broadcastToEventConnectors('task-created', eventData);
   }
 
   sendTaskInitialized(task: TaskData): void {

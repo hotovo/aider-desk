@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { CgTerminal } from 'react-icons/cg';
 import { FaRegQuestionCircle } from 'react-icons/fa';
 import { AiOutlineFileSearch } from 'react-icons/ai';
@@ -45,6 +46,8 @@ type Props = {
   onModeChange: (mode: Mode) => void;
 };
 
-export const ModeSelector = ({ mode, onModeChange }: Props) => {
+export const ModeSelector = memo(({ mode, onModeChange }: Props) => {
   return <ItemSelector items={MODE_ITEMS} selectedValue={mode} onChange={onModeChange} />;
-};
+});
+
+ModeSelector.displayName = 'ModeSelector';

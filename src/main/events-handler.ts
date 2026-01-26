@@ -19,6 +19,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TaskStateData,
   TodoItem,
   UsageDataRow,
@@ -238,6 +239,15 @@ export class EventsHandler {
     }
   }
 
+  async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+    const mode = this.store.getProjectSettings(baseDir).currentMode || 'agent';
+    await task.handoffConversation(mode, focus);
+  }
+
   async loadInputHistory(baseDir: string): Promise<string[]> {
     return await this.projectManager.getProject(baseDir).loadInputHistory();
   }
@@ -255,7 +265,7 @@ export class EventsHandler {
   }
 
   async addFile(baseDir: string, taskId: string, filePath: string, readOnly = false): Promise<void> {
-    void this.projectManager.getProject(baseDir).getTask(taskId)?.addFile({ path: filePath, readOnly });
+    void this.projectManager.getProject(baseDir).getTask(taskId)?.addFiles({ path: filePath, readOnly });
   }
 
   dropFile(baseDir: string, taskId: string, filePath: string): void {
@@ -300,7 +310,7 @@ export class EventsHandler {
 
       await fs.writeFile(absoluteImagePath, imageBuffer);
 
-      await task.addFile({ path: imagePath, readOnly: true });
+      await task.addFiles({ path: imagePath, readOnly: true });
     } catch (error) {
       logger.error('Error pasting image:', error);
       task.addLogMessage('error', `Failed to paste image: ${error instanceof Error ? error.message : String(error)}`);
@@ -569,7 +579,7 @@ export class EventsHandler {
       }
 
       await fs.writeFile(targetFilePath, `Scraped content of ${url}:\n\n${content}`);
-      await task.addFile({
+      await task.addFiles({
         path: path.relative(baseDir, targetFilePath),
         readOnly: true,
       });
@@ -585,8 +595,8 @@ export class EventsHandler {
     }
   }
 
-  async createNewTask(baseDir: string): Promise<TaskData> {
-    return await this.projectManager.getProject(baseDir).createNewTask();
+  async createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData> {
+    return await this.projectManager.getProject(baseDir).createNewTask(params);
   }
 
   async updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<TaskData | undefined> {
@@ -605,6 +615,10 @@ export class EventsHandler {
 
   async duplicateTask(baseDir: string, taskId: string): Promise<TaskData> {
     return await this.projectManager.getProject(baseDir).duplicateTask(taskId);
+  }
+
+  async forkTask(baseDir: string, taskId: string, messageId: string): Promise<TaskData> {
+    return await this.projectManager.getProject(baseDir).forkTask(taskId, messageId);
   }
 
   async getTasks(baseDir: string): Promise<TaskData[]> {

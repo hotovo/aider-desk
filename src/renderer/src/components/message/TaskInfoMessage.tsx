@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { FaClipboard, FaFolderOpen } from 'react-icons/fa';
-import { MdAssignment } from 'react-icons/md';
+import { FaFolderOpen } from 'react-icons/fa';
+import { MdAssignment, MdClose } from 'react-icons/md';
 
 import { TaskInfoMessage as TaskInfoMessageType } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
@@ -18,15 +18,6 @@ export const TaskInfoMessage = ({ message, onRemove }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
   const { task } = message;
-
-  const handleCopyTaskId = async () => {
-    try {
-      await api.writeToClipboard(task.id);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to copy task ID:', error);
-    }
-  };
 
   const handleOpenFolder = async (path: string) => {
     try {
@@ -51,9 +42,7 @@ export const TaskInfoMessage = ({ message, onRemove }: Props) => {
           <MdAssignment className="w-4 h-4 flex-shrink-0 text-text-tertiary" />
           <span className="font-medium text-text-secondary">{task.name}</span>
         </div>
-        {onRemove && (
-          <IconButton icon={<FaClipboard className="w-3 h-3" />} onClick={handleCopyTaskId} tooltip={t('messages.copy')} className="p-1 flex-shrink-0" />
-        )}
+        {onRemove && <IconButton icon={<MdClose className="w-3 h-3" />} onClick={onRemove} className="p-1 flex-shrink-0" />}
       </div>
 
       <div className="space-y-1.5 text-text-secondary">

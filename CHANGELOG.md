@@ -1,12 +1,42 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.50.0]
+
+- further improvement to the rendering performance
+- properly showing the Aider cost
+- added option to disable thinking for Z.AI Coding Plan provider models
+- hidden pin and state change actions for new tasks
+- search field for messages (CTRL+F) properly showing only for active project
+- added optimistic user message on prompt submission for better user experience
+- updated notification messages to include task name and state
+- added support for terminals in the browser
+- added visual indicator to project tab when that project is in progress
+- improved usability of message virtual rendering
+- added Claude Agent SDK as a provider to use with Claude subscription
+- using Enter action on mobiles adds a new line instead of submitting the prompt
+- properly storing the handoff task context before executing it
+- fixed tooltip translation for TODO items actions
+- added action to fork a task from a specific message
+
+## [0.49.0]
 
 - improved responsiveness for small screen devices with mobile-first layouts for task sidebar, task bar, and prompt field components
 - added full-screen task sidebar on mobile with toggle button
 - added flexible layout adjustments for model selectors and dropdowns to prevent overflow on small screens
 - added action to remove any message in the conversation
 - added tooltip to read and edit file power tools to show the file path on hover
+- added support for subtasks with worktree inheritance
+- updated task tools with the subtask capabilities
+- added missing scrollbar to task sidebar on mobile devices
+- added Select all action into menu
+- ensuring to include usage in for LiteLLM models when streaming
+- added optimistic updates to redo user message and interrupt response
+- setting max width for the autocompletion popup in prompt field
+- added task search tools for searching within tasks and parent tasks using semantic search
+- properly interrupting determine task state action after agent completion
+- max output tokens for models is now undefined by default
+- added handoff feature to create a new task with focus from current conversation
+- changes made in mdx files are now properly showing up in diff viewer
 
 ## [0.48.1]
 

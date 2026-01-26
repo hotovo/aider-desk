@@ -2,6 +2,7 @@ export { AnthropicIcon } from './AnthropicIcon';
 export { AzureIcon } from './AzureIcon';
 export { BedrockIcon } from './BedrockIcon';
 export { CerebrasIcon } from './CerebrasIcon';
+export { ClaudeAgentSdkIcon } from './ClaudeAgentSdkIcon';
 export { DeepseekIcon } from './DeepseekIcon';
 export { GeminiIcon } from './GeminiIcon';
 export { GpustackIcon } from './GpustackIcon';
