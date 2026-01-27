@@ -56,7 +56,7 @@ export const EditFormatSelector = forwardRef<EditFormatSelectorRef, Props>(({ cu
 
   return (
     <div className="relative" ref={selectorRef}>
-      <button onClick={toggle} className="flex items-center hover:text-text-tertiary focus:outline-none transition-colors duration-200 text-xs">
+      <button onClick={toggle} className="flex items-center hover:text-text-tertiary focus:outline-none transition-colors duration-200 text-2xs">
         <span>{currentFormat || t('common.loading')}</span>
         <MdKeyboardArrowUp className="w-3 h-3 ml-1 transform rotate-180" />
       </button>

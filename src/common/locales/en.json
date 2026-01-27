@@ -926,7 +926,8 @@
     "cancelTodo": "Cancel",
     "noTodos": "No todo items",
     "confirmDelete": "Are you sure you want to delete this todo item?",
-    "clearAllTodos": "Clear all todo items"
+    "clearAllTodos": "Clear all todo items",
+    "handoffTodo": "Handoff to new task"
   },
   "tool": {
     "noDescription": "No description",

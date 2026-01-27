@@ -588,7 +588,7 @@ export const getShellPath = (): string => {
 /**
  * Find an executable in the shell PATH
  */
-export const findExecutableInPath = (executable: string): string | null => {
+export const findExecutableInPath = (executable: string, checkOnly = false): string | null => {
   logger.debug(`Finding executable: ${executable}`);
   const shellPath = getShellPath();
   const pathSep = getPathSeparator();
@@ -623,9 +623,11 @@ export const findExecutableInPath = (executable: string): string | null => {
     }
   }
 
-  logger.error(`Executable '${executable}' not found after searching ${searchedPaths} paths`, {
-    firstFewPaths: paths.slice(0, 5).join(', '),
-  });
+  if (!checkOnly) {
+    logger.error(`Executable '${executable}' not found after searching ${searchedPaths} paths`, {
+      firstFewPaths: paths.slice(0, 5).join(', '),
+    });
+  }
   return null;
 };
 

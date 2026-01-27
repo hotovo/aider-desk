@@ -3,6 +3,15 @@
 ## [UNRELEASED]
 
 - hiding the subtasks when parent task is archived
+- skipping model loading for disabled providers
+- updated visuals of model selectors
+- Claude Agent SDK provider only available when claude executable is present
+- added action to handoff a todo item to a new task
+
+## [0.50.1]
+
+- setting the executably path manually for Claude Agent SDK provider in Electron
+- fixed internal TypeError when processing the response
 
 ## [0.50.0]
 

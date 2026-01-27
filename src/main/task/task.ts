@@ -36,7 +36,7 @@ import {
   ModelInfo,
   TaskStateEmoji,
 } from '@common/types';
-import { extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import { extractProviderModel, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
@@ -1516,9 +1516,7 @@ export class Task {
         return null;
       }
 
-      // Parse providerId and actual modelId from the modelId string
-      const [providerId, ...modelIdParts] = modelName.split('/');
-      const modelId = modelIdParts.join('/');
+      const [providerId, modelId] = extractProviderModel(modelName);
 
       if (!providerId || !modelId) {
         return null;

@@ -902,7 +902,8 @@
     "cancelTodo": "取消",
     "noTodos": "没有待办事项",
     "confirmDelete": "确定要删除这个待办事项吗？",
-    "clearAllTodos": "清除所有任务"
+    "clearAllTodos": "清除所有任务",
+    "handoffTodo": "交接到新任务"
   },
   "tool": {
     "noDescription": "无描述",

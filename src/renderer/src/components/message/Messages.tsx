@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, memo, useRef } from 'react';
+import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
@@ -153,7 +153,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
             if (isGroupMessage(message)) {
               return (
                 <GroupMessageBlock
-                  key={message.id || index}
+                  key={message.id}
                   baseDir={baseDir}
                   taskId={taskId}
                   message={message}
@@ -168,7 +168,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
             }
             return (
               <MessageBlock
-                key={message.id || index}
+                key={message.id}
                 baseDir={baseDir}
                 taskId={taskId}
                 message={message}

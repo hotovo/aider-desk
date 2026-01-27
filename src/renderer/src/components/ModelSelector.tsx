@@ -5,6 +5,7 @@ import { useDebounce } from '@reactuses/core';
 import { twMerge } from 'tailwind-merge';
 import { Model, ProviderProfile } from '@common/types';
 import { getProviderModelId } from '@common/agent';
+import { extractProviderModel } from '@common/utils';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useDropdownState } from '@/hooks/useDropdownState';
@@ -30,6 +31,13 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
     const modelSelectorRef = useRef<HTMLDivElement>(null);
     const highlightedModelRef = useRef<HTMLDivElement>(null);
     const [optimisticSelectedModelId, setOptimisticSelectedModel] = useOptimistic(selectedModelId);
+
+    const getProviderName = (providerId: string) => {
+      const provider = providers.find((p) => p.id === providerId);
+      return provider?.name || t(`providers.${providerId}`);
+    };
+    const [selectedProviderId, selectedModel] = extractProviderModel(optimisticSelectedModelId || '');
+    const selectedProviderName = selectedProviderId ? getProviderName(selectedProviderId) : '';
 
     const { isOpen, state, open, close, toggle, updateState } = useDropdownState({
       initialState: { modelSearchTerm: '', highlightedModelIndex: -1 },
@@ -74,11 +82,6 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
       .sort((a, b) => a.providerId.localeCompare(b.providerId));
 
     const showCustomModelHint = filteredModels.length === 0 && state.modelSearchTerm.trim() !== '';
-
-    const getProviderName = (providerId: string) => {
-      const provider = providers.find((p) => p.id === providerId);
-      return provider?.name || t(`providers.${providerId}`);
-    };
 
     useClickOutside(modelSelectorRef, close);
 
@@ -133,13 +136,16 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
 
     const renderModelItem = (model: Model, index: number, isPreferred: boolean) => {
       const fullModelId = getProviderModelId(model);
-      const displayModelId = isPreferred ? fullModelId : model.id;
       index = index + (isPreferred ? 0 : preferredModels.length);
 
       const handleRemovePreferredModel = (e: MouseEvent) => {
         e.stopPropagation();
         removePreferredModel(fullModelId);
       };
+
+      const providerId = isPreferred ? extractProviderModel(fullModelId)[0] : model.providerId;
+      const modelIdPart = isPreferred ? extractProviderModel(fullModelId)[1] : model.id;
+      const providerName = getProviderName(providerId);
 
       return (
         <div
@@ -149,10 +155,17 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
         >
           <button
             onClick={() => onModelSelected(model)}
-            className={`flex-grow px-3 py-1 text-left text-xs
-                        ${fullModelId === optimisticSelectedModelId ? 'text-text-primary font-bold' : ''}`}
+            className={`flex-grow px-3 py-1 text-left ${fullModelId === optimisticSelectedModelId ? 'text-text-primary' : ''}`}
           >
-            {displayModelId}
+            {isPreferred ? (
+              <div className="text-xs">
+                {modelIdPart} <span className="text-text-muted text-2xs">({providerName})</span>
+              </div>
+            ) : (
+              <>
+                <div className="text-xs font-medium">{modelIdPart}</div>
+              </>
+            )}
           </button>
           {isPreferred && (
             <button
@@ -168,18 +181,29 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
     };
 
     return (
-      <div className="relative w-full" ref={modelSelectorRef}>
+      <div className="relative w-full flex" ref={modelSelectorRef}>
         <button
           onClick={optimisticSelectedModelId ? toggle : undefined}
           disabled={!optimisticSelectedModelId}
           className={twMerge(
-            'flex items-center focus:outline-none transition-colors duration-200 text-xs',
+            'focus:outline-none transition-colors duration-200 text-xs',
             optimisticSelectedModelId ? 'hover:text-text-tertiary' : 'text-text-muted cursor-not-allowed',
             className,
           )}
         >
-          <span>{optimisticSelectedModelId || t('common.loading')}</span>
-          <MdKeyboardArrowUp className={`w-3 h-3 ml-1 transform rotate-180 ${!optimisticSelectedModelId ? 'text-text-muted' : ''}`} />
+          {selectedProviderName && selectedModel ? (
+            <div className="flex items-end">
+              <div className="flex flex-col items-start flex-1 min-w-0 gap-0.5">
+                <div className="text-2xs text-text-muted leading-none">{selectedProviderName}</div>
+                <div className="flex items-center gap-1">
+                  <div className="text-2xs font-medium truncate leading-tight">{selectedModel}</div>
+                  <MdKeyboardArrowUp className="w-3 h-3 ml-1 flex-shrink-0 transform rotate-180" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <span>{t('common.loading')}</span>
+          )}
         </button>
         {isOpen && (
           <div className="absolute top-full left-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]">

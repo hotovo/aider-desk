@@ -263,3 +263,8 @@ export const isURL = (url: string): boolean => {
     return false;
   }
 };
+
+export const extractProviderModel = (modelId: string): [string, string] => {
+  const [providerId, ...modelParts] = modelId.split('/');
+  return [providerId, modelParts.join('/')];
+};
