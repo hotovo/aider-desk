@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.50.1]
+
+- setting the executably path manually for Claude Agent SDK provider in Electron
+
 ## [0.50.0]
 
 - further improvement to the rendering performance

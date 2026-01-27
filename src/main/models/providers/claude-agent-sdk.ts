@@ -12,6 +12,8 @@ import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { Task } from '@/task/task';
 import { calculateCost } from '@/models/providers/default';
+import { isDev, isElectron } from '@/app';
+import { CLAUDE_CODE_EXECUTABLE_PATH } from '@/constants';
 
 interface ClaudeCodeProviderMetadata {
   'claude-code': {
@@ -226,6 +228,10 @@ export const createClaudeAgentSdkLlm = (
   if (providerMetadata && typeof providerMetadata === 'object' && 'claude-code' in providerMetadata) {
     const metadata = (providerMetadata as ClaudeCodeProviderMetadata)['claude-code'] || {};
     settings.resume = metadata.sessionId;
+  }
+
+  if (!isDev() && isElectron()) {
+    settings.pathToClaudeCodeExecutable = CLAUDE_CODE_EXECUTABLE_PATH;
   }
 
   if (toolSet) {
