@@ -387,6 +387,19 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       onDeleteTask?.();
     }, [onDeleteTask]);
 
+    const handleForkFromMessage = useCallback(
+      async (message: Message) => {
+        try {
+          await api.forkTask(projectDir, task.id, message.id);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to fork task:', error);
+          showErrorNotification(t('errors.forkTaskFailed'));
+        }
+      },
+      [api, projectDir, task.id, t],
+    );
+
     const handleRemoveMessage = useCallback(
       async (messageToRemove: Message) => {
         const originalMessages = displayedMessages;
@@ -630,6 +643,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       onUnarchiveTask={handleUnarchiveTask}
                       onDeleteTask={handleDeleteTask}
                       onInterrupt={handleInterruptResponse}
+                      onForkFromMessage={handleForkFromMessage}
                     />
                   )}
                 </>

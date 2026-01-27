@@ -177,6 +177,12 @@ const DuplicateTaskSchema = z.object({
   taskId: z.string().min(1, 'Task id is required'),
 });
 
+const ForkTaskSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  messageId: z.string().min(1, 'Message id is required'),
+});
+
 const GetTaskContextDataSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   id: z.string().min(1, 'Task id is required'),
@@ -521,6 +527,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId } = parsed;
         const duplicatedTask = await this.eventsHandler.duplicateTask(projectDir, taskId);
         res.status(200).json(duplicatedTask);
+      }),
+    );
+
+    // Fork task from message
+    router.post(
+      '/project/tasks/fork',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ForkTaskSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, messageId } = parsed;
+        const forkedTask = await this.eventsHandler.forkTask(projectDir, taskId, messageId);
+        res.status(200).json(forkedTask);
       }),
     );
 

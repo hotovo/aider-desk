@@ -474,6 +474,13 @@ export class BrowserApi implements ApplicationAPI {
       taskId,
     });
   }
+  forkTask(baseDir: string, taskId: string, messageId: string): Promise<TaskData> {
+    return this.post('/project/tasks/fork', {
+      projectDir: baseDir,
+      taskId,
+      messageId,
+    });
+  }
   getTasks(baseDir: string): Promise<TaskData[]> {
     return this.get('/project/tasks', { projectDir: baseDir });
   }

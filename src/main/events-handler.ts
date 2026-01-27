@@ -617,6 +617,10 @@ export class EventsHandler {
     return await this.projectManager.getProject(baseDir).duplicateTask(taskId);
   }
 
+  async forkTask(baseDir: string, taskId: string, messageId: string): Promise<TaskData> {
+    return await this.projectManager.getProject(baseDir).forkTask(taskId, messageId);
+  }
+
   async getTasks(baseDir: string): Promise<TaskData[]> {
     return this.projectManager.getProject(baseDir).getTasks();
   }

@@ -380,9 +380,26 @@ export class Project {
     }
 
     const newTask = this.prepareTask(undefined, sourceTask.task);
+    await newTask.init();
     await newTask.duplicateFrom(sourceTask);
     this.eventManager.sendTaskCreated(newTask.task);
+
+    return newTask.task;
+  }
+
+  public async forkTask(taskId: string, messageId: string): Promise<TaskData> {
+    const sourceTask = this.tasks.get(taskId);
+    if (!sourceTask) {
+      throw new Error(`Task with id ${taskId} not found`);
+    }
+
+    const newTask = this.prepareTask(undefined, {
+      ...sourceTask.task,
+      parentId: sourceTask.task.parentId || sourceTask.task.id,
+    });
     await newTask.init();
+    await newTask.forkFrom(sourceTask, messageId);
+    this.eventManager.sendTaskCreated(newTask.task, true);
 
     return newTask.task;
   }

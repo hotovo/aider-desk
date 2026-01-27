@@ -12,9 +12,10 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 
-export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
   const { t } = useTranslation();
 
   const prompt = message.args.prompt as string;
@@ -156,5 +157,5 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Pr
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
+  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} onFork={onFork} />;
 };

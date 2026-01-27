@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsageReportData } from '@common/types';
-import { MdDeleteForever, MdEdit, MdRedo } from 'react-icons/md';
+import { MdCallSplit, MdDeleteForever, MdEdit, MdRedo } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
 
@@ -19,9 +19,10 @@ type Props = {
   remove?: () => void;
   redo?: () => void;
   edit?: () => void;
+  onFork?: () => void;
 };
 
-export const MessageBar = ({ className, content, usageReport, remove, redo, edit }: Props) => {
+export const MessageBar = ({ className, content, usageReport, remove, redo, edit, onFork }: Props) => {
   const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -46,11 +47,16 @@ export const MessageBar = ({ className, content, usageReport, remove, redo, edit
     setIsMenuOpen(false);
   };
 
+  const handleForkClick = () => {
+    onFork?.();
+    setIsMenuOpen(false);
+  };
+
   return (
     <div className={twMerge('mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative', className)}>
       {usageReport && <UsageInfo usageReport={usageReport} className="mt-[4px]" />}
       {content && <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />}
-      {(remove || redo || edit) && (
+      {(remove || redo || edit || onFork) && (
         <div ref={buttonRef}>
           <IconButton
             icon={<FaEllipsisVertical className="w-4 h-4" />}
@@ -59,8 +65,11 @@ export const MessageBar = ({ className, content, usageReport, remove, redo, edit
           />
         </div>
       )}
-      {isMenuOpen && (remove || redo || edit) && (
-        <div ref={menuRef} className="absolute right-0 bottom-4 mb-1 w-[120px] bg-bg-secondary-light border border-border-default-dark rounded shadow-lg z-10">
+      {isMenuOpen && (remove || redo || edit || onFork) && (
+        <div
+          ref={menuRef}
+          className="absolute right-0 bottom-4 mb-1 min-w-[120px] bg-bg-secondary-light border border-border-default-dark rounded shadow-lg z-10"
+        >
           <ul>
             {edit && (
               <li
@@ -78,6 +87,15 @@ export const MessageBar = ({ className, content, usageReport, remove, redo, edit
               >
                 <MdRedo className="w-4 h-4" />
                 <span className="whitespace-nowrap">{t('messages.redo')}</span>
+              </li>
+            )}
+            {onFork && (
+              <li
+                className="flex items-center gap-1 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                onClick={handleForkClick}
+              >
+                <MdCallSplit className="w-4 h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">{t('messages.forkFromHere')}</span>
               </li>
             )}
             {remove && (

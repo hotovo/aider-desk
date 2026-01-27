@@ -248,6 +248,8 @@
       "invalidTemperature": "温度必须在 0 到 2 之间",
       "duplicateId": "提供商 ID 已存在"
     },
+    "claudeAgentSdkAuthRequired": "此提供商需要安装和认证 Claude Code CLI。请从 https://claude.com/product/claude-code 安装并运行 `claude login` 进行认证。",
+    "claudeAgentSdkAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
     "overrides": {
       "title": "提供商覆盖",
       "resetToDefaults": "清除覆盖",
@@ -369,6 +371,7 @@
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
+    "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
@@ -730,6 +733,7 @@
     "delete": "删除",
     "redo": "重做",
     "edit": "编辑",
+    "forkFromHere": "从这里创建子任务",
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
     "group": "分组",
@@ -756,7 +760,8 @@
   "errors": {
     "frozenTitle": "AIDER冻结了?",
     "frozenMessage": "Aider进程似乎已冻结。您想重启任务吗?",
-    "removeMessageFailed": "删除消息失败 - 请重试"
+    "removeMessageFailed": "删除消息失败 - 请重试",
+    "forkTaskFailed": "从消息分叉任务失败 - 请重试"
   },
   "dialogs": {
     "confirm": "确认",

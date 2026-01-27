@@ -38,6 +38,7 @@ export type LlmProviderName =
   | 'azure'
   | 'bedrock'
   | 'cerebras'
+  | 'claude-agent-sdk'
   | 'deepseek'
   | 'gemini'
   | 'gpustack'
@@ -78,6 +79,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'azure',
   'bedrock',
   'cerebras',
+  'claude-agent-sdk',
   'deepseek',
   'gemini',
   'gpustack',
@@ -186,6 +188,13 @@ export interface CerebrasProvider extends LlmProviderBase {
 }
 export const isCerebrasProvider = (provider: LlmProviderBase): provider is CerebrasProvider => provider.name === 'cerebras';
 
+export interface ClaudeAgentSdkProvider extends LlmProviderBase {
+  name: 'claude-agent-sdk';
+  systemPrompt?: string;
+  mcpServers?: Record<string, unknown>;
+}
+export const isClaudeAgentSdkProvider = (provider: LlmProviderBase): provider is ClaudeAgentSdkProvider => provider.name === 'claude-agent-sdk';
+
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -275,6 +284,7 @@ export type LlmProvider =
   | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
+  | ClaudeAgentSdkProvider
   | DeepseekProvider
   | GroqProvider
   | GpustackProvider
@@ -294,6 +304,7 @@ export const DEFAULT_MODEL_TEMPERATURE = 0.0;
 export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> = {
   anthropic: 'claude-sonnet-4-5-20250929',
   cerebras: 'qwen-3-235b-a22b-instruct-2507',
+  'claude-agent-sdk': 'sonnet',
   deepseek: 'deepseek-chat',
   gemini: 'gemini-3-pro',
   groq: 'moonshotai/kimi-k2-instruct-0905',

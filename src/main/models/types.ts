@@ -37,7 +37,15 @@ export interface LlmProviderStrategy {
    * Creates a LanguageModel instance for the given provider and model
    * Each provider is responsible for loading its own credentials using getEffectiveEnvironmentVariable
    */
-  createLlm: (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string) => LanguageModelV2;
+  createLlm: (
+    profile: ProviderProfile,
+    model: Model,
+    settings: SettingsData,
+    projectDir: string,
+    toolSet?: ToolSet,
+    systemPrompt?: string,
+    providerMetadata?: unknown,
+  ) => LanguageModelV2;
 
   /**
    * Generates usage reports with provider-specific metadata and calculates cost internally

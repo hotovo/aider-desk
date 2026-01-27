@@ -109,6 +109,7 @@ src/
         azure.ts
         bedrock.ts
         cerebras.ts
+        claude-agent-sdk.ts
         deepseek.ts
         default.ts
         gemini.ts
@@ -235,6 +236,9 @@ src/
     index.d.ts
     index.ts
   renderer/
+    public/
+      manifest.json
+      sw.js
     src/
       api/
         browser-api.ts
@@ -342,6 +346,7 @@ src/
             AzureParameters.tsx
             BedrockParameters.tsx
             CerebrasParameters.tsx
+            ClaudeAgentSdkParameters.tsx
             DeepseekParameters.tsx
             DefaultModelOverrides.tsx
             EnableVoiceControl.tsx
@@ -538,6 +543,7 @@ src/
         AzureIcon.tsx
         BedrockIcon.tsx
         CerebrasIcon.tsx
+        ClaudeAgentSdkIcon.tsx
         DeepseekIcon.tsx
         GeminiIcon.tsx
         gpustack.png
@@ -1567,6 +1573,8 @@ File: src/common/locales/en.json
       "invalidTemperature": "Temperature must be between 0 and 2",
       "duplicateId": "Provider ID already exists"
     },
+    "claudeAgentSdkAuthRequired": "This provider requires Claude Code CLI installation and authentication. Install from https://claude.com/product/claude-code and run `claude login` to authenticate.",
+    "claudeAgentSdkAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
     "overrides": {
       "title": "Provider Overrides",
       "resetToDefaults": "Clear overrides",
@@ -1690,6 +1698,7 @@ File: src/common/locales/en.json
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
+    "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
@@ -2091,6 +2100,7 @@ File: src/common/locales/en.json
     "delete": "Delete",
     "redo": "Redo",
     "edit": "Edit",
+    "forkFromHere": "Fork from here",
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
     "group": "Group",
@@ -2117,7 +2127,8 @@ File: src/common/locales/en.json
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
     "frozenMessage": "Aider process seems to be frozen. Would you like to restart the task?",
-    "removeMessageFailed": "Failed to remove message - please try again"
+    "removeMessageFailed": "Failed to remove message - please try again",
+    "forkTaskFailed": "Failed to fork task - please try again"
   },
   "dialogs": {
     "confirm": "Confirm",
@@ -3041,6 +3052,8 @@ File: src/common/locales/zh.json
       "invalidTemperature": "温度必须在 0 到 2 之间",
       "duplicateId": "提供商 ID 已存在"
     },
+    "claudeAgentSdkAuthRequired": "此提供商需要安装和认证 Claude Code CLI。请从 https://claude.com/product/claude-code 安装并运行 `claude login` 进行认证。",
+    "claudeAgentSdkAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
     "overrides": {
       "title": "提供商覆盖",
       "resetToDefaults": "清除覆盖",
@@ -3162,6 +3175,7 @@ File: src/common/locales/zh.json
     "anthropic": "Anthropic",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
+    "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "groq": "Groq",
@@ -3523,6 +3537,7 @@ File: src/common/locales/zh.json
     "delete": "删除",
     "redo": "重做",
     "edit": "编辑",
+    "forkFromHere": "从这里创建子任务",
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
     "group": "分组",
@@ -3549,7 +3564,8 @@ File: src/common/locales/zh.json
   "errors": {
     "frozenTitle": "AIDER冻结了?",
     "frozenMessage": "Aider进程似乎已冻结。您想重启任务吗?",
-    "removeMessageFailed": "删除消息失败 - 请重试"
+    "removeMessageFailed": "删除消息失败 - 请重试",
+    "forkTaskFailed": "从消息分叉任务失败 - 请重试"
   },
   "dialogs": {
     "confirm": "确认",
@@ -4313,6 +4329,7 @@ export type LlmProviderName =
   | 'azure'
   | 'bedrock'
   | 'cerebras'
+  | 'claude-agent-sdk'
   | 'deepseek'
   | 'gemini'
   | 'gpustack'
@@ -4436,6 +4453,13 @@ export interface CerebrasProvider extends LlmProviderBase {
 }
 export const isCerebrasProvider = (provider: LlmProviderBase): provider is CerebrasProvider
 ⋮----
+export interface ClaudeAgentSdkProvider extends LlmProviderBase {
+  name: 'claude-agent-sdk';
+  systemPrompt?: string;
+  mcpServers?: Record<string, unknown>;
+}
+export const isClaudeAgentSdkProvider = (provider: LlmProviderBase): provider is ClaudeAgentSdkProvider
+⋮----
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -4528,6 +4552,7 @@ export type LlmProvider =
   | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
+  | ClaudeAgentSdkProvider
   | DeepseekProvider
   | GroqProvider
   | GpustackProvider
@@ -4687,6 +4712,7 @@ export interface ApplicationAPI {
   updateTask: (baseDir: string, id: string, updates: Partial<TaskData>) => Promise<boolean>;
   deleteTask: (baseDir: string, id: string) => Promise<boolean>;
   duplicateTask: (baseDir: string, taskId: string) => Promise<TaskData>;
+  forkTask: (baseDir: string, taskId: string, messageId: string) => Promise<TaskData>;
   getTasks: (baseDir: string) => Promise<TaskData[]>;
   loadTask: (baseDir: string, taskId: string) => Promise<TaskStateData>;
   exportTaskToMarkdown: (baseDir: string, taskId: string) => Promise<void>;
@@ -6459,12 +6485,13 @@ import {
   jsonSchema,
   type ModelMessage,
   NoSuchToolError,
+  smoothStream,
   type StepResult,
   streamText,
-  smoothStream,
   type Tool,
   type ToolCallOptions,
   type ToolSet,
+  type TypedToolResult,
   wrapLanguageModel,
 } from 'ai';
 import { delay, extractServerNameToolName } from '@common/utils';
@@ -6652,8 +6679,6 @@ const onStepFinish = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
 // Clean up abort controller only if we created it
 ⋮----
-// Always send a final "finished" message, regardless of whether there was text or tools
-⋮----
 private filterResultMessages(resultMessages: ContextMessage[])
 ⋮----
 private async prepareMessages(task: Task, profile: AgentProfile, contextMessages: ModelMessage[], contextFiles: ContextFile[]): Promise<ModelMessage[]>
@@ -6668,6 +6693,7 @@ async generateText(
     agentProfile: AgentProfile,
     systemPrompt: string,
     prompt: string,
+    projectDir: string,
     messages: ContextMessage[] = [],
     abortable = true,
     abortSignal?: AbortSignal,
@@ -6690,7 +6716,7 @@ isRunning()
 ⋮----
 private async processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
+    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
     task: Task,
     profile: AgentProfile,
     provider: ProviderProfile,
@@ -6701,17 +6727,15 @@ private async processStep<TOOLS extends ToolSet>(
 reasoningText: reasoningText?.substring(0, 100), // Log truncated reasoning
 text: text?.substring(0, 100), // Log truncated text
 ⋮----
-// Process text/reasoning content
-⋮----
-// only send usage report if there are no tool results
-⋮----
-// Process successful tool results *after* sending text/reasoning and handling errors
+const processToolResult = (toolResult: TypedToolResult<TOOLS>, isLast = true) =>
 ⋮----
 // Update the existing tool message with the result
 ⋮----
-i === toolResults.length - 1 ? usageReport : undefined, // Only add usage report to the last tool message
+isLast ? usageReport : undefined, // Only add usage report to the last tool message
 ⋮----
-// @ts-expect-error the id is there
+// move to the next one right away
+⋮----
+// Process successful tool results *after* sending text/reasoning and handling errors
 ⋮----
 // @ts-expect-error the id is there
 ⋮----
@@ -7833,6 +7857,110 @@ export const createCerebrasLlm = (profile: ProviderProfile, model: Model, settin
 // Model discovery functions
 
 ================
+File: src/main/models/providers/claude-agent-sdk.ts
+================
+import { claudeCode } from 'ai-sdk-provider-claude-code';
+import { type JSONSchema, JSONSchemaToZod } from '@dmitryrechkin/json-schema-to-zod';
+import { isClaudeAgentSdkProvider } from '@common/agent';
+import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+⋮----
+import type { ClaudeCodeSettings } from 'ai-sdk-provider-claude-code';
+import type { LanguageModelUsage, ToolSet } from 'ai';
+import type { LanguageModelV2, JSONSchema7 } from '@ai-sdk/provider';
+⋮----
+import logger from '@/logger';
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import { Task } from '@/task/task';
+import { calculateCost } from '@/models/providers/default';
+⋮----
+interface ClaudeCodeProviderMetadata {
+  'claude-code': {
+    costUsd?: number;
+    rawUsage: {
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+      input_tokens: number;
+      output_tokens: number;
+    };
+    lastMessageRawUsage?: {
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+      input_tokens: number;
+      output_tokens: number;
+    };
+    sessionId?: string;
+  };
+}
+⋮----
+export const loadClaudeAgentSdkModels = async (profile: ProviderProfile, _settings: SettingsData): Promise<LoadModelsResponse> =>
+⋮----
+const hasClaudeAgentSdkEnvVars = (_settings: SettingsData): boolean =>
+⋮----
+const getClaudeAgentSdkAiderMapping = (_provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+/**
+ * Normalizes the AI SDK ToolSet for Claude Agent SDK by:
+ * 1. Converting JSONSchema-based inputSchemas (from MCP tools) to Zod schemas
+ * 2. Wrapping specific tools to optimize their output
+ *
+ * This is necessary because:
+ * - Claude Agent SDK provider internally needs ZodRawShape to extract from inputSchema
+ * - Tools converted from MCP use jsonSchema() which wraps JSONSchema7, not Zod
+ * - Some tools return large amounts of data that need to be optimized
+ */
+const normalizeAiSdkToolSet = (toolSet: ToolSet): ToolSet =>
+⋮----
+// First, check if the inputSchema is a jsonSchema wrapper (from MCP tools)
+// and convert it to a proper Zod schema
+⋮----
+// Check if this is a jsonSchema() wrapper by looking for the jsonSchema property
+// The AI SDK's jsonSchema() function wraps a JSONSchema7 in a Schema object
+⋮----
+// Convert JSONSchema7 to Zod schema
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+⋮----
+// Check if this is the aider run_prompt tool
+⋮----
+// Run the original execute function
+⋮----
+// Optimize the result by removing responses and promptContext (same as optimizer.ts)
+⋮----
+// Check if this is the subagent run_task tool
+⋮----
+// Run the original execute function
+⋮----
+// Optimize the result by keeping only the last message (same as optimizer.ts)
+⋮----
+// If optimization fails, return the original result
+⋮----
+// For all other tools, use the normalized tool
+⋮----
+export const createClaudeAgentSdkLlm = (
+  _profile: ProviderProfile,
+  model: Model,
+  _settings: SettingsData,
+  _projectDir: string,
+  toolSet?: ToolSet,
+  systemPrompt?: string,
+  providerMetadata?: unknown,
+): LanguageModelV2 =>
+⋮----
+// setting MAX_MCP_OUTPUT_TOKENS to a high number to avoid errors
+⋮----
+// for now only tools from AiderDesk are allowed
+⋮----
+const getClaudeAgentSdkUsageReport = (
+  task: Task,
+  provider: ProviderProfile,
+  model: Model,
+  _usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+const getClaudeAgentSdkProviderParameters = (): Record<string, unknown> =>
+
+================
 File: src/main/models/providers/deepseek.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
@@ -8794,6 +8922,7 @@ import { anthropicProviderStrategy } from './providers/anthropic';
 import { azureProviderStrategy } from './providers/azure';
 import { bedrockProviderStrategy } from './providers/bedrock';
 import { cerebrasProviderStrategy } from './providers/cerebras';
+import { claudeAgentSdkProviderStrategy } from './providers/claude-agent-sdk';
 import { deepseekProviderStrategy } from './providers/deepseek';
 import { geminiProviderStrategy } from './providers/gemini';
 import { gpustackProviderStrategy } from './providers/gpustack';
@@ -8929,9 +9058,17 @@ getAiderModelMapping(modelName: string, projectDir: string): AiderModelMapping
 ⋮----
 private getProviderAiderMapping(provider: ProviderProfile, modelId: string, projectDir: string): AiderModelMapping
 ⋮----
-getModel(providerId: string, modelId: string, useModelInfoFallback = false): Model | undefined
+getModelSettings(providerId: string, modelId: string, useModelInfoFallback = false): Model | undefined
 ⋮----
-createLlm(provider: ProviderProfile, model: string | Model, settings: SettingsData, projectDir: string): LanguageModelV2
+createLlm(
+    provider: ProviderProfile,
+    model: string | Model,
+    settings: SettingsData,
+    projectDir: string,
+    toolSet?: ToolSet,
+    systemPrompt?: string,
+    providerMetadata?: unknown,
+): LanguageModelV2
 ⋮----
 // Resolve Model object if string is provided
 ⋮----
@@ -9007,7 +9144,15 @@ export interface LlmProviderStrategy {
    * Creates a LanguageModel instance for the given provider and model
    * Each provider is responsible for loading its own credentials using getEffectiveEnvironmentVariable
    */
-  createLlm: (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string) => LanguageModelV2;
+  createLlm: (
+    profile: ProviderProfile,
+    model: Model,
+    settings: SettingsData,
+    projectDir: string,
+    toolSet?: ToolSet,
+    systemPrompt?: string,
+    providerMetadata?: unknown,
+  ) => LanguageModelV2;
 
   /**
    * Generates usage reports with provider-specific metadata and calculates cost internally
@@ -9337,6 +9482,8 @@ public async deleteTask(taskId: string): Promise<void>
 // Then delete the parent task
 ⋮----
 public async duplicateTask(taskId: string): Promise<TaskData>
+⋮----
+public async forkTask(taskId: string, messageId: string): Promise<TaskData>
 ⋮----
 async getTasks(): Promise<TaskData[]>
 ⋮----
@@ -9796,6 +9943,8 @@ registerRoutes(router: Router): void
 // Delete session
 ⋮----
 // Duplicate task
+⋮----
+// Fork task from message
 ⋮----
 // Reset task
 ⋮----
@@ -10680,6 +10829,8 @@ import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, TaskCo
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
 ⋮----
+import type { ToolResultPart } from 'ai';
+⋮----
 import logger from '@/logger';
 import { Task } from '@/task';
 import { isDirectory, isFileIgnored } from '@/utils';
@@ -10760,12 +10911,6 @@ removeMessagesUpToLastUserMessage(): ContextMessage[]
 ⋮----
 toConnectorMessages(contextMessages: ContextMessage[] = this.messages):
 ⋮----
-// @ts-expect-error part.input type is complex, 'prompt' check is safe in this context
-⋮----
-// @ts-expect-error part.input type is complex, 'prompt' check is safe in this context
-⋮----
-// @ts-expect-error part.output.value.responses type is complex, safe in this context
-⋮----
 async save(): Promise<void>
 ⋮----
 private async cleanupContext(): Promise<void>
@@ -10806,21 +10951,11 @@ private autosave()
 ⋮----
 public getContextMessagesData(contextMessages: ContextMessage[] = this.messages): (UserMessageData | ResponseCompletedData | ToolData)[]
 ⋮----
-// Collect reasoning and text parts to combine them if both exist
-⋮----
-// Process combined reasoning and text content
-⋮----
-// Process tool-call parts
-⋮----
-// Ensure toolCall.toolCallId exists before proceeding
+const processToolResult = (part: ToolResultPart) =>
 ⋮----
 // Handle aider tool responses - create ResponseCompletedData for each response
 ⋮----
-// @ts-expect-error part.output.value.responses type is complex, safe in this context
-⋮----
 // Handle agent tool results - process all messages from subagent
-⋮----
-// @ts-expect-error part.output.value.messages type is complex, safe in this context
 ⋮----
 // Collect reasoning and text parts to combine them if both exist
 ⋮----
@@ -10828,7 +10963,42 @@ public getContextMessagesData(contextMessages: ContextMessage[] = this.messages)
 ⋮----
 // Process tool-call parts
 ⋮----
+const pushResponseCompletedData = (content = '') =>
+⋮----
+// Create tool message for tool-call parts
+⋮----
+// Now update tool messages with their responses from tool-results
+⋮----
 async generateContextMarkdown(): Promise<string | null>
+⋮----
+getMessagesUpTo(messageId: string): ContextMessage[]
+⋮----
+// If not found as a message ID, check if it's a toolCallId
+⋮----
+// If it's an assistant message with tool calls, we need to filter out tool calls
+⋮----
+// Filter the assistant message to keep only reasoning and text parts, exclude tool calls
+⋮----
+// If it's a tool message, we need to handle the assistant message with tool calls
+⋮----
+// messageId might be a toolCallId passed directly, or the message ID
+// Try to get the toolCallId from the message content
+⋮----
+// If messageId is a toolCallId that doesn't match the first result, search for it
+⋮----
+// Find the assistant message that contains this tool call
+⋮----
+// Clone messages up to and including the assistant message
+⋮----
+// Clone the assistant message and keep only tool calls up to and including the target
+⋮----
+// Add all tool messages up to and including the target
+⋮----
+// Check if this tool message contains a tool-result for a tool-call we kept
+⋮----
+// Check if this tool call is in the assistant message we kept
+⋮----
+// For non-tool messages or if we couldn't find the assistant message, return all messages up to the target
 
 ================
 File: src/main/task/index.ts
@@ -11512,6 +11682,18 @@ public async duplicateFrom(sourceTask: Task): Promise<void>
 // Copy messages
 ⋮----
 // Copy todos
+⋮----
+// Copy worktree if exists
+⋮----
+public async forkFrom(sourceTask: Task, messageId: string): Promise<void>
+⋮----
+// Copy basic task data
+⋮----
+// Copy ALL context files from source task (not just up to fork point)
+⋮----
+// Get messages up to and including the specified message
+⋮----
+// Save forked messages into new task
 ⋮----
 // Copy worktree if exists
 ⋮----
@@ -12963,6 +13145,8 @@ async deleteTask(baseDir: string, id: string): Promise<void>
 ⋮----
 async duplicateTask(baseDir: string, taskId: string): Promise<TaskData>
 ⋮----
+async forkTask(baseDir: string, taskId: string, messageId: string): Promise<TaskData>
+⋮----
 async getTasks(baseDir: string): Promise<TaskData[]>
 ⋮----
 async loadTask(baseDir: string, taskId: string): Promise<TaskStateData>
@@ -13696,6 +13880,61 @@ const listener = (_: Electron.IpcRendererEvent, data: SettingsData) =>
 // eslint-disable-next-line no-console
 
 ================
+File: src/renderer/public/manifest.json
+================
+{
+  "name": "AiderDesk",
+  "short_name": "AiderDesk",
+  "description": "AI-powered coding assistant desktop application",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1c2025",
+  "theme_color": "#3b82f6",
+  "orientation": "any",
+  "categories": ["development", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
+
+================
+File: src/renderer/public/sw.js
+================
+// Minimal service worker for PWA recognition
+// No caching - just exists to enable PWA features
+⋮----
+// Skip waiting to activate immediately
+⋮----
+// Claim clients immediately
+⋮----
+// Pass through all fetch requests without caching
+
+================
 File: src/renderer/src/api/browser-api.ts
 ================
 import {
@@ -13881,6 +14120,7 @@ createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData>
 updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<boolean>
 deleteTask(baseDir: string, id: string): Promise<boolean>
 duplicateTask(baseDir: string, taskId: string): Promise<TaskData>
+forkTask(baseDir: string, taskId: string, messageId: string): Promise<TaskData>
 getTasks(baseDir: string): Promise<TaskData[]>
 loadTask(baseDir: string, id: string): Promise<TaskStateData>
 ⋮----
@@ -15354,11 +15594,10 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 <div className=
-⋮----
-return <ExpandableMessageBlock title=
 
 ================
 File: src/renderer/src/components/message/BashToolMessage.tsx
@@ -15381,6 +15620,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 const handleScrollToBottom = () =>
@@ -15388,8 +15628,6 @@ const handleScrollToBottom = () =>
 const handleExpandedChange = (open: boolean) =>
 ⋮----
 aria-label=
-⋮----
-<ExpandableMessageBlock title=
 
 ================
 File: src/renderer/src/components/message/CommandOutputMessageBlock.tsx
@@ -15447,6 +15685,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 {/* Task Details */}
@@ -15485,6 +15724,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 {/* Memory Details */}
@@ -15508,6 +15748,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 {/* Success Message */}
@@ -15532,6 +15773,7 @@ type Props = {
   onRemove?: () => void;
   initialExpanded?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onFork?: () => void;
 };
 ⋮----
 export interface ExpandableMessageBlockRef {
@@ -15561,6 +15803,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 return <ExpandableMessageBlock title=
@@ -15584,6 +15827,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 <strong>
@@ -15606,13 +15850,12 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 {/* File content - filter out line numbers if present */}
 ⋮----
 {/* Parameter information */}
-⋮----
-return <ExpandableMessageBlock title=
 
 ================
 File: src/renderer/src/components/message/FileWriteToolMessage.tsx
@@ -15634,6 +15877,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 const formatName = (name: string): string =>
@@ -15656,6 +15900,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 {/* Message Header */}
@@ -15684,6 +15929,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 type ContextFile = {
@@ -15718,6 +15964,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 return <ExpandableMessageBlock title=
@@ -15739,6 +15986,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 return <ExpandableMessageBlock title=
@@ -15818,6 +16066,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 // Handle array data (new format)
@@ -15845,6 +16094,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 type Task = {
@@ -15935,7 +16185,7 @@ File: src/renderer/src/components/message/MessageBar.tsx
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UsageReportData } from '@common/types';
-import { MdDeleteForever, MdEdit, MdRedo } from 'react-icons/md';
+import { MdCallSplit, MdDeleteForever, MdEdit, MdRedo } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
 ⋮----
@@ -15953,6 +16203,7 @@ type Props = {
   remove?: () => void;
   redo?: () => void;
   edit?: () => void;
+  onFork?: () => void;
 };
 ⋮----
 const handleRemoveClick = () =>
@@ -15960,6 +16211,8 @@ const handleRemoveClick = () =>
 const handleRedoClick = () =>
 ⋮----
 const handleEditClick = () =>
+⋮----
+const handleForkClick = () =>
 ⋮----
 <div className=
 ⋮----
@@ -16060,6 +16313,7 @@ type Props = {
   redo?: () => void;
   edit?: (content: string) => void;
   onInterrupt?: () => void;
+  onFork?: () => void;
 };
 ⋮----
 const MessageBlockComponent = (
@@ -16110,6 +16364,7 @@ type Props = {
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
   onInterrupt?: () => void;
+  onForkFromMessage?: (message: Message) => void;
 };
 ⋮----
 // Group messages by promptContext.group.id
@@ -16159,6 +16414,7 @@ type Props = {
   renderMarkdown: boolean;
   compact?: boolean;
   onRemove?: () => void;
+  onFork?: () => void;
 };
 ⋮----
 export const ResponseMessageBlock = (
@@ -16184,6 +16440,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 const loadMemories = async () =>
@@ -16223,6 +16480,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 return <ExpandableMessageBlock title=
@@ -16244,6 +16502,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 return <ExpandableMessageBlock title=
@@ -16265,6 +16524,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 return <ExpandableMessageBlock title=
@@ -16284,6 +16544,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 {/* Memory Details */}
@@ -16458,6 +16719,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 const formatName = (name: string): string =>
@@ -16497,6 +16759,7 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 ⋮----
 {/* Memory ID */}
@@ -16539,6 +16802,7 @@ type Props = {
   onRemove?: () => void;
   onRedo?: () => void;
   onEdit?: (content: string) => void;
+  onFork?: () => void;
 };
 ⋮----
 export const UserMessageBlock = (
@@ -16731,6 +16995,7 @@ type Props = {
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
   onInterrupt?: () => void;
+  onForkFromMessage?: (message: Message) => void;
 };
 ⋮----
 // Group messages by promptContext.group.id
@@ -16746,6 +17011,8 @@ estimateSize: () => 44, // Initial estimate, will be measured
 const exportToImage = async () =>
 ⋮----
 // Show notification that export is not available with virtualized rendering
+⋮----
+onFork=
 ⋮----
 aria-label=
 
@@ -16896,6 +17163,17 @@ export const CerebrasParameters = (
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 label=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/ClaudeAgentSdkParameters.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { ClaudeAgentSdkProvider } from '@common/agent';
+⋮----
+type Props = {
+  provider: ClaudeAgentSdkProvider;
+  onChange: (updated: ClaudeAgentSdkProvider) => void;
+};
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/DeepseekParameters.tsx
@@ -18037,6 +18315,7 @@ import {
   AzureIcon,
   BedrockIcon,
   CerebrasIcon,
+  ClaudeAgentSdkIcon,
   DeepseekIcon,
   GeminiIcon,
   GpustackIcon,
@@ -18151,6 +18430,7 @@ import {
   AnthropicParameters,
   AzureParameters,
   BedrockParameters,
+  ClaudeAgentSdkParameters,
   DeepseekParameters,
   GeminiParameters,
   GpustackParameters,
@@ -18236,6 +18516,7 @@ import {
   AzureIcon,
   BedrockIcon,
   CerebrasIcon,
+  ClaudeAgentSdkIcon,
   DeepseekIcon,
   GeminiIcon,
   GpustackIcon,
@@ -19181,6 +19462,8 @@ setEditingMessageIndex(null); // Clear editing state
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// eslint-disable-next-line no-console
+⋮----
 <div className=
 ⋮----
 
@@ -19732,6 +20015,15 @@ const getAutocompleteDetailLabel = (item: string): [string | null, boolean] =>
 // Check if it's a custom command
 ⋮----
 const toggleVoice = () =>
+⋮----
+// On desktop, Shift+Enter inserts a new line
+⋮----
+// On mobile, Enter inserts a new line (default behavior)
+// On desktop, Enter submits the prompt
+⋮----
+return false; // Allow default behavior (new line)
+⋮----
+// Desktop behavior: submit or handle special cases
 ⋮----
 onClick=
 ⋮----
@@ -22182,6 +22474,15 @@ export const BedrockIcon = ({ width = 64, height = 64, className }: Props) => (
 
 ================
 File: src/renderer/src/icons/CerebrasIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+
+================
+File: src/renderer/src/icons/ClaudeAgentSdkIcon.tsx
 ================
 type Props = {
   width?: number;
@@ -25090,6 +25391,16 @@ const getMostRecentUpdatedAt = (task: TaskData, allTasks: TaskData[]): string | 
 ⋮----
 export const getSortedVisibleTasks = (tasks: TaskData[], showArchived: boolean = false, searchQuery: string = ''): TaskData[] =>
 ⋮----
+// When showArchived is false, exclude tasks whose parent is archived
+// Check each task's parent exists in the original tasks and is not archived
+⋮----
+// Find the parent in the original tasks array
+⋮----
+// Include the task if:
+// - showArchived is true (show everything), OR
+// - parent doesn't exist (orphan), OR
+// - parent exists and is not archived
+⋮----
 const sortFn = (a: TaskData, b: TaskData) =>
 ⋮----
 // Pinned tasks come first
@@ -25397,11 +25708,27 @@ File: src/renderer/index.html
     />
     <link rel="stylesheet" href="/src/fonts.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AiderDesk">
+    <link rel="apple-touch-icon" href="/icon-192.png">
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register service worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {
+            // Silently fail if service worker registration fails
+          });
+        });
+      }
+    </script>
   </body>
 </html>
 
@@ -25628,7 +25955,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.50.0-dev",
+  "version": "0.51.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -25685,6 +26012,7 @@ File: package.json
     "@aws-sdk/credential-providers": "^3.782.0",
     "@aws-sdk/types": "^3.540.0",
     "@codemirror/autocomplete": "^6.18.7",
+    "@dmitryrechkin/json-schema-to-zod": "^1.0.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dotenvx/dotenvx": "^1.24.5",
@@ -25701,7 +26029,7 @@ File: package.json
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
-    "@probelabs/probe": "^0.6.0-rc161",
+    "@probelabs/probe": "0.6.0-rc161",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
     "@requesty/ai-sdk": "^2.1.2",
@@ -25721,6 +26049,7 @@ File: package.json
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
     "ai": "^5.0.119",
+    "ai-sdk-provider-claude-code": "^2.3.0",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",

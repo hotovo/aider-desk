@@ -2,6 +2,10 @@
 
 ## [UNRELEASED]
 
+- hiding the subtasks when parent task is archived
+
+## [0.50.0]
+
 - further improvement to the rendering performance
 - properly showing the Aider cost
 - added option to disable thinking for Z.AI Coding Plan provider models
@@ -12,6 +16,11 @@
 - added support for terminals in the browser
 - added visual indicator to project tab when that project is in progress
 - improved usability of message virtual rendering
+- added Claude Agent SDK as a provider to use with Claude subscription
+- using Enter action on mobiles adds a new line instead of submitting the prompt
+- properly storing the handoff task context before executing it
+- fixed tooltip translation for TODO items actions
+- added action to fork a task from a specific message
 
 ## [0.49.0]
 

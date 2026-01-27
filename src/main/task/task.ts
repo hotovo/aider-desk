@@ -88,6 +88,7 @@ export const EMPTY_TASK_DATA: TaskData = {
   contextCompactingThreshold: 0,
   weakModelLocked: false,
   parentId: null,
+  lastAgentProviderMetadata: undefined,
 };
 
 const getTaskFinishedNotificationText = (task: TaskData) => {
@@ -867,6 +868,7 @@ export class Task {
         agentProfile,
         this.promptsManager.getGenerateTaskNamePrompt(this),
         `Generate a concise task name for this request:\n\n${prompt.length > maxPromptLength ? prompt.substring(0, maxPromptLength) + '...' : prompt}\n\nOnly answer with the task name, nothing else.`,
+        this.getProjectDir(),
         undefined,
         false,
       );
@@ -917,7 +919,7 @@ export class Task {
 
       this.addLogMessage('loading', 'Updating task state...');
 
-      const answer = await this.agent.generateText(agentProfile, this.promptsManager.getUpdateTaskStatePrompt(this), wrappedMessage);
+      const answer = await this.agent.generateText(agentProfile, this.promptsManager.getUpdateTaskStatePrompt(this), wrappedMessage, this.getProjectDir());
       if (!answer) {
         logger.warn('Task state determination interrupted');
         return null;
@@ -1522,7 +1524,7 @@ export class Task {
         return null;
       }
 
-      const model = this.modelManager.getModel(providerId, modelId, true);
+      const model = this.modelManager.getModelSettings(providerId, modelId, true);
       if (!model) {
         return null;
       }
@@ -1907,6 +1909,9 @@ export class Task {
       updateContextInfo,
     });
 
+    await this.updateTask({
+      lastAgentProviderMetadata: null,
+    });
     this.contextManager.clearMessages();
     await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
@@ -1963,6 +1968,11 @@ export class Task {
     saveToDb = true,
     finished = !!response,
   ) {
+    if (!id && !finished) {
+      logger.debug('No tool id provided for new tool message, skipping...');
+      return;
+    }
+
     logger.debug('Sending tool message:', {
       id,
       baseDir: this.project.baseDir,
@@ -2011,7 +2021,7 @@ export class Task {
       this.updateTokensInfo({
         agent: {
           cost: usageReport.agentTotalCost,
-          tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0) + (usageReport.cacheWriteTokens ?? 0),
+          tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0),
         },
       });
     }
@@ -2298,7 +2308,14 @@ export class Task {
       };
 
       await this.waitForCurrentAgentToFinish();
-      generatedPrompt = await this.agent.generateText(handoffAgentProfile, '', handoffPrompt, await this.contextManager.getContextMessages(), true);
+      generatedPrompt = await this.agent.generateText(
+        handoffAgentProfile,
+        '',
+        handoffPrompt,
+        this.getProjectDir(),
+        await this.contextManager.getContextMessages(),
+        true,
+      );
     } else {
       // Other modes (ask, edit)
       const responses = await this.sendPromptToAider(handoffPrompt, undefined, 'ask');
@@ -2320,7 +2337,6 @@ export class Task {
       parentId: this.task.parentId || this.taskId,
       sendEvent: false,
       activate: true,
-      handoff: true,
     });
 
     // Get the newly created Task instance
@@ -2328,6 +2344,8 @@ export class Task {
     if (!newTask) {
       throw new Error('Failed to get newly created task');
     }
+
+    await newTask.init();
 
     // Add prompt to new task
     await newTask.savePromptOnly(generatedPrompt, false);
@@ -2867,6 +2885,7 @@ ${error.stderr}`,
                 agentProfile,
                 this.promptsManager.getGenerateCommitMessagePrompt(this),
                 `Generate a concise conventional commit message for these changes:\n\n${changesDiff}\n\nOnly answer with the commit message, nothing else.`,
+                this.getProjectDir(),
                 undefined,
                 false,
               );
@@ -3261,9 +3280,7 @@ ${error.stderr}`,
 
     // Copy messages
     const messages = await sourceTask.getContextMessages();
-    for (const message of messages) {
-      this.contextManager.addContextMessage(message);
-    }
+    this.contextManager.setContextMessages(messages);
 
     await this.updateContextInfo();
 
@@ -3272,6 +3289,33 @@ ${error.stderr}`,
     if (todos.length > 0) {
       await this.setTodos(todos, 'Duplicated from original task');
     }
+
+    // Copy worktree if exists
+    if (sourceData.worktree && sourceData.workingMode === 'worktree') {
+      await this.updateTask({
+        workingMode: 'worktree',
+      });
+    }
+  }
+
+  public async forkFrom(sourceTask: Task, messageId: string): Promise<void> {
+    // Copy basic task data
+    const sourceData = sourceTask.task;
+    await this.saveTask({
+      name: `${sourceData.name} (Fork)`,
+    });
+
+    // Copy ALL context files from source task (not just up to fork point)
+    const contextFiles = await sourceTask.getContextFiles();
+    await this.addFiles(...contextFiles);
+
+    // Get messages up to and including the specified message
+    const forkedMessages = sourceTask.contextManager.getMessagesUpTo(messageId);
+
+    // Save forked messages into new task
+    this.contextManager.setContextMessages(forkedMessages);
+
+    await this.updateContextInfo();
 
     // Copy worktree if exists
     if (sourceData.worktree && sourceData.workingMode === 'worktree') {

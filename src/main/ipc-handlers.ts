@@ -217,6 +217,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.duplicateTask(baseDir, taskId);
   });
 
+  ipcMain.handle('fork-task', async (_, baseDir: string, taskId: string, messageId: string) => {
+    return await eventsHandler.forkTask(baseDir, taskId, messageId);
+  });
+
   ipcMain.handle('get-tasks', async (_, baseDir: string) => {
     return await eventsHandler.getTasks(baseDir);
   });

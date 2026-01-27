@@ -106,7 +106,7 @@ export const extractServerNameToolName = (toolCallName: string): [string, string
   const [serverName, ...toolNameParts] = toolCallName.split(TOOL_GROUP_NAME_SEPARATOR);
   const toolName = toolNameParts.join(TOOL_GROUP_NAME_SEPARATOR);
 
-  return [serverName, toolName];
+  return [serverName.startsWith('mcp__local__') ? serverName.slice('mcp__local__'.length) : serverName, toolName];
 };
 
 export const isMessageEmpty = (content: unknown): boolean => {

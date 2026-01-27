@@ -802,6 +802,7 @@ export const TaskDataSchema = z.object({
   contextCompactingThreshold: z.number().optional(),
   weakModelLocked: z.boolean().optional(),
   handoff: z.boolean().optional(),
+  lastAgentProviderMetadata: z.unknown().optional(),
 });
 
 export type TaskData = z.infer<typeof TaskDataSchema>;

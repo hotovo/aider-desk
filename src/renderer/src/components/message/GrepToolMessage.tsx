@@ -12,9 +12,10 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 
-export const GrepToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const GrepToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
   const { t } = useTranslation();
 
   const filePattern = message.args.filePattern as string;
@@ -137,5 +138,5 @@ export const GrepToolMessage = ({ message, onRemove, compact = false }: Props) =
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
+  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} onFork={onFork} />;
 };

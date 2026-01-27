@@ -25,8 +25,23 @@ export const getSortedVisibleTasks = (tasks: TaskData[], showArchived: boolean =
       return task.name.toLowerCase().includes(searchText);
     });
 
-  const topLevelTasks = filteredTasks.filter((t) => !t.parentId || !filteredTasks.some((p) => p.id === t.parentId));
-  const subtasks = filteredTasks.filter((t) => t.parentId);
+  // When showArchived is false, exclude tasks whose parent is archived
+  // Check each task's parent exists in the original tasks and is not archived
+  const tasksWithValidParents = filteredTasks.filter((task) => {
+    if (!task.parentId) {
+      return true;
+    }
+    // Find the parent in the original tasks array
+    const parentTask = tasks.find((t) => t.id === task.parentId);
+    // Include the task if:
+    // - showArchived is true (show everything), OR
+    // - parent doesn't exist (orphan), OR
+    // - parent exists and is not archived
+    return showArchived || !parentTask || !parentTask.archived;
+  });
+
+  const topLevelTasks = tasksWithValidParents.filter((t) => !t.parentId || !tasksWithValidParents.some((p) => p.id === t.parentId));
+  const subtasks = tasksWithValidParents.filter((t) => t.parentId && tasksWithValidParents.some((p) => p.id === t.parentId));
 
   const sortFn = (a: TaskData, b: TaskData) => {
     // Pinned tasks come first
