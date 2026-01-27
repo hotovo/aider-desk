@@ -25,12 +25,12 @@ import { getSubagentId } from '@/agent/tools/subagents';
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
  */
 export const optimizeMessages = (
-  task: Task,
-  profile: AgentProfile,
-  projectProfiles: AgentProfile[],
-  userRequestMessageIndex: number,
   messages: ModelMessage[],
-  cacheControl: CacheControl | undefined,
+  cacheControl?: CacheControl,
+  task: Task | null = null,
+  profile: AgentProfile | null = null,
+  projectProfiles: AgentProfile[] = [],
+  userRequestMessageIndex: number = -1,
 ) => {
   if (messages.length === 0) {
     return [];
@@ -38,7 +38,9 @@ export const optimizeMessages = (
 
   let optimizedMessages = cloneDeep(messages);
 
-  optimizedMessages = addImportantReminders(task, profile, projectProfiles, userRequestMessageIndex, optimizedMessages);
+  if (task && profile) {
+    optimizedMessages = addImportantReminders(task, profile, projectProfiles, userRequestMessageIndex, optimizedMessages);
+  }
   optimizedMessages = convertImageToolResults(optimizedMessages);
   optimizedMessages = removeDuplicateToolCalls(optimizedMessages);
   optimizedMessages = optimizeAiderMessages(optimizedMessages);
@@ -88,6 +90,10 @@ const addImportantReminders = (
   userRequestMessageIndex: number,
   messages: ModelMessage[],
 ): ModelMessage[] => {
+  if (userRequestMessageIndex === -1) {
+    return messages;
+  }
+
   const userRequestMessage = messages[userRequestMessageIndex] as UserModelMessage;
   const reminders: string[] = [];
 

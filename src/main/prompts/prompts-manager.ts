@@ -43,6 +43,7 @@ import {
   CompactConversationPromptData,
   ConflictResolutionPromptData,
   ConflictResolutionSystemPromptData,
+  HandoffPromptData,
   InitProjectPromptData,
   PromptTemplateData,
   PromptTemplateName,
@@ -116,6 +117,7 @@ export class PromptsManager {
       'conflict-resolution',
       'conflict-resolution-system',
       'update-task-state',
+      'handoff',
     ];
   }
 
@@ -439,5 +441,14 @@ export class PromptsManager {
   public getUpdateTaskStatePrompt = (task: Task) => {
     const data: UpdateTaskStateData = {};
     return this.render('update-task-state', data, task.getProjectDir());
+  };
+
+  public getHandoffPrompt = async (task: Task, focus?: string) => {
+    const contextFiles = await task.getContextFiles();
+    const data: HandoffPromptData = {
+      focus,
+      contextFiles,
+    };
+    return this.render('handoff', data, task.getProjectDir());
   };
 }

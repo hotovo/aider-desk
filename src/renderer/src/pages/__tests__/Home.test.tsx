@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 import { ApplicationAPI } from '@common/api';
@@ -101,7 +101,9 @@ describe('Home', () => {
     );
 
     const modelLibraryButton = screen.getByTitle('projectBar.modelLibrary');
-    fireEvent.click(modelLibraryButton);
+    await act(async () => {
+      fireEvent.click(modelLibraryButton);
+    });
 
     expect(screen.getByTestId('model-library')).toBeInTheDocument();
   });

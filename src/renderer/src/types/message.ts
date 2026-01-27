@@ -10,6 +10,7 @@ export interface Message {
 
 export interface UserMessage extends Message {
   type: 'user';
+  isOptimistic?: boolean;
 }
 
 export interface ResponseMessage extends Message {
@@ -30,6 +31,7 @@ export interface LogMessage extends Message {
 
 export interface LoadingMessage extends Message {
   type: 'loading';
+  actionIds?: string[];
 }
 
 export interface CommandOutputMessage extends Message {

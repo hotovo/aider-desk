@@ -34,9 +34,10 @@ import {
   UserMessageData,
   WorkingMode,
   ModelInfo,
+  TaskStateEmoji,
 } from '@common/types';
-import { extractTextContent, fileExists, parseUsageReport } from '@common/utils';
-import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
+import { extractProviderModel, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
@@ -75,6 +76,33 @@ import { PromptsManager } from '@/prompts';
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
 
+export const EMPTY_TASK_DATA: TaskData = {
+  id: '',
+  baseDir: '',
+  name: '',
+  archived: false,
+  aiderTotalCost: 0,
+  agentTotalCost: 0,
+  mainModel: '',
+  currentMode: 'agent',
+  contextCompactingThreshold: 0,
+  weakModelLocked: false,
+  parentId: null,
+  lastAgentProviderMetadata: undefined,
+};
+
+const getTaskFinishedNotificationText = (task: TaskData) => {
+  return `📋 ${task.name}${
+    task.state
+      ? `\n${TaskStateEmoji[task.state] || ''} ${task.state
+          .toLowerCase()
+          .split('_')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')}`
+      : ''
+  }`;
+};
+
 export class Task {
   private initialized = false;
   private initPromise: Promise<void> | null = null;
@@ -89,6 +117,7 @@ export class Task {
   private agentRunResolves: (() => void)[] = [];
   private git: SimpleGit | null = null;
   private responseChunkMap: Map<string, { buffer: string; interval: NodeJS.Timeout }> = new Map();
+  private isDeterminingTaskState = false;
 
   private readonly taskDataPath: string;
   private readonly contextManager: ContextManager;
@@ -115,14 +144,7 @@ export class Task {
     initialTaskData?: Partial<TaskData>,
   ) {
     this.task = {
-      name: '',
-      archived: false,
-      aiderTotalCost: 0,
-      agentTotalCost: 0,
-      mainModel: '',
-      currentMode: 'agent',
-      contextCompactingThreshold: 0,
-      weakModelLocked: false,
+      ...EMPTY_TASK_DATA,
       ...initialTaskData,
       id: taskId,
       baseDir: project.baseDir,
@@ -343,6 +365,7 @@ export class Task {
     logger.info('Saved task data', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
+      task: this.task,
     });
 
     return this.task;
@@ -379,6 +402,13 @@ export class Task {
     if (workingMode === 'worktree') {
       if (existingWorktree) {
         this.task.worktree = existingWorktree;
+      } else if (this.task.worktree) {
+        // Worktree is already set (e.g. inherited from parent)
+        logger.info('Using inherited worktree for task', {
+          baseDir: this.project.baseDir,
+          taskId: this.taskId,
+          worktreePath: this.task.worktree.path,
+        });
       } else {
         // Create a default worktree for this task
         const branchName = this.generateBranchName();
@@ -598,7 +628,7 @@ export class Task {
     }
   }
 
-  public async runPrompt(prompt: string, mode: Mode = 'code', addToInputHistory = true): Promise<ResponseCompletedData[]> {
+  public async runPrompt(prompt: string, mode: Mode = 'code', addToInputHistory = true, userMessageId = uuidv4()): Promise<ResponseCompletedData[]> {
     if (this.currentQuestion) {
       if (this.answerQuestion('n', prompt)) {
         logger.debug('Processed by the answerQuestion function.');
@@ -627,10 +657,10 @@ export class Task {
     }
 
     const promptContext: PromptContext = {
-      id: uuidv4(),
+      id: userMessageId,
     };
 
-    this.addUserMessage(promptContext.id, prompt);
+    this.addUserMessage(userMessageId, prompt);
     this.addLogMessage('loading');
 
     this.telemetryManager.captureRunPrompt(mode);
@@ -664,9 +694,6 @@ export class Task {
       id: uuidv4(),
     };
 
-    // Add user message to context
-    this.addUserMessage(promptContext.id, prompt);
-
     // Add to context manager
     this.contextManager.addContextMessage({
       id: promptContext.id,
@@ -674,6 +701,9 @@ export class Task {
       content: prompt,
       promptContext,
     });
+
+    // Add user message to context
+    this.addUserMessage(promptContext.id, prompt);
 
     await this.saveTask({
       name: this.task.name || this.getTaskNameFromPrompt(prompt),
@@ -736,7 +766,7 @@ export class Task {
 
     void this.sendRequestContextInfo();
     void this.sendWorktreeIntegrationStatusUpdated();
-    this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
+    this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
 
     await this.hookManager.trigger('onAiderPromptFinished', { responses }, this, this.project);
     await this.hookManager.trigger('onPromptFinished', { responses }, this, this.project);
@@ -802,7 +832,7 @@ export class Task {
 
     void this.sendRequestContextInfo();
     void this.sendWorktreeIntegrationStatusUpdated();
-    this.notifyIfEnabled('Prompt finished', 'Your Agent has finished the task.');
+    this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
 
     return [];
   }
@@ -838,40 +868,49 @@ export class Task {
         agentProfile,
         this.promptsManager.getGenerateTaskNamePrompt(this),
         `Generate a concise task name for this request:\n\n${prompt.length > maxPromptLength ? prompt.substring(0, maxPromptLength) + '...' : prompt}\n\nOnly answer with the task name, nothing else.`,
+        this.getProjectDir(),
+        undefined,
+        false,
       );
-      logger.info('Generated task name:', { taskName });
-      return taskName.trim();
+      if (taskName) {
+        logger.info('Generated task name:', { taskName });
+        return taskName.trim();
+      } else {
+        logger.warn('Generate task name interrupted');
+      }
     }
 
     return null;
   }
 
   private async determineTaskState(resultMessages: ContextMessage[]): Promise<string | null> {
-    // Find the last assistant message from result messages
-    const lastAssistantMessage = [...resultMessages].reverse().find((msg) => msg.role === MessageRole.Assistant) as ContextAssistantMessage | undefined;
-
-    if (!lastAssistantMessage) {
-      logger.debug('No assistant message found for task state determination');
-      return null;
-    }
-
-    // Extract reasoning and text from the last assistant message
-    const reasoningText = Array.isArray(lastAssistantMessage.content) && lastAssistantMessage.content.find((part) => part.type === 'reasoning')?.text;
-    const contentText = extractTextContent(lastAssistantMessage.content);
-
-    if (!contentText && !reasoningText) {
-      logger.debug('No content found in last assistant message for task state determination');
-      return null;
-    }
-
-    // Create a user message wrapping the last assistant message information
-    let wrappedMessage = "Based on the agent's last response, determine the appropriate task state.\n\n";
-    if (reasoningText) {
-      wrappedMessage += `<agent-reasoning>\n${reasoningText}</agent-reasoning>\n\n`;
-    }
-    wrappedMessage += `<agent-response>\n${contentText}</agent-response>`;
+    this.isDeterminingTaskState = true;
 
     try {
+      // Find the last assistant message from result messages
+      const lastAssistantMessage = [...resultMessages].reverse().find((msg) => msg.role === MessageRole.Assistant) as ContextAssistantMessage | undefined;
+
+      if (!lastAssistantMessage) {
+        logger.debug('No assistant message found for task state determination');
+        return null;
+      }
+
+      // Extract reasoning and text from the last assistant message
+      const reasoningText = Array.isArray(lastAssistantMessage.content) && lastAssistantMessage.content.find((part) => part.type === 'reasoning')?.text;
+      const contentText = extractTextContent(lastAssistantMessage.content);
+
+      if (!contentText && !reasoningText) {
+        logger.debug('No content found in last assistant message for task state determination');
+        return null;
+      }
+
+      // Create a user message wrapping the last assistant message information
+      let wrappedMessage = "Based on the agent's last response, determine the appropriate task state.\n\n";
+      if (reasoningText) {
+        wrappedMessage += `<agent-reasoning>\n${reasoningText}</agent-reasoning>\n\n`;
+      }
+      wrappedMessage += `<agent-response>\n${contentText}</agent-response>`;
+
       const agentProfile = await this.getTaskAgentProfile();
       if (!agentProfile) {
         logger.debug('No agent profile found for task state determination');
@@ -880,7 +919,11 @@ export class Task {
 
       this.addLogMessage('loading', 'Updating task state...');
 
-      const answer = await this.agent.generateText(agentProfile, this.promptsManager.getUpdateTaskStatePrompt(this), wrappedMessage);
+      const answer = await this.agent.generateText(agentProfile, this.promptsManager.getUpdateTaskStatePrompt(this), wrappedMessage, this.getProjectDir());
+      if (!answer) {
+        logger.warn('Task state determination interrupted');
+        return null;
+      }
 
       logger.info('Determining task state:', {
         baseDir: this.project.baseDir,
@@ -901,6 +944,8 @@ export class Task {
       }
     } catch (error) {
       logger.error('Error determining task state:', error);
+    } finally {
+      this.isDeterminingTaskState = false;
     }
 
     return null;
@@ -1072,7 +1117,7 @@ export class Task {
       }
 
       if (usageReport) {
-        logger.debug(`Usage report: ${JSON.stringify(usageReport)}`);
+        logger.info(`Usage report: ${JSON.stringify(usageReport)}`);
         this.updateTotalCosts(usageReport);
       }
       const data: ResponseCompletedData = {
@@ -1190,21 +1235,25 @@ export class Task {
     return false;
   }
 
-  public async addFile(contextFile: ContextFile) {
-    const hookResult = await this.hookManager.trigger('onFileAdded', { file: contextFile }, this, this.project);
-    if (hookResult.blocked) {
-      logger.info('File addition blocked by hook');
-      return false;
-    }
-    contextFile = hookResult.event.file;
+  public async addFiles(...contextFiles: ContextFile[]) {
+    const addedFiles: ContextFile[] = [];
 
-    const normalizedPath = this.normalizeFilePath(contextFile.path);
-    logger.debug('Adding file or folder:', {
-      path: normalizedPath,
-      readOnly: contextFile.readOnly,
-    });
-    const fileToAdd = { ...contextFile, path: normalizedPath };
-    const addedFiles = await this.contextManager.addContextFile(fileToAdd);
+    for (let contextFile of contextFiles) {
+      const hookResult = await this.hookManager.trigger('onFileAdded', { file: contextFile }, this, this.project);
+      if (hookResult.blocked) {
+        logger.info('File addition blocked by hook');
+        return false;
+      }
+      contextFile = hookResult.event.file;
+
+      const normalizedPath = this.normalizeFilePath(contextFile.path);
+      logger.debug('Adding file or folder:', {
+        path: normalizedPath,
+        readOnly: contextFile.readOnly,
+      });
+      const fileToAdd = { ...contextFile, path: normalizedPath };
+      addedFiles.push(...(await this.contextManager.addContextFile(fileToAdd)));
+    }
     if (addedFiles.length === 0) {
       return false;
     }
@@ -1467,15 +1516,13 @@ export class Task {
         return null;
       }
 
-      // Parse providerId and actual modelId from the modelId string
-      const [providerId, ...modelIdParts] = modelName.split('/');
-      const modelId = modelIdParts.join('/');
+      const [providerId, modelId] = extractProviderModel(modelName);
 
       if (!providerId || !modelId) {
         return null;
       }
 
-      const model = this.modelManager.getModel(providerId, modelId, true);
+      const model = this.modelManager.getModelSettings(providerId, modelId, true);
       if (!model) {
         return null;
       }
@@ -1603,7 +1650,7 @@ export class Task {
         }
 
         if (addAllRemaining) {
-          await this.addFile({ path: filePath, readOnly: false });
+          await this.addFiles({ path: filePath, readOnly: false });
           continue;
         }
 
@@ -1630,12 +1677,12 @@ export class Task {
 
         if (answer === 'a') {
           addAllRemaining = true;
-          await this.addFile({ path: filePath, readOnly: false });
+          await this.addFiles({ path: filePath, readOnly: false });
           continue;
         }
 
         if (answer === 'y') {
-          await this.addFile({ path: filePath, readOnly: false });
+          await this.addFiles({ path: filePath, readOnly: false });
         }
       }
     } catch (error) {
@@ -1860,6 +1907,9 @@ export class Task {
       updateContextInfo,
     });
 
+    await this.updateTask({
+      lastAgentProviderMetadata: null,
+    });
     this.contextManager.clearMessages();
     await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
@@ -1886,10 +1936,17 @@ export class Task {
     this.cleanupChunkBuffers();
 
     if (this.initialized && this.task.state === DefaultTaskState.InProgress) {
-      void this.saveTask({
-        state: DefaultTaskState.Interrupted,
-        interruptedAt: new Date().toISOString(),
-      });
+      if (this.isDeterminingTaskState) {
+        void this.saveTask({
+          state: DefaultTaskState.ReadyForReview,
+          completedAt: new Date().toISOString(),
+        });
+      } else {
+        void this.saveTask({
+          state: DefaultTaskState.Interrupted,
+          interruptedAt: new Date().toISOString(),
+        });
+      }
     }
   }
 
@@ -1909,6 +1966,11 @@ export class Task {
     saveToDb = true,
     finished = !!response,
   ) {
+    if (!id && !finished) {
+      logger.debug('No tool id provided for new tool message, skipping...');
+      return;
+    }
+
     logger.debug('Sending tool message:', {
       id,
       baseDir: this.project.baseDir,
@@ -1957,12 +2019,13 @@ export class Task {
       this.updateTokensInfo({
         agent: {
           cost: usageReport.agentTotalCost,
-          tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0) + (usageReport.cacheWriteTokens ?? 0),
+          tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0),
         },
       });
     }
     if (usageReport.aiderTotalCost) {
-      this.task.aiderTotalCost = usageReport.aiderTotalCost;
+      this.task.aiderTotalCost += usageReport.messageCost;
+      this.eventManager.sendTaskUpdated(this.task);
     }
   }
 
@@ -2007,18 +2070,30 @@ export class Task {
       hasUpdatedPrompt: !!updatedPrompt,
     });
 
-    const originalLastUserMessageContent = this.contextManager.removeLastUserMessage();
-    const promptToRun = updatedPrompt ?? originalLastUserMessageContent;
+    const removedMessages = this.contextManager.removeMessagesUpToLastUserMessage();
+    const originalLastUserMessage = removedMessages.findLast((msg) => msg.role === MessageRole.User);
+    if (!originalLastUserMessage) {
+      logger.warn('Could not find original last user message content to redo.');
+      return;
+    }
+
+    const promptToRun = updatedPrompt ?? (originalLastUserMessage.content as string);
 
     if (promptToRun) {
       logger.info('Found message content to run, reloading and re-running prompt.', {
         remainingMessagesCount: (await this.contextManager.getContextMessages()).length,
       });
-      await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
+
+      this.eventManager.sendTaskMessageRemoved(
+        this.project.baseDir,
+        this.taskId,
+        removedMessages.slice(0, -1).map((msg) => msg.id),
+      );
+
       await this.updateContextInfo();
 
       // No need to await runPrompt here, let it run in the background
-      void this.runPrompt(promptToRun, mode);
+      void this.runPrompt(promptToRun, mode, false, originalLastUserMessage.id);
     } else {
       logger.warn('Could not find a previous user message to redo or an updated prompt to run.');
     }
@@ -2110,66 +2185,174 @@ export class Task {
       return content;
     };
 
+    try {
+      if (mode === 'agent') {
+        // Agent mode logic
+        if (!profile) {
+          throw new Error('No active Agent profile found');
+        }
+
+        const compactConversationAgentProfile: AgentProfile = {
+          ...COMPACT_CONVERSATION_AGENT_PROFILE,
+          provider: profile.provider,
+          model: profile.model,
+        };
+
+        if (waitForAgentCompletion) {
+          await this.waitForCurrentAgentToFinish();
+        }
+        const agentMessages = await this.agent.runAgent(
+          this,
+          compactConversationAgentProfile,
+          this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          promptContext,
+          contextMessages,
+          [],
+          undefined,
+          abortSignal,
+        );
+        if (waitForAgentCompletion) {
+          this.resolveAgentRunPromises();
+        }
+
+        if (agentMessages.length > 0) {
+          // Clear existing context and add the summary
+          const summaryMessage = agentMessages[agentMessages.length - 1];
+          summaryMessage.content = extractSummary(extractTextContent(summaryMessage.content));
+
+          this.contextManager.setContextMessages([userMessage, summaryMessage]);
+
+          await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
+        }
+      } else {
+        const responses = await this.sendPromptToAider(
+          this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          undefined,
+          'ask',
+          undefined,
+          [],
+          undefined,
+        );
+
+        // Collect all new messages before setting the context
+        const newMessages: ContextMessage[] = [userMessage];
+        for (const response of responses) {
+          if (response.content) {
+            newMessages.push({
+              id: response.messageId,
+              role: MessageRole.Assistant,
+              content: extractSummary(response.content),
+              promptContext,
+            });
+          }
+        }
+
+        // Set all messages at once
+        this.contextManager.setContextMessages(newMessages);
+
+        await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
+      }
+
+      await this.updateContextInfo();
+      this.addLogMessage('info', 'Conversation compacted.');
+    } catch (error) {
+      logger.error('Failed to compact conversation', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        mode,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      this.addLogMessage('error', 'Failed to compact conversation. Original conversation preserved.');
+      // Prevent memory leaks by cleaning up pending prompt resources
+      if (mode === 'agent' && waitForAgentCompletion) {
+        this.resolveAgentRunPromises();
+      } else if (mode !== 'agent') {
+        this.promptFinished();
+      }
+    }
+  }
+
+  public async handoffConversation(mode: Mode, focus: string = ''): Promise<void> {
+    // Get context messages
+    const contextMessages = await this.contextManager.getContextMessages();
+
+    const userMessage = contextMessages[0];
+
+    if (!userMessage) {
+      throw new Error('No conversation to handoff. Please send at least one message before using /handoff.');
+    }
+
+    const loadingMessage = 'Preparing handoff...';
+    this.addLogMessage('loading', loadingMessage, false, undefined, ['interrupt']);
+
+    // Get context files to transfer
+    const contextFiles = await this.getContextFiles();
+
+    // Generate the handoff prompt using agent.generateText
+    const handoffPrompt = await this.promptsManager.getHandoffPrompt(this, focus.trim().length ? focus.trim() : undefined);
+    let generatedPrompt: string | undefined;
+
     if (mode === 'agent') {
       // Agent mode logic
+      const profile = await this.getTaskAgentProfile();
       if (!profile) {
         throw new Error('No active Agent profile found');
       }
 
-      const compactConversationAgentProfile: AgentProfile = {
-        ...COMPACT_CONVERSATION_AGENT_PROFILE,
+      const handoffAgentProfile: AgentProfile = {
+        ...HANDOFF_AGENT_PROFILE,
         provider: profile.provider,
         model: profile.model,
       };
 
-      if (waitForAgentCompletion) {
-        await this.waitForCurrentAgentToFinish();
-      }
-      const agentMessages = await this.agent.runAgent(
-        this,
-        compactConversationAgentProfile,
-        this.promptsManager.getCompactConversationPrompt(this, customInstructions),
-        promptContext,
-        contextMessages,
-        [],
-        undefined,
-        abortSignal,
+      await this.waitForCurrentAgentToFinish();
+      generatedPrompt = await this.agent.generateText(
+        handoffAgentProfile,
+        '',
+        handoffPrompt,
+        this.getProjectDir(),
+        await this.contextManager.getContextMessages(),
+        true,
       );
-      if (waitForAgentCompletion) {
-        this.resolveAgentRunPromises();
-      }
-
-      if (agentMessages.length > 0) {
-        // Clear existing context and add the summary
-        const summaryMessage = agentMessages[agentMessages.length - 1];
-        summaryMessage.content = extractSummary(extractTextContent(summaryMessage.content));
-
-        this.contextManager.setContextMessages([userMessage, summaryMessage]);
-
-        await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
-      }
     } else {
-      const responses = await this.sendPromptToAider(
-        this.promptsManager.getCompactConversationPrompt(this, customInstructions),
-        undefined,
-        'ask',
-        undefined,
-        [],
-        undefined,
-      );
+      // Other modes (ask, edit)
+      const responses = await this.sendPromptToAider(handoffPrompt, undefined, 'ask');
 
-      // add messages to session
-      this.contextManager.setContextMessages([userMessage], false);
-      for (const response of responses) {
-        if (response.content) {
-          this.contextManager.addContextMessage(MessageRole.Assistant, extractSummary(response.content));
-        }
+      if (responses.length > 0 && responses[0].content) {
+        generatedPrompt = extractTextContent(responses[0].content);
       }
-      await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
     }
 
-    await this.updateContextInfo();
-    this.addLogMessage('info', 'Conversation compacted.');
+    this.addLogMessage('loading', '', true);
+
+    if (!generatedPrompt) {
+      logger.info('Handoff prompt generation cancelled or failed.');
+      return;
+    }
+
+    // Create new task without sending event (sendEvent flag defaults to true)
+    const newTaskData = await this.project.createNewTask({
+      parentId: this.task.parentId || this.taskId,
+      sendEvent: false,
+      activate: true,
+    });
+
+    // Get the newly created Task instance
+    const newTask = this.project.getTask(newTaskData.id);
+    if (!newTask) {
+      throw new Error('Failed to get newly created task');
+    }
+
+    await newTask.init();
+
+    // Add prompt to new task
+    await newTask.savePromptOnly(generatedPrompt, false);
+
+    // Transfer context files
+    await newTask.addFiles(...contextFiles);
+
+    // Send task-created event to trigger activation and handoff
+    this.eventManager.sendTaskCreated(newTask.task, true);
   }
 
   public async generateContextMarkdown(): Promise<string | null> {
@@ -2700,6 +2883,9 @@ ${error.stderr}`,
                 agentProfile,
                 this.promptsManager.getGenerateCommitMessagePrompt(this),
                 `Generate a concise conventional commit message for these changes:\n\n${changesDiff}\n\nOnly answer with the commit message, nothing else.`,
+                this.getProjectDir(),
+                undefined,
+                false,
               );
               logger.info('Generated commit message:', {
                 commitMessage: effectiveCommitMessage,
@@ -2711,11 +2897,7 @@ ${error.stderr}`,
             }
           } else {
             logger.warn('No active agent profile found, using task name for commit message');
-            effectiveCommitMessage = this.task.name || `Task ${this.taskId} changes`;
           }
-        } else {
-          // No commits to merge, use default message
-          effectiveCommitMessage = this.task.name || `Task ${this.taskId} changes`;
         }
       }
 
@@ -2724,7 +2906,7 @@ ${error.stderr}`,
         this.task.id,
         this.task.worktree.path,
         squash,
-        effectiveCommitMessage,
+        effectiveCommitMessage || this.task.name || `Task ${this.taskId} changes`,
         targetBranch,
       );
 
@@ -3092,15 +3274,11 @@ ${error.stderr}`,
 
     // Copy context files
     const contextFiles = await sourceTask.getContextFiles();
-    for (const file of contextFiles) {
-      await this.addFile(file);
-    }
+    await this.addFiles(...contextFiles);
 
     // Copy messages
     const messages = await sourceTask.getContextMessages();
-    for (const message of messages) {
-      this.contextManager.addContextMessage(message);
-    }
+    this.contextManager.setContextMessages(messages);
 
     await this.updateContextInfo();
 
@@ -3109,6 +3287,33 @@ ${error.stderr}`,
     if (todos.length > 0) {
       await this.setTodos(todos, 'Duplicated from original task');
     }
+
+    // Copy worktree if exists
+    if (sourceData.worktree && sourceData.workingMode === 'worktree') {
+      await this.updateTask({
+        workingMode: 'worktree',
+      });
+    }
+  }
+
+  public async forkFrom(sourceTask: Task, messageId: string): Promise<void> {
+    // Copy basic task data
+    const sourceData = sourceTask.task;
+    await this.saveTask({
+      name: `${sourceData.name} (Fork)`,
+    });
+
+    // Copy ALL context files from source task (not just up to fork point)
+    const contextFiles = await sourceTask.getContextFiles();
+    await this.addFiles(...contextFiles);
+
+    // Get messages up to and including the specified message
+    const forkedMessages = sourceTask.contextManager.getMessagesUpTo(messageId);
+
+    // Save forked messages into new task
+    this.contextManager.setContextMessages(forkedMessages);
+
+    await this.updateContextInfo();
 
     // Copy worktree if exists
     if (sourceData.worktree && sourceData.workingMode === 'worktree') {

@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ProjectData, TaskData, ModelsData } from '@common/types';
+import { TaskData, ModelsData } from '@common/types';
 import { toast } from 'react-toastify';
 
 import { TaskView } from '../TaskView';
@@ -106,27 +106,21 @@ vi.mock('../../terminal/TerminalView', () => ({
 }));
 
 describe('TaskView', () => {
-  const mockProject: ProjectData = {
-    baseDir: '/test/project',
-    active: true,
-    settings: {
-      agentProfileId: 'default',
-      chatHistoryEnabled: true,
-      theme: 'dark',
-      modelSettings: { models: [] },
-      projectSettings: {},
-    },
-  } as unknown as ProjectData;
+  const projectDir = '/test/project';
 
   const mockTask: TaskData = {
     id: 'task-1',
     name: 'Test Task',
+    baseDir: '/test/project',
     state: 'in-progress',
     currentMode: 'code',
     mainModel: 'gpt-4',
-  } as unknown as TaskData;
+    agentTotalCost: 0,
+    aiderTotalCost: 0,
+  };
 
   const mockUpdateTask = vi.fn();
+  const mockUpdateOptimisticTaskState = vi.fn();
   const mockApi = createMockApi();
 
   const mockTaskContext = createMockTaskContext();
@@ -136,7 +130,6 @@ describe('TaskView', () => {
     allFiles: [],
     contextFiles: [],
     autocompletionWords: [],
-    aiderTotalCost: 0,
     tokensInfo: null,
     question: null,
     todoItems: [],
@@ -158,43 +151,96 @@ describe('TaskView', () => {
     vi.mocked(useResponsive).mockReturnValue(createMockResponsive());
   });
 
-  it('renders core components when loaded', () => {
-    render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+  it('renders core components when loaded', async () => {
+    render(
+      <TaskView
+        projectDir={projectDir}
+        task={mockTask}
+        updateTask={mockUpdateTask}
+        updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+        inputHistory={[]}
+      />,
+    );
+
+    // Wait for any async state updates to complete
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
 
     expect(screen.getByTestId('task-bar')).toBeInTheDocument();
   });
 
-  it('calls updateTask when mode is changed in TaskBar', () => {
-    render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+  it('calls updateTask when mode is changed in TaskBar', async () => {
+    render(
+      <TaskView
+        projectDir={projectDir}
+        task={mockTask}
+        updateTask={mockUpdateTask}
+        updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+        inputHistory={[]}
+      />,
+    );
 
-    fireEvent.click(screen.getByText('Change Mode'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Change Mode'));
+    });
     expect(mockUpdateTask).toHaveBeenCalledWith({ currentMode: 'architect' });
   });
 
-  it('calls setAiderModelsData when model is changed in TaskBar', () => {
-    render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+  it('calls setAiderModelsData when model is changed in TaskBar', async () => {
+    render(
+      <TaskView
+        projectDir={projectDir}
+        task={mockTask}
+        updateTask={mockUpdateTask}
+        updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+        inputHistory={[]}
+      />,
+    );
 
-    fireEvent.click(screen.getByText('Change Model'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('Change Model'));
+    });
     expect(mockTaskContext.setAiderModelsData).toHaveBeenCalledWith(mockTask.id, { mainModel: 'new-model' });
   });
 
-  it('calls api.runPrompt when prompt is submitted', () => {
-    render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+  it('calls api.runPrompt when prompt is submitted', async () => {
+    render(
+      <TaskView
+        projectDir={projectDir}
+        task={mockTask}
+        updateTask={mockUpdateTask}
+        updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+        inputHistory={[]}
+      />,
+    );
 
-    fireEvent.click(screen.getByText('Run Prompt'));
-    expect(mockApi.runPrompt).toHaveBeenCalledWith(mockProject.baseDir, mockTask.id, 'hello', 'code');
+    await act(async () => {
+      fireEvent.click(screen.getByText('Run Prompt'));
+    });
+    expect(mockApi.runPrompt).toHaveBeenCalledWith(projectDir, mockTask.id, 'hello', 'code');
   });
 
-  it('calls api.addFile when files are added', () => {
-    render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+  it('calls api.addFile when files are added', async () => {
+    render(
+      <TaskView
+        projectDir={projectDir}
+        task={mockTask}
+        updateTask={mockUpdateTask}
+        updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+        inputHistory={[]}
+      />,
+    );
 
-    fireEvent.click(screen.getByText('Add File'));
-    expect(mockApi.addFile).toHaveBeenCalledWith(mockProject.baseDir, mockTask.id, 'file1.ts', false);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add File'));
+    });
+    expect(mockApi.addFile).toHaveBeenCalledWith(projectDir, mockTask.id, 'file1.ts', false);
   });
 
   describe('Message Removal', () => {
     describe('Task 7.1: Test optimistic update flow', () => {
-      it('optimistically updates UI by removing message immediately', () => {
+      it('optimistically updates UI by removing message immediately', async () => {
         const testMessages: Message[] = [
           { id: 'msg1', type: 'user', content: 'First message' },
           { id: 'msg2', type: 'response', content: 'Second message' },
@@ -203,7 +249,20 @@ describe('TaskView', () => {
 
         vi.mocked(useTaskMessages).mockReturnValue(testMessages);
 
-        render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+        render(
+          <TaskView
+            projectDir={projectDir}
+            task={mockTask}
+            updateTask={mockUpdateTask}
+            updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+            inputHistory={[]}
+          />,
+        );
+
+        // Wait for async state updates to complete
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
 
         // All messages should be present initially
         expect(screen.queryByText('First message')).toBeInTheDocument();
@@ -215,24 +274,50 @@ describe('TaskView', () => {
         expect(mockTaskContext.setMessages).toBeDefined();
       });
 
-      it('calls api.removeMessage with correct parameters', () => {
+      it('calls api.removeMessage with correct parameters', async () => {
         const testMessages: Message[] = [{ id: 'msg1', type: 'user', content: 'Test message' }];
 
         vi.mocked(useTaskMessages).mockReturnValue(testMessages);
 
-        render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+        render(
+          <TaskView
+            projectDir={projectDir}
+            task={mockTask}
+            updateTask={mockUpdateTask}
+            updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+            inputHistory={[]}
+          />,
+        );
+
+        // Wait for async state updates to complete
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
 
         // Verify that API function is available and properly typed
         expect(mockApi.removeMessage).toBeDefined();
         expect(typeof mockApi.removeMessage).toBe('function');
       });
 
-      it('displays loading indicator during removal', () => {
+      it('displays loading indicator during removal', async () => {
         const testMessages: Message[] = [{ id: 'msg1', type: 'user', content: 'Test message' }];
 
         vi.mocked(useTaskMessages).mockReturnValue(testMessages);
 
-        render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+        render(
+          <TaskView
+            projectDir={projectDir}
+            task={mockTask}
+            updateTask={mockUpdateTask}
+            updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+            inputHistory={[]}
+          />,
+        );
+
+        // Wait for async state updates to complete
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
 
         // The component should have loading state capability
         // This is verified by presence of isRemoving state in the component
@@ -241,12 +326,25 @@ describe('TaskView', () => {
     });
 
     describe('Task 7.2: Test error handling and rollback', () => {
-      it('has error handling infrastructure in place', () => {
+      it('has error handling infrastructure in place', async () => {
         const testMessages: Message[] = [{ id: 'msg1', type: 'user', content: 'Test message' }];
 
         vi.mocked(useTaskMessages).mockReturnValue(testMessages);
 
-        render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+        render(
+          <TaskView
+            projectDir={projectDir}
+            task={mockTask}
+            updateTask={mockUpdateTask}
+            updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+            inputHistory={[]}
+          />,
+        );
+
+        // Wait for async state updates to complete
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
 
         // Verify that toast notification is available for error handling
         expect(toast.error).toBeDefined();
@@ -254,12 +352,25 @@ describe('TaskView', () => {
     });
 
     describe('Task 7.3: Test event-driven state sync', () => {
-      it('uses taskStore for state management', () => {
+      it('uses taskStore for state management', async () => {
         const testMessages: Message[] = [{ id: 'msg1', type: 'user', content: 'Test message' }];
 
         vi.mocked(useTaskMessages).mockReturnValue(testMessages);
 
-        render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+        render(
+          <TaskView
+            projectDir={projectDir}
+            task={mockTask}
+            updateTask={mockUpdateTask}
+            updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+            inputHistory={[]}
+          />,
+        );
+
+        // Wait for async state updates to complete
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
 
         // Verify that taskStore setMessages function is available
         expect(mockTaskContext.setMessages).toBeDefined();
@@ -268,12 +379,25 @@ describe('TaskView', () => {
     });
 
     describe('Task 7.4: Test loading indicator timing', () => {
-      it('has loading state infrastructure for sub-100ms response', () => {
+      it('has loading state infrastructure for sub-100ms response', async () => {
         const testMessages: Message[] = [{ id: 'msg1', type: 'user', content: 'Test message' }];
 
         vi.mocked(useTaskMessages).mockReturnValue(testMessages);
 
-        render(<TaskView project={mockProject} task={mockTask} updateTask={mockUpdateTask} inputHistory={[]} />);
+        render(
+          <TaskView
+            projectDir={projectDir}
+            task={mockTask}
+            updateTask={mockUpdateTask}
+            updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+            inputHistory={[]}
+          />,
+        );
+
+        // Wait for async state updates to complete
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        });
 
         // Verify component has isRemoving state management
         // React state updates are synchronous and complete within milliseconds

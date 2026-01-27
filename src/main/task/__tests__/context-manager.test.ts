@@ -3,7 +3,6 @@
  * These tests verify message removal with proper tool call cascade handling
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('ContextManager - removeMessageById', () => {

@@ -126,7 +126,7 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
 
         if (fileExists) {
           // This condition is now met if the file initially existed or was just created
-          const added = await task.addFile({
+          const added = await task.addFiles({
             path: filePath,
             readOnly,
           });

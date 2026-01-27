@@ -8,6 +8,7 @@ import {
   ProviderProfile,
   SettingsData,
   TaskData,
+  CreateTaskParams,
   TodoItem,
   AgentProfile,
 } from '@common/types';
@@ -192,12 +193,16 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.compactConversation(baseDir, taskId, mode, customInstructions);
   });
 
+  ipcMain.handle('handoff-conversation', async (_event, baseDir: string, taskId: string, focus?: string) => {
+    return await eventsHandler.handoffConversation(baseDir, taskId, focus);
+  });
+
   ipcMain.handle('scrape-web', async (_, baseDir: string, taskId: string, url: string, filePath?: string) => {
     await eventsHandler.scrapeWeb(baseDir, taskId, url, filePath);
   });
 
-  ipcMain.handle('create-new-task', async (_, baseDir: string) => {
-    return await eventsHandler.createNewTask(baseDir);
+  ipcMain.handle('create-new-task', async (_, baseDir: string, params?: CreateTaskParams) => {
+    return await eventsHandler.createNewTask(baseDir, params);
   });
 
   ipcMain.handle('update-task', async (_, baseDir: string, id: string, updates: Partial<TaskData>) => {
@@ -210,6 +215,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 
   ipcMain.handle('duplicate-task', async (_, baseDir: string, taskId: string) => {
     return await eventsHandler.duplicateTask(baseDir, taskId);
+  });
+
+  ipcMain.handle('fork-task', async (_, baseDir: string, taskId: string, messageId: string) => {
+    return await eventsHandler.forkTask(baseDir, taskId, messageId);
   });
 
   ipcMain.handle('get-tasks', async (_, baseDir: string) => {

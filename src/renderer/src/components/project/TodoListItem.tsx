@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { clsx } from 'clsx';
-import { MdEdit, MdDelete, MdCheck, MdClose } from 'react-icons/md';
+import { MdEdit, MdDelete, MdCheck, MdClose, MdSwapHoriz } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';
 
@@ -12,9 +12,10 @@ type Props = {
   onToggle?: (name: string, completed: boolean) => void;
   onUpdate?: (name: string, updates: Partial<TodoItem>) => void;
   onDelete?: (name: string) => void;
+  onHandoff?: (name: string) => void;
 };
 
-export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
+export const TodoListItem = ({ item, onToggle, onUpdate, onDelete, onHandoff }: Props) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
@@ -54,6 +55,12 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
     }
   };
 
+  const handleHandoff = () => {
+    if (onHandoff) {
+      onHandoff(item.name);
+    }
+  };
+
   return (
     <div className="group flex items-center gap-2 hover:bg-bg-secondary rounded p-1 -m-1">
       <Checkbox checked={item.completed} onChange={handleToggle} size="sm" className={clsx(item.completed && 'opacity-40')} />
@@ -89,14 +96,20 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete }: Props) => {
             <IconButton
               icon={<MdEdit className="w-3 h-3" />}
               onClick={handleEdit}
-              tooltip={t('tasks.editTodo')}
+              tooltip={t('todo.editTodo')}
               className="text-text-muted-light hover:text-text-secondary hover:bg-bg-tertiary rounded p-1"
             />
             <IconButton
               icon={<MdDelete className="w-3 h-3" />}
               onClick={handleDelete}
-              tooltip={t('tasks.deleteTodo')}
+              tooltip={t('todo.deleteTodo')}
               className="text-text-muted-light hover:text-error-light hover:bg-error-subtle rounded p-1"
+            />
+            <IconButton
+              icon={<MdSwapHoriz className="w-3 h-3" />}
+              onClick={handleHandoff}
+              tooltip={t('todo.handoffTodo')}
+              className="text-text-muted-light hover:text-info-light hover:bg-info-subtle rounded p-1"
             />
           </div>
         </>

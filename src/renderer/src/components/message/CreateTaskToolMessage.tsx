@@ -12,13 +12,16 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 
-export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
   const { t } = useTranslation();
 
   const prompt = message.args.prompt as string;
   const agentProfileId = message.args.agentProfileId as string;
+  const name = message.args.name as string | undefined;
+  const parentTaskId = message.args.parentTaskId as string | null | undefined;
   const modelId = message.args.modelId as string;
   const execute = message.args.execute as boolean;
   const executeInBackground = message.args.executeInBackground as boolean;
@@ -114,6 +117,16 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Pr
               <div className="text-3xs">
                 <span className="text-text-muted">{t('agentProfiles.profileName')}:</span> {content.name}
               </div>
+              {name && (
+                <div className="text-3xs">
+                  <span className="text-text-muted">{t('toolMessage.tasks.name')}:</span> {name}
+                </div>
+              )}
+              {parentTaskId !== undefined && (
+                <div className="text-3xs">
+                  <span className="text-text-muted">{t('toolMessage.tasks.parentTaskId')}:</span> {parentTaskId}
+                </div>
+              )}
               {agentProfileId && (
                 <div className="text-3xs mt-2">
                   <span className="text-text-muted">{t('toolMessage.tasks.agentProfile')}:</span> {agentProfileId}
@@ -129,7 +142,7 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Pr
                   <span className="text-text-muted">{t('toolMessage.tasks.execute')}:</span> {execute ? t('toolMessage.tasks.yes') : t('toolMessage.tasks.no')}
                 </div>
               )}
-              {executeInBackground !== undefined && (
+              {executeInBackground !== undefined && execute && (
                 <div className="text-3xs">
                   <span className="text-text-muted">{t('toolMessage.tasks.executeInBackground')}:</span>{' '}
                   {executeInBackground ? t('toolMessage.tasks.yes') : t('toolMessage.tasks.no')}
@@ -146,5 +159,5 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Pr
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
+  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} onFork={onFork} />;
 };

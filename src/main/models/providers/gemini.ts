@@ -49,7 +49,7 @@ const loadGeminiModels = async (profile: ProviderProfile, settings: SettingsData
             id: modelId,
             providerId: profile.id,
             maxInputTokens: model.inputTokenLimit,
-            maxOutputTokens: model.outputTokenLimit,
+            maxOutputTokensLimit: model.outputTokenLimit,
             temperature: 0.7, // Default temperature for Gemini models
           } satisfies Model;
         }) || [];

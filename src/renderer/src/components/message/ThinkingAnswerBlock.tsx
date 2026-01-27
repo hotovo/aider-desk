@@ -1,9 +1,8 @@
 import { MouseEvent, useState } from 'react';
-import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import { FaChevronRight } from 'react-icons/fa';
 import { TfiThought } from 'react-icons/tfi';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { AnimatePresence, motion } from 'framer-motion';
 
 import { CopyMessageButton } from './CopyMessageButton';
 
@@ -57,24 +56,18 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
               <div className="font-medium text-text-secondary flex-1">{t('thinkingAnswer.thinking')}</div>
             </div>
             {thinking && <CopyMessageButton content={thinking} className="text-text-muted-dark hover:text-text-tertiary" />}
-            <motion.div initial={false} animate={{ rotate: isThinkingExpanded ? 0 : -90 }} transition={{ duration: 0.2 }} className="text-text-secondary">
-              {isThinkingExpanded ? <FaChevronDown className="w-3 h-3" /> : <FaChevronRight className="w-3 h-3" />}
-            </motion.div>
+            <div className={clsx('text-text-secondary transition-transform', isThinkingExpanded ? 'rotate-90' : '')}>
+              <FaChevronRight className="w-3 h-3" />
+            </div>
           </div>
 
-          <AnimatePresence initial={false}>
-            {isThinkingExpanded && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2, ease: 'easeInOut' }}
-                className={clsx('p-3 text-xs text-text-primary bg-bg-secondary overflow-hidden', !renderMarkdown && 'whitespace-pre-wrap break-words')}
-              >
+          <div className={`grid transition-all duration-200 ease-in-out ${isThinkingExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+            <div className="overflow-hidden">
+              <div className={clsx('p-3 text-xs text-text-primary bg-bg-secondary', !renderMarkdown && 'whitespace-pre-wrap break-words')}>
                 {parsedThinking}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </div>
+          </div>
         </div>
       )}
       {/* Answer section - only show if we have an answer or we're streaming */}

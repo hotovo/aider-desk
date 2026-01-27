@@ -1,11 +1,15 @@
-import { Message } from '@/types/message';
+import { LoadingMessage } from '@/types/message';
 import { useTypingAnimation } from '@/hooks/useTypingAnimation';
+import { MessageActions } from '@/components/message/MessageActions';
 
 type Props = {
-  message: Message;
+  message: LoadingMessage;
+  baseDir: string;
+  taskId: string;
+  onInterrupt?: () => void;
 };
 
-export const LoadingMessageBlock = ({ message }: Props) => {
+export const LoadingMessageBlock = ({ message, baseDir, taskId, onInterrupt }: Props) => {
   const displayedText = useTypingAnimation(message.content, 60, 3000);
 
   const baseClasses =
@@ -14,6 +18,11 @@ export const LoadingMessageBlock = ({ message }: Props) => {
   return (
     <div className={`${baseClasses} text-text-secondary relative group flex items-center`}>
       <span className="flex-grow">{displayedText || ' '}</span>
+      {message.actionIds && (
+        <div className="flex flex-wrap justify-end">
+          <MessageActions actionIds={message.actionIds} baseDir={baseDir} taskId={taskId} onInterrupt={onInterrupt} />
+        </div>
+      )}
     </div>
   );
 };

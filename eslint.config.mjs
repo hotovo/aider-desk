@@ -135,4 +135,9 @@ export default tseslint.config({ ignores: ['dist', 'node_modules', 'out'] }, {
     'react-hooks/set-state-in-effect': 'warn',
     'react-hooks/refs': 'warn',
   }
+}, {
+  files: ['**/__tests__/**/*.test.ts'],
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'off'
+  }
 });

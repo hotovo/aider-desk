@@ -1,10 +1,10 @@
 import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
-import { isZaiPlanProvider, ZaiPlanProvider } from '@common/agent';
+import { isZaiPlanProvider, LlmProvider, ZaiPlanProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { getDefaultUsageReport } from './default';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -114,6 +114,26 @@ const getZaiPlanModelInfo = (_provider: ProviderProfile, modelId: string, allMod
   return allModelInfos[fullModelId];
 };
 
+const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+  if (isZaiPlanProvider(llmProvider)) {
+    const providerOverrides = model.providerOverrides as Partial<ZaiPlanProvider> | undefined;
+    const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
+
+    // Only disable thinking if explicitly set to false
+    if (thinkingEnabled === false) {
+      return {
+        'zai-plan': {
+          thinking: {
+            type: 'disabled',
+          },
+        },
+      } as SharedV2ProviderOptions;
+    }
+  }
+
+  return undefined;
+};
+
 // === Complete Strategy Implementation ===
 export const zaiPlanProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
@@ -125,4 +145,6 @@ export const zaiPlanProviderStrategy: LlmProviderStrategy = {
   hasEnvVars: hasZaiPlanEnvVars,
   getAiderMapping: getZaiPlanAiderMapping,
   getModelInfo: getZaiPlanModelInfo,
+
+  getProviderOptions: getZaiPlanProviderOptions,
 };

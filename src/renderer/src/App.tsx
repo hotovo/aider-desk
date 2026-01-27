@@ -5,6 +5,7 @@ import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'reac
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { THEMES } from '@common/types';
+import { IconContext } from 'react-icons';
 
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
@@ -17,6 +18,8 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { ApiProvider } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
+
+const ICON_CONTEXT_DEFAULT_VALUE: IconContext = {};
 
 const ThemeAndFontManager = () => {
   const { theme, font = 'Sono', fontSize = 16 } = useSettings();
@@ -95,17 +98,19 @@ const App = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
       <Router>
         <ApiProvider>
-          <ModelProviderProvider>
-            <SettingsProvider>
-              <AgentsProvider>
-                <ContextMenuProvider>
-                  <ThemeAndFontManager />
-                  <AnimatedRoutes />
-                  <ToastContainer />
-                </ContextMenuProvider>
-              </AgentsProvider>
-            </SettingsProvider>
-          </ModelProviderProvider>
+          <IconContext.Provider value={ICON_CONTEXT_DEFAULT_VALUE}>
+            <ModelProviderProvider>
+              <SettingsProvider>
+                <AgentsProvider>
+                  <ContextMenuProvider>
+                    <ThemeAndFontManager />
+                    <AnimatedRoutes />
+                    <ToastContainer />
+                  </ContextMenuProvider>
+                </AgentsProvider>
+              </SettingsProvider>
+            </ModelProviderProvider>
+          </IconContext.Provider>
         </ApiProvider>
       </Router>
     </motion.div>

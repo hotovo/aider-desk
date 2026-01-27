@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdDoneAll } from 'react-icons/md';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
@@ -12,7 +13,7 @@ type Props = {
   showLabel?: boolean;
 };
 
-export const AutoApprove = ({ enabled, locked, onChange, onLockChange, showLabel = true }: Props) => {
+export const AutoApprove = memo(({ enabled, locked, onChange, onLockChange, showLabel = true }: Props) => {
   const { t } = useTranslation();
 
   const handleClick = () => {
@@ -50,4 +51,6 @@ export const AutoApprove = ({ enabled, locked, onChange, onLockChange, showLabel
       )}
     </div>
   );
-};
+});
+
+AutoApprove.displayName = 'AutoApprove';

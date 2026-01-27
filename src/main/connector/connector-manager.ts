@@ -94,7 +94,7 @@ export class ConnectorManager {
         const project = this.projectManager.getProject(message.baseDir);
         void project.addConnector(connector);
 
-        message.contextFiles?.forEach((file) => project.getTask(connector.taskId)?.addFile(file));
+        message.contextFiles?.forEach((file) => project.getTask(connector.taskId)?.addFiles(file));
         logger.info('Socket.IO registered project for base directory:', {
           baseDir: message.baseDir,
           taskId: message.taskId,
@@ -113,18 +113,18 @@ export class ConnectorManager {
         logger.info('Adding file in project', { baseDir: connector.baseDir });
         const project = this.projectManager.getProject(connector.baseDir);
         if (connector.taskId) {
-          project.getTask(connector.taskId)?.addFile({
+          project.getTask(connector.taskId)?.addFiles({
             path: message.path,
             readOnly: message.readOnly,
           });
         } else {
           project.forEachTask((task) =>
-            task.addFile({
+            task.addFiles({
               path: message.path,
               readOnly: message.readOnly,
             }),
           );
-          project.getInternalTask()?.addFile({
+          project.getInternalTask()?.addFiles({
             path: message.path,
             readOnly: message.readOnly,
           });

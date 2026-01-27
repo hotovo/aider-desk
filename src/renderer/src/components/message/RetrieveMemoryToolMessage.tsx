@@ -14,9 +14,10 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 
-export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
 
@@ -187,7 +188,7 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false }
 
   return (
     <>
-      <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />
+      <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} onFork={onFork} />
       {memoryToDelete && (
         <ConfirmDialog
           title={t('toolMessage.memory.deleteDialogTitle')}

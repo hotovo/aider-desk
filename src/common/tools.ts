@@ -101,7 +101,7 @@ const myFunction = () => {
   [POWER_TOOL_GREP]:
     'Searches for content matching a regular expression pattern within files specified by a glob pattern. Returns matching lines and their context.',
   [POWER_TOOL_SEMANTIC_SEARCH]:
-    'Search code in the repository using Elasticsearch-like query syntax. Use this tool first for any code-related questions to find out relationships between files and what files need to be changed.',
+    'Search code in repository using semantic search. Use natural language queries with 2-5 descriptive words including key concepts and context. Can filter results with hints like ext:ts, dir:src, or lang:typescript. Use this tool first for any code-related questions to find relationships between files and identify files to change.',
   [POWER_TOOL_BASH]: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',
   [POWER_TOOL_FETCH]:
     'Fetches and returns the content of a web page from a specified URL. Useful for retrieving web content, documentation, or external resources. Supports three formats: "markdown" (default, converts HTML to markdown), "html" (returns raw HTML), "raw" (fetches raw content via HTTP, ideal for API responses or raw files like GitHub raw files).',
@@ -132,6 +132,8 @@ export const TASKS_TOOL_GET_TASK = 'get_task';
 export const TASKS_TOOL_GET_TASK_MESSAGE = 'get_task_message';
 export const TASKS_TOOL_CREATE_TASK = 'create_task';
 export const TASKS_TOOL_DELETE_TASK = 'delete_task';
+export const TASKS_TOOL_SEARCH_TASK = 'search_task';
+export const TASKS_TOOL_SEARCH_PARENT_TASK = 'search_parent_task';
 
 export const TASKS_TOOL_DESCRIPTIONS = {
   [TASKS_TOOL_LIST_TASKS]:
@@ -141,7 +143,11 @@ export const TASKS_TOOL_DESCRIPTIONS = {
   [TASKS_TOOL_GET_TASK_MESSAGE]:
     "Retrieve a specific message from a task's conversation history by message index and task ID. The first message (index 0) is always the user's initial prompt, and subsequent messages alternate between user and assistant. Use this to examine the conversation flow, understand previous interactions, or extract specific information from the task history.",
   [TASKS_TOOL_CREATE_TASK]:
-    'Create a new task in the current project with an initial prompt. Optionally specify an agent profile ID to use different capabilities, or a model ID to override the default model. The new task will start with the provided prompt as its first user message. Use this to begin new work streams or separate different aspects of a project.',
+    'Create a new task in the current project with an initial prompt. Optionally specify an agent profile ID to use different capabilities, a model ID to override the default model, or a parentTaskId to create a subtask of another task. The parentTaskId parameter is only available for top-level tasks; if the current task is itself a subtask, you cannot create subtasks from it. The new task will start with the provided prompt as its first user message. Use this to begin new work streams, separate different aspects of a project, or break down complex tasks into manageable subtasks.',
   [TASKS_TOOL_DELETE_TASK]:
     'Permanently delete a task and all its associated data including messages, context files, and metadata. This action cannot be undone. Note that you cannot delete the currently active task. Use this to clean up completed or abandoned tasks, but be cautious as this removes all task history permanently.',
+  [TASKS_TOOL_SEARCH_TASK]:
+    'Search content within a specific task using semantic search. Use natural language queries with 2-5 descriptive words including key concepts and context. Searches through task conversation history and context files. Use this to find relevant information, discussions, or code snippets within a task.',
+  [TASKS_TOOL_SEARCH_PARENT_TASK]:
+    'Search content within parent task using semantic search. Use natural language queries with 2-5 descriptive words including key concepts and context. Automatically searches parent task conversation history and context files.',
 } as const;

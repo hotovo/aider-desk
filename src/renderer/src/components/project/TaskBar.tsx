@@ -1,4 +1,4 @@
-import { EditFormat, Mode, Model, ModelsData, RawModelInfo, TaskData } from '@common/types';
+import { AgentProfile, EditFormat, Mode, Model, ModelsData, RawModelInfo, TaskData } from '@common/types';
 import React, { ReactNode, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
@@ -9,6 +9,7 @@ import { RiRobot2Line, RiMenuUnfold4Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { getProviderModelId, AVAILABLE_PROVIDERS } from '@common/agent';
 import { clsx } from 'clsx';
+import { extractProviderModel } from '@common/utils';
 
 import { IconButton } from '@/components/common/IconButton';
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
@@ -17,11 +18,9 @@ import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector'
 import { TaskWorkingMode } from '@/components/PromptField/TaskWorkingMode';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
-import { useAgents } from '@/contexts/AgentsContext';
 
 export type TaskBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -33,18 +32,18 @@ type Props = {
   task: TaskData;
   modelsData: ModelsData | null;
   mode: Mode;
+  activeAgentProfile: AgentProfile | null;
   onModelsChange?: (modelsData: ModelsData | null) => void;
   runCommand: (command: string) => void;
   onToggleSidebar: () => void;
   onToggleTaskSidebar?: () => void;
-  updateTask: (updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
 };
 
 export const TaskBar = React.forwardRef<TaskBarRef, Props>(
-  ({ baseDir, task, modelsData, mode, onModelsChange, runCommand, onToggleSidebar, onToggleTaskSidebar, updateTask }, ref) => {
+  ({ baseDir, task, modelsData, mode, activeAgentProfile, onModelsChange, runCommand, onToggleSidebar, onToggleTaskSidebar, updateTask }, ref) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
-    const { projectSettings } = useProjectSettings();
     const { models, providers } = useModelProviders();
     const api = useApi();
     const { isMobile } = useResponsive();
@@ -78,12 +77,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     const mainModelSelectorRef = useRef<ModelSelectorRef>(null);
     const architectModelSelectorRef = useRef<ModelSelectorRef>(null);
 
-    const { profiles: agentProfiles } = useAgents();
-    const activeAgentProfile = useMemo(() => {
-      return agentProfiles.find((profile) => profile.id === projectSettings?.agentProfileId);
-    }, [projectSettings?.agentProfileId, agentProfiles]);
-
-    const showAiderInfo = mode !== 'agent' || activeAgentProfile?.useAiderTools === true;
+    const showAiderInfo = mode !== 'agent' || activeAgentProfile?.useAiderTools;
 
     // Use task provider/model first, fallback to active agent profile
     const effectiveAgentProvider = task.provider || activeAgentProfile?.provider;
@@ -98,8 +92,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
         const existingModel = taskModels.find((model) => getProviderModelId(model) === currentTaskModelId);
         if (!existingModel) {
           // Create a custom model object for the current model
-          const [providerId, ...modelNameParts] = currentTaskModelId.split('/');
-          const modelId = modelNameParts.join('/');
+          const [providerId, modelId] = extractProviderModel(currentTaskModelId);
           if (providerId && modelId) {
             const customModel: Model = {
               id: modelId,
@@ -138,14 +131,14 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
           return;
         }
 
-        updateTask({
+        updateTask(task.id, {
           provider: provider.id,
           model: modelId,
         });
 
         updatePreferredModels(selectedModelId);
       },
-      [providers, updateTask, t, updatePreferredModels],
+      [providers, updateTask, task.id, updatePreferredModels, t],
     );
 
     useImperativeHandle(ref, () => ({
@@ -237,10 +230,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     );
 
     const toggleWeakModelLock = useCallback(() => {
-      updateTask({
+      updateTask(task.id, {
         weakModelLocked: !task.weakModelLocked,
       });
-    }, [task.weakModelLocked, updateTask]);
+    }, [task.id, task.weakModelLocked, updateTask]);
 
     const updateArchitectModel = useCallback(
       (architectModel: Model) => {
@@ -390,7 +383,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
       return (
         <div className={clsx('flex flex-wrap gap-x-2 flex-shrink-0', isMobile ? 'flex-col items-start gap-y-1' : 'flex-row items-center gap-y-0.5')}>
           {showLabel && <span className="text-2xs font-semibold text-text-primary uppercase whitespace-nowrap">{t('projectBar.aider')}:</span>}
-          <div className="flex items-center space-x-1 flex-shrink-0">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <CgTerminal className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="main-model-tooltip" />
             <StyledTooltip id="main-model-tooltip" content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)} />
             <ModelSelector
@@ -404,7 +397,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
             />
           </div>
           {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
-          <div className="flex items-center space-x-1 flex-shrink-0">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <BsFilter className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
             <StyledTooltip id="weak-model-tooltip" />
             <ModelSelector
@@ -437,8 +430,8 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
             <>
               {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
               <div className="flex items-center space-x-1 group/reasoning flex-shrink-0">
-                <span className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.reasoning')}:</span>
-                <span className="text-text-primary text-xs whitespace-nowrap">{modelsData.reasoningEffort}</span>
+                <span className="text-2xs text-text-muted-light whitespace-nowrap">{t('modelSelector.reasoning')}:</span>
+                <span className="text-text-primary text-2xs whitespace-nowrap">{modelsData.reasoningEffort}</span>
                 <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('reasoning-effort none')} className="ml-0.5" />
               </div>
             </>
@@ -447,8 +440,8 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
             <>
               {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
               <div className="flex items-center space-x-1 group/thinking flex-shrink-0">
-                <span className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.thinkingTokens')}:</span>
-                <span className="text-text-primary text-xs whitespace-nowrap">{modelsData.thinkingTokens}</span>
+                <span className="text-2xs text-text-muted-light whitespace-nowrap">{t('modelSelector.thinkingTokens')}:</span>
+                <span className="text-text-primary text-2xs whitespace-nowrap">{modelsData.thinkingTokens}</span>
                 <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('think-tokens 0')} className="ml-0.5" />
               </div>
             </>
@@ -470,7 +463,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
               <div className="flex flex-wrap gap-x-5 gap-y-2">
                 {/* Row 1: AGENT */}
                 <div className="flex items-center space-x-2 flex-shrink-0">
-                  <div className="flex items-center space-x-1 flex-shrink-0">
+                  <div className="flex items-center space-x-2 flex-shrink-0">
                     <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
                     <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
                     {!currentTaskModelId ? (
@@ -497,7 +490,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
               <div className="flex items-center space-x-3 flex-wrap">
                 {mode === 'agent' ? (
                   <>
-                    <div className="flex items-center space-x-1 flex-shrink-0">
+                    <div className="flex items-center space-x-2 flex-shrink-0">
                       <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
                       <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
                       {!currentTaskModelId ? (
@@ -520,7 +513,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                   <>
                     {mode === 'architect' && (
                       <>
-                        <div className="flex items-center space-x-1 flex-shrink-0">
+                        <div className="flex items-center space-x-2 flex-shrink-0">
                           <GoProjectRoadmap
                             className="w-4 h-4 text-text-primary mr-1"
                             data-tooltip-id="architect-model-tooltip"

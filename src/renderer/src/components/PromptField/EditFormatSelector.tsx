@@ -1,10 +1,10 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdKeyboardArrowUp } from 'react-icons/md';
 import { EditFormat } from '@common/types';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
-import { useBooleanState } from '@/hooks/useBooleanState';
+import { useDropdownState } from '@/hooks/useDropdownState';
 
 export type EditFormatSelectorRef = {
   open: () => void;
@@ -20,45 +20,30 @@ type Props = {
 
 export const EditFormatSelector = forwardRef<EditFormatSelectorRef, Props>(({ currentFormat, onFormatChange }, ref) => {
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [visible, show, hide] = useBooleanState(false);
   const selectorRef = useRef<HTMLDivElement>(null);
   const highlightedItemRef = useRef<HTMLDivElement>(null);
 
-  useClickOutside(selectorRef, hide);
+  const { isOpen, state, open, close, toggle } = useDropdownState({
+    initialState: { highlightedIndex: -1 },
+    onCloseReset: { highlightedIndex: -1 },
+  });
 
-  useEffect(() => {
-    if (!visible) {
-      setHighlightedIndex(-1);
-      setSearchTerm('');
-    }
-  }, [visible]);
+  useClickOutside(selectorRef, close);
 
   useImperativeHandle(ref, () => ({
-    open: show,
+    open: () => open(),
   }));
-
-  const toggleVisible = useCallback(() => {
-    if (visible) {
-      hide();
-    } else {
-      show();
-    }
-  }, [visible, hide, show]);
 
   const handleFormatSelected = (format: EditFormat) => {
     onFormatChange(format);
-    hide();
+    close();
   };
-
-  const filteredFormats = editFormatOptions.filter((format) => format.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const renderFormatItem = (format: EditFormat, index: number) => (
     <div
       key={format}
-      ref={index === highlightedIndex ? highlightedItemRef : undefined}
-      className={`flex items-center w-full hover:bg-bg-tertiary transition-colors duration-200 ${index === highlightedIndex ? 'bg-bg-tertiary' : 'text-text-tertiary'}`}
+      ref={index === state.highlightedIndex ? highlightedItemRef : undefined}
+      className={`flex items-center w-full hover:bg-bg-tertiary transition-colors duration-200 ${index === state.highlightedIndex ? 'bg-bg-tertiary' : 'text-text-tertiary'}`}
     >
       <button
         onClick={() => handleFormatSelected(format)}
@@ -71,14 +56,14 @@ export const EditFormatSelector = forwardRef<EditFormatSelectorRef, Props>(({ cu
 
   return (
     <div className="relative" ref={selectorRef}>
-      <button onClick={toggleVisible} className="flex items-center hover:text-text-tertiary focus:outline-none transition-colors duration-200 text-xs">
+      <button onClick={toggle} className="flex items-center hover:text-text-tertiary focus:outline-none transition-colors duration-200 text-2xs">
         <span>{currentFormat || t('common.loading')}</span>
         <MdKeyboardArrowUp className="w-3 h-3 ml-1 transform rotate-180" />
       </button>
-      {visible && (
+      {isOpen && (
         <div className="absolute top-full left-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-60 max-w-[calc(100vw-20px)]">
           <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
-            {filteredFormats.map(renderFormatItem)}
+            {editFormatOptions.map(renderFormatItem)}
           </div>
         </div>
       )}

@@ -30,3 +30,4 @@ start-docker.sh
 .claude-trace
 repomix-output.txt
 .eslintcache
+ai-docs

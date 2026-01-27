@@ -2,6 +2,7 @@ export * from './AnthropicParameters';
 export * from './AzureParameters';
 export * from './BedrockParameters';
 export * from './CerebrasParameters';
+export * from './ClaudeAgentSdkParameters';
 export * from './DeepseekParameters';
 export * from './GeminiParameters';
 export * from './GpustackParameters';
@@ -34,3 +35,7 @@ export * from './GeminiModelOverrides';
 export * from './OpenCodeModelOverrides';
 export * from './VertexAiModelOverrides';
 export * from './RequestyModelOverrides';
+export * from './ZaiPlanModelOverrides';
+
+// Utility Components
+export * from './ZaiPlanThinkingSetting';

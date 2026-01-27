@@ -36,10 +36,12 @@ export abstract class BaseApi {
           path: req.path,
           method: req.method,
         });
-        res.status(500).json({
-          error: 'Internal server error',
-          details: error instanceof Error ? error.message : 'Unknown error',
-        });
+        if (!res.writableEnded) {
+          res.status(500).json({
+            error: 'Internal server error',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
       }
     };
   }

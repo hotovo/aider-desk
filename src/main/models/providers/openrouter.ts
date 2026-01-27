@@ -88,7 +88,7 @@ const loadOpenrouterModels = async (profile: ProviderProfile, settings: Settings
           id: model.id,
           providerId: profile.id,
           maxInputTokens: model.context_length,
-          maxOutputTokens: model.top_provider.max_completion_tokens,
+          maxOutputTokensLimit: model.top_provider.max_completion_tokens,
           inputCostPerToken: Number(model.pricing.prompt),
           outputCostPerToken: Number(model.pricing.completion),
           cacheWriteInputTokenCost: model.pricing.input_cache_write ? Number(model.pricing.input_cache_write) : undefined,

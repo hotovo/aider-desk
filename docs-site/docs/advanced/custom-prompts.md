@@ -22,6 +22,7 @@ AiderDesk includes the following built-in prompt templates that you can override
 | `update-task-state.hbs` | Instructions for determining the appropriate task state based on the agent's last response | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/update-task-state.hbs) |
 | `conflict-resolution-system.hbs` | System prompt for resolving Git merge conflicts | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/conflict-resolution-system.hbs) |
 | `conflict-resolution.hbs` | Instructions for handling conflict resolution tasks | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/conflict-resolution.hbs) |
+| `handoff.hbs` | Template for generating focused prompts when using the `/handoff` command | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/handoff.hbs) |
 
 ## Template Override System
 
@@ -234,6 +235,20 @@ The `conflict-resolution.hbs` template receives:
 }
 ```
 
+### Handoff Variables
+
+The `handoff.hbs` template receives:
+
+```typescript
+{
+  focus?: string;
+  contextFiles?: ContextFile[];
+}
+```
+
+- `focus`: Optional focus parameter provided by the user when running `/handoff`
+- `contextFiles`: List of context files that will be transferred to the new task
+
 ## Live Reloading
 
 AiderDesk automatically watches for changes to custom prompt templates:
@@ -358,6 +373,7 @@ EOF
 
 ## Related Features
 
-- **Project Rules**: Combine custom prompts with rule files for complete behavior control. See [Project-Specific Rules](./project-specific-rules.md)
+- **Handoff**: Customize the handoff prompt template to control how conversation context is transferred to new tasks. See [Handoff](../features/handoff.md)
+- **Project Rules**: Combine custom prompts with rule files for complete behavior control. See [Project-Specific Rules](../configuration/project-specific-rules.md)
 - **Agent Profiles**: Create different agent profiles with different prompts. See [Agent Profiles](../agent-mode/agent-profiles.md)
 - **Memory System**: Use memory to store and retrieve user preferences that can inform prompts. See [Memory](../features/memory.md)

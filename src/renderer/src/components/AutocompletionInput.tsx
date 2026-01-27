@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 
+import { KeyboardKeys } from '@/constants/keyboardKeys';
+
 type Props = {
   value: string;
   suggestions: string[];
@@ -40,17 +42,17 @@ export const AutocompletionInput = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showSuggestions) {
-      if (e.key === 'Enter' && onSubmit) {
+      if (e.key === KeyboardKeys.Enter && onSubmit) {
         e.preventDefault();
         onSubmit();
-      } else if (e.key === 'Tab') {
+      } else if (e.key === KeyboardKeys.Tab) {
         e.preventDefault();
       }
       return;
     }
 
     switch (e.key) {
-      case 'ArrowDown':
+      case KeyboardKeys.ArrowDown:
         e.preventDefault();
         setSelectedIndex((prev) => {
           const newIndex = Math.min(prev + 1, suggestions.length - 1);
@@ -59,7 +61,7 @@ export const AutocompletionInput = ({
           return newIndex;
         });
         break;
-      case 'ArrowUp':
+      case KeyboardKeys.ArrowUp:
         e.preventDefault();
         setSelectedIndex((prev) => {
           const newIndex = Math.max(prev - 1, 0);
@@ -70,7 +72,7 @@ export const AutocompletionInput = ({
           return newIndex;
         });
         break;
-      case 'Enter':
+      case KeyboardKeys.Enter:
         if (selectedIndex >= 0) {
           e.preventDefault();
           const isMultiSelect = e.ctrlKey || e.metaKey;
@@ -86,14 +88,14 @@ export const AutocompletionInput = ({
           onSubmit(e.ctrlKey || e.metaKey);
         }
         break;
-      case 'Tab':
+      case KeyboardKeys.Tab:
         if (suggestions.length > 0 || selectedIndex >= 0) {
           e.preventDefault();
           onChange(suggestions[selectedIndex >= 0 ? selectedIndex : 0], true);
           setShowSuggestions(false);
         }
         break;
-      case 'Escape':
+      case KeyboardKeys.Escape:
         e.preventDefault();
         e.stopPropagation();
         setShowSuggestions(false);

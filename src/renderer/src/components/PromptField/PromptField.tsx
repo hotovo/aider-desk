@@ -66,6 +66,7 @@ const COMMANDS = [
   '/edit-last',
   '/compact',
   '/commit',
+  '/handoff',
   '/init',
   '/clear-logs',
 ];
@@ -130,6 +131,7 @@ type Props = {
   onAutoApproveChanged?: (autoApprove: boolean) => void;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   showTaskInfo?: () => void;
+  handoffConversation?: (focus?: string) => Promise<void>;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -169,6 +171,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       onAutoApproveChanged,
       showSettingsPage,
       showTaskInfo,
+      handoffConversation,
     }: Props,
     ref,
   ) => {
@@ -184,7 +187,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       });
       setText(text);
     });
-    const [placeholderIndex, setPlaceholderIndex] = useState(() => Math.floor(Math.random() * PLACEHOLDER_COUNT));
+    const [placeholderIndex, setPlaceholderIndex] = useState(1);
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
     const [historyLimit, setHistoryLimit] = useState(HISTORY_MENU_CHUNK_SIZE);
@@ -361,11 +364,14 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       },
     }));
 
-    const handleAutoApproveLockChanged = (locked: boolean) => {
-      void saveProjectSettings({
-        autoApproveLocked: locked,
-      });
-    };
+    const handleAutoApproveLockChanged = useCallback(
+      (locked: boolean) => {
+        void saveProjectSettings({
+          autoApproveLocked: locked,
+        });
+      },
+      [saveProjectSettings],
+    );
 
     const prepareForNextPrompt = useCallback(() => {
       setTextWithDispatch('');
@@ -449,6 +455,14 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             prepareForNextPrompt();
             api.compactConversation(baseDir, taskId, mode, args);
             break;
+          case '/handoff': {
+            const focus = args || '';
+            if (handoffConversation) {
+              handoffConversation(focus);
+            }
+            prepareForNextPrompt();
+            break;
+          }
           case '/test': {
             runTests(args);
             break;
@@ -496,6 +510,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         runCommand,
         showTaskInfo,
         setTextWithDispatch,
+        handoffConversation,
       ],
     );
 
@@ -694,9 +709,28 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         run: toggleVoice,
       },
       {
-        key: 'Enter',
+        key: 'Shift-Enter',
         preventDefault: true,
         run: (view) => {
+          // On desktop, Shift+Enter inserts a new line
+          const cursorPos = view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: cursorPos, insert: '\n' },
+            selection: { anchor: cursorPos + 1 },
+          });
+          return true;
+        },
+      },
+      {
+        key: 'Enter',
+        run: (view) => {
+          // On mobile, Enter inserts a new line (default behavior)
+          // On desktop, Enter submits the prompt
+          if (isMobile) {
+            return false; // Allow default behavior (new line)
+          }
+
+          // Desktop behavior: submit or handle special cases
           if (question && selectedAnswer) {
             const answers = question.answers?.map((answer) => answer.shortkey.toLowerCase()) || ANSWERS;
             if (answers.includes(selectedAnswer.toLowerCase())) {
@@ -912,12 +946,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             <CodeMirror
               ref={(instance) => {
                 editorRef.current = instance;
-                // if (instance?.view && !initialTextRefSet.current && savedText) {
-                //   setTimeout(() => {
-                //     setTextWithDispatch(savedText);
-                //   }, 0);
-                //   initialTextRefSet.current = true;
-                // }
               }}
               onChange={onChange}
               placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
@@ -968,6 +996,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                   aboveCursor: true,
                   icons: false,
                   selectOnOpen: false,
+                  tooltipClass: () => (isMobile ? '' : 'max-w-[60vw]'),
                   addToOptions: [
                     {
                       render: (completion) => {
@@ -977,7 +1006,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                         }
 
                         const element = document.createElement('span');
-                        element.className = showInChip ? 'cm-tooltip-autocomplete-chip' : 'cm-tooltip-autocomplete-detail';
+                        element.className = showInChip
+                          ? 'cm-tooltip-autocomplete-chip whitespace-pre-wrap text-right'
+                          : 'cm-tooltip-autocomplete-detail whitespace-pre-wrap text-right';
                         element.innerText = detail;
                         return element;
                       },
@@ -1049,7 +1080,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               </div>
             )}
           </div>
-          <div className={clsx('relative w-full flex gap-1.5 flex-wrap', isMobile ? 'items-start' : 'items-center')}>
+          <div className={clsx('relative w-full flex flex-wrap', isMobile ? 'items-start gap-0.5' : 'items-center gap-1.5')}>
             <div className={clsx('flex gap-1.5', isMobile && mode === 'agent' ? 'flex-col items-start' : 'items-center')}>
               <ModeSelector mode={mode} onModeChange={onModeChanged} />
               <div className="flex gap-2">
@@ -1075,7 +1106,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 size="xs"
               >
                 <VscTerminal className="w-4 h-4 mr-1" />
-                Terminal
+                <span className="hidden sm:inline">Terminal</span>
               </Button>
             )}
             <Button

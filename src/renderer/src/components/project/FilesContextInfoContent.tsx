@@ -17,7 +17,7 @@ type Props = {
   mode: Mode;
   showFileDialog: () => void;
   task: TaskData;
-  updateTask: (updates: Partial<TaskData>) => void;
+  updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
 };
 

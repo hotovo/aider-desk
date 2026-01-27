@@ -20,9 +20,10 @@ type Props = {
   remove?: (message: Message) => void;
   redo?: () => void;
   edit?: (content: string) => void;
+  onInterrupt?: () => void;
 };
 
-const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, remove, redo, edit }: Props) => {
+const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, remove, redo, edit, onInterrupt }: Props) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -121,6 +122,7 @@ const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, render
               remove={remove ? () => remove(child) : undefined}
               redo={redo}
               edit={edit}
+              onInterrupt={onInterrupt}
             />
           ))}
         </div>

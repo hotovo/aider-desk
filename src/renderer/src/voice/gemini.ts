@@ -55,6 +55,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
             this.isSessionActive = true;
           },
           onmessage: (message: LiveServerMessage) => {
+            // eslint-disable-next-line no-console
             console.log(message);
             this.handleMessage(message);
           },

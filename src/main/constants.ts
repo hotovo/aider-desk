@@ -63,3 +63,5 @@ export const CLOUDFLARED_BINARY_PATH = path.join(
   'bin',
   process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared',
 );
+
+export const CLAUDE_CODE_EXECUTABLE_PATH = path.join(RESOURCES_DIR, 'app.asar.unpacked', 'node_modules', '@anthropic-ai', 'claude-agent-sdk', 'cli.js');

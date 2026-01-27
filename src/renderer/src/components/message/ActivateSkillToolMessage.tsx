@@ -14,9 +14,10 @@ type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
 };
 
-export const ActivateSkillToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const ActivateSkillToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
   const { t } = useTranslation();
   const skillName = (message.args.skill as string) || '';
   const isExecuting = message.content === '';
@@ -79,5 +80,14 @@ export const ActivateSkillToolMessage = ({ message, onRemove, compact = false }:
 
   const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} copyContent={copyContent} usageReport={message.usageReport} onRemove={onRemove} />;
+  return (
+    <ExpandableMessageBlock
+      title={title}
+      content={renderContent()}
+      copyContent={copyContent}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      onFork={onFork}
+    />
+  );
 };

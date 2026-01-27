@@ -40,7 +40,7 @@ export const TaskStateChip = ({ state, className = '' }: Props) => {
   const stateTextClass = getStateTextClass(state);
 
   return (
-    <span className={twMerge('text-4xs px-1 rounded border border-border-dark-light bg-bg-tertiary-emphasis', stateTextClass, className)}>
+    <span className={twMerge('text-4xs px-1 rounded border border-border-dark-light bg-bg-tertiary-emphasis whitespace-nowrap', stateTextClass, className)}>
       {getTaskStateLabel(t, state)}
     </span>
   );

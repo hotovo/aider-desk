@@ -14,9 +14,10 @@ type Props = {
   message: LogMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onInterrupt?: () => void;
 };
 
-export const LogMessageBlock = ({ baseDir, taskId, message, onRemove, compact = false }: Props) => {
+export const LogMessageBlock = ({ baseDir, taskId, message, onRemove, compact = false, onInterrupt }: Props) => {
   const { t } = useTranslation();
   const baseClasses = 'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs border';
 
@@ -56,8 +57,8 @@ export const LogMessageBlock = ({ baseDir, taskId, message, onRemove, compact = 
     <div className={`${baseClasses} ${config.levelClasses} relative group`}>
       {renderMessage()}
       {message.actionIds && (
-        <div className="flex flex-wrap justify-end">
-          <MessageActions actionIds={message.actionIds} baseDir={baseDir} taskId={taskId} />
+        <div className="flex flex-wrap justify-end mt-4">
+          <MessageActions actionIds={message.actionIds} baseDir={baseDir} taskId={taskId} onInterrupt={onInterrupt} />
         </div>
       )}
       <div className="absolute top-2 right-2 flex items-center space-x-1">
