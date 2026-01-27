@@ -1,10 +1,11 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskData, ModelsData } from '@common/types';
 import { toast } from 'react-toastify';
 
 import { TaskView } from '../TaskView';
 
+import { render } from '@/__tests__/render';
 import { useApi } from '@/contexts/ApiContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';

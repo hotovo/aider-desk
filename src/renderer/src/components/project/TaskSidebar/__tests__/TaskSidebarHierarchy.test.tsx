@@ -1,9 +1,10 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskData } from '@common/types';
 
 import { TaskSidebar } from '../TaskSidebar';
 
+import { render } from '@/__tests__/render';
 import { useTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
 
 // Mock react-i18next

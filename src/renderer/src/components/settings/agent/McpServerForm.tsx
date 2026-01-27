@@ -4,9 +4,9 @@ import { z } from 'zod/v3';
 import { useTranslation } from 'react-i18next';
 import { MdInfoOutline } from 'react-icons/md';
 
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { TextArea } from '@/components/common/TextArea';
 import { Button } from '@/components/common/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 const MCP_SERVER_EXAMPLE_JSON = `{
   "mcpServers": {
@@ -146,8 +146,9 @@ export const McpServerForm = ({ onSave, onCancel, servers }: Props) => {
         </div>
         {!servers && (
           <div className="mr-1">
-            <MdInfoOutline className="h-5 w-5 text-text-secondary hover:text-text-primary cursor-pointer" data-tooltip-id="mcp-server-config-hint" />
-            <StyledTooltip id="mcp-server-config-hint" content={t('mcpServer.configHint')} />
+            <Tooltip content={t('mcpServer.configHint')}>
+              <MdInfoOutline className="h-5 w-5 text-text-secondary hover:text-text-primary cursor-pointer" />
+            </Tooltip>
           </div>
         )}
       </div>

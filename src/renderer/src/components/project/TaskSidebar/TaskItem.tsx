@@ -16,6 +16,7 @@ import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   task: TaskData;
@@ -227,15 +228,15 @@ export const TaskItem = memo(
           {!isMultiselectMode && (
             <div className="flex items-center">
               {level === 0 && (
-                <button
-                  data-tooltip-id="task-sidebar-tooltip"
-                  data-tooltip-content={t('taskSidebar.createSubtask')}
-                  data-testid={`create-subtask-${task.id}`}
-                  className="p-1.5 rounded-md hover:bg-bg-tertiary text-text-muted hover:text-text-primary hidden group-hover:flex"
-                  onClick={handleCreateSubtask}
-                >
-                  <HiPlus className="w-4 h-4" />
-                </button>
+                <Tooltip content={t('taskSidebar.createSubtask')}>
+                  <button
+                    data-testid={`create-subtask-${task.id}`}
+                    className="p-1.5 rounded-md hover:bg-bg-tertiary text-text-muted hover:text-text-primary hidden group-hover:flex"
+                    onClick={handleCreateSubtask}
+                  >
+                    <HiPlus className="w-4 h-4" />
+                  </button>
+                </Tooltip>
               )}
               <TaskMenuButton
                 task={task}

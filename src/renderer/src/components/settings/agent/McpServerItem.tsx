@@ -95,7 +95,6 @@ export const McpServerItem = ({
               onClick={onEdit}
               tooltip={t('common.edit')}
               className="ml-4"
-              tooltipId="mcp-server-item"
             />
           )}
           {onRemove && (
@@ -104,7 +103,6 @@ export const McpServerItem = ({
               onClick={onRemove}
               tooltip={t('common.remove')}
               className="ml-3"
-              tooltipId="mcp-server-item"
             />
           )}
         </div>

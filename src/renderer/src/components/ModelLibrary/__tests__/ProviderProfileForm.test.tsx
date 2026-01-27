@@ -1,9 +1,11 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { ProviderProfile } from '@common/types';
 import { LlmProvider } from '@common/agent';
 
 import { ProviderProfileForm } from '../ProviderProfileForm';
+
+import { render } from '@/__tests__/render';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

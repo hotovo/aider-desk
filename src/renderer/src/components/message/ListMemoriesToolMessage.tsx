@@ -5,7 +5,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
@@ -44,19 +44,13 @@ export const ListMemoriesToolMessage = ({ message, onRemove, compact = false }: 
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
         (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`list-memories-error-tooltip-${message.id}`} maxWidth={600} />
-            <FaExclamationTriangle
-              className="w-3 h-3 text-error"
-              data-tooltip-id={`list-memories-error-tooltip-${message.id}`}
-              data-tooltip-content={content}
-            />
-          </span>
+          <Tooltip content={content}>
+            <FaExclamationTriangle className="w-3 h-3 text-error" />
+          </Tooltip>
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`list-memories-denied-tooltip-${message.id}`} maxWidth={600} />
-            <FaTimesCircle className="w-3 h-3 text-warning" data-tooltip-id={`list-memories-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <FaTimesCircle className="w-3 h-3 text-warning" />
+          </Tooltip>
         ) : (
           <FaCheckCircle className="w-3 h-3 text-success flex-shrink-0" />
         ))}

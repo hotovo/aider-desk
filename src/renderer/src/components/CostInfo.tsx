@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { IoChevronDown, IoChevronUp, IoClose } from 'react-icons/io5';
 import { MdOutlineRefresh, MdSettingsBackupRestore } from 'react-icons/md';
 
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
 
 type Props = {
@@ -38,6 +38,22 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
   const repoMapCost = tokensInfo?.repoMap?.cost ?? 0;
   const agentTotalCost = tokensInfo?.agent?.cost ?? 0;
 
+  const renderRefreshButton = (tooltipContent: ReactNode, onClick: () => void, icon: ReactNode) => (
+    <Tooltip content={tooltipContent}>
+      <button onClick={onClick} className="p-0.5 hover:bg-bg-tertiary rounded-md" disabled={refreshingAnimation}>
+        {icon}
+      </button>
+    </Tooltip>
+  );
+
+  const renderActionButton = (tooltipContent: ReactNode, onClick: () => void, icon: ReactNode, className = 'p-0.5 hover:bg-bg-tertiary rounded-md') => (
+    <Tooltip content={tooltipContent}>
+      <button onClick={onClick} className={className}>
+        {icon}
+      </button>
+    </Tooltip>
+  );
+
   return (
     <div className={`border-t border-border-dark-light p-2 pb-1 ${isExpanded ? 'pt-4' : 'pt-3'} relative group`}>
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mt-0.5">
@@ -55,20 +71,15 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
             <div className="flex-1">{renderLabelValue('costInfo.repoMap', `${repoMapTokens} tokens, $${repoMapCost.toFixed(5)}`)}</div>
             {refreshRepoMap && (
               <div className="ml-0 max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 group-hover:px-1 group-hover:ml-1 transition-all duration-300 overflow-hidden">
-                <button
-                  onClick={() => {
+                {renderRefreshButton(
+                  t('costInfo.refreshRepoMap'),
+                  () => {
                     refreshRepoMap();
                     setRefreshingAnimation(true);
                     setTimeout(() => setRefreshingAnimation(false), REFRESH_ANIMATION_DURATION);
-                  }}
-                  className="p-0.5 hover:bg-bg-tertiary rounded-md"
-                  data-tooltip-id="refresh-repo-map-tooltip"
-                  data-tooltip-content={t('costInfo.refreshRepoMap')}
-                  disabled={refreshingAnimation}
-                >
-                  <MdOutlineRefresh className={`w-4 h-4 ${refreshingAnimation ? 'animate-spin' : ''}`} />
-                </button>
-                <StyledTooltip id="refresh-repo-map-tooltip" />
+                  },
+                  <MdOutlineRefresh className={`w-4 h-4 ${refreshingAnimation ? 'animate-spin' : ''}`} />,
+                )}
               </div>
             )}
           </div>
@@ -78,15 +89,12 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
                 {renderLabelValue('costInfo.messages', `${tokensInfo.chatHistory.tokens} tokens, $${tokensInfo.chatHistory.cost.toFixed(5)}`)}
               </div>
               <div className="ml-0 max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 group-hover:px-1 group-hover:ml-1 transition-all duration-300 overflow-hidden">
-                <button
-                  onClick={clearMessages}
-                  data-tooltip-id="clear-message-history"
-                  className="p-0.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-tertiary transition-colors"
-                  data-tooltip-content={t('costInfo.clearMessages')}
-                >
-                  <IoClose className="w-4 h-4" />
-                </button>
-                <StyledTooltip id="clear-message-history" />
+                {renderActionButton(
+                  t('costInfo.clearMessages'),
+                  clearMessages ?? (() => {}),
+                  <IoClose className="w-4 h-4" />,
+                  'p-0.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-tertiary transition-colors',
+                )}
               </div>
             </div>
           )}
@@ -96,17 +104,13 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
         <div className="flex items-center h-[20px] mt-1">
           <div className="flex-1">{renderLabelValue('costInfo.total', `$${(aiderTotalCost + agentTotalCost).toFixed(5)}`)}</div>
           <div className="ml-0 max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 group-hover:px-1 group-hover:ml-1 transition-all duration-300 overflow-hidden">
-            {resetTask && (
-              <button
-                onClick={resetTask}
-                data-tooltip-id="reset-project-tooltip"
-                className="p-1 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-tertiary transition-colors mb-1"
-                data-tooltip-content={t('costInfo.resetTask')}
-              >
-                <MdSettingsBackupRestore className="w-4 h-4" />
-              </button>
-            )}
-            <StyledTooltip id="reset-project-tooltip" />
+            {resetTask &&
+              renderActionButton(
+                t('costInfo.resetTask'),
+                resetTask,
+                <MdSettingsBackupRestore className="w-4 h-4" />,
+                'p-1 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-tertiary transition-colors mb-1',
+              )}
           </div>
         </div>
 

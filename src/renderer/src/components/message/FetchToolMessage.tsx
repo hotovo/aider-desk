@@ -5,9 +5,9 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { highlightWithLowlight } from '@/utils/highlighter';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
@@ -24,6 +24,27 @@ export const FetchToolMessage = ({ message, onRemove, compact = false }: Props) 
   const isError = content && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('URL fetch from');
 
+  const renderStatusIcon = () => {
+    if (!content) {
+      return <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />;
+    }
+    if (isError) {
+      return (
+        <Tooltip content={content}>
+          <RiErrorWarningFill className="w-3 h-3 text-error" />
+        </Tooltip>
+      );
+    }
+    if (isDenied) {
+      return (
+        <Tooltip content={content}>
+          <RiCloseCircleFill className="w-3 h-3 text-warning" />
+        </Tooltip>
+      );
+    }
+    return <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />;
+  };
+
   const title = (
     <div className="flex items-center gap-2 w-full">
       <div className="text-text-muted">
@@ -35,21 +56,7 @@ export const FetchToolMessage = ({ message, onRemove, compact = false }: Props) 
           <CodeInline className="bg-bg-primary-light">{url}</CodeInline>
         </span>
       </div>
-      {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
-      {content &&
-        (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`fetch-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`fetch-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`fetch-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`fetch-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : (
-          <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
-        ))}
+      {renderStatusIcon()}
     </div>
   );
 

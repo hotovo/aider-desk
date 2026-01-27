@@ -16,10 +16,10 @@ import { TaskItem } from './TaskItem';
 
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { Input } from '@/components/common/Input';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { IconButton } from '@/components/common/IconButton';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 export const COLLAPSED_WIDTH = 44;
 export const EXPANDED_WIDTH = 256;
@@ -382,7 +382,6 @@ const TaskSidebarComponent = ({
             : clsx('flex flex-col h-full border-r border-border-dark-light bg-bg-primary-light-strong', className)
         }
       >
-        <StyledTooltip id="task-sidebar-tooltip" />
         <div className="bg-bg-primary-light border-b border-border-dark-light">
           <div className="flex items-center justify-between p-2 h-10">
             <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors" onClick={isMobile && onClose ? onClose : onToggleCollapse}>
@@ -403,14 +402,11 @@ const TaskSidebarComponent = ({
                       <h3 className="text-sm font-semibold uppercase h-5">{t('taskSidebar.title')}</h3>
                       <div className="flex items-center gap-1">
                         <span className="text-2xs text-text-muted mr-2">{t('taskSidebar.selectedCount', { count: selectedTasks.size })}</span>
-                        <button
-                          data-tooltip-id="task-sidebar-tooltip"
-                          data-tooltip-content={t('taskSidebar.closeMultiselect')}
-                          className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
-                          onClick={handleMultiselectClose}
-                        >
-                          <HiXMark className="w-5 h-5 text-text-primary" />
-                        </button>
+                        <Tooltip content={t('taskSidebar.closeMultiselect')}>
+                          <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors" onClick={handleMultiselectClose}>
+                            <HiXMark className="w-5 h-5 text-text-primary" />
+                          </button>
+                        </Tooltip>
                         <TaskSidebarMultiSelectMenu
                           hasArchived={Array.from(selectedTasks).some((taskId) => tasks.find((task) => task.id === taskId)?.archived)}
                           onDelete={() => setBulkDeleteConfirm(true)}
@@ -430,7 +426,6 @@ const TaskSidebarComponent = ({
                         <IconButton
                           onClick={() => setShowArchived(!showArchived)}
                           tooltip={showArchived ? t('taskSidebar.hideArchived') : t('taskSidebar.showArchived')}
-                          tooltipId="task-sidebar-tooltip"
                           className="p-1.5 hover:bg-bg-tertiary rounded-md group"
                           icon={
                             showArchived ? (
@@ -440,23 +435,25 @@ const TaskSidebarComponent = ({
                             )
                           }
                         />
-                        <button
-                          data-tooltip-id="task-sidebar-tooltip"
-                          data-tooltip-content={t('taskSidebar.search')}
-                          className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
-                          onClick={handleSearchToggle}
-                        >
-                          <MdOutlineSearch className="w-5 h-5 text-text-primary" />
-                        </button>
-                        {createNewTask && (
+                        <Tooltip content={t('taskSidebar.search')}>
                           <button
-                            data-tooltip-id="task-sidebar-tooltip"
-                            data-tooltip-content={t('taskSidebar.createTask')}
                             className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
-                            onClick={handleCreateTask}
+                            onClick={handleSearchToggle}
+                            data-testid="search-toggle-button"
                           >
-                            <HiPlus className="w-5 h-5 text-text-primary" />
+                            <MdOutlineSearch className="w-5 h-5 text-text-primary" />
                           </button>
+                        </Tooltip>
+                        {createNewTask && (
+                          <Tooltip content={t('taskSidebar.createTask')}>
+                            <button
+                              className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
+                              onClick={handleCreateTask}
+                              data-testid="create-task-button"
+                            >
+                              <HiPlus className="w-5 h-5 text-text-primary" />
+                            </button>
+                          </Tooltip>
                         )}
                       </div>
                     </>
@@ -562,14 +559,11 @@ const TaskSidebarComponent = ({
                 className="h-full flex items-start justify-center py-1"
               >
                 {createNewTask && (
-                  <button
-                    data-tooltip-id="task-sidebar-tooltip"
-                    data-tooltip-content={t('taskSidebar.createTask')}
-                    className="p-2 rounded-md hover:bg-bg-tertiary transition-colors"
-                    onClick={handleCreateTask}
-                  >
-                    <HiPlus className="w-5 h-5 text-text-primary" />
-                  </button>
+                  <Tooltip content={t('taskSidebar.createTask')}>
+                    <button className="p-2 rounded-md hover:bg-bg-tertiary transition-colors" onClick={handleCreateTask}>
+                      <HiPlus className="w-5 h-5 text-text-primary" />
+                    </button>
+                  </Tooltip>
                 )}
               </motion.div>
             )}

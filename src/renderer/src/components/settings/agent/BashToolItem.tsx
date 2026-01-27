@@ -30,7 +30,7 @@ export const BashToolItem = ({ tool, profile, onApprovalChange, onProfileChange 
         label={
           <div className="flex items-center">
             <span className="text-2xs">{t('settings.agent.bashToolAllowedPattern')}</span>
-            <InfoIcon className="ml-2" tooltip={t('settings.agent.bashToolAllowedPatternTooltip')} tooltipId="global-tooltip-md" />
+            <InfoIcon className="ml-2" tooltip={t('settings.agent.bashToolAllowedPatternTooltip')} />
           </div>
         }
         value={bashSettings?.allowedPattern || ''}
@@ -52,7 +52,7 @@ export const BashToolItem = ({ tool, profile, onApprovalChange, onProfileChange 
         label={
           <div className="flex items-center">
             <span className="text-2xs">{t('settings.agent.bashToolDeniedPattern')}</span>
-            <InfoIcon className="ml-2" tooltip={t('settings.agent.bashToolDeniedPatternTooltip')} tooltipId="global-tooltip-md" />
+            <InfoIcon className="ml-2" tooltip={t('settings.agent.bashToolDeniedPatternTooltip')} />
           </div>
         }
         value={bashSettings?.deniedPattern || ''}

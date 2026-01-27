@@ -14,8 +14,7 @@ import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
-import { StyledTooltip } from '../common/StyledTooltip';
-
+import { Tooltip } from '@/components/ui/Tooltip';
 import { Input } from '@/components/common/Input';
 import { useOS } from '@/hooks/useOS';
 import { useApi } from '@/contexts/ApiContext';
@@ -331,6 +330,8 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
     const showAdd = type === 'project' && !isContextFile && !isRuleFile;
     const showRemove = (type === 'context' || (type === 'project' && isContextFile)) && !isRuleFile;
 
+    const fileTokenTooltip = getFileTokenTooltip(treeItem);
+
     return (
       <>
         <div className="flex space-between items-center w-full pr-1 h-6 group/item">
@@ -356,65 +357,56 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
             ) : (
               <span className="w-3 h-3 inline-block" />
             )}
-            <span
-              className={clsx(
-                'select-none text-2xs overflow-hidden',
-                treeItem.isFolder ? 'context-dimmed' : 'text-text-primary font-semibold',
-                type === 'project' && isContextFile && 'text-text-muted',
-              )}
-              {...(treeItem.isFolder
-                ? {
-                    onClick: () => {
-                      const isExpanded = expandedItems.includes(String(treeItem.index));
-                      if (isExpanded) {
-                        setExpandedItems(expandedItems.filter((id) => id !== String(treeItem.index)));
-                      } else {
-                        setExpandedItems([...expandedItems, String(treeItem.index)]);
-                      }
-                    },
-                  }
-                : {})}
-              data-tooltip-id="context-files-tooltip"
-              data-tooltip-content={getFileTokenTooltip(treeItem)}
-              data-tooltip-delay-show={800}
-            >
-              {title}
-            </span>
+            <Tooltip content={fileTokenTooltip}>
+              <span
+                className={clsx(
+                  'select-none text-2xs overflow-hidden',
+                  treeItem.isFolder ? 'context-dimmed' : 'text-text-primary font-semibold',
+                  type === 'project' && isContextFile && 'text-text-muted',
+                )}
+                {...(treeItem.isFolder
+                  ? {
+                      onClick: () => {
+                        const isExpanded = expandedItems.includes(String(treeItem.index));
+                        if (isExpanded) {
+                          setExpandedItems(expandedItems.filter((id) => id !== String(treeItem.index)));
+                        } else {
+                          setExpandedItems([...expandedItems, String(treeItem.index)]);
+                        }
+                      },
+                    }
+                  : {})}
+              >
+                {title}
+              </span>
+            </Tooltip>
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0 group">
             {isRuleFile && (
               <>
                 {source === 'global-rule' && (
-                  <MdOutlinePublic
-                    className="w-4 h-4 text-text-muted-light mr-1"
-                    data-tooltip-id="context-files-tooltip"
-                    data-tooltip-content={t('contextFiles.globalRule')}
-                  />
+                  <Tooltip content={t('contextFiles.globalRule')}>
+                    <MdOutlinePublic className="w-4 h-4 text-text-muted-light mr-1" />
+                  </Tooltip>
                 )}
                 {source === 'project-rule' && (
-                  <VscFileCode
-                    className="w-4 h-4 text-text-muted-light mr-1"
-                    data-tooltip-id="context-files-tooltip"
-                    data-tooltip-content={t('contextFiles.projectRule')}
-                  />
+                  <Tooltip content={t('contextFiles.projectRule')}>
+                    <VscFileCode className="w-4 h-4 text-text-muted-light mr-1" />
+                  </Tooltip>
                 )}
                 {source === 'agent-rule' && (
-                  <RiRobot2Line
-                    className="w-4 h-4 text-text-muted-light mr-1"
-                    data-tooltip-id="context-files-tooltip"
-                    data-tooltip-content={t('contextFiles.agentRule')}
-                  />
+                  <Tooltip content={t('contextFiles.agentRule')}>
+                    <RiRobot2Line className="w-4 h-4 text-text-muted-light mr-1" />
+                  </Tooltip>
                 )}
               </>
             )}
 
             {treeItem.file?.readOnly && !isRuleFile && (
-              <TbPencilOff
-                className="w-4 h-4 text-text-muted-light"
-                data-tooltip-id="context-files-tooltip"
-                data-tooltip-content={t('contextFiles.readOnly')}
-              />
+              <Tooltip content={t('contextFiles.readOnly')}>
+                <TbPencilOff className="w-4 h-4 text-text-muted-light" />
+              </Tooltip>
             )}
 
             {showRemove && (
@@ -424,14 +416,11 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
             )}
 
             {showAdd && (
-              <button
-                onClick={addFile(treeItem)}
-                className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary"
-                data-tooltip-id="context-files-tooltip"
-                data-tooltip-content={os === OS.MacOS ? t('contextFiles.addFileTooltip.cmd') : t('contextFiles.addFileTooltip.ctrl')}
-              >
-                <HiPlus className="w-4 h-4" />
-              </button>
+              <Tooltip content={os === OS.MacOS ? t('contextFiles.addFileTooltip.cmd') : t('contextFiles.addFileTooltip.ctrl')}>
+                <button onClick={addFile(treeItem)} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary">
+                  <HiPlus className="w-4 h-4" />
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -513,26 +502,14 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
                   key={objectHash(treeData)} // Force re-render if data structure changes drastically
                   items={treeData}
                   getItemTitle={(item) => item.data}
-                  renderItemTitle={({ title, item }) => {
-                    const treeItem = item as TreeItem;
-                    const filePath = treeItem.file?.path;
-                    const isContextFile = filePath ? contextFiles.some((f) => normalizePath(f.path) === normalizePath(filePath)) : false;
-                    const dimmed = section === 'project' && !isContextFile;
-
-                    return (
-                      <div className="px-1 flex items-center gap-1 h-6 whitespace-nowrap">
-                        <span className={dimmed ? 'context-dimmed' : undefined}>{title}</span>
-                      </div>
-                    );
-                  }}
-                  renderItemArrow={() => null} // Handled in renderItem
+                  renderItemTitle={({ title }) => <>{title}</>}
                   viewState={{
                     [treeId]: {
                       expandedItems,
                     },
                   }}
-                  onExpandItem={(item) => setExpandedItems([...expandedItems, item.index as string])}
-                  onCollapseItem={(item) => setExpandedItems(expandedItems.filter((expandedItemIndex) => expandedItemIndex !== item.index))}
+                  onExpandItem={(item) => setExpandedItems([...expandedItems, String(item.index)])}
+                  onCollapseItem={(item) => setExpandedItems(expandedItems.filter((id) => id !== String(item.index)))}
                   renderItem={(props) => renderTreeItem(props, section, treeData, expandedItems, setExpandedItems)}
                   canDragAndDrop={false}
                   canDropOnFolder={false}
@@ -557,8 +534,6 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
     >
-      <StyledTooltip id="context-files-tooltip" />
-
       {/* Context Files Section */}
       {renderSection(
         'context',
@@ -568,23 +543,20 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
         contextExpandedItems,
         setContextExpandedItems,
         <>
-          <button
-            onClick={handleDropAllFiles}
-            className="p-1.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-error transition-colors disabled:opacity-50"
-            data-tooltip-id="context-files-tooltip"
-            data-tooltip-content={t('contextFiles.dropAll')}
-            disabled={userContextFiles.length === 0}
-          >
-            <HiOutlineTrash className="w-4 h-4" />
-          </button>
-          <button
-            onClick={showFileDialog}
-            className="p-1 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-primary transition-colors"
-            data-tooltip-id="context-files-tooltip"
-            data-tooltip-content={t('contextFiles.add')}
-          >
-            <HiPlus className="w-5 h-5" />
-          </button>
+          <Tooltip content={t('contextFiles.dropAll')}>
+            <button
+              onClick={handleDropAllFiles}
+              className="p-1.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-error transition-colors disabled:opacity-50"
+              disabled={userContextFiles.length === 0}
+            >
+              <HiOutlineTrash className="w-4 h-4" />
+            </button>
+          </Tooltip>
+          <Tooltip content={t('contextFiles.add')}>
+            <button onClick={showFileDialog} className="p-1 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-primary transition-colors">
+              <HiPlus className="w-5 h-5" />
+            </button>
+          </Tooltip>
         </>,
         true,
         false,
@@ -599,47 +571,37 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
         projectExpandedItems,
         setProjectExpandedItems,
         <>
-          <button
-            onClick={toggleUseGit}
-            className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors"
-            data-tooltip-id="context-files-tooltip"
-            data-tooltip-content={useGit ? t('contextFiles.useGitEnabled') : t('contextFiles.useGitDisabled')}
-          >
-            <FaGitSquare className={clsx('w-4 h-4', useGit ? 'text-text-primary' : 'text-text-muted')} />
-          </button>
-          <button
-            onClick={() => setProjectExpandedItems(Object.keys(projectTreeData))}
-            className="p-1.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-primary transition-colors"
-            data-tooltip-id="context-files-tooltip"
-            data-tooltip-content={t('contextFiles.expandAll')}
-          >
-            <BiExpandVertical className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setProjectExpandedItems(['root'])}
-            className="p-1.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-primary transition-colors"
-            data-tooltip-id="context-files-tooltip"
-            data-tooltip-content={t('contextFiles.collapseAll')}
-          >
-            <BiCollapseVertical className="w-4 h-4" />
-          </button>
-          <button
-            data-tooltip-id="context-files-tooltip"
-            data-tooltip-content={t('contextFiles.search')}
-            className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
-            onClick={handleSearchToggle}
-          >
-            <MdOutlineSearch className="w-5 h-5 text-text-primary" />
-          </button>
-          <button
-            data-tooltip-id="context-files-tooltip"
-            data-tooltip-content={t('contextFiles.refresh')}
-            className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
-            onClick={() => handleRefreshFiles(useGit!)}
-            disabled={isRefreshing}
-          >
-            <MdOutlineRefresh className={`w-5 h-5 text-text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
+          <Tooltip content={useGit ? t('contextFiles.useGitEnabled') : t('contextFiles.useGitDisabled')}>
+            <button onClick={toggleUseGit} className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors">
+              <FaGitSquare className={clsx('w-4 h-4', useGit ? 'text-text-primary' : 'text-text-muted')} />
+            </button>
+          </Tooltip>
+          <Tooltip content={t('contextFiles.expandAll')}>
+            <button
+              onClick={() => setProjectExpandedItems(Object.keys(projectTreeData))}
+              className="p-1.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-primary transition-colors"
+            >
+              <BiExpandVertical className="w-4 h-4" />
+            </button>
+          </Tooltip>
+          <Tooltip content={t('contextFiles.collapseAll')}>
+            <button
+              onClick={() => setProjectExpandedItems(['root'])}
+              className="p-1.5 hover:bg-bg-tertiary rounded-md text-text-muted hover:text-text-primary transition-colors"
+            >
+              <BiCollapseVertical className="w-4 h-4" />
+            </button>
+          </Tooltip>
+          <Tooltip content={t('contextFiles.search')}>
+            <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors" onClick={handleSearchToggle}>
+              <MdOutlineSearch className="w-5 h-5 text-text-primary" />
+            </button>
+          </Tooltip>
+          <Tooltip content={t('contextFiles.refresh')}>
+            <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors" onClick={() => handleRefreshFiles(useGit!)} disabled={isRefreshing}>
+              <MdOutlineRefresh className={`w-5 h-5 text-text-primary ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </Tooltip>
         </>,
         false,
         false,

@@ -1,10 +1,12 @@
 import { ReactNode } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Model, ProviderProfile } from '@common/types';
 import { LlmProvider } from '@common/agent';
 
 import { ModelDialog } from '../ModelDialog';
+
+import { render } from '@/__tests__/render';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

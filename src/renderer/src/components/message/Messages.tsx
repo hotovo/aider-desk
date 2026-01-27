@@ -10,7 +10,6 @@ import { GroupMessageBlock } from './GroupMessageBlock';
 
 import { isGroupMessage, isLoadingMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { groupMessagesByPromptContext } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
@@ -134,7 +133,6 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
           className="flex flex-col flex-grow overflow-y-auto max-h-full p-4 scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth"
           {...eventHandlers}
         >
-          <StyledTooltip id="usage-info-tooltip" />
           <div className="absolute left-1/2 -translate-x-1/2 w-[50%] bottom-0 z-10 flex justify-center gap-1 pt-10 pb-2 group">
             {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToPrevious()}
             {scrollingPaused && (

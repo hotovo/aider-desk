@@ -440,7 +440,6 @@ export const Home = () => {
               <IconButton
                 icon={<MdUpload className="h-5 w-5 text-text-primary animate-pulse animate-slow" />}
                 tooltip={getUpdateTooltip()}
-                tooltipId="top-bar-tooltip"
                 onClick={handleOpenAboutSettings}
                 className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
               />
@@ -448,21 +447,18 @@ export const Home = () => {
             <IconButton
               icon={<PiNotebookFill className="h-5 w-5 text-text-secondary" />}
               tooltip={t('projectBar.modelLibrary')}
-              tooltipId="top-bar-tooltip"
               onClick={showModelLibrary}
               className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
             />
             <IconButton
               icon={<MdBarChart className="h-5 w-5 text-text-secondary" />}
               tooltip={t('usageDashboard.title')}
-              tooltipId="top-bar-tooltip"
               onClick={handleOpenUsageDashboard}
               className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
             />
             <IconButton
               icon={<MdSettings className="h-5 w-5 text-text-secondary" />}
               tooltip={t('settings.title')}
-              tooltipId="top-bar-tooltip"
               onClick={handleOpenGeneralSettings}
               className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
             />

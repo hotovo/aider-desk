@@ -1,9 +1,8 @@
-import { ElementType, useId, useRef, useState } from 'react';
+import { ElementType, useRef, useState } from 'react';
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 
-import { StyledTooltip } from './StyledTooltip';
-
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 export type ItemConfig<T extends string = string> = {
@@ -51,7 +50,6 @@ export const ItemSelector = <T extends string = string>({
 }: Props<T>) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const tooltipId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(containerRef, () => setIsOpen(false));
@@ -75,6 +73,32 @@ export const ItemSelector = <T extends string = string>({
   const SelectedIcon = selectedItem.icon;
   const popupPositionClasses = getPopupPositionClasses(popupPlacement);
 
+  const renderItem = (item: ItemConfig<T>) => {
+    const Icon = item.icon;
+    const tooltipContent = item.tooltipKey ? t(item.tooltipKey) : undefined;
+    const itemElement = (
+      <button
+        key={item.value}
+        onClick={() => handleItemSelect(item.value)}
+        className={`w-full px-3 py-1.5 text-left hover:bg-bg-tertiary transition-colors duration-200 text-xs flex items-center gap-2
+        ${item.value === selectedValue ? 'text-text-primary font-semibold bg-bg-tertiary' : 'text-text-tertiary'}`}
+      >
+        <Icon className="w-4 h-4" />
+        {t(item.labelKey)}
+      </button>
+    );
+
+    if (tooltipContent) {
+      return (
+        <Tooltip key={item.value} content={tooltipContent}>
+          {itemElement}
+        </Tooltip>
+      );
+    }
+
+    return itemElement;
+  };
+
   return (
     <div className={`relative flex items-center gap-1.5 ${className}`} ref={containerRef}>
       <button
@@ -91,25 +115,9 @@ export const ItemSelector = <T extends string = string>({
         <div
           className={`absolute ${popupPositionClasses} bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-10 min-w-[${minWidth}px]`}
         >
-          {items.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.value}
-                onClick={() => handleItemSelect(item.value)}
-                data-tooltip-id={item.tooltipKey ? tooltipId : undefined}
-                data-tooltip-content={item.tooltipKey ? t(item.tooltipKey) : undefined}
-                className={`w-full px-3 py-1.5 text-left hover:bg-bg-tertiary transition-colors duration-200 text-xs flex items-center gap-2
-                ${item.value === selectedValue ? 'text-text-primary font-semibold bg-bg-tertiary' : 'text-text-tertiary'}`}
-              >
-                <Icon className="w-4 h-4" />
-                {t(item.labelKey)}
-              </button>
-            );
-          })}
+          {items.map(renderItem)}
         </div>
       )}
-      <StyledTooltip id={tooltipId} />
     </div>
   );
 };

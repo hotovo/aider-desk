@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { useSidebarWidth } from './useSidebarWidth';
 
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
@@ -720,20 +720,18 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               width: isFilesSidebarCollapsed ? FILES_COLLAPSED_WIDTH : sidebarWidth,
             }}
           >
-            <StyledTooltip id="files-sidebar-tooltip" />
-
             {/* Expand/Collapse Button */}
-            <button
-              data-tooltip-id="files-sidebar-tooltip"
-              data-tooltip-content={isFilesSidebarCollapsed ? t('common.expand') : t('common.collapse')}
-              className={clsx(
-                'absolute top-[50%] translate-y-[-50%] z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5',
-                isFilesSidebarCollapsed ? 'left-1' : 'transition-opacity opacity-0 group-hover:opacity-100 left-3',
-              )}
-              onClick={handleToggleFilesSidebarCollapse}
-            >
-              <RiMenuUnfold4Line className={clsx('w-4 h-4 text-text-primary transition-transform duration-300', !isFilesSidebarCollapsed && 'rotate-180')} />
-            </button>
+            <Tooltip content={isFilesSidebarCollapsed ? t('common.expand') : t('common.collapse')}>
+              <button
+                className={clsx(
+                  'absolute top-[50%] translate-y-[-50%] z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5',
+                  isFilesSidebarCollapsed ? 'left-1' : 'transition-opacity opacity-0 group-hover:opacity-100 left-3',
+                )}
+                onClick={handleToggleFilesSidebarCollapse}
+              >
+                <RiMenuUnfold4Line className={clsx('w-4 h-4 text-text-primary transition-transform duration-300', !isFilesSidebarCollapsed && 'rotate-180')} />
+              </button>
+            </Tooltip>
 
             {/* Resizable wrapper for expanded state */}
             {!isFilesSidebarCollapsed && (

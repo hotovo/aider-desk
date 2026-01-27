@@ -5,8 +5,8 @@ import { CgSpinner } from 'react-icons/cg';
 
 import { ToolMessage } from '@/types/message';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { IconButton } from '@/components/common/IconButton';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
 
@@ -73,19 +73,13 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false }
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
         (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`retrieve-memory-error-tooltip-${message.id}`} maxWidth={600} />
-            <FaExclamationTriangle
-              className="w-3 h-3 text-error"
-              data-tooltip-id={`retrieve-memory-error-tooltip-${message.id}`}
-              data-tooltip-content={content}
-            />
-          </span>
+          <Tooltip content={content}>
+            <FaExclamationTriangle className="w-3 h-3 text-error" />
+          </Tooltip>
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`retrieve-memory-denied-tooltip-${message.id}`} maxWidth={600} />
-            <FaTimesCircle className="w-3 h-3 text-warning" data-tooltip-id={`retrieve-memory-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <FaTimesCircle className="w-3 h-3 text-warning" />
+          </Tooltip>
         ) : (
           <FaCheckCircle className="w-3 h-3 text-success flex-shrink-0" />
         ))}

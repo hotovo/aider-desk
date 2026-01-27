@@ -1,9 +1,10 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApplicationAPI } from '@common/api';
 
 import { OpenProjectDialog } from '../OpenProjectDialog';
 
+import { render } from '@/__tests__/render';
 import { useApi } from '@/contexts/ApiContext';
 
 // Mock contexts
@@ -38,12 +39,12 @@ describe('OpenProjectDialog', () => {
 
   it('renders and allows browsing for a project', async () => {
     const onAddProject = vi.fn();
-    const { container } = render(<OpenProjectDialog onClose={vi.fn()} onAddProject={onAddProject} openProjects={[]} />);
+    render(<OpenProjectDialog onClose={vi.fn()} onAddProject={onAddProject} openProjects={[]} />);
 
     expect(screen.getByText('dialogs.openProjectTitle')).toBeInTheDocument();
 
-    const browseButton = container.querySelector('[data-tooltip-content="dialogs.browseFoldersTooltip"]');
-    fireEvent.click(browseButton!);
+    const browseButton = screen.getByTestId('browse-folder-button');
+    fireEvent.click(browseButton);
 
     await waitFor(() => {
       expect(mockApi.showOpenDialog).toHaveBeenCalled();

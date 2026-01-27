@@ -7,7 +7,7 @@ import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
 import { IconButton } from '@/components/common/IconButton';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
@@ -74,19 +74,13 @@ export const BashToolMessage = ({ message, onRemove, compact = false }: Props) =
       {isFinished &&
         content &&
         (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`bash-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill
-              className="w-3 h-3 text-error"
-              data-tooltip-id={`bash-error-tooltip-${message.id}`}
-              data-tooltip-content={typeof content === 'string' ? content : content.stderr || t('toolMessage.power.bash.commandFailed')}
-            />
-          </span>
+          <Tooltip content={typeof content === 'string' ? content : content.stderr || t('toolMessage.power.bash.commandFailed')}>
+            <RiErrorWarningFill className="w-3 h-3 text-error" />
+          </Tooltip>
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`bash-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`bash-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiCloseCircleFill className="w-3 h-3 text-warning" />
+          </Tooltip>
         ) : (
           <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
         ))}

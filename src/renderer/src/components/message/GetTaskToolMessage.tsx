@@ -6,8 +6,8 @@ import { MdAssignment } from 'react-icons/md';
 import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
@@ -31,6 +31,27 @@ export const GetTaskToolMessage = ({ message, onRemove, compact = false }: Props
     (content.startsWith('Error getting task:') || (content.startsWith('Task with ID') && content.includes('not found')));
   const isDenied = content && typeof content === 'string' && content.startsWith('Getting task information denied by user.');
 
+  const renderStatusIcon = () => {
+    if (!content) {
+      return <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />;
+    }
+    if (isError) {
+      return (
+        <Tooltip content={content}>
+          <RiErrorWarningFill className="w-3 h-3 text-error" />
+        </Tooltip>
+      );
+    }
+    if (isDenied) {
+      return (
+        <Tooltip content={content}>
+          <RiCloseCircleFill className="w-3 h-3 text-warning" />
+        </Tooltip>
+      );
+    }
+    return <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />;
+  };
+
   const title = (
     <div className="flex items-center gap-2 w-full">
       <div className="text-text-muted">
@@ -42,21 +63,7 @@ export const GetTaskToolMessage = ({ message, onRemove, compact = false }: Props
           <CodeInline className="bg-bg-primary-light">{taskId}</CodeInline>
         </span>
       </div>
-      {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
-      {content &&
-        (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`get-task-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`get-task-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`get-task-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`get-task-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : (
-          <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
-        ))}
+      {renderStatusIcon()}
     </div>
   );
 

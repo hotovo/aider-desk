@@ -1,10 +1,11 @@
 import { ReactNode } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskData } from '@common/types';
 
 import { TaskSidebar } from '../TaskSidebar';
 
+import { render } from '@/__tests__/render';
 import { useTask } from '@/contexts/TaskContext';
 import { useTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
 import { createMockTaskContext } from '@/__tests__/mocks/contexts';
@@ -81,7 +82,7 @@ describe('TaskSidebar', () => {
 
   it('calls createNewTask when plus button is clicked', () => {
     const createNewTask = vi.fn();
-    const { container } = render(
+    render(
       <TaskSidebar
         loading={false}
         tasks={mockTasks}
@@ -93,16 +94,14 @@ describe('TaskSidebar', () => {
       />,
     );
 
-    fireEvent.click(container.querySelector('[data-tooltip-content="taskSidebar.createTask"]')!);
+    fireEvent.click(screen.getByTestId('create-task-button'));
     expect(createNewTask).toHaveBeenCalled();
   });
 
   it('filters tasks based on search query', async () => {
-    const { container } = render(
-      <TaskSidebar loading={false} tasks={mockTasks} activeTaskId="task-1" onTaskSelect={vi.fn()} isCollapsed={false} onToggleCollapse={vi.fn()} />,
-    );
+    render(<TaskSidebar loading={false} tasks={mockTasks} activeTaskId="task-1" onTaskSelect={vi.fn()} isCollapsed={false} onToggleCollapse={vi.fn()} />);
 
-    fireEvent.click(container.querySelector('[data-tooltip-content="taskSidebar.search"]')!);
+    fireEvent.click(screen.getByTestId('search-toggle-button'));
     fireEvent.change(screen.getByPlaceholderText('taskSidebar.searchPlaceholder'), {
       target: { value: 'Task 1' },
     });

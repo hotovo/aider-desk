@@ -5,8 +5,8 @@ import { LuClipboardList } from 'react-icons/lu';
 
 import { ToolMessage } from '@/types/message';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
@@ -34,6 +34,27 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false }: Pro
   const isError = content && typeof content === 'string' && content.startsWith('Error listing tasks:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Listing tasks denied by user.');
 
+  const renderStatusIcon = () => {
+    if (!content) {
+      return <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />;
+    }
+    if (isError) {
+      return (
+        <Tooltip content={content}>
+          <RiErrorWarningFill className="w-3 h-3 text-error" />
+        </Tooltip>
+      );
+    }
+    if (isDenied) {
+      return (
+        <Tooltip content={content}>
+          <RiCloseCircleFill className="w-3 h-3 text-warning" />
+        </Tooltip>
+      );
+    }
+    return <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />;
+  };
+
   const title = (
     <div className="flex items-center gap-2 w-full">
       <div className="text-text-muted">
@@ -42,21 +63,7 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false }: Pro
       <div className="text-xs text-text-primary flex flex-wrap gap-1">
         <span>{state ? t('toolMessage.tasks.listTasksWithState', { state }) : t('toolMessage.tasks.listTasks')}</span>
       </div>
-      {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
-      {content &&
-        (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`list-tasks-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`list-tasks-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`list-tasks-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`list-tasks-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : (
-          <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
-        ))}
+      {renderStatusIcon()}
     </div>
   );
 
@@ -99,30 +106,16 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false }: Pro
             </span>
           )}
         </div>
-        <div className="space-y-2">
+        <div className="space-y-1">
           {content.map((task: Task) => (
-            <div key={task.id} className="border border-border-dark-light rounded bg-bg-primary-light px-3 py-2">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-text-secondary">{task.name}</span>
-                  {task.state && <TaskStateChip state={task.state} className="-ml-0.5" />}
-                  {task.archived && <span className="px-1.5 py-0.5 text-3xs bg-bg-secondary text-text-muted rounded">{t('toolMessage.tasks.archived')}</span>}
-                </div>
+            <div key={task.id} className="flex items-center justify-between p-2 bg-bg-primary-light rounded">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-text-primary">{task.id.slice(0, 8)}</span>
+                <span className="text-text-secondary">{task.name || t('toolMessage.tasks.unnamedTask')}</span>
               </div>
-              <div className="space-y-1 text-3xs text-text-muted">
-                <div>
-                  <span className="text-text-muted">{t('toolMessage.tasks.taskId')}:</span> {task.id}
-                </div>
-                {task.createdAt && (
-                  <div>
-                    <span className="text-text-muted">{t('toolMessage.tasks.createdAt')}:</span> {new Date(task.createdAt).toLocaleString()}
-                  </div>
-                )}
-                {task.updatedAt && (
-                  <div>
-                    <span className="text-text-muted">{t('toolMessage.tasks.updatedAt')}:</span> {new Date(task.updatedAt).toLocaleString()}
-                  </div>
-                )}
+              <div className="flex items-center gap-2">
+                {task.archived && <span className="text-2xs bg-bg-secondary text-text-muted px-1 rounded">{t('toolMessage.tasks.archived')}</span>}
+                {task.state && <TaskStateChip state={task.state} className="text-2xs" />}
               </div>
             </div>
           ))}

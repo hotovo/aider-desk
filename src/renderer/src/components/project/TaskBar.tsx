@@ -15,7 +15,7 @@ import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector';
 import { TaskWorkingMode } from '@/components/PromptField/TaskWorkingMode';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
@@ -391,8 +391,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
         <div className={clsx('flex flex-wrap gap-x-2 flex-shrink-0', isMobile ? 'flex-col items-start gap-y-1' : 'flex-row items-center gap-y-0.5')}>
           {showLabel && <span className="text-2xs font-semibold text-text-primary uppercase whitespace-nowrap">{t('projectBar.aider')}:</span>}
           <div className="flex items-center space-x-1 flex-shrink-0">
-            <CgTerminal className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="main-model-tooltip" />
-            <StyledTooltip id="main-model-tooltip" content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)} />
+            <Tooltip content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)}>
+              <CgTerminal className="w-4 h-4 text-text-primary mr-1" />
+            </Tooltip>
             <ModelSelector
               ref={mainModelSelectorRef}
               models={aiderModels}
@@ -405,8 +406,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
           </div>
           {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
           <div className="flex items-center space-x-1 flex-shrink-0">
-            <BsFilter className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
-            <StyledTooltip id="weak-model-tooltip" />
+            <Tooltip content={t('modelSelector.weakModel')}>
+              <BsFilter className="w-4 h-4 text-text-primary mr-1" />
+            </Tooltip>
             <ModelSelector
               models={aiderModels}
               selectedModelId={modelsData?.weakModel || modelsData?.mainModel}
@@ -427,8 +429,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
             <>
               {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
               <div className="flex items-center space-x-1 flex-shrink-0">
-                <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="edit-format-tooltip" />
-                <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
+                <Tooltip content={t('projectBar.editFormatTooltip')}>
+                  <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" />
+                </Tooltip>
                 <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
               </div>
             </>
@@ -457,6 +460,27 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
       );
     };
 
+    const renderAgentModelSelector = () => (
+      <div className="flex items-center space-x-1 flex-shrink-0">
+        <Tooltip content={t('modelSelector.agentModel')}>
+          <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" />
+        </Tooltip>
+        {!currentTaskModelId ? (
+          <div className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.noModelSelected')}</div>
+        ) : (
+          <ModelSelector
+            ref={agentModelSelectorRef}
+            models={taskModels}
+            selectedModelId={currentTaskModelId}
+            onChange={handleTaskModelChange}
+            preferredModelIds={settings?.preferredModels || []}
+            removePreferredModel={handleRemovePreferredModel}
+            providers={providers}
+          />
+        )}
+      </div>
+    );
+
     return (
       <div className="relative group px-2 py-2 pr-1 border-b border-border-dark-light bg-bg-primary-light">
         <div className="flex items-center h-full">
@@ -469,25 +493,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
               // Two-row layout for Agent mode with Aider tools
               <div className="flex flex-wrap gap-x-5 gap-y-2">
                 {/* Row 1: AGENT */}
-                <div className="flex items-center space-x-2 flex-shrink-0">
-                  <div className="flex items-center space-x-1 flex-shrink-0">
-                    <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
-                    <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
-                    {!currentTaskModelId ? (
-                      <div className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.noModelSelected')}</div>
-                    ) : (
-                      <ModelSelector
-                        ref={agentModelSelectorRef}
-                        models={taskModels}
-                        selectedModelId={currentTaskModelId}
-                        onChange={handleTaskModelChange}
-                        preferredModelIds={settings?.preferredModels || []}
-                        removePreferredModel={handleRemovePreferredModel}
-                        providers={providers}
-                      />
-                    )}
-                  </div>
-                </div>
+                <div className="flex items-center space-x-2 flex-shrink-0">{renderAgentModelSelector()}</div>
 
                 {/* Row 2: AIDER */}
                 {renderAiderInfo(true)}
@@ -497,23 +503,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
               <div className="flex items-center space-x-3 flex-wrap">
                 {mode === 'agent' ? (
                   <>
-                    <div className="flex items-center space-x-1 flex-shrink-0">
-                      <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
-                      <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
-                      {!currentTaskModelId ? (
-                        <div className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.noModelSelected')}</div>
-                      ) : (
-                        <ModelSelector
-                          ref={agentModelSelectorRef}
-                          models={taskModels}
-                          selectedModelId={currentTaskModelId}
-                          onChange={handleTaskModelChange}
-                          preferredModelIds={settings?.preferredModels || []}
-                          removePreferredModel={handleRemovePreferredModel}
-                          providers={providers}
-                        />
-                      )}
-                    </div>
+                    {renderAgentModelSelector()}
                     {showAiderInfo && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
                   </>
                 ) : (
@@ -521,12 +511,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                     {mode === 'architect' && (
                       <>
                         <div className="flex items-center space-x-1 flex-shrink-0">
-                          <GoProjectRoadmap
-                            className="w-4 h-4 text-text-primary mr-1"
-                            data-tooltip-id="architect-model-tooltip"
-                            data-tooltip-content={t('modelSelector.architectModel')}
-                          />
-                          <StyledTooltip id="architect-model-tooltip" />
+                          <Tooltip content={t('modelSelector.architectModel')}>
+                            <GoProjectRoadmap className="w-4 h-4 text-text-primary mr-1" />
+                          </Tooltip>
                           <ModelSelector
                             ref={architectModelSelectorRef}
                             models={aiderModels}

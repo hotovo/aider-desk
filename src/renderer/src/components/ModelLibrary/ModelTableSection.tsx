@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/common/Checkbox';
 import { Column } from '@/components/common/Table';
 import { VirtualTable } from '@/components/common/VirtualTable';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { type MenuOption } from '@/components/common/VerticalDotsMenu';
 
 type Props = {
@@ -231,7 +231,9 @@ export const ModelTableSection = ({
     {
       accessor: 'temperature',
       header: (
-        <MdThermostat className="w-4 h-4 text-text-secondary" data-tooltip-id="model-table-tooltip" data-tooltip-content={t('modelLibrary.temperature')} />
+        <Tooltip content={t('modelLibrary.temperature')}>
+          <MdThermostat className="w-4 h-4 text-text-secondary" />
+        </Tooltip>
       ),
       align: 'center',
       maxWidth: 50,
@@ -274,7 +276,6 @@ export const ModelTableSection = ({
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <StyledTooltip id="model-table-tooltip" />
       {/* Search and Info Header */}
       <div className="px-2 pt-2">
         <div className="flex items-center justify-between space-x-4 pr-4">

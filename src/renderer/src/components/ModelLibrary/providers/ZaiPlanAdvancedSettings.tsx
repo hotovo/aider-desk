@@ -8,7 +8,7 @@ import { ZaiPlanThinkingSetting } from './ZaiPlanThinkingSetting';
 
 import { useSettings } from '@/contexts/SettingsContext';
 import { Button } from '@/components/common/Button';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   provider: ZaiPlanProvider;
@@ -124,8 +124,9 @@ export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
       <div className="border border-border-default-dark rounded-md p-4">
         <div className="flex items-center space-x-2 mb-3">
           <span className="text-sm font-medium">{t('zaiPlan.mcp.title')}</span>
-          <FaInfoCircle className="h-4 w-4 text-text-secondary" data-tooltip-id="zai-mcp-info" />
-          <StyledTooltip id="zai-mcp-info" content={t('zaiPlan.mcp.infoTooltip')} />
+          <Tooltip content={t('zaiPlan.mcp.infoTooltip')}>
+            <FaInfoCircle className="h-4 w-4 text-text-secondary" />
+          </Tooltip>
         </div>
 
         {mcpServers.map((server) => {

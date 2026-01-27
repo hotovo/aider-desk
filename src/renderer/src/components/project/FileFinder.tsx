@@ -6,7 +6,6 @@ import { PiKeyReturn } from 'react-icons/pi';
 
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
@@ -198,7 +197,6 @@ export const FileFinder = ({
       <IconButton
         onClick={handleInputSubmit}
         icon={<PiKeyReturn className="w-4 h-4" />}
-        tooltipId="filePathAutocompletionAddButtonTooltip"
         tooltip={t('fileFinder.addPathTooltip')}
         className="p-2 rounded-md hover:bg-bg-tertiary-strong transition-colors"
       />
@@ -209,7 +207,6 @@ export const FileFinder = ({
       <IconButton
         onClick={() => handleBrowse('file')}
         icon={<FaFile className="w-4 h-4" />}
-        tooltipId="browseTooltipId"
         tooltip={t('fileFinder.browseFile')}
         className="p-2 rounded-md hover:bg-bg-tertiary-strong transition-colors"
       />
@@ -220,7 +217,6 @@ export const FileFinder = ({
       <IconButton
         onClick={() => handleBrowse('directory')}
         icon={<FaFolder className="w-4 h-4" />}
-        tooltipId="browseTooltipId"
         tooltip={t('fileFinder.browseDirectory')}
         className="p-2 rounded-md hover:bg-bg-tertiary-strong transition-colors"
       />
@@ -236,9 +232,7 @@ export const FileFinder = ({
     ) : undefined;
 
   return (
-    <>
-      <StyledTooltip id="filePathAutocompletionAddButtonTooltip" />
-      <StyledTooltip id="browseTooltipId" />
+    <div>
       <AutocompletionInput
         value={inputValue}
         suggestions={suggestions}
@@ -250,6 +244,6 @@ export const FileFinder = ({
         onPaste={onPaste}
         rightElement={internalRightElement}
       />
-    </>
+    </div>
   );
 };
