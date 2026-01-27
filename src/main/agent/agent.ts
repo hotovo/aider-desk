@@ -1218,6 +1218,7 @@ export class Agent {
     abortSignal?: AbortSignal,
   ): Promise<ContextMessage[]> {
     logger.info(`Step finished. Reason: ${finishReason}`, {
+      currentResponseId,
       reasoningText: reasoningText?.substring(0, 100), // Log truncated reasoning
       text: text?.substring(0, 100), // Log truncated text
       toolCalls: toolCalls?.map((tc) => tc.toolName),
@@ -1282,7 +1283,7 @@ export class Agent {
         responseMessageIndex++;
       }
 
-      if (part.type === 'tool-result') {
+      if (part?.type === 'tool-result') {
         const toolResult = toolResults.find((toolResult) => toolResult.toolCallId === part.toolCallId);
         if (toolResult) {
           toolResults = toolResults.filter((toolResult) => toolResult.toolCallId !== part.toolCallId);
