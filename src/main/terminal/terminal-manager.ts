@@ -7,6 +7,7 @@ import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
 import { WorktreeManager } from '@/worktrees/worktree-manager';
+import { ProjectManager } from '@/project/project-manager';
 
 export interface TerminalInstance {
   id: string;
@@ -23,6 +24,7 @@ export class TerminalManager {
   constructor(
     private readonly eventManager: EventManager,
     private readonly worktreeManager: WorktreeManager,
+    private readonly projectManager: ProjectManager,
     private readonly telemetryManager?: TelemetryManager,
   ) {}
 
@@ -56,7 +58,21 @@ export class TerminalManager {
     const terminalId = uuidv4();
 
     try {
-      const worktree = await this.worktreeManager.getTaskWorktree(baseDir, taskId);
+      // First try to get worktree for this task directly
+      let worktree = await this.worktreeManager.getTaskWorktree(baseDir, taskId);
+
+      // If no worktree found, check if this is a subtask and inherit parent's worktree
+      if (!worktree) {
+        const project = this.projectManager.getProject(baseDir);
+        const task = project?.getTask(taskId);
+        if (task?.task.parentId) {
+          const parentTask = project?.getTask(task.task.parentId);
+          if (parentTask?.task.worktree) {
+            worktree = parentTask.task.worktree;
+          }
+        }
+      }
+
       const cwd = worktree ? worktree.path : baseDir;
       const shell = this.getShellCommand();
       const args = this.getShellArgs();
