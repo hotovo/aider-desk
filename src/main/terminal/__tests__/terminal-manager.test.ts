@@ -6,11 +6,15 @@
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { EventManager } from '@/events';
-import { WorktreeManager } from '@/worktrees/worktree-manager';
-import { ProjectManager } from '@/project/project-manager';
-import { TelemetryManager } from '@/telemetry';
+import * as pty from '@homebridge/node-pty-prebuilt-multiarch';
+import { v4 as uuidv4 } from 'uuid';
+
 import { TerminalManager } from '../terminal-manager';
+
+import type { EventManager } from '@/events';
+import type { WorktreeManager } from '@/worktrees/worktree-manager';
+import type { ProjectManager } from '@/project/project-manager';
+import type { TelemetryManager } from '@/telemetry';
 
 // Mock dependencies BEFORE importing the module
 vi.mock('@/logger', () => ({
@@ -42,10 +46,6 @@ vi.mock('uuid', () => ({
 beforeEach(() => {
   uuidCounter = 0;
 });
-
-// Import after mocking
-import * as pty from '@homebridge/node-pty-prebuilt-multiarch';
-import { v4 as uuidv4 } from 'uuid';
 
 describe('TerminalManager - createTerminal CWD handling for worktree subtasks', () => {
   let mockEventManager: Partial<EventManager>;
@@ -81,7 +81,7 @@ describe('TerminalManager - createTerminal CWD handling for worktree subtasks', 
 
     // Mock ProjectManager with structure for task lookup
     mockProjectManager = {
-      getProject: vi.fn((baseDir: string) => ({
+      getProject: vi.fn((_baseDir: string) => ({
         getTask: vi.fn((taskId: string) => {
           // Return task data based on taskId
           if (taskId === 'task-with-worktree') {
@@ -143,7 +143,7 @@ describe('TerminalManager - createTerminal CWD handling for worktree subtasks', 
       // Verify PTY was spawned with correct CWD
       expect(ptySpawnMock).toHaveBeenCalledWith(
         expect.any(String), // shell
-        expect.any(Array),  // args
+        expect.any(Array), // args
         expect.objectContaining({
           cwd: worktreePath,
         }),
@@ -275,11 +275,7 @@ describe('TerminalManager - createTerminal CWD handling for worktree subtasks', 
 
       await terminalManager.createTerminal(baseDir, taskId);
 
-      expect(ptySpawnMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(Array),
-        expect.objectContaining({ cwd: ownWorktreePath }),
-      );
+      expect(ptySpawnMock).toHaveBeenCalledWith(expect.any(String), expect.any(Array), expect.objectContaining({ cwd: ownWorktreePath }));
 
       // Reset for next test
       ptySpawnMock.mockClear();
@@ -304,11 +300,7 @@ describe('TerminalManager - createTerminal CWD handling for worktree subtasks', 
 
       await terminalManager.createTerminal(baseDir, taskId);
 
-      expect(ptySpawnMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(Array),
-        expect.objectContaining({ cwd: parentWorktreePath }),
-      );
+      expect(ptySpawnMock).toHaveBeenCalledWith(expect.any(String), expect.any(Array), expect.objectContaining({ cwd: parentWorktreePath }));
 
       // Reset for next test
       ptySpawnMock.mockClear();
@@ -333,11 +325,7 @@ describe('TerminalManager - createTerminal CWD handling for worktree subtasks', 
 
       await terminalManager.createTerminal(baseDir, taskId);
 
-      expect(ptySpawnMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(Array),
-        expect.objectContaining({ cwd: baseDir }),
-      );
+      expect(ptySpawnMock).toHaveBeenCalledWith(expect.any(String), expect.any(Array), expect.objectContaining({ cwd: baseDir }));
     });
   });
 
