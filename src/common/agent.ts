@@ -7,6 +7,7 @@ import {
   AIDER_TOOL_RUN_PROMPT,
   POWER_TOOL_BASH,
   POWER_TOOL_FETCH,
+  POWER_TOOL_FILE_DELETE,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE,
@@ -327,6 +328,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Ask,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Ask,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_DELETE}`]: ToolApprovalState.Never,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}`]: ToolApprovalState.Always,
     [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}`]: ToolApprovalState.Always,
@@ -389,6 +391,10 @@ export const DEFAULT_AGENT_PROFILES: AgentProfile[] = [
       systemPrompt:
         'You are a specialized subagent for code analysis and file manipulation. Focus on providing detailed technical insights and precise file operations.',
     },
+    toolApprovals: {
+      ...DEFAULT_AGENT_PROFILE.toolApprovals,
+      [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_DELETE}`]: ToolApprovalState.Ask,
+    },
   },
   // Aider
   {
@@ -409,6 +415,7 @@ export const DEFAULT_AGENT_PROFILES: AgentProfile[] = [
       ...DEFAULT_AGENT_PROFILE.toolApprovals,
       [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
       [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+      [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_DELETE}`]: ToolApprovalState.Never,
     },
   },
   // Aider with Power Search
