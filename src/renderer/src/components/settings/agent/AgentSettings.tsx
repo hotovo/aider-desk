@@ -29,6 +29,7 @@ import {
   POWER_TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FETCH,
+  POWER_TOOL_FILE_DELETE,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE,
@@ -121,6 +122,11 @@ const tools: Record<string, GenericTool[]> = {
       groupName: POWER_TOOL_GROUP_NAME,
       name: POWER_TOOL_FILE_WRITE,
       description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_FILE_WRITE],
+    },
+    {
+      groupName: POWER_TOOL_GROUP_NAME,
+      name: POWER_TOOL_FILE_DELETE,
+      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_FILE_DELETE],
     },
     {
       groupName: POWER_TOOL_GROUP_NAME,

@@ -392,7 +392,47 @@ export interface BashToolSettings {
   deniedPattern: string;
 }
 
-export type ToolSettings = BashToolSettings;
+export interface FileDeleteToolSettings {
+  /**
+   * File patterns that are allowed for deletion.
+   * If specified, only files matching these glob patterns can be deleted.
+   */
+  allowedPatterns?: string[];
+
+  /**
+   * File patterns that are protected from deletion.
+   * Files matching these patterns will never be deleted.
+   */
+  deniedPatterns?: string[];
+
+  /**
+   * Maximum file size in bytes for deletion.
+   * Files larger than this limit cannot be deleted.
+   * If not specified, no size limit is enforced.
+   */
+  maxFileSizeBytes?: number;
+
+  /**
+   * Whether to allow recursive deletion of directories.
+   * When true, non-empty directories can be deleted (contents removed first).
+   * When false or not specified, only empty directories can be deleted.
+   */
+  allowRecursiveDirectoryDeletion?: boolean;
+
+  /**
+   * Directory patterns that are allowed for deletion.
+   * If specified, only directories matching these glob patterns can be deleted.
+   */
+  allowedDirectoryPatterns?: string[];
+
+  /**
+   * Directory patterns that are protected from deletion.
+   * Directories matching these patterns will never be deleted.
+   */
+  deniedDirectoryPatterns?: string[];
+}
+
+export type ToolSettings = BashToolSettings | FileDeleteToolSettings;
 
 export interface AgentProfile {
   id: string;
