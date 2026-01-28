@@ -64,9 +64,9 @@ export class TerminalManager {
       // If no worktree found, check if this is a subtask and inherit parent's worktree
       if (!worktree) {
         const project = this.projectManager.getProject(baseDir);
-        const task = project?.getTask(taskId);
+        const task = project.getTask(taskId);
         if (task?.task.parentId) {
-          const parentTask = project?.getTask(task.task.parentId);
+          const parentTask = project.getTask(task.task.parentId);
           if (parentTask?.task.worktree) {
             worktree = parentTask.task.worktree;
           }
