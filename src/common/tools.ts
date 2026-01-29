@@ -14,6 +14,7 @@ export const POWER_TOOL_GROUP_NAME = 'power';
 export const POWER_TOOL_FILE_EDIT = 'file_edit';
 export const POWER_TOOL_FILE_READ = 'file_read';
 export const POWER_TOOL_FILE_WRITE = 'file_write';
+export const POWER_TOOL_FILE_DELETE = 'file_delete';
 export const POWER_TOOL_GLOB = 'glob';
 export const POWER_TOOL_GREP = 'grep';
 export const POWER_TOOL_SEMANTIC_SEARCH = 'semantic_search';
@@ -97,6 +98,12 @@ const myFunction = () => {
   [POWER_TOOL_FILE_READ]:
     "Reads and returns the content of a specified non-binary file. Useful for inspecting file contents when analyzing user's request or before modifying it. Can return content as raw text or with line numbers in format 'lineNumber|content'. Supports line offset and limit for reading specific portions of files.",
   [POWER_TOOL_FILE_WRITE]: 'Writes content to a specified file. Can create a new file, overwrite an existing file, or append to an existing file.',
+  [POWER_TOOL_FILE_DELETE]: `Safely deletes a file or directory within the task directory.
+- Requires explicit approval by default (ToolApprovalState.Never)
+- Validates path stays within task directory
+- Supports dry-run mode for preview
+- File pattern and size restrictions configurable via agent profile
+- Directory deletion controlled by isDirectory argument and pattern-based protections`,
   [POWER_TOOL_GLOB]: 'Finds files and directories matching a specified glob pattern within the project. Useful for discovering files based on patterns.',
   [POWER_TOOL_GREP]:
     'Searches for content matching a regular expression pattern within files specified by a glob pattern. Returns matching lines and their context.',
