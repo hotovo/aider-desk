@@ -48,7 +48,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
 
   // Initialize data manager
   const dataManager = new DataManager();
-  dataManager.init();
+  await dataManager.init();
 
   // Initialize memory manager
   const memoryManager = new MemoryManager(store);

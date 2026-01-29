@@ -14,18 +14,18 @@ import { Store } from '@/store';
  * Get the platform-specific directory name for binary resources
  * Returns platform directories like 'win', 'macos-arm64', 'macos-x64', 'linux-arm64', 'linux-x64'
  */
-export function getPlatformDir(): string {
+export const getPlatformDir = (): string => {
   if (process.platform === 'win32') {
     return 'win';
   }
-  
+
   if (process.platform === 'darwin') {
     return process.arch === 'arm64' ? 'macos-arm64' : 'macos-x64';
   }
-  
+
   // Default to Linux
   return process.arch === 'arm64' ? 'linux-arm64' : 'linux-x64';
-}
+};
 
 const readEnvFile = (filePath: string): Record<string, string> | null => {
   try {

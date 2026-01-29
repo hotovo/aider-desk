@@ -1,9 +1,33 @@
 import * as path from 'path';
 import { mkdir, access, chmod } from 'fs/promises';
 
+import { glob } from 'glob';
+
+import { getPlatformDir } from './utils/environment';
+
 import logger from '@/logger';
 import { withLock } from '@/utils/mutex';
-import { getPlatformDir } from './utils/environment';
+
+/**
+ * Express request interface for renderer middleware
+ */
+interface RendererRequest {
+  method: string;
+  path: string;
+  url: string;
+  headers: Record<string, string | string[] | undefined>;
+}
+
+/**
+ * Express response interface for renderer middleware
+ */
+interface RendererResponse {
+  set: (key: string, value: string) => unknown;
+  setHeader: (key: string, value: string | number) => unknown;
+  statusCode: number;
+  end: () => unknown;
+  send: (data: string) => unknown;
+}
 
 // Build directory - set during build via Bun.build() define
 // This is a temp directory used during build to work around Bun's CWD bug
@@ -16,24 +40,120 @@ const CWD_MUTEX_RESOURCE = 'bun-cwd';
 const rendererCache = new Map<string, { content: string; contentType: string; etag: string }>();
 
 /**
+ * Discover all resources that need to be extracted for Bun binary.
+ * This dynamically scans the resources directory to avoid hardcoded lists.
+ *
+ * @returns Array of resource paths relative to resources directory
+ */
+const discoverResourcesForExtraction = async (): Promise<string[]> => {
+  const resourcesDir = path.join(BUILD_DIR, 'resources');
+  const resources: string[] = [];
+
+  try {
+    // Discover text resources (non-binary files)
+    const textPatterns = ['connector/**/*', 'prompts/**/*.hbs', 'icon.png'];
+
+    for (const pattern of textPatterns) {
+      const files = await glob(pattern, {
+        cwd: resourcesDir,
+        nodir: true,
+        dot: true,
+      });
+      resources.push(...files);
+    }
+
+    // Discover platform-specific binaries
+    const platformDir = getPlatformDir();
+    const binaryPatterns = [`${platformDir}/uv`, `${platformDir}/probe`];
+
+    for (const pattern of binaryPatterns) {
+      const fullPath = path.join(resourcesDir, pattern);
+      try {
+        await access(fullPath);
+        resources.push(pattern);
+      } catch {
+        // File doesn't exist, skip
+      }
+    }
+
+    // Add Windows binaries if on Windows
+    if (process.platform === 'win32') {
+      const winPatterns = ['win/uv.exe', 'win/probe.exe'];
+      for (const pattern of winPatterns) {
+        const fullPath = path.join(resourcesDir, pattern);
+        try {
+          await access(fullPath);
+          resources.push(pattern);
+        } catch {
+          // File doesn't exist, skip
+        }
+      }
+    }
+
+    logger.debug('[Bun I/O] Discovered resources', {
+      count: resources.length,
+      resources,
+    });
+  } catch (error) {
+    logger.warn('[Bun I/O] Failed to discover resources dynamically', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Fallback to minimal required resources if glob fails
+    return getFallbackResources();
+  }
+
+  return resources;
+};
+
+/**
+ * Get fallback resource list if dynamic discovery fails.
+ * This ensures critical resources are always available.
+ */
+const getFallbackResources = (): string[] => {
+  const platformDir = getPlatformDir();
+  const resources = [
+    'connector/connector.py',
+    'icon.png',
+    'prompts/commit-message.hbs',
+    'prompts/compact-conversation.hbs',
+    'prompts/conflict-resolution-system.hbs',
+    'prompts/conflict-resolution.hbs',
+    'prompts/init-project.hbs',
+    'prompts/task-name.hbs',
+    'prompts/update-task-state.hbs',
+    'prompts/workflow.hbs',
+    'prompts/handoff.hbs',
+    'prompts/system-prompt.hbs',
+    `${platformDir}/uv`,
+    `${platformDir}/probe`,
+  ];
+
+  if (process.platform === 'win32') {
+    resources.push('win/uv.exe', 'win/probe.exe');
+  }
+
+  return resources;
+};
+
+/**
  * Check if we're running in Bun runtime
  */
-export function isBunRuntime(): boolean {
+export const isBunRuntime = (): boolean => {
   return typeof Bun !== 'undefined';
-}
+};
 
 /**
  * Check if we're running as a compiled Bun binary
  */
-export function isBunBinary(): boolean {
+export const isBunBinary = (): boolean => {
   return isBunRuntime() && process.execPath.endsWith('bun') === false;
-}
+};
 
 /**
  * Execute a function with the CWD workaround and mutex protection.
  * This ensures thread-safe access to Bun's CWD-dependent operations.
  */
-async function withCwdWorkaround<T>(fn: () => Promise<T> | T): Promise<T> {
+const withCwdWorkaround = async <T>(fn: () => Promise<T> | T): Promise<T> => {
   return withLock(CWD_MUTEX_RESOURCE, async () => {
     const originalCwd = process.cwd();
     let needsRestore = false;
@@ -54,13 +174,13 @@ async function withCwdWorkaround<T>(fn: () => Promise<T> | T): Promise<T> {
       }
     }
   });
-}
+};
 
 /**
  * Read an embedded resource file using Bun's async I/O with mutex protection.
  * This works for both source files and compiled binaries.
  */
-export async function readResource(resourcePath: string): Promise<string | null> {
+export const readResource = async (resourcePath: string): Promise<string | null> => {
   // In compiled Bun binary with extracted resources, read from temp directory
   if (isBunBinary() && process.env.AIDER_DESK_RESOURCES_DIR) {
     const tempPath = path.join(process.env.AIDER_DESK_RESOURCES_DIR, resourcePath);
@@ -83,13 +203,13 @@ export async function readResource(resourcePath: string): Promise<string | null>
       return null;
     }
   });
-}
+};
 
 /**
  * Read a binary resource file as Buffer.
  * Uses Bun.file() for async I/O to read embedded binary files.
  */
-export async function readBinaryResource(resourcePath: string): Promise<Buffer | null> {
+export const readBinaryResource = async (resourcePath: string): Promise<Buffer | null> => {
   return withCwdWorkaround(async () => {
     try {
       // resourcePath is like "linux-x64/uv", embedded as "resources/linux-x64/uv"
@@ -102,14 +222,14 @@ export async function readBinaryResource(resourcePath: string): Promise<Buffer |
       return null;
     }
   });
-}
+};
 
 /**
  * Extract embedded resources from Bun binary to temp directory.
  * This is called during startup when running as a compiled Bun binary.
  * Uses mutex protection to ensure thread-safe extraction.
  */
-export async function extractEmbeddedResources(): Promise<void> {
+export const extractEmbeddedResources = async (): Promise<void> => {
   if (!isBunBinary()) {
     return;
   }
@@ -135,36 +255,11 @@ export async function extractEmbeddedResources(): Promise<void> {
     // One or more files don't exist, proceed with extraction
   }
 
-  // List of text resources to extract (must match what's embedded in build script)
-  const textResources = [
-    'connector/connector.py',
-    'icon.png',
-    'prompts/commit-message.hbs',
-    'prompts/compact-conversation.hbs',
-    'prompts/conflict-resolution-system.hbs',
-    'prompts/conflict-resolution.hbs',
-    'prompts/init-project.hbs',
-    'prompts/task-name.hbs',
-    'prompts/update-task-state.hbs',
-    'prompts/workflow.hbs',
-    'prompts/handoff.hbs',
-    'prompts/system-prompt.hbs',
-  ];
+  // Discover resources dynamically using glob
+  const resources = await discoverResourcesForExtraction();
 
   // Note: Renderer files are NOT extracted in Bun mode
   // They are served directly from embedded resources via createRendererMiddleware()
-
-  // Combine all resources to extract
-  const resources = [...textResources];
-
-  // Add platform-specific binaries
-  if (process.platform === 'linux') {
-    resources.push(`${platformDir}/uv`, `${platformDir}/probe`);
-  } else if (process.platform === 'darwin') {
-    resources.push(`${platformDir}/uv`, `${platformDir}/probe`);
-  } else if (process.platform === 'win32') {
-    resources.push('win/uv.exe', 'win/probe.exe');
-  }
 
   // Extract each resource with mutex protection
   for (const resourcePath of resources) {
@@ -201,45 +296,50 @@ export async function extractEmbeddedResources(): Promise<void> {
   // Set environment variable so getResourceDir knows where to look
   process.env.AIDER_DESK_RESOURCES_DIR = tempDir;
   logger.info('[Bun I/O] Resource extraction complete', { tempDir });
-}
+};
 
 /**
  * Generate ETag for content
  */
-function generateETag(content: string): string {
+const generateETag = (content: string): string => {
   const hash = Buffer.from(content).toString('base64');
   return `"${hash.slice(0, 27)}"`;
-}
+};
 
 /**
  * Get content type based on file extension
  */
-function getContentType(filePath: string): string {
+const getContentType = (filePath: string): string => {
   const ext = path.basename(filePath).split('.').pop()?.toLowerCase() || '';
   const contentTypes: Record<string, string> = {
-    'html': 'text/html',
-    'css': 'text/css',
-    'js': 'application/javascript',
-    'json': 'application/json',
-    'png': 'image/png',
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'svg': 'image/svg+xml',
-    'ico': 'image/x-icon',
-    'woff': 'font/woff',
-    'woff2': 'font/woff2',
-    'ttf': 'font/ttf',
-    'eot': 'application/vnd.ms-fontobject',
+    html: 'text/html',
+    css: 'text/css',
+    js: 'application/javascript',
+    json: 'application/json',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    svg: 'image/svg+xml',
+    ico: 'image/x-icon',
+    woff: 'font/woff',
+    woff2: 'font/woff2',
+    ttf: 'font/ttf',
+    eot: 'application/vnd.ms-fontobject',
   };
   return contentTypes[ext] || 'application/octet-stream';
-}
+};
 
 /**
  * Serve a specific renderer file from embedded resources with mutex protection.
  */
-async function serveRendererFile(req: any, res: any, filePath: string, options: {
-  setHeaders?: (res: any, path: string) => void;
-} = {}): Promise<void> {
+const serveRendererFile = async (
+  req: RendererRequest,
+  res: RendererResponse,
+  filePath: string,
+  options: {
+    setHeaders?: (res: RendererResponse, path: string) => void;
+  } = {},
+): Promise<void> => {
   const { setHeaders } = options;
   const cacheKey = `/out/renderer/${filePath}`;
 
@@ -266,16 +366,19 @@ async function serveRendererFile(req: any, res: any, filePath: string, options: 
     if (ifNoneMatch && ifNoneMatch === cached.etag) {
       logger.debug('[Bun Renderer] 304 Not Modified (ETag match)');
       res.statusCode = 304;
-      return res.end();
+      void res.end();
+      return;
     }
 
     if (req.method === 'HEAD') {
       res.setHeader('Content-Length', Buffer.byteLength(cached.content));
-      return res.end();
+      void res.end();
+      return;
     }
 
     logger.debug('[Bun Renderer] Sending cached content', { cacheKey, size: cached.content.length });
-    return res.send(cached.content);
+    void res.send(cached.content);
+    return;
   }
 
   logger.debug('[Bun Renderer] Cache MISS', { cacheKey });
@@ -306,17 +409,20 @@ async function serveRendererFile(req: any, res: any, filePath: string, options: 
   if (ifNoneMatch && ifNoneMatch === etag) {
     logger.debug('[Bun Renderer] 304 Not Modified (ETag match)');
     res.statusCode = 304;
-    return res.end();
+    void res.end();
+    return;
   }
 
   if (req.method === 'HEAD') {
     res.setHeader('Content-Length', Buffer.byteLength(result));
-    return res.end();
+    void res.end();
+    return;
   }
 
   logger.debug('[Bun Renderer] Sending loaded content', { cacheKey, size: result.length });
-  return res.send(result);
-}
+  void res.send(result);
+  return;
+};
 
 /**
  * Express middleware to serve renderer files with CWD workaround, mutex protection, and caching.
@@ -326,13 +432,15 @@ async function serveRendererFile(req: any, res: any, filePath: string, options: 
  * - Supports custom headers
  * - Caching for performance
  */
-export function createRendererMiddleware(options: {
-  fallthrough?: boolean;
-  setHeaders?: (res: any, path: string) => void;
-} = {}) {
+export const createRendererMiddleware = (
+  options: {
+    fallthrough?: boolean;
+    setHeaders?: (res: RendererResponse, path: string) => void;
+  } = {},
+) => {
   const setHeaders = options.setHeaders;
 
-  return async (req: any, res: any, next: any) => {
+  return async (req: RendererRequest, res: RendererResponse, next: () => void) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       return next();
     }
@@ -359,4 +467,4 @@ export function createRendererMiddleware(options: {
       return next();
     }
   };
-}
+};

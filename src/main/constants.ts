@@ -45,11 +45,7 @@ export const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
 export const AUTH_USERNAME = process.env.AIDER_DESK_USERNAME;
 export const AUTH_PASSWORD = process.env.AIDER_DESK_PASSWORD;
 
-export const PROBE_BINARY_PATH = path.join(
-  RESOURCES_DIR,
-  getPlatformDir(),
-  process.platform === 'win32' ? 'probe.exe' : 'probe',
-);
+export const PROBE_BINARY_PATH = path.join(RESOURCES_DIR, getPlatformDir(), process.platform === 'win32' ? 'probe.exe' : 'probe');
 
 export const CLOUDFLARED_BINARY_PATH = path.join(
   RESOURCES_DIR,
@@ -60,13 +56,6 @@ export const CLOUDFLARED_BINARY_PATH = path.join(
   process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared',
 );
 
-export const CLAUDE_CODE_EXECUTABLE_PATH = path.join(
-  RESOURCES_DIR,
-  'app.asar.unpacked',
-  'node_modules',
-  '@anthropic-ai',
-  'claude-agent-sdk',
-  'cli.js',
-);
+export const CLAUDE_CODE_EXECUTABLE_PATH = path.join(RESOURCES_DIR, 'app.asar.unpacked', 'node_modules', '@anthropic-ai', 'claude-agent-sdk', 'cli.js');
 
 export const MCP_SERVER_FILES = ['mcp-server/index.js', 'mcp-server/package.json'];

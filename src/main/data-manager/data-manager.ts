@@ -67,22 +67,20 @@ class StatementAdapter<T extends ISqliteStatement> implements ISqliteStatement {
 /**
  * Factory function to create a Bun database adapter
  */
-async function createBunDatabase(): Promise<ISqliteDatabase> {
+const createBunDatabase = async (): Promise<ISqliteDatabase> => {
   logger.debug('Using bun:sqlite for database');
   const { Database: BunDatabase } = await import('bun:sqlite');
   return new DatabaseAdapter(new BunDatabase(DB_FILE_PATH));
-}
+};
 
 /**
  * Factory function to create a better-sqlite3 database adapter
  */
-async function createBetterSqliteDatabase(): Promise<ISqliteDatabase> {
+const createBetterSqliteDatabase = async (): Promise<ISqliteDatabase> => {
   logger.debug('Using better-sqlite3 for database');
   const BetterSqlite3 = await import('better-sqlite3');
   return new DatabaseAdapter(new BetterSqlite3.default(DB_FILE_PATH));
-}
-
-
+};
 
 /**
  * Manages the application's database connection and structure.
@@ -111,9 +109,7 @@ export class DataManager {
 
     this._dbLoadPromise = (async () => {
       try {
-        const db = isBunRuntime()
-          ? await createBunDatabase()
-          : await createBetterSqliteDatabase();
+        const db = isBunRuntime() ? await createBunDatabase() : await createBetterSqliteDatabase();
         this._db = db;
         return db;
       } catch (error) {
@@ -124,8 +120,6 @@ export class DataManager {
 
     return this._dbLoadPromise;
   }
-
-
 
   /**
    * Constructs a new DataManager instance.
