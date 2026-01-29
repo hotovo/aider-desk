@@ -91,6 +91,21 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
     }
   }, [activeTabId]);
 
+  // Resize terminals on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      Object.values(terminalRefs.current).forEach((terminalRef) => {
+        terminalRef?.resize();
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   // Handle copying terminal output
   const handleCopyOutput = () => {
     const activeRef = terminalRefs.current[activeTabId];
@@ -101,7 +116,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
   };
 
   return (
-    <div className={clsx('flex flex-col', visible ? 'block' : 'hidden', className)}>
+    <div className={clsx('flex flex-col', visible ? 'visible' : 'invisible', className)}>
       {/* Tab bar */}
       <div className="flex items-center justify-between pl-1 pr-2 bg-bg-primary-light border-b border-border-dark-light">
         <div className="flex items-center space-x-1">
@@ -141,7 +156,6 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
         {tabs.map((tab) => (
           <div key={tab.id} className={clsx('absolute inset-0')}>
             <TerminalComponent
-              key={tab.id}
               ref={(ref) => {
                 terminalRefs.current[tab.id] = ref;
               }}
