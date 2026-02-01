@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.51.0]
 
 - hiding the subtasks when parent task is archived
 - skipping model loading for disabled providers
