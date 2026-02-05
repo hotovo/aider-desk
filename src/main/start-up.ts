@@ -12,11 +12,13 @@ import {
   SETUP_COMPLETE_FILENAME,
   PYTHON_VENV_DIR,
   AIDER_DESK_CONNECTOR_DIR,
-  RESOURCES_DIR,
   AIDER_DESK_MCP_SERVER_DIR,
   UV_EXECUTABLE,
+  RESOURCES_DIR,
 } from '@/constants';
 import { isDev } from '@/app';
+import { copyResourceFile, setupMcpServerForBun } from '@/bun-startup';
+import { isBunBinary } from '@/bun-resources';
 
 const execAsync = promisify(exec);
 
@@ -52,15 +54,16 @@ const createVirtualEnv = async (): Promise<void> => {
   });
 };
 
+// copyResourceFile is now imported from @/bun-startup
+
 const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> => {
   if (!fs.existsSync(AIDER_DESK_CONNECTOR_DIR)) {
     fs.mkdirSync(AIDER_DESK_CONNECTOR_DIR, { recursive: true });
   }
 
   // Copy connector.py from resources
-  const sourceConnectorPath = path.join(RESOURCES_DIR, 'connector/connector.py');
   const destConnectorPath = path.join(AIDER_DESK_CONNECTOR_DIR, 'connector.py');
-  fs.copyFileSync(sourceConnectorPath, destConnectorPath);
+  await copyResourceFile('connector/connector.py', destConnectorPath);
 
   await installAiderConnectorRequirements(cleanInstall, updateProgress);
 };
@@ -184,27 +187,31 @@ const setupMcpServer = async () => {
     return;
   }
 
-  if (!fs.existsSync(AIDER_DESK_MCP_SERVER_DIR)) {
-    fs.mkdirSync(AIDER_DESK_MCP_SERVER_DIR, { recursive: true });
-  }
-
-  // Copy all files from the MCP server directory
-  const sourceMcpServerDir = path.join(RESOURCES_DIR, 'mcp-server');
-
-  if (fs.existsSync(sourceMcpServerDir)) {
-    const files = fs.readdirSync(sourceMcpServerDir);
-
-    for (const file of files) {
-      const sourceFilePath = path.join(sourceMcpServerDir, file);
-      const destFilePath = path.join(AIDER_DESK_MCP_SERVER_DIR, file);
-
-      // Skip directories for now, only copy files
-      if (fs.statSync(sourceFilePath).isFile()) {
-        fs.copyFileSync(sourceFilePath, destFilePath);
-      }
-    }
+  if (isBunBinary()) {
+    // Use Bun-specific setup
+    await setupMcpServerForBun();
   } else {
-    logger.error(`MCP server directory not found: ${sourceMcpServerDir}`);
+    // Use file system for non-Bun environments
+    if (!fs.existsSync(AIDER_DESK_MCP_SERVER_DIR)) {
+      fs.mkdirSync(AIDER_DESK_MCP_SERVER_DIR, { recursive: true });
+    }
+
+    const sourceMcpServerDir = path.join(RESOURCES_DIR, 'mcp-server');
+    if (fs.existsSync(sourceMcpServerDir)) {
+      const files = fs.readdirSync(sourceMcpServerDir);
+
+      for (const file of files) {
+        const sourceFilePath = path.join(sourceMcpServerDir, file);
+        const destFilePath = path.join(AIDER_DESK_MCP_SERVER_DIR, file);
+
+        // Skip directories for now, only copy files
+        if (fs.statSync(sourceFilePath).isFile()) {
+          fs.copyFileSync(sourceFilePath, destFilePath);
+        }
+      }
+    } else {
+      logger.error(`MCP server directory not found: ${sourceMcpServerDir}`);
+    }
   }
 };
 

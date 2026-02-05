@@ -1112,7 +1112,7 @@ export class Task {
         : undefined;
 
       if (usageReport && saveToDb) {
-        this.dataManager.saveMessage(message.id, 'assistant', this.project.baseDir, usageReport.model, usageReport, message.content);
+        await this.dataManager.saveMessage(message.id, 'assistant', this.project.baseDir, usageReport.model, usageReport, message.content);
       }
 
       if (usageReport) {
@@ -2028,7 +2028,7 @@ export class Task {
     };
 
     if (response && usageReport && saveToDb) {
-      this.dataManager.saveMessage(id, 'tool', this.project.baseDir, usageReport.model, usageReport, {
+      void this.dataManager.saveMessage(id, 'tool', this.project.baseDir, usageReport.model, usageReport, {
         toolName,
         args,
         response,

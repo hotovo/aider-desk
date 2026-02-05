@@ -26,6 +26,7 @@ import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
 import { isDev, isElectron } from '@/app';
+import { isBunBinary, createRendererMiddleware } from '@/bun-resources';
 
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -138,14 +139,23 @@ export class ServerController {
 
     // Serve static renderer files in production (for browser access)
     if (!isElectron() || !isDev()) {
-      logger.info(`Serving static renderer files on port ${SERVER_PORT}...`, {
-        dirname: __dirname,
-      });
-      this.app.use(express.static(join(__dirname, '../renderer')));
-      // Handle SPA routing: serve index.html for non-API routes
-      this.app.get('*', (_, res) => {
-        res.sendFile(join(__dirname, '../renderer/index.html'));
-      });
+      if (isBunBinary()) {
+        // Use Bun's embedded renderer middleware with CWD workaround and caching
+        // Middleware handles:
+        // 1. Serve static files from embedded resources
+        // 2. Fall back to index.html for SPA routes (no file extension)
+        // 3. Fall through for API routes (handled by API router)
+        this.app.use(createRendererMiddleware());
+      } else {
+        logger.info(`Serving static renderer files on port ${SERVER_PORT}...`, {
+          dirname: __dirname,
+        });
+        this.app.use(express.static(join(__dirname, '../renderer')));
+        // Handle SPA routing: serve index.html for non-API routes
+        this.app.get('*', (_, res) => {
+          res.sendFile(join(__dirname, '../renderer/index.html'));
+        });
+      }
     }
 
     logger.debug(`REST API routes registered on port ${SERVER_PORT}`);
