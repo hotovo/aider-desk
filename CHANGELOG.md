@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.52.0]
 
 - decreased default max tokens of semantic search for better context management
 - added support for Anthropic compatible provider
