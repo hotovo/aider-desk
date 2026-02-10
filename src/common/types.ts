@@ -289,6 +289,13 @@ export interface ContextToolMessage extends BaseContextMessage {
 // Union type for enhanced context messages
 export type ContextMessage = ContextUserMessage | ContextAssistantMessage | ContextToolMessage;
 
+export type ConnectorMessageContent = UserContent | AssistantContent;
+
+export interface ConnectorMessage {
+  role: MessageRole;
+  content: ConnectorMessageContent;
+}
+
 export interface ContextFile {
   path: string;
   readOnly?: boolean;

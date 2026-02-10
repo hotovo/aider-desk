@@ -7,6 +7,8 @@ import {
   ContextFile,
   ContextMessage,
   ContextToolMessage,
+  ConnectorMessage,
+  ConnectorMessageContent,
   MessageRole,
   ResponseCompletedData,
   TaskContext,
@@ -59,20 +61,28 @@ export class ContextManager {
     this.autosaveEnabled = false;
   }
 
-  addContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData): void;
+  addContextMessage(role: MessageRole, content: ConnectorMessageContent, usageReport?: UsageReportData): void;
   addContextMessage(message: ContextMessage): void;
-  addContextMessage(roleOrMessage: MessageRole | ContextMessage, content?: string, usageReport?: UsageReportData) {
+  addContextMessage(roleOrMessage: MessageRole | ContextMessage, content?: ConnectorMessageContent, usageReport?: UsageReportData) {
     let message: ContextMessage;
 
     if (typeof roleOrMessage === 'string') {
-      if (!content) {
+      if (content === undefined || content === null) {
+        return;
+      }
+
+      if (typeof content === 'string' && content.length === 0) {
+        return;
+      }
+
+      if (Array.isArray(content) && content.length === 0) {
         return;
       }
 
       message = {
         id: uuidv4(),
         role: roleOrMessage,
-        content: content || '',
+        content,
         usageReport,
       } as ContextMessage;
     } else {
@@ -479,7 +489,80 @@ export class ContextManager {
     return removedMessages;
   }
 
-  toConnectorMessages(contextMessages: ContextMessage[] = this.messages): { role: MessageRole; content: string }[] {
+  private isImageContentPart(part: unknown): part is { type: 'image' } {
+    return typeof part === 'object' && part !== null && 'type' in part && (part as { type?: string }).type === 'image';
+  }
+
+  private isCodeBlockPart(part: unknown): part is { type: 'code-block'; code?: unknown; language?: unknown } {
+    return typeof part === 'object' && part !== null && 'type' in part && (part as { type?: string }).type === 'code-block';
+  }
+
+  private normalizeConnectorContent(content: unknown): ConnectorMessage['content'] | null {
+    if (typeof content === 'string') {
+      return content.trim().length > 0 ? content : null;
+    }
+
+    if (Array.isArray(content)) {
+      const normalizedParts: Array<{ type: 'text'; text: string } | Record<string, unknown>> = [];
+      const textParts: string[] = [];
+
+      for (const part of content) {
+        if (isTextContent(part)) {
+          const text = typeof part === 'string' ? part : part.text;
+          if (text.trim().length > 0) {
+            normalizedParts.push({ type: 'text', text });
+            textParts.push(text);
+          }
+          continue;
+        }
+
+        if (this.isImageContentPart(part)) {
+          normalizedParts.push(part as Record<string, unknown>);
+          continue;
+        }
+
+        if (this.isCodeBlockPart(part)) {
+          const code = typeof part.code === 'string' ? part.code : '';
+          const language = typeof part.language === 'string' ? part.language : '';
+          const fence = '```';
+          const text = language ? `${fence}${language}\n${code}\n${fence}` : `${fence}\n${code}\n${fence}`;
+          normalizedParts.push({ type: 'text', text });
+          textParts.push(text);
+          continue;
+        }
+
+        if (typeof part === 'object' && part !== null && 'text' in part) {
+          const text = typeof (part as { text?: unknown }).text === 'string' ? (part as { text: string }).text : '';
+          if (text.trim().length > 0) {
+            normalizedParts.push({ type: 'text', text });
+            textParts.push(text);
+          }
+        }
+      }
+
+      if (normalizedParts.length === 0) {
+        return null;
+      }
+
+      const hasImage = normalizedParts.some(
+        (part) => typeof part === 'object' && part !== null && 'type' in part && (part as { type?: string }).type === 'image',
+      );
+
+      if (hasImage) {
+        return normalizedParts as ConnectorMessage['content'];
+      }
+
+      return textParts.join('\n\n');
+    }
+
+    if (typeof content === 'object' && content !== null && 'content' in content) {
+      return this.normalizeConnectorContent((content as { content: unknown }).content);
+    }
+
+    return null;
+  }
+
+  toConnectorMessages(contextMessages: ContextMessage[] = this.messages): ConnectorMessage[] {
     let aiderPrompt = '';
     let subAgentsPrompt = '';
 
@@ -515,7 +598,7 @@ export class ContextManager {
           }
         }
 
-        const content = extractTextContent(message.content);
+        const content = this.normalizeConnectorContent(message.content);
         if (!content) {
           return [];
         }
@@ -596,7 +679,7 @@ export class ContextManager {
       } else {
         return [];
       }
-    }) as { role: MessageRole; content: string }[];
+    }) as ConnectorMessage[];
   }
 
   async save(): Promise<void> {
