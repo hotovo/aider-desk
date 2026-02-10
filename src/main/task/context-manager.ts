@@ -16,7 +16,7 @@ import {
   UsageReportData,
   UserMessageData,
 } from '@common/types';
-import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
+import { extractServerNameToolName, extractTextContent, fileExists, formatCodeBlockText, isMessageEmpty, isTextContent } from '@common/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
 
 import type { ToolResultPart } from 'ai';
@@ -524,8 +524,10 @@ export class ContextManager {
         if (this.isCodeBlockPart(part)) {
           const code = typeof part.code === 'string' ? part.code : '';
           const language = typeof part.language === 'string' ? part.language : '';
-          const fence = '```';
-          const text = language ? `${fence}${language}\n${code}\n${fence}` : `${fence}\n${code}\n${fence}`;
+          if (code.trim().length === 0 && language.trim().length === 0) {
+            continue;
+          }
+          const text = formatCodeBlockText(code, language);
           normalizedParts.push({ type: 'text', text });
           textParts.push(text);
           continue;
