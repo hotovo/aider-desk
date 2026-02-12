@@ -685,26 +685,28 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 </>
               )}
             </div>
-            <ResizableBox
-              className="flex flex-col flex-shrink-0"
-              height={terminalVisible ? (isMobile ? 150 : 200) : 0}
-              width={Infinity}
-              axis="y"
-              resizeHandles={terminalVisible ? ['n'] : []}
-              minConstraints={[Infinity, 100]}
-              maxConstraints={[Infinity, isMobile ? window.innerHeight / 3 : window.innerHeight / 2]}
-              onResize={handleTerminalViewResize}
-            >
-              <TerminalView
-                ref={terminalViewRef}
-                baseDir={projectDir}
-                taskId={task.id}
-                visible={terminalVisible}
-                className="border-t border-border-dark-light flex-grow"
-                onVisibilityChange={setTerminalVisible}
-                onCopyOutput={handleCopyTerminalOutput}
-              />
-            </ResizableBox>
+            {terminalVisible && (
+              <ResizableBox
+                className="flex flex-col flex-shrink-0"
+                height={isMobile ? 150 : 200}
+                width={Infinity}
+                axis="y"
+                resizeHandles={['n']}
+                minConstraints={[Infinity, 100]}
+                maxConstraints={[Infinity, isMobile ? window.innerHeight / 3 : window.innerHeight / 2]}
+                onResize={handleTerminalViewResize}
+              >
+                <TerminalView
+                  ref={terminalViewRef}
+                  baseDir={project.baseDir}
+                  taskId={task.id}
+                  visible={terminalVisible}
+                  className="border-t border-border-dark-light flex-grow"
+                  onVisibilityChange={setTerminalVisible}
+                  onCopyOutput={handleCopyTerminalOutput}
+                />
+              </ResizableBox>
+            )}
           </div>
           <div className={clsx('relative w-full flex-shrink-0 flex flex-col border-t border-border-dark-light', editingMessageIndex !== null && 'pt-1')}>
             <div className={clsx('p-4 pb-2', editingMessageIndex !== null && 'pt-1')}>
