@@ -11,6 +11,12 @@ type TextContent =
       text: string;
     };
 
+type CodeBlockContent = {
+  type: 'code-block';
+  code?: unknown;
+  language?: unknown;
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isTextContent = (content: any): content is TextContent => content?.type === 'text' || typeof content === 'string';
 
@@ -20,10 +26,25 @@ export const extractTextContent = (content: unknown): string => {
   }
 
   if (Array.isArray(content)) {
-    return content
-      .filter(isTextContent)
-      .map((c) => (typeof c === 'string' ? c : c.text))
-      .join('\n\n');
+    const textParts: string[] = [];
+
+    for (const part of content) {
+      if (isTextContent(part)) {
+        textParts.push(typeof part === 'string' ? part : part.text);
+        continue;
+      }
+
+      if (typeof part === 'object' && part !== null && 'type' in part && (part as { type?: string }).type === 'code-block') {
+        const codePart = part as CodeBlockContent;
+        const code = typeof codePart.code === 'string' ? codePart.code : '';
+        const language = typeof codePart.language === 'string' ? codePart.language : '';
+        if (code.trim().length > 0 || language.trim().length > 0) {
+          textParts.push(formatCodeBlockText(code, language));
+        }
+      }
+    }
+
+    return textParts.join('\n\n');
   }
 
   if (typeof content === 'object' && content !== null && 'content' in content) {
@@ -31,6 +52,33 @@ export const extractTextContent = (content: unknown): string => {
   }
 
   return '';
+};
+
+const maxFenceLength = (text: string): number => {
+  let maxLength = 0;
+  let currentLength = 0;
+
+  for (const char of text) {
+    if (char === '`') {
+      currentLength += 1;
+      if (currentLength > maxLength) {
+        maxLength = currentLength;
+      }
+    } else {
+      currentLength = 0;
+    }
+  }
+
+  return maxLength;
+};
+
+export const formatCodeBlockText = (code: string, language?: string): string => {
+  const rawLanguage = typeof language === 'string' ? language : '';
+  const normalizedLanguage = rawLanguage.trim().split(/\r?\n/)[0].replace(/`/g, '');
+  const fenceLength = Math.max(3, maxFenceLength(code) + 1);
+  const fence = '`'.repeat(fenceLength);
+
+  return normalizedLanguage.length > 0 ? `${fence}${normalizedLanguage}\n${code}\n${fence}` : `${fence}\n${code}\n${fence}`;
 };
 
 export const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
