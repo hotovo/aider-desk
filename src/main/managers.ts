@@ -80,7 +80,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   );
 
   // Initialize terminal manager
-  const terminalManager = new TerminalManager(eventManager, worktreeManager, telemetryManager);
+  const terminalManager = new TerminalManager(eventManager, worktreeManager, projectManager, telemetryManager);
 
   // Initialize Versions Manager
   const versionsManager = new VersionsManager(eventManager, store);
