@@ -2,6 +2,7 @@
 
 ## [UNRELEASED]
 
+- optimized mobile layout for bmad mode - agent selector now stacks under mode selector and action buttons are absolutely positioned at top right
 - optimized MCP server initialization
 - optimized Aider connector start-up management
 - better detection of state for Quick Flow BMAD workflows

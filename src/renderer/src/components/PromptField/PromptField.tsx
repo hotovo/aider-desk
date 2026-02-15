@@ -1095,7 +1095,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             )}
           </div>
           <div className={clsx('relative w-full flex flex-wrap', isMobile ? 'items-start gap-0.5' : 'items-center')}>
-            <div className={clsx('flex gap-1.5', isMobile && mode === 'agent' ? 'flex-col items-start' : 'items-center')}>
+            <div className={clsx('flex gap-1.5', isMobile && AGENT_MODES.includes(mode) ? 'flex-col items-start' : 'items-center')}>
               <ModeSelector mode={mode} onModeChange={onModeChanged} />
               <div className="flex gap-2">
                 {(mode === 'agent' || mode === 'bmad') && (
@@ -1112,17 +1112,40 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             </div>
 
             <div className="flex-grow" />
-            {toggleTerminal && (
+            {isMobile && (
+              <div className="absolute top-0 right-0 z-10 flex items-center gap-1">
+                {toggleTerminal && (
+                  <Button variant="text" color="tertiary" onClick={toggleTerminal} className={terminalVisible ? 'bg-bg-secondary-light' : ''} size="xs">
+                    <VscTerminal className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Terminal</span>
+                  </Button>
+                )}
+                <Button variant="text" color="tertiary" onClick={() => clearMessages()} size="xs">
+                  <MdPlaylistRemove className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
+                </Button>
+                {showTaskInfo && (
+                  <Tooltip content={t('promptField.taskInfo')}>
+                    <Button variant="text" onClick={showTaskInfo} className="py-1.5" size="xs" color="tertiary">
+                      <FaInfoCircle className="w-3.5 h-3.5" />
+                    </Button>
+                  </Tooltip>
+                )}
+              </div>
+            )}
+            {!isMobile && toggleTerminal && (
               <Button variant="text" color="tertiary" onClick={toggleTerminal} className={terminalVisible ? 'bg-bg-secondary-light' : ''} size="xs">
                 <VscTerminal className="w-4 h-4 mr-1" />
                 <span className="hidden sm:inline">Terminal</span>
               </Button>
             )}
-            <Button variant="text" color="tertiary" onClick={() => clearMessages()} size="xs">
-              <MdPlaylistRemove className="w-4 h-4" />
-              <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
-            </Button>
-            {showTaskInfo && (
+            {!isMobile && (
+              <Button variant="text" color="tertiary" onClick={() => clearMessages()} size="xs">
+                <MdPlaylistRemove className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
+              </Button>
+            )}
+            {!isMobile && showTaskInfo && (
               <Tooltip content={t('promptField.taskInfo')}>
                 <div>
                   <Button variant="text" onClick={showTaskInfo} className="py-1.5" size="xs" color="tertiary">
