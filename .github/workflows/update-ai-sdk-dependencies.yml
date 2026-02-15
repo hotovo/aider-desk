@@ -25,10 +25,16 @@ jobs:
         with:
           node-version: '22.17.0'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Update AI SDK dependencies
+        working-directory: packages/core
         run: |
           # Define the AI SDK packages to update
           packages=(
@@ -49,7 +55,7 @@ jobs:
           )
 
           # Create changelog in memory (not as file)
-          changelog="# AI SDK Dependencies Update\n\n| Package | From | To |\n|---------|------|----|"
+          changelog="# AI SDK Dependencies Update\n\n| Package | From | To |\n|---------|------|----"
           has_updates=false
 
           # Update each package to latest stable version within the same major version
@@ -95,7 +101,7 @@ jobs:
             # Update if different
             if [ "$current_clean" != "$latest_clean" ]; then
               echo "Updating $package from $current_version to $latest_same_major"
-              npm install $package@$latest_same_major
+              pnpm add $package@$latest_same_major
               
               # Add to changelog
               changelog="$changelog\n| $package | $current_version | $latest_same_major |"

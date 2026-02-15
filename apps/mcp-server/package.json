@@ -1,0 +1,26 @@
+{
+  "name": "@aider-desk/mcp-server",
+  "version": "0.53.0-dev",
+  "private": true,
+  "type": "module",
+  "main": "./dist/aider-desk-mcp-server.js",
+  "bin": {
+    "aider-desk-mcp-server": "./dist/aider-desk-mcp-server.js"
+  },
+  "scripts": {
+    "build": "esbuild src/aider-desk-mcp-server.ts --bundle --platform=node --outdir=dist",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "axios": "^1.8.3",
+    "socket.io-client": "^4.8.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.8",
+    "esbuild": "^0.25.9",
+    "typescript": "^5.9.3"
+  }
+}

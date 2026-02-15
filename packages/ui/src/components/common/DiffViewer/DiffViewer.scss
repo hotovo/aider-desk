@@ -1,0 +1,65 @@
+.diff-viewer {
+  .diff-gutter {
+    color: var(--color-text-muted);
+    text-align: center; // Better alignment for line numbers
+
+    &.diff-gutter-omit {
+      &:before {
+        background-color: var(--color-bg-tertiary);
+      }
+    }
+  }
+
+  .diff-code {
+    padding: 0;
+    font-family: 'Sono', monospace;
+  }
+
+  .diff-code-insert {
+    background-color: var(--color-bg-diff-viewer-new-primary);
+
+    .diff-code-edit {
+      background-color: var(--color-bg-diff-viewer-new-secondary);
+    }
+  }
+
+  .diff-code-delete {
+    background-color: var(--color-bg-diff-viewer-old-primary);
+
+    .diff-code-edit {
+      background-color: var(--color-bg-diff-viewer-old-secondary);
+    }
+  }
+
+  .diff-gutter-insert {
+    background-color: var(--color-bg-diff-viewer-new-primary);
+    width: 16px;
+    min-width: 16px;
+    max-width: 16px;
+  }
+
+  .diff-gutter-delete {
+    background-color: var(--color-bg-diff-viewer-old-primary);
+  }
+
+  ::selection {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+  }
+
+  &.selectable {
+    .diff-line-hover-new,
+    .diff-line-hover-old,
+    .diff-gutter-selected,
+    .diff-code-selected {
+      cursor: pointer;
+      background-color: var(--color-bg-tertiary) !important;
+    }
+
+    .diff-code-insert:hover,
+    .diff-code-normal:hover{
+      cursor: pointer;
+      background-color: var(--color-bg-tertiary) !important;
+    }
+  }
+}

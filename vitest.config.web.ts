@@ -11,20 +11,17 @@ export default defineConfig({
     env: {
       AIDER_DESK_WEB_TESTING: 'true',
     },
-    include: ['src/renderer/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    include: ['packages/ui/src/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', 'dist', 'out'],
-    setupFiles: ['./src/renderer/src/__tests__/setup.ts'],
+    setupFiles: ['./packages/ui/src/__tests__/setup.ts'],
   },
   plugins: [
     react(),
     tsconfigPaths({
-      projects: [resolve(__dirname, 'tsconfig.web.json')],
+      projects: [
+        resolve(__dirname, 'packages/ui/tsconfig.json'),
+        resolve(__dirname, 'packages/common/tsconfig.json'),
+      ],
     }),
   ],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src/renderer/src'),
-      '@common': resolve(__dirname, 'src/common'),
-    },
-  },
 });

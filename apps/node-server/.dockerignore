@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/dist
+out
+**/out
+
+# Development files
+.git
+.gitignore
+*.md
+.vscode
+.idea
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+vitest.config.*
+
+# Electron-specific (not needed for server)
+apps/electron
+src/main
+src/renderer
+src/preload
+
+# Other apps not needed
+apps/mcp-server/node_modules
+
+# Misc
+.DS_Store
+*.log
+.env.local
+.env.*.local

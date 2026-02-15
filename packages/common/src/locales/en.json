@@ -1,0 +1,1704 @@
+{
+  "languages": {
+    "en": "English",
+    "zh": "中文"
+  },
+  "common": {
+    "settings": "Settings",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "of": "of",
+    "finish": "Finish",
+    "loading": "Loading...",
+    "startingUp": "Starting up...",
+    "loadingProjectSettings": "Loading project settings...",
+    "loadingProject": "Loading project...",
+    "loadingTask": "Loading task...",
+    "loadingMessages": "Loading messages...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "yes": "Yes",
+    "no": "No",
+    "retry": "Retry",
+    "open": "Open",
+    "openProject": "Open Project",
+    "lock": "Lock",
+    "default": "Default",
+    "suffix.billion": "B",
+    "suffix.million": "M",
+    "suffix.thousand": "K",
+    "ok": "OK",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "enabled": "Enabled",
+    "noFiles": "No files",
+    "clickToRefresh": "Click to refresh",
+    "closeTasks": "Close Tasks",
+    "toggleTasks": "Toggle Tasks",
+    "submit": "Submit"
+  },
+  "search": {
+    "placeholder": "Search...",
+    "previousResult": "Previous result (SHIFT + F3)",
+    "nextResult": "Next result (F3)"
+  },
+  "onboarding": {
+    "title": "Welcome to AiderDesk",
+    "description": "AiderDesk is your desktop companion for AI-assisted coding. This application brings the power of Aider's AI coding assistant to a user-friendly interface, helping you:",
+    "skipForNow": "Skip for now",
+    "finish": "Finish Setup",
+    "features": {
+      "1": "Manage multiple coding projects",
+      "2": "Track your AI usage and costs",
+      "3": "Interact with AI models in a structured way",
+      "4": "Visualize and manage your code files",
+      "5": "Use agentic flow for automated coding tasks and connection to MCP servers"
+    },
+    "getStarted": "Let's get started by configuring your Aider settings.",
+    "steps": {
+      "welcome": "Welcome",
+      "connectModel": "Connect AI Model",
+      "language": "Language",
+      "aider": "Aider",
+      "agent": "AI Agent",
+      "providers": "Providers",
+      "finish": "Finish"
+    },
+    "language": {
+      "title": "Choose Your Language",
+      "description": "Select your preferred language for the application interface."
+    },
+    "aider": {
+      "title": "Configure Aider",
+      "description": "To get started, please configure your Aider settings. You'll need to:",
+      "options": {
+        "1": "Add your API keys for the LLM provider you want to use",
+        "2": "Set any additional options for Aider",
+        "3": ".env and .aider.conf.yaml are also read as they would with Aider"
+      },
+      "configureLater": "You can also do that later in the Settings.",
+      "fineTuneTitle": "Fine-Tune Aider (Optional)",
+      "fineTuneDescription": "Advanced users can configure additional Aider settings and environment variables. This step is completely optional and can be safely skipped.",
+      "fineTuneNote": "Note: These settings are for advanced users who want to customize Aider's behavior. Most users can skip this step and configure these later in Settings if needed."
+    },
+    "providers": {
+      "title": "Model Providers",
+      "description": "Configure your LLM providers for use with both Aider and Agent modes. You can set up API keys and additional settings for various providers.",
+      "configureLater": "You can configure these later in the Settings if you prefer.",
+      "connectTitle": "Connect Your AI Model",
+      "connectDescription": "AiderDesk supports multiple AI providers including OpenAI, Anthropic, Google Gemini, and more. Your API keys are stored securely on your local machine and never shared.",
+      "advancedUsersNote": "Advanced users: You can also configure providers using environment variables in the next step's Aider configuration section.",
+      "advancedSettings": "Advanced settings",
+      "order": "Order",
+      "orderDescription": "List of provider slugs to try in order (e.g. [\"anthropic\", \"openai\"]).",
+      "allowFallbacks": "Allow Fallbacks",
+      "allowFallbacksDescription": "Whether to allow backup providers when the primary is unavailable.",
+      "dataCollection": "Data Collection",
+      "dataCollectionDescription": "Control whether to use providers that may store data.",
+      "only": "Only",
+      "onlyDescription": "List of provider slugs to allow.",
+      "ignore": "Ignore",
+      "ignoreDescription": "List of provider slugs to skip.",
+      "quantizations": "Quantizations",
+      "quantizationsDescription": "List of quantization levels to filter by (e.g. [\"int4\", \"int8\"]).",
+      "sort": "Sort",
+      "sortDescription": "Sort providers by price or throughput.",
+      "requireParameters": "Require Parameters",
+      "requireParametersDescription": "Only use providers that support all parameters in your request.",
+      "setupLater": "You can also configure the providers and models in Model Library later."
+    },
+    "agent": {
+      "title": "Meet Your AI Agent",
+      "description": "Discover the power of autonomous AI assistance with AiderDesk's Agent mode. Your AI agent can work independently to complete complex tasks.",
+      "capabilities": "Agent Capabilities:",
+      "autonomousPlanning": "Autonomous Task Planning:",
+      "autonomousPlanningDesc": "Breaks down complex requests into manageable steps and executes them systematically.",
+      "toolUse": "Tool Use:",
+      "toolUseDesc": "Leverages various tools for file operations, web searches, and code analysis.",
+      "extensible": "Extensible via MCP:",
+      "extensibleDesc": "Connect to Model Context Protocol servers for enhanced capabilities.",
+      "configureAgent": "Configure Agent",
+      "finishLater": "Finish Setup (Configure Agent Later)",
+      "configureTitle": "Configure Your Agent (Optional)",
+      "configureDescription": "Customize your default agent profile to match your workflow. You can adjust settings like tool permissions, context preferences, and behavior rules."
+    },
+    "complete": {
+      "title": "Setup Complete!",
+      "description": "Congratulations! You've successfully set up AiderDesk. You're now ready to start coding with AI assistance.",
+      "ready": "Click 'Finish Setup' to begin your coding journey.",
+      "success": "Onboarding completed successfully! Welcome to AiderDesk."
+    },
+    "errors": {
+      "navigationFailed": "Navigation failed. Please try again.",
+      "finishFailed": "Failed to complete onboarding. Please try again."
+    }
+  },
+  "noProjectsOpen": {
+    "welcome": "Welcome to",
+    "description": "To begin, open a project directory. This will enable Aider to work with your code."
+  },
+  "home": {
+    "title": "Home",
+    "noProjectsOpen": "No Projects Open",
+    "openProject": "Open Project",
+    "addFile": "Add File",
+    "projectView": "Project View",
+    "recentProjects": "Recent projects"
+  },
+  "tips": {
+    "multipleProjects": "Tip: You can open multiple projects and switch between them using the tabs at the top (or CTRL+Tab)."
+  },
+  "mcpServer": {
+    "addServer": "Add MCP Server",
+    "editServer": "Edit MCP Server: {{name}}",
+    "serverConfigJson": "Server Config JSON",
+    "pasteServerAs": "Paste your server as:\n\n{{example}}\n\nor\n\n{{exampleNoParent}}\n\nor\n\n{{exampleBare}}",
+    "invalidConfig": "Invalid configuration",
+    "emptyConfig": "Configuration cannot be empty",
+    "configHint": "You can add multiple servers at once by pasting a JSON object with multiple server configurations.\n\nYou can use ${projectDir} in env and args to reference the current project directory.",
+    "viewExamples": "View Examples"
+  },
+  "model": {
+    "label": "Model",
+    "labelMultiple": "Models",
+    "selectLabel": "Model",
+    "placeholder": "e.g. anthropic/claude-sonnet-4-20250514",
+    "chooseModelsToAdd": "Choose models to add...",
+    "library": {
+      "all": "All",
+      "deleteMemoryTitle": "Delete Memory",
+      "deleteMemoryDialogText": "Are you sure you want to delete this memory?"
+    }
+  },
+  "modelLibrary": {
+    "enableVoiceControl": "Enable Voice Control",
+    "enableVoiceControlOnlyOneInfo": "Only one provider can be enabled at a time.",
+    "voiceControl": "Voice control",
+    "voiceControlDescription": "Use speech-to-text to dictate your prompts directly into the chat input.",
+    "voiceEnabled": "Voice interaction enabled",
+    "title": "Model Library",
+    "selectAll": "Select All",
+    "clearSelection": "Clear Selection",
+    "hideSelected": "Hide Selected",
+    "unhideSelected": "Unhide Selected",
+    "selectedCount": "{{count}} selected",
+    "bulkActions": "Actions",
+    "search": "Search Models",
+    "providers": "Providers",
+    "all": "All",
+    "refresh": "Refresh",
+    "selectProvider": "Select a Provider to Configure",
+    "editProvider": "Edit Provider",
+    "profileForm": {
+      "title": "Configure Profile for {{provider}} Provider",
+      "name": "Profile Name",
+      "id": "Provider ID (prefix)",
+      "parameters": "Provider Parameters",
+      "headers": "Custom Headers",
+      "headerKey": "Header Name",
+      "headerValue": "Header Value",
+      "addHeader": "Add Header",
+      "test": "Test & Load Models"
+    },
+    "noProvidersConfigured": "No providers configured yet",
+    "addProvider": "Add Provider",
+    "addFirstProvider": "Add Your First Provider",
+    "searchPlaceholder": "Search models...",
+    "showingAllModels": "Showing {{count}} models from all providers",
+    "showingModelsFromProviders": "Showing {{modelCount}} models from {{providerCount}} providers",
+    "noModelsMatchSearch": "No models match your search",
+    "selectProvidersToViewModels": "Select provider profiles above to view their models",
+    "noModelsFromSelectedProviders": "No models available from selected providers",
+    "hidden": "Hidden",
+    "showModel": "Show model",
+    "hideModel": "Hide model",
+    "showHidden": "Show hidden",
+    "deleteProfileTitle": "Delete Profile",
+    "deleteProfileConfirm": "Are you sure you want to delete the profile '{{name}}'?",
+    "addModel": "Add Model",
+    "editModel": "Edit Model",
+    "provider": "Provider",
+    "modelId": "Model ID",
+    "modelIdPlaceholder": "e.g. custom-gpt-4-turbo",
+    "maxInputTokens": "Context Window",
+    "maxOutputTokens": "Max Output Tokens",
+    "limit": "Limit",
+    "temperature": "Temperature",
+    "temperatureTooltip": "Controls the randomness of model responses. Lower values (0.0-0.3) produce more focused and deterministic outputs, while higher values (0.7-1.0) generate more creative and varied responses.",
+    "cacheWrites": "Cache Writes",
+    "cachedInput": "Cached Input",
+    "inputCost": "Input",
+    "outputCost": "Output",
+    "inputTokenCost": "Input Cost per 1M Tokens",
+    "outputTokenCost": "Output Cost per 1M Tokens",
+    "cacheReadInputTokenCost": "Cache Read Cost per 1M Tokens",
+    "cacheWriteInputTokenCost": "Cache Write Cost per 1M Tokens",
+    "supportsTools": "Supports Tools",
+    "errors": {
+      "idRequired": "Model ID is required",
+      "providerRequired": "Provider is required",
+      "invalidTokenCount": "Token count must be a positive number",
+      "invalidCost": "Cost must be a non-negative number",
+      "invalidTemperature": "Temperature must be between 0 and 2",
+      "duplicateId": "Provider ID already exists"
+    },
+    "claudeAgentSdkAuthRequired": "This provider requires Claude Code CLI installation and authentication. Install from https://claude.com/product/claude-code and run `claude login` to authenticate.",
+    "claudeAgentSdkAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
+    "overrides": {
+      "title": "Provider Overrides",
+      "resetToDefaults": "Clear overrides",
+      "overridesProviderParameters": "Overrides some provider parameters"
+    },
+    "disableStreaming": "Disable streaming",
+    "disableStreamingInfo": "Disables response streaming. Use this when the provider or model does not support streaming responses.",
+    "disable": "Disable",
+    "enable": "Enable",
+    "providerDisabled": "This provider is disabled. Its models will not be available."
+  },
+  "openai": {
+    "apiKey": "API Key",
+    "baseUrl": "Base URL",
+    "modelName": "Model Name",
+    "baseUrlPlaceholder": "e.g. http://localhost:8080/v1",
+    "useWebSearch": "Use Web Search",
+    "useWebSearchTooltip": "When enabled, the model will use OpenAI's web search tool to access current information from the internet."
+  },
+  "ollama": {
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "e.g. http://localhost:11434/api"
+  },
+  "anthropic": {
+    "apiKey": "API Key",
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "e.g. https://api.anthropic.com"
+  },
+  "minimax": {
+    "apiKey": "API Key"
+  },
+  "gemini": {
+    "apiKey": "API Key",
+    "customBaseUrl": "Custom Base URL",
+    "thinkingBudget": "Thinking budget (tokens)",
+    "includeThoughts": "Include thoughts",
+    "includeThoughtsTooltip": "When enabled, the model's internal thought process will be included in the conversation.",
+    "useSearchGrounding": "Use Search grounding",
+    "useSearchGroundingTooltip": "When enabled, the model will use search results to ground its responses, improving accuracy and relevance."
+  },
+  "groq": {
+    "apiKey": "API Key",
+    "modelPlaceholder": "e.g. moonshotai/kimi-k2-instruct"
+  },
+  "kimiPlan": {
+    "apiKey": "API Key"
+  },
+  "deepseek": {
+    "apiKey": "API Key"
+  },
+  "bedrock": {
+    "apiKey": "API Key",
+    "region": "Region",
+    "regionPlaceholder": "e.g. us-east-1 or AWS_REGION env",
+    "accessKeyId": "Access Key ID",
+    "accessKeyIdTooltip": "AWS access key ID. Can be left empty if AWS_PROFILE is set in environment.",
+    "secretAccessKey": "Secret Access Key",
+    "secretAccessKeyTooltip": "AWS secret access key. Can be left empty if AWS_PROFILE is set in environment.",
+    "sessionToken": "Session Token",
+    "sessionTokenTooltip": "Optional session token for temporary credentials."
+  },
+  "cerebras": {
+    "apiKey": "API Key"
+  },
+  "openRouter": {
+    "apiKey": "API Key",
+    "modelPlaceholder": "e.g. anthropic/claude-3.7-sonnet"
+  },
+  "opencode": {
+    "apiKey": "API Key"
+  },
+  "requesty": {
+    "apiKey": "API Key",
+    "modelPlaceholder": "e.g. claude-4-sonnet",
+    "autoCacheLabel": "Use Auto Cache",
+    "autoCacheTooltip": "This will instruct the router to attempt to cache the response from the provider. If a similar request has been cached previously, it might be served from the cache (depending on the provider’s caching strategy and TTL)."
+  },
+  "lmstudio": {
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "e.g. http://localhost:1234/v1"
+  },
+  "gpustack": {
+    "name": "GPUStack",
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "http://localhost",
+    "apiKey": "API Key"
+  },
+  "synthetic": {
+    "apiKey": "API Key"
+  },
+  "zaiPlan": {
+    "apiKey": "API Key",
+    "mcp": {
+      "title": "MCP Servers",
+      "infoTooltip": "Add Z.AI Coding Plan MCP servers to enable additional capabilities for the agent.",
+      "vision": {
+        "name": "Vision",
+        "description": "Image and video analysis using GLM-4.6V model"
+      },
+      "zread": {
+        "name": "Zread",
+        "description": "Search and read GitHub repository documentation and code"
+      },
+      "webReader": {
+        "name": "Web Reader",
+        "description": "Fetch and extract content from web pages"
+      },
+      "webSearch": {
+        "name": "Web Search",
+        "description": "Search the web for real-time information"
+      },
+      "add": "Add",
+      "adding": "Adding...",
+      "configured": "Configured"
+    },
+    "thinkingEnabled": "Enable Thinking",
+    "thinkingEnabledTooltip": "When enabled, the model will use thinking mode for deeper reasoning (default). Disable for faster responses on simple tasks."
+  },
+  "azure": {
+    "apiKey": "API Key",
+    "resourceName": "Resource Name",
+    "apiVersion": "API Version",
+    "addCustomModelInfo": "Models cannot be loaded automatically for Azure provider and you need to add them manually using ”+ Add Model”, ensuring the model name matches the deployment name."
+  },
+  "providers": {
+    "anthropic": "Anthropic",
+    "anthropic-compatible": "Anthropic Compatible",
+    "bedrock": "Bedrock",
+    "cerebras": "Cerebras",
+    "claude-agent-sdk": "Claude Agent SDK",
+    "deepseek": "Deepseek",
+    "gemini": "Gemini",
+    "groq": "Groq",
+    "kimi-plan": "Kimi Coding Plan",
+    "gpustack": "GPUStack",
+    "lmstudio": "LM Studio",
+    "litellm": "LiteLLM",
+    "minimax": "MiniMax",
+    "ollama": "Ollama",
+    "openai": "OpenAI",
+    "opencode": "OpenCode ZEN",
+    "openai-compatible": "OpenAI Compatible",
+    "openrouter": "OpenRouter",
+    "requesty": "Requesty",
+    "synthetic": "Synthetic",
+    "vertex-ai": "Vertex AI",
+    "zai-plan": "Z.AI Coding Plan",
+    "azure": "Azure"
+  },
+  "select": {
+    "placeholder": "Select an option"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "general": "General",
+      "aider": "Aider",
+      "agents": "Agents",
+      "tasks": "Tasks",
+      "memory": "Memory",
+      "voice": "Voice",
+      "hotkeys": "Hotkeys",
+      "server": "Server",
+      "about": "About"
+    },
+    "hotkeys": {
+      "projectHotkeys": "Project",
+      "taskHotkeys": "Task",
+      "dialogHotkeys": "Dialogs",
+      "closeProject": "Close Project",
+      "newProject": "New Project",
+      "usageDashboard": "Usage Dashboard",
+      "modelLibrary": "Model Library",
+      "settings": "Settings",
+      "cycleNextProject": "Cycle next project",
+      "cyclePrevProject": "Cycle previous project",
+      "switchProject": "Switch to Project {{number}}",
+      "switchTask": "Switch to Task {{number}}",
+      "focusPrompt": "Focus Prompt",
+      "newTask": "New Task",
+      "closeTask": "Close Task",
+      "browseFolder": "Browse Folder",
+      "enterHotkey": "Enter hotkey...",
+      "resetToDefaults": "Reset to Defaults",
+      "hotkeyFormat": "Hotkey Format:",
+      "modKey": "Use 'mod' for Cmd (Mac) or Ctrl (Windows/Linux)",
+      "multipleKeys": "Separate multiple key combinations with commas",
+      "examples": "Examples: 'mod+w', 'ctrl+shift+t', 'alt+1,meta+1'",
+      "clickToRecord": "Click to record",
+      "recording": "Press keys...",
+      "addShortcut": "Add shortcut",
+      "editShortcut": "Edit shortcut",
+      "clearShortcut": "Clear shortcut",
+      "noShortcut": "No shortcut configured",
+      "recordShortcutDescription": "Press the record button below and then press the key combination you want to use as a shortcut.",
+      "pressKeysToRecord": "Press keys to record...",
+      "startRecording": "Start Recording",
+      "stopRecording": "Stop Recording"
+    },
+    "gui": "Appearance",
+    "voice": {
+      "title": "Voice",
+      "providerProfile": "Provider profile",
+      "model": "Model",
+      "idleTimeout": "Idle timeout (seconds)",
+      "idleTimeoutHelp": "Stops recording after this much silence",
+      "systemInstructions": "System instructions",
+      "microphone": "Microphone",
+      "microphoneDefault": "Default",
+      "microphoneUnknown": "Unknown microphone",
+      "noSupportedProviders": "No supported voice providers configured. Configure Gemini or OpenAI via Model Library.",
+      "openai": {
+        "title": "OpenAI",
+        "model": "Model",
+        "language": "Language"
+      },
+      "gemini": {
+        "title": "Gemini",
+        "model": "Model",
+        "temperature": "Temperature"
+      }
+    },
+    "startup": {
+      "title": "Start Up",
+      "emptyTask": "Start with empty task",
+      "lastTask": "Load last task"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "smartTaskState": "Smart Task State",
+      "smartTaskStateTooltip": "When enabled, the model intelligently analyzes the agent's response to classify the task as 'More Info Needed', 'Ready for Implementation', or 'Ready for Review'. When disabled, the task state will always be set to 'Ready for Review'.",
+      "autoGenerateTaskName": "Auto-Generate Task Name",
+      "autoGenerateTaskNameTooltip": "When enabled, the model generates a concise task name from your prompt. When disabled, the first 5 words of your prompt will be used as the task name.",
+      "showTaskStateActions": "Show Task State Actions",
+      "showTaskStateActionsTooltip": "When enabled, task state actions are displayed at the bottom of messages. Disable to hide these actions.",
+      "contextManagement": "Context Management",
+      "contextCompactingThreshold": "Auto-compact threshold",
+      "contextCompactingThresholdTooltip": "When token usage exceeds this threshold, the conversation will be automatically managed according to the selected compaction type. Set to 0 to disable.",
+      "contextCompactionType": "Compaction type",
+      "contextCompactionTypeCompact": "Compact",
+      "contextCompactionTypeHandoff": "Handoff",
+      "contextCompactionTypeTooltip": "Choose how to manage conversation context when the token threshold is exceeded: Compact summarizes the conversation within the task, while Handoff creates a new task with a handoff.",
+      "worktree": "Worktree",
+      "worktreeSymlinkFoldersLabel": "Symlink Folders",
+      "worktreeSymlinkFoldersTooltip": "These folders will be symlinked from the project root to the task worktree. Useful for large dependencies like node_modules.",
+      "noSymlinkFolders": "No symlink folders configured",
+      "symlinkFolderPlaceholder": "Folder name (e.g. node_modules)",
+      "addSymlinkFolder": "Add",
+      "removeSymlinkFolder": "Remove folder"
+    },
+    "language": "Language",
+    "notifications": {
+      "title": "Notifications"
+    },
+    "agent": {
+      "mcpServers": "MCP Servers",
+      "provider": "Provider",
+      "providerSettings": "Provider Settings",
+      "context": "Context",
+      "runSettings": "Parameters",
+      "maxIterations": "Max Iterations",
+      "minTimeBetweenToolCalls": "Min Time Between Tool Calls (ms)",
+      "maxTokens": "Max Tokens",
+      "temperature": "Temperature",
+      "customInstructions": "Additional Rules",
+      "rules": "Rules",
+      "rulesInfo": "You can use Rules to add specific instructions for specific MCP servers or to control flow of the agent.",
+      "ruleFilesInfo": "Any file in your project's <file>.aider-desk/rules</file> directory is automatically included in the Rules. See example <a>here</a>.",
+      "noServersConfigured": "No MCP servers configured.",
+      "computationalResources": "Maximum number of iterations for the agent per run. Helps control computational resources.",
+      "rateLimiting": "Sets the minimum time between tool calls to prevent rate limiting (e.g. for Brave or other API-constrained services).",
+      "temperatureTooltip": "Controls randomness in responses. Lower values (0.0-0.3) make responses more focused and deterministic, higher values (0.7-1.0) make them more creative and varied. When not set, uses the model's Temperature.",
+      "tokensPerResponse": "Maximum number of tokens the agent can use per response. When not set, uses the model's Max Output tokens.",
+      "addMcpServer": "Add",
+      "editConfig": "Edit Config",
+      "editMcpServersConfig": "Edit MCP Servers Config",
+      "reloadServers": "Reload",
+      "powerToolsTooltip": "Allows the agent to use tools for direct file operations (read, write, edit), searching (glob, grep, semantic search), and executing shell commands (bash).",
+      "aiderToolsTooltip": "Agent can use Aider to perform add/drop context files actions and run prompts.",
+      "useAiderTools": "Use Aider tools",
+      "usePowerTools": "Use Power tools",
+      "useTodoTools": "Use Todo tools",
+      "useTaskTools": "Use Task tools",
+      "useMemoryTools": "Use Memory tools",
+      "useSkillsTools": "Use Skills tools",
+      "includeContextFiles": "Include context files",
+      "includeFilesTooltip": "Adds content of context files into the chat of agent. This will increase token usage.",
+      "includeRepoMap": "Include repository map",
+      "includeRepoMapTooltip": "Include the repository map from Aider in the agent's context. This can help the agent understand the project structure, but will increase token usage.",
+      "autoApprove": "Auto approve",
+      "override": "Override",
+      "clearOverride": "Clear Override",
+      "selectOrCreateProfile": "Select or create new agent profile",
+      "newProfileName": "New Profile",
+      "bashToolAllowedPattern": "Allowed patterns",
+      "bashToolDeniedPattern": "Denied patterns",
+      "bashToolAllowedPatternPlaceholder": "e.g. 'ls .*;cat .*'",
+      "bashToolDeniedPatternPlaceholder": "e.g. 'rm .*'",
+      "bashToolAllowedPatternTooltip": "Commands that match these Regex patterns separated by ; can be executed without approval",
+      "bashToolDeniedPatternTooltip": "Commands that match these Regex patterns separated by ; will always be denied execution",
+      "envVarPlaceholder": "{{envVar}}",
+      "envVarFoundPlaceholder": "Found in: {{source}}",
+      "createNewProfile": "Create New",
+      "genericTools": "Tools",
+      "noGenericToolsConfigured": "No tools configured.",
+      "todoTools": "Todo tools",
+      "includeTodoToolsTooltip": "Allows the agent to manage a list of todo items, including setting, getting, updating, and clearing them.",
+      "subagent": {
+        "title": "Subagent",
+        "enableAsSubagent": "Enable as Subagent",
+        "enableAsSubagentInformation": "When enabled, this profile is available as a subagent to other agents.",
+        "canUseSubagents": "Can use Subagents",
+        "canUseSubagentsInformation": "When enabled, this agent can use subagents.",
+        "contextMemory": "Context memory",
+        "contextMemoryTooltip": "Controls how much of the previous conversation context is remembered by the subagent. 'Full Context' maintains all previous subagents history, 'Last Message' only uses the final messages from previous subagent runs, and 'Off' starts fresh each time.",
+        "contextMemory.off": "Off",
+        "contextMemory.fullContext": "Full Context",
+        "contextMemory.lastMessage": "Last Message",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe this subagent's purpose, capabilities, and specialization and when this subagent should be invoked",
+        "systemPrompt": "System Prompt",
+        "systemPromptPlaceholder": "Your subagent's system prompt goes here. This can be multiple paragraphs and should clearly define the subagent's role, capabilities, and approach to solving problems.",
+        "invocationMode": "Invocation",
+        "invocationModeOnDemand": "On demand",
+        "invocationModeOnDemandInformation": "Subagent is only used when explicitly requested by the user.",
+        "invocationModeAutomatic": "Automatic",
+        "invocationModeAutomaticInformation": "Subagent can be automatically invoked when appropriate by the agent.",
+        "statusDisabled": "Disabled",
+        "statusOnDemand": "On-demand",
+        "statusAutomatic": "Automatic",
+        "descriptionRequiredForAutomatic": "Description needs to be set in order to use this subagent automatically, otherwise the subagent can only be used when explicitly requested by the user.",
+        "on-demand": "Used as subagent on user demand",
+        "automatic": "Used as subagent automatically"
+      },
+      "skills": {
+        "activating": "Activating {{name}} skill...",
+        "activated": "Activated {{name}} skill",
+        "skill": "Skill"
+      },
+      "profileContext": "Profile Context",
+      "globalProfiles": "Global Profiles",
+      "projectProfiles": "Project Profiles: {{projectName}}",
+      "global": "Global",
+      "previousContext": "Previous project",
+      "nextContext": "Next project",
+      "noProfilesInContext": "No profiles found in this context",
+      "createNewProfileInContext": "Create New Profile",
+      "copyProfile": "Copy",
+      "cutProfile": "Cut",
+      "deleteProfile": "Delete",
+      "pasteProfile": "Paste Agent",
+      "resetProfileToDefaults": "Reset to Defaults",
+      "resetProfileTitle": "Reset '{{name}}' to Defaults?",
+      "resetProfileConfirm": "This will restore '{{name}}' to its original default settings. Any custom modifications will be lost.",
+      "restoreProfile": "Restore",
+      "restoreProfileTooltip": "Restore this default profile"
+    },
+    "aider": {
+      "options": "Options",
+      "optionsPlaceholder": "e.g. --no-auto-commits --cache-prompts",
+      "autoCommits": "Auto commit of LLM changes",
+      "cachingEnabled": "Enable prompt caching",
+      "watchFiles": "Watch files for changes",
+      "environmentVariables": "Environment Variables",
+      "envVarsPlaceholder": "#################\n# LLM parameters:\n#\n# Include xxx_API_KEY parameters and other params needed for your LLMs.\n# See https://aider.chat/docs/llms.html for details.\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
+      "optionsDocumentation": "Check the documentation for available options at",
+      "envVarsDocumentation": "Check the documentation for environment variables at",
+      "context": "Context",
+      "addRuleFiles": "Add rule files from project's <file>.aider-desk/rules</file> directory as read-only files.",
+      "confirmBeforeEdit": "Confirm before editing files"
+    },
+    "common": {
+      "showSecrets": "Show Secrets",
+      "learnMore": "Learn more"
+    },
+    "notificationsEnabled": "Notifications enabled",
+    "zoom": "Zoom level",
+    "theme": "Theme",
+    "font": "Font",
+    "fontSize": "Font size",
+    "fontOptions": {
+      "Sono": "Sono (Default)",
+      "PlayfairDisplay": "Playfair Display",
+      "SpaceGrotesk": "Space Grotesk",
+      "GoogleSansCode": "Google Sans Code",
+      "JetBrainsMono": "JetBrains Mono",
+      "RobotoMono": "Roboto Mono",
+      "SourceCodePro": "Source Code Pro",
+      "SpaceMono": "Space Mono",
+      "UbuntuMono": "Ubuntu Mono"
+    },
+    "themeOptions": {
+      "dark": "Default (Dark)",
+      "light": "Default (Light)",
+      "ocean": "Ocean",
+      "forest": "Forest",
+      "lavender": "Lavender",
+      "bw": "Black & White",
+      "midnight": "Midnight",
+      "neon": "Neon",
+      "neopunk": "Neopunk",
+      "charcoal": "Charcoal",
+      "aurora": "Aurora",
+      "serenity": "Serenity",
+      "cappuccino": "Cappuccino",
+      "fresh": "Fresh",
+      "botanical-garden": "Botanical Garden",
+      "botanical-garden-dark": "Botanical Garden (Dark)"
+    },
+    "aiderRestartConfirm": {
+      "title": "Restart Required",
+      "message": "Changes to Aider options or environment variables require a restart of the Aider task to take effect. Would you like to restart now?",
+      "restartNow": "Restart now",
+      "later": "I'll do it later"
+    },
+    "models": {
+      "title": "Model Providers",
+      "description": "Configure your LLM providers for use with both Aider and Agent modes. Click on a provider card to configure API key and additional settings.",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "agentOnly": "Agent only",
+      "showAllProviders": "Show All Providers",
+      "additionalProvidersInfo": "You can configure additional LLM providers for Aider by setting environment variables in the <aiderTab>Aider settings</aiderTab>."
+    },
+    "vertexAi": {
+      "project": "Project",
+      "projectPlaceholder": "Enter your Google Cloud project ID",
+      "location": "Location",
+      "locationPlaceholder": "Enter your Google Cloud location",
+      "credentials": "Google Cloud Credentials (optional)",
+      "credentialsPlaceholder": "Enter your Google Cloud credentials JSON"
+    },
+    "about": {
+      "version": "Version",
+      "notAvailable": "N/A",
+      "checkForUpdates": "Check for updates",
+      "newAiderVersionAvailable": "New Aider version ({{version}}) is available - restart AiderDesk to install.",
+      "updateAvailable": "Update is available",
+      "downloadUpdate": "Download",
+      "downloadingUpdate": "Downloading update",
+      "newAiderDeskVersionReady": "A new version is ready. Restart AiderDesk to apply the update.",
+      "downloadAutomatically": "Download update automatically",
+      "releaseNotes": "Release notes",
+      "openLogsDirectory": "Open logs directory",
+      "openLogsError": "Error opening a log directory"
+    },
+    "telemetry": {
+      "title": "Telemetry"
+    },
+    "promptBehavior": {
+      "title": "Prompt Behavior",
+      "showSuggestions": "Show suggestions",
+      "automaticallyWhileTyping": "Automatically while typing",
+      "onlyWhenTabPressed": "Only when TAB key is pressed",
+      "suggestionsDelay": "Suggestions delay",
+      "requireCommandConfirmation": "Require confirmation for commands",
+      "addCommand": "/add",
+      "readOnlyCommand": "/read-only",
+      "modelCommand": "/model",
+      "modeSwitchingCommands": "Mode commands (/code, /agent, ...)",
+      "keyBindings": "Key bindings",
+      "useVimBindings": "Use Vim bindings",
+      "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field.",
+      "modeAtSign": "@ mention mode"
+    },
+    "server": {
+      "description": "Enable server on port 24337 to access AiderDesk from external applications",
+      "status": "Status",
+      "running": "Running",
+      "enableBasicAuth": "Enable Basic Authentication",
+      "enableBasicAuthDescription": "Require username and password for browser access and API calls",
+      "username": "Username",
+      "password": "Password",
+      "controlServer": "REST API Server",
+      "starting": "Starting...",
+      "stopping": "Stopping...",
+      "start": "Start",
+      "stop": "Stop",
+      "stopped": "Stopped",
+      "copyUrl": "Copy URL",
+      "authentication": "Authentication",
+      "serverControl": "Server Control",
+      "tunnelManagement": "Tunnel Management",
+      "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally."
+    },
+    "messages": {
+      "title": "Message Display",
+      "display": "Display Options",
+      "markdownRendering": "Markdown rendering",
+      "diffViewMode": "Diff view mode",
+      "viewMode": "Messages view mode",
+      "viewModeFull": "Full",
+      "viewModeCompact": "Compact",
+      "virtualizedRendering": "Use virtualized rendering (experimental)",
+      "virtualizedRenderingTooltip": "Experimental feature that can improve performance when you have many messages in your conversation history by only rendering visible messages."
+    },
+    "memory": {
+      "configuration": "Configuration",
+      "description": "Configure AI memory features to enhance conversation continuity and context retention across sessions.",
+      "enabled": {
+        "label": "Enable",
+        "description": "Enable AI memory to remember important information across conversations and sessions."
+      },
+      "model": {
+        "label": "Model"
+      },
+      "provider": {
+        "label": "Embedding Provider",
+        "description": "Choose the embedding provider to use for memory functionality"
+      },
+      "maxDistance": {
+        "label": "Relevance threshold",
+        "description": "Higher values retrieve more (and less relevant) memories. Lower values retrieve fewer (and more relevant) memories."
+      },
+      "embeddingProgress": {
+        "loadingModel": "Loading embedding model: {{status}}",
+        "reEmbedding": "Re-embedding memories: {{done}}/{{total}}",
+        "error": "Embedding migration failed: {{error}}"
+      },
+      "memories": {
+        "title": "Memories",
+        "project": "Project",
+        "allProjects": "All projects",
+        "loading": "Loading memories...",
+        "empty": "No memories found.",
+        "delete": "Delete",
+        "deleteAllForProject": "Delete all for project",
+        "deleteDialogTitle": "Delete memory",
+        "deleteDialogText": "Delete memory",
+        "deleteProjectDialogTitle": "Delete project memories",
+        "deleteProjectDialogText": "Delete all memories for project",
+        "projectId": "projectId",
+        "id": "id"
+      }
+    }
+  },
+  "messages": {
+    "thinking": "Thinking...",
+    "loading": "Loading...",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "interrupted": "Interrupted by user.",
+    "taskInterrupted": "Task Interrupted",
+    "taskInterruptedDescription": "The task was interrupted by the user while in progress.",
+    "delete": "Delete",
+    "redo": "Redo",
+    "edit": "Edit",
+    "forkFromHere": "Fork from here",
+    "editingLastMessage": "Editing last message",
+    "cancelEdit": "Cancel",
+    "group": "Group",
+    "scrollToBottom": "Scroll to bottom",
+    "previousUserMessage": "Previous user message",
+    "nextUserMessage": "Next user message",
+    "messageBar": "Message Bar",
+    "exportNotAvailableWithVirtualized": "Export to image is not available when using virtualized message rendering. Change to standard rendering in Settings -> General -> Message Display.",
+    "execute": "Execute",
+    "resume": "Resume",
+    "taskReadyForReview": "Task Ready for Review",
+    "taskTodo": "Task Not Started",
+    "taskTodoDescription": "Task Ready to Execute.",
+    "markAsDone": "Mark as done",
+    "taskReadyForImplementation": "Task Ready for Implementation",
+    "taskDone": "Task Completed",
+    "taskDoneArchived": "Task Completed and Archived",
+    "proceed": "Proceed",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "confirmDelete": "Confirm Delete",
+    "remove": "Remove message",
+    "deleteUpToHere": "Delete up to here"
+  },
+  "errors": {
+    "frozenTitle": "AIDER FROZEN?",
+    "frozenMessage": "Aider process seems to be frozen. Would you like to restart the task?",
+    "removeMessageFailed": "Failed to remove message - please try again",
+    "forkTaskFailed": "Failed to fork task - please try again",
+    "removeMessagesUpToFailed": "Failed to remove messages - please try again"
+  },
+  "dialogs": {
+    "confirm": "Confirm",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "addFile": "Add File",
+    "openProject": "Open Project",
+    "recentProjects": "Recent projects",
+    "openProjectTitle": "OPEN PROJECT",
+    "projectPathPlaceholder": "Type the path to your project or use icon to browse",
+    "openButton": "Open",
+    "browseFoldersTooltip": "Browse folders",
+    "projectAlreadyOpenWarning": "This project is already open.",
+    "cantOpenProject": "This project can not be opened."
+  },
+  "mode": {
+    "code": "Code",
+    "ask": "Ask",
+    "architect": "Architect",
+    "context": "Context",
+    "agent": "Agent",
+    "bmad": "BMAD"
+  },
+  "modeTooltip": {
+    "code": "Direct code generation and editing with Aider AI assistant",
+    "agent": "Autonomous AI agent with advanced reasoning and tool usage capabilities",
+    "ask": "Ask questions about your codebase without making changes",
+    "architect": "High-level project planning and architecture design",
+    "context": "Search and explore your codebase context",
+    "bmad": "Guided workflows for planning, spec'ing, and implementing features"
+  },
+  "addFileDialog": {
+    "title": "Add context files",
+    "browse": "Browse files",
+    "readOnly": "Read-Only"
+  },
+  "fileFinder": {
+    "addPathTooltip": "Add path",
+    "browseFile": "Browse for files",
+    "browseDirectory": "Browse for directories",
+    "placeholder": {
+      "filesOnly": "Enter file to add",
+      "directoriesOnly": "Enter directory to add",
+      "filesAndDirectories": "Enter file or directory to add"
+    },
+    "placeholderFinish": {
+      "filesOnly": "Enter file or press Enter to finish",
+      "directoriesOnly": "Enter directory or press Enter to finish",
+      "filesAndDirectories": "Enter file or directory or press Enter to finish"
+    }
+  },
+  "fileChip": {
+    "removeFileTooltip": "Remove file"
+  },
+  "contextFiles": {
+    "title": "Context Files",
+    "updatedFiles": "Updated Files",
+    "updated": "Updated",
+    "add": "Add context files",
+    "addFileTooltip": "Add file (use Ctrl/Cmd to add as Read-only)",
+    "addFileTooltip.ctrl": "Add file (use Ctrl to add as Read-only)",
+    "addFileTooltip.cmd": "Add file (use Cmd to add as Read-only)",
+    "readOnly": "Read-only file",
+    "showAllFiles": "Show all files",
+    "hideAllFiles": "Hide all files",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "dropAll": "Drop all context files",
+    "globalRule": "Global rule file",
+    "projectRule": "Project rule file",
+    "agentRule": "Agent rule file",
+    "projectFiles": "Project Files",
+    "rules": "Rule Files",
+    "diffViewer": {
+      "file": "File"
+    },
+    "search": "Search files",
+    "searchPlaceholder": "Search files...",
+    "refresh": "Refresh",
+    "useGit": "Use Git",
+    "useGitEnabled": "Git enabled - Click to use filesystem",
+    "useGitDisabled": "Filesystem enabled - Click to use Git",
+    "revertFile": "Revert changes",
+    "confirmRevertTitle": "Revert file changes?",
+    "confirmRevertMessage": "This will discard all changes to this file. This action cannot be undone.",
+    "revert": "Revert",
+    "empty": {
+      "title": "No Context Files",
+      "aiderMode": {
+        "description": "Add files here that you want to read or modify. Aider can only access files that are in the context.",
+        "hint": "Tip: Add related files (imports, types) for better understanding."
+      },
+      "agentMode": {
+        "description": "The agent can access any file in your project using tools. Adding files here is optional but can speed up tasks by providing immediate context.",
+        "hint": "Tip: Add files here when using Aider tools or when you want file contents included in the prompt.",
+        "includeContextFiles": "When 'Include Context Files' is enabled in agent settings, file contents are embedded directly in the prompt for immediate access."
+      }
+    }
+  },
+  "modelSelector": {
+    "mainModel": "Main model",
+    "editorModel": "Editor model",
+    "weakModel": "Weak model",
+    "architectModel": "Architect model",
+    "agentModel": "Agent model",
+    "reasoning": "Reasoning",
+    "thinkingTokens": "Thinking tokens",
+    "loadingModel": "Loading model...",
+    "searchPlaceholder": "Search models...",
+    "searchPlaceholderOrCustom": "Search models or enter custom name...",
+    "removePreferred": "Remove from preferred models",
+    "invalidModelSelection": "Invalid format of the model. Expected format is 'provider/model', e.g. 'openai/gpt-4'.",
+    "providerNotSupported": "Provider '{{provider}}' is not supported. Supported providers are: {{providers}}.",
+    "selectModel": "Select model...",
+    "weakModelLock": "Lock weak model",
+    "weakModelUnlock": "Unlock weak model",
+    "noModelSelected": "No model selected"
+  },
+  "modelInfo": {
+    "noInfo": "No model information available.",
+    "maxInputTokens": "Max Input Tokens",
+    "maxOutputTokens": "Max Output Tokens",
+    "inputCostPerMillion": "Input Cost / 1M Tokens",
+    "outputCostPerMillion": "Output Cost / 1M Tokens"
+  },
+  "mcp": {
+    "initializingServers": "Initializing MCP servers...",
+    "serverToolStatus": "{{enabledCount}} of {{count}} tools enabled",
+    "toolsCount_one": "{{count}} tool",
+    "toolsCount_other": "{{count}} tools",
+    "loadToolsError": "Failed to load MCP server tools",
+    "noToolsFound": "No tools could be found. Check your configuration.",
+    "servers": "MCP servers",
+    "tools": "Tools"
+  },
+  "todo": {
+    "title": "Todos",
+    "addTodo": "Add Todo",
+    "editTodo": "Edit Todo",
+    "deleteTodo": "Delete Todo",
+    "todoName": "Todo Name",
+    "todoNamePlaceholder": "Enter todo name...",
+    "saveTodo": "Save",
+    "cancelTodo": "Cancel",
+    "noTodos": "No todo items",
+    "confirmDelete": "Are you sure you want to delete this todo item?",
+    "clearAllTodos": "Clear all todo items",
+    "handoffTodo": "Handoff to new task"
+  },
+  "tool": {
+    "noDescription": "No description",
+    "approval": {
+      "never": "Never",
+      "always": "Always",
+      "ask": "Ask"
+    }
+  },
+  "autocompletion": {
+    "placeholder": "Type to search..."
+  },
+  "costInfo": {
+    "files": "Files",
+    "repoMap": "Repo map",
+    "refreshRepoMap": "Refresh repository map",
+    "messages": "Messages",
+    "clearMessages": "Clear message history",
+    "agent": "Agent",
+    "aider": "Aider",
+    "total": "Total",
+    "resetTask": "Reset",
+    "tokenUsage": "{{usedTokens}} of {{maxTokens}}",
+    "contextCompactingThreshold": "Auto-compact threshold",
+    "contextCompactingThresholdOff": "Off",
+    "contextCompactingThresholdTooltip": "When token usage exceeds this threshold, the conversation will be automatically compacted to save space.",
+    "thresholdTokens": "Threshold tokens"
+  },
+  "commandOutput": {
+    "command": "Command"
+  },
+  "reflectedMessage": {
+    "title": "Reflected Message"
+  },
+  "responseMessage": {
+    "inputTokens": "Input Tokens",
+    "outputTokens": "Output Tokens",
+    "cacheWriteTokens": "Cache Write Tokens",
+    "cacheReadTokens": "Cache Read Tokens"
+  },
+  "thinkingAnswer": {
+    "thinking": "THINKING",
+    "answer": "ANSWER"
+  },
+  "toolMessage": {
+    "toolLabel": "{{server}}: {{tool}}",
+    "arguments": "Arguments:",
+    "executing": "Executing tool...",
+    "result": "Result:",
+    "error": "Error while executing tool:",
+    "denied": "Denied by user.",
+    "deniedByReason": "Denied by user:\n{{reason}}",
+    "tasks": {
+      "listTasks": "List tasks",
+      "listTasksWithState": "List tasks with state: {{state}}",
+      "getTask": "Get task",
+      "getTaskMessage": "Get task message",
+      "createTask": "Create task",
+      "deleteTask": "Delete task",
+      "searchTask": "Search task:",
+      "inTask": "in",
+      "searchTaskNoMatches": "No matches found.",
+      "searchParentTask": "Search parent task:",
+      "inParentTask": "in",
+      "searchParentTaskNoMatches": "No matches found.",
+      "name": "Name",
+      "parentTaskId": "Parent Task ID",
+      "execute": "Execute",
+      "executeInBackground": "Execute in background",
+      "yes": "Yes",
+      "no": "No",
+      "taskId": "Task ID",
+      "messageIndex": "Message Index",
+      "prompt": "Prompt",
+      "agentProfile": "Agent Profile",
+      "model": "Model",
+      "state": "State",
+      "contextFiles": "Context Files",
+      "contextMessages": "Context Messages",
+      "currentMode": "Current mode",
+      "role": "Role",
+      "usage": "Usage",
+      "noTasksFound": "No tasks found",
+      "taskNotFound": "Task not found",
+      "messageNotFound": "Message not found",
+      "taskCreatedSuccessfully": "Task created successfully",
+      "taskDeletedSuccessfully": "Task deleted successfully",
+      "cannotDeleteCurrentTask": "Cannot delete current task",
+      "active": "Active",
+      "completed": "Completed",
+      "archived": "Archived",
+      "user": "User",
+      "assistant": "Assistant",
+      "readOnly": "Read-only",
+      "createdAt": "Created at",
+      "updatedAt": "Updated at"
+    },
+    "aider": {
+      "addContextFiles": "Add file(s) to Aider's context:\n{{paths}}",
+      "dropContextFiles": "Drop file(s) from Aider's context:\n{{paths}}",
+      "runPrompt": "Run prompt in Aider",
+      "working": "Aider is working...",
+      "finishedTask": "Aider finished the task.",
+      "noChanges": "Aider did not make any changes."
+    },
+    "power": {
+      "fileRead": {
+        "title": "Read",
+        "withLines": "With lines",
+        "lineOffset": "Line offset",
+        "lineLimit": "Line limit"
+      },
+      "fileWrite": {
+        "overwrite": "Rewrite",
+        "append": "Append to",
+        "createOnly": "Create"
+      },
+      "fileEdit": {
+        "title": "Edit",
+        "searchTerm": "Search Term",
+        "regex": "Regex",
+        "replacementText": "Replacement Text",
+        "replaceAll": "Replace All"
+      },
+      "glob": {
+        "title": "Find files matching pattern:",
+        "findingFiles": "Finding files...",
+        "foundFiles": "Found {{count}} files",
+        "noMatches": "No files found",
+        "matching": "matching"
+      },
+      "grep": {
+        "title": "Search files matching",
+        "findingMatches": "Finding...",
+        "in": "in",
+        "for": "for",
+        "foundMatches": "Found {{count}} matches",
+        "noMatches": "No matches found",
+        "contextLines": "({{count}} lines of context)",
+        "matchesCount": "({{count}} matches)",
+        "lineLabel": "Line {{lineNumber}}:",
+        "contextLabel": "Context:"
+      },
+      "bash": {
+        "title": "Run command",
+        "exitCode": "Exit Code",
+        "stdout": "Stdout",
+        "stderr": "Stderr",
+        "commandFailed": "Command failed"
+      },
+      "semanticSearch": {
+        "title": "Semantic search:",
+        "in": "in",
+        "noMatches": "No matches found.",
+        "foundMatches": "Found {{count}} matches",
+        "score": " (score: {{score}})",
+        "resultLabel": "Result {{index}}"
+      },
+      "fetch": {
+        "title": "Fetch"
+      }
+    },
+    "memory": {
+      "group": "Memory",
+      "storingMemory": "Storing memory...",
+      "retrievingMemories": "Retrieving memories...",
+      "deletingMemory": "Deleting memory...",
+      "updatingMemory": "Updating memory...",
+      "listingMemories": "Listing memories...",
+      "memoryStored": "Memory stored.",
+      "memoryUpdated": "Memory updated.",
+      "memoryDeleted": "Memory deleted.",
+      "memoryId": "Memory ID",
+      "type": "Type",
+      "content": "Content",
+      "newContent": "New Content",
+      "query": "Query",
+      "limit": "Limit",
+      "foundMemories": "Found {{count}} memories.",
+      "noMemoriesFound": "No relevant memories have been found.",
+      "noRelevantMemories": "No relevant memories have been found",
+      "storedMemoryDetails": "Stored Memory Details",
+      "updatedMemoryDetails": "Updated Memory Details",
+      "deletedMemoryDetails": "Deleted Memory Details",
+      "retrievedMemories": "Retrieved Memories",
+      "memoryList": "Memory List",
+      "listedMemories": "Listing {{count}} memories.",
+      "ofType": "of type {{type}}",
+      "noMemoriesOfType": "No memories found of type: {{type}}",
+      "all": "All",
+      "delete": "Delete",
+      "memoryNotFound": "Not found",
+      "deleteDialogTitle": "Delete memory",
+      "deleteDialogText": "Are you sure you want to delete this memory?"
+    },
+    "subagents": {
+      "groupRunning": "{{name}}: Subagent is working...",
+      "groupCompleted": "{{name}}: Subagent finished the task.",
+      "running": "Subagent is working...",
+      "completed": "Subagent finished the task.",
+      "prompt": "Prompt",
+      "error": "Error running the subagent"
+    },
+    "errors": {
+      "noSuchTool": "Attempted to use unknown tool: {{toolName}}",
+      "invalidToolArguments": "Invalid arguments for tool: {{toolName}}"
+    }
+  },
+  "codeBlock": {
+    "revertChanges": "Revert changes"
+  },
+  "diffViewer": {
+    "sideBySide": "Side by Side",
+    "unified": "Unified",
+    "compact": "Compact",
+    "noChanges": "No changes have been made. Content is identical.",
+    "lineComment": {
+      "placeholder": "Describe the changes you want to make to this code...",
+      "taskName": "Update {{filename}}"
+    }
+  },
+  "promptField": {
+    "startRecording": "Start listening",
+    "stopRecording": "Stop listening",
+    "savePrompt": "Save Prompt",
+    "savePromptDescription": "Save prompt without executing",
+    "saveError": "Failed to save prompt: {{error}}",
+    "autoApprove": "Auto Approve",
+    "autoApproveTooltip": "When enabled, automatically approve tool executions without asking for confirmation",
+    "autoApproveLockTooltip": "Locking keeps Auto Approve enabled for newly created tasks",
+    "placeholders": {
+      "0": "Update the UserValidator class to add email format validation...",
+      "1": "Fix the memory leak in DataProcessor.processBatch() by closing...",
+      "2": "Add error handling to PaymentService.chargeCard() with proper...",
+      "3": "Create a React component UserProfileCard with props interface...",
+      "4": "Optimize the SQL query in UserRepository.findByEmail() by adding...",
+      "5": "Add unit tests for AuthController.login() using Jest and...",
+      "6": "Implement the missing handleResize() method in ChartComponent...",
+      "7": "Update package.json to add TypeScript dependency and configure...",
+      "8": "Add input validation to ContactForm's handleSubmit function...",
+      "9": "Fix the bug in calculateTotal() where decimal values are being...",
+      "10": "Add logging to API middleware using Winston for request...",
+      "11": "Create a Dockerfile for Node.js application with multi-stage...",
+      "12": "Add rate limiting middleware to /api/users endpoint using...",
+      "13": "Implement the missing deleteTodo() function in TodoService...",
+      "14": "Add TypeScript interfaces for API response objects in...",
+      "15": "Fix the CSS issue where mobile menu is not displaying...",
+      "16": "Add environment variable validation using dotenv and...",
+      "17": "Create database migration to add 'last_login' column to...",
+      "18": "Add error boundaries to React app to catch component...",
+      "19": "Implement pagination logic in ProductList's fetchProducts..."
+    },
+    "questionPlaceholder": "...or suggest something else",
+    "answers": {
+      "yes": "(Y)es",
+      "no": "(N)o",
+      "always": "(A)lways",
+      "dontAsk": "(D)on't ask again"
+    },
+    "invalidCommand": "Invalid command",
+    "stopResponse": "Stop response",
+    "sendMessage": "Send message (Enter)",
+    "clearChat": "Clear chat",
+    "agentModeOnly": "Available in Agent mode only",
+    "handoffError": "Handoff failed: {{error}}",
+    "taskInfo": "Show task information"
+  },
+  "agentProfiles": {
+    "title": "Agents",
+    "profileSettings": "Agent Profile: {{profileName}}",
+    "newProfileName": "New Profile",
+    "manageProfiles": "Manage Profiles",
+    "createNew": "New Profile",
+    "profileName": "Name",
+    "profileDescription": "Description",
+    "profileDescriptionPlaceholder": "Describe this agent profile (purpose, tools, etc.)",
+    "tools": "Tools",
+    "model": "Model",
+    "selectProfile": "Select...",
+    "saveAsProjectDefault": "Save as project default"
+  },
+  "projectBar": {
+    "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
+    "aider": "Aider",
+    "toggleSidebar": "Toggle sidebar",
+    "modelLibrary": "Model Library",
+    "worktree": "Worktree",
+    "worktreeTooltip": "Toggle worktree for this task"
+  },
+  "workingMode": {
+    "local": "Local",
+    "worktree": "Worktree",
+    "switching": "Switching...",
+    "confirmLocalTitle": "Switch to Local Mode",
+    "confirmLocalMessage": "Warning: This worktree has unsaved work:\n{{warnings}}\n\nRemoving the worktree will delete this work. If you want to keep this work, use Merge action to merge it to the main branch first.\n\nAre you sure you want to continue and remove the worktree?",
+    "confirmLocalAction": "Remove and switch"
+  },
+  "workingModeTooltip": {
+    "local": "Make changes directly in the local project directory for this task",
+    "worktree": "Use git worktree to make isolated changes for this task"
+  },
+  "reasoningEffort": {
+    "label": "Reasoning effort",
+    "tooltip": "Reasoning effort determines how much the model will think before taking action. High reasoning effort means the model will think more before taking action, but will also take longer to respond.",
+    "none": "None",
+    "minimal": "Minimal",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "max": "Max"
+  },
+  "commands": {
+    "add": "Add files to the context",
+    "agent": "Switch to agent mode. If already in agent mode, opens the agent model selector. Any text after the command is used as a prompt",
+    "architect": "Switch to architect mode. Architect mode is used to plan changes to the code base and execute them",
+    "ask": "Switch to ask mode. Ask questions about the code base without editing any files",
+    "clear": "Clear the chat history",
+    "clear-logs": "Remove only log messages from chat",
+    "code": "Switch to code mode. Ask for changes to your code",
+    "commit": "Commit unstaged changes to the repo",
+    "context": "Switch to context mode. Ask for changes and Aider will add relevant files to the context",
+    "compact": "Summarize the conversation",
+    "copy-context": "Copy the current chat context as markdown, suitable to paste into a web UI",
+    "drop": "Remove files from the context to free up context space",
+    "edit-last": "Edits the last user message",
+    "init": "Initializes AGENTS.md rule file with project information",
+    "agentModeOnly": "Agent mode only",
+    "map": "Print out the current repository map",
+    "map-refresh": "Force a refresh of the repository map",
+    "model": "Open the model selector",
+    "read-only": "Add files to the chat that are for reference only, or turn added files to read-only",
+    "redo": "Redoes the last user prompt.",
+    "resolve-conflicts": "Resolve merge conflicts using AI",
+    "reasoning-effort": "Set the reasoning effort level (values: minimal/low/medium/high depending on model)",
+    "reset": "Drop all files and clear the chat history",
+    "run": "Run a shell command and optionally add the output to the chat",
+    "task-info": "Show task information",
+    "test": "Run a predefined test command and add the output to the chat on non-zero exit code",
+    "think-tokens": "Set the thinking token budget (supports formats like 8096, 8k, 10.5k, 0.5M)",
+    "tokens": "Report on the number of tokens used by the current chat context",
+    "undo": "Undo the last git commit if it was done by Aider",
+    "web": "Scrape a webpage and save it to a file. Use /web url [file] with optional [file].",
+    "handoff": "Handoff conversation to new task with focus"
+  },
+  "telemetry": {
+    "title": "Telemetry Information",
+    "message": "To help us improve AiderDesk, anonymous telemetry data is collected. This includes information like mode usage (agent, code, ask...) and some specifics when Agent mode is used. No personal data or prompts are ever collected.",
+    "fullInfo": "Full information about what is collected can be found <a>here</a>.",
+    "enabledLabel": "Enable anonymous telemetry"
+  },
+  "multiselect": {
+    "noneSelected": "None selected",
+    "allSelected": "All selected",
+    "someSelected": "{{count}} selected",
+    "selectAll": "Select All"
+  },
+  "usageDashboard": {
+    "title": "Usage Dashboard",
+    "refresh": "Refresh",
+    "projects": "Projects",
+    "models": "Models",
+    "dateRange": "Date Range",
+    "total": "Total",
+    "thisMonth": "This month",
+    "today": "Today",
+    "all": "All",
+    "groupBy": "Group by",
+    "periods": {
+      "hour": "Hour",
+      "day": "Day",
+      "month": "Month",
+      "year": "Year"
+    },
+    "tabs": {
+      "table": "Table View",
+      "charts": "Charts View"
+    },
+    "charts": {
+      "tokenUsageTrend": "Token Usage Trend",
+      "costBreakdown": "Cost Breakdown",
+      "messageBreakdown": "Message Breakdown",
+      "modelUsageDistribution": "Model Usage Distribution",
+      "inputTokens": "Input Tokens",
+      "outputTokens": "Output Tokens",
+      "noData": "No data available for the selected period",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "share": "Share",
+      "moreItems": "+{{count}} more"
+    },
+    "error": {
+      "fetch": "Failed to fetch usage data."
+    },
+    "table": {
+      "date": "Date",
+      "project": "Project",
+      "model": "Model",
+      "input": "Input",
+      "output": "Output",
+      "cacheRead": "Cache Read",
+      "cacheWrite": "Cache Write",
+      "totalTokens": "Total Tokens",
+      "cost": "Cost"
+    }
+  },
+  "terminal": {
+    "copyOutput": "Copy terminal output to prompt",
+    "minimize": "Minimize terminal",
+    "addTerminal": "Add new terminal"
+  },
+  "contextMenu": {
+    "copy": "Copy",
+    "paste": "Paste",
+    "close": "Close",
+    "closeOtherTabs": "Close other tabs",
+    "closeAllTabs": "Close all tabs"
+  },
+  "taskSidebar": {
+    "title": "Tasks",
+    "noTasks": "No tasks available",
+    "deleteTask": "Delete task",
+    "deleteConfirm": "Are you sure you want to delete this task?",
+    "createTask": "Create new task",
+    "rename": "Rename",
+    "pinTask": "Pin task",
+    "unpinTask": "Unpin task",
+    "taskNamePlaceholder": "Enter task name...",
+    "untitled": "[Untitled]",
+    "exportAsMarkdown": "Export as markdown",
+    "exportAsImage": "Export as image",
+    "taskIdCopied": "Task ID {{taskId}} copied to clipboard",
+    "duplicateTask": "Duplicate Task",
+    "search": "Search tasks",
+    "searchPlaceholder": "Search tasks...",
+    "archiveTask": "Archive Task",
+    "unarchiveTask": "Unarchive Task",
+    "showArchived": "Show archived",
+    "hideArchived": "Hide archived",
+    "archived": "Archived",
+    "multiselectMode": "Multiselect Mode",
+    "selectedCount": "{{count}} selected",
+    "closeMultiselect": "Exit multiselect",
+    "deleteSelected": "Delete selected",
+    "archiveSelected": "Archive selected",
+    "unarchiveSelected": "Unarchive selected",
+    "deleteSelectedConfirm": "Are you sure you want to delete {{count}} selected tasks?",
+    "archiveSelectedConfirm": "Are you sure you want to archive {{count}} selected tasks?",
+    "unarchiveSelectedConfirm": "Are you sure you want to unarchive {{count}} selected tasks?",
+    "generatingName": "Generating name...",
+    "changeState": "Change State",
+    "createSubtask": "Create subtask",
+    "deleteConfirmWithSubtasks": "This task has {{count}} subtask(s). Delete anyway?"
+  },
+  "taskInfo": {
+    "createdAt": "Created at",
+    "updatedAt": "Updated at",
+    "worktreeDirectory": "Worktree Directory",
+    "baseBranch": "Base Branch",
+    "baseCommit": "Base Commit",
+    "targetBranch": "Target Branch",
+    "lastMergeState": "Last Merge State",
+    "beforeMergeCommit": "Before Merge Commit",
+    "mergeTimestamp": "Merge Timestamp",
+    "openFolder": "Open Folder",
+    "taskId": "Task ID",
+    "state": "State",
+    "messageCount": "Message count"
+  },
+  "taskState": {
+    "TODO": "Todo",
+    "IN_PROGRESS": "In Progress",
+    "INTERRUPTED": "Interrupted",
+    "MORE_INFO_NEEDED": "More Info Needed",
+    "READY_FOR_REVIEW": "Ready for Review",
+    "READY_FOR_IMPLEMENTATION": "Ready for Implementation",
+    "DONE": "Done"
+  },
+  "worktree": {
+    "aheadCommits": "↑ {{count}} commits",
+    "uncommittedFiles": "{{count}} files",
+    "conflicts": "conflicts",
+    "conflictsPredicted": "Conflicts predicted",
+    "conflictsPresent": "Conflicts present",
+    "merge": "Merge",
+    "squash": "Squash & Merge",
+    "onlyUncommitted": "Only uncommitted",
+    "rebaseFromBranch": "Rebase from branch",
+    "abortRebase": "Abort rebase",
+    "continueRebase": "Continue rebase",
+    "rebaseConflicts": "Rebase failed due to conflicts. Please resolve them manually or use the AI agent to help.",
+    "confirmRebaseTitle": "Rebase worktree",
+    "confirmRebaseMessage": "This will rebase your worktree onto the selected branch. If there are conflicts, you will need to resolve them.",
+    "confirmAbortRebaseTitle": "Abort rebase",
+    "confirmAbortRebaseMessage": "This will abort the in-progress rebase and restore the worktree to its pre-rebase state.",
+    "confirmContinueRebaseTitle": "Continue rebase",
+    "confirmContinueRebaseMessage": "This will try to continue the rebase. Make sure all conflicts are resolved and staged.",
+    "resolveConflictsWithAgent": "Resolve conflicts with agent",
+    "confirmResolveConflictsWithAgentTitle": "Resolve conflicts with agent",
+    "confirmResolveConflictsWithAgentMessage": "This will try to automatically resolve all conflicted files and stage them. Review results carefully before continuing the rebase.",
+    "commitMessage": "Commit message",
+    "commitMessagePlaceholder": "Enter commit message...",
+    "selectBranch": "Select branch",
+    "selectTargetBranchTitle": "Select target branch",
+    "selectSourceBranchTitle": "Select source branch",
+    "branchHasWorktree": "has worktree",
+    "mergeTooltip": "Merge worktree changes to a branch",
+    "revertTooltip": "Revert the last merged changes",
+    "confirmMerge": "Are you sure you want to {{action}} the worktree changes to the main branch? This will include any uncommitted changes.",
+    "confirmRevert": "Are you sure you want to revert the last merge? This will reset the main branch to its previous state.",
+    "confirmMergeTitle": "Confirm Merge",
+    "confirmSquashTitle": "Confirm Squash",
+    "confirmOnlyUncommittedTitle": "Confirm Apply Uncommitted Changes",
+    "confirmMergeMessage": "Are you sure you want to merge the worktree changes to the selected branch?",
+    "confirmSquashMessage": "Are you sure you want to squash and merge the worktree changes to the selected branch?",
+    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to the selected branch? No git merge will be performed.",
+    "mergeConflicts": "Merge failed due to conflicts between your worktree and the target branch. Please rebase your worktree first to resolve them.",
+    "applyUncommittedConflicts": "Failed to apply uncommitted changes due to conflicts with the target branch. Please rebase your worktree first to align your changes.",
+    "dontAskAgain": "Don't ask me again",
+    "confirmRevertTitle": "Confirm Revert",
+    "confirmRevertMessage": "Are you sure you want to revert the last merge? This will undo the changes that were merged from the worktree back to the main branch.",
+    "revert": "Revert",
+    "noChanges": "No changes"
+  },
+  "welcomeMessage": {
+    "title": "AiderDesk",
+    "subtitle": "Your AI-powered coding assistant",
+    "features": {
+      "title": "What you can do:",
+      "aiCoding": "Generate and modify code with AI assistance",
+      "contextManagement": "Add files to context for better results",
+      "multiModel": "Choose from multiple AI models and providers",
+      "commands": "Execute commands and run tests"
+    },
+    "tips": {
+      "title": "Getting started:",
+      "addFiles": "Add files to context using the sidebar or /add command",
+      "askQuestion": "Type your request in the prompt field below",
+      "useCommands": "Use / commands for quick actions",
+      "switchMode": "Switch between modes using the mode selector below"
+    },
+    "modes": {
+      "title": "Choosing the Right Mode",
+      "agent": {
+        "title": "Agent Mode",
+        "description": "Use for autonomous tasks, complex workflows, and multi-step operations. The agent plans and executes tasks independently using available tools."
+      },
+      "code": {
+        "title": "Code Mode",
+        "description": "Use for direct code changes and specific tasks. Important: Add files to context to ensure the AI works on the right files."
+      }
+    }
+  },
+  "bmad": {
+    "welcome": {
+      "title": "Welcome to BMAD Mode (Preview)",
+      "subtitle": "Guided workflows for planning, spec'ing, and implementing features"
+    },
+    "workflows": {
+      "phaseProgress": "{{completed}}/{{total}} completed",
+      "installedVersion": "BMAD Library installed (v{{version}})",
+      "comingSoon": "Workflow list coming in Story 2.4",
+      "loading": "Loading workflows...",
+      "errorLoading": "Failed to load workflows: {{error}}",
+      "noWorkflows": "No workflows available",
+      "execute": "Execute",
+      "executing": "Executing...",
+      "workflowCompleted": "Workflow completed successfully",
+      "workflowError": "Workflow execution failed",
+      "retryExecution": "Retry",
+      "research": {
+        "name": "Research",
+        "description": "Conduct comprehensive research across multiple domains using current web data and verified sources"
+      },
+      "product-brief": {
+        "name": "Create Product Brief",
+        "description": "Define product vision and target users"
+      },
+      "prd": {
+        "name": "Create PRD",
+        "description": "Create comprehensive requirements document"
+      },
+      "architecture": {
+        "name": "Architecture",
+        "description": "Design technical architecture and system structure"
+      },
+      "ux-design": {
+        "name": "UX Design",
+        "description": "Create UX design documentation for product interface"
+      },
+      "quick-spec": {
+        "name": "Quick Spec",
+        "description": "Create focused specifications for well-defined features"
+      },
+      "quick-dev": {
+        "name": "Quick Dev",
+        "description": "Rapid spec-to-implementation for small features"
+      },
+      "epics-stories": {
+        "name": "Epics/Stories",
+        "description": "Break down requirements into implementation-ready epics and stories"
+      },
+      "implementation": {
+        "name": "Implementation",
+        "description": "Guided development for implementing stories and features"
+      }
+    },
+    "phase": {
+      "analysis": "Analysis",
+      "planning": "Planning",
+      "solutioning": "Solutioning",
+      "implementation": "Implementation",
+      "quick-flow": "Quick Flow"
+    },
+    "resume": {
+      "sectionTitle": "Resume Workflows",
+      "button": "Resume",
+      "stepIndicator": "Step {{current}} of {{total}}",
+      "lastModified": "Modified {{time}}",
+      "resuming": "Resuming...",
+      "unavailable": "Resume unavailable - workflow file corrupted",
+      "noSteps": "No progress recorded",
+      "corrupted": "Corrupted",
+      "corruptedDescription": "Artifact frontmatter is unreadable. Restart from beginning to recover.",
+      "restartFromBeginning": "Restart from Beginning",
+      "restarting": "Restarting..."
+    },
+    "errors": {
+      "npmInstallFailed": "NPM installation failed",
+      "workflowNotFound": "Workflow not found",
+      "artifactMissing": "Required artifact is missing"
+    },
+    "hierarchy": {
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "expandAll": "Expand All",
+      "collapseAll": "Collapse All",
+      "workflowProgress": "Workflow Progress",
+      "subtasksCompleted": "{{completed}} of {{total}} subtasks completed",
+      "noSubtasks": "No subtasks"
+    },
+    "progress": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "notStarted": "Not Started",
+      "percentage": "{{percentage}}% complete"
+    },
+    "install": {
+      "button": "Install BMAD",
+      "installing": "Installing...",
+      "success": "BMAD installed successfully",
+      "error": "BMAD installation failed",
+      "autoInstallNote": "Click the button above to automatically install BMAD for the current project.",
+      "manualInstallTitle": "Manual Installation",
+      "manualInstallNote": "For advanced customization, you can also install BMAD manually by running this command in your terminal.",
+      "terminalPrompt": "Install BMAD to access guided workflows for planning, spec'ing, and implementing features.",
+      "commandLabel": "Command that will be executed:",
+      "openTerminal": "Open Terminal & Install",
+      "opening": "Opening Terminal...",
+      "terminalError": "Failed to open terminal",
+      "autoCheckNote": "This page will automatically detect when BMAD installation is complete.",
+      "benefits": [
+        "Structured workflows from brainstorming to implementation",
+        "Automatic context preparation (50-80% cost savings)",
+        "No context-switching between tools",
+        "Smart next-step recommendations"
+      ]
+    },
+    "tabs": {
+      "fullWorkflow": "Full Workflow",
+      "quickFlow": "Quick Flow"
+    },
+    "pathInfo": {
+      "fullWorkflow": {
+        "title": "Full Workflow",
+        "description": "Use for new projects, complex features, or when requirements need exploration. Guides you through analysis, planning, solutioning, and implementation phases.",
+        "whenToUse": "When to use:",
+        "useCases": {
+          "newProject": "New project from scratch",
+          "complexFeature": "Complex feature development",
+          "unclearRequirements": "Unclear or evolving requirements",
+          "teamCollaboration": "Team collaboration needed"
+        }
+      },
+      "quickFlow": {
+        "title": "Quick Flow",
+        "description": "Skip planning phases for small, well-understood work. Create a quick spec and go directly to implementation.",
+        "whenToUse": "When to use:",
+        "useCases": {
+          "bugFixes": "Bug fixes",
+          "smallFeatures": "Small feature additions",
+          "refactoring": "Refactoring tasks",
+          "wellDefined": "Well-defined changes"
+        }
+      }
+    },
+    "artifact": {
+      "openFile": "Open file",
+      "notCreated": "Not created yet"
+    },
+    "taskActions": {
+      "loading": "Loading BMAD workflows...",
+      "error": "Failed to load BMAD status",
+      "resumeSection": "Resume Workflows",
+      "workflowsSection": "Follow-up workflows",
+      "noWorkflows": "No workflows available",
+      "execute": "Execute",
+      "entryPoint": "Entry point - start your project here",
+      "recommendedAfter": "Recommended after completing"
+    },
+    "reset": {
+      "bannerTitle": "Reset Workflow Progress",
+      "bannerDescription": "This will permanently delete all files in the _bmad-output folder. If you have a completed workflow or want to preserve your progress, backup the files from _bmad-output/ to docs/ or another location first.",
+      "button": "Reset",
+      "resetting": "Resetting...",
+      "confirmTitle": "Reset Workflow Progress?",
+      "confirmDescription": "This action will permanently delete all generated artifacts and workflow progress in the _bmad-output folder. This cannot be undone.",
+      "confirmButton": "Reset All Progress",
+      "success": "Workflow progress has been reset",
+      "error": "Failed to reset workflow progress"
+    }
+  }
+}

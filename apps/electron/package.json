@@ -1,0 +1,39 @@
+{
+  "name": "@aider-desk/electron",
+  "version": "0.53.0-dev",
+  "productName": "aider-desk",
+  "private": true,
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "dev:no-hmr": "NO_HMR=true electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json",
+    "build:win": "pnpm run build && electron-builder --win",
+    "build:mac": "pnpm run build && electron-builder --mac",
+    "build:linux": "pnpm run build && electron-builder --linux",
+    "build:unpack": "pnpm run build && electron-builder --dir"
+  },
+  "dependencies": {
+    "@aider-desk/common": "workspace:*",
+    "@aider-desk/core": "workspace:*",
+    "@aider-desk/ui": "workspace:*",
+    "@electron-toolkit/preload": "^3.0.2",
+    "@electron-toolkit/utils": "^4.0.0",
+    "electron-updater": "^6.6.2",
+    "fix-path": "^4.0.0"
+  },
+  "devDependencies": {
+    "@electron-toolkit/tsconfig": "^2.0.0",
+    "@vitejs/plugin-react": "^4.5.2",
+    "babel-plugin-react-compiler": "19.1.0-rc.3",
+    "electron": "^37.6.0",
+    "electron-builder": "^26.0.12",
+    "electron-vite": "^4.0.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.0.0",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}

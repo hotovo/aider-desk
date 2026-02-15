@@ -1,6 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ['./src/renderer/index.html', './src/renderer/src/**/*.{js,ts,jsx,tsx}'],
+  content: {
+    relative: true,
+    files: [
+      './src/renderer/index.html',
+      './src/renderer/src/**/*.{js,ts,jsx,tsx}',
+      './apps/electron/src/renderer/**/*.{js,ts,jsx,tsx,html}',
+      './packages/ui/src/**/*.{js,ts,jsx,tsx}',
+    ],
+  },
   theme: {
     extend: {
       colors: {

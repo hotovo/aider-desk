@@ -1,0 +1,115 @@
+.theme-fresh {
+  // Background colors
+  --color-bg-primary: #f8fafc;
+  --color-bg-primary-light: #f1f5f9;
+  --color-bg-primary-light-strong: #f1f5f980;
+  --color-bg-secondary: #e2e8f0;
+  --color-bg-secondary-light: #cbd5e1;
+  --color-bg-secondary-light-strongest: #cbd5e1f2;
+  --color-bg-tertiary: #94a3b8;
+  --color-bg-tertiary-emphasis: #94a3b84c;
+  --color-bg-tertiary-strong: #94a3b87f;
+  --color-bg-fourth: #64748b;
+  --color-bg-fourth-muted: #64748b33;
+  --color-bg-fourth-emphasis: #64748b4c;
+  --color-bg-fifth: #475569;
+  --color-bg-selection: #94a3b8;
+  --color-bg-code-block: #f8fafc;
+
+  // Diff viewer colors
+  --color-bg-diff-viewer-old-primary: #fee2e2;
+  --color-bg-diff-viewer-old-secondary: #fecaca;
+  --color-bg-diff-viewer-new-primary: #dcfce7;
+  --color-bg-diff-viewer-new-secondary: #bbf7d0;
+
+  // Text colors
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-tertiary: #475569;
+  --color-text-muted-light: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-text-muted-dark: #cbd5e1;
+  --color-text-dark: #e2e8f0;
+
+  // Border colors
+  --color-border-dark: #e2e8f0;
+  --color-border-dark-light: #cbd5e1;
+  --color-border-dark-light-strong: #cbd5e180;
+  --color-border-default-dark: #94a3b8;
+  --color-border-default: #64748b;
+  --color-border-accent: #10b981;
+  --color-border-light: #0f172a;
+
+  // Accent colors
+  --color-accent-primary: #10b981;
+  --color-accent-secondary: #06b6d4;
+  --color-accent-light: #0f172a;
+
+  // Status colors
+  --color-success: #10b981;
+  --color-success-light: #34d399;
+  --color-success-subtle: #10b9811a;
+  --color-success-muted: #10b98133;
+  --color-success-emphasis: #10b9814c;
+
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #f59e0b19;
+  --color-warning-emphasis: #f59e0b4c;
+  --color-warning-light: #fbbf24;
+  --color-warning-text: #0f172a;
+
+  --color-error: #ef4444;
+  --color-error-dark: #dc2626;
+  --color-error-subtle: #ef44441a;
+  --color-error-muted: #ef444426;
+  --color-error-emphasis: #ef44444c;
+  --color-error-strong: #ef444480;
+  --color-error-light: #f87171;
+  --color-error-lighter: #fca5a5;
+  --color-error-lightest: #fecaca;
+
+  --color-info: #3b82f6;
+  --color-info-light: #60a5fa;
+  --color-info-lighter: #93c5fd;
+  --color-info-lightest: #dbeafe;
+  --color-info-subtle: #3b82f61a;
+  --color-info-light-muted: #3b82f633;
+  --color-info-light-emphasis: #3b82f64c;
+
+  // Button colors
+  --color-button-primary: #10b981;
+  --color-button-primary-light: #34d399;
+  --color-button-primary-subtle: #10b98119;
+  --color-button-primary-emphasis: #10b9814c;
+  --color-button-primary-text: #ffffff;
+
+  --color-button-secondary: #3b82f6;
+  --color-button-secondary-light: #60a5fa;
+  --color-button-secondary-subtle: #3b82f61a;
+  --color-button-secondary-emphasis: #3b82f64c;
+  --color-button-secondary-text: #ffffff;
+
+  --color-button-danger: #ef4444;
+  --color-button-danger-light: #f87171;
+  --color-button-danger-subtle: #ef44441a;
+  --color-button-danger-emphasis: #ef44444c;
+  --color-button-danger-text: #ffffff;
+
+  // Input colors
+  --color-input-bg: #f8fafc;
+  --color-input-border: #cbd5e1;
+  --color-input-text: #0f172a;
+
+  // Agent tool colors
+  --color-agent-auto-approve: #10b981;
+  --color-agent-aider-tools: #f59e0b;
+  --color-agent-power-tools: #8b5cf6;
+  --color-agent-todo-tools: #3b82f6;
+  --color-agent-tasks-tools: #14b8a6;
+  --color-agent-memory-tools: #f472b6;
+  --color-agent-skills-tools: #a78bfa;
+  --color-agent-context-files: #06b6d4;
+  --color-agent-repo-map: #10b981;
+  --color-agent-ai-request: #ef4444;
+  --color-agent-sub-agent: #6366f1;
+}

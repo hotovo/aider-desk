@@ -1,5 +1,6 @@
 .idea
 .vscode
+.turbo
 node_modules
 dist
 out
@@ -12,7 +13,7 @@ out
 .aider-desk/tmp
 .junie*
 .env
-tsconfig.*.tsbuildinfo
+*.tsbuildinfo
 .taskmaster
 
 # uv binaries

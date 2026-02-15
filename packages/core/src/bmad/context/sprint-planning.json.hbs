@@ -1,0 +1,272 @@
+[
+  {
+    "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+    "role": "user",
+    "content": "Execute the sprint-planning workflow by following these steps:\n\nIT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:\n\n<steps CRITICAL=\"TRUE\">\n1. Always LOAD the FULL _bmad/core/tasks/workflow.xml\n2. READ its entire contents - this is the CORE OS for EXECUTING the specific workflow-config _bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml\n3. Pass the yaml path _bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml as 'workflow-config' parameter to the workflow.xml instructions\n4. Follow workflow.xml instructions EXACTLY as written to process and follow the specific workflow config and its instructions\n5. Save outputs after EACH section when generating any documents from templates\n</steps>",
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "5c6f2b07-7d39-477e-9a15-055b09570d1d",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll execute the sprint-planning workflow by first loading and reading the core workflow.xml file."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_858dffedf58c481da3a2f02e",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/core/tasks/workflow.xml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "95336b76-dddc-45e6-8223-947fcc5439bf",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_858dffedf58c481da3a2f02e",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/core/tasks/workflow.xml"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "66768efb-3e0f-4abe-9236-a04446a26735",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now I need to read the sprint-planning workflow configuration file."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_0150077582404a738a8474eb",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "9b23bc7a-6861-4889-8e3a-acbee8cb7595",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_0150077582404a738a8474eb",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "c9bc4884-1a84-46b6-81ed-8f51cea9894f",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Good, I have loaded the workflow.xml and the workflow.yaml for sprint-planning. Now let me proceed according to the workflow.xml instructions:\n\nStep 1: Load and Initialize Workflow\n1a: Load Configuration and Resolve Variables\n- Need to load config from {project-root}/_bmad/bmm/config.yaml\n- Resolve all {config_source}: references\n- Resolve system variables and paths\n- Ask user for any unknown variables\n\nLet me first load the config.yaml file:"
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_85970354dc7946b2b2458067",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/config.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "67e04834-6077-46c2-aef8-db3b9202d5d4",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_85970354dc7946b2b2458067",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/config.yaml"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "36521712-e47f-4b72-8147-b73cbd91f337",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now I need to load the instructions file and the template file to understand what the workflow requires me to do."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_1d1b1301020f41b4bdb56a63",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/4-implementation/sprint-planning/instructions.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "0ba4572e-ad7a-4531-a5da-193b977cb520",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_1d1b1301020f41b4bdb56a63",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/4-implementation/sprint-planning/instructions.md"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "6898960f-8cfc-435b-a6bf-c6c64926b1ea",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now let me read the template file to understand the structure I need to create."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_d364c25eafd046bea01378e5",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/4-implementation/sprint-planning/sprint-status-template.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "09cbb098-96a5-447b-b1b0-27cadb38f5d9",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_d364c25eafd046bea01378e5",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/4-implementation/sprint-planning/sprint-status-template.yaml"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4"
+      }
+    }
+  },
+  {
+    "id": "dbc09378-d534-473b-9e1e-df992b539dcb",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now I'll execute Step 0.5: Discover and load project documents using the discover_inputs protocol.\n\n**Step 0.5: Document Discovery - Loading Epic Files**\n\nI'll search for epic files in the implementation artifacts directory."
+      }
+    ],
+    "promptContext": {
+      "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+      "group": {
+        "id": "01cd2110-d039-4854-9b50-49220ddac2d4",
+        "name": "Sprint Planning",
+        "color": "#ef4444",
+        "finished": true
+      }
+    }
+  }
+]

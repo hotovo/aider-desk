@@ -1,0 +1,224 @@
+[
+  {
+    "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+    "role": "user",
+    "content": "Execute the code-review workflow by following these steps:\n\nIT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:\n\n<steps CRITICAL=\"TRUE\">\n1. Always LOAD the FULL _bmad/core/tasks/workflow.xml\n2. READ its entire contents - this is the CORE OS for EXECUTING the specific workflow-config _bmad/bmm/workflows/4-implementation/code-review/workflow.yaml\n3. Pass the yaml path _bmad/bmm/workflows/4-implementation/code-review/workflow.yaml as 'workflow-config' parameter to the workflow.xml instructions\n4. Follow workflow.xml instructions EXACTLY as written to process and follow the specific workflow config and its instructions\n5. Save outputs after EACH section when generating any documents from templates\n</steps>",
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "4b780c0c-755c-48bd-9bfc-cc497e41fcf1",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll execute the code-review workflow by following the steps exactly as specified. Let me start by loading the core workflow XML file."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_829ff7d160e1452d88564f83",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/core/tasks/workflow.xml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "817a084c-dd0e-4ab7-9b2a-9fabf9b90898",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_829ff7d160e1452d88564f83",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/core/tasks/workflow.xml"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "4fd86cf5-c6ef-472a-ae2f-ed8619bc8cb6",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now I need to load the specific workflow configuration file."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_252abf7c68f64e2dafe7dd6f",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/4-implementation/code-review/workflow.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "629e7b1b-5e0b-4f8c-b97d-7408f736e785",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_252abf7c68f64e2dafe7dd6f",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/4-implementation/code-review/workflow.yaml"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "a2516c2b-65be-4720-b5b4-244816ec7e69",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now I need to load the instructions.xml file to understand the specific steps for the code review workflow."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_72c9df046fa44138ae5a2069",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/4-implementation/code-review/instructions.xml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "b7531d9b-2b50-4a3e-8aa4-ea27026ea627",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_72c9df046fa44138ae5a2069",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/4-implementation/code-review/instructions.xml"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "462a52d7-eccd-4dbe-917b-aa32bd8addbc",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll execute the code-review workflow. Let me start by following Step 1 of the workflow instructions.\n\n## Step 1: Load Configuration and Discover Changes\n\nFirst, let me load the configuration file to resolve variables:"
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_00b31c026ec348da8415bd5d",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/config.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "00245163-1aa9-4a08-8099-35a2cca5872e",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_00b31c026ec348da8415bd5d",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/config.yaml"}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+      }
+    }
+  },
+  {
+    "id": "321b2573-60c6-410c-99ca-c25579085de8",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Good! Now I have the config. Let me first check if there's a project context file:"
+      }
+    ],
+    "promptContext": {
+      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "group": {
+        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+        "name": "Code Review",
+        "color": "#ef4444",
+        "finished": true
+      }
+    }
+  }
+]

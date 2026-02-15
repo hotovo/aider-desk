@@ -1,0 +1,158 @@
+@import './fonts.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.react-resizable {
+  position: relative;
+}
+
+.react-resizable-handle {
+  background-image: none !important;
+}
+
+.react-resizable-handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-0%, -0%) rotate(45deg);
+  width: 0;
+  height: 0;
+  border-left: 6px solid var(--color-bg-secondary-light);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+
+@layer base {
+  html {
+    font-family: var(--font-family, "Sono"), monospace;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-variation-settings: "MONO" 1;
+    height: 100%;
+  }
+}
+
+:root {
+  --font-family: Sono;
+  --font-size: 16px;
+}
+
+body {
+  margin: 0;
+  background-color:  var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-variation-settings: "MONO" 1;
+  height: 100%;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+* {
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-variation-settings: "MONO" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  monospace;
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.cm-fat-cursor {
+  background-color: var(--color-text-primary) !important;
+  outline: none !important;
+}
+
+.cm-placeholder {
+  color: var(--color-text-muted-dark) !important;
+}
+
+.cm-line {
+  color: var(--color-text-primary);
+}
+
+.cm-tooltip-autocomplete {
+  background-color: var(--color-bg-primary-light) !important;
+  border: 1px solid var(--color-bg-tertiary) !important;
+  border-radius: 0.375rem !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  font-size: 0.8rem !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  z-index: 10;
+}
+
+.cm-tooltip-autocomplete > ul {
+  max-height: 200px !important;
+  max-width: 100% !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-bg-secondary-light) var(--color-bg-primary-light);
+}
+
+.cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.5rem !important;
+  cursor: pointer;
+}
+
+.cm-tooltip-autocomplete-detail {
+  color: var(--color-text-muted-light);
+  font-size: 0.675rem;
+  margin-left: 40px;
+}
+
+.cm-tooltip-autocomplete-chip {
+  color: var(--color-text-muted-light);
+  font-size: 0.675rem;
+  margin-left: 40px;
+  background-color: var(--color-bg-secondary-light);
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.cm-tooltip-autocomplete > ul > li:hover {
+  background-color: var(--color-bg-secondary-light);
+}
+
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background-color: var(--color-bg-tertiary) !important;
+}
+
+/* Scrollbar styles for Webkit browsers */
+.cm-tooltip-autocomplete::-webkit-scrollbar {
+  width: 8px;
+}
+
+.cm-tooltip-autocomplete::-webkit-scrollbar-track {
+  background: var(--color-bg-primary-light);
+}
+
+.cm-tooltip-autocomplete::-webkit-scrollbar-thumb {
+  background-color: var(--color-bg-secondary-light);
+  border-radius: 4px;
+  border: 2px solid var(--color-bg-primary-light);
+}
+
+.cm-tooltip-autocomplete::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-bg-fourth);
+}
+
+::selection {
+  background-color: var(--color-bg-selection);
+}

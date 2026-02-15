@@ -26,6 +26,7 @@
 - correcly showing the project files with special characters
 - increased timeout of semantic search tool to avoid errors when the tool is running multiple times in parallel
 - added Brainstorming as another BMAD workflow option
+- added quick actions for BMAD mode workflows
 
 ## [0.52.0]
 
@@ -44,7 +45,6 @@
 - rules directory is correctly handled when using Aider modes and Worktree
 - added detaled information about the context files
 - setting Compact as default messages view mode
-- added quick actions for BMAD mode workflows
 
 ## [0.51.0]
 

@@ -1,0 +1,24 @@
+.rct-tree-items-container {
+  padding-left: 7px;
+}
+
+.rct-tree-root {
+  @apply p-0;
+  margin-left: -6px;
+}
+
+
+
+.context-dimmed {
+  @apply text-text-muted;
+}
+
+body.theme-light .context-dimmed {
+  opacity: 0.9;
+}
+
+.context-files-root.drag-over {
+  @apply bg-bg-tertiary;
+}
+
+@tailwind utilities;

@@ -17,7 +17,7 @@ jobs:
         with:
           output: llms.txt
           style: plain
-          include: "src/**/*,resources/connector/**,scripts/**,electron-builder.yml,electron.vite.config.ts,tailwind.config.js,package.json"
+          include: "packages/**/*,apps/**/*,resources/connector/**,scripts/**,turbo.json,pnpm-workspace.yaml,package.json"
 
       - name: Upload Repomix output
         uses: actions/upload-artifact@v4

@@ -11,22 +11,18 @@ export default defineConfig({
       AIDER_DESK_NODE_TESTING: 'true',
     },
     include: [
-      'src/main/**/__tests__/**/*.{test,spec}.{ts,tsx}',
-      'src/preload/**/__tests__/**/*.{test,spec}.{ts,tsx}',
-      'src/common/**/__tests__/**/*.{test,spec}.{ts,tsx}',
+      'packages/core/src/**/__tests__/**/*.{test,spec}.{ts,tsx}',
+      'packages/common/src/**/__tests__/**/*.{test,spec}.{ts,tsx}',
     ],
     exclude: ['node_modules', 'dist', 'out'],
     setupFiles: ['./src/main/__tests__/setup.ts'],
   },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src/main'),
-      '@common': resolve(__dirname, 'src/common'),
-    },
-  },
   plugins: [
     tsconfigPaths({
-      projects: [resolve(__dirname, 'tsconfig.node.json')],
+      projects: [
+        resolve(__dirname, 'packages/core/tsconfig.json'),
+        resolve(__dirname, 'packages/common/tsconfig.json'),
+      ],
     }),
   ],
 });

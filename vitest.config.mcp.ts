@@ -1,5 +1,3 @@
-import { resolve } from 'path';
-
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -9,12 +7,7 @@ export default defineConfig({
     env: {
       AIDER_DESK_MCP_TESTING: 'true',
     },
-    include: ['src/mcp-server/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    include: ['apps/mcp-server/src/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', 'dist', 'out'],
-  },
-  resolve: {
-    alias: {
-      '@common': resolve(__dirname, 'src/common'),
-    },
   },
 });

@@ -1,0 +1,32 @@
+{
+  "name": "@aider-desk/common",
+  "version": "0.53.0-dev",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && node ../../scripts/fix-esm-extensions.mjs",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@ai-sdk/provider": "^2.0.1",
+    "@types/node": "^20.14.8",
+    "ai": "^5.0.119",
+    "typescript": "^5.9.3"
+  }
+}

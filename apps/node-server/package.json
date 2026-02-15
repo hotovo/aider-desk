@@ -1,0 +1,26 @@
+{
+  "name": "@aider-desk/node-server",
+  "version": "0.53.0-dev",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "aider-desk-server": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist",
+    "docker:build": "docker build -t aider-desk-server -f Dockerfile ../..",
+    "docker:run": "docker run -p 24337:24337 -v aider-desk-data:/app/data aider-desk-server"
+  },
+  "dependencies": {
+    "@aider-desk/common": "workspace:*",
+    "@aider-desk/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.8",
+    "typescript": "^5.9.3"
+  }
+}

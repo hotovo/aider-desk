@@ -1,0 +1,57 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "out/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "dev:electron": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["@aider-desk/common#build", "@aider-desk/core#build", "@aider-desk/ui#build"]
+    },
+    "dev:server": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["@aider-desk/common#build", "@aider-desk/core#build"]
+    },
+    "build:electron": {
+      "dependsOn": ["@aider-desk/common#build", "@aider-desk/core#build", "@aider-desk/ui#build", "@aider-desk/mcp-server#build"],
+      "outputs": ["out/**", "dist/**"]
+    },
+    "build:server": {
+      "dependsOn": ["@aider-desk/common#build", "@aider-desk/core#build"],
+      "outputs": ["dist/**"]
+    },
+    "build:win": {
+      "dependsOn": ["build:electron"],
+      "outputs": ["dist/**"]
+    },
+    "build:mac": {
+      "dependsOn": ["build:electron"],
+      "outputs": ["dist/**"]
+    },
+    "build:linux": {
+      "dependsOn": ["build:electron"],
+      "outputs": ["dist/**"]
+    }
+  }
+}

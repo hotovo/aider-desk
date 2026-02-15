@@ -1,0 +1,125 @@
+[
+  {
+    "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
+    "role": "user",
+    "content": "IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL _bmad/bmm/workflows/1-analysis/research/workflow.md, READ its entire contents and follow its directions exactly!",
+    "promptContext": {
+      "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
+      "group": {
+        "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll load and read the workflow file you specified."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_e0310bde7e0945fd91fe05f9",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/1-analysis/research/workflow-technical-research.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "05b3477d-146d-4e10-8cd5-aa6c9ccc4947",
+    "promptContext": {
+      "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
+      "group": {
+        "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_e0310bde7e0945fd91fe05f9",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/1-analysis/research/workflow-technical-research.md"}}
+        }
+      }
+    ],
+    "id": "9b81ab90-6d41-4672-ac75-e6fdee8816db",
+    "promptContext": {
+      "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
+      "group": {
+        "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I've loaded the research workflow. Let me now initialize the workflow by loading the configuration file."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_d0798312c69d493c8565bd92",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/config.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "63cd3f8b-7d72-4b40-a834-a6ca5126f6bd",
+    "promptContext": {
+      "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
+      "group": {
+        "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_d0798312c69d493c8565bd92",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/config.yaml"}}
+        }
+      }
+    ],
+    "id": "de419579-792c-4339-92de-26c97aef1705",
+    "promptContext": {
+      "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
+      "group": {
+        "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
+        "name": "Research",
+        "color": "#0ea5e9",
+        "finished": true
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Welcome! I'm excited to work with you as your research partner. I bring web research capabilities with rigorous source verification, while you bring the domain expertise and research direction.\n\n**Let me help you clarify what you'd like to research.**\n\n**First, tell me: What specific topic, problem, or area do you want to research?**\n\nFor example:\n- 'The electric vehicle market in Europe'\n- 'Cloud migration strategies for healthcare'\n- 'AI implementation in financial services'\n- 'Sustainable packaging regulations'\n- 'Or anything else you have in mind...'"
+      }
+    ],
+    "id": "45b4980f-c7da-4c03-95de-18d4ee695171",
+    "promptContext": {
+      "id": "45b4980f-c7da-4c03-95de-18d4ee695171"
+    }
+  }
+]
