@@ -210,6 +210,7 @@ jobs:
           CSC_LINK: "./certificate.p12"
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=4096
 
         run: npm run build:mac -- --x64 -p always
 
@@ -245,6 +246,7 @@ jobs:
           CSC_LINK: "./certificate.p12"
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NODE_OPTIONS: --max-old-space-size=4096
 
         run: npm run build:mac -- --arm64 -p always
 
