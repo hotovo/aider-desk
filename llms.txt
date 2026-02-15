@@ -284,6 +284,7 @@ src/
         common/
           DiffViewer/
             CompactDiffViewer.tsx
+            DiffLineCommentPanel.tsx
             DiffViewer.scss
             DiffViewer.tsx
             index.tsx
@@ -1428,7 +1429,8 @@ File: src/common/locales/en.json
     "noFiles": "No files",
     "clickToRefresh": "Click to refresh",
     "closeTasks": "Close Tasks",
-    "toggleTasks": "Toggle Tasks"
+    "toggleTasks": "Toggle Tasks",
+    "submit": "Submit"
   },
   "search": {
     "placeholder": "Search...",
@@ -2296,6 +2298,10 @@ File: src/common/locales/en.json
     "useGit": "Use Git",
     "useGitEnabled": "Git enabled - Click to use filesystem",
     "useGitDisabled": "Filesystem enabled - Click to use Git",
+    "revertFile": "Revert changes",
+    "confirmRevertTitle": "Revert file changes?",
+    "confirmRevertMessage": "This will discard all changes to this file. This action cannot be undone.",
+    "revert": "Revert",
     "empty": {
       "title": "No Context Files",
       "aiderMode": {
@@ -2573,7 +2579,11 @@ File: src/common/locales/en.json
     "sideBySide": "Side by Side",
     "unified": "Unified",
     "compact": "Compact",
-    "noChanges": "No changes have been made. Content is identical."
+    "noChanges": "No changes have been made. Content is identical.",
+    "lineComment": {
+      "placeholder": "Describe the changes you want to make to this code...",
+      "taskName": "Update {{filename}}"
+    }
   },
   "promptField": {
     "startRecording": "Start listening",
@@ -3127,7 +3137,8 @@ File: src/common/locales/zh.json
     "noFiles": "没有找到文件",
     "clickToRefresh": "点击刷新",
     "closeTasks": "关闭任务",
-    "toggleTasks": "切换任务"
+    "toggleTasks": "切换任务",
+    "submit": "提交"
   },
   "search": {
     "placeholder": "查找...",
@@ -3952,6 +3963,10 @@ File: src/common/locales/zh.json
     "useGit": "使用 Git",
     "useGitEnabled": "Git 已启用 - 点击使用文件系统",
     "useGitDisabled": "文件系统已启用 - 点击使用 Git",
+    "revertFile": "恢复更改",
+    "confirmRevertTitle": "恢复文件更改？",
+    "confirmRevertMessage": "这将丢弃此文件的所有更改。此操作无法撤销。",
+    "revert": "恢复",
     "empty": {
       "title": "没有上下文文件",
       "aiderMode": {
@@ -4248,7 +4263,11 @@ File: src/common/locales/zh.json
     "sideBySide": "并排",
     "unified": "统一",
     "compact": "紧凑",
-    "noChanges": "没有进行任何更改。内容相同。"
+    "noChanges": "没有进行任何更改。内容相同。",
+    "lineComment": {
+      "placeholder": "描述您想要对此代码进行的更改...",
+      "taskName": "更新 {{filename}}"
+    }
   },
   "promptField": {
     "savePrompt": "保存提示",
@@ -5213,6 +5232,7 @@ export interface ApplicationAPI {
   getAddableFiles: (baseDir: string, taskId: string) => Promise<string[]>;
   getAllFiles: (baseDir: string, taskId: string, useGit?: boolean) => Promise<string[]>;
   getUpdatedFiles: (baseDir: string, taskId: string) => Promise<UpdatedFile[]>;
+  restoreFile: (baseDir: string, taskId: string, filePath: string) => Promise<void>;
   addFile: (baseDir: string, taskId: string, filePath: string, readOnly?: boolean) => void;
   isValidPath: (baseDir: string, path: string) => Promise<boolean>;
   isProjectPath: (path: string) => Promise<boolean>;
@@ -5252,6 +5272,7 @@ export interface ApplicationAPI {
   removeMessagesUpTo: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
   compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
   handoffConversation: (baseDir: string, taskId: string, focus?: string) => Promise<void>;
+  runCodeInlineRequest: (baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
   getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
@@ -6787,6 +6808,8 @@ exitCode = 124; // Timeout exit code
 // Only include language parameter if it's supported
 ⋮----
 // @ts-expect-error probe is not typed properly
+⋮----
+timeout: 5 * 60, // 5 minutes
 ⋮----
 // Filter out tools that are set to Never in toolApprovals
 
@@ -13073,6 +13096,7 @@ import {
 ⋮----
 import { registerAllHelpers } from './helpers';
 import {
+  CodeInlineRequestPromptData,
   CommitMessagePromptData,
   CompactConversationPromptData,
   ConflictResolutionPromptData,
@@ -13193,6 +13217,14 @@ export interface HandoffPromptData {
   contextFiles?: ContextFile[];
 }
 ⋮----
+export interface CodeInlineRequestPromptData {
+  filename: string;
+  lineNumber: number;
+  fileExtension: string;
+  contextLines: { lineNumber: number; content: string }[];
+  userComment: string;
+}
+⋮----
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface CommitMessagePromptData {
   // Static for now
@@ -13237,7 +13269,8 @@ export type PromptTemplateName =
   | 'conflict-resolution'
   | 'conflict-resolution-system'
   | 'update-task-state'
-  | 'handoff';
+  | 'handoff'
+  | 'code-inline-request';
 
 ================
 File: src/main/server/rest-api/agent-api.ts
@@ -13492,6 +13525,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Handoff conversation
 ⋮----
+// Run code inline request
+⋮----
 // Scrape web
 ⋮----
 // Merge worktree to main
@@ -13499,6 +13534,8 @@ registerRoutes(router: Router): void
 // Apply uncommitted changes
 ⋮----
 // Revert last merge
+⋮----
+// Restore file
 ⋮----
 // List branches
 ⋮----
@@ -15134,6 +15171,8 @@ public async handoffConversation(
 ⋮----
 // Send task-created event to trigger activation and handoff
 ⋮----
+public async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, contextSize: number = 5): Promise<void>
+⋮----
 public async generateContextMarkdown(): Promise<string | null>
 ⋮----
 updateTokensInfo(data: Partial<TokensInfoData>)
@@ -15257,6 +15296,8 @@ public async applyUncommittedChanges(targetBranch?: string): Promise<void>
 public async revertLastMerge(): Promise<void>
 ⋮----
 // Clear merge state after successful revert
+⋮----
+public async restoreFile(filePath: string): Promise<void>
 ⋮----
 public async getWorktreeIntegrationStatus(targetBranch?: string)
 ⋮----
@@ -16105,6 +16146,8 @@ import fs, { mkdir, rm, lstat, symlink } from 'fs/promises';
 import { existsSync } from 'fs';
 ⋮----
 import { ConflictResolutionFileContext, MergeState, RebaseState, UpdatedFile, Worktree, WorktreeAheadCommits, WorktreeUncommittedFiles } from '@common/types';
+// @ts-expect-error istextorbinary library does not provide TypeScript definitions
+import { isBinary } from 'istextorbinary';
 ⋮----
 import { execWithShellPath, withLock } from '@/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
@@ -16466,19 +16509,28 @@ async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFile
 ⋮----
 /**
    * Get updated files with line diff stats from git
-   * Uses `git diff --numstat HEAD` to get additions and deletions per file
-   * Format: "additions\tdeletions\tfilepath"
+   * Uses `git diff --numstat -z HEAD` to get additions and deletions per file
+   * Format: "additions\0deletions\0filepath\0"
+   * The -z flag uses NUL-separated output to handle filenames with special characters correctly
    * Also fetches the full git diff for each file
    */
 async getUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]>
 ⋮----
+// Parse NUL-separated format: additions\tdeletions\tfilename
+⋮----
 const filePath = parts.slice(2).join('\t'); // Handle paths with tabs
 ⋮----
-// Fetch git diff for this file
+// Check if file is binary and skip diff generation
 ⋮----
-// If diff fetch fails, continue with empty diff
+// Binary file - skip diff
+⋮----
+// Escape file path for git command - use quotes and -- separator
+⋮----
+// If diff fetch fails (e.g., file not readable, git error), continue with empty diff
 ⋮----
 // If git diff fails (e.g., no HEAD commit), return empty array
+⋮----
+async restoreFile(worktreePath: string, filePath: string): Promise<void>
 ⋮----
 async getRebaseState(worktreePath: string): Promise<RebaseState>
 ⋮----
@@ -16708,6 +16760,8 @@ async compactConversation(baseDir: string, taskId: string, mode: Mode, customIns
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
+async runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string): Promise<void>
+⋮----
 async loadInputHistory(baseDir: string): Promise<string[]>
 ⋮----
 async getAddableFiles(baseDir: string, taskId: string, searchRegex?: string): Promise<string[]>
@@ -16769,6 +16823,8 @@ async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targ
 async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
 async revertLastMerge(baseDir: string, taskId: string): Promise<void>
+⋮----
+async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
 async listBranches(projectDir: string): Promise<Array<
 ⋮----
@@ -17822,6 +17878,8 @@ compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructi
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
+runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string): void
+⋮----
 setZoomLevel(level: number): Promise<void>
 ⋮----
 // eslint-disable-next-line no-console
@@ -17925,6 +17983,8 @@ mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBran
 applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
 revertLastMerge(baseDir: string, taskId: string): Promise<void>
+⋮----
+restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
 listBranches(baseDir: string): Promise<Array<
 ⋮----
@@ -18386,6 +18446,25 @@ export interface DiffProps extends React.TableHTMLAttributes<HTMLTableElement>, 
 className=
 
 ================
+File: src/renderer/src/components/common/DiffViewer/DiffLineCommentPanel.tsx
+================
+import { useState, useRef, KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { Button } from '@/components/common/Button';
+import { useClickOutside } from '@/hooks/useClickOutside';
+⋮----
+type Props = {
+  onSubmit: (comment: string) => void;
+  onCancel: () => void;
+  position: { top: number; left: number };
+};
+⋮----
+const handleSubmit = () =>
+⋮----
+const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) =>
+
+================
 File: src/renderer/src/components/common/DiffViewer/DiffViewer.scss
 ================
 .diff-viewer {
@@ -18436,6 +18515,22 @@ File: src/renderer/src/components/common/DiffViewer/DiffViewer.scss
     background-color: var(--color-bg-tertiary);
     color: var(--color-text-primary);
   }
+
+  &.selectable {
+    .diff-line-hover-new,
+    .diff-line-hover-old,
+    .diff-gutter-selected,
+    .diff-code-selected {
+      cursor: pointer;
+      background-color: var(--color-bg-tertiary) !important;
+    }
+
+    .diff-code-insert:hover,
+    .diff-code-normal:hover{
+      cursor: pointer;
+      background-color: var(--color-bg-tertiary) !important;
+    }
+  }
 }
 
 ================
@@ -18476,19 +18571,32 @@ File: src/renderer/src/components/common/DiffViewer/index.tsx
 ================
 File: src/renderer/src/components/common/DiffViewer/UDiffViewer.tsx
 ================
-import { useMemo } from 'react';
-import { Diff, Hunk, parseDiff } from 'react-diff-view';
+import { useMemo, MouseEvent, useCallback } from 'react';
+import { Diff, Hunk, parseDiff, getChangeKey } from 'react-diff-view';
 import { DiffViewMode } from '@common/types';
+import { clsx } from 'clsx';
 ⋮----
 import { createTokens } from './utils';
 ⋮----
+import type { ChangeData, HunkData } from 'react-diff-view';
+import type { NormalChange } from 'gitdiff-parser';
+⋮----
 import { useResponsive } from '@/hooks/useResponsive';
+⋮----
+export type LineClickInfo = {
+  lineKey: string;
+  change: ChangeData;
+  lineNumber: number;
+  content: string;
+};
 ⋮----
 type Props = {
   udiff: string;
   language: string;
   viewMode?: DiffViewMode;
   showFilename?: boolean;
+  onLineClick?: (lineInfo: LineClickInfo, event: MouseEvent) => void;
+  activeLineKey?: string | null;
 };
 ⋮----
 // eslint-disable-next-line no-console
@@ -19478,7 +19586,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
 import { HiChevronDown, HiChevronRight, HiOutlineTrash, HiPlus, HiX } from 'react-icons/hi';
-import { MdOutlinePublic, MdOutlineRefresh, MdOutlineSearch } from 'react-icons/md';
+import { MdOutlinePublic, MdOutlineRefresh, MdOutlineSearch, MdUndo } from 'react-icons/md';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { TbPencilOff } from 'react-icons/tb';
 import { RiRobot2Line } from 'react-icons/ri';
@@ -19494,6 +19602,7 @@ import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Input } from '@/components/common/Input';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useOS } from '@/hooks/useOS';
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
@@ -19542,6 +19651,8 @@ type EmptyContextInfoProps = {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// eslint-disable-next-line no-console
+⋮----
 // Tree Data Generators
 ⋮----
 // Check if readOnly in context files
@@ -19580,9 +19691,9 @@ const dropFile = (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) =>
 ⋮----
 const addFile = (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) =>
 ⋮----
-// Actions logic
-⋮----
 // Get line stats for updated files section
+⋮----
+// Actions logic
 ⋮----
 // Helper functions
 const toggleFolder = () =>
@@ -19596,6 +19707,9 @@ const renderTitle = () =>
 
 ⋮----
 <button onClick=
+⋮----
+e.stopPropagation();
+handleRevertFile(updatedFile.path);
 ⋮----
 className=
 ⋮----
@@ -19618,6 +19732,8 @@ onExpandItem=
 onClick=
 ⋮----
 {/* Rules Section */}
+⋮----
+title=
 
 ================
 File: src/renderer/src/components/ContextFiles/index.ts
@@ -19627,8 +19743,9 @@ File: src/renderer/src/components/ContextFiles/index.ts
 ================
 File: src/renderer/src/components/ContextFiles/UpdatedFilesDiffModal.tsx
 ================
-import { useCallback, useMemo, useState, startTransition, useOptimistic } from 'react';
+import { useCallback, useMemo, useState, startTransition, useOptimistic, MouseEvent, useEffect } from 'react';
 import { HiChevronLeft, HiChevronRight } from 'react-icons/hi';
+import { MdUndo } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { DiffViewMode, UpdatedFile } from '@common/types';
@@ -19637,18 +19754,28 @@ import { clsx } from 'clsx';
 ⋮----
 import { IconButton } from '../common/IconButton';
 import { ModalOverlayLayout } from '../common/ModalOverlayLayout';
-import { UDiffViewer, CompactDiffViewer } from '../common/DiffViewer';
+import { ConfirmDialog } from '../common/ConfirmDialog';
+import { UDiffViewer, CompactDiffViewer, DiffLineCommentPanel, LineClickInfo } from '../common/DiffViewer';
 import { CompactSelect } from '../common/CompactSelect';
 ⋮----
 import { useSettings } from '@/contexts/SettingsContext';
+import { useApi } from '@/contexts/ApiContext';
 ⋮----
 type Props = {
   files: UpdatedFile[];
   initialFileIndex: number;
   onClose: () => void;
+  baseDir: string;
+  taskId: string;
 };
 ⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
 <ModalOverlayLayout title=
+⋮----
+title=
 
 ================
 File: src/renderer/src/components/message/ActivateSkillToolMessage.tsx
@@ -30791,7 +30918,7 @@ File: package.json
     "vitest": "^4.0.16"
   },
   "lint-staged": {
-    "*.{ts,tsx}": "eslint --fix"
+    "*.{ts,tsx}": "npm run lint"
   }
 }
 
