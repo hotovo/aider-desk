@@ -2,6 +2,7 @@
 
 ## [UNRELEASED]
 
+- fixed mobile project dropdown to truncate long project names with ellipsis instead of pushing icons off-screen
 - optimized mobile layout for bmad mode - agent selector now stacks under mode selector and action buttons are absolutely positioned at top right
 - optimized MCP server initialization
 - optimized Aider connector start-up management

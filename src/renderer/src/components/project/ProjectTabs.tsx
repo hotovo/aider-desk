@@ -121,31 +121,29 @@ export const ProjectTabs = ({
     const selectedProject = openProjects.find((p) => p.baseDir === activeProject);
 
     return (
-      <div className="flex items-center gap-2 px-2 py-2">
+      <div className="flex items-center gap-2 px-2 py-2 min-w-0 flex-1">
         {activeProject && (
-          <div className="flex-1 min-w-0">
-            <Listbox value={activeProject} onChange={onSetActiveProject}>
-              <div className="relative">
-                <ListboxButton className="flex w-full items-center justify-between gap-2 px-2 py-1 text-sm text-text-primary focus:outline-none">
-                  <span className="block truncate">{selectedProject?.baseDir.split(/[\\/]/).pop()}</span>
-                  <HiChevronDown className="h-4 w-4 flex-shrink-0 text-text-muted" aria-hidden="true" />
-                </ListboxButton>
-                <Transition
-                  as="div"
-                  leave="transition ease-in duration-100"
-                  leaveFrom="opacity-100"
-                  leaveTo="opacity-0"
-                  className="absolute left-0 top-full z-50 mt-2"
-                >
-                  <ListboxOptions className="max-h-60 max-w-[300px] overflow-auto rounded-sm bg-bg-primary py-1 shadow-lg ring-1 ring-border-default focus:outline-none">
-                    {openProjects.map((project) => (
-                      <MobileTabItem key={project.baseDir} project={project} />
-                    ))}
-                  </ListboxOptions>
-                </Transition>
-              </div>
-            </Listbox>
-          </div>
+          <Listbox value={activeProject} onChange={onSetActiveProject}>
+            <div className="relative flex-1 min-w-0">
+              <ListboxButton className="flex w-full items-center justify-between gap-2 px-2 py-1 text-sm text-text-primary focus:outline-none">
+                <span className="flex-1 min-w-0 truncate text-left">{selectedProject?.baseDir.split(/[\\/]/).pop()}</span>
+                <HiChevronDown className="h-4 w-4 flex-shrink-0 text-text-muted" aria-hidden="true" />
+              </ListboxButton>
+              <Transition
+                as="div"
+                leave="transition ease-in duration-100"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+                className="absolute left-0 top-full z-50 mt-2"
+              >
+                <ListboxOptions className="max-h-60 max-w-[300px] overflow-auto rounded-sm bg-bg-primary py-1 shadow-lg ring-1 ring-border-default focus:outline-none">
+                  {openProjects.map((project) => (
+                    <MobileTabItem key={project.baseDir} project={project} />
+                  ))}
+                </ListboxOptions>
+              </Transition>
+            </div>
+          </Listbox>
         )}
         <button
           className="flex-shrink-0 rounded-md px-3 py-2 text-text-muted hover:text-text-secondary hover:bg-bg-secondary-light transition-colors duration-200"

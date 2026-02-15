@@ -512,7 +512,7 @@ export const Home = () => {
             onCloseOtherProjects={handleCloseOtherProjects}
             onReorderProjects={handleReorderProjects}
           />
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0">
             {showUpdateIcon && (
               <IconButton
                 icon={<MdUpload className="h-5 w-5 text-text-primary animate-pulse animate-slow" />}
