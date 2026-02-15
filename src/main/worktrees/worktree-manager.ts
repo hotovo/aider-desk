@@ -1476,6 +1476,7 @@ export class WorktreeManager {
             const escapedPath = filePath.replace(/"/g, '\\"');
             const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 HEAD -- "${escapedPath}"`, {
               cwd: worktreePath,
+              maxBuffer: 10 * 1024 * 1024, // 10 MB
             });
             diff = diffOutput;
           } catch (diffError) {
