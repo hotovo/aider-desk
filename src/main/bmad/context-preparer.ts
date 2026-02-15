@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs/promises';
 
 import Handlebars from 'handlebars';
 import { v4 as uuidv4 } from 'uuid';
@@ -25,7 +26,7 @@ export class ContextPreparer {
 
   /**
    * Prepare context for workflow execution
-   * @param workflowId - ID of the workflow to prepare context for
+   * @param workflowId - ID of workflow to prepare context for
    * @param status - Current BMAD status with workflow and artifact information
    * @returns Prepared context with messages and file paths
    */
@@ -52,11 +53,18 @@ export class ContextPreparer {
     logger.debug('Context template loaded.', { workflowId });
 
     switch (workflowId) {
+      case 'research':
+        // research workflow doesn't auto-execute, it's waiting for user input
+        context.execute = false;
+        break;
       case 'quick-spec':
         await this.injectQuickSpecContext(context, status);
         break;
       case 'quick-dev':
         await this.injectQuickDevContext(context, status);
+        break;
+      case 'brainstorming':
+        await this.injectBrainstormingContext(context, status);
         break;
     }
   }
@@ -77,15 +85,44 @@ export class ContextPreparer {
 
       context.contextMessages = messages.map((msg) => ({ ...msg }));
 
-      // Special case: research workflow doesn't auto-execute
-      if (workflowId === 'research') {
-        context.execute = false;
-      }
-
       return true;
     } catch (error) {
       logger.error('Failed to load context template', { error: error instanceof Error ? error.message : String(error) });
       return false;
+    }
+  }
+
+  private async injectBrainstormingContext(context: PreparedContext, status: BmadStatus): Promise<void> {
+    const brainstormingArtifact = status.detectedArtifacts['brainstorming'];
+    const hasIncompleteWorkflow = status.incompleteWorkflows?.find((w) => w.workflowId === 'brainstorming');
+
+    // Check if there's an existing incomplete brainstorming session
+    if (hasIncompleteWorkflow && brainstormingArtifact?.path) {
+      const userMessage: ContextUserMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content: `We already have a brainstorming session in progress. We should continue with the existing brainstorming session at \`${brainstormingArtifact.path}\`. Here is the current content of the file: \n\`\`\`${await fs.readFile(brainstormingArtifact.path, 'utf8')}\`\`\``,
+        promptContext: {
+          id: 'brainstorming',
+          group: {
+            id: 'brainstorming',
+          },
+        },
+      };
+      context.contextMessages.push(userMessage);
+    } else {
+      const userMessage: ContextUserMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content: 'We have no brainstorming document in the output. Let us create a new one and start a new brainstorming session.',
+        promptContext: {
+          id: 'brainstorming',
+          group: {
+            id: 'brainstorming',
+          },
+        },
+      };
+      context.contextMessages.push(userMessage);
     }
   }
 

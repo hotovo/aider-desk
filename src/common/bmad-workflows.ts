@@ -8,6 +8,16 @@ import { WorkflowMetadata, WorkflowPhase } from './bmad-types';
 export const BMAD_WORKFLOWS: WorkflowMetadata[] = [
   // Analysis Phase
   {
+    id: 'brainstorming',
+    name: 'Brainstorming',
+    phase: WorkflowPhase.Analysis,
+    description: 'Facilitate interactive brainstorming sessions using diverse creative techniques and ideation methods',
+    workflowPath: '_bmad/core/workflows/brainstorming/workflow.md',
+    outputArtifact: '_bmad-output/brainstorming/brainstorming-session-*.md',
+    totalSteps: 4,
+    followUps: ['create-product-brief'],
+  },
+  {
     id: 'research',
     name: 'Research',
     phase: WorkflowPhase.Analysis,

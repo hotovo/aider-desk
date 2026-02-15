@@ -1,0 +1,132 @@
+[
+  {
+    "id": "4982dcae-90fa-4382-bcfb-5d9235619fe8",
+    "role": "user",
+    "content": "IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL _bmad/core/workflows/brainstorming/workflow.md, READ its entire contents and follow its directions exactly!",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming",
+        "name": "Brainstorming",
+        "color": "#0ea5e9",
+        "finished": true
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll load the brainstorming workflow file and follow its directions."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_5037f5e26dd84725a5c1f958",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/core/workflows/brainstorming/workflow.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "c8414da2-2e39-448b-b100-c2c9766a9962",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_5037f5e26dd84725a5c1f958",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/core/workflows/brainstorming/workflow.md"}}
+        }
+      }
+    ],
+    "id": "3c7d6558-db65-4279-9917-9160be47e9b9",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I've loaded the main workflow file, which tells me to:\n\n1. Load config from `{project-root}/_bmad/core/config.yaml`\n2. Then follow `steps/step-01-session-setup.md` to begin the workflow."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_52ac6e939f614590a3efbd3c",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/core/config.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 100
+        }
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_b4cf4a4879c94cc084d3457e",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/core/workflows/brainstorming/steps/step-01-session-setup.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "40c75ca7-55b9-46eb-b845-a437b9008129",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_52ac6e939f614590a3efbd3c",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/core/config.yaml"}}
+        }
+      },
+      {
+        "type": "tool-result",
+        "toolCallId": "call_b4cf4a4879c94cc084d3457e",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/core/workflows/brainstorming/steps/step-01-session-setup.md"}}
+        }
+      }
+    ],
+    "id": "c59ed49e-009c-41fd-82b5-8089736442df",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming"
+      }
+    }
+  }
+]
