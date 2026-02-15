@@ -382,12 +382,15 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     }
   }, [activeTaskId, handleDeleteTask]);
 
-  const handleProceed = useCallback(() => {
-    if (!activeTask) {
-      return;
-    }
-    api.runPrompt(projectDir, activeTask.id, 'Proceed.', activeTask.currentMode || 'code');
-  }, [activeTask, api, projectDir]);
+  const handleRunPrompt = useCallback(
+    (prompt = 'Proceed.') => {
+      if (!activeTask) {
+        return;
+      }
+      api.runPrompt(projectDir, activeTask.id, prompt, activeTask.currentMode || 'code');
+    },
+    [activeTask, api, projectDir],
+  );
 
   const handleArchiveActiveTask = useCallback(async () => {
     if (activeTaskId) {
@@ -513,7 +516,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
                 isActive={activeTaskId === activeTask.id}
                 shouldFocusPrompt={shouldFocusNewTask}
                 showSettingsPage={showSettingsPage}
-                onProceed={handleProceed}
+                onRunPrompt={handleRunPrompt}
                 onArchiveTask={handleArchiveActiveTask}
                 onUnarchiveTask={handleUnarchiveActiveTask}
                 onDeleteTask={handleDeleteActiveTask}

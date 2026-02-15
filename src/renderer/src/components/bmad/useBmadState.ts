@@ -2,12 +2,54 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BmadStatus } from '@common/bmad-types';
 import { TaskData } from '@common/types';
 
+import { isResponseMessage, Message } from '@/types/message';
 import { useApi } from '@/contexts/ApiContext';
+import { useTaskMessages } from '@/stores/taskStore';
 import { generateSuggestions } from '@/utils/bmad-suggestions';
+
+export interface BmadAction {
+  actionLetter: string;
+  actionName: string;
+}
+
+const BMAD_ACTIONS: Array<{ letter: string; label: string }> = [
+  { letter: 'Y', label: 'Yes' },
+  { letter: 'N', label: 'No' },
+  { letter: 'C', label: 'Continue' },
+  { letter: 'E', label: 'Edit' },
+  { letter: 'Q', label: 'Questions' },
+  { letter: 'A', label: 'Advanced Elicitation' },
+  { letter: 'P', label: 'Party Mode' },
+];
+
+export const extractBmadActions = (lastAssistantMessage: Message | undefined): BmadAction[] | undefined => {
+  if (!lastAssistantMessage) {
+    return undefined;
+  }
+
+  const lines = lastAssistantMessage.content.split('\n');
+  const lastTenLines = lines.slice(-10);
+
+  const extractedActions: BmadAction[] = [];
+
+  for (const line of lastTenLines) {
+    for (const action of BMAD_ACTIONS) {
+      if (line.toLowerCase().includes(`[${action.letter}] ${action.label}`.toLowerCase())) {
+        extractedActions.push({
+          actionLetter: action.letter,
+          actionName: action.label,
+        });
+      }
+    }
+  }
+
+  return extractedActions.length > 0 ? extractedActions : undefined;
+};
 
 type Result = {
   status: BmadStatus | null;
   suggestedWorkflows: string[];
+  bmadActions?: BmadAction[];
   isLoading: boolean;
   error: string | null;
   refresh: (loading?: boolean) => Promise<void>;
@@ -18,12 +60,12 @@ type UseBmadStateParams = {
   task?: TaskData | null;
 };
 
-export const useBmadState = (params: UseBmadStateParams): Result => {
-  const { projectDir, task } = params;
+export const useBmadState = ({ projectDir, task }: UseBmadStateParams): Result => {
   const [status, setStatus] = useState<BmadStatus | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const api = useApi();
+  const messages = useTaskMessages(task?.id || '');
 
   const suggestedWorkflows = useMemo(() => {
     if (!status) {
@@ -31,6 +73,19 @@ export const useBmadState = (params: UseBmadStateParams): Result => {
     }
     return generateSuggestions(status.completedWorkflows, status.detectedArtifacts, status.sprintStatus, task?.metadata);
   }, [status, task?.metadata]);
+
+  const bmadActions = useMemo(() => {
+    if (!task) {
+      return undefined;
+    }
+
+    const lastAssistantMessage = messages
+      .slice()
+      .reverse()
+      .find((message) => isResponseMessage(message));
+
+    return extractBmadActions(lastAssistantMessage);
+  }, [messages, task]);
 
   const loadBmadStatus = useCallback(
     async (loading = true) => {
@@ -91,6 +146,7 @@ export const useBmadState = (params: UseBmadStateParams): Result => {
   return {
     status,
     suggestedWorkflows,
+    bmadActions,
     isLoading,
     error,
     refresh,

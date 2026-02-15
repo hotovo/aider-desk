@@ -16,7 +16,7 @@ type Props = {
   task?: TaskData | null;
   onResumeTask: () => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -31,7 +31,7 @@ export const TaskStateActions = ({
   task,
   onResumeTask,
   onMarkAsDone,
-  onProceed,
+  onRunPrompt,
   onArchiveTask,
   onUnarchiveTask,
   onDeleteTask,
@@ -53,7 +53,7 @@ export const TaskStateActions = ({
   };
 
   const handleProceedClick = () => {
-    onProceed?.();
+    onRunPrompt?.('Proceed.');
   };
 
   const handleArchiveClick = () => {
@@ -77,8 +77,8 @@ export const TaskStateActions = ({
   };
 
   // BMAD mode rendering
-  if (mode === 'bmad' && [DefaultTaskState.ReadyForReview, DefaultTaskState.Done, DefaultTaskState.MoreInfoNeeded].includes(state as DefaultTaskState)) {
-    return <BmadTaskActions projectDir={projectDir} taskId={taskId} task={task} />;
+  if (mode === 'bmad') {
+    return <BmadTaskActions projectDir={projectDir} taskId={taskId} task={task} onRunPrompt={onRunPrompt} />;
   }
 
   if (state === DefaultTaskState.Todo) {

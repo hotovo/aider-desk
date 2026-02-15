@@ -209,7 +209,7 @@ export class ContextPreparer {
     const hasReadyTechSpec = quickSpecArtifact?.status === 'ready-for-dev';
     const wipFileExists = await fileExists(fullWipPath);
 
-    const shouldStartFresh = !hasReadyTechSpec || quickDevCompleted || !wipFileExists;
+    const shouldStartFresh = !wipFileExists && (hasReadyTechSpec || quickDevCompleted);
 
     if (shouldStartFresh) {
       const userMessage: ContextUserMessage = {

@@ -34,7 +34,7 @@ type Props = {
   redoLastUserPrompt: () => void;
   editLastUserMessage: (content: string) => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -57,7 +57,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
       redoLastUserPrompt,
       editLastUserMessage,
       onMarkAsDone,
-      onProceed,
+      onRunPrompt,
       onArchiveTask,
       onUnarchiveTask,
       onDeleteTask,
@@ -217,7 +217,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
             taskId={taskId}
             onResumeTask={resumeTask}
             onMarkAsDone={onMarkAsDone}
-            onProceed={onProceed}
+            onRunPrompt={onRunPrompt}
             onArchiveTask={onArchiveTask}
             onUnarchiveTask={onUnarchiveTask}
             onDeleteTask={onDeleteTask}

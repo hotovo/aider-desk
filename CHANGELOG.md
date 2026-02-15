@@ -37,6 +37,7 @@
 - rules directory is correctly handled when using Aider modes and Worktree
 - added detaled information about the context files
 - setting Compact as default messages view mode
+- added quick actions for BMAD mode workflows
 
 ## [0.51.0]
 

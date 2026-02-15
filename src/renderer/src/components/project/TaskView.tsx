@@ -59,7 +59,7 @@ type Props = {
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   shouldFocusPrompt?: boolean;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -77,7 +77,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       showSettingsPage,
       shouldFocusPrompt = false,
       updateOptimisticTaskState,
-      onProceed,
+      onRunPrompt,
       onArchiveTask,
       onUnarchiveTask,
       onDeleteTask,
@@ -373,9 +373,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       api.resumeTask(projectDir, task.id);
     }, [api, projectDir, task.id]);
 
-    const handleProceed = useCallback(() => {
-      onProceed?.();
-    }, [onProceed]);
+    const handleRunPrompt = useCallback(
+      (prompt: string) => {
+        onRunPrompt?.(prompt);
+      },
+      [onRunPrompt],
+    );
 
     const handleArchiveTask = useCallback(() => {
       onArchiveTask?.();
@@ -653,7 +656,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       redoLastUserPrompt={handleRedoLastUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
                       onMarkAsDone={handleMarkAsDone}
-                      onProceed={handleProceed}
+                      onRunPrompt={handleRunPrompt}
                       onArchiveTask={handleArchiveTask}
                       onUnarchiveTask={handleUnarchiveTask}
                       onDeleteTask={handleDeleteTask}
@@ -673,7 +676,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       redoLastUserPrompt={handleRedoLastUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
                       onMarkAsDone={handleMarkAsDone}
-                      onProceed={handleProceed}
+                      onRunPrompt={handleRunPrompt}
                       onArchiveTask={handleArchiveTask}
                       onUnarchiveTask={handleUnarchiveTask}
                       onDeleteTask={handleDeleteTask}
