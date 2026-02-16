@@ -2,7 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
-import type { TokensInfoData, QuestionData, AutocompletionData, ModelsData, ContextFilesUpdatedData } from '@common/types';
+import type { AutocompletionData, ContextFilesUpdatedData, ModelsData, QuestionData, QueuedPromptsUpdatedData, TokensInfoData } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -15,6 +15,7 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
   const setAutocompletionWords = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setAutocompletionWords, shallow);
   const setTokensInfo = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setTokensInfo, shallow);
   const setAiderModelsData = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setAiderModelsData, shallow);
+  const setQueuedPrompts = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setQueuedPrompts, shallow);
 
   const handleUpdateAutocompletion = useCallback(
     ({ allFiles, words }: AutocompletionData) => {
@@ -60,6 +61,13 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
     [taskId, setAiderModelsData],
   );
 
+  const handleQueuedPromptsUpdated = useCallback(
+    ({ queuedPrompts }: QueuedPromptsUpdatedData) => {
+      setQueuedPrompts(taskId, queuedPrompts);
+    },
+    [taskId, setQueuedPrompts],
+  );
+
   useEffect(() => {
     const removeAutocompletion = api.addUpdateAutocompletionListener(baseDir, taskId, handleUpdateAutocompletion);
     const removeTokensInfo = api.addTokensInfoListener(baseDir, taskId, handleTokensInfo);
@@ -67,6 +75,7 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
     const removeQuestionAnswered = api.addQuestionAnsweredListener(baseDir, taskId, handleQuestionAnswered);
     const removeContextFiles = api.addContextFilesUpdatedListener(baseDir, taskId, handleContextFilesUpdated);
     const removeUpdateAiderModels = api.addUpdateAiderModelsListener(baseDir, taskId, handleUpdateAiderModels);
+    const removeQueuedPrompts = api.addQueuedPromptsUpdatedListener(baseDir, taskId, handleQueuedPromptsUpdated);
 
     return () => {
       removeAutocompletion();
@@ -75,6 +84,7 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
       removeQuestionAnswered();
       removeContextFiles();
       removeUpdateAiderModels();
+      removeQueuedPrompts();
     };
   }, [
     api,
@@ -86,5 +96,6 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
     handleQuestionAnswered,
     handleContextFilesUpdated,
     handleUpdateAiderModels,
+    handleQueuedPromptsUpdated,
   ]);
 };

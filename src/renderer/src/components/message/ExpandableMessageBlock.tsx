@@ -62,7 +62,7 @@ export const ExpandableMessageBlock = forwardRef<ExpandableMessageBlockRef, Prop
     }, [isInitialAutoExpand, isExpanded]);
 
     return (
-      <div className="border border-border-default-dark rounded-md mb-2 group bg-bg-secondary">
+      <div className="border border-border-dark-light rounded-md mb-2 group bg-bg-secondary">
         <Accordion
           title={title}
           isOpen={isExpanded}

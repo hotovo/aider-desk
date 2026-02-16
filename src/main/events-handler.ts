@@ -366,6 +366,17 @@ export class EventsHandler {
     this.projectManager.getProject(baseDir).getTask(taskId)?.answerQuestion(answer);
   }
 
+  removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void {
+    this.projectManager.getProject(baseDir).getTask(taskId)?.removeQueuedPrompt(promptId);
+  }
+
+  async sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (task) {
+      await task.sendQueuedPromptNow(promptId);
+    }
+  }
+
   runCommand(baseDir: string, taskId: string, command: string): void {
     void this.projectManager.getProject(baseDir).getTask(taskId)?.runCommand(command);
   }
@@ -677,6 +688,7 @@ export class EventsHandler {
         messages: [],
         files: [],
         todoItems: [],
+        queuedPrompts: [],
         question: null,
         workingMode: 'local',
       }

@@ -1233,6 +1233,10 @@
       "19": "Implement pagination logic in ProductList's fetchProducts..."
     },
     "questionPlaceholder": "...or suggest something else",
+    "queueTitle": "Queued Prompts",
+    "queuedPrompt": "Queued",
+    "removeQueuedPrompt": "Remove",
+    "sendQueuedPromptNow": "Send immediately",
     "answers": {
       "yes": "(Y)es",
       "no": "(N)o",

@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added support for message queue while task is processing
+
 ## [0.53.0]
 
 - fixed mobile project dropdown to truncate long project names with ellipsis instead of pushing icons off-screen

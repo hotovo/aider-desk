@@ -246,6 +246,19 @@ export interface QuestionAnsweredData {
   userInput?: string;
 }
 
+export interface QueuedPromptData {
+  id: string;
+  text: string;
+  mode: Mode;
+  timestamp: number;
+}
+
+export interface QueuedPromptsUpdatedData {
+  baseDir: string;
+  taskId: string;
+  queuedPrompts: QueuedPromptData[];
+}
+
 export type ContextFileSourceType = 'companion' | 'aider' | 'app' | string;
 
 export enum OS {
@@ -788,6 +801,7 @@ export interface TaskStateData {
   files: ContextFile[];
   todoItems: TodoItem[];
   question: QuestionData | null;
+  queuedPrompts: QueuedPromptData[];
   workingMode: WorkingMode;
 }
 

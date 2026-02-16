@@ -24,7 +24,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
       try {
         updateTaskState(taskId, { loading: true });
 
-        const { messages: stateMessages, files, todoItems, question } = await api.loadTask(baseDir, taskId);
+        const { messages: stateMessages, files, todoItems, question, queuedPrompts } = await api.loadTask(baseDir, taskId);
 
         const messages: Message[] = stateMessages.flatMap((message): Message[] => {
           if (message.type === 'response-completed') {
@@ -87,6 +87,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
           contextFiles: files,
           todoItems: todoItems || [],
           question,
+          queuedPrompts,
         });
       } catch (error) {
         // eslint-disable-next-line no-console

@@ -59,7 +59,6 @@ type Props = {
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   shouldFocusPrompt?: boolean;
-  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -77,7 +76,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       showSettingsPage,
       shouldFocusPrompt = false,
       updateOptimisticTaskState,
-      onRunPrompt,
       onArchiveTask,
       onUnarchiveTask,
       onDeleteTask,
@@ -96,7 +94,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const { getProfiles } = useAgents();
 
     const taskState = useTaskState(task.id);
-    const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData } = taskState;
+    const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData, queuedPrompts } = taskState;
 
     const messages = useTaskMessages(task.id);
     const deferredMessages = useDeferredValue(messages);
@@ -290,7 +288,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           });
           api.redoLastUserPrompt(projectDir, task.id, currentMode, prompt);
         } else {
-          if (!question) {
+          if (!question && !inProgress) {
             // OPTIMISTIC: Add user message immediately before backend response
             const optimisticUserMessage = {
               id: uuidv4(),
@@ -304,7 +302,19 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           api.runPrompt(projectDir, task.id, prompt, currentMode);
         }
       },
-      [updateOptimisticTaskState, task.id, editingMessageIndex, setMessages, api, projectDir, currentMode, question, setDisplayedMessages, displayedMessages],
+      [
+        updateOptimisticTaskState,
+        task.id,
+        editingMessageIndex,
+        setMessages,
+        api,
+        projectDir,
+        currentMode,
+        question,
+        inProgress,
+        setDisplayedMessages,
+        displayedMessages,
+      ],
     );
 
     const handleSavePrompt = useCallback(
@@ -375,9 +385,9 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const handleRunPrompt = useCallback(
       (prompt: string) => {
-        onRunPrompt?.(prompt);
+        api.runPrompt(projectDir, task.id, prompt, currentMode);
       },
-      [onRunPrompt],
+      [api, currentMode, projectDir, task.id],
     );
 
     const handleArchiveTask = useCallback(() => {
@@ -565,6 +575,20 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [answerQuestion, task.id],
     );
 
+    const handleRemoveQueuedPrompt = useCallback(
+      (id: string) => {
+        api.removeQueuedPrompt(projectDir, task.id, id);
+      },
+      [api, projectDir, task.id],
+    );
+
+    const handleSendQueuedPromptNow = useCallback(
+      (id: string) => {
+        api.sendQueuedPromptNow(projectDir, task.id, id);
+      },
+      [api, projectDir, task.id],
+    );
+
     const handleInterruptResponse = useCallback(
       (interruptId?: string) => {
         interruptResponse(task.id, interruptId);
@@ -748,6 +772,9 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 addFiles={handleAddFiles}
                 question={question}
                 answerQuestion={handleAnswerQuestion}
+                queuedPrompts={queuedPrompts}
+                removeQueuedPrompt={handleRemoveQueuedPrompt}
+                sendQueuedPromptNow={handleSendQueuedPromptNow}
                 interruptResponse={handleInterruptResponse}
                 runCommand={runCommand}
                 runTests={runTests}

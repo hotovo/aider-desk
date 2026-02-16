@@ -32,6 +32,7 @@ import {
   ProviderModelsData,
   ProviderProfile,
   ProvidersUpdatedData,
+  QueuedPromptsUpdatedData,
   QuestionAnsweredData,
   QuestionData,
   ResponseChunkData,
@@ -76,6 +77,8 @@ export interface ApplicationAPI {
   redoLastUserPrompt: (baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string) => void;
   resumeTask: (baseDir: string, taskId: string) => void;
   answerQuestion: (baseDir: string, taskId: string, answer: string) => void;
+  removeQueuedPrompt: (baseDir: string, taskId: string, promptId: string) => void;
+  sendQueuedPromptNow: (baseDir: string, taskId: string, promptId: string) => void;
   loadInputHistory: (baseDir: string) => Promise<string[]>;
   isOpenDialogSupported: () => boolean;
   showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
@@ -167,6 +170,7 @@ export interface ApplicationAPI {
   addUpdateAutocompletionListener: (baseDir: string, taskId: string, callback: (data: AutocompletionData) => void) => () => void;
   addAskQuestionListener: (baseDir: string, taskId: string, callback: (data: QuestionData) => void) => () => void;
   addQuestionAnsweredListener: (baseDir: string, taskId: string, callback: (data: QuestionAnsweredData) => void) => () => void;
+  addQueuedPromptsUpdatedListener: (baseDir: string, taskId: string, callback: (data: QueuedPromptsUpdatedData) => void) => () => void;
   addUpdateAiderModelsListener: (baseDir: string, taskId: string, callback: (data: ModelsData) => void) => () => void;
   addCommandOutputListener: (baseDir: string, taskId: string, callback: (data: CommandOutputData) => void) => () => void;
   addTokensInfoListener: (baseDir: string, taskId: string, callback: (data: TokensInfoData) => void) => () => void;

@@ -15,6 +15,7 @@ import {
   ProjectStartedData,
   ProviderModelsData,
   ProvidersUpdatedData,
+  QueuedPromptsUpdatedData,
   QuestionAnsweredData,
   QuestionData,
   ResponseChunkData,
@@ -59,6 +60,8 @@ const api: ApplicationAPI = {
   redoLastUserPrompt: (baseDir, taskId, mode, updatedPrompt?) => ipcRenderer.send('redo-last-user-prompt', baseDir, taskId, mode, updatedPrompt),
   resumeTask: (baseDir, taskId) => ipcRenderer.send('resume-task', baseDir, taskId),
   answerQuestion: (baseDir, taskId, answer) => ipcRenderer.send('answer-question', baseDir, taskId, answer),
+  removeQueuedPrompt: (baseDir, taskId, promptId) => ipcRenderer.send('remove-queued-prompt', baseDir, taskId, promptId),
+  sendQueuedPromptNow: (baseDir, taskId, promptId) => ipcRenderer.send('send-queued-prompt-now', baseDir, taskId, promptId),
   loadInputHistory: (baseDir) => ipcRenderer.invoke('load-input-history', baseDir),
   isOpenDialogSupported: () => true,
   showOpenDialog: (options: Electron.OpenDialogSyncOptions) => ipcRenderer.invoke('show-open-dialog', options),
@@ -249,6 +252,19 @@ const api: ApplicationAPI = {
     ipcRenderer.on('question-answered', listener);
     return () => {
       ipcRenderer.removeListener('question-answered', listener);
+    };
+  },
+
+  addQueuedPromptsUpdatedListener: (baseDir, taskId, callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: QueuedPromptsUpdatedData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir) || data.taskId !== taskId) {
+        return;
+      }
+      callback(data);
+    };
+    ipcRenderer.on('queued-prompts-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('queued-prompts-updated', listener);
     };
   },
 

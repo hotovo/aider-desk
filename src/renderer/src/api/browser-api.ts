@@ -50,6 +50,7 @@ import {
   WorktreeIntegrationStatusUpdatedData,
   TaskCreatedData,
   UpdatedFilesUpdatedData,
+  QueuedPromptsUpdatedData,
   WorkflowExecutionResult,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
@@ -70,6 +71,7 @@ type EventDataMap = {
   'update-autocompletion': AutocompletionData;
   'ask-question': QuestionData;
   'question-answered': QuestionAnsweredData;
+  'queued-prompts-updated': QueuedPromptsUpdatedData;
   'update-aider-models': ModelsData;
   'command-output': CommandOutputData;
   'update-tokens-info': TokensInfoData;
@@ -165,6 +167,7 @@ export class BrowserApi implements ApplicationAPI {
       'terminal-data': new Map(),
       'terminal-exit': new Map(),
       'bmad-status-changed': new Map(),
+      'queued-prompts-updated': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -321,6 +324,20 @@ export class BrowserApi implements ApplicationAPI {
       projectDir: baseDir,
       taskId,
       answer,
+    });
+  }
+  removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void {
+    this.post('/project/remove-queued-prompt', {
+      projectDir: baseDir,
+      taskId,
+      promptId,
+    });
+  }
+  sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): void {
+    this.post('/project/send-queued-prompt-now', {
+      projectDir: baseDir,
+      taskId,
+      promptId,
     });
   }
   loadInputHistory(baseDir: string): Promise<string[]> {
@@ -677,6 +694,9 @@ export class BrowserApi implements ApplicationAPI {
 
   addQuestionAnsweredListener(baseDir: string, taskId: string, callback: (data: QuestionAnsweredData) => void): () => void {
     return this.addListener('question-answered', callback, baseDir, taskId);
+  }
+  addQueuedPromptsUpdatedListener(baseDir: string, taskId: string, callback: (data: QueuedPromptsUpdatedData) => void): () => void {
+    return this.addListener('queued-prompts-updated', callback, baseDir, taskId);
   }
   addUpdateAiderModelsListener(baseDir: string, taskId: string, callback: (data: ModelsData) => void): () => void {
     return this.addListener('update-aider-models', callback, baseDir, taskId);

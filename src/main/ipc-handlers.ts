@@ -44,6 +44,14 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     eventsHandler.answerQuestion(baseDir, taskId, answer);
   });
 
+  ipcMain.on('remove-queued-prompt', (_, baseDir: string, taskId: string, promptId: string) => {
+    eventsHandler.removeQueuedPrompt(baseDir, taskId, promptId);
+  });
+
+  ipcMain.on('send-queued-prompt-now', async (_, baseDir: string, taskId: string, promptId: string) => {
+    await eventsHandler.sendQueuedPromptNow(baseDir, taskId, promptId);
+  });
+
   ipcMain.on('drop-file', (_, baseDir: string, taskId: string, filePath: string) => {
     void eventsHandler.dropFile(baseDir, taskId, filePath);
   });

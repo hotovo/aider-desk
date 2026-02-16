@@ -23,6 +23,7 @@ import {
   ModelsData,
   ProjectSettings,
   PromptContext,
+  QueuedPromptData,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -124,6 +125,7 @@ export class Task {
   private isDeterminingTaskState = false;
   private resolutionAbortControllers: Record<string, AbortController> = {};
   private tokensInfo: TokensInfoData;
+  private queuedPrompts: QueuedPromptData[] = [];
 
   private readonly taskDataPath: string;
   private readonly contextManager: ContextManager;
@@ -482,6 +484,7 @@ export class Task {
       files: await this.getContextFiles(AGENT_MODES.includes(mode)),
       todoItems: await this.getTodos(),
       question: this.currentQuestion,
+      queuedPrompts: this.queuedPrompts,
       workingMode: this.task.workingMode || 'local',
     };
   }
@@ -648,6 +651,10 @@ export class Task {
     }
   }
 
+  private isPromptRunning() {
+    return !!this.currentPromptContext || this.agent.isRunning();
+  }
+
   public async runPrompt(prompt: string, mode: Mode = 'code', addToInputHistory = true, userMessageId = uuidv4()): Promise<ResponseCompletedData[]> {
     if (this.currentQuestion) {
       if (this.answerQuestion('n', prompt)) {
@@ -656,7 +663,18 @@ export class Task {
       }
     }
 
-    await this.waitForCurrentPromptToFinish();
+    if (this.isPromptRunning()) {
+      // Queue the prompt for later execution
+      const queuedPrompt: QueuedPromptData = {
+        id: userMessageId,
+        text: prompt,
+        mode,
+        timestamp: Date.now(),
+      };
+      this.queuedPrompts.push(queuedPrompt);
+      this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+      return [];
+    }
 
     const hookResult = await this.hookManager.trigger('onPromptSubmitted', { prompt, mode }, this, this.project);
     if (hookResult.blocked) {
@@ -727,12 +745,29 @@ export class Task {
 
     await this.saveTask({
       name: this.task.name || this.getTaskNameFromPrompt(prompt),
+      state: DefaultTaskState.Todo,
     });
   }
 
-  public async runPromptInAider(prompt: string, promptContext: PromptContext, mode?: Mode): Promise<ResponseCompletedData[]> {
-    await this.hookManager.trigger('onPromptStarted', { prompt, mode: mode || 'code' }, this, this.project);
-    const aiderHookResult = await this.hookManager.trigger('onAiderPromptStarted', { prompt, mode: mode || 'code' }, this, this.project);
+  private async runNextQueuedPrompt(): Promise<ResponseCompletedData[]> {
+    if (this.queuedPrompts.length > 0) {
+      const nextPrompt = this.queuedPrompts.shift();
+      if (nextPrompt) {
+        this.addUserMessage(nextPrompt.id, nextPrompt.text);
+        this.addLogMessage('loading');
+        this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+        return this.runPrompt(nextPrompt.text, nextPrompt.mode, true, nextPrompt.id);
+      }
+    }
+
+    return [];
+  }
+
+  public async runPromptInAider(prompt: string, promptContext: PromptContext, mode: Mode = 'code'): Promise<ResponseCompletedData[]> {
+    await this.waitForCurrentPromptToFinish();
+
+    await this.hookManager.trigger('onPromptStarted', { prompt, mode }, this, this.project);
+    const aiderHookResult = await this.hookManager.trigger('onAiderPromptStarted', { prompt, mode }, this, this.project);
     if (aiderHookResult.blocked) {
       logger.info('Aider prompt blocked by hook');
       return [];
@@ -799,6 +834,9 @@ export class Task {
       });
     }
 
+    const nextResponses = await this.runNextQueuedPrompt();
+    responses.push(...nextResponses);
+
     return responses;
   }
 
@@ -834,6 +872,14 @@ export class Task {
 
     await this.hookManager.trigger('onPromptFinished', { responses: [] }, this, this.project);
 
+    void this.sendRequestContextInfo();
+    void this.sendWorktreeIntegrationStatusUpdated();
+    void this.sendUpdatedFilesUpdated();
+
+    if (waitForCurrentAgentToFinish) {
+      await this.runNextQueuedPrompt();
+    }
+
     if (this.task.state === DefaultTaskState.InProgress) {
       // Determine task state based on the last assistant message
       const settings = this.store.getSettings();
@@ -849,9 +895,6 @@ export class Task {
       });
     }
 
-    void this.sendRequestContextInfo();
-    void this.sendWorktreeIntegrationStatusUpdated();
-    void this.sendUpdatedFilesUpdated();
     this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
 
     return [];
@@ -2036,6 +2079,7 @@ export class Task {
 
     if (this.initialized && this.task.state === DefaultTaskState.InProgress) {
       if (this.isDeterminingTaskState) {
+        // cancel the task state determination and set the task to ready for review
         void this.saveTask({
           state: DefaultTaskState.ReadyForReview,
           completedAt: new Date().toISOString(),
@@ -2047,6 +2091,32 @@ export class Task {
         });
       }
     }
+  }
+
+  public removeQueuedPrompt(promptId: string): void {
+    this.queuedPrompts = this.queuedPrompts.filter((qp) => qp.id !== promptId);
+    this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+  }
+
+  public async sendQueuedPromptNow(promptId: string): Promise<void> {
+    const queuedPromptIndex = this.queuedPrompts.findIndex((qp) => qp.id === promptId);
+    if (queuedPromptIndex === -1) {
+      logger.warn('Queued prompt not found:', { promptId });
+      return;
+    }
+
+    const queuedPrompt = this.queuedPrompts[queuedPromptIndex];
+
+    if (queuedPromptIndex > 0) {
+      logger.debug('Moving queued prompt to top:', { promptId });
+      this.queuedPrompts.splice(queuedPromptIndex, 1);
+      this.queuedPrompts.unshift(queuedPrompt);
+    }
+
+    // interrupting to allow the next queued prompt to be sent
+    this.addUserMessage(queuedPrompt.id, queuedPrompt.text);
+    this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
+    this.agent.interrupt();
   }
 
   public applyEdits(edits: FileEdit[]) {
@@ -2144,7 +2214,6 @@ export class Task {
     };
 
     this.eventManager.sendUserMessage(data);
-    void this.saveTask({ state: DefaultTaskState.Todo });
   }
 
   public async removeLastMessage() {

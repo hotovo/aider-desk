@@ -1207,6 +1207,10 @@
       "19": "在 ProductList 的 fetchProducts 方法中实现分页逻辑..."
     },
     "questionPlaceholder": "...或建议其他内容",
+    "queueTitle": "排队的提示",
+    "queuedPrompt": "排队",
+    "removeQueuedPrompt": "移除",
+    "sendQueuedPromptNow": "立即发送",
     "answers": {
       "yes": "(Y)是",
       "no": "(N)否",

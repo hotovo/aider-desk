@@ -32,6 +32,8 @@ import {
   TaskCreatedData,
   UpdatedFile,
   UpdatedFilesUpdatedData,
+  QueuedPromptData,
+  QueuedPromptsUpdatedData,
 } from '@common/types';
 
 import type { BmadStatus } from '@common/bmad-types';
@@ -141,6 +143,17 @@ export class EventManager {
     };
     this.sendToMainWindow('update-autocompletion', data);
     this.broadcastToEventConnectors('update-autocompletion', data);
+  }
+
+  // Queue events
+  sendQueuedPromptsUpdated(baseDir: string, taskId: string, queuedPrompts: QueuedPromptData[]): void {
+    const data: QueuedPromptsUpdatedData = {
+      baseDir,
+      taskId,
+      queuedPrompts,
+    };
+    this.sendToMainWindow('queued-prompts-updated', data);
+    this.broadcastToEventConnectors('queued-prompts-updated', data);
   }
 
   // Aider models events

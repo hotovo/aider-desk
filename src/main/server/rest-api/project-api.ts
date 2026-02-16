@@ -41,6 +41,18 @@ const AnswerQuestionSchema = z.object({
   answer: z.string().min(1, 'Answer is required'),
 });
 
+const RemoveQueuedPromptSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  promptId: z.string().min(1, 'Prompt id is required'),
+});
+
+const SendQueuedPromptNowSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  promptId: z.string().min(1, 'Prompt id is required'),
+});
+
 const UpdateMainModelSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task ID is required'),
@@ -1014,6 +1026,36 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, answer } = parsed;
         this.eventsHandler.answerQuestion(projectDir, taskId, answer);
         res.status(200).json({ message: 'Answer submitted' });
+      }),
+    );
+
+    // Remove queued prompt
+    router.post(
+      '/project/remove-queued-prompt',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RemoveQueuedPromptSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, promptId } = parsed;
+        this.eventsHandler.removeQueuedPrompt(projectDir, taskId, promptId);
+        res.status(200).json({ message: 'Queued prompt removed' });
+      }),
+    );
+
+    // Send queued prompt immediately
+    router.post(
+      '/project/send-queued-prompt-now',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(SendQueuedPromptNowSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, promptId } = parsed;
+        await this.eventsHandler.sendQueuedPromptNow(projectDir, taskId, promptId);
+        res.status(200).json({ message: 'Queued prompt sent' });
       }),
     );
 

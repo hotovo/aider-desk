@@ -9,7 +9,7 @@ import {
 } from '@codemirror/autocomplete';
 import { EditorView, keymap } from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
-import { AGENT_MODES, Mode, PromptBehavior, QuestionData, SuggestionMode, TaskData } from '@common/types';
+import { AGENT_MODES, Mode, PromptBehavior, QueuedPromptData, QuestionData, SuggestionMode, TaskData } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Annotation, Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -18,7 +18,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { FaInfoCircle } from 'react-icons/fa';
-import { MdPlaylistRemove, MdSave, MdStop, MdMic, MdMicOff } from 'react-icons/md';
+import { MdPlaylistRemove, MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { VscTerminal } from 'react-icons/vsc';
 import { clsx } from 'clsx';
 
@@ -119,6 +119,9 @@ type Props = {
   scrapeWeb: (url: string, filePath?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
+  queuedPrompts?: QueuedPromptData[];
+  removeQueuedPrompt?: (id: string) => void;
+  sendQueuedPromptNow?: (id: string) => void;
   interruptResponse: () => void;
   runCommand: (command: string) => void;
   runTests: (testCmd?: string) => void;
@@ -157,6 +160,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       scrapeWeb,
       question,
       answerQuestion,
+      queuedPrompts = [],
+      removeQueuedPrompt,
+      sendQueuedPromptNow,
       interruptResponse,
       runCommand,
       runTests,
@@ -758,7 +764,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 anchor: newText.length,
               },
             });
-          } else if (!processing || question) {
+          } else {
             handleSubmit();
           }
           return true;
@@ -894,6 +900,31 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
 
     return (
       <div className="w-full relative">
+        {queuedPrompts && queuedPrompts.length > 0 && (
+          <div className="mb-2 p-3 bg-bg-primary-light from-bg-primary to-bg-primary-light rounded-md border border-border-default-dark text-sm max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded">
+            <div className="text-text-primary text-xs mb-2">{t('promptField.queueTitle')}</div>
+            {queuedPrompts.map((queuedPrompt) => (
+              <div key={queuedPrompt.id} className="flex items-center gap-2 mb-2 last:mb-0 p-2 bg-bg-secondary rounded border border-border-default-dark">
+                <div className="flex-1 truncate text-text-muted-light text-xs">{queuedPrompt.text}</div>
+                <Tooltip content={t('promptField.removeQueuedPrompt')}>
+                  <button onClick={() => removeQueuedPrompt?.(queuedPrompt.id)} className="text-text-muted hover:text-text-primary transition-colors">
+                    <MdPlaylistRemove size={16} />
+                  </button>
+                </Tooltip>
+
+                <Tooltip content={t('promptField.sendQueuedPromptNow')}>
+                  <button
+                    onClick={() => sendQueuedPromptNow?.(queuedPrompt.id)}
+                    className="text-text-muted hover:text-text-primary transition-colors"
+                    title={t('promptField.sendQueuedPromptNow')}
+                  >
+                    <BiSend size={16} />
+                  </button>
+                </Tooltip>
+              </div>
+            ))}
+          </div>
+        )}
         {question && (
           <div className="mb-2 p-3 bg-gradient-to-b from-bg-primary to-bg-primary-light rounded-md border border-border-default-dark text-sm">
             <div className="text-text-primary text-sm mb-2 whitespace-pre-wrap">{question.text}</div>
@@ -1034,8 +1065,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 Prec.high(keymapExtension),
               ]}
             />
-            {processing ? (
-              <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-2 text-text-muted-light">
+            <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-1 text-text-muted-light">
+              {processing && (
                 <Tooltip content={`${t('promptField.stopResponse')} (Ctrl+C)`}>
                   <button
                     onClick={() => interruptResponse()}
@@ -1044,33 +1075,31 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     <MdStop className="w-4 h-4" />
                   </button>
                 </Tooltip>
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <div className="absolute right-2 top-1/2 -translate-y-[12px] flex items-center space-x-1 text-text-muted-light">
-                {isRecording && mediaStream && <AudioAnalyzer stream={mediaStream} />}
-                {voiceAvailable && (
-                  <button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    disabled={disabled || isProcessing}
-                    className={clsx(
-                      'text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200',
-                      isRecording ? 'text-accent-primary animate-pulse' : '',
-                    )}
-                    data-tooltip-id="prompt-field-tooltip"
-                    data-tooltip-content={`${isRecording ? t('promptField.stopRecording') : t('promptField.startRecording')} (Alt+V)`}
-                  >
-                    {isProcessing ? (
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : isRecording ? (
-                      <MdMicOff className="w-4 h-4" />
-                    ) : (
-                      <MdMic className="w-4 h-4" />
-                    )}
-                  </button>
-                )}
-                {text.trim() && !isRecording && (
-                  <>
+              )}
+              {isRecording && mediaStream && <AudioAnalyzer stream={mediaStream} />}
+              {voiceAvailable && (
+                <button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={disabled || isProcessing}
+                  className={clsx(
+                    'text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200',
+                    isRecording ? 'text-accent-primary animate-pulse' : '',
+                  )}
+                  data-tooltip-id="prompt-field-tooltip"
+                  data-tooltip-content={`${isRecording ? t('promptField.stopRecording') : t('promptField.startRecording')} (Alt+V)`}
+                >
+                  {isProcessing ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : isRecording ? (
+                    <MdMicOff className="w-4 h-4" />
+                  ) : (
+                    <MdMic className="w-4 h-4" />
+                  )}
+                </button>
+              )}
+              {text.trim() && !isRecording && (
+                <>
+                  {!processing && (
                     <button
                       onClick={handleSavePrompt}
                       disabled={!text.trim() || disabled}
@@ -1080,27 +1109,26 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     >
                       <MdSave className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={handleSubmit}
-                      disabled={!text.trim() || disabled}
-                      className={clsx('hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
-                      data-tooltip-id="prompt-field-tooltip"
-                      data-tooltip-content={t('promptField.sendMessage')}
-                    >
-                      <BiSend className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+                  )}
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!text.trim() || disabled}
+                    className={clsx('hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
+                    data-tooltip-id="prompt-field-tooltip"
+                    data-tooltip-content={t('promptField.sendMessage')}
+                  >
+                    {isProcessing && !question ? <MdOutlineScheduleSend className="w-4 h-4" /> : <BiSend className="w-4 h-4" />}
+                  </button>
+                </>
+              )}
+              {processing && <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+            </div>
           </div>
           <div className={clsx('relative w-full flex flex-wrap', isMobile ? 'items-start gap-0.5' : 'items-center')}>
             <div className={clsx('flex gap-1.5', isMobile && AGENT_MODES.includes(mode) ? 'flex-col items-start' : 'items-center')}>
               <ModeSelector mode={mode} onModeChange={onModeChanged} />
               <div className="flex gap-2">
-                {(mode === 'agent' || mode === 'bmad') && (
-                  <AgentSelector projectDir={baseDir} task={task} isActive={isActive} showSettingsPage={showSettingsPage} />
-                )}
+                {AGENT_MODES.includes(mode) && <AgentSelector projectDir={baseDir} task={task} isActive={isActive} showSettingsPage={showSettingsPage} />}
                 <AutoApprove
                   enabled={!!task?.autoApprove}
                   locked={projectSettings?.autoApproveLocked ?? false}

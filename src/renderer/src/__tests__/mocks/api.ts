@@ -259,6 +259,9 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addBmadStatusChangedListener: vi.fn(() => vi.fn()),
     executeWorkflow: vi.fn(() => Promise.resolve({ success: true, artifactPath: '/path/to/artifact.md' })),
     resetBmadWorkflow: vi.fn((): Promise<{ success: boolean; message?: string }> => Promise.resolve({ success: true })),
+    removeQueuedPrompt: vi.fn((): void => undefined),
+    sendQueuedPromptNow: vi.fn((): Promise<void> => Promise.resolve()),
+    addQueuedPromptsUpdatedListener: vi.fn(() => vi.fn()),
   };
 
   return vi.mocked<ApplicationAPI>({ ...defaultMock, ...overrides });

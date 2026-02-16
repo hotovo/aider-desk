@@ -136,6 +136,7 @@ describe('TaskView', () => {
     todoItems: [],
     aiderModelsData: null,
     lastActiveAt: null,
+    queuedPrompts: [],
   };
   const mockMessages: Message[] = [];
 
