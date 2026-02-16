@@ -89,6 +89,7 @@ src/
       utils.ts
     bmad/
       context/
+        brainstorming.json.hbs
         code-review.json.hbs
         create-architecture.json.hbs
         create-epics-and-stories.json.hbs
@@ -7843,6 +7844,142 @@ export const extractPromptContextFromToolResult = (toolResult: unknown): PromptC
 export const findLastUserMessage = (messages: ContextMessage[]): ContextUserMessage | undefined =>
 
 ================
+File: src/main/bmad/context/brainstorming.json.hbs
+================
+[
+  {
+    "id": "4982dcae-90fa-4382-bcfb-5d9235619fe8",
+    "role": "user",
+    "content": "IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL _bmad/core/workflows/brainstorming/workflow.md, READ its entire contents and follow its directions exactly!",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming",
+        "name": "Brainstorming",
+        "color": "#0ea5e9",
+        "finished": true
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll load the brainstorming workflow file and follow its directions."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_5037f5e26dd84725a5c1f958",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/core/workflows/brainstorming/workflow.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "c8414da2-2e39-448b-b100-c2c9766a9962",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_5037f5e26dd84725a5c1f958",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/core/workflows/brainstorming/workflow.md"}}
+        }
+      }
+    ],
+    "id": "3c7d6558-db65-4279-9917-9160be47e9b9",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I've loaded the main workflow file, which tells me to:\n\n1. Load config from `{project-root}/_bmad/core/config.yaml`\n2. Then follow `steps/step-01-session-setup.md` to begin the workflow."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_52ac6e939f614590a3efbd3c",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/core/config.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 100
+        }
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_b4cf4a4879c94cc084d3457e",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/core/workflows/brainstorming/steps/step-01-session-setup.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "40c75ca7-55b9-46eb-b845-a437b9008129",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_52ac6e939f614590a3efbd3c",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/core/config.yaml"}}
+        }
+      },
+      {
+        "type": "tool-result",
+        "toolCallId": "call_b4cf4a4879c94cc084d3457e",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/core/workflows/brainstorming/steps/step-01-session-setup.md"}}
+        }
+      }
+    ],
+    "id": "c59ed49e-009c-41fd-82b5-8089736442df",
+    "promptContext": {
+      "id": "brainstorming",
+      "group": {
+        "id": "brainstorming"
+      }
+    }
+  }
+]
+
+================
 File: src/main/bmad/context/code-review.json.hbs
 ================
 [
@@ -9832,7 +9969,7 @@ File: src/main/bmad/context/research.json.hbs
       "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
       "group": {
         "id": "6c97db1e-297f-491b-b65c-eaac1bbb6438",
-        "name": "BMAD Method: Research",
+        "name": "Research",
         "color": "#0ea5e9",
         "finished": true
       }
@@ -10311,6 +10448,7 @@ null, // No user prompt - workflow is system-driven
 File: src/main/bmad/context-preparer.ts
 ================
 import path from 'path';
+import fs from 'fs/promises';
 ⋮----
 import Handlebars from 'handlebars';
 import { v4 as uuidv4 } from 'uuid';
@@ -10338,7 +10476,7 @@ constructor(private readonly projectDir: string)
 ⋮----
 /**
    * Prepare context for workflow execution
-   * @param workflowId - ID of the workflow to prepare context for
+   * @param workflowId - ID of workflow to prepare context for
    * @param status - Current BMAD status with workflow and artifact information
    * @returns Prepared context with messages and file paths
    */
@@ -10348,9 +10486,13 @@ async prepare(workflowId: string, status: BmadStatus): Promise<PreparedContext>
 ⋮----
 private async injectContextMessages(workflowId: string, context: PreparedContext, status: BmadStatus)
 ⋮----
+// research workflow doesn't auto-execute, it's waiting for user input
+⋮----
 private async injectTemplate(workflowId: string, context: PreparedContext): Promise<boolean>
 ⋮----
-// Special case: research workflow doesn't auto-execute
+private async injectBrainstormingContext(context: PreparedContext, status: BmadStatus): Promise<void>
+⋮----
+// Check if there's an existing incomplete brainstorming session
 ⋮----
 private async injectQuickDevContext(context: PreparedContext, status: BmadStatus): Promise<void>
 ⋮----
@@ -15985,7 +16127,10 @@ export const findExecutableInPath = (executable: string, checkOnly = false): str
 // Not found in this directory
 ⋮----
 // Wrapper for execAsync that includes enhanced PATH
-export const execWithShellPath = async (command: string, options?:
+export const execWithShellPath = async (
+  command: string,
+  options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number },
+): Promise<
 
 ================
 File: src/main/utils/web-scrapper.ts
@@ -16525,6 +16670,8 @@ const filePath = parts.slice(2).join('\t'); // Handle paths with tabs
 // Binary file - skip diff
 ⋮----
 // Escape file path for git command - use quotes and -- separator
+⋮----
+maxBuffer: 10 * 1024 * 1024, // 10 MB
 ⋮----
 // If diff fetch fails (e.g., file not readable, git error), continue with empty diff
 ⋮----
@@ -18162,16 +18309,25 @@ File: src/renderer/src/components/bmad/BmadTaskActions.tsx
 import { RiAlertLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { TaskData } from '@common/types';
+import { clsx } from 'clsx';
 ⋮----
-import { useBmadState } from './useBmadState';
+import { useBmadState, type BmadAction } from './useBmadState';
 ⋮----
+import { Button } from '@/components/common/Button';
 import { SuggestedWorkflowCard } from '@/components/bmad/SuggestedWorkflowCard';
 ⋮----
 type Props = {
   projectDir: string;
   taskId: string;
   task?: TaskData | null;
+  onRunPrompt?: (prompt: string) => void;
 };
+⋮----
+const handlePromptClick = (action: BmadAction) =>
+⋮----
+<div className=
+⋮----
+<Button key=
 
 ================
 File: src/renderer/src/components/bmad/BmadWelcomeSection.tsx
@@ -18274,12 +18430,22 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BmadStatus } from '@common/bmad-types';
 import { TaskData } from '@common/types';
 ⋮----
+import { isResponseMessage, Message } from '@/types/message';
 import { useApi } from '@/contexts/ApiContext';
+import { useTaskMessages } from '@/stores/taskStore';
 import { generateSuggestions } from '@/utils/bmad-suggestions';
+⋮----
+export interface BmadAction {
+  actionLetter: string;
+  actionName: string;
+}
+⋮----
+export const extractBmadActions = (lastAssistantMessage: Message | undefined): BmadAction[] | undefined =>
 ⋮----
 type Result = {
   status: BmadStatus | null;
   suggestedWorkflows: string[];
+  bmadActions?: BmadAction[];
   isLoading: boolean;
   error: string | null;
   refresh: (loading?: boolean) => Promise<void>;
@@ -18290,7 +18456,7 @@ type UseBmadStateParams = {
   task?: TaskData | null;
 };
 ⋮----
-export const useBmadState = (params: UseBmadStateParams): Result =>
+export const useBmadState = (
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -20698,7 +20864,7 @@ type Props = {
   redoLastUserPrompt: () => void;
   editLastUserMessage: (content: string) => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -20965,7 +21131,7 @@ type Props = {
   task?: TaskData | null;
   onResumeTask: () => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -21366,7 +21532,7 @@ type Props = {
   redoLastUserPrompt: () => void;
   editLastUserMessage: (content: string) => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -23861,7 +24027,7 @@ type Props = {
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   shouldFocusPrompt?: boolean;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -30764,9 +30930,9 @@ File: package.json
     "@smithy/signature-v4": "^2.0.0",
     "@smithy/util-utf8": "^2.0.0",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/react-virtual": "^3.13.12",
+    "@tanstack/react-virtual": "3.13.12",
     "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
+    "@types/express": "^4.17.25",
     "@types/hast": "^3.0.4",
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.25.1",
@@ -30774,8 +30940,8 @@ File: package.json
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "ai": "^5.0.119",
-    "ai-sdk-provider-claude-code": "^2.3.0",
+    "ai": "5.0.119",
+    "ai-sdk-provider-claude-code": "2.3.0",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
@@ -30831,7 +30997,7 @@ File: package.json
     "react-router-dom": "^7.0.1",
     "react-textarea-autosize": "^8.5.6",
     "react-toastify": "^10.0.6",
-    "recharts": "^3.0.2",
+    "recharts": "3.0.2",
     "refractor": "^5.0.0",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-slug": "^6.0.0",
