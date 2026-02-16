@@ -4,6 +4,7 @@
 
 - added support for message queue while task is processing
 - making sure to include user message when using Gemini models to avoid signature error
+- added missing tooltips to prompt field icons
 
 ## [0.53.0]
 

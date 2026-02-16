@@ -1070,7 +1070,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 <Tooltip content={`${t('promptField.stopResponse')} (Ctrl+C)`}>
                   <button
                     onClick={() => interruptResponse()}
-                    className="hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-colors duration-200"
+                    className="hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-colors duration-200 ml-1"
                   >
                     <MdStop className="w-4 h-4" />
                   </button>
@@ -1078,47 +1078,47 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               )}
               {isRecording && mediaStream && <AudioAnalyzer stream={mediaStream} />}
               {voiceAvailable && (
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={disabled || isProcessing}
-                  className={clsx(
-                    'text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200',
-                    isRecording ? 'text-accent-primary animate-pulse' : '',
-                  )}
-                  data-tooltip-id="prompt-field-tooltip"
-                  data-tooltip-content={`${isRecording ? t('promptField.stopRecording') : t('promptField.startRecording')} (Alt+V)`}
-                >
-                  {isProcessing ? (
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : isRecording ? (
-                    <MdMicOff className="w-4 h-4" />
-                  ) : (
-                    <MdMic className="w-4 h-4" />
-                  )}
-                </button>
+                <Tooltip content={`${isRecording ? t('promptField.stopRecording') : t('promptField.startRecording')} (Alt+V)`}>
+                  <button
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={disabled || isProcessing}
+                    className={clsx(
+                      'text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200',
+                      isRecording ? 'text-accent-primary animate-pulse' : '',
+                    )}
+                  >
+                    {isProcessing ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : isRecording ? (
+                      <MdMicOff className="w-4 h-4" />
+                    ) : (
+                      <MdMic className="w-4 h-4" />
+                    )}
+                  </button>
+                </Tooltip>
               )}
               {text.trim() && !isRecording && (
                 <>
                   {!processing && (
-                    <button
-                      onClick={handleSavePrompt}
-                      disabled={!text.trim() || disabled}
-                      className={clsx('text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
-                      data-tooltip-id="prompt-field-tooltip"
-                      data-tooltip-content={t('promptField.savePrompt')}
-                    >
-                      <MdSave className="w-4 h-4" />
-                    </button>
+                    <Tooltip content={t('promptField.savePrompt')}>
+                      <button
+                        onClick={handleSavePrompt}
+                        disabled={disabled}
+                        className={clsx('text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
+                      >
+                        <MdSave className="w-4 h-4" />
+                      </button>
+                    </Tooltip>
                   )}
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!text.trim() || disabled}
-                    className={clsx('hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
-                    data-tooltip-id="prompt-field-tooltip"
-                    data-tooltip-content={t('promptField.sendMessage')}
-                  >
-                    {isProcessing && !question ? <MdOutlineScheduleSend className="w-4 h-4" /> : <BiSend className="w-4 h-4" />}
-                  </button>
+                  <Tooltip content={isProcessing ? t('promptField.queueMessage') : t('promptField.sendMessage')}>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={disabled}
+                      className={clsx('hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
+                    >
+                      {isProcessing && !question ? <MdOutlineScheduleSend className="w-4 h-4" /> : <BiSend className="w-4 h-4" />}
+                    </button>
+                  </Tooltip>
                 </>
               )}
               {processing && <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}

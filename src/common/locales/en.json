@@ -1235,6 +1235,7 @@
     "questionPlaceholder": "...or suggest something else",
     "queueTitle": "Queued Prompts",
     "queuedPrompt": "Queued",
+    "queueMessage": "Queue message (Enter)",
     "removeQueuedPrompt": "Remove",
     "sendQueuedPromptNow": "Send immediately",
     "answers": {
