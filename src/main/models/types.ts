@@ -2,7 +2,7 @@ import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageRep
 import { LlmProvider, LlmProviderName } from '@common/agent';
 
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModelUsage, ToolSet } from 'ai';
+import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 
 import { Task } from '@/task';
 
@@ -98,6 +98,11 @@ export interface LlmProviderStrategy {
    * Creates a voice session configuration if supported
    */
   createVoiceSession?: (profile: ProviderProfile, settings: SettingsData) => Promise<VoiceSession>;
+
+  /**
+   * Normalizes messages for provider-specific requirements
+   */
+  normalizeMessages?: (provider: LlmProvider, model: Model, messages: ModelMessage[]) => ModelMessage[];
 }
 
 export type LlmProviderRegistry = Record<LlmProviderName, LlmProviderStrategy>;

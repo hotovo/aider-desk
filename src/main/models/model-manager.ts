@@ -40,7 +40,7 @@ import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { JSONValue, LanguageModelUsage, ToolSet } from 'ai';
+import type { JSONValue, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
@@ -786,5 +786,30 @@ export class ModelManager {
     }
 
     return await strategy.createVoiceSession(provider, this.store.getSettings());
+  }
+
+  /**
+   * Normalizes messages for provider-specific requirements
+   */
+  normalizeMessages(provider: ProviderProfile, model: string | Model, messages: ModelMessage[]): ModelMessage[] {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy?.normalizeMessages) {
+      return messages;
+    }
+
+    // Resolve Model object
+    let modelObj: Model | undefined;
+    if (typeof model === 'string') {
+      modelObj = this.getModelSettings(provider.id, model);
+    } else {
+      modelObj = model;
+    }
+
+    if (!modelObj) {
+      logger.warn(`Model not found for normalization: ${model}`);
+      return messages;
+    }
+
+    return strategy.normalizeMessages(provider.provider, modelObj, messages);
   }
 }

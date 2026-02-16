@@ -685,13 +685,16 @@ export class Agent {
     const providerParameters = this.modelManager.getProviderParameters(provider, profile.model);
 
     const firstUserMessage = contextMessages.length > 0 ? contextMessages[0] : null;
-    const messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
+    let messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
     const initialUserRequestMessageIndex = firstUserMessage
       ? messages.findIndex((message) => message.role === 'user' && message.content === firstUserMessage.content)
       : messages.length;
 
     // add user message
     messages.push(...resultMessages);
+
+    // Normalize messages for provider-specific requirements
+    messages = this.modelManager.normalizeMessages(provider, profile.model, messages);
 
     let mcpConnectors: McpConnector[] = [];
     try {
