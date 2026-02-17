@@ -1,6 +1,17 @@
 import path from 'path';
 
-import { AiderRunOptions, ContextFile, EditFormat, FileEdit, MessageRole, Mode, ModelInfo, PromptContext } from '@common/types';
+import {
+  AiderRunOptions,
+  ConnectorMessage,
+  ConnectorMessageContent,
+  ContextFile,
+  EditFormat,
+  FileEdit,
+  MessageRole,
+  Mode,
+  ModelInfo,
+  PromptContext,
+} from '@common/types';
 import { Socket } from 'socket.io';
 
 import logger from '@/logger';
@@ -49,7 +60,7 @@ export class Connector {
     promptContext: PromptContext,
     mode: Mode | null = null,
     architectModel: string | null = null,
-    messages: { role: MessageRole; content: string }[] = [],
+    messages: ConnectorMessage[] = [],
     files: ContextFile[] = [],
     options?: AiderRunOptions,
   ): void {
@@ -106,7 +117,7 @@ export class Connector {
     this.sendMessage(message);
   }
 
-  public sendRunCommandMessage(command: string, messages: { role: MessageRole; content: string }[] = [], files: ContextFile[] = []): void {
+  public sendRunCommandMessage(command: string, messages: ConnectorMessage[] = [], files: ContextFile[] = []): void {
     const message: RunCommandMessage = {
       action: 'run-command',
       command: `/${command}`,
@@ -116,7 +127,7 @@ export class Connector {
     this.sendMessage(message);
   }
 
-  public sendAddMessageMessage(role: MessageRole = MessageRole.User, content: string, acknowledge = true) {
+  public sendAddMessageMessage(role: MessageRole = MessageRole.User, content: ConnectorMessageContent, acknowledge = true) {
     const message: AddMessageMessage = {
       action: 'add-message',
       content,
@@ -157,7 +168,7 @@ export class Connector {
     this.sendMessage(message);
   }
 
-  public sendRequestTokensInfoMessage(messages: { role: MessageRole; content: string }[], files: ContextFile[]) {
+  public sendRequestTokensInfoMessage(messages: ConnectorMessage[], files: ContextFile[]) {
     const message: RequestContextInfoMessage = {
       action: 'request-context-info',
       messages,

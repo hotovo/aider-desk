@@ -688,11 +688,16 @@ def clone_coder(connector, coder, prompt_context=None, messages=None, files=None
     # Set files from the provided data
     coder.abs_fnames = set()
     coder.abs_read_only_fnames = set()
+    coder.abs_image_fnames = set()
 
     for file in files:
       file_path = file['path']
       if not file_path.startswith(connector.task_dir):
         file_path = os.path.join(connector.task_dir, file_path)
+
+      if is_image_file(file_path):
+        coder.abs_image_fnames.add(file_path)
+        continue
 
       if file.get('readOnly', False):
         coder.abs_read_only_fnames.add(file_path)
@@ -1306,6 +1311,8 @@ class Connector:
     })
 
   async def send_tokens_info(self, messages, files):
+    messages = messages or []
+    files = files or []
     cost_per_token = self.coder.main_model.info.get("input_cost_per_token") or 0
     info = {
       "files": {}

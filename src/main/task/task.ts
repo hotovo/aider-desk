@@ -9,6 +9,8 @@ import {
   AIDER_MODES,
   AGENT_MODES,
   AgentProfile,
+  ConnectorMessage,
+  ConnectorMessageContent,
   ContextAssistantMessage,
   ContextFile,
   ContextMessage,
@@ -1057,10 +1059,7 @@ export class Task {
     prompt: string,
     promptContext: PromptContext = { id: uuidv4() },
     mode?: Mode,
-    messages: {
-      role: MessageRole;
-      content: string;
-    }[] = this.contextManager.toConnectorMessages(),
+    messages: ConnectorMessage[] = this.contextManager.toConnectorMessages(),
     files: ContextFile[] = this.contextManager.getContextFiles(),
     options?: AiderRunOptions,
   ): Promise<ResponseCompletedData[]> {
@@ -1948,11 +1947,12 @@ export class Task {
     return this.contextManager.getContextMessages();
   }
 
-  public async addRoleContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData) {
+  public async addRoleContextMessage(role: MessageRole, content: ConnectorMessageContent, usageReport?: UsageReportData) {
+    const preview = typeof content === 'string' ? content : extractTextContent(content);
     logger.debug('Adding role message to session:', {
       baseDir: this.project.baseDir,
       role,
-      content: content.substring(0, 30),
+      content: preview.substring(0, 30),
     });
 
     this.contextManager.addContextMessage(role, content, usageReport);
@@ -1966,11 +1966,12 @@ export class Task {
     }
   }
 
-  public sendAddMessage(role: MessageRole = MessageRole.User, content: string, acknowledge = true) {
+  public sendAddMessage(role: MessageRole = MessageRole.User, content: ConnectorMessageContent, acknowledge = true) {
+    const preview = typeof content === 'string' ? content : extractTextContent(content);
     logger.debug('Adding message:', {
       baseDir: this.project.baseDir,
       role,
-      content,
+      content: preview,
       acknowledge,
     });
     this.findMessageConnectors('add-message').forEach((connector) => connector.sendAddMessageMessage(role, content, acknowledge));
