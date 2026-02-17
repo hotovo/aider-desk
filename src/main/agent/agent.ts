@@ -1628,7 +1628,9 @@ export class Agent {
   ) {
     const contextCompactingThreshold =
       task.task.contextCompactingThreshold ?? this.store.getProjectSettings(task.getProjectDir())?.contextCompactingThreshold ?? 0;
-    const contextCompactionType = this.store.getSettings().taskSettings.contextCompactionType ?? ContextCompactionType.Compact;
+    const contextCompactionType = profile.isSubagent
+      ? ContextCompactionType.Compact
+      : (this.store.getSettings().taskSettings.contextCompactionType ?? ContextCompactionType.Compact);
     const usageReport = resultMessages[resultMessages.length - 1]?.usageReport;
     const maxTokens = this.modelManager.getModelSettings(profile.provider, profile.model)?.maxInputTokens;
 
