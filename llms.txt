@@ -2618,6 +2618,10 @@ File: src/common/locales/en.json
       "19": "Implement pagination logic in ProductList's fetchProducts..."
     },
     "questionPlaceholder": "...or suggest something else",
+    "queueTitle": "Queued Prompts",
+    "queuedPrompt": "Queued",
+    "removeQueuedPrompt": "Remove",
+    "sendQueuedPromptNow": "Send immediately",
     "answers": {
       "yes": "(Y)es",
       "no": "(N)o",
@@ -4300,6 +4304,10 @@ File: src/common/locales/zh.json
       "19": "在 ProductList 的 fetchProducts 方法中实现分页逻辑..."
     },
     "questionPlaceholder": "...或建议其他内容",
+    "queueTitle": "排队的提示",
+    "queuedPrompt": "排队",
+    "removeQueuedPrompt": "移除",
+    "sendQueuedPromptNow": "立即发送",
     "answers": {
       "yes": "(Y)是",
       "no": "(N)否",
@@ -5170,6 +5178,7 @@ import {
   ProviderModelsData,
   ProviderProfile,
   ProvidersUpdatedData,
+  QueuedPromptsUpdatedData,
   QuestionAnsweredData,
   QuestionData,
   ResponseChunkData,
@@ -5214,6 +5223,8 @@ export interface ApplicationAPI {
   redoLastUserPrompt: (baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string) => void;
   resumeTask: (baseDir: string, taskId: string) => void;
   answerQuestion: (baseDir: string, taskId: string, answer: string) => void;
+  removeQueuedPrompt: (baseDir: string, taskId: string, promptId: string) => void;
+  sendQueuedPromptNow: (baseDir: string, taskId: string, promptId: string) => void;
   loadInputHistory: (baseDir: string) => Promise<string[]>;
   isOpenDialogSupported: () => boolean;
   showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
@@ -5305,6 +5316,7 @@ export interface ApplicationAPI {
   addUpdateAutocompletionListener: (baseDir: string, taskId: string, callback: (data: AutocompletionData) => void) => () => void;
   addAskQuestionListener: (baseDir: string, taskId: string, callback: (data: QuestionData) => void) => () => void;
   addQuestionAnsweredListener: (baseDir: string, taskId: string, callback: (data: QuestionAnsweredData) => void) => () => void;
+  addQueuedPromptsUpdatedListener: (baseDir: string, taskId: string, callback: (data: QueuedPromptsUpdatedData) => void) => () => void;
   addUpdateAiderModelsListener: (baseDir: string, taskId: string, callback: (data: ModelsData) => void) => () => void;
   addCommandOutputListener: (baseDir: string, taskId: string, callback: (data: CommandOutputData) => void) => () => void;
   addTokensInfoListener: (baseDir: string, taskId: string, callback: (data: TokensInfoData) => void) => () => void;
@@ -5794,6 +5806,19 @@ export interface QuestionAnsweredData {
   question: QuestionData;
   answer: string;
   userInput?: string;
+}
+⋮----
+export interface QueuedPromptData {
+  id: string;
+  text: string;
+  mode: Mode;
+  timestamp: number;
+}
+⋮----
+export interface QueuedPromptsUpdatedData {
+  baseDir: string;
+  taskId: string;
+  queuedPrompts: QueuedPromptData[];
 }
 ⋮----
 export type ContextFileSourceType = 'companion' | 'aider' | 'app' | string;
@@ -6295,6 +6320,7 @@ export interface TaskStateData {
   files: ContextFile[];
   todoItems: TodoItem[];
   question: QuestionData | null;
+  queuedPrompts: QueuedPromptData[];
   workingMode: WorkingMode;
 }
 ⋮----
@@ -10838,6 +10864,8 @@ import {
   TaskCreatedData,
   UpdatedFile,
   UpdatedFilesUpdatedData,
+  QueuedPromptData,
+  QueuedPromptsUpdatedData,
 } from '@common/types';
 ⋮----
 import type { BmadStatus } from '@common/bmad-types';
@@ -10882,6 +10910,9 @@ sendQuestionAnswered(baseDir: string, taskId: string, question: QuestionData, an
 ⋮----
 // Autocompletion events
 sendUpdateAutocompletion(baseDir: string, taskId: string, words?: string[], allFiles?: string[]): void
+⋮----
+// Queue events
+sendQueuedPromptsUpdated(baseDir: string, taskId: string, queuedPrompts: QueuedPromptData[]): void
 ⋮----
 // Aider models events
 sendUpdateAiderModels(_baseDir: string, _taskId: string, modelsData: ModelsData): void
@@ -13709,6 +13740,10 @@ registerRoutes(router: Router): void
 ⋮----
 // Answer project question
 ⋮----
+// Remove queued prompt
+⋮----
+// Send queued prompt immediately
+⋮----
 // Update main model
 ⋮----
 // Update weak model
@@ -14781,6 +14816,7 @@ import {
   ModelsData,
   ProjectSettings,
   PromptContext,
+  QueuedPromptData,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -14956,7 +14992,11 @@ private async waitForCurrentAgentToFinish()
 ⋮----
 private resolveAgentRunPromises()
 ⋮----
+private isPromptRunning()
+⋮----
 public async runPrompt(prompt: string, mode: Mode = 'code', addToInputHistory = true, userMessageId = uuidv4()): Promise<ResponseCompletedData[]>
+⋮----
+// Queue the prompt for later execution
 ⋮----
 // Generate promptContext for this run
 ⋮----
@@ -14966,7 +15006,9 @@ public async savePromptOnly(prompt: string, addInputHistory = true): Promise<voi
 ⋮----
 // Add user message to context
 ⋮----
-public async runPromptInAider(prompt: string, promptContext: PromptContext, mode?: Mode): Promise<ResponseCompletedData[]>
+private async runNextQueuedPrompt(): Promise<ResponseCompletedData[]>
+⋮----
+public async runPromptInAider(prompt: string, promptContext: PromptContext, mode: Mode = 'code'): Promise<ResponseCompletedData[]>
 ⋮----
 // Detect files in prompt and ask to add them to context (only for aider modes)
 ⋮----
@@ -15214,6 +15256,14 @@ public interruptResponse(interruptId?: string)
 // Interrupt specific conflict resolution agent
 ⋮----
 // Default behavior: interrupt all agents
+⋮----
+// cancel the task state determination and set the task to ready for review
+⋮----
+public removeQueuedPrompt(promptId: string): void
+⋮----
+public async sendQueuedPromptNow(promptId: string): Promise<void>
+⋮----
+// interrupting to allow the next queued prompt to be sent
 ⋮----
 public applyEdits(edits: FileEdit[])
 ⋮----
@@ -16931,6 +16981,10 @@ async savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
 ⋮----
 answerQuestion(baseDir: string, taskId: string, answer: string): void
 ⋮----
+removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void
+⋮----
+async sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): Promise<void>
+⋮----
 runCommand(baseDir: string, taskId: string, command: string): void
 ⋮----
 async getCustomCommands(baseDir: string): Promise<CustomCommand[]>
@@ -17710,6 +17764,7 @@ import {
   ProjectStartedData,
   ProviderModelsData,
   ProvidersUpdatedData,
+  QueuedPromptsUpdatedData,
   QuestionAnsweredData,
   QuestionData,
   ResponseChunkData,
@@ -17862,6 +17917,7 @@ import {
   WorktreeIntegrationStatusUpdatedData,
   TaskCreatedData,
   UpdatedFilesUpdatedData,
+  QueuedPromptsUpdatedData,
   WorkflowExecutionResult,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
@@ -17882,6 +17938,7 @@ type EventDataMap = {
   'update-autocompletion': AutocompletionData;
   'ask-question': QuestionData;
   'question-answered': QuestionAnsweredData;
+  'queued-prompts-updated': QueuedPromptsUpdatedData;
   'update-aider-models': ModelsData;
   'command-output': CommandOutputData;
   'update-tokens-info': TokensInfoData;
@@ -17964,6 +18021,8 @@ savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
 redoLastUserPrompt(baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string): void
 resumeTask(baseDir: string, taskId: string): void
 answerQuestion(baseDir: string, taskId: string, answer: string): void
+removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void
+sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): void
 loadInputHistory(baseDir: string): Promise<string[]>
 isOpenDialogSupported(): boolean
 showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue>
@@ -18059,6 +18118,7 @@ addUpdateAutocompletionListener(baseDir: string, taskId: string, callback: (data
 addAskQuestionListener(baseDir: string, taskId: string, callback: (data: QuestionData) => void): () => void
 ⋮----
 addQuestionAnsweredListener(baseDir: string, taskId: string, callback: (data: QuestionAnsweredData) => void): () => void
+addQueuedPromptsUpdatedListener(baseDir: string, taskId: string, callback: (data: QueuedPromptsUpdatedData) => void): () => void
 addUpdateAiderModelsListener(baseDir: string, taskId: string, callback: (data: ModelsData) => void): () => void
 addCommandOutputListener(baseDir: string, taskId: string, callback: (data: CommandOutputData) => void): () => void
 addTokensInfoListener(baseDir: string, taskId: string, callback: (data: TokensInfoData) => void): () => void
@@ -24027,7 +24087,6 @@ type Props = {
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   shouldFocusPrompt?: boolean;
-  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -24534,7 +24593,7 @@ import {
 } from '@codemirror/autocomplete';
 import { EditorView, keymap } from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
-import { AGENT_MODES, Mode, PromptBehavior, QuestionData, SuggestionMode, TaskData } from '@common/types';
+import { AGENT_MODES, Mode, PromptBehavior, QueuedPromptData, QuestionData, SuggestionMode, TaskData } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Annotation, Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -24543,7 +24602,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { FaInfoCircle } from 'react-icons/fa';
-import { MdPlaylistRemove, MdSave, MdStop, MdMic, MdMicOff } from 'react-icons/md';
+import { MdPlaylistRemove, MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { VscTerminal } from 'react-icons/vsc';
 import { clsx } from 'clsx';
 ⋮----
@@ -24594,6 +24653,9 @@ type Props = {
   scrapeWeb: (url: string, filePath?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
+  queuedPrompts?: QueuedPromptData[];
+  removeQueuedPrompt?: (id: string) => void;
+  sendQueuedPromptNow?: (id: string) => void;
   interruptResponse: () => void;
   runCommand: (command: string) => void;
   runTests: (testCmd?: string) => void;
@@ -24662,13 +24724,13 @@ return false; // Allow default behavior (new line)
 ⋮----
 // Desktop behavior: submit or handle special cases
 ⋮----
+<button onClick=
+⋮----
 onClick=
 ⋮----
 className=
 ⋮----
 paste(event)
-⋮----
-data-tooltip-content=
 ⋮----
 <div className=
 ⋮----
@@ -26948,7 +27010,7 @@ import { useCallback, useEffect } from 'react';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import type { TokensInfoData, QuestionData, AutocompletionData, ModelsData, ContextFilesUpdatedData } from '@common/types';
+import type { AutocompletionData, ContextFilesUpdatedData, ModelsData, QuestionData, QueuedPromptsUpdatedData, TokensInfoData } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -28049,7 +28111,7 @@ export const useProjectProcessingState = (projectBaseDir: string)
 File: src/renderer/src/stores/taskStore.ts
 ================
 import { useShallow } from 'zustand/react/shallow';
-import { ContextFile, ModelsData, QuestionData, TodoItem, TokensInfoData } from '@common/types';
+import { ContextFile, ModelsData, QueuedPromptData, QuestionData, TodoItem, TokensInfoData } from '@common/types';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
@@ -28066,6 +28128,7 @@ export interface TaskState {
   contextFiles: ContextFile[];
   aiderModelsData: ModelsData | null;
   lastActiveAt: Date | null;
+  queuedPrompts: QueuedPromptData[];
 }
 ⋮----
 interface TaskStore {
@@ -28080,6 +28143,7 @@ interface TaskStore {
   setTokensInfo: (taskId: string, tokensInfo: TokensInfoData | null) => void;
   setQuestion: (taskId: string, question: QuestionData | null) => void;
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
+  setQueuedPrompts: (taskId: string, queuedPrompts: QueuedPromptData[]) => void;
   clearSession: (taskId: string, messagesOnly: boolean) => void;
 }
 ⋮----
@@ -30846,7 +30910,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.53.0-dev",
+  "version": "0.54.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
