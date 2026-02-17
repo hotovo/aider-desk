@@ -649,6 +649,7 @@ export class EventsHandler {
     } catch (error) {
       logger.error(`Error processing scraped web content for ${url}:`, error);
       task.addLogMessage('error', `Failed to save scraped content from ${url}:\n${error instanceof Error ? error.message : String(error)}`);
+      throw error;
     }
   }
 

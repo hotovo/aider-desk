@@ -17,6 +17,7 @@ import { ipcMain, clipboard } from 'electron';
 import { EventsHandler } from './events-handler';
 
 import { ServerController } from '@/server';
+import logger from '@/logger';
 
 export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) => {
   // Voice handlers
@@ -219,7 +220,12 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.handle('scrape-web', async (_, baseDir: string, taskId: string, url: string, filePath?: string) => {
-    await eventsHandler.scrapeWeb(baseDir, taskId, url, filePath);
+    try {
+      await eventsHandler.scrapeWeb(baseDir, taskId, url, filePath);
+    } catch (error) {
+      logger.error(`Error in scrape-web handler:`, error);
+      throw error;
+    }
   });
 
   ipcMain.handle('create-new-task', async (_, baseDir: string, params?: CreateTaskParams) => {

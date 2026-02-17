@@ -42,26 +42,93 @@ export class WebScraper {
       },
     });
 
+    let timeoutTimerId: NodeJS.Timeout | null = null;
+    const timers: NodeJS.Timeout[] = [];
+    const abortHandlers: (() => void)[] = [];
+
+    const clearAllTimers = () => {
+      if (timeoutTimerId) {
+        clearTimeout(timeoutTimerId);
+        timeoutTimerId = null;
+      }
+      timers.forEach((id) => clearTimeout(id));
+      timers.length = 0;
+    };
+
+    const removeAbortListeners = () => {
+      if (abortSignal) {
+        abortHandlers.forEach((handler) => abortSignal!.removeEventListener('abort', handler));
+        abortHandlers.length = 0;
+      }
+    };
+
+    const cleanupWindow = async (win: BrowserWindowType): Promise<void> => {
+      if (!win.isDestroyed()) {
+        const wc = win.webContents;
+        if (!wc.isDestroyed()) {
+          wc.removeAllListeners('render-process-gone');
+          wc.removeAllListeners('did-fail-load');
+        }
+        win.destroy();
+      }
+    };
+
     try {
       // Create timeout promise
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`Scraping timeout after ${timeout}ms`)), timeout);
+        timeoutTimerId = setTimeout(() => reject(new Error(`Scraping timeout after ${timeout}ms`)), timeout);
       });
 
       // Create abort promise if signal is provided
-      const abortPromise = abortSignal
-        ? new Promise<never>((_, reject) => {
-            abortSignal.addEventListener('abort', () => {
-              reject(new Error('The operation was aborted'));
-            });
-          })
-        : new Promise<never>(() => {});
+      const abortHandler = () => {
+        clearAllTimers();
+        removeAbortListeners();
+      };
+
+      let abortPromise: Promise<never>;
+      let abortReject: (reason?: unknown) => void;
+      if (abortSignal) {
+        abortHandlers.push(abortHandler);
+        abortSignal.addEventListener('abort', abortHandler);
+        abortPromise = new Promise<never>((_, reject) => {
+          abortReject = reject;
+          abortSignal!.addEventListener('abort', () => {
+            reject(new Error('The operation was aborted'));
+          });
+        });
+        abortHandlers.push(() => {
+          abortReject(new Error('The operation was aborted'));
+        });
+      } else {
+        abortPromise = new Promise<never>(() => {});
+      }
+
+      // Add crash handlers
+      const renderProcessGoneHandler = () => {
+        throw new Error('Browser window render process crashed');
+      };
+      const didFailLoadHandler = (_event: Electron.Event, errorCode: number, errorDescription: string) => {
+        throw new Error(`Failed to load: ${errorCode} - ${errorDescription}`);
+      };
+
+      window.webContents.on('render-process-gone', renderProcessGoneHandler);
+      window.webContents.on('did-fail-load', didFailLoadHandler);
+
+      abortHandlers.push(() => {
+        window.webContents.removeListener('render-process-gone', renderProcessGoneHandler);
+        window.webContents.removeListener('did-fail-load', didFailLoadHandler);
+      });
 
       // Load the URL with timeout and abort signal
       await Promise.race([window.loadURL(url), timeoutPromise, abortPromise]);
 
       // Wait for page to load completely with timeout and abort signal
-      await Promise.race([this.waitForPageLoad(window), timeoutPromise, abortPromise]);
+      await Promise.race([this.waitForPageLoad(window, timers), timeoutPromise, abortPromise]);
+
+      // Check if window is destroyed before executing JavaScript
+      if (window.isDestroyed() || window.webContents.isDestroyed()) {
+        throw new Error('Window was destroyed before content could be retrieved');
+      }
 
       // Get page content with timeout and abort signal
       const content = await Promise.race([
@@ -71,6 +138,11 @@ export class WebScraper {
         timeoutPromise,
         abortPromise,
       ]);
+
+      // Check if window is destroyed before getting content type
+      if (window.isDestroyed() || window.webContents.isDestroyed()) {
+        throw new Error('Window was destroyed before content type could be retrieved');
+      }
 
       // Get content type from headers with timeout and abort signal
       const contentType = await Promise.race([this.getContentType(window), timeoutPromise, abortPromise]);
@@ -90,23 +162,30 @@ export class WebScraper {
       }
       return `Error: ${error instanceof Error ? error.message : String(error)}`;
     } finally {
-      // Cleanup window
-      await this.cleanupWindow(window);
+      clearAllTimers();
+      removeAbortListeners();
+      await cleanupWindow(window);
     }
   }
 
-  private async waitForPageLoad(window: BrowserWindowType): Promise<void> {
+  private async waitForPageLoad(window: BrowserWindowType, timers: NodeJS.Timeout[]): Promise<void> {
     return new Promise((resolve) => {
-      if (!window) {
+      if (!window || window.isDestroyed()) {
         return resolve();
       }
 
       const checkLoadState = () => {
-        if (window!.webContents.isLoading()) {
-          setTimeout(checkLoadState, 100);
+        if (window.isDestroyed()) {
+          return resolve();
+        }
+
+        if (window.webContents.isLoading()) {
+          const timerId = setTimeout(checkLoadState, 100);
+          timers.push(timerId);
         } else {
           // Additional wait for dynamic content to load
-          setTimeout(resolve, 1000);
+          const timerId = setTimeout(resolve, 1000);
+          timers.push(timerId);
         }
       };
 
@@ -115,6 +194,10 @@ export class WebScraper {
   }
 
   private async getContentType(window: BrowserWindowType): Promise<string> {
+    if (window.isDestroyed() || window.webContents.isDestroyed()) {
+      return '';
+    }
+
     try {
       const contentType = await window.webContents.executeJavaScript(`
         (() => {
@@ -130,18 +213,23 @@ export class WebScraper {
     }
   }
 
-  private async cleanupWindow(window: BrowserWindowType): Promise<void> {
-    if (!window.isDestroyed()) {
-      window.close();
-    }
-  }
-
   private async scrapeWithFetch(url: string, timeout: number = 60000, abortSignal?: AbortSignal): Promise<string> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+    const abortHandlers: (() => void)[] = [];
+
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      if (abortSignal) {
+        abortHandlers.forEach((handler) => abortSignal!.removeEventListener('abort', handler));
+      }
+    };
+
     if (abortSignal) {
-      abortSignal.addEventListener('abort', () => controller.abort());
+      const abortHandler = () => controller.abort();
+      abortHandlers.push(abortHandler);
+      abortSignal.addEventListener('abort', abortHandler);
     }
 
     try {
@@ -169,11 +257,12 @@ export class WebScraper {
       // For other content types, return as text
       return await response.text();
     } catch (error) {
-      clearTimeout(timeoutId);
       if (isAbortError(error)) {
         return 'Operation was cancelled by user.';
       }
       return `Error: ${error instanceof Error ? error.message : String(error)}`;
+    } finally {
+      cleanup();
     }
   }
 
