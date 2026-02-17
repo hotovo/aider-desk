@@ -870,6 +870,16 @@ export class Agent {
       return resultMessages;
     }
 
+    // Get the base system prompt (project rules)
+    const baseSystemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
+
+    // Merge base prompt with custom systemPrompt if provided
+    if (systemPrompt && baseSystemPrompt) {
+      systemPrompt = `${baseSystemPrompt}\n\n${systemPrompt}`;
+    } else if (!systemPrompt) {
+      systemPrompt = baseSystemPrompt;
+    }
+
     const toolSet = await this.getAvailableTools(
       task,
       mode,
