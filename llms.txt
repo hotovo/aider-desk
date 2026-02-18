@@ -2620,6 +2620,7 @@ File: src/common/locales/en.json
     "questionPlaceholder": "...or suggest something else",
     "queueTitle": "Queued Prompts",
     "queuedPrompt": "Queued",
+    "queueMessage": "Queue message (Enter)",
     "removeQueuedPrompt": "Remove",
     "sendQueuedPromptNow": "Send immediately",
     "answers": {
@@ -4306,6 +4307,7 @@ File: src/common/locales/zh.json
     "questionPlaceholder": "...或建议其他内容",
     "queueTitle": "排队的提示",
     "queuedPrompt": "排队",
+    "queueMessage": "队列消息(Enter)",
     "removeQueuedPrompt": "移除",
     "sendQueuedPromptNow": "立即发送",
     "answers": {
@@ -7456,6 +7458,8 @@ async runAgent(
 // Create new abort controller for this run only if abortSignal is not provided
 ⋮----
 // add user message
+⋮----
+// Normalize messages for provider-specific requirements
 ⋮----
 // Lazily initialize MCP clients for the current task
 ⋮----
@@ -11637,12 +11641,13 @@ export const getDefaultUsageReport = (task: Task, provider: ProviderProfile, mod
 ================
 File: src/main/models/providers/gemini.ts
 ================
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, GeminiProvider, GeminiVoiceModel, isGeminiProvider, LlmProvider } from '@common/agent';
 import { createGoogleGenerativeAI, google, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import { Modality } from '@google/genai';
+import { v4 as uuidv4 } from 'uuid';
 ⋮----
-import type { LanguageModelUsage, ToolSet } from 'ai';
+import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -11689,6 +11694,8 @@ const getGeminiProviderTools = (provider: LlmProvider, model: Model): ToolSet =>
 ⋮----
 const getGeminiModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined =>
 ⋮----
+const normalizeGeminiMessages = (_provider: LlmProvider, _model: Model, messages: ModelMessage[]): ModelMessage[] =>
+⋮----
 const createGeminiVoiceSession = async (profile: ProviderProfile, settings: SettingsData): Promise<VoiceSession> =>
 ⋮----
 // Default to the model specified in requirements or fallback
@@ -11701,6 +11708,8 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
 // Core LLM functions
 ⋮----
 // Model discovery functions
+⋮----
+// Message normalization
 
 ================
 File: src/main/models/providers/gpustack.ts
@@ -12327,11 +12336,12 @@ export const getOpenRouterCacheControl = (profile: AgentProfile, llmProvider: Ll
 ================
 File: src/main/models/providers/requesty.ts
 ================
-import { AgentProfile, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
+import { AgentProfile, ContextUserMessage, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
 import { DEFAULT_MODEL_TEMPERATURE, isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
+import { v4 as uuidv4 } from 'uuid';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
+import type { LanguageModelUsage, ModelMessage } from 'ai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 ⋮----
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
@@ -12397,6 +12407,11 @@ export const getRequestyUsageReport = (
 ⋮----
 // Calculate cost internally with already deducted sentTokens
 ⋮----
+// === Message Normalization Functions ===
+export const normalizeRequestyMessages = (_provider: LlmProvider, model: Model, messages: ModelMessage[]): ModelMessage[] =>
+⋮----
+// Apply Gemini normalization for Google/Gemini models
+⋮----
 // === Configuration Helper Functions ===
 export const getRequestyCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl | undefined =>
 ⋮----
@@ -12407,6 +12422,8 @@ export const getRequestyCacheControl = (profile: AgentProfile, llmProvider: LlmP
 // Model discovery functions
 ⋮----
 // Configuration helpers
+⋮----
+// Message normalization
 
 ================
 File: src/main/models/providers/synthetic.ts
@@ -12607,7 +12624,7 @@ import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 ⋮----
 import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { JSONValue, LanguageModelUsage, ToolSet } from 'ai';
+import type { JSONValue, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 ⋮----
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
@@ -12771,6 +12788,13 @@ async getProviderTools(provider: ProviderProfile, modelId: string): Promise<Tool
    * Creates a voice session if supported by the provider
    */
 async createVoiceSession(provider: ProviderProfile): Promise<VoiceSession>
+⋮----
+/**
+   * Normalizes messages for provider-specific requirements
+   */
+normalizeMessages(provider: ProviderProfile, model: string | Model, messages: ModelMessage[]): ModelMessage[]
+⋮----
+// Resolve Model object
 
 ================
 File: src/main/models/types.ts
@@ -12779,7 +12803,7 @@ import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageRep
 import { LlmProvider, LlmProviderName } from '@common/agent';
 ⋮----
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModelUsage, ToolSet } from 'ai';
+import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 ⋮----
 import { Task } from '@/task';
 ⋮----
@@ -12875,6 +12899,11 @@ export interface LlmProviderStrategy {
    * Creates a voice session configuration if supported
    */
   createVoiceSession?: (profile: ProviderProfile, settings: SettingsData) => Promise<VoiceSession>;
+
+  /**
+   * Normalizes messages for provider-specific requirements
+   */
+  normalizeMessages?: (provider: LlmProvider, model: Model, messages: ModelMessage[]) => ModelMessage[];
 }
 ⋮----
 // === LLM Creation and Usage Functions ===
@@ -12923,6 +12952,10 @@ export interface LlmProviderStrategy {
 ⋮----
 /**
    * Creates a voice session configuration if supported
+   */
+⋮----
+/**
+   * Normalizes messages for provider-specific requirements
    */
 ⋮----
 export type LlmProviderRegistry = Record<LlmProviderName, LlmProviderStrategy>;
