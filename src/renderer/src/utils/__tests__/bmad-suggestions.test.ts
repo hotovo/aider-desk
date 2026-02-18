@@ -55,7 +55,7 @@ describe('generateSuggestions', () => {
         },
       };
 
-      const suggestions = generateSuggestions(completedWorkflows, detectedArtifacts, undefined, undefined);
+      const suggestions = generateSuggestions(completedWorkflows, detectedArtifacts, undefined);
 
       // Should still generate suggestions normally
       expect(suggestions).toContain('create-prd');
@@ -254,6 +254,44 @@ describe('generateSuggestions', () => {
         // create-ux-design is a PRD follow-up, should be early in the list
         expect(uxIndex).toBeLessThan(suggestions.length / 2);
       }
+    });
+
+    it('should return empty array when current workflow is not completed', () => {
+      const completedWorkflows = ['create-prd'];
+      const detectedArtifacts: WorkflowArtifacts['detectedArtifacts'] = {
+        'create-prd': {
+          path: '_bmad-output/planning-artifacts/prd.md',
+        },
+      };
+      const taskMetadata = {
+        bmadWorkflowId: 'create-architecture',
+      };
+
+      const suggestions = generateSuggestions(completedWorkflows, detectedArtifacts, undefined, taskMetadata);
+
+      // Should NOT show any suggestions when current workflow is in progress
+      expect(suggestions).toEqual([]);
+    });
+
+    it('should show follow-ups when current workflow is completed', () => {
+      const completedWorkflows = ['create-prd', 'create-architecture'];
+      const detectedArtifacts: WorkflowArtifacts['detectedArtifacts'] = {
+        'create-prd': {
+          path: '_bmad-output/planning-artifacts/prd.md',
+        },
+        'create-architecture': {
+          path: '_bmad-output/planning-artifacts/architecture.md',
+        },
+      };
+      const taskMetadata = {
+        bmadWorkflowId: 'create-architecture',
+      };
+
+      const suggestions = generateSuggestions(completedWorkflows, detectedArtifacts, undefined, taskMetadata);
+
+      // Should filter to create-architecture follow-ups since it's completed
+      expect(suggestions).toContain('create-epics-and-stories');
+      expect(suggestions).not.toContain('create-ux-design'); // not a follow-up of create-architecture
     });
   });
 

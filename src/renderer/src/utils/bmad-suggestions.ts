@@ -104,6 +104,12 @@ export const generateSuggestions = (
 
   // Get the currently executing workflow ID from metadata (if available)
   const currentWorkflowId = taskMetadata?.bmadWorkflowId as string | undefined;
+  const currentWorkflow = currentWorkflowId ? BMAD_WORKFLOWS.find((w) => w.id === currentWorkflowId) : undefined;
+
+  // If a workflow is currently executing but not completed, don't show any suggestions
+  if (currentWorkflow && !completedWorkflows.includes(currentWorkflowId!)) {
+    return [];
+  }
 
   // Collect followUps from completed workflows
   const followUpSet = new Set<string>();
@@ -135,9 +141,9 @@ export const generateSuggestions = (
   }
 
   // If we have a current workflow, filter to only include its follow-ups
-  if (currentWorkflowId) {
-    const currentWorkflow = BMAD_WORKFLOWS.find((w) => w.id === currentWorkflowId);
-    if (currentWorkflow?.followUps) {
+  // BUT only if the workflow is completed
+  if (currentWorkflow && completedWorkflows.includes(currentWorkflowId!)) {
+    if (currentWorkflow.followUps) {
       const currentFollowUps = new Set(currentWorkflow.followUps);
       followUpSet.forEach((item) => {
         if (!currentFollowUps.has(item)) {
@@ -156,10 +162,9 @@ export const generateSuggestions = (
     const workflowB = BMAD_WORKFLOWS.find((w) => w.id === b);
 
     // If current workflow has follow-ups, prioritize them
-    if (currentWorkflowId) {
-      const currentWorkflow = BMAD_WORKFLOWS.find((w) => w.id === currentWorkflowId);
-      const aIsFromCurrent = currentWorkflow?.followUps?.includes(a) ?? false;
-      const bIsFromCurrent = currentWorkflow?.followUps?.includes(b) ?? false;
+    if (currentWorkflow) {
+      const aIsFromCurrent = currentWorkflow.followUps?.includes(a) ?? false;
+      const bIsFromCurrent = currentWorkflow.followUps?.includes(b) ?? false;
 
       if (aIsFromCurrent && !bIsFromCurrent) {
         return -1;
