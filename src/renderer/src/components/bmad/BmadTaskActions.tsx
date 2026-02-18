@@ -61,7 +61,7 @@ export const BmadTaskActions = ({ projectDir, taskId, task, onRunPrompt }: Props
           {hasBmadActions
             ? bmadActions.map((action, index) => (
                 <Button key={`action-${index}`} variant="outline" color="primary" size="xs" onClick={() => handlePromptClick(action)}>
-                  {action.actionName}
+                  [{action.actionLetter}] {action.actionName}
                 </Button>
               ))
             : hasWorkflows
