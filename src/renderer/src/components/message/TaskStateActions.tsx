@@ -77,7 +77,7 @@ export const TaskStateActions = ({
   };
 
   // BMAD mode rendering
-  if (mode === 'bmad') {
+  if (mode === 'bmad' && state !== DefaultTaskState.Todo) {
     return <BmadTaskActions projectDir={projectDir} taskId={taskId} task={task} onRunPrompt={onRunPrompt} />;
   }
 
