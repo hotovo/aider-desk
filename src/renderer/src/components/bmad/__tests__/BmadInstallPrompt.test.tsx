@@ -60,6 +60,7 @@ describe('BmadInstallPrompt', () => {
     } as unknown as ReturnType<typeof useApi>);
     vi.mocked(useBmadState).mockReturnValue({
       status: null,
+      currentWorkflow: null,
       suggestedWorkflows: [],
       isLoading: false,
       error: null,

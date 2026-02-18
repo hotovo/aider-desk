@@ -6,6 +6,7 @@
 - making sure to include user message when using Gemini models to avoid signature error
 - added missing tooltips to prompt field icons
 - subagent now always uses Compact context compaction type
+- added current workflow information in BMAD mode
 
 ## [0.53.0]
 

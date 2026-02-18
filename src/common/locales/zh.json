@@ -1703,7 +1703,10 @@
       "noWorkflows": "没有可用的工作流",
       "execute": "执行",
       "entryPoint": "入口点 - 从这里开始您的项目",
-      "recommendedAfter": "完成后推荐"
+      "recommendedAfter": "完成后推荐",
+      "currentWorkflow": "当前工作流",
+      "changeWorkflow": "更改工作流",
+      "outputArtifacts": "输出文件"
     },
     "reset": {
       "bannerTitle": "重置工作流进度",

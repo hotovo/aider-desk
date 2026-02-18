@@ -1692,7 +1692,10 @@
       "noWorkflows": "No workflows available",
       "execute": "Execute",
       "entryPoint": "Entry point - start your project here",
-      "recommendedAfter": "Recommended after completing"
+      "recommendedAfter": "Recommended after completing",
+      "currentWorkflow": "Current Workflow",
+      "changeWorkflow": "Change Workflow",
+      "outputArtifacts": "Output Artifacts"
     },
     "reset": {
       "bannerTitle": "Reset Workflow Progress",

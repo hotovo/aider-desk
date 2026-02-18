@@ -14,6 +14,13 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock useApi hook
+vi.mock('@/contexts/ApiContext', () => ({
+  useApi: () => ({
+    openPath: vi.fn(),
+  }),
+}));
+
 // Mock Button component
 vi.mock('@/components/common/Button', () => ({
   Button: ({ children, onClick }: { children: React.ReactNode; onClick: () => void }) => <button onClick={onClick}>{children}</button>,
@@ -59,6 +66,7 @@ describe('TaskStateActions - BMAD Integration', () => {
     it('should render BMAD actions when mode is "bmad" in ReadyForReview state', () => {
       vi.spyOn(useBmadStateModule, 'useBmadState').mockReturnValue({
         status: createMockBmadStatus(),
+        currentWorkflow: null,
         suggestedWorkflows: [],
         isLoading: false,
         error: null,
@@ -132,6 +140,7 @@ describe('TaskStateActions - BMAD Integration', () => {
           availableWorkflows: [mockWorkflow],
           completedWorkflows: ['create-product-brief'], // Need completed workflows to show suggestions
         }),
+        currentWorkflow: null,
         suggestedWorkflows: ['product-brief'],
         isLoading: false,
         error: null,
@@ -169,6 +178,7 @@ describe('TaskStateActions - BMAD Integration', () => {
           availableWorkflows: [mockSuggestedWorkflow],
           completedWorkflows: ['product-brief'],
         }),
+        currentWorkflow: null,
         suggestedWorkflows: ['prd'],
         isLoading: false,
         error: null,
@@ -196,6 +206,7 @@ describe('TaskStateActions - BMAD Integration', () => {
     it('should handle error state gracefully', () => {
       vi.spyOn(useBmadStateModule, 'useBmadState').mockReturnValue({
         status: null,
+        currentWorkflow: null,
         suggestedWorkflows: [],
         isLoading: false,
         error: 'Failed to load BMAD status',
@@ -237,6 +248,7 @@ describe('TaskStateActions - BMAD Integration', () => {
           availableWorkflows: [mockWorkflow],
           completedWorkflows: ['create-product-brief'], // Need completed workflows to show suggestions
         }),
+        currentWorkflow: null,
         suggestedWorkflows: ['product-brief'],
         isLoading: false,
         error: null,
