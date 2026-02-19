@@ -38,7 +38,8 @@
     "test:mcp": "NODE_ENV=test vitest run --config vitest.config.mcp.ts",
     "test:watch": "concurrently \"npm run test:node -- --watch\" \"npm run test:web -- --watch\"",
     "test:coverage": "npm run test:node -- --coverage && npm run test:web -- --coverage",
-    "test:ui": "vitest --config vitest.config.web.ts --ui"
+    "test:ui": "vitest --config vitest.config.web.ts --ui",
+    "validate": "npm-run-all --parallel lint typecheck test"
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^3.0.73",
@@ -224,6 +225,7 @@
     "jsdom": "^27.3.0",
     "lint-staged": "^15.4.1",
     "node-fetch": "^3.3.2",
+    "npm-run-all": "^4.1.5",
     "prettier": "^3.3.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
