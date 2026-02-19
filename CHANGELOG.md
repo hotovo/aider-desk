@@ -7,6 +7,7 @@
 - added missing tooltips to prompt field icons
 - subagent now always uses Compact context compaction type
 - added current workflow information in BMAD mode
+- improved initial context for some BMAD workflows
 
 ## [0.53.0]
 

@@ -66,6 +66,9 @@ export class ContextPreparer {
       case 'brainstorming':
         await this.injectBrainstormingContext(context, status);
         break;
+      case 'sprint-planning':
+        await this.injectSprintPlanningContext(context, status);
+        break;
     }
   }
 
@@ -124,6 +127,47 @@ export class ContextPreparer {
       };
       context.contextMessages.push(userMessage);
     }
+  }
+
+  private async injectSprintPlanningContext(context: PreparedContext, _status: BmadStatus): Promise<void> {
+    const sprintStatusPath = path.join(this.projectDir, '_bmad-output/implementation-artifacts/sprint-status.yaml');
+    const epicsPath = path.join(this.projectDir, '_bmad-output/planning-artifacts/epics.md');
+
+    const sprintStatusExists = await fileExists(sprintStatusPath);
+    const epicsExists = await fileExists(epicsPath);
+
+    const messageParts: string[] = [];
+
+    messageParts.push('**Sprint Planning Context**\n');
+
+    if (sprintStatusExists) {
+      messageParts.push('- Existing sprint-status.yaml found at `_bmad-output/implementation-artifacts/sprint-status.yaml`');
+      messageParts.push('- Please preserve existing statuses when generating the new sprint-status.yaml');
+      messageParts.push("- Never downgrade status (e.g., don't change 'done' to 'ready-for-dev')");
+    } else {
+      messageParts.push('- No existing sprint-status.yaml found, creating new file');
+    }
+
+    if (epicsExists) {
+      messageParts.push('- Epics file found at `_bmad-output/planning-artifacts/epics.md`');
+    } else {
+      messageParts.push('- No epics file found at `_bmad-output/planning-artifacts/epics.md`');
+      messageParts.push('- Please search for epic files in the planning artifacts directory');
+    }
+
+    const userMessage: ContextUserMessage = {
+      id: uuidv4(),
+      role: 'user',
+      content: messageParts.join('\n'),
+      promptContext: {
+        id: 'sprint-planning-context',
+        group: {
+          id: 'sprint-planning',
+        },
+      },
+    };
+
+    context.contextMessages.push(userMessage);
   }
 
   private async injectQuickDevContext(context: PreparedContext, status: BmadStatus): Promise<void> {
