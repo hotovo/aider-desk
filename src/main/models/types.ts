@@ -37,7 +37,15 @@ export interface LlmProviderStrategy {
    * Creates a LanguageModel instance for the given provider and model
    * Each provider is responsible for loading its own credentials using getEffectiveEnvironmentVariable
    */
-  createLlm: (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string, toolSet?: ToolSet, systemPrompt?: string, providerMetadata?: unknown) => LanguageModelV2 | Promise<LanguageModelV2>;
+  createLlm: (
+    profile: ProviderProfile,
+    model: Model,
+    settings: SettingsData,
+    projectDir: string,
+    toolSet?: ToolSet,
+    systemPrompt?: string,
+    providerMetadata?: unknown,
+  ) => LanguageModelV2 | Promise<LanguageModelV2>;
 
   /**
    * Generates usage reports with provider-specific metadata and calculates cost internally
@@ -95,6 +103,13 @@ export interface LlmProviderStrategy {
    * Normalizes messages for provider-specific requirements
    */
   normalizeMessages?: (provider: LlmProvider, model: Model, messages: ModelMessage[]) => ModelMessage[];
+
+  /**
+   * Determines if an error is retryable for this provider
+   * Returns false for non-retryable errors (e.g., auth issues, invalid requests)
+   * Returns true for transient errors that may succeed on retry
+   */
+  isRetryable?: (error: unknown) => boolean;
 }
 
 export type LlmProviderRegistry = Record<LlmProviderName, LlmProviderStrategy>;

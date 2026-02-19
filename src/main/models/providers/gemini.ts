@@ -304,6 +304,18 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
   }
 };
 
+const isGeminiRetryable = (error: unknown): boolean => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
+  // Gemini: thought_signature errors (occurs when resuming from another model's conversation) - non-retryable
+  if (errorMessage.includes('thought_signature')) {
+    return false;
+  }
+
+  // All other errors are retryable by default
+  return true;
+};
+
 // === Complete Strategy Implementation ===
 export const geminiProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
@@ -322,4 +334,7 @@ export const geminiProviderStrategy: LlmProviderStrategy = {
 
   // Message normalization
   normalizeMessages: normalizeGeminiMessages,
+
+  // Error handling
+  isRetryable: isGeminiRetryable,
 };

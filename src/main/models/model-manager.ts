@@ -814,4 +814,18 @@ export class ModelManager {
 
     return strategy.normalizeMessages(provider.provider, modelObj, messages);
   }
+
+  /**
+   * Determines if an error is retryable for the given provider and model
+   * Defaults to true (retryable) if the provider doesn't implement isRetryable
+   */
+  isRetryable(provider: ProviderProfile, _modelId: string, error: unknown): boolean {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy?.isRetryable) {
+      // Default to retryable if provider doesn't implement this method
+      return true;
+    }
+
+    return strategy.isRetryable(error);
+  }
 }

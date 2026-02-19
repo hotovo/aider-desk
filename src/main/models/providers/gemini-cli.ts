@@ -1,10 +1,10 @@
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isGeminiCliProvider } from '@common/agent';
+import { type LanguageModelUsage, type ToolSet } from 'ai';
 
 import { getDefaultUsageReport } from './default';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { LanguageModelUsage, ToolSet } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { Task } from '@/task/task';
@@ -117,6 +117,18 @@ const getGeminiCliProviderParameters = (): Record<string, unknown> => {
   return {};
 };
 
+const isGeminiCliRetryable = (error: unknown): boolean => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
+  // Gemini CLI: Project ID required for workspace accounts - non-retryable
+  if (errorMessage.includes('GOOGLE_CLOUD_PROJECT') || errorMessage.includes('GOOGLE_CLOUD_PROJECT_ID')) {
+    return false;
+  }
+
+  // All other errors are retryable by default
+  return true;
+};
+
 export const geminiCliProviderStrategy: LlmProviderStrategy = {
   createLlm: createGeminiCliLlm,
   getUsageReport: getGeminiCliUsageReport,
@@ -124,4 +136,5 @@ export const geminiCliProviderStrategy: LlmProviderStrategy = {
   hasEnvVars: hasGeminiCliEnvVars,
   getAiderMapping: getGeminiCliAiderMapping,
   getProviderParameters: getGeminiCliProviderParameters,
+  isRetryable: isGeminiCliRetryable,
 };
