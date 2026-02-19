@@ -271,10 +271,12 @@ src/
           index.ts
           McpServerSelectorItem.tsx
         bmad/
+          ArtifactsSection.tsx
           BmadInstallPrompt.tsx
           BmadTaskActions.tsx
           BmadWelcomeSection.tsx
           BmadWorkflowPage.tsx
+          CurrentWorkflowHeader.tsx
           PathInfoCard.tsx
           SuggestedWorkflowCard.tsx
           useBmadState.ts
@@ -282,6 +284,7 @@ src/
           WorkflowItem.tsx
           WorkflowList.tsx
           WorkflowPhaseSection.tsx
+          WorkflowSelector.tsx
         common/
           DiffViewer/
             CompactDiffViewer.tsx
@@ -3077,7 +3080,10 @@ File: src/common/locales/en.json
       "noWorkflows": "No workflows available",
       "execute": "Execute",
       "entryPoint": "Entry point - start your project here",
-      "recommendedAfter": "Recommended after completing"
+      "recommendedAfter": "Recommended after completing",
+      "currentWorkflow": "Current Workflow",
+      "changeWorkflow": "Change Workflow",
+      "outputArtifacts": "Output Artifacts"
     },
     "reset": {
       "bannerTitle": "Reset Workflow Progress",
@@ -4801,7 +4807,10 @@ File: src/common/locales/zh.json
       "noWorkflows": "没有可用的工作流",
       "execute": "执行",
       "entryPoint": "入口点 - 从这里开始您的项目",
-      "recommendedAfter": "完成后推荐"
+      "recommendedAfter": "完成后推荐",
+      "currentWorkflow": "当前工作流",
+      "changeWorkflow": "更改工作流",
+      "outputArtifacts": "输出文件"
     },
     "reset": {
       "bannerTitle": "重置工作流进度",
@@ -18372,6 +18381,27 @@ const loadTools = async () =>
 // eslint-disable-next-line no-console
 
 ================
+File: src/renderer/src/components/bmad/ArtifactsSection.tsx
+================
+import { DetectedArtifacts } from '@common/bmad-types';
+import { useState, MouseEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FiFile, FiExternalLink, FiChevronDown } from 'react-icons/fi';
+import { clsx } from 'clsx';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type Props = {
+  detectedArtifacts: DetectedArtifacts;
+};
+⋮----
+const handleOpenArtifact = async (e: MouseEvent<HTMLButtonElement>, path: string) =>
+⋮----
+const handleToggle = () =>
+⋮----
+const getFileName = (path: string) =>
+
+================
 File: src/renderer/src/components/bmad/BmadInstallPrompt.tsx
 ================
 import { MouseEvent, useState } from 'react';
@@ -18403,11 +18433,16 @@ import { RiAlertLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { TaskData } from '@common/types';
 import { clsx } from 'clsx';
+import { MouseEvent, useRef, useState } from 'react';
+import { FiEdit2, FiExternalLink, FiFile } from 'react-icons/fi';
 ⋮----
-import { useBmadState, type BmadAction } from './useBmadState';
+import { type BmadAction, useBmadState } from './useBmadState';
+import { WorkflowSelector } from './WorkflowSelector';
 ⋮----
 import { Button } from '@/components/common/Button';
 import { SuggestedWorkflowCard } from '@/components/bmad/SuggestedWorkflowCard';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { useApi } from '@/contexts/ApiContext';
 ⋮----
 type Props = {
   projectDir: string;
@@ -18416,7 +18451,29 @@ type Props = {
   onRunPrompt?: (prompt: string) => void;
 };
 ⋮----
+// Get artifact for current workflow if exists
+⋮----
 const handlePromptClick = (action: BmadAction) =>
+⋮----
+const handleChangeWorkflow = () =>
+⋮----
+const handleCloseWorkflowSelector = () =>
+⋮----
+const handleOpenArtifact = async (e: MouseEvent<HTMLButtonElement>, path: string) =>
+⋮----
+const getFileName = (path: string) =>
+⋮----
+{/* Info Row - Current Workflow with Edit and Artifact */}
+⋮----
+{/* Workflow Badge */}
+⋮----
+{/* Edit button inside badge */}
+⋮----
+{/* Artifact link */}
+⋮----
+onClick=
+⋮----
+{/* Actions Row - BMAD Actions or Follow-up Workflows */}
 ⋮----
 <div className=
 ⋮----
@@ -18476,6 +18533,22 @@ onClick=
 title=
 
 ================
+File: src/renderer/src/components/bmad/CurrentWorkflowHeader.tsx
+================
+import { WorkflowMetadata, WorkflowPhase, IncompleteWorkflowMetadata } from '@common/bmad-types';
+import { useTranslation } from 'react-i18next';
+import { FiEdit2 } from 'react-icons/fi';
+import { clsx } from 'clsx';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  workflow: WorkflowMetadata;
+  incompleteWorkflow?: IncompleteWorkflowMetadata;
+  onChangeWorkflow: () => void;
+};
+
+================
 File: src/renderer/src/components/bmad/PathInfoCard.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -18520,7 +18593,7 @@ const handleExecuteWorkflow = async (e: MouseEvent<HTMLButtonElement>) =>
 File: src/renderer/src/components/bmad/useBmadState.ts
 ================
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BmadStatus } from '@common/bmad-types';
+import { BmadStatus, WorkflowMetadata } from '@common/bmad-types';
 import { TaskData } from '@common/types';
 ⋮----
 import { isResponseMessage, Message } from '@/types/message';
@@ -18537,6 +18610,7 @@ export const extractBmadActions = (lastAssistantMessage: Message | undefined): B
 ⋮----
 type Result = {
   status: BmadStatus | null;
+  currentWorkflow: WorkflowMetadata | null;
   suggestedWorkflows: string[];
   bmadActions?: BmadAction[];
   isLoading: boolean;
@@ -18674,6 +18748,36 @@ const handleToggle = () =>
 className=
 ⋮----
 <div className=
+
+================
+File: src/renderer/src/components/bmad/WorkflowSelector.tsx
+================
+import { WorkflowMetadata, WorkflowPhase } from '@common/bmad-types';
+import { useRef, useState, useEffect, RefObject } from 'react';
+import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+import { CgSpinner } from 'react-icons/cg';
+import { FiCheck } from 'react-icons/fi';
+⋮----
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { useApi } from '@/contexts/ApiContext';
+import { showErrorNotification } from '@/utils/notifications';
+⋮----
+type Props = {
+  workflows: WorkflowMetadata[];
+  currentWorkflowId?: string;
+  completedWorkflowIds: string[];
+  inProgressWorkflowIds: string[];
+  projectDir: string;
+  taskId: string;
+  taskMetadata?: Record<string, unknown>;
+  triggerRef: RefObject<HTMLDivElement | null>;
+  isOpen: boolean;
+  onClose: () => void;
+};
+⋮----
+const handleSelectWorkflow = async (workflow: WorkflowMetadata) =>
 
 ================
 File: src/renderer/src/components/common/DiffViewer/CompactDiffViewer.tsx
@@ -30184,6 +30288,8 @@ export const generateSuggestions = (
 ⋮----
 // Get the currently executing workflow ID from metadata (if available)
 ⋮----
+// If a workflow is currently executing but not completed, don't show any suggestions
+⋮----
 // Collect followUps from completed workflows
 ⋮----
 // Collect follow-ups from all completed workflows
@@ -30197,6 +30303,7 @@ export const generateSuggestions = (
 // If on Full path, also suggest Quick path entry point if not already suggested/completed
 ⋮----
 // If we have a current workflow, filter to only include its follow-ups
+// BUT only if the workflow is completed
 ⋮----
 // Filter out already completed workflows
 ⋮----
