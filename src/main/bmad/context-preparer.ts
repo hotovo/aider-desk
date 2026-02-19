@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { glob } from 'glob';
 import { ContextMessage, ContextUserMessage } from '@common/types';
 import { fileExists } from '@common/utils';
+import * as yaml from 'yaml';
 
 import type { BmadStatus } from '@common/bmad-types';
 
@@ -68,6 +69,15 @@ export class ContextPreparer {
         break;
       case 'sprint-planning':
         await this.injectSprintPlanningContext(context, status);
+        break;
+      case 'create-story':
+        await this.injectCreateStoryContext(context, status);
+        break;
+      case 'dev-story':
+        await this.injectDevStoryContext(context, status);
+        break;
+      case 'code-review':
+        await this.injectCodeReviewContext(context, status);
         break;
     }
   }
@@ -163,6 +173,257 @@ export class ContextPreparer {
         id: 'sprint-planning-context',
         group: {
           id: 'sprint-planning',
+        },
+      },
+    };
+
+    context.contextMessages.push(userMessage);
+  }
+
+  private async injectCreateStoryContext(context: PreparedContext, _status: BmadStatus): Promise<void> {
+    const sprintStatusPath = path.join(this.projectDir, '_bmad-output/implementation-artifacts/sprint-status.yaml');
+
+    const sprintStatusExists = await fileExists(sprintStatusPath);
+    const messageParts: string[] = [];
+
+    messageParts.push('**Create Story Context**\n');
+
+    if (!sprintStatusExists) {
+      messageParts.push('- No sprint-status.yaml found');
+      messageParts.push('- Please run sprint-planning workflow first to create the sprint status file');
+      const userMessage: ContextUserMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content: messageParts.join('\n'),
+        promptContext: {
+          id: 'create-story-context',
+          group: {
+            id: 'create-story',
+          },
+        },
+      };
+      context.contextMessages.push(userMessage);
+      return;
+    }
+
+    try {
+      const sprintStatusContent = await fs.readFile(sprintStatusPath, 'utf8');
+      const sprintStatus = yaml.parse(sprintStatusContent) as { development_status: Record<string, string> };
+
+      const developmentStatus = sprintStatus.development_status || {};
+
+      let nextBacklogStory: string | null = null;
+      let nextBacklogStoryStatus: string | null = null;
+
+      for (const [key, value] of Object.entries(developmentStatus)) {
+        if (key === 'project' || key === 'project_key' || key === 'tracking_system' || key === 'story_location') {
+          continue;
+        }
+
+        if (key.startsWith('epic-') && key.endsWith('-retrospective')) {
+          continue;
+        }
+
+        if (/^epic-\d+$/.test(key)) {
+          continue;
+        }
+
+        if (value === 'backlog') {
+          nextBacklogStory = key;
+          nextBacklogStoryStatus = value;
+          break;
+        }
+      }
+
+      if (nextBacklogStory) {
+        messageParts.push(`- Next story to create: \`${nextBacklogStory}\``);
+        messageParts.push(`- Current status: \`${nextBacklogStoryStatus}\``);
+        messageParts.push('- Please create a story file for this user story');
+      } else {
+        messageParts.push('- No stories with "backlog" status found');
+        messageParts.push('- All stories may already be created or no stories exist');
+      }
+    } catch (error) {
+      logger.error('Failed to read or parse sprint-status.yaml', { error: error instanceof Error ? error.message : String(error) });
+      messageParts.push('- Error reading sprint-status.yaml');
+    }
+
+    const userMessage: ContextUserMessage = {
+      id: uuidv4(),
+      role: 'user',
+      content: messageParts.join('\n'),
+      promptContext: {
+        id: 'create-story-context',
+        group: {
+          id: 'create-story',
+        },
+      },
+    };
+
+    context.contextMessages.push(userMessage);
+  }
+
+  private async injectDevStoryContext(context: PreparedContext, _status: BmadStatus): Promise<void> {
+    const sprintStatusPath = path.join(this.projectDir, '_bmad-output/implementation-artifacts/sprint-status.yaml');
+
+    const sprintStatusExists = await fileExists(sprintStatusPath);
+    const messageParts: string[] = [];
+
+    messageParts.push('**Dev Story Context**\n');
+
+    if (!sprintStatusExists) {
+      messageParts.push('- No sprint-status.yaml found');
+      messageParts.push('- Please run sprint-planning workflow first to create the sprint status file');
+      const userMessage: ContextUserMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content: messageParts.join('\n'),
+        promptContext: {
+          id: 'dev-story-context',
+          group: {
+            id: 'dev-story',
+          },
+        },
+      };
+      context.contextMessages.push(userMessage);
+      return;
+    }
+
+    try {
+      const sprintStatusContent = await fs.readFile(sprintStatusPath, 'utf8');
+      const sprintStatus = yaml.parse(sprintStatusContent) as { development_status: Record<string, string> };
+
+      const developmentStatus = sprintStatus.development_status || {};
+
+      let nextReadyForDevStory: string | null = null;
+      let nextReadyForDevStoryStatus: string | null = null;
+
+      for (const [key, value] of Object.entries(developmentStatus)) {
+        if (key === 'project' || key === 'project_key' || key === 'tracking_system' || key === 'story_location') {
+          continue;
+        }
+
+        if (/^epic-\d+$/.test(key)) {
+          continue;
+        }
+
+        if (key.endsWith('-retrospective')) {
+          continue;
+        }
+
+        if (value === 'ready-for-dev') {
+          nextReadyForDevStory = key;
+          nextReadyForDevStoryStatus = value;
+          break;
+        }
+      }
+
+      if (nextReadyForDevStory) {
+        messageParts.push(`- Next story to develop: \`${nextReadyForDevStory}\``);
+        messageParts.push(`- Current status: \`${nextReadyForDevStoryStatus}\``);
+        messageParts.push('- Please read the story file and implement it');
+      } else {
+        messageParts.push('- No stories with "ready-for-dev" status found');
+        messageParts.push('- All stories may already be in progress, done, or no stories exist');
+        messageParts.push('- Please run create-story workflow to create more stories if needed');
+      }
+    } catch (error) {
+      logger.error('Failed to read or parse sprint-status.yaml', { error: error instanceof Error ? error.message : String(error) });
+      messageParts.push('- Error reading sprint-status.yaml');
+    }
+
+    const userMessage: ContextUserMessage = {
+      id: uuidv4(),
+      role: 'user',
+      content: messageParts.join('\n'),
+      promptContext: {
+        id: 'dev-story-context',
+        group: {
+          id: 'dev-story',
+        },
+      },
+    };
+
+    context.contextMessages.push(userMessage);
+  }
+
+  private async injectCodeReviewContext(context: PreparedContext, _status: BmadStatus): Promise<void> {
+    const sprintStatusPath = path.join(this.projectDir, '_bmad-output/implementation-artifacts/sprint-status.yaml');
+
+    const sprintStatusExists = await fileExists(sprintStatusPath);
+    const messageParts: string[] = [];
+
+    messageParts.push('**Code Review Context**\n');
+
+    if (!sprintStatusExists) {
+      messageParts.push('- No sprint-status.yaml found');
+      messageParts.push('- Please run sprint-planning workflow first to create the sprint status file');
+      const userMessage: ContextUserMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content: messageParts.join('\n'),
+        promptContext: {
+          id: 'code-review-context',
+          group: {
+            id: 'code-review',
+          },
+        },
+      };
+      context.contextMessages.push(userMessage);
+      return;
+    }
+
+    try {
+      const sprintStatusContent = await fs.readFile(sprintStatusPath, 'utf8');
+      const sprintStatus = yaml.parse(sprintStatusContent) as { development_status: Record<string, string> };
+
+      const developmentStatus = sprintStatus.development_status || {};
+
+      let nextReviewStory: string | null = null;
+      let nextReviewStoryStatus: string | null = null;
+
+      for (const [key, value] of Object.entries(developmentStatus)) {
+        if (key === 'project' || key === 'project_key' || key === 'tracking_system' || key === 'story_location') {
+          continue;
+        }
+
+        if (/^epic-\d+$/.test(key)) {
+          continue;
+        }
+
+        if (key.endsWith('-retrospective')) {
+          continue;
+        }
+
+        if (value === 'review') {
+          nextReviewStory = key;
+          nextReviewStoryStatus = value;
+          break;
+        }
+      }
+
+      if (nextReviewStory) {
+        messageParts.push(`- Next story to review: \`${nextReviewStory}\``);
+        messageParts.push(`- Current status: \`${nextReviewStoryStatus}\``);
+        messageParts.push('- Please read the story file and review the implementation');
+      } else {
+        messageParts.push('- No stories with "review" status found');
+        messageParts.push('- All stories may already be done or no stories are ready for review');
+        messageParts.push('- Please run dev-story workflow to implement more stories if needed');
+      }
+    } catch (error) {
+      logger.error('Failed to read or parse sprint-status.yaml', { error: error instanceof Error ? error.message : String(error) });
+      messageParts.push('- Error reading sprint-status.yaml');
+    }
+
+    const userMessage: ContextUserMessage = {
+      id: uuidv4(),
+      role: 'user',
+      content: messageParts.join('\n'),
+      promptContext: {
+        id: 'code-review-context',
+        group: {
+          id: 'code-review',
         },
       },
     };

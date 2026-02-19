@@ -40,34 +40,6 @@ const getPrerequisiteScore = (workflow: WorkflowMetadata | undefined, detectedAr
   return (satisfiedCount / totalRequired) * 100;
 };
 
-const STORY_STATUS_TO_WORKFLOW: Record<StoryStatus, string | null> = {
-  [StoryStatus.Backlog]: 'create-story',
-  [StoryStatus.ReadyForDev]: 'dev-story',
-  [StoryStatus.InProgress]: null,
-  [StoryStatus.Review]: 'code-review',
-  [StoryStatus.Done]: null,
-};
-
-/**
- * Get workflow suggestions based on story statuses in sprint-status.yaml
- */
-const getSprintStatusSuggestions = (sprintStatus: SprintStatusData | undefined): string[] => {
-  if (!sprintStatus?.storyStatuses.length) {
-    return [];
-  }
-
-  const suggestions = new Set<string>();
-
-  for (const status of sprintStatus.storyStatuses) {
-    const workflow = STORY_STATUS_TO_WORKFLOW[status];
-    if (workflow) {
-      suggestions.add(workflow);
-    }
-  }
-
-  return Array.from(suggestions);
-};
-
 /**
  * Determine if the user is on the Quick Flow path based on completed workflows
  */
@@ -106,13 +78,51 @@ export const generateSuggestions = (
   const currentWorkflowId = taskMetadata?.bmadWorkflowId as string | undefined;
   const currentWorkflow = currentWorkflowId ? BMAD_WORKFLOWS.find((w) => w.id === currentWorkflowId) : undefined;
 
+  // Collect followUps from completed workflows
+  const followUpSet = new Set<string>();
+
+  // Add suggestions based on current workflow and sprint status
+  if (currentWorkflow) {
+    if (currentWorkflow.id === 'create-story' && sprintStatus?.storyStatuses.some((status) => status === StoryStatus.ReadyForDev)) {
+      return ['dev-story'];
+    }
+
+    if (currentWorkflow.id === 'dev-story') {
+      if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Review)) {
+        followUpSet.add('code-review');
+      }
+      if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Backlog)) {
+        followUpSet.add('create-story');
+      }
+
+      return Array.from(followUpSet);
+    }
+
+    if (currentWorkflow.id === 'code-review') {
+      if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Backlog)) {
+        followUpSet.add('create-story');
+      }
+      if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.ReadyForDev)) {
+        followUpSet.add('dev-story');
+      }
+      return Array.from(followUpSet);
+    }
+  } else {
+    if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Backlog)) {
+      followUpSet.add('create-story');
+    }
+    if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.ReadyForDev)) {
+      followUpSet.add('dev-story');
+    }
+    if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Review)) {
+      followUpSet.add('code-review');
+    }
+  }
+
   // If a workflow is currently executing but not completed, don't show any suggestions
   if (currentWorkflow && !completedWorkflows.includes(currentWorkflowId!)) {
     return [];
   }
-
-  // Collect followUps from completed workflows
-  const followUpSet = new Set<string>();
 
   // Collect follow-ups from all completed workflows
   completedWorkflows.forEach((workflowId) => {
@@ -121,10 +131,6 @@ export const generateSuggestions = (
       workflow.followUps.forEach((followUp) => followUpSet.add(followUp));
     }
   });
-
-  // Add suggestions based on story statuses in sprint-status.yaml
-  const sprintSuggestions = getSprintStatusSuggestions(sprintStatus);
-  sprintSuggestions.forEach((suggestion) => followUpSet.add(suggestion));
 
   // Ensure both paths are represented in suggestions
   const onQuickPath = isOnQuickPath(completedWorkflows);

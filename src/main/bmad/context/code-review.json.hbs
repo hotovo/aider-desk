@@ -4,9 +4,12 @@
     "role": "user",
     "content": "Execute the code-review workflow by following these steps:\n\nIT IS CRITICAL THAT YOU FOLLOW THESE STEPS - while staying in character as the current agent persona you may have loaded:\n\n<steps CRITICAL=\"TRUE\">\n1. Always LOAD the FULL _bmad/core/tasks/workflow.xml\n2. READ its entire contents - this is the CORE OS for EXECUTING the specific workflow-config _bmad/bmm/workflows/4-implementation/code-review/workflow.yaml\n3. Pass the yaml path _bmad/bmm/workflows/4-implementation/code-review/workflow.yaml as 'workflow-config' parameter to the workflow.xml instructions\n4. Follow workflow.xml instructions EXACTLY as written to process and follow the specific workflow config and its instructions\n5. Save outputs after EACH section when generating any documents from templates\n</steps>",
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review",
+        "name": "Code Review",
+        "color": "#ef4444",
+        "finished": true
       }
     }
   },
@@ -31,9 +34,9 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review"
       }
     }
   },
@@ -52,9 +55,9 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review"
       }
     }
   },
@@ -79,9 +82,9 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review"
       }
     }
   },
@@ -100,9 +103,9 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review"
       }
     }
   },
@@ -127,9 +130,9 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review"
       }
     }
   },
@@ -148,9 +151,9 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review"
       }
     }
   },
@@ -175,9 +178,9 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review"
       }
     }
   },
@@ -196,9 +199,9 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8"
+        "id": "code-review"
       }
     }
   },
@@ -212,12 +215,59 @@
       }
     ],
     "promptContext": {
-      "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+      "id": "code-review",
       "group": {
-        "id": "e9019b26-4a71-4ed8-88f4-04848cd2bfd8",
+        "id": "code-review"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Now let me read the sprint status file to find stories ready for code review:"
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_sprint_status_001",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad-output/implementation-artifacts/sprint-status.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "e8d9cce7-d4ef-6025-8e4f-f1a44edb1856",
+    "promptContext": {
+      "id": "code-review",
+      "group": {
+        "id": "code-review",
         "name": "Code Review",
-        "color": "#ef4444",
-        "finished": true
+        "color": "#ef4444"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_sprint_status_001",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad-output/implementation-artifacts/sprint-status.yaml"}}
+        }
+      }
+    ],
+    "id": "f9f0ddf8-e5f0-7136-9f5g-g2b55fec2967",
+    "promptContext": {
+      "id": "code-review",
+      "group": {
+        "id": "code-review"
       }
     }
   }
