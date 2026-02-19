@@ -255,6 +255,10 @@
     },
     "claudeAgentSdkAuthRequired": "This provider requires Claude Code CLI installation and authentication. Install from https://claude.com/product/claude-code and run `claude login` to authenticate.",
     "claudeAgentSdkAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
+    "geminiCliAuthRequired": "This provider requires Gemini CLI installation and authentication. Install from https://geminicli.com and run `gemini` to authenticate.",
+    "geminiCliAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
+    "projectId": "Project ID",
+    "projectIdPlaceholder": "Optional. Required for organization or enterprise accounts.",
     "overrides": {
       "title": "Provider Overrides",
       "resetToDefaults": "Clear overrides",
@@ -387,6 +391,7 @@
     "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "gemini-cli": "Gemini CLI",
     "groq": "Groq",
     "kimi-plan": "Kimi Coding Plan",
     "gpustack": "GPUStack",

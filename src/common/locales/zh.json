@@ -254,6 +254,10 @@
     },
     "claudeAgentSdkAuthRequired": "此提供商需要安装和认证 Claude Code CLI。请从 https://claude.com/product/claude-code 安装并运行 `claude login` 进行认证。",
     "claudeAgentSdkAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "geminiCliAuthRequired": "此提供商需要安装和认证 Gemini CLI。请从 https://geminicli.com 安装并运行 `gemini` 进行认证。",
+    "geminiCliAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "projectId": "项目 ID",
+    "projectIdPlaceholder": "可选。组织和企业账户需要此项。",
     "overrides": {
       "title": "提供商覆盖",
       "resetToDefaults": "清除覆盖",
@@ -384,6 +388,7 @@
     "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "gemini-cli": "Gemini CLI",
     "groq": "Groq",
     "kimi-plan": "Kimi Coding Plan",
     "gpustack": "GPUStack",

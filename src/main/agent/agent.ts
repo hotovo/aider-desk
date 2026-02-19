@@ -748,7 +748,7 @@ export class Agent {
         modelName: profile.model,
       });
 
-      const model = this.modelManager.createLlm(
+      const model = await this.modelManager.createLlm(
         provider,
         profile.model,
         settings,
@@ -1046,9 +1046,26 @@ export class Agent {
           }
         }
 
+        // Helper to detect non-retryable provider errors
+        const isNonRetryableProviderError = (error: unknown, _providerName?: string): boolean => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+
+          // Gemini CLI: Project ID required for workspace accounts
+          if (errorMessage.includes('GOOGLE_CLOUD_PROJECT') || errorMessage.includes('GOOGLE_CLOUD_PROJECT_ID')) {
+            return true;
+          }
+
+          // Gemini: thought_signature errors (occurs when resuming from another model's conversation)
+          if (errorMessage.includes('thought_signature')) {
+            return true;
+          }
+
+          return false;
+        };
+
         if (iterationError) {
           logger.error('Error during prompt:', iterationError);
-          if (iterationError instanceof APICallError && iterationError.isRetryable) {
+          if (iterationError instanceof APICallError && iterationError.isRetryable && !isNonRetryableProviderError(iterationError, task.task.provider)) {
             // try again
             continue;
           } else {
@@ -1117,6 +1134,7 @@ export class Agent {
       }
 
       logger.error('Error running prompt:', error);
+
       if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
         task.addLogMessage('error', `${error.message}. Configure credentials in the Model Library.`, false, promptContext);
       } else {
@@ -1380,7 +1398,7 @@ export class Agent {
     }
 
     const settings = this.store.getSettings();
-    const model = this.modelManager.createLlm(provider, agentProfile.model, settings, projectDir, undefined, systemPrompt, undefined);
+    const model = await this.modelManager.createLlm(provider, agentProfile.model, settings, projectDir, undefined, systemPrompt, undefined);
     const providerOptions = this.modelManager.getProviderOptions(provider, agentProfile.model);
     const providerParameters = this.modelManager.getProviderParameters(provider, agentProfile.model);
 

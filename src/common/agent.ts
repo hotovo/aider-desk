@@ -42,6 +42,7 @@ export type LlmProviderName =
   | 'claude-agent-sdk'
   | 'deepseek'
   | 'gemini'
+  | 'gemini-cli'
   | 'gpustack'
   | 'groq'
   | 'kimi-plan'
@@ -85,6 +86,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'claude-agent-sdk',
   'deepseek',
   'gemini',
+  'gemini-cli',
   'gpustack',
   'groq',
   'kimi-plan',
@@ -212,6 +214,12 @@ export interface ClaudeAgentSdkProvider extends LlmProviderBase {
 }
 export const isClaudeAgentSdkProvider = (provider: LlmProviderBase): provider is ClaudeAgentSdkProvider => provider.name === 'claude-agent-sdk';
 
+export interface GeminiCliProvider extends LlmProviderBase {
+  name: 'gemini-cli';
+  projectId?: string;
+}
+export const isGeminiCliProvider = (provider: LlmProviderBase): provider is GeminiCliProvider => provider.name === 'gemini-cli';
+
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -299,6 +307,7 @@ export type LlmProvider =
   | AnthropicCompatibleProvider
   | AzureProvider
   | GeminiProvider
+  | GeminiCliProvider
   | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
@@ -326,6 +335,7 @@ export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> =
   'claude-agent-sdk': 'sonnet',
   deepseek: 'deepseek-chat',
   gemini: 'gemini-3-pro',
+  'gemini-cli': 'gemini-2.5-flash',
   groq: 'moonshotai/kimi-k2-instruct-0905',
   openai: 'gpt-5.2',
   openrouter: 'anthropic/claude-sonnet-4.5',
@@ -742,6 +752,12 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         name: 'minimax',
         apiKey: '',
       } satisfies MinimaxProvider;
+      break;
+    case 'gemini-cli':
+      provider = {
+        name: 'gemini-cli',
+        projectId: '',
+      } satisfies GeminiCliProvider;
       break;
     default:
       // For any other provider, create a base structure. This might need more specific handling if new providers are added.
