@@ -339,6 +339,9 @@ export class WorktreeManager {
 
       return worktrees;
     } catch (error) {
+      if (error instanceof Error && error.message.includes('not a git repository')) {
+        return [];
+      }
       throw new Error(`Failed to list worktrees: ${error instanceof Error ? error.message : String(error)}`);
     }
   }

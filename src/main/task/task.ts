@@ -1385,14 +1385,23 @@ export class Task {
   }
 
   public async addToGit(absolutePath: string, promptContext?: PromptContext): Promise<void> {
+    if (!this.git) {
+      return;
+    }
+
     try {
+      // Check if the project is a git repository before attempting to add
+      const isRepo = await this.git.checkIsRepo();
+      if (!isRepo) {
+        return;
+      }
+
       // Add the new file to git staging
-      await this.git?.add(absolutePath);
+      await this.git.add(absolutePath);
       await this.updateAutocompletionData(undefined, true);
     } catch (gitError) {
       const gitErrorMessage = gitError instanceof Error ? gitError.message : String(gitError);
       this.addLogMessage('warning', `Failed to add new file ${absolutePath} to git staging area: ${gitErrorMessage}`, false, promptContext);
-      // Continue even if git add fails, as the file was created successfully
     }
   }
 
