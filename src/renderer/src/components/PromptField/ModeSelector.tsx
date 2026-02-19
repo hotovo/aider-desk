@@ -17,16 +17,16 @@ const MODE_ITEMS: ItemConfig<Mode>[] = [
     tooltipKey: 'modeTooltip.agent',
   },
   {
-    value: 'code',
-    icon: CgTerminal,
-    labelKey: 'mode.code',
-    tooltipKey: 'modeTooltip.code',
-  },
-  {
     value: 'bmad',
     icon: FiLayers,
     labelKey: 'mode.bmad',
     tooltipKey: 'modeTooltip.bmad',
+  },
+  {
+    value: 'code',
+    icon: CgTerminal,
+    labelKey: 'mode.code',
+    tooltipKey: 'modeTooltip.code',
   },
   {
     value: 'ask',
