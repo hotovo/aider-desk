@@ -28,7 +28,6 @@ import {
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
-  TaskContext,
   TaskData,
   TaskStateData,
   TaskStateEmoji,
@@ -235,86 +234,6 @@ export class Task {
       }
       // make sure we always have the most recent project baseDir, in case the task was migrated from another path
       this.task.baseDir = this.project.baseDir;
-    }
-
-    // Migrate missing task-level settings from project settings
-    await this.migrateFromProjectSettings();
-
-    // Migrate task state based on last message in context
-    await this.migrateTaskState();
-  }
-
-  /**
-   * @deprecated Migrate missing task-level settings from project settings
-   */
-  private async migrateFromProjectSettings() {
-    const projectSettings = this.project.getProjectSettings();
-
-    if (!this.task.mainModel || !this.task.currentMode) {
-      this.task.currentMode = projectSettings.currentMode;
-      this.task.mainModel = projectSettings.mainModel;
-      this.task.weakModel = projectSettings.weakModel;
-      this.task.architectModel = projectSettings.architectModel;
-      this.task.reasoningEffort = projectSettings.reasoningEffort;
-      this.task.thinkingTokens = projectSettings.thinkingTokens;
-      this.task.contextCompactingThreshold = projectSettings.contextCompactingThreshold;
-      this.task.weakModelLocked = projectSettings.weakModelLocked ?? false;
-
-      await this.saveTask(undefined, false);
-    }
-  }
-
-  /**
-   * @deprecated Migrate task state based on last message in context
-   */
-  private async migrateTaskState() {
-    // Skip if state is already set
-    if (this.task.state) {
-      return;
-    }
-
-    const contextPath = path.join(this.getProjectDir(), AIDER_DESK_TASKS_DIR, this.taskId, 'context.json');
-
-    if (!(await fileExists(contextPath))) {
-      logger.debug('No existing task context found for state migration', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-      });
-      return;
-    }
-
-    try {
-      const content = await fs.readFile(contextPath, 'utf8');
-      const contextData = JSON.parse(content) as TaskContext;
-      const messages = contextData.contextMessages || [];
-
-      if (messages.length === 0) {
-        logger.debug('No messages found in context for state migration', {
-          baseDir: this.project.baseDir,
-          taskId: this.taskId,
-        });
-        return;
-      }
-
-      const lastMessage = messages[messages.length - 1];
-
-      // Set state based on last message role
-      const newState = lastMessage.role === MessageRole.User ? DefaultTaskState.Todo : DefaultTaskState.ReadyForReview;
-
-      logger.info('Migrated task state', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-        lastMessageRole: lastMessage.role,
-        newState,
-      });
-
-      await this.saveTask({ state: newState }, false);
-    } catch (error) {
-      logger.error('Failed to migrate task state', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
     }
   }
 
@@ -1385,14 +1304,23 @@ export class Task {
   }
 
   public async addToGit(absolutePath: string, promptContext?: PromptContext): Promise<void> {
+    if (!this.git) {
+      return;
+    }
+
     try {
+      // Check if the project is a git repository before attempting to add
+      const isRepo = await this.git.checkIsRepo();
+      if (!isRepo) {
+        return;
+      }
+
       // Add the new file to git staging
-      await this.git?.add(absolutePath);
+      await this.git.add(absolutePath);
       await this.updateAutocompletionData(undefined, true);
     } catch (gitError) {
       const gitErrorMessage = gitError instanceof Error ? gitError.message : String(gitError);
       this.addLogMessage('warning', `Failed to add new file ${absolutePath} to git staging area: ${gitErrorMessage}`, false, promptContext);
-      // Continue even if git add fails, as the file was created successfully
     }
   }
 

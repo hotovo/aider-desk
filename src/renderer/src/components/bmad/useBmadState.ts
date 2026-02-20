@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BmadStatus } from '@common/bmad-types';
+import { BmadStatus, WorkflowMetadata } from '@common/bmad-types';
 import { TaskData } from '@common/types';
 
 import { isResponseMessage, Message } from '@/types/message';
@@ -16,6 +16,7 @@ const BMAD_ACTIONS: Array<{ letter: string; label: string }> = [
   { letter: 'Y', label: 'Yes' },
   { letter: 'N', label: 'No' },
   { letter: 'C', label: 'Continue' },
+  { letter: 'C', label: 'Complete' },
   { letter: 'E', label: 'Edit' },
   { letter: 'Q', label: 'Questions' },
   { letter: 'A', label: 'Advanced Elicitation' },
@@ -48,6 +49,7 @@ export const extractBmadActions = (lastAssistantMessage: Message | undefined): B
 
 type Result = {
   status: BmadStatus | null;
+  currentWorkflow: WorkflowMetadata | null;
   suggestedWorkflows: string[];
   bmadActions?: BmadAction[];
   isLoading: boolean;
@@ -66,6 +68,14 @@ export const useBmadState = ({ projectDir, task }: UseBmadStateParams): Result =
   const [error, setError] = useState<string | null>(null);
   const api = useApi();
   const messages = useTaskMessages(task?.id || '');
+
+  const currentWorkflow = useMemo((): WorkflowMetadata | null => {
+    if (!status || !task?.metadata?.bmadWorkflowId) {
+      return null;
+    }
+    const workflowId = task.metadata.bmadWorkflowId as string;
+    return status.availableWorkflows.find((w) => w.id === workflowId) ?? null;
+  }, [status, task?.metadata?.bmadWorkflowId]);
 
   const suggestedWorkflows = useMemo(() => {
     if (!status) {
@@ -145,6 +155,7 @@ export const useBmadState = ({ projectDir, task }: UseBmadStateParams): Result =
 
   return {
     status,
+    currentWorkflow,
     suggestedWorkflows,
     bmadActions,
     isLoading,

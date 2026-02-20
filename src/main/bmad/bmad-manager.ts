@@ -127,15 +127,24 @@ export class BmadManager {
         }
       }
 
-      const completedWorkflows: string[] = [];
-
-      if (storyStatuses.length > 0 && storyStatuses.every((status) => status === StoryStatus.Done)) {
-        completedWorkflows.push('dev-story', 'code-review');
+      const completedWorkflows: string[] = ['sprint-planning'];
+      if (storyStatuses.length === 0) {
+        return { storyStatuses, completedWorkflows };
       }
 
-      if (storyStatuses.length > 0 && !storyStatuses.includes(StoryStatus.Backlog)) {
+      if (!storyStatuses.includes(StoryStatus.Backlog)) {
         completedWorkflows.push('create-story');
+
+        if (!storyStatuses.includes(StoryStatus.ReadyForDev)) {
+          completedWorkflows.push('dev-story');
+
+          if (!storyStatuses.includes(StoryStatus.Review)) {
+            completedWorkflows.push('code-review');
+          }
+        }
       }
+
+      logger.info('Parsed sprint-status.yaml', { storyStatuses, completedWorkflows });
 
       return { storyStatuses, completedWorkflows };
     } catch {
@@ -232,62 +241,68 @@ export class BmadManager {
 
           // Determine completion status using workflow.totalSteps from registry
           const workflowTotalSteps = workflow.totalSteps;
-          const stepsCompletedNumbers = stepsCompleted?.map((s, i) => this.parseStepNumber(s, i)) || [];
-          const maxCompletedStep = stepsCompletedNumbers.length > 0 ? Math.max(...stepsCompletedNumbers) : 0;
 
-          // Workflow is complete if:
-          // 1. No stepsCompleted in frontmatter (legacy/simple artifact) - assume complete
-          // 2. stepsCompleted exists and max step >= totalSteps from registry
-          // 3. For quick-spec workflow: status is 'ready-for-dev'
-          // 4. For quick-dev workflow: status (lowercase) contains 'complete' or 'done'
-          const isQuickSpecReadyForDevStatus = id === 'quick-spec' && status === 'ready-for-dev';
-          const statusLower = status?.toLowerCase() || '';
-          const isQuickDevCompletedByStatus = id === 'quick-dev' && (statusLower.includes('complete') || statusLower.includes('done'));
+          if (workflowTotalSteps > 0) {
+            const stepsCompletedNumbers = stepsCompleted?.map((s, i) => this.parseStepNumber(s, i)) || [];
+            const maxCompletedStep = stepsCompletedNumbers.length > 0 ? Math.max(...stepsCompletedNumbers) : 0;
 
-          // quick-dev uses status field only for completion, ignores stepsCompleted
-          const isLegacyComplete = !stepsCompleted && id !== 'quick-dev';
-          const isStepsComplete = id === 'quick-dev' ? false : maxCompletedStep >= workflowTotalSteps;
-          const isFullyCompleted = isLegacyComplete || isStepsComplete || isQuickSpecReadyForDevStatus || isQuickDevCompletedByStatus;
+            // Workflow is complete if:
+            // 1. No stepsCompleted in frontmatter (legacy/simple artifact) - assume complete
+            // 2. stepsCompleted exists and max step >= totalSteps from registry
+            // 3. For quick-spec workflow: status is 'ready-for-dev'
+            // 4. For quick-dev workflow: status (lowercase) contains 'complete' or 'done'
+            const isQuickSpecReadyForDevStatus = id === 'quick-spec' && status === 'ready-for-dev';
+            const statusLower = status?.toLowerCase() || '';
+            const isQuickDevCompletedByStatus = id === 'quick-dev' && (statusLower.includes('complete') || statusLower.includes('done'));
 
-          logger.debug('Workflow completion status', {
-            workflowId: id,
-            stepsCompleted,
-            maxCompletedStep,
-            workflowTotalSteps,
-            status,
-            isLegacyComplete,
-            isStepsComplete,
-            isQuickSpecReadyForDevStatus,
-            isQuickDevCompletedByStatus,
-            isFullyCompleted,
-          });
+            // quick-dev uses status field only for completion, ignores stepsCompleted
+            const isLegacyComplete = !stepsCompleted && id !== 'quick-dev';
+            const isStepsComplete = id === 'quick-dev' ? false : maxCompletedStep >= workflowTotalSteps;
+            const isFullyCompleted = isLegacyComplete || isStepsComplete || isQuickSpecReadyForDevStatus || isQuickDevCompletedByStatus;
 
-          if (isFullyCompleted) {
-            completedWorkflows.push(id);
-          } else {
-            if (id === 'quick-dev' && detectedArtifacts['quick-spec']?.status === 'ready-for-dev') {
-              // quick-dev is not in progress if quick-spec is ready-for-dev
-              continue;
-            }
+            logger.debug('Workflow completion status', {
+              workflowId: id,
+              stepsCompleted,
+              maxCompletedStep,
+              workflowTotalSteps,
+              status,
+              isLegacyComplete,
+              isStepsComplete,
+              isQuickSpecReadyForDevStatus,
+              isQuickDevCompletedByStatus,
+              isFullyCompleted,
+            });
 
-            // Workflow is in progress
-            inProgressWorkflows.push(id);
+            if (isFullyCompleted) {
+              completedWorkflows.push(id);
+            } else {
+              if (id === 'quick-dev' && detectedArtifacts['quick-spec']?.status === 'ready-for-dev') {
+                // quick-dev is not in progress if quick-spec is ready-for-dev
+                continue;
+              }
 
-            // Also add to incompleteWorkflows for resume functionality
-            try {
-              const stats = await fsPromises.stat(artifactPath);
-              const nextStep = stepsCompletedNumbers.length === 0 ? 1 : maxCompletedStep + 1;
+              // Workflow is in progress
+              inProgressWorkflows.push(id);
 
-              incompleteWorkflows.push({
-                workflowId: id,
-                artifactPath,
-                stepsCompleted: stepsCompletedNumbers,
-                nextStep,
-                lastModified: stats.mtime,
-                ...(frontmatterError && { corrupted: true, corruptionError: frontmatterError }),
-              });
-            } catch {
-              // Failed to get file stats - still mark as in progress but skip incompleteWorkflows entry
+              // Also add to incompleteWorkflows for resume functionality
+              try {
+                const stats = await fsPromises.stat(artifactPath);
+                const nextStep = stepsCompletedNumbers.length === 0 ? 1 : maxCompletedStep + 1;
+
+                incompleteWorkflows.push({
+                  workflowId: id,
+                  artifactPath,
+                  stepsCompleted: stepsCompletedNumbers,
+                  nextStep,
+                  lastModified: stats.mtime,
+                  ...(frontmatterError && {
+                    corrupted: true,
+                    corruptionError: frontmatterError,
+                  }),
+                });
+              } catch {
+                // Failed to get file stats - still mark as in progress but skip incompleteWorkflows entry
+              }
             }
           }
         }

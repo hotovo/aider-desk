@@ -5,6 +5,10 @@
 - added support for message queue while task is processing
 - making sure to include user message when using Gemini models to avoid signature error
 - added missing tooltips to prompt field icons
+- subagent now always uses Compact context compaction type
+- added current workflow information in BMAD mode
+- improved initial context for some BMAD workflows
+- git add is not used when the project is not a git repository
 
 ## [0.53.0]
 
