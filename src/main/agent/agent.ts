@@ -588,7 +588,7 @@ export class Agent {
         if (value !== null && typeof value === 'object') {
           if (Array.isArray(value)) {
             // Process arrays (e.g., anyOf, oneOf, allOf, enum items)
-            result[key] = value.map((item) => (typeof item === 'object' ? processObject(item as Record<string, unknown>) : item));
+            result[key] = value.map((item) => (item !== null && typeof item === 'object' ? processObject(item as Record<string, unknown>) : item));
           } else {
             // Process nested objects (e.g., properties, items, additionalProperties)
             result[key] = processObject(value as Record<string, unknown>);
