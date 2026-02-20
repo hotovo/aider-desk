@@ -752,6 +752,7 @@ class Connector:
     self.thinking_tokens = thinking_tokens
     self.confirm_before_edit = confirm_before_edit
     self.models_info = None
+    self._initialized = False
 
     try:
       self.loop = asyncio.get_event_loop()
@@ -874,8 +875,8 @@ class Connector:
     async def connect():
       await self.on_connect()
 
-    @self.sio.on("message")
-    async def on_message(data):
+    @self.sio.event
+    async def message(data):
       await self.on_message(data)
 
     @self.sio.event
@@ -888,6 +889,11 @@ class Connector:
 
   async def on_connect(self):
     """Handle connection event."""
+    # Guard against duplicate initialization (can happen if event fires and we also call explicitly)
+    if self._initialized:
+      return
+
+    self._initialized = True
     self.coder.io.tool_output("---- AIDER CONNECTOR CONNECTED TO AIDER DESK ----")
 
     await self.send_action({
@@ -936,6 +942,8 @@ class Connector:
     """Handle disconnection event."""
     self.coder.io.tool_output("AIDER CONNECTOR DISCONNECTED FROM AIDER DESK")
 
+    self._initialized = False
+
     # Shutdown prompt executor
     if self.prompt_executor:
       await self.prompt_executor.shutdown()
@@ -951,7 +959,14 @@ class Connector:
 
     for attempt in range(max_retries):
       try:
+        # Reset initialized flag before each connection attempt
+        # This ensures on_connect runs properly after reconnection
+        self._initialized = False
         await self.sio.connect(self.server_url)
+        # Explicitly call on_connect after successful connection
+        # This ensures init message is sent even if the event handler doesn't fire
+        # (which can happen on reconnection after namespace errors)
+        await self.on_connect()
         return  # Connection successful
       except Exception as e:
         if attempt == max_retries - 1:
@@ -960,7 +975,7 @@ class Connector:
 
         # Calculate delay with exponential backoff
         delay = min(base_delay * (2 ** attempt), max_delay)
-        sys.stderr.write(f"Connection refused by the server. Retrying in {delay:.1f}s... (attempt {attempt + 1}/{max_retries})\n")
+        sys.stderr.write(f"Connection refused by the server: {e}. Retrying in {delay:.1f}s... (attempt {attempt + 1}/{max_retries})\n")
         sys.stderr.flush()
         await asyncio.sleep(delay)
 

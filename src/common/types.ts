@@ -99,6 +99,8 @@ export const AGENT_MODES: Mode[] = ['agent', 'bmad'];
 
 export const AIDER_MODES: Mode[] = ['code', 'ask', 'architect', 'context'];
 
+export const AIDER_COMMANDS: string[] = ['commit', 'map', 'map-refresh', 'tokens', 'test'];
+
 export interface AiderRunOptions {
   autoApprove?: boolean;
   denyCommands?: boolean;

@@ -62,7 +62,9 @@ export class ConnectorManager {
           baseDir: connector?.baseDir,
         });
         this.eventManager.unsubscribe(socket);
-        this.removeConnector(socket);
+        if (connector) {
+          this.removeConnector(socket);
+        }
       });
     });
 
@@ -77,7 +79,7 @@ export class ConnectorManager {
 
   private processMessage = (socket: Socket, message: Message) => {
     try {
-      logger.debug('Received message from client', { action: message.action });
+      logger.info('Received message from client', { action: message.action });
       logger.debug('Message:', {
         message: JSON.stringify(message).slice(0, 1000),
       });
@@ -88,6 +90,18 @@ export class ConnectorManager {
           taskId: message.taskId,
           listenTo: message.listenTo,
         });
+
+        // Check if there's an existing connector with the same baseDir and taskId
+        // This can happen on reconnection when the old connector wasn't properly cleaned up
+        const existingConnector = this.connectors.find((c) => c.baseDir === message.baseDir && c.taskId === message.taskId);
+        if (existingConnector) {
+          logger.info('Removing existing connector before creating new one', {
+            baseDir: message.baseDir,
+            taskId: message.taskId,
+          });
+          this.removeConnector(existingConnector.socket);
+        }
+
         const connector = new Connector(socket, message.baseDir, message.taskId, message.source, message.listenTo, message.inputHistoryFile);
         this.connectors.push(connector);
 

@@ -9,6 +9,7 @@
 - added current workflow information in BMAD mode
 - improved initial context for some BMAD workflows
 - git add is not used when the project is not a git repository
+- agent with Aider tools and aider specific commands now properly start the aider connector
 
 ## [0.53.0]
 

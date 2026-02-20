@@ -264,6 +264,10 @@ export class AiderManager {
   }
 
   public async waitForStart(): Promise<void> {
+    if (!this.isStarted()) {
+      await this.start();
+    }
+
     await this.createAiderStartPromise();
   }
 
