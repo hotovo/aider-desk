@@ -567,7 +567,7 @@ export class BmadManager {
       }
 
       if (!task.task.name) {
-        await task.saveTask({ name: workflow.name });
+        await task.saveTask({ name: preparedContext.taskName ?? workflow.name });
       }
 
       // Store workflow ID in task metadata

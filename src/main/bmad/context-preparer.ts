@@ -17,6 +17,7 @@ export interface PreparedContext {
   contextMessages: ContextMessage[];
   contextFiles: string[];
   execute: boolean;
+  taskName?: string;
 }
 
 /**
@@ -239,6 +240,7 @@ export class ContextPreparer {
         messageParts.push(`- Next story to create: \`${nextBacklogStory}\``);
         messageParts.push(`- Current status: \`${nextBacklogStoryStatus}\``);
         messageParts.push('- Please create a story file for this user story');
+        context.taskName = `[Create] ${nextBacklogStory}`;
       } else {
         messageParts.push('- No stories with "backlog" status found');
         messageParts.push('- All stories may already be created or no stories exist');
@@ -322,6 +324,7 @@ export class ContextPreparer {
         messageParts.push(`- Next story to develop: \`${nextReadyForDevStory}\``);
         messageParts.push(`- Current status: \`${nextReadyForDevStoryStatus}\``);
         messageParts.push('- Please read the story file and implement it');
+        context.taskName = `[Dev] ${nextReadyForDevStory}`;
       } else {
         messageParts.push('- No stories with "ready-for-dev" status found');
         messageParts.push('- All stories may already be in progress, done, or no stories exist');
@@ -406,6 +409,7 @@ export class ContextPreparer {
         messageParts.push(`- Next story to review: \`${nextReviewStory}\``);
         messageParts.push(`- Current status: \`${nextReviewStoryStatus}\``);
         messageParts.push('- Please read the story file and review the implementation');
+        context.taskName = `[Review] ${nextReviewStory}`;
       } else {
         messageParts.push('- No stories with "review" status found');
         messageParts.push('- All stories may already be done or no stories are ready for review');

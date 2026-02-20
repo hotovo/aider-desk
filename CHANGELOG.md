@@ -10,6 +10,7 @@
 - improved initial context for some BMAD workflows
 - git add is not used when the project is not a git repository
 - agent with Aider tools and aider specific commands now properly start the aider connector
+- task name is now based on user story name when using BMAD create-story, dev-story and code-review workflows
 
 ## [0.53.0]
 
