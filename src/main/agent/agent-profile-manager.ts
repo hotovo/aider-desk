@@ -393,9 +393,11 @@ export class AgentProfileManager {
       enabledServers: loadedProfile.enabledServers ?? [],
       customInstructions: loadedProfile.customInstructions ?? '',
       toolApprovals: {
+        ...DEFAULT_AGENT_PROFILE.toolApprovals,
         ...loadedProfile.toolApprovals,
       },
       toolSettings: {
+        ...DEFAULT_AGENT_PROFILE.toolSettings,
         ...loadedProfile.toolSettings,
       },
       subagent: {

@@ -1,9 +1,10 @@
 import { AgentProfile, GenericTool, ToolApprovalState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { POWER_TOOL_BASH, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { POWER_TOOL_BASH, POWER_TOOL_FILE_DELETE, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { GenericToolItem } from './GenericToolItem';
 import { BashToolItem } from './BashToolItem';
+import { FileDeleteToolItem } from './FileDeleteToolItem';
 
 import { Accordion } from '@/components/common/Accordion';
 import { Checkbox } from '@/components/common/Checkbox';
@@ -55,6 +56,11 @@ export const GenericToolGroupItem = ({ name, tools, profile, onApprovalChange, o
               {tools.map((tool) => {
                 if (tool.name === POWER_TOOL_BASH) {
                   return <BashToolItem key={tool.name} tool={tool} profile={profile} onApprovalChange={onApprovalChange} onProfileChange={onProfileChange} />;
+                }
+                if (tool.name === POWER_TOOL_FILE_DELETE) {
+                  return (
+                    <FileDeleteToolItem key={tool.name} tool={tool} profile={profile} onApprovalChange={onApprovalChange} onProfileChange={onProfileChange} />
+                  );
                 }
 
                 return <GenericToolItem key={tool.name} tool={tool} profile={profile} onApprovalChange={onApprovalChange} />;
