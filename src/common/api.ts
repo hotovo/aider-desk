@@ -50,6 +50,7 @@ import {
   UserMessageData,
   VersionsInfo,
   VoiceSession,
+  WorkflowExecutionOptions,
   WorkflowExecutionResult,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
@@ -246,7 +247,7 @@ export interface ApplicationAPI {
   // BMAD operations
   installBmad: (projectDir: string) => Promise<{ success: boolean; message?: string }>;
   getBmadStatus: (projectDir: string) => Promise<BmadStatus>;
-  executeWorkflow: (projectDir: string, taskId: string, workflowId: string, asSubtask?: boolean) => Promise<WorkflowExecutionResult>;
+  executeWorkflow: (projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions) => Promise<WorkflowExecutionResult>;
   resetBmadWorkflow: (projectDir: string) => Promise<{ success: boolean; message?: string }>;
   addBmadStatusChangedListener: (baseDir: string, callback: (status: BmadStatus) => void) => () => void;
 }

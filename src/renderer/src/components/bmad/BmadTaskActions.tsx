@@ -2,7 +2,7 @@ import { RiAlertLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { TaskData } from '@common/types';
 import { clsx } from 'clsx';
-import { MouseEvent, useRef, useState } from 'react';
+import { MouseEvent, useMemo, useRef, useState } from 'react';
 import { FiEdit2, FiExternalLink, FiFile } from 'react-icons/fi';
 
 import { type BmadAction, useBmadState } from './useBmadState';
@@ -12,6 +12,10 @@ import { Button } from '@/components/common/Button';
 import { SuggestedWorkflowCard } from '@/components/bmad/SuggestedWorkflowCard';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+import { useAgents } from '@/contexts/AgentsContext';
+import { resolveAgentProfile } from '@/utils/agents';
 
 type Props = {
   projectDir: string;
@@ -26,6 +30,20 @@ export const BmadTaskActions = ({ projectDir, taskId, task, onRunPrompt }: Props
   const { status, currentWorkflow, suggestedWorkflows, bmadActions, error, refresh } = useBmadState({ projectDir, task });
   const [isWorkflowSelectorOpen, setIsWorkflowSelectorOpen] = useState(false);
   const workflowButtonRef = useRef<HTMLDivElement>(null);
+
+  const { models, providers } = useModelProviders();
+  const { projectSettings } = useProjectSettings();
+  const { getProfiles } = useAgents();
+
+  const activeAgentProfile = useMemo(() => {
+    return resolveAgentProfile(task || undefined, projectSettings?.agentProfileId, getProfiles(projectDir));
+  }, [task, projectSettings?.agentProfileId, getProfiles, projectDir]);
+
+  const defaultModelId = useMemo(() => {
+    const effectiveProvider = task?.provider || activeAgentProfile?.provider;
+    const effectiveModel = task?.model || activeAgentProfile?.model;
+    return effectiveProvider && effectiveModel ? `${effectiveProvider}/${effectiveModel}` : undefined;
+  }, [task, activeAgentProfile]);
 
   if (error) {
     return (
@@ -148,7 +166,16 @@ export const BmadTaskActions = ({ projectDir, taskId, task, onRunPrompt }: Props
                 ))
               : hasWorkflows
                 ? suggestedWorkflowMetadata.map((workflow) => (
-                    <SuggestedWorkflowCard key={workflow.id} workflow={workflow} projectDir={projectDir} taskId={taskId} onRefresh={refresh} />
+                    <SuggestedWorkflowCard
+                      key={workflow.id}
+                      workflow={workflow}
+                      projectDir={projectDir}
+                      taskId={taskId}
+                      onRefresh={refresh}
+                      defaultModelId={defaultModelId}
+                      models={models}
+                      providers={providers}
+                    />
                   ))
                 : null}
           </div>

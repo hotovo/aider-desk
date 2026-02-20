@@ -15,6 +15,7 @@ type Props = {
   autoFocus?: boolean;
   size?: ButtonSize;
   type?: 'button' | 'submit' | 'reset';
+  title?: string;
 };
 
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
@@ -56,6 +57,7 @@ export const Button = ({
   autoFocus = false,
   size = 'md',
   type = 'button',
+  title,
 }: Props) => {
   const baseColorClasses = disabled
     ? 'bg-bg-tertiary-strong text-text-muted cursor-not-allowed hover:bg-bg-tertiary-strong hover:text-text-muted'
@@ -71,6 +73,7 @@ export const Button = ({
       onClick={onClick}
       disabled={disabled}
       autoFocus={autoFocus}
+      title={title}
       className={twMerge('flex items-center space-x-1 rounded-lg font-medium transition-colors', borderClass, baseColorClasses, baseSizeClasses, className)}
     >
       {children}

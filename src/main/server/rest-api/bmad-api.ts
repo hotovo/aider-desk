@@ -22,10 +22,11 @@ const ExecuteWorkflowSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task ID is required'),
   workflowId: z.string().min(1, 'Workflow ID is required'),
-  asSubtask: z.boolean().optional(),
   options: z
     .object({
-      resumeFromStep: z.number().optional(),
+      asSubtask: z.boolean().optional(),
+      provider: z.string().optional(),
+      model: z.string().optional(),
     })
     .optional(),
 });
@@ -75,8 +76,8 @@ export class BmadApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, workflowId, asSubtask } = parsed;
-        const result = await this.eventsHandler.executeWorkflow(projectDir, taskId, workflowId, asSubtask);
+        const { projectDir, taskId, workflowId, options } = parsed;
+        const result = await this.eventsHandler.executeWorkflow(projectDir, taskId, workflowId, options);
 
         if (result.success) {
           res.status(200).json(result);

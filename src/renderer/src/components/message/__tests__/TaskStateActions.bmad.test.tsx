@@ -21,6 +21,36 @@ vi.mock('@/contexts/ApiContext', () => ({
   }),
 }));
 
+// Mock useModelProviders hook
+vi.mock('@/contexts/ModelProviderContext', () => ({
+  useModelProviders: () => ({
+    models: [],
+    providers: [],
+  }),
+}));
+
+// Mock useProjectSettings hook
+vi.mock('@/contexts/ProjectSettingsContext', () => ({
+  useProjectSettings: () => ({
+    projectSettings: {},
+  }),
+}));
+
+// Mock useAgents hook
+vi.mock('@/contexts/AgentsContext', () => ({
+  useAgents: () => ({
+    getProfiles: () => [],
+  }),
+}));
+
+// Mock useSettings hook
+vi.mock('@/contexts/SettingsContext', () => ({
+  useSettings: () => ({
+    settings: { preferredModels: [] },
+    saveSettings: vi.fn(),
+  }),
+}));
+
 // Mock Button component
 vi.mock('@/components/common/Button', () => ({
   Button: ({ children, onClick }: { children: React.ReactNode; onClick: () => void }) => <button onClick={onClick}>{children}</button>,

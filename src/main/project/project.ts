@@ -69,6 +69,10 @@ export class Project {
   }
 
   public async createNewTask(params?: CreateTaskParams) {
+    logger.info('Creating new task', {
+      baseDir: this.baseDir,
+      params,
+    });
     const normalizedParams = {
       ...params,
       parentId: params?.parentId || null,

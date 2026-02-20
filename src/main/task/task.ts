@@ -47,7 +47,7 @@ import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 
 import type { SimpleGit } from 'simple-git';
-import type { WorkflowExecutionResult } from '@common/bmad-types';
+import type { WorkflowExecutionOptions, WorkflowExecutionResult } from '@common/bmad-types';
 
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import {
@@ -820,14 +820,16 @@ export class Task {
     return [];
   }
 
-  public async executeBmadWorkflow(workflowId: string, asSubtask?: boolean): Promise<WorkflowExecutionResult> {
-    if (asSubtask) {
+  public async executeBmadWorkflow(workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult> {
+    if (options?.asSubtask) {
       // Create a new subtask. If the current task already has a parentId (is a subtask),
       // use that parentId to maintain only 1 level of subtasks
       const parentId = this.task.parentId || this.taskId;
       const subtaskData = await this.project.createNewTask({
         parentId,
         activate: true,
+        provider: options?.provider,
+        model: options?.model,
       });
       const subtask = this.project.getTask(subtaskData.id);
       if (!subtask) {

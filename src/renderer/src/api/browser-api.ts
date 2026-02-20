@@ -51,6 +51,7 @@ import {
   TaskCreatedData,
   UpdatedFilesUpdatedData,
   QueuedPromptsUpdatedData,
+  WorkflowExecutionOptions,
   WorkflowExecutionResult,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
@@ -992,12 +993,12 @@ export class BrowserApi implements ApplicationAPI {
     return this.get<BmadStatus>('/bmad/status', { projectDir });
   }
 
-  async executeWorkflow(projectDir: string, taskId: string, workflowId: string, asSubtask?: boolean): Promise<WorkflowExecutionResult> {
+  async executeWorkflow(projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult> {
     return await this.post('/bmad/execute-workflow', {
       projectDir,
       taskId,
       workflowId,
-      asSubtask,
+      options,
     });
   }
 

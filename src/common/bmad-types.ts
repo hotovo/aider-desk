@@ -113,6 +113,15 @@ export interface BmadError {
 }
 
 /**
+ * Workflow execution options
+ */
+export interface WorkflowExecutionOptions {
+  asSubtask?: boolean;
+  provider?: string;
+  model?: string;
+}
+
+/**
  * Workflow execution result
  */
 export interface WorkflowExecutionResult {

@@ -1718,6 +1718,8 @@
       "confirmButton": "重置所有进度",
       "success": "工作流进度已重置",
       "error": "重置工作流进度失败"
-    }
+    },
+    "showModelSelector": "更换模型",
+    "hideModelSelector": "隐藏模型选择器"
   }
 }

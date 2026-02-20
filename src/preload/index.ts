@@ -629,8 +629,8 @@ const api: ApplicationAPI = {
   // BMAD operations
   installBmad: (projectDir: string) => ipcRenderer.invoke('bmad-install', projectDir),
   getBmadStatus: (projectDir: string) => ipcRenderer.invoke('bmad-get-status', projectDir),
-  executeWorkflow: (projectDir: string, taskId: string, workflowId: string, asSubtask?: boolean) =>
-    ipcRenderer.invoke('bmad-execute-workflow', projectDir, taskId, workflowId, asSubtask),
+  executeWorkflow: (projectDir: string, taskId: string, workflowId: string, options?: { asSubtask?: boolean; provider?: string; model?: string }) =>
+    ipcRenderer.invoke('bmad-execute-workflow', projectDir, taskId, workflowId, options),
   resetBmadWorkflow: (projectDir: string) => ipcRenderer.invoke('bmad-reset-workflow', projectDir),
 
   writeToClipboard: (text: string) => ipcRenderer.invoke('clipboard-write-text', text),

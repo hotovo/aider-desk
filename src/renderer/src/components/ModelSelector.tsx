@@ -21,12 +21,13 @@ type Props = {
   selectedModelId?: string;
   onChange: (model: Model) => void;
   preferredModelIds: string[];
-  removePreferredModel: (modelId: string) => void;
+  removePreferredModel?: (modelId: string) => void;
   providers: ProviderProfile[];
+  popupPlacement?: 'top' | 'bottom';
 };
 
 export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
-  ({ className, models, selectedModelId, onChange, preferredModelIds, removePreferredModel, providers }, ref) => {
+  ({ className, models, selectedModelId, onChange, preferredModelIds, removePreferredModel, providers, popupPlacement = 'bottom' }, ref) => {
     const { t } = useTranslation();
     const modelSelectorRef = useRef<HTMLDivElement>(null);
     const highlightedModelRef = useRef<HTMLDivElement>(null);
@@ -140,7 +141,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
 
       const handleRemovePreferredModel = (e: MouseEvent) => {
         e.stopPropagation();
-        removePreferredModel(fullModelId);
+        removePreferredModel?.(fullModelId);
       };
 
       const providerId = isPreferred ? extractProviderModel(fullModelId)[0] : model.providerId;
@@ -167,7 +168,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
               </>
             )}
           </button>
-          {isPreferred && (
+          {isPreferred && removePreferredModel && (
             <button
               onClick={handleRemovePreferredModel}
               className="px-2 py-1 text-text-muted hover:text-text-muted-light transition-colors duration-200"
@@ -206,7 +207,12 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
           )}
         </button>
         {isOpen && (
-          <div className="absolute top-full left-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]">
+          <div
+            className={twMerge(
+              'absolute left-0 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]',
+              popupPlacement === 'bottom' ? 'top-full mt-1' : 'bottom-full mb-1',
+            )}
+          >
             <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
               <input
                 type="text"

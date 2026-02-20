@@ -855,6 +855,8 @@ export interface CreateTaskParams {
   activate?: boolean;
   handoff?: boolean;
   sendEvent?: boolean;
+  provider?: string;
+  model?: string;
 }
 
 export interface TaskCreatedData {

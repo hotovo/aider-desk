@@ -1707,6 +1707,8 @@
       "confirmButton": "Reset All Progress",
       "success": "Workflow progress has been reset",
       "error": "Failed to reset workflow progress"
-    }
+    },
+    "showModelSelector": "Change model",
+    "hideModelSelector": "Hide model selector"
   }
 }

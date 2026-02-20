@@ -28,6 +28,7 @@ import {
   UsageDataRow,
   VersionsInfo,
   VoiceSession,
+  WorkflowExecutionOptions,
   WorkflowExecutionResult,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
@@ -1007,7 +1008,7 @@ export class EventsHandler {
     return await project.installBmad();
   }
 
-  async executeWorkflow(projectDir: string, taskId: string, workflowId: string, asSubtask?: boolean): Promise<WorkflowExecutionResult> {
+  async executeWorkflow(projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult> {
     const project = this.projectManager.getProject(projectDir);
     if (!project) {
       throw new Error('Project not found');
@@ -1018,7 +1019,7 @@ export class EventsHandler {
       throw new Error('Task not found');
     }
 
-    return await task.executeBmadWorkflow(workflowId, asSubtask);
+    return await task.executeBmadWorkflow(workflowId, options);
   }
 
   async resetBmadWorkflow(projectDir: string): Promise<{ success: boolean; message?: string }> {
