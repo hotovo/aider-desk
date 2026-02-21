@@ -7,7 +7,7 @@ export interface HookContext {
   addInfoMessage: (message: string) => void;
   addWarningMessage: (message: string) => void;
   addErrorMessage: (message: string) => void;
-  addLoadingMessage: (message: string) => void;
+  addLoadingMessage: (message: string, finished?: boolean) => void;
   setTaskName: (name: string) => Promise<void>;
   addContextMessage: (role: 'user' | 'assistant', content: string) => Promise<void>;
   task: Task;
@@ -34,8 +34,8 @@ export class HookContextImpl implements HookContext {
     this.task.addLogMessage('error', message);
   }
 
-  addLoadingMessage(message: string) {
-    this.task.addLogMessage('loading', message);
+  addLoadingMessage(message: string, finished = false) {
+    this.task.addLogMessage('loading', message, finished);
   }
 
   async setTaskName(name: string) {

@@ -463,10 +463,13 @@ export class Agent {
           const effectiveArgs = hookResult.event.args as Record<string, unknown> | undefined;
 
           const result = await toolDef.execute!(effectiveArgs, options);
+          const toolFinishedHookResult = await task.hookManager.trigger('onToolFinished', { toolName, args: effectiveArgs, result }, task, task.project);
 
-          void task.hookManager.trigger('onToolFinished', { toolName, args: effectiveArgs, result }, task, task.project);
-
-          return result;
+          if (toolFinishedHookResult.event.result) {
+            return toolFinishedHookResult.event.result;
+          } else {
+            return result;
+          }
         },
       };
     }
@@ -671,15 +674,21 @@ export class Agent {
     includeInContext = true,
     abortSignal?: AbortSignal,
   ): Promise<ContextMessage[]> {
-    const hookResult = await task.hookManager.trigger('onAgentStarted', { prompt }, task, task.project);
+    let contextMessages = initialContextMessages ?? (await task.getContextMessages());
+    let contextFiles = initialContextFiles ?? (await task.getContextFiles());
+
+    const hookResult = await task.hookManager.trigger('onAgentStarted', { prompt, contextMessages, contextFiles }, task, task.project);
     if (hookResult.blocked) {
       logger.info('Agent execution blocked by hook');
       return [];
     }
     prompt = hookResult.event.prompt;
-    // Set default values inside function body since await can't be used in parameter initializers
-    const contextMessages = initialContextMessages ?? (await task.getContextMessages());
-    const contextFiles = initialContextFiles ?? (await task.getContextFiles());
+    if (hookResult.event.contextMessages) {
+      contextMessages = hookResult.event.contextMessages;
+    }
+    if (hookResult.event.contextFiles) {
+      contextFiles = hookResult.event.contextFiles;
+    }
 
     const userRequestMessage: ContextUserMessage | null = prompt
       ? {
@@ -696,7 +705,7 @@ export class Agent {
 
     const settings = this.store.getSettings();
     const projectProfiles = this.agentProfileManager.getProjectProfiles(task.getProjectDir());
-    const resultMessages: ContextMessage[] = userRequestMessage ? [userRequestMessage] : [];
+    let resultMessages: ContextMessage[] = userRequestMessage ? [userRequestMessage] : [];
 
     const providers = this.store.getProviders();
     const provider = providers.find((p) => p.id === profile.provider);
@@ -982,7 +991,13 @@ export class Agent {
           }
 
           responseMessages = await this.processStep(currentResponseId, stepResult, task, profile, provider, promptContext, abortSignal);
-          void task.hookManager.trigger('onAgentStepFinished', { stepResult }, task, task.project);
+          const hookResult = await task.hookManager.trigger('onAgentStepFinished', { stepResult, finishReason, responseMessages }, task, task.project);
+          if (hookResult?.event?.finishReason) {
+            finishReason = hookResult.event.finishReason;
+          }
+          if (hookResult?.event?.responseMessages) {
+            responseMessages = hookResult.event.responseMessages;
+          }
           currentResponseId = uuidv4();
           responseMessageIndex = 0;
           hasReasoning = false;
@@ -1156,6 +1171,12 @@ export class Agent {
 
         retryCount = 0;
 
+        if (lastMessage?.role === 'user') {
+          // if response messages have been modified by other means (e.g. hooks), we need to continue when the last message is a user message
+          logger.debug('Last message is a user message. Continuing...');
+          continue;
+        }
+
         if (finishReason === 'length') {
           task.addLogMessage(
             'warning',
@@ -1170,9 +1191,20 @@ export class Agent {
           break;
         }
       }
+
+      const hookResult = await task.hookManager.trigger('onAgentFinished', { aborted: false, contextMessages, resultMessages }, task, task.project);
+      if (hookResult?.event?.resultMessages) {
+        resultMessages = hookResult.event.resultMessages;
+      }
     } catch (error) {
       if (effectiveAbortSignal?.aborted) {
         logger.info('Prompt aborted by user');
+
+        const hookResult = await task.hookManager.trigger('onAgentFinished', { aborted: true, contextMessages, resultMessages }, task, task.project);
+        if (hookResult?.event?.resultMessages) {
+          resultMessages = hookResult.event.resultMessages;
+        }
+
         return resultMessages;
       }
 
@@ -1192,8 +1224,6 @@ export class Agent {
           controllerId: controllerId,
         });
       }
-
-      void task.hookManager.trigger('onAgentFinished', { resultMessages }, task, task.project);
     }
 
     return resultMessages;

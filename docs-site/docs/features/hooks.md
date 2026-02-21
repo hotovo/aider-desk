@@ -48,11 +48,12 @@ Every hook function receives a `context` object as its second argument, providin
 *   `context.addInfoMessage(message)`: Displays an info message in the task log.
 *   `context.addWarningMessage(message)`: Displays a warning message.
 *   `context.addErrorMessage(message)`: Displays an error message.
-*   `context.addLoadingMessage(message)`: Displays a loading/status message.
+*   `context.addLoadingMessage(message, finished?)`: Displays a loading/status message. Set `finished` to `true` to mark it as complete.
 *   `context.setTaskName(name)`: Updates the current task's name.
 *   `context.addContextMessage(role, content)`: Adds a message ('user' or 'assistant') to the chat history.
 *   `context.projectDir`: The absolute path to the current project.
 *   `context.taskData`: The current task's metadata.
+*   `context.task`: The current Task instance (advanced). Provides methods like `runPrompt(prompt, mode, includeInContext)` to programmatically trigger prompts.
 
 ## Hook Events Reference
 
@@ -66,9 +67,9 @@ Below is a list of available events you can listen to. Events marked with **(M)*
 | `onPromptSubmitted` **(M)** | Triggered when a prompt is submitted by the user. | `{ prompt: string, mode: Mode }` |
 | `onPromptStarted` **(M)** | Triggered just before a prompt is processed. Return `false` to block. | `{ prompt: string, mode: Mode }` |
 | `onPromptFinished` **(M)** | Triggered after a prompt has been fully processed. | `{ responses: ResponseCompletedData[] }` |
-| `onAgentStarted` **(M)** | Triggered when the Agent starts processing a prompt. | `{ prompt: string }` |
-| `onAgentFinished` **(M)** | Triggered when the Agent finishes its work. | `{ resultMessages: unknown[] }` |
-| `onAgentStepFinished` **(M)** | Triggered after each individual step of an Agent. | `{ stepResult: unknown }` |
+| `onAgentStarted` **(M)** | Triggered when the Agent starts processing a prompt. | `{ prompt: string, contextMessages: ContextMessage[], contextFiles: ContextFile[] }` |
+| `onAgentFinished` **(M)** | Triggered when the Agent finishes its work. | `{ contextMessages: ContextMessage[], resultMessages: ContextMessage[], aborted: boolean }` |
+| `onAgentStepFinished` **(M)** | Triggered after each individual step of an Agent. | `{ stepResult: unknown, finishReason: FinishReason, responseMessages: ContextMessage[] }` |
 | `onToolCalled` **(M)** | Triggered when a tool (e.g., `read_file`) is called. | `{ toolName: string, args: object }` |
 | `onToolFinished` **(M)** | Triggered after a tool execution completes. | `{ toolName: string, args: object, result: unknown }` |
 | `onFileAdded` **(M)** | Triggered when a file is added to the chat context. | `{ file: ContextFile }` |
@@ -80,7 +81,7 @@ Below is a list of available events you can listen to. Events marked with **(M)*
 | `onQuestionAnswered` **(M)** | Triggered after a question is answered. | `{ question: QuestionData, answer: string }` |
 | `onHandleApproval` | Triggered for actions requiring approval. Return `true` to auto-approve, `false` to deny. | `{ key: string, text: string, subject?: string }` |
 | `onSubagentStarted` **(M)** | Triggered when a subagent is launched. | `{ subagentId: string, prompt: string }` |
-| `onSubagentFinished` **(M)** | Triggered when a subagent completes. | `{ subagentId: string, resultMessages: unknown[] }` |
+| `onSubagentFinished` **(M)** | Triggered when a subagent completes. | `{ subagentId: string, resultMessages: ContextMessage[] }` |
 | `onResponseMessageProcessed` | Triggered after a message is processed. Return modified message to transform it. | `{ message: ResponseMessage }` |
 
 ## Advanced Usage
@@ -108,3 +109,26 @@ onQuestionAsked: (event) => {
   }
 }
 ```
+
+### Modifying Tool Results
+For `onToolFinished`, you can return a string directly to replace the tool's result. This is useful for post-processing or validation:
+
+```javascript
+onToolFinished: (event) => {
+  if (event.toolName === 'power---file_edit' && event.result.startsWith('Successfully')) {
+    // Return a modified result string
+    return `${event.result}\n\nNote: File was automatically formatted.`;
+  }
+}
+```
+
+## Example Hooks
+
+Here are some practical hook examples you can use as starting points:
+
+| Example | Description |
+| :--- | :--- |
+| [lint-check-on-tool-finished.js](./hooks-examples/lint-check-on-tool-finished.js) | Runs eslint --fix after file modifications and updates the result if linting fails |
+| [lint-check-on-agent-finished.js](./hooks-examples/lint-check-on-agent-finished.js) | Runs project-wide linting after the agent finishes and can auto-prompt fixes |
+
+To use these examples, copy them to your project's `.aider-desk/hooks/` directory or to `~/.aider-desk/hooks/` for global use.

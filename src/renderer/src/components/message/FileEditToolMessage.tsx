@@ -31,8 +31,10 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork
   const content = message.content && JSON.parse(message.content);
   const language = getLanguageFromPath(filePath);
 
-  const isDenied = content && content.startsWith('File edit to');
-  const shouldCloseOnError = content && !content.startsWith('Successfully');
+  const isDenied = typeof content === 'string' && content.startsWith('File edit to');
+  const shouldCloseOnError = typeof content === 'string' && !content.startsWith('Successfully');
+
+  console.log('FileEditToolMessage', typeof content, content);
 
   useLayoutEffect(() => {
     if (shouldCloseOnError && expandableRef.current) {
@@ -55,7 +57,7 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork
       </div>
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
-        (content.startsWith('Successfully') ? (
+        (typeof content === 'string' && content.startsWith('Successfully') ? (
           <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
         ) : isDenied ? (
           <Tooltip content={content}>

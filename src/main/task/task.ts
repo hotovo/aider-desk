@@ -606,7 +606,7 @@ export class Task {
 
     logger.info('Running prompt:', {
       baseDir: this.project.baseDir,
-      prompt,
+      prompt: prompt.substring(0, 100),
       mode,
     });
 
@@ -782,7 +782,6 @@ export class Task {
     });
 
     const agentMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt);
-    this.resolveAgentRunPromises();
     if (agentMessages.length > 0) {
       // send messages to connectors
       this.contextManager.toConnectorMessages(agentMessages).forEach((message) => {
@@ -815,6 +814,7 @@ export class Task {
       });
     }
 
+    this.resolveAgentRunPromises();
     this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
 
     return [];
@@ -970,8 +970,13 @@ export class Task {
       return [];
     }
     prompt = hookResult.event.prompt;
-    const resultMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt, false, abortSignal);
-    await this.hookManager.trigger('onSubagentFinished', { subagentId: profile.id, resultMessages }, this, this.project);
+    let resultMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt, false, abortSignal);
+    const finishedHookResult = await this.hookManager.trigger('onSubagentFinished', { subagentId: profile.id, resultMessages }, this, this.project);
+
+    if (finishedHookResult.event.resultMessages) {
+      resultMessages = finishedHookResult.event.resultMessages;
+    }
+
     return resultMessages;
   }
 

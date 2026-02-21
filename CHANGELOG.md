@@ -14,6 +14,8 @@
 - added support for selecting a specific model when executing BMAD workflows
 - moved message navigation controls outside the scrollable container
 - added Gemini CLI as supported provider
+- enhanced hook system to allow modification of event data
+- added some example hooks
 
 ## [0.53.0]
 
