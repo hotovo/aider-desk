@@ -142,20 +142,6 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
           className="flex flex-col flex-grow overflow-y-auto max-h-full p-4 scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth"
           {...eventHandlers}
         >
-          <div className="absolute left-1/2 -translate-x-1/2 w-[150px] bottom-0 z-10 flex justify-center gap-1 pt-10 pb-2 group">
-            {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToPrevious()}
-            {scrollingPaused && (
-              <IconButton
-                icon={<MdKeyboardDoubleArrowDown className="h-6 w-6" />}
-                onClick={scrollToBottom}
-                tooltip={t('messages.scrollToBottom')}
-                className="bg-bg-primary-light border border-border-default shadow-lg hover:bg-bg-secondary transition-colors duration-200"
-                aria-label={t('messages.scrollToBottom')}
-              />
-            )}
-            {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToNext()}
-          </div>
-
           {processedMessages.map((message, index) => {
             if (isGroupMessage(message)) {
               return (
@@ -206,6 +192,21 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
             );
           })}
           <div ref={messagesEndRef} />
+        </div>
+        <div className="relative">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[140px] z-10 flex justify-center gap-1 pt-6 pb-1 group">
+            {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToPrevious()}
+            {scrollingPaused && (
+              <IconButton
+                icon={<MdKeyboardDoubleArrowDown className="h-6 w-6" />}
+                onClick={scrollToBottom}
+                tooltip={t('messages.scrollToBottom')}
+                className="bg-bg-primary-light border border-border-default shadow-lg hover:bg-bg-secondary transition-colors duration-200"
+                aria-label={t('messages.scrollToBottom')}
+              />
+            )}
+            {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToNext()}
+          </div>
         </div>
         {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
           <TaskStateActions
