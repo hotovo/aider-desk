@@ -1054,8 +1054,8 @@ def register_events(self)
 @self.sio.event
     async def connect()
 ⋮----
-@self.sio.on("message")
-    async def on_message(data)
+@self.sio.event
+    async def message(data)
 ⋮----
 @self.sio.event
     async def disconnect()
@@ -1066,6 +1066,7 @@ def register_events(self)
 async def on_connect(self)
 ⋮----
 """Handle connection event."""
+# Guard against duplicate initialization (can happen if event fires and we also call explicitly)
 ⋮----
 def _tokenize_files_sync(self, root, rel_fnames, addable_rel_fnames, encoding, abs_read_only_fnames)
 ⋮----
@@ -1089,6 +1090,13 @@ async def connect(self)
 max_retries = 10
 base_delay = 0.5  # Initial delay in seconds
 max_delay = 5.0   # Maximum delay in seconds
+⋮----
+# Reset initialized flag before each connection attempt
+# This ensures on_connect runs properly after reconnection
+⋮----
+# Explicitly call on_connect after successful connection
+# This ensures init message is sent even if the event handler doesn't fire
+# (which can happen on reconnection after namespace errors)
 ⋮----
 return  # Connection successful
 ⋮----
@@ -3095,7 +3103,9 @@ File: src/common/locales/en.json
       "confirmButton": "Reset All Progress",
       "success": "Workflow progress has been reset",
       "error": "Failed to reset workflow progress"
-    }
+    },
+    "showModelSelector": "Change model",
+    "hideModelSelector": "Hide model selector"
   }
 }
 
@@ -4822,7 +4832,9 @@ File: src/common/locales/zh.json
       "confirmButton": "重置所有进度",
       "success": "工作流进度已重置",
       "error": "重置工作流进度失败"
-    }
+    },
+    "showModelSelector": "更换模型",
+    "hideModelSelector": "隐藏模型选择器"
   }
 }
 
@@ -5207,6 +5219,7 @@ import {
   UserMessageData,
   VersionsInfo,
   VoiceSession,
+  WorkflowExecutionOptions,
   WorkflowExecutionResult,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
@@ -5403,7 +5416,7 @@ export interface ApplicationAPI {
   // BMAD operations
   installBmad: (projectDir: string) => Promise<{ success: boolean; message?: string }>;
   getBmadStatus: (projectDir: string) => Promise<BmadStatus>;
-  executeWorkflow: (projectDir: string, taskId: string, workflowId: string, asSubtask?: boolean) => Promise<WorkflowExecutionResult>;
+  executeWorkflow: (projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions) => Promise<WorkflowExecutionResult>;
   resetBmadWorkflow: (projectDir: string) => Promise<{ success: boolean; message?: string }>;
   addBmadStatusChangedListener: (baseDir: string, callback: (status: BmadStatus) => void) => () => void;
 }
@@ -5544,6 +5557,15 @@ export interface BmadError {
   message: string;
   recoveryAction?: string;
   details?: string;
+}
+⋮----
+/**
+ * Workflow execution options
+ */
+export interface WorkflowExecutionOptions {
+  asSubtask?: boolean;
+  provider?: string;
+  model?: string;
 }
 ⋮----
 /**
@@ -6346,6 +6368,8 @@ export interface CreateTaskParams {
   activate?: boolean;
   handoff?: boolean;
   sendEvent?: boolean;
+  provider?: string;
+  model?: string;
 }
 ⋮----
 export interface TaskCreatedData {
@@ -10680,6 +10704,7 @@ export interface PreparedContext {
   contextMessages: ContextMessage[];
   contextFiles: string[];
   execute: boolean;
+  taskName?: string;
 }
 ⋮----
 /**
@@ -10789,6 +10814,9 @@ pingTimeout: 600_000, // 10 minutes
 maxHttpBufferSize: 1e8, // Increase payload size to 100 MB
 ⋮----
 public async close()
+⋮----
+// Check if there's an existing connector with the same baseDir and taskId
+// This can happen on reconnection when the old connector wasn't properly cleaned up
 ⋮----
 // Handle the case where taskId is not available, e.g., log an error or apply to all tasks
 
@@ -15057,6 +15085,7 @@ import {
   UsageReportData,
   UserMessageData,
   WorkingMode,
+  AIDER_COMMANDS,
 } from '@common/types';
 import { extractProviderModel, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
@@ -15065,7 +15094,7 @@ import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 ⋮----
 import type { SimpleGit } from 'simple-git';
-import type { WorkflowExecutionResult } from '@common/bmad-types';
+import type { WorkflowExecutionOptions, WorkflowExecutionResult } from '@common/bmad-types';
 ⋮----
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import {
@@ -15237,7 +15266,7 @@ public async runPromptInAgent(
 ⋮----
 // Determine task state based on the last assistant message
 ⋮----
-public async executeBmadWorkflow(workflowId: string, asSubtask?: boolean): Promise<WorkflowExecutionResult>
+public async executeBmadWorkflow(workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult>
 ⋮----
 // Create a new subtask. If the current task already has a parentId (is a subtask),
 // use that parentId to maintain only 1 level of subtasks
@@ -15512,7 +15541,7 @@ public async resumeTask()
 ⋮----
 private getCurrentMode()
 ⋮----
-private shouldStartAider(): boolean
+private async shouldStartAider(): Promise<boolean>
 ⋮----
 private async reloadConnectorMessages()
 ⋮----
@@ -17083,6 +17112,7 @@ import {
   UsageDataRow,
   VersionsInfo,
   VoiceSession,
+  WorkflowExecutionOptions,
   WorkflowExecutionResult,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
@@ -17358,7 +17388,7 @@ async getBmadStatus(projectDir: string): Promise<BmadStatus>
 ⋮----
 async installBmad(projectDir: string): Promise<InstallResult>
 ⋮----
-async executeWorkflow(projectDir: string, taskId: string, workflowId: string, asSubtask?: boolean): Promise<WorkflowExecutionResult>
+async executeWorkflow(projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult>
 ⋮----
 async resetBmadWorkflow(projectDir: string): Promise<
 
@@ -18125,6 +18155,7 @@ import {
   TaskCreatedData,
   UpdatedFilesUpdatedData,
   QueuedPromptsUpdatedData,
+  WorkflowExecutionOptions,
   WorkflowExecutionResult,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
@@ -18428,7 +18459,7 @@ async installBmad(projectDir: string): Promise<
 ⋮----
 getBmadStatus(projectDir: string): Promise<BmadStatus>
 ⋮----
-async executeWorkflow(projectDir: string, taskId: string, workflowId: string, asSubtask?: boolean): Promise<WorkflowExecutionResult>
+async executeWorkflow(projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult>
 ⋮----
 async resetBmadWorkflow(projectDir: string): Promise<
 ⋮----
@@ -18598,7 +18629,7 @@ import { RiAlertLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { TaskData } from '@common/types';
 import { clsx } from 'clsx';
-import { MouseEvent, useRef, useState } from 'react';
+import { MouseEvent, useMemo, useRef, useState } from 'react';
 import { FiEdit2, FiExternalLink, FiFile } from 'react-icons/fi';
 ⋮----
 import { type BmadAction, useBmadState } from './useBmadState';
@@ -18608,6 +18639,10 @@ import { Button } from '@/components/common/Button';
 import { SuggestedWorkflowCard } from '@/components/bmad/SuggestedWorkflowCard';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+import { useAgents } from '@/contexts/AgentsContext';
+import { resolveAgentProfile } from '@/utils/agents';
 ⋮----
 type Props = {
   projectDir: string;
@@ -18733,26 +18768,35 @@ export const PathInfoCard = (
 ================
 File: src/renderer/src/components/bmad/SuggestedWorkflowCard.tsx
 ================
-import { WorkflowMetadata } from '@common/bmad-types';
-import { MouseEvent, useState } from 'react';
+import { Model, ProviderProfile } from '@common/types';
+import { WorkflowExecutionOptions, WorkflowMetadata } from '@common/bmad-types';
+import { getProviderModelId } from '@common/agent';
+import { extractProviderModel } from '@common/utils';
+import { MouseEvent, useCallback, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
-import { FiPlay } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiPlay } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
+import { useSettings } from '@/contexts/SettingsContext';
 import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
+import { ModelSelector } from '@/components/ModelSelector';
+import { IconButton } from '@/components/common/IconButton';
 ⋮----
 type Props = {
   workflow: WorkflowMetadata;
   projectDir: string;
   taskId: string;
   onRefresh: () => Promise<void>;
+  defaultModelId?: string;
+  models: Model[];
+  providers: ProviderProfile[];
 };
 ⋮----
-export const SuggestedWorkflowCard = (
-⋮----
 const handleExecuteWorkflow = async (e: MouseEvent<HTMLButtonElement>) =>
+⋮----
+const handleToggleModelSelector = () =>
 
 ================
 File: src/renderer/src/components/bmad/useBmadState.ts
@@ -19308,6 +19352,7 @@ type Props = {
   autoFocus?: boolean;
   size?: ButtonSize;
   type?: 'button' | 'submit' | 'reset';
+  title?: string;
 };
 ⋮----
 export const Button = ({
@@ -19320,6 +19365,7 @@ export const Button = ({
   autoFocus = false,
   size = 'md',
   type = 'button',
+  title,
 }: Props) =>
 ⋮----
 className=
@@ -26646,8 +26692,9 @@ type Props = {
   selectedModelId?: string;
   onChange: (model: Model) => void;
   preferredModelIds: string[];
-  removePreferredModel: (modelId: string) => void;
+  removePreferredModel?: (modelId: string) => void;
   providers: ProviderProfile[];
+  popupPlacement?: 'top' | 'bottom';
 };
 ⋮----
 const getProviderName = (providerId: string) =>
@@ -26659,6 +26706,8 @@ const onModelSelected = (model: Model) =>
 const onModelSelectorSearchInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) =>
 ⋮----
 const handleRemovePreferredModel = (e: MouseEvent) =>
+⋮----
+className=
 ⋮----
 placeholder=
 ⋮----
