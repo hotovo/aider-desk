@@ -9,12 +9,20 @@ import type { LanguageModelV2 } from '@ai-sdk/provider';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { Task } from '@/task/task';
 import logger from '@/logger';
-import { getEffectiveEnvironmentVariable, findExecutableInPath } from '@/utils';
+import { findExecutableInPath } from '@/utils';
 
 // Gemini CLI models with token limits
 const GEMINI_CLI_MODELS = [
-  { id: 'gemini-3-pro-preview', maxInputTokens: 1000000, maxOutputTokens: 64000 },
-  { id: 'gemini-3-flash-preview', maxInputTokens: 1000000, maxOutputTokens: 64000 },
+  {
+    id: 'gemini-3-pro-preview',
+    maxInputTokens: 1000000,
+    maxOutputTokens: 64000,
+  },
+  {
+    id: 'gemini-3-flash-preview',
+    maxInputTokens: 1000000,
+    maxOutputTokens: 64000,
+  },
   { id: 'gemini-2.5-pro', maxInputTokens: 200000, maxOutputTokens: 64000 },
   { id: 'gemini-2.5-flash', maxInputTokens: 200000, maxOutputTokens: 64000 },
 ];
@@ -34,25 +42,9 @@ export const loadGeminiCliModels = async (profile: ProviderProfile, _settings: S
   return { models, success: true };
 };
 
-export const hasGeminiCliEnvVars = (settings: SettingsData): boolean => {
+export const hasGeminiCliEnvVars = (): boolean => {
   // Check for gemini CLI in PATH
-  if (findExecutableInPath('gemini') !== null) {
-    return true;
-  }
-
-  // Check for GEMINI_API_KEY env var
-  const apiKeyVar = getEffectiveEnvironmentVariable('GEMINI_API_KEY', settings, undefined);
-  if (apiKeyVar?.value) {
-    return true;
-  }
-
-  // Check for GOOGLE_API_KEY env var (alternative for Gemini)
-  const googleApiKeyVar = getEffectiveEnvironmentVariable('GOOGLE_API_KEY', settings, undefined);
-  if (googleApiKeyVar?.value) {
-    return true;
-  }
-
-  return false;
+  return findExecutableInPath('gemini') !== null;
 };
 
 const getGeminiCliAiderMapping = (provider: ProviderProfile, modelId: string, _settings: SettingsData, _projectDir: string): AiderModelMapping => {
