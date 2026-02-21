@@ -97,6 +97,7 @@
     "@xterm/xterm": "^5.5.0",
     "ai": "5.0.119",
     "ai-sdk-provider-claude-code": "2.3.0",
+    "ai-sdk-provider-gemini-cli": "^1.5.1",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",

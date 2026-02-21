@@ -5,6 +5,7 @@ export { BedrockIcon } from './BedrockIcon';
 export { CerebrasIcon } from './CerebrasIcon';
 export { ClaudeAgentSdkIcon } from './ClaudeAgentSdkIcon';
 export { DeepseekIcon } from './DeepseekIcon';
+export { GeminiCliIcon } from './GeminiCliIcon';
 export { GeminiIcon } from './GeminiIcon';
 export { GpustackIcon } from './GpustackIcon';
 export { GroqIcon } from './GroqIcon';

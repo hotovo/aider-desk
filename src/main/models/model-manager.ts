@@ -23,6 +23,7 @@ import { cerebrasProviderStrategy } from './providers/cerebras';
 import { claudeAgentSdkProviderStrategy } from './providers/claude-agent-sdk';
 import { deepseekProviderStrategy } from './providers/deepseek';
 import { geminiProviderStrategy } from './providers/gemini';
+import { geminiCliProviderStrategy } from './providers/gemini-cli';
 import { gpustackProviderStrategy } from './providers/gpustack';
 import { groqProviderStrategy } from './providers/groq';
 import { kimiPlanProviderStrategy } from './providers/kimi-plan';
@@ -92,6 +93,7 @@ export class ModelManager {
     'claude-agent-sdk': claudeAgentSdkProviderStrategy,
     deepseek: deepseekProviderStrategy,
     gemini: geminiProviderStrategy,
+    'gemini-cli': geminiCliProviderStrategy,
     gpustack: gpustackProviderStrategy,
     groq: groqProviderStrategy,
     'kimi-plan': kimiPlanProviderStrategy,
@@ -618,7 +620,7 @@ export class ModelManager {
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
-  ): LanguageModelV2 {
+  ): LanguageModelV2 | Promise<LanguageModelV2> {
     const strategy = this.providerRegistry[provider.provider.name];
     if (!strategy) {
       throw new Error(`Unsupported LLM provider: ${provider.provider.name}`);
@@ -811,5 +813,19 @@ export class ModelManager {
     }
 
     return strategy.normalizeMessages(provider.provider, modelObj, messages);
+  }
+
+  /**
+   * Determines if an error is retryable for the given provider and model
+   * Defaults to true (retryable) if the provider doesn't implement isRetryable
+   */
+  isRetryable(provider: ProviderProfile, _modelId: string, error: unknown): boolean {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy?.isRetryable) {
+      // Default to retryable if provider doesn't implement this method
+      return true;
+    }
+
+    return strategy.isRetryable(error);
   }
 }
