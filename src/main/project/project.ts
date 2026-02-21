@@ -22,6 +22,7 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
+import { ExtensionManager } from '@/extensions/extension-manager';
 import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { determineMainModel, determineWeakModel } from '@/utils';
 import { BmadManager } from '@/bmad/bmad-manager';
@@ -48,6 +49,7 @@ export class Project {
     private readonly memoryManager: MemoryManager,
     private readonly hookManager: HookManager,
     private readonly promptsManager: PromptsManager,
+    private readonly extensionManager: ExtensionManager,
   ) {
     this.customCommandManager = new CustomCommandManager(this);
     this.bmadManager = new BmadManager(this.baseDir);
@@ -58,13 +60,14 @@ export class Project {
     await this.customCommandManager.start();
     await this.promptsManager.watchProject(this.baseDir);
     await this.agentProfileManager.initializeForProject(this.baseDir);
+    await this.extensionManager.reloadProjectExtensions(this);
     await this.sendInputHistoryUpdatedEvent();
 
     this.eventManager.sendProjectStarted(this.baseDir);
   }
 
   private async prepareInternalTask() {
-    const task = this.prepareTask(INTERNAL_TASK_ID);
+    const task = await this.prepareTask(INTERNAL_TASK_ID);
     await task.resetContext();
   }
 
@@ -122,11 +125,20 @@ export class Project {
 
     const projectSettings = this.getProjectSettings();
     const taskSettings = this.store.getSettings().taskSettings;
-    const task = this.prepareTask(undefined, {
-      ...initialTaskData,
-      autoApprove: projectSettings.autoApproveLocked ? true : initialTaskData?.autoApprove,
+    const taskData: Partial<TaskData> = {
       contextCompactingThreshold: taskSettings.contextCompactingThreshold,
-    });
+      autoApprove: projectSettings.autoApproveLocked ? true : initialTaskData.autoApprove,
+      ...initialTaskData,
+    };
+
+    // Allow extensions to modify initial task data before task is created
+    const extResult = await this.extensionManager.dispatchEvent('onTaskCreated', { task: taskData as TaskData }, this);
+    if (extResult.task) {
+      // Apply modifications from extension
+      Object.assign(taskData, extResult.task);
+    }
+
+    const task = await this.prepareTask(undefined, taskData);
     if (params?.sendEvent !== false) {
       this.eventManager.sendTaskCreated(task.task, params?.activate);
     }
@@ -141,7 +153,7 @@ export class Project {
     return task.task;
   }
 
-  private prepareTask(taskId: string = uuidv4(), initialTaskData?: Partial<TaskData>) {
+  private async prepareTask(taskId: string = uuidv4(), initialTaskData?: Partial<TaskData>) {
     const task = new Task(
       this,
       taskId,
@@ -157,11 +169,19 @@ export class Project {
       this.memoryManager,
       this.hookManager,
       this.promptsManager,
+      this.extensionManager,
       initialTaskData,
     );
     this.tasks.set(taskId, task);
 
     void task.hookManager.trigger('onTaskCreated', { task: task.task }, task, this);
+
+    // Allow extensions to modify task data after preparation
+    const extResult = await this.extensionManager.dispatchEvent('onTaskPrepared', { task: task.task }, this, task);
+    if (extResult.task) {
+      // Apply modifications from extension
+      Object.assign(task.task, extResult.task);
+    }
 
     return task;
   }
@@ -195,7 +215,7 @@ export class Project {
       });
 
       for (const taskId of taskDirs) {
-        this.prepareTask(taskId);
+        await this.prepareTask(taskId);
       }
 
       logger.info('Successfully loaded tasks', {
@@ -396,7 +416,7 @@ export class Project {
       throw new Error(`Task with id ${taskId} not found`);
     }
 
-    const newTask = this.prepareTask(undefined, {
+    const newTask = await this.prepareTask(undefined, {
       ...sourceTask.task,
       state: sourceTask.task.state === DefaultTaskState.InProgress ? DefaultTaskState.Todo : sourceTask.task.state,
     });
@@ -413,7 +433,7 @@ export class Project {
       throw new Error(`Task with id ${taskId} not found`);
     }
 
-    const newTask = this.prepareTask(undefined, {
+    const newTask = await this.prepareTask(undefined, {
       ...sourceTask.task,
       parentId: sourceTask.task.parentId || sourceTask.task.id,
       state: sourceTask.task.state === DefaultTaskState.InProgress ? DefaultTaskState.Todo : sourceTask.task.state,
@@ -485,6 +505,7 @@ export class Project {
     this.agentProfileManager.removeProject(this.baseDir);
     await this.hookManager.stopWatchingProject(this.baseDir);
     await this.promptsManager.unwatchProject(this.baseDir);
+    this.extensionManager.stopWatchingProject(this.baseDir);
     await Promise.all(Array.from(this.tasks.values()).map((task) => task.close()));
     await this.worktreeManager.close(this.baseDir);
 

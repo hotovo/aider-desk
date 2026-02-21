@@ -1036,7 +1036,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId } = parsed;
-        this.eventsHandler.interruptResponse(projectDir, taskId);
+        await this.eventsHandler.interruptResponse(projectDir, taskId);
         res.status(200).json({ message: 'Interrupt signal sent' });
       }),
     );
@@ -1066,7 +1066,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId, answer } = parsed;
-        this.eventsHandler.answerQuestion(projectDir, taskId, answer);
+        await this.eventsHandler.answerQuestion(projectDir, taskId, answer);
         res.status(200).json({ message: 'Answer submitted' });
       }),
     );

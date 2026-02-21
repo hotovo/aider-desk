@@ -10,11 +10,40 @@ export class ApprovalManager {
     private readonly profile: AgentProfile,
   ) {}
 
-  public async handleApproval(key: string, text: string, subject?: string): Promise<[boolean, string | undefined]> {
+  async handleToolApproval(
+    toolName: string,
+    input: Record<string, unknown> | undefined,
+    key: string,
+    text: string,
+    subject?: string,
+  ): Promise<[boolean, string | undefined]> {
+    const extensionResult = await this.task.dispatchExtensionEvent('onToolApproval', { toolName, input });
+    if (extensionResult.blocked) {
+      return [false, undefined];
+    }
+    if (extensionResult.allowed) {
+      return [true, undefined];
+    }
+
+    return this.handleApproval(key, text, subject);
+  }
+
+  async handleApproval(key: string, text: string, subject?: string): Promise<[boolean, string | undefined]> {
     const hookResult = await this.task.hookManager.trigger('onHandleApproval', { key, text, subject }, this.task, this.task.project);
     if (typeof hookResult.result === 'boolean') {
       return [hookResult.result, undefined];
     }
+
+    const extensionResult = await this.task.dispatchExtensionEvent('onHandleApproval', { key, text, subject });
+    if (extensionResult.blocked) {
+      return [false, undefined];
+    }
+    if (extensionResult.allowed) {
+      return [true, undefined];
+    }
+    key = extensionResult.key;
+    text = extensionResult.text;
+    subject = extensionResult.subject;
 
     if (this.task.task.autoApprove) {
       return [true, undefined]; // Auto-approve

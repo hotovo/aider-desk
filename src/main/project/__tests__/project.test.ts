@@ -19,6 +19,7 @@ vi.mock('@/worktrees');
 vi.mock('@/memory/memory-manager');
 vi.mock('@/hooks/hook-manager');
 vi.mock('@/prompts');
+vi.mock('@/extensions/extension-manager');
 vi.mock('@/constants');
 vi.mock('@/utils');
 vi.mock('fs/promises');
@@ -40,6 +41,7 @@ import { HookManager } from '@/hooks/hook-manager';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ModelManager } from '@/models';
 import { PromptsManager } from '@/prompts';
+import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { Task } from '@/task';
 import { TelemetryManager } from '@/telemetry';
@@ -60,6 +62,7 @@ describe('Project - createNewTask', () => {
   let mockMemoryManager: Partial<MemoryManager>;
   let mockHookManager: Partial<HookManager>;
   let mockPromptsManager: Partial<PromptsManager>;
+  let mockExtensionManager: Partial<ExtensionManager>;
   let baseDir: string;
 
   beforeEach(async () => {
@@ -177,6 +180,11 @@ describe('Project - createNewTask', () => {
       dispose: vi.fn(),
     } as unknown as PromptsManager;
     (mockPromptsManager as any).start = vi.fn(() => Promise.resolve());
+    mockExtensionManager = {
+      reloadProjectExtensions: vi.fn(() => Promise.resolve()),
+      stopWatchingProject: vi.fn(),
+      dispatchEvent: vi.fn(() => Promise.resolve({} as any)),
+    };
 
     // Mock file system operations
     vi.mocked(fs.readdir).mockResolvedValue([] as any);
@@ -216,6 +224,7 @@ describe('Project - createNewTask', () => {
       mockMemoryManager as MemoryManager,
       mockHookManager as HookManager,
       mockPromptsManager as PromptsManager,
+      mockExtensionManager as ExtensionManager,
     );
 
     // Wait for tasks to load
@@ -419,6 +428,7 @@ describe('Project - deleteTask', () => {
   let mockMemoryManager: MemoryManager;
   let mockHookManager: HookManager;
   let mockPromptsManager: PromptsManager;
+  let mockExtensionManager: ExtensionManager;
 
   beforeEach(async () => {
     mockMcpManager = {} as unknown as McpManager;
@@ -538,6 +548,12 @@ describe('Project - deleteTask', () => {
     } as unknown as PromptsManager;
     (mockPromptsManager as any).start = vi.fn(() => Promise.resolve());
 
+    mockExtensionManager = {
+      reloadProjectExtensions: vi.fn(() => Promise.resolve()),
+      stopWatchingProject: vi.fn(),
+      dispatchEvent: vi.fn(() => Promise.resolve({ event: {} as any, blocked: false, modifiedResult: undefined })),
+    } as unknown as ExtensionManager;
+
     vi.mocked(determineMainModel).mockReturnValue('default-model');
     vi.mocked(determineWeakModel).mockReturnValue(null as any);
     vi.mocked(fs.readdir).mockResolvedValue([] as any);
@@ -562,6 +578,7 @@ describe('Project - deleteTask', () => {
       mockMemoryManager,
       mockHookManager,
       mockPromptsManager,
+      mockExtensionManager,
     );
 
     await (project as any).tasksLoadingPromise;

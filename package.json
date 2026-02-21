@@ -127,6 +127,7 @@
     "i18next": "^24.2.3",
     "i18next-browser-languagedetector": "^8.0.4",
     "istextorbinary": "^9.5.0",
+    "jiti": "^2.6.1",
     "js-tiktoken": "^1.0.20",
     "langfuse-vercel": "^3.38.4",
     "lodash": "^4.17.21",

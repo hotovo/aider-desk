@@ -76,6 +76,7 @@ import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
 import { createSubagentsToolset } from '@/agent/tools/subagents';
 import { AgentProfileManager } from '@/agent/agent-profile-manager';
+import { ExtensionManager } from '@/extensions/extension-manager';
 
 const MAX_RETRIES = 3;
 
@@ -91,6 +92,7 @@ export class Agent {
     private readonly telemetryManager: TelemetryManager,
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
+    private readonly extensionManager: ExtensionManager,
   ) {}
 
   private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: ImagePart[] }> {
@@ -445,10 +447,16 @@ export class Agent {
     const providerTools = await this.modelManager.getProviderTools(provider, profile.model);
     Object.assign(toolSet, providerTools);
 
-    return this.wrapToolsWithHooks(task, toolSet);
+    // Add extension tools
+    if (this.extensionManager.isInitialized() && profile.useExtensionTools !== false) {
+      const extensionTools = this.extensionManager.createExtensionToolset(task, profile, abortSignal);
+      Object.assign(toolSet, extensionTools);
+    }
+
+    return this.wrapToolsWithHooks(task, toolSet, abortSignal);
   }
 
-  private wrapToolsWithHooks(task: Task, toolSet: ToolSet): ToolSet {
+  private wrapToolsWithHooks(task: Task, toolSet: ToolSet, abortSignal?: AbortSignal): ToolSet {
     const wrappedToolSet: ToolSet = {};
 
     for (const [toolName, toolDef] of Object.entries(toolSet)) {
@@ -462,10 +470,27 @@ export class Agent {
           }
           const effectiveArgs = hookResult.event.args as Record<string, unknown> | undefined;
 
+          const toolCalledExtensionResult = await this.extensionManager.dispatchEvent('onToolCalled', { toolName, input: effectiveArgs }, task.project, task);
+          if (toolCalledExtensionResult.output) {
+            return toolCalledExtensionResult.output;
+          }
+
+          if (!options.abortSignal && abortSignal) {
+            options.abortSignal = abortSignal;
+          }
+
           const result = await toolDef.execute!(effectiveArgs, options);
           const toolFinishedHookResult = await task.hookManager.trigger('onToolFinished', { toolName, args: effectiveArgs, result }, task, task.project);
+          const toolFinishedExtensionResult = await this.extensionManager.dispatchEvent(
+            'onToolFinished',
+            { toolName, input: effectiveArgs, output: result },
+            task.project,
+            task,
+          );
 
-          if (toolFinishedHookResult.event.result) {
+          if (toolFinishedExtensionResult.output) {
+            return toolFinishedExtensionResult.output;
+          } else if (toolFinishedHookResult.event.result) {
             return toolFinishedHookResult.event.result;
           } else {
             return result;
@@ -493,11 +518,12 @@ export class Agent {
       task.addToolMessage(toolCallId, serverName, toolDef.name, args, undefined, undefined, promptContext);
 
       // --- Tool Approval Logic ---
+      const toolName = toolId;
       const questionKey = toolId;
       const questionText = `Approve tool ${toolDef.name} from ${serverName} MCP server?`;
       const questionSubject = args ? JSON.stringify(args) : undefined;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, args, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         logger.warn(`Tool execution denied by user: ${toolId}`);
@@ -690,6 +716,34 @@ export class Agent {
       contextFiles = hookResult.event.contextFiles;
     }
 
+    if (!systemPrompt) {
+      systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
+    }
+
+    const extensionResult = await this.extensionManager.dispatchEvent(
+      'onAgentStarted',
+      {
+        agentProfile: profile,
+        prompt,
+        promptContext,
+        contextMessages,
+        contextFiles,
+        systemPrompt,
+      },
+      task.project,
+      task,
+    );
+    if (extensionResult.blocked) {
+      logger.info('Agent execution blocked by extension');
+      return [];
+    }
+    profile = extensionResult.agentProfile;
+    prompt = extensionResult.prompt;
+    promptContext = extensionResult.promptContext;
+    contextMessages = extensionResult.contextMessages;
+    contextFiles = extensionResult.contextFiles;
+    systemPrompt = extensionResult.systemPrompt;
+
     const userRequestMessage: ContextUserMessage | null = prompt
       ? {
           id: promptContext?.id || uuidv4(),
@@ -791,10 +845,6 @@ export class Agent {
     if (effectiveAbortSignal?.aborted) {
       logger.info('Prompt aborted by user (before Agent run)');
       return resultMessages;
-    }
-
-    if (!systemPrompt) {
-      systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
     }
 
     const toolSet = await this.getAvailableTools(task, profile, provider, mcpConnectors, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
@@ -998,6 +1048,15 @@ export class Agent {
           if (hookResult?.event?.responseMessages) {
             responseMessages = hookResult.event.responseMessages;
           }
+          const extensionResult = await this.extensionManager.dispatchEvent(
+            'onAgentStepFinished',
+            { agentProfile: profile, currentResponseId, stepResult, finishReason, responseMessages },
+            task.project,
+            task,
+          );
+          responseMessages = extensionResult.responseMessages;
+          finishReason = extensionResult.finishReason;
+
           currentResponseId = uuidv4();
           responseMessageIndex = 0;
           hasReasoning = false;
@@ -1196,6 +1255,13 @@ export class Agent {
       if (hookResult?.event?.resultMessages) {
         resultMessages = hookResult.event.resultMessages;
       }
+      const extensionResult = await this.extensionManager.dispatchEvent(
+        'onAgentFinished',
+        { aborted: false, contextMessages, resultMessages },
+        task.project,
+        task,
+      );
+      resultMessages = extensionResult.resultMessages;
     } catch (error) {
       if (effectiveAbortSignal?.aborted) {
         logger.info('Prompt aborted by user');
@@ -1204,6 +1270,13 @@ export class Agent {
         if (hookResult?.event?.resultMessages) {
           resultMessages = hookResult.event.resultMessages;
         }
+        const extensionResult = await this.extensionManager.dispatchEvent(
+          'onAgentFinished',
+          { aborted: true, contextMessages, resultMessages },
+          task.project,
+          task,
+        );
+        resultMessages = extensionResult.resultMessages;
 
         return resultMessages;
       }
@@ -1292,7 +1365,12 @@ export class Agent {
 
       const fileMessages: ModelMessage[] = [];
       const nonBinaryFiles: Array<{ path: string; relativePath: string }> = [];
-      const imageFiles: Array<{ path: string; relativePath: string; mimeType: string; imageBase64: string }> = [];
+      const imageFiles: Array<{
+        path: string;
+        relativePath: string;
+        mimeType: string;
+        imageBase64: string;
+      }> = [];
 
       // Read all files and categorize them
       for (const file of files) {

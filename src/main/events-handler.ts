@@ -208,8 +208,8 @@ export class EventsHandler {
     this.store.removeRecentProject(baseDir);
   }
 
-  interruptResponse(baseDir: string, taskId: string, interruptId?: string): void {
-    this.projectManager.getProject(baseDir).getTask(taskId)?.interruptResponse(interruptId);
+  async interruptResponse(baseDir: string, taskId: string, interruptId?: string): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.interruptResponse(interruptId);
   }
 
   clearContext(baseDir: string, taskId: string, includeLastMessage = true): void {
@@ -363,8 +363,8 @@ export class EventsHandler {
     return this.projectManager.getProject(baseDir).getTask(taskId)?.savePromptOnly(prompt);
   }
 
-  answerQuestion(baseDir: string, taskId: string, answer: string): void {
-    this.projectManager.getProject(baseDir).getTask(taskId)?.answerQuestion(answer);
+  async answerQuestion(baseDir: string, taskId: string, answer: string): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.answerQuestion(answer);
   }
 
   removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void {

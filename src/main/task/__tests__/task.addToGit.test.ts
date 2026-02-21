@@ -149,6 +149,7 @@ describe('Task - addToGit', () => {
   let mockMemoryManager: any;
   let mockHookManager: any;
   let mockPromptsManager: any;
+  let mockExtensionManager: any;
 
   const baseDir = '/test/project';
   const taskId = 'test-task-id';
@@ -202,6 +203,9 @@ describe('Task - addToGit', () => {
       trigger: vi.fn((_hookName: string, event: any) => Promise.resolve({ event, blocked: false })),
     };
     mockPromptsManager = {};
+    mockExtensionManager = {
+      isInitialized: vi.fn(() => false),
+    };
 
     // Create Task instance
     task = new Task(
@@ -219,6 +223,7 @@ describe('Task - addToGit', () => {
       mockMemoryManager,
       mockHookManager,
       mockPromptsManager,
+      mockExtensionManager,
     );
   });
 

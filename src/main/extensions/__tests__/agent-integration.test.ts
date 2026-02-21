@@ -1,0 +1,544 @@
+/**
+ * Tests for Extension Tool Integration with Agent System
+ * Verifies toolset creation, execution wrapping, error isolation, and hook integration
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { z } from 'zod';
+
+import { ExtensionManager } from '../extension-manager';
+import { ExtensionRegistry } from '../extension-registry';
+
+import type { ToolCallOptions } from 'ai';
+import type { Extension, ExtensionMetadata, ToolDefinition, ExtensionContext, ToolResult } from '@common/extensions/types';
+import type { TaskData, AgentProfile, ContextMemoryMode, InvocationMode } from '@common/types';
+import type { Task } from '@/task';
+import type { Project } from '@/project';
+
+vi.mock('@/logger', () => ({
+  default: {
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+
+vi.mock('../extension-loader', () => ({
+  ExtensionLoader: class {
+    loadExtension = vi.fn();
+  },
+}));
+
+vi.mock('../extension-validator', () => ({
+  ExtensionValidator: class {
+    validateExtension = vi.fn().mockResolvedValue({ isValid: true, errors: [] });
+  },
+}));
+
+vi.mock('../extension-watcher', () => ({
+  ExtensionWatcher: vi.fn(),
+}));
+
+const createMockExtension = (overrides: Partial<Extension> = {}): Extension => ({
+  onLoad: vi.fn(),
+  onUnload: vi.fn(),
+  ...overrides,
+});
+
+const createMockMetadata = (overrides: Partial<ExtensionMetadata> = {}): ExtensionMetadata => ({
+  name: 'test-extension',
+  version: '1.0.0',
+  description: 'Test extension',
+  author: 'Test Author',
+  ...overrides,
+});
+
+const createMockDeps = () => ({
+  store: {} as any,
+  agentProfileManager: {
+    getAllProfiles: vi.fn().mockReturnValue([]),
+  } as any,
+  modelManager: {
+    getAllModels: vi.fn().mockResolvedValue([]),
+    getProviderModels: vi.fn().mockResolvedValue({ models: [] }),
+  } as any,
+});
+
+const createValidTool = (overrides: Partial<ToolDefinition> = {}): ToolDefinition => ({
+  name: 'test-tool',
+  description: 'A test tool',
+  parameters: z.object({
+    input: z.string(),
+  }),
+  async execute(args, _signal, _context) {
+    return { content: [{ type: 'text', text: args.input }] };
+  },
+  ...overrides,
+});
+
+const createMockTask = (): Task => {
+  const task = {
+    task: {
+      id: 'test-task-id',
+      baseDir: '/test/project',
+      name: 'Test Task',
+      aiderTotalCost: 0,
+      agentTotalCost: 0,
+      mainModel: 'test-model',
+      parentId: null,
+      state: 'in-progress',
+    } as TaskData,
+    project: {
+      baseDir: '/test/project',
+    } as Project,
+    hookManager: {
+      trigger: vi.fn().mockResolvedValue({ blocked: false, event: {} }),
+    },
+    addToolMessage: vi.fn(),
+  } as unknown as Task;
+  return task;
+};
+
+const createMockProfile = (): AgentProfile => ({
+  id: 'test-profile',
+  name: 'Test Profile',
+  model: 'test-model',
+  provider: 'test-provider',
+  enabledServers: [],
+  toolApprovals: {},
+  toolSettings: {},
+  includeContextFiles: true,
+  includeRepoMap: true,
+  useAiderTools: true,
+  usePowerTools: true,
+  useSubagents: false,
+  useTodoTools: true,
+  useTaskTools: true,
+  useMemoryTools: true,
+  useSkillsTools: true,
+  useExtensionTools: true,
+  customInstructions: '',
+  maxIterations: 10,
+  maxTokens: 4096,
+  temperature: 0.7,
+  minTimeBetweenToolCalls: 0,
+  subagent: {
+    enabled: false,
+    contextMemory: 'full' as ContextMemoryMode,
+    systemPrompt: '',
+    invocationMode: 'on-demand' as InvocationMode,
+    color: '#000',
+    description: '',
+  },
+});
+
+describe('Extension Tool Integration with Agent', () => {
+  let manager: ExtensionManager;
+  let mockDeps: ReturnType<typeof createMockDeps>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockDeps = createMockDeps();
+    manager = new ExtensionManager(mockDeps.store, mockDeps.agentProfileManager, mockDeps.modelManager);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('createExtensionToolset', () => {
+    it('should return empty ToolSet when no tools registered', async () => {
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      expect(toolset).toBeDefined();
+      expect(Object.keys(toolset)).toHaveLength(0);
+    });
+
+    it('should create ToolSet with tool name as key', async () => {
+      const testTool = createValidTool({ name: 'my-custom-tool' });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      expect(toolset).toBeDefined();
+      expect(Object.keys(toolset)).toContain('test-extension-my-custom-tool');
+    });
+
+    it('should create ExtensionContext with Task', async () => {
+      const executeMock = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'success' }] } as ToolResult);
+      const testTool = createValidTool({ execute: executeMock });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      // Execute the tool
+      const toolKey = 'test-extension-test-tool';
+      const toolDef = toolset[toolKey];
+      expect(toolDef).toBeDefined();
+      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+
+      expect(executeMock).toHaveBeenCalled();
+      const contextArg = executeMock.mock.calls[0][2] as ExtensionContext;
+      expect(contextArg.getCurrentTask()).not.toBeNull();
+      expect(contextArg.getCurrentTask()?.id).toBe('test-task-id');
+    });
+
+    it('should validate args with Zod before execution', async () => {
+      const executeMock = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'success' }] } as ToolResult);
+      const testTool = createValidTool({
+        parameters: z.object({
+          count: z.number().min(1),
+        }),
+        execute: executeMock,
+      });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      // Execute with invalid args
+      const toolKey = 'test-extension-test-tool';
+      const toolDef = toolset[toolKey];
+      expect(toolDef).toBeDefined();
+      const result = await toolDef!.execute!({ count: -1 }, { toolCallId: 'call-123' } as ToolCallOptions);
+
+      // Should not call execute with invalid args
+      expect(executeMock).not.toHaveBeenCalled();
+      expect(result).toContain('Error');
+    });
+
+    it('should pass AbortSignal to execute', async () => {
+      const executeMock = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'success' }] } as ToolResult);
+      const testTool = createValidTool({ execute: executeMock });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortController = new AbortController();
+      const abortSignal = abortController.signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      const toolKey = 'test-extension-test-tool';
+      const toolDef = toolset[toolKey];
+      expect(toolDef).toBeDefined();
+      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+
+      expect(executeMock).toHaveBeenCalled();
+      const signalArg = executeMock.mock.calls[0][1] as AbortSignal;
+      expect(signalArg.aborted).toBe(false);
+    });
+  });
+
+  describe('Tool Execution Wrapper', () => {
+    it('should catch and log errors without crashing', async () => {
+      const executeMock = vi.fn().mockRejectedValue(new Error('Tool execution failed'));
+      const testTool = createValidTool({ execute: executeMock });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      const toolKey = 'test-extension-test-tool';
+      const toolDef = toolset[toolKey];
+      expect(toolDef).toBeDefined();
+      // Should not throw
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+
+      expect(result).toBeDefined();
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Error');
+    });
+
+    it('should format ToolResult to string', async () => {
+      const testTool = createValidTool({
+        async execute(_args) {
+          return {
+            content: [
+              { type: 'text', text: 'First line' },
+              { type: 'text', text: 'Second line' },
+            ],
+          } as ToolResult;
+        },
+      });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      const toolKey = 'test-extension-test-tool';
+      const toolDef = toolset[toolKey];
+      expect(toolDef).toBeDefined();
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+
+      expect(result).toBeDefined();
+      expect(result).toContain('First line');
+      expect(result).toContain('Second line');
+    });
+
+    it('should return string directly if result is string', async () => {
+      const testTool = createValidTool({
+        async execute() {
+          return 'Simple string result' as unknown as ToolResult;
+        },
+      });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      const toolKey = 'test-extension-test-tool';
+      const toolDef = toolset[toolKey];
+      expect(toolDef).toBeDefined();
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+
+      expect(result).toBe('Simple string result');
+    });
+
+    it('should return error message on failure', async () => {
+      const testTool = createValidTool({
+        async execute() {
+          throw new Error('Something went wrong');
+        },
+      });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      const toolKey = 'test-extension-test-tool';
+      const toolDef = toolset[toolKey];
+      expect(toolDef).toBeDefined();
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+
+      expect(result).toContain('Something went wrong');
+    });
+
+    it('should not add noticeable latency', async () => {
+      const testTool = createValidTool({
+        async execute() {
+          return 'Fast result' as unknown as ToolResult;
+        },
+      });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const startTime = Date.now();
+      manager.createExtensionToolset(task, profile, abortSignal);
+      const creationTime = Date.now() - startTime;
+
+      // Toolset creation should be fast (< 100ms)
+      expect(creationTime).toBeLessThan(100);
+    });
+  });
+
+  describe('Tool Naming Convention', () => {
+    it('should use extension name and tool name in key', async () => {
+      const testTool = createValidTool({ name: 'my-tool' });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'my-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      expect(Object.keys(toolset)).toContain('my-extension-my-tool');
+    });
+
+    it('should handle multiple tools from same extension', async () => {
+      const tool1 = createValidTool({ name: 'tool-one' });
+      const tool2 = createValidTool({ name: 'tool-two' });
+      const extension = createMockExtension({
+        getTools: () => [tool1, tool2],
+      });
+      const metadata = createMockMetadata({ name: 'multi-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, tool1);
+      registry.registerTool(metadata.name, tool2);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      expect(Object.keys(toolset)).toContain('multi-extension-tool-one');
+      expect(Object.keys(toolset)).toContain('multi-extension-tool-two');
+    });
+  });
+
+  describe('Tool Approval', () => {
+    it('should skip tools marked as Never approved', async () => {
+      const testTool = createValidTool({ name: 'never-approved-tool' });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      profile.toolApprovals = {
+        'test-extension-never-approved-tool': 'never' as any,
+      };
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      expect(Object.keys(toolset)).not.toContain('test-extension-never-approved-tool');
+    });
+  });
+
+  describe('Description and Parameters', () => {
+    it('should preserve tool description', async () => {
+      const testTool = createValidTool({ description: 'A custom tool description' });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      expect(toolset['test-extension-test-tool']!.description).toBe('A custom tool description');
+    });
+
+    it('should preserve Zod schema as inputSchema', async () => {
+      const schema = z.object({
+        input: z.string(),
+        count: z.number().optional(),
+      });
+      const testTool = createValidTool({ parameters: schema });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'test-extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/test/path.ts');
+      registry.registerTool(metadata.name, testTool);
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      const abortSignal = new AbortController().signal;
+
+      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
+
+      expect(toolset['test-extension-test-tool']!.inputSchema).toBe(schema);
+    });
+  });
+});

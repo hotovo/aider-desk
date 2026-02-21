@@ -16,9 +16,18 @@ import { ipcMain, clipboard } from 'electron';
 
 import { EventsHandler } from './events-handler';
 
+import type { ExtensionMetadata } from '@common/extensions/types';
+import type { ExtensionManager } from './extensions/extension-manager';
+
 import { ServerController } from '@/server';
 
-export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) => {
+export interface ExtensionInfo {
+  metadata: ExtensionMetadata;
+  filePath: string;
+  initialized: boolean;
+}
+
+export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController, extensionManager?: ExtensionManager) => {
   // Voice handlers
   ipcMain.handle('create-voice-session', async (_, provider: ProviderProfile) => {
     return await eventsHandler.createVoiceSession(provider);
@@ -41,7 +50,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.on('answer-question', (_, baseDir: string, taskId: string, answer: string) => {
-    eventsHandler.answerQuestion(baseDir, taskId, answer);
+    void eventsHandler.answerQuestion(baseDir, taskId, answer);
   });
 
   ipcMain.on('remove-queued-prompt', (_, baseDir: string, taskId: string, promptId: string) => {
@@ -149,11 +158,11 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.on('update-main-model', (_, baseDir: string, taskId: string, mainModel: string) => {
-    eventsHandler.updateMainModel(baseDir, taskId, mainModel);
+    void eventsHandler.updateMainModel(baseDir, taskId, mainModel);
   });
 
   ipcMain.on('update-weak-model', (_, baseDir: string, taskId: string, weakModel: string) => {
-    eventsHandler.updateWeakModel(baseDir, taskId, weakModel);
+    void eventsHandler.updateWeakModel(baseDir, taskId, weakModel);
   });
 
   ipcMain.on('update-architect-model', (_, baseDir: string, taskId: string, architectModel: string) => {
@@ -173,7 +182,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.on('interrupt-response', (_, baseDir: string, taskId: string, interruptId?: string) => {
-    eventsHandler.interruptResponse(baseDir, taskId, interruptId);
+    void eventsHandler.interruptResponse(baseDir, taskId, interruptId);
   });
 
   ipcMain.on('apply-edits', (_, baseDir: string, taskId: string, edits: FileEdit[]) => {
@@ -530,5 +539,17 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 
   ipcMain.handle('clipboard-write-text', async (_, text: string) => {
     clipboard.writeText(text);
+  });
+
+  // Extension handlers
+  ipcMain.handle('get-extensions', (): ExtensionInfo[] => {
+    if (!extensionManager) {
+      return [];
+    }
+    return extensionManager.getExtensions().map((ext) => ({
+      metadata: ext.metadata,
+      filePath: ext.filePath,
+      initialized: ext.initialized,
+    }));
   });
 };

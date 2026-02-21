@@ -54,6 +54,9 @@ describe('Agent - Schema Manipulation', () => {
     };
     const mockMemoryManager = {};
     const mockPromptsManager = {};
+    const mockExtensionManager = {
+      isInitialized: vi.fn(() => false),
+    };
 
     agent = new AgentClass(
       mockStore as any,
@@ -63,6 +66,7 @@ describe('Agent - Schema Manipulation', () => {
       mockTelemetryManager as any,
       mockMemoryManager as any,
       mockPromptsManager as any,
+      mockExtensionManager as any,
     );
   });
 

@@ -14,6 +14,7 @@ import { VersionsManager } from '@/versions';
 import { TelemetryManager } from '@/telemetry';
 import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
+import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
 import logger from '@/logger';
@@ -27,6 +28,7 @@ export interface ManagersResult {
   cleanup: () => Promise<void>;
   modelManager: ModelManager;
   agentProfileManager: AgentProfileManager;
+  extensionManager: ExtensionManager;
 }
 
 export const initManagers = async (store: Store, mainWindow: BrowserWindow | null = null): Promise<ManagersResult> => {
@@ -64,6 +66,18 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   const agentProfileManager = new AgentProfileManager(eventManager);
   await agentProfileManager.start();
 
+  // Initialize extension manager (non-blocking - errors should not crash app per NFR6)
+  const extensionManager = new ExtensionManager(store, agentProfileManager, modelManager);
+  const extensionInitPromise = extensionManager.init().catch((error) => {
+    logger.error('[Extensions] Extension system initialization failed, continuing without extensions:', error);
+    return {
+      loadedCount: 0,
+      initializedCount: 0,
+      durationMs: 0,
+      errors: [error instanceof Error ? error.message : String(error)],
+    };
+  });
+
   // Initialize project manager
   const projectManager = new ProjectManager(
     store,
@@ -77,6 +91,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     memoryManager,
     hookManager,
     promptsManager,
+    extensionManager,
   );
 
   // Initialize terminal manager
@@ -114,6 +129,9 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   // Initialize connector manager with the server
   const connectorManager = new ConnectorManager(httpServer, projectManager, eventManager);
 
+  // Wait for extension initialization to complete (but don't block startup)
+  await extensionInitPromise;
+
   // Start listening
   httpServer.listen(SERVER_PORT);
   logger.info(`AiderDesk headless server listening on http://localhost:${SERVER_PORT}`);
@@ -139,6 +157,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
         agentProfileManager.dispose(),
         hookManager.dispose(),
         promptsManager.dispose(),
+        extensionManager.dispose(),
       ]);
     } catch (error) {
       logger.error('Error during cleanup:', {
@@ -168,5 +187,6 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     cleanup,
     modelManager,
     agentProfileManager,
+    extensionManager,
   };
 };

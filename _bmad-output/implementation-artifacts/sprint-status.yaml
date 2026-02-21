@@ -1,0 +1,69 @@
+generated: Thu Feb 19 2026
+project: aider-desk
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Extension Installation & Discovery
+  epic-1: done
+  1-1-extension-directories-and-constants: done
+  1-2-extension-file-discovery: done
+  1-3-extension-type-checking-and-validation: done
+  1-4-extension-loading-with-jiti: done
+  1-5-extension-startup-integration: done
+  1-6-extension-hot-reload: done
+  epic-1-retrospective: optional
+
+  # Epic 2: Extension Development & Basic Tool Registration
+  epic-2: done
+  2-1-extension-type-definitions: done
+  2-2-extensioncontext-implementation: done
+  2-3-tool-definition-interface: done
+  2-4-extension-class-lifecycle: done
+  2-5-tool-registration-via-gettools: done
+  2-6-tool-integration-with-agent-system: done
+  epic-2-retrospective: optional
+
+  # Epic 3: Extension Event System Integration
+  epic-3: in-progress
+  3-1-extension-event-handler-methods: done
+  3-2-hookmanager-integration-for-event-dispatch: review
+  3-3-event-modification-and-chaining: backlog
+  3-4-tool-result-modification: backlog
+  3-5-agent-lifecycle-event-implementation: backlog
+  3-6-non-blocking-event-execution: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Task, Project & Settings Integration
+  epic-4: backlog
+  4-1-task-and-project-class-access-in-event-handlers: backlog
+  4-2-settings-read-and-write-access-via-extensioncontext: backlog
+  4-3-task-creation-api-integration: backlog
+  4-4-subtask-creation-api-integration: backlog
+  4-5-settings-access-agent-profiles-and-model-configs: backlog
+  4-6-multi-file-extension-support: backlog
+  4-7-extension-lifecycle-state-methods: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Extension UI Elements & User Interaction
+  epic-5: backlog
+  5-1-ui-element-definition-interface: backlog
+  5-2-extensioncontext-ui-methods: backlog
+  5-3-ui-element-registration-via-getuielements: backlog
+  5-4-ipc-communication-for-extension-ui: backlog
+  5-5-renderer-components-for-extension-ui: backlog
+  5-6-extension-status-ui: backlog
+  5-7-manual-reload-capability: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Extension Documentation, Testing & Examples
+  epic-6: backlog
+  6-1-complete-typescript-type-definitions: backlog
+  6-2-extensions-run-in-appropriate-electron-contexts: backlog
+  6-3-extend-existing-docs-site-infrastructure: backlog
+  6-4-complete-api-reference-with-type-signatures: backlog
+  6-5-working-examples-tool-registration: backlog
+  6-6-working-examples-event-subscription: backlog
+  6-7-working-examples-ui-element-registration: backlog
+  epic-6-retrospective: optional

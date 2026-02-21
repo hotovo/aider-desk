@@ -13,6 +13,7 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
+import { ExtensionManager } from '@/extensions/extension-manager';
 
 export class ProjectManager {
   public readonly worktreeManager: WorktreeManager;
@@ -30,6 +31,7 @@ export class ProjectManager {
     private readonly memoryManager: MemoryManager,
     private readonly hookManager: HookManager,
     private readonly promptsManager: PromptsManager,
+    private readonly extensionManager: ExtensionManager,
   ) {
     this.worktreeManager = worktreeManager;
   }
@@ -53,6 +55,7 @@ export class ProjectManager {
       this.memoryManager,
       this.hookManager,
       this.promptsManager,
+      this.extensionManager,
     );
     this.projects.push(project);
     return project;

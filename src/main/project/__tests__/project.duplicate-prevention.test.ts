@@ -17,6 +17,7 @@ vi.mock('@/worktrees');
 vi.mock('@/memory/memory-manager');
 vi.mock('@/hooks/hook-manager');
 vi.mock('@/prompts');
+vi.mock('@/extensions/extension-manager');
 vi.mock('@/task/aider-manager');
 vi.mock('@/task/context-manager');
 vi.mock('@/project/migrations');
@@ -79,6 +80,11 @@ describe('Project Duplicate Subtask Prevention', () => {
       {} as any,
       { trigger: vi.fn().mockResolvedValue({ event: {}, blocked: false }) } as any,
       { watchProject: vi.fn() } as any,
+      {
+        reloadProjectExtensions: vi.fn(),
+        stopWatchingProject: vi.fn(),
+        dispatchEvent: vi.fn(() => Promise.resolve({ event: {}, blocked: false, modifiedResult: undefined })),
+      } as any,
     );
 
     // Mock INTERNAL_TASK_ID

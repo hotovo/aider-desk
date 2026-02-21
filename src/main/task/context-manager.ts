@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import {
+  ConnectorMessage,
   ContextFile,
   ContextMessage,
   ContextToolMessage,
@@ -479,7 +480,7 @@ export class ContextManager {
     return removedMessages;
   }
 
-  toConnectorMessages(contextMessages: ContextMessage[] = this.messages): { role: MessageRole; content: string }[] {
+  toConnectorMessages(contextMessages: ContextMessage[] = this.messages): ConnectorMessage[] {
     let aiderPrompt = '';
     let subAgentsPrompt = '';
 

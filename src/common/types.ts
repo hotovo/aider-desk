@@ -312,6 +312,11 @@ export interface ContextToolMessage extends BaseContextMessage {
 // Union type for enhanced context messages
 export type ContextMessage = ContextUserMessage | ContextAssistantMessage | ContextToolMessage;
 
+export interface ConnectorMessage {
+  role: MessageRole;
+  content: string;
+}
+
 export interface ContextFile {
   path: string;
   readOnly?: boolean;
@@ -446,6 +451,7 @@ export interface AgentProfile {
   useTaskTools: boolean;
   useMemoryTools: boolean;
   useSkillsTools: boolean;
+  useExtensionTools: boolean;
   customInstructions: string;
   subagent: SubagentConfig;
   isSubagent?: boolean; // flag to indicate if this profile is being used as a subagent

@@ -404,6 +404,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   useTaskTools: false,
   useMemoryTools: true,
   useSkillsTools: true,
+  useExtensionTools: true,
   customInstructions: '',
   enabledServers: [],
   subagent: {

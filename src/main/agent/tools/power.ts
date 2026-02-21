@@ -104,10 +104,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         .describe('Whether the searchTerm should be treated as a regular expression. Use regex only when it is really needed. Default: false.'),
       replaceAll: z.boolean().optional().default(false).describe('Whether to replace all occurrences or just the first one. Default: false.'),
     }),
-    execute: async (args, { toolCallId }) => {
-      const { filePath, searchTerm, replacementText, isRegex, replaceAll } = args;
+    execute: async (input, { toolCallId }) => {
+      const { filePath, searchTerm, replacementText, isRegex, replaceAll } = input;
       const expandedPath = expandTilde(filePath);
-      task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_EDIT, args, undefined, undefined, promptContext);
+      task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_EDIT, input, undefined, undefined, promptContext);
 
       if (searchTerm === replacementText) {
         return 'Already updated - no changes were needed.';
@@ -145,10 +145,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         return updated;
       };
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_EDIT}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_EDIT}`;
+      const questionKey = toolName;
       const questionText = `Approve editing file '${filePath}'?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `File edit to '${filePath}' denied by user. Reason: ${userInput}`;
@@ -210,7 +211,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       lineOffset: z.number().int().min(0).optional().default(0).describe('The starting line number (0-based) to begin reading from. Default: 0.'),
       lineLimit: z.number().int().min(1).optional().default(1000).describe('The maximum number of lines to read. Default: 1000.'),
     }),
-    execute: async ({ filePath, withLines, lineOffset, lineLimit }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { filePath, withLines, lineOffset, lineLimit } = input;
       const expandedPath = expandTilde(filePath);
       task.addToolMessage(
         toolCallId,
@@ -227,10 +229,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         promptContext,
       );
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_READ}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_READ}`;
+      const questionKey = toolName;
       const questionText = `Approve reading file '${filePath}'?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `File read of '${filePath}' denied by user. Reason: ${userInput}`;
@@ -265,7 +268,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           "Mode of writing: 'create_only' (creates if not exists, fails if exists), 'overwrite' (overwrites or creates), 'append' (appends or creates). Default: 'create_only'.",
         ),
     }),
-    execute: async ({ filePath, content, mode }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { filePath, content, mode } = input;
       const expandedPath = expandTilde(filePath);
       task.addToolMessage(
         toolCallId,
@@ -281,7 +285,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         promptContext,
       );
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_WRITE}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_WRITE}`;
+      const questionKey = toolName;
       const questionText =
         mode === FileWriteMode.Overwrite
           ? `Approve overwriting file '${filePath}'?`
@@ -289,7 +294,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             ? `Approve appending to file '${filePath}'?`
             : `Approve creating file '${filePath}'?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `File write to '${filePath}' denied by user. Reason: ${userInput}`;
@@ -344,7 +349,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         .describe('The current working directory from which to apply the glob pattern (relative to <WorkingDirectory>). Default: <WorkingDirectory>.'),
       ignore: z.array(z.string()).optional().describe('An array of glob patterns to ignore.'),
     }),
-    execute: async ({ pattern, cwd, ignore }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { pattern, cwd, ignore } = input;
       const expandedCwd = cwd ? expandTilde(cwd) : cwd;
       task.addToolMessage(
         toolCallId,
@@ -360,10 +366,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         promptContext,
       );
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GLOB}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GLOB}`;
+      const questionKey = toolName;
       const questionText = `Approve glob search with pattern '${pattern}'?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Glob search with pattern '${pattern}' denied by user. Reason: ${userInput}`;
@@ -409,7 +416,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       caseSensitive: z.boolean().optional().default(false).describe('Whether the search should be case sensitive. Default: false.'),
       maxResults: z.number().int().min(1).optional().default(50).describe('Maximum number of results to return. Default: 50.'),
     }),
-    execute: async ({ filePattern, searchTerm, contextLines, caseSensitive, maxResults }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { filePattern, searchTerm, contextLines, caseSensitive, maxResults } = input;
       task.addToolMessage(
         toolCallId,
         TOOL_GROUP_NAME,
@@ -426,10 +434,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         promptContext,
       );
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`;
+      const questionKey = toolName;
       const questionText = `Approve grep search for '${searchTerm}' in files matching '${filePattern}'?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Grep search for '${searchTerm}' in files matching '${filePattern}' denied by user. Reason: ${userInput}`;
@@ -515,7 +524,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       cwd: z.string().optional().describe('The working directory for the command (relative to <WorkingDirectory>). Default: <WorkingDirectory>.'),
       timeout: z.number().int().min(0).optional().default(120000).describe('Timeout for the command execution in milliseconds. Default: 120000 ms.'),
     }),
-    execute: async ({ command, cwd, timeout }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { command, cwd, timeout } = input;
       const expandedCwd = cwd ? expandTilde(cwd) : cwd;
       task.addToolMessage(
         toolCallId,
@@ -532,7 +542,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         false, // not finished yet
       );
 
-      const toolId = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`;
+      const toolId = toolName;
       const questionText = 'Approve executing bash command?';
       const questionSubject = `Command: ${command}\nWorking Directory: ${cwd || '.'}\nTimeout: ${timeout}ms`;
 
@@ -553,7 +564,9 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         approvedBySettings = true;
       }
 
-      const [isApproved, userInput] = approvedBySettings ? [true, undefined] : await approvalManager.handleApproval(toolId, questionText, questionSubject);
+      const [isApproved, userInput] = approvedBySettings
+        ? [true, undefined]
+        : await approvalManager.handleToolApproval(toolName, input, toolId, questionText, questionSubject);
 
       if (!isApproved) {
         return `Bash command execution denied by user. Reason: ${userInput}`;
@@ -696,7 +709,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           'Format of the response: "markdown" (default, converts HTML to markdown), "html" (returns raw HTML), "raw" (fetches raw content via HTTP, ideal for API responses or raw files).',
         ),
     }),
-    execute: async ({ url, timeout, format }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { url, timeout, format } = input;
       task.addToolMessage(
         toolCallId,
         TOOL_GROUP_NAME,
@@ -711,11 +725,12 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         promptContext,
       );
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FETCH}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FETCH}`;
+      const questionKey = toolName;
       const questionText = `Approve fetching content from URL '${url}'?`;
       const questionSubject = `URL: ${url}\nTimeout: ${timeout}ms\nFormat: ${format}`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         return `URL fetch from '${url}' denied by user. Reason: ${userInput}`;
@@ -752,14 +767,16 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       maxTokens: z.number().optional().default(5000).describe('Maximum number of tokens to return'),
       language: z.string().optional().describe('Limit search to files of a specific programming language'),
     }),
-    execute: async ({ query: searchQuery, path: inputPath, allowTests, exact, maxTokens: paramMaxTokens, language }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { query: searchQuery, path: inputPath, allowTests, exact, maxTokens: paramMaxTokens, language } = input;
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_SEMANTIC_SEARCH, { searchQuery, path: inputPath }, undefined, undefined, promptContext);
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`;
+      const questionKey = toolName;
       const questionText = 'Approve running codebase search?';
       const questionSubject = `Query: ${searchQuery}\nPath: ${inputPath || '.'}\nAllow Tests: ${allowTests}\nExact: ${exact}\nLanguage: ${language}`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         return `Search execution denied by user. Reason: ${userInput}`;

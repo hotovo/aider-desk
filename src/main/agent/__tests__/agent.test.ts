@@ -105,6 +105,10 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
     };
     const mockMemoryManager = {};
     const mockPromptsManager = {};
+    const mockExtensionManager = {
+      isInitialized: vi.fn(() => false),
+      createExtensionToolset: vi.fn(() => ({})),
+    };
 
     agent = new AgentClass(
       mockStore as any,
@@ -114,6 +118,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       mockTelemetryManager as any,
       mockMemoryManager as any,
       mockPromptsManager as any,
+      mockExtensionManager as any,
     );
 
     // Spy on the private method for testing

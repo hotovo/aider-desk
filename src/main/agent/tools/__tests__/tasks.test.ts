@@ -40,6 +40,7 @@ describe('Tasks Tools - search_task', () => {
       hookManager: {
         trigger: vi.fn().mockResolvedValue({ result: true, reason: undefined }),
       },
+      dispatchExtensionEvent: vi.fn().mockResolvedValue({ blocked: false, allowed: false }),
     };
 
     mockProfile = {
@@ -121,7 +122,7 @@ describe('Tasks Tools - search_task', () => {
       const searchQuery = 'test query';
 
       const { ApprovalManager } = await import('../approval-manager');
-      vi.spyOn(ApprovalManager.prototype, 'handleApproval').mockResolvedValueOnce([false, 'User denied request'] as never);
+      vi.spyOn(ApprovalManager.prototype, 'handleToolApproval').mockResolvedValueOnce([false, 'User denied request'] as never);
 
       const tools = createTasksToolset(mockSettings, mockTask, mockProfile, mockPromptContext);
       const searchTaskToolKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_TASK}`;
@@ -452,7 +453,7 @@ describe('Tasks Tools - search_task', () => {
       }));
 
       const { ApprovalManager } = await import('../approval-manager');
-      const handleApprovalSpy = vi.spyOn(ApprovalManager.prototype, 'handleApproval').mockResolvedValue([true, undefined] as never);
+      const handleApprovalSpy = vi.spyOn(ApprovalManager.prototype, 'handleToolApproval').mockResolvedValue([true, undefined] as never);
 
       const tools = createTasksToolset(mockSettings, mockTask, mockProfile, mockPromptContext);
       const searchTaskToolKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_TASK}`;
@@ -466,6 +467,8 @@ describe('Tasks Tools - search_task', () => {
 
       expect(handleApprovalSpy).toHaveBeenCalledWith(
         `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_TASK}`,
+        { taskId: targetTaskId, query: searchQuery },
+        `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_TASK}`,
         `Approve searching in task ${targetTaskId}?`,
         `Query: ${searchQuery}\nTask ID: ${targetTaskId}`,
       );
@@ -473,7 +476,7 @@ describe('Tasks Tools - search_task', () => {
 
     it('should return denial message when user denies', async () => {
       const { ApprovalManager } = await import('../approval-manager');
-      vi.spyOn(ApprovalManager.prototype, 'handleApproval').mockResolvedValue([false, 'I do not want to search'] as never);
+      vi.spyOn(ApprovalManager.prototype, 'handleToolApproval').mockResolvedValue([false, 'I do not want to search'] as never);
 
       const tools = createTasksToolset(mockSettings, mockTask, mockProfile, mockPromptContext);
       const searchTaskToolKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_TASK}`;
