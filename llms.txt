@@ -132,6 +132,7 @@ src/
         claude-agent-sdk.ts
         deepseek.ts
         default.ts
+        gemini-cli.ts
         gemini.ts
         gpustack.ts
         groq.ts
@@ -395,6 +396,7 @@ src/
             DefaultModelOverrides.tsx
             EnableVoiceControl.tsx
             GeminiAdvancedSettings.tsx
+            GeminiCliParameters.tsx
             GeminiModelOverrides.tsx
             GeminiParameters.tsx
             GpustackParameters.tsx
@@ -593,6 +595,8 @@ src/
         CerebrasIcon.tsx
         ClaudeAgentSdkIcon.tsx
         DeepseekIcon.tsx
+        gemini-cli.png
+        GeminiCliIcon.tsx
         GeminiIcon.tsx
         gpustack.png
         GpustackIcon.tsx
@@ -1651,6 +1655,10 @@ File: src/common/locales/en.json
     },
     "claudeAgentSdkAuthRequired": "This provider requires Claude Code CLI installation and authentication. Install from https://claude.com/product/claude-code and run `claude login` to authenticate.",
     "claudeAgentSdkAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
+    "geminiCliAuthRequired": "This provider requires Gemini CLI installation and authentication. Install from https://geminicli.com and run `gemini` to authenticate.",
+    "geminiCliAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
+    "projectId": "Project ID",
+    "projectIdPlaceholder": "Optional. Required for organization or enterprise accounts.",
     "overrides": {
       "title": "Provider Overrides",
       "resetToDefaults": "Clear overrides",
@@ -1783,6 +1791,7 @@ File: src/common/locales/en.json
     "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "gemini-cli": "Gemini CLI",
     "groq": "Groq",
     "kimi-plan": "Kimi Coding Plan",
     "gpustack": "GPUStack",
@@ -3368,6 +3377,10 @@ File: src/common/locales/zh.json
     },
     "claudeAgentSdkAuthRequired": "此提供商需要安装和认证 Claude Code CLI。请从 https://claude.com/product/claude-code 安装并运行 `claude login` 进行认证。",
     "claudeAgentSdkAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "geminiCliAuthRequired": "此提供商需要安装和认证 Gemini CLI。请从 https://geminicli.com 安装并运行 `gemini` 进行认证。",
+    "geminiCliAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "projectId": "项目 ID",
+    "projectIdPlaceholder": "可选。组织和企业账户需要此项。",
     "overrides": {
       "title": "提供商覆盖",
       "resetToDefaults": "清除覆盖",
@@ -3498,6 +3511,7 @@ File: src/common/locales/zh.json
     "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "gemini-cli": "Gemini CLI",
     "groq": "Groq",
     "kimi-plan": "Kimi Coding Plan",
     "gpustack": "GPUStack",
@@ -4885,6 +4899,7 @@ export type LlmProviderName =
   | 'claude-agent-sdk'
   | 'deepseek'
   | 'gemini'
+  | 'gemini-cli'
   | 'gpustack'
   | 'groq'
   | 'kimi-plan'
@@ -5027,6 +5042,12 @@ export interface ClaudeAgentSdkProvider extends LlmProviderBase {
 }
 export const isClaudeAgentSdkProvider = (provider: LlmProviderBase): provider is ClaudeAgentSdkProvider
 ⋮----
+export interface GeminiCliProvider extends LlmProviderBase {
+  name: 'gemini-cli';
+  projectId?: string;
+}
+export const isGeminiCliProvider = (provider: LlmProviderBase): provider is GeminiCliProvider
+⋮----
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -5117,6 +5138,7 @@ export type LlmProvider =
   | AnthropicCompatibleProvider
   | AzureProvider
   | GeminiProvider
+  | GeminiCliProvider
   | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
@@ -7356,6 +7378,8 @@ import { ApprovalManager } from './tools/approval-manager';
 import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, findLastUserMessage, THINKING_RESPONSE_STAR_TAG } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 ⋮----
+import type { JSONSchema7Definition } from '@ai-sdk/provider';
+⋮----
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
@@ -7464,11 +7488,32 @@ const execute = async (args:
 // Return an error message string to the agent
 ⋮----
 /**
-   * Fixes the input schema for various providers.
+   * Recursively strips unsupported JSON Schema 2019-09 keywords that are not
+   * recognized by some MCP servers (like gemini-cli).
    */
+private stripUnsupportedSchemaKeywords(schema: Record<string, unknown>): Record<string, unknown>
+⋮----
+// JSON Schema 2019-09 keywords to remove
+⋮----
+// Recursive helper to process schema objects
+const processObject = (obj: Record<string, unknown>): Record<string, unknown> =>
+⋮----
+// Skip unsupported keywords
+⋮----
+// Recursively process objects
+⋮----
+// Process arrays (e.g., anyOf, oneOf, allOf, enum items)
+⋮----
+// Process nested objects (e.g., properties, items, additionalProperties)
+⋮----
 private fixInputSchema(provider: LlmProviderName, inputSchema: McpToolInputSchema): McpToolInputSchema
 ⋮----
 // Deep clone to avoid modifying the original schema
+⋮----
+// First, strip JSON Schema 2019-09 keywords that are not supported
+⋮----
+// Gemini requires that when any_of/one_of/all_of is present,
+// it must be the ONLY field in the property
 ⋮----
 // gemini does not like "default" in the schema
 ⋮----
@@ -7486,7 +7531,7 @@ async runAgent(
     abortSignal?: AbortSignal,
 ): Promise<ContextMessage[]>
 ⋮----
-// Set default values inside function body since await can't be used in parameter initializers
+// Store resolved provider for use in retry logic
 ⋮----
 // Create new abort controller for this run only if abortSignal is not provided
 ⋮----
@@ -7529,6 +7574,8 @@ const onStepFinish = async (stepResult: StepResult<typeof toolSet>) =>
 // Persist new messages incrementally after each iteration
 ⋮----
 // Check for 'stop' with trailing tool message
+⋮----
+// if response messages have been modified by other means (e.g. hooks), we need to continue when the last message is a user message
 ⋮----
 // Clean up abort controller only if we created it
 ⋮----
@@ -11240,7 +11287,7 @@ export interface HookContext {
   addInfoMessage: (message: string) => void;
   addWarningMessage: (message: string) => void;
   addErrorMessage: (message: string) => void;
-  addLoadingMessage: (message: string) => void;
+  addLoadingMessage: (message: string, finished?: boolean) => void;
   setTaskName: (name: string) => Promise<void>;
   addContextMessage: (role: 'user' | 'assistant', content: string) => Promise<void>;
   task: Task;
@@ -11259,7 +11306,7 @@ addWarningMessage(message: string)
 ⋮----
 addErrorMessage(message: string)
 ⋮----
-addLoadingMessage(message: string)
+addLoadingMessage(message: string, finished = false)
 ⋮----
 async setTaskName(name: string)
 ⋮----
@@ -11277,9 +11324,11 @@ import path from 'path';
 ⋮----
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
-import { Mode, ResponseCompletedData, ContextFile, TaskData, QuestionData } from '@common/types';
+import { Mode, ResponseCompletedData, ContextFile, TaskData, QuestionData, ContextMessage } from '@common/types';
 ⋮----
 import { HookContext, HookContextImpl } from './hook-context';
+⋮----
+import type { FinishReason } from 'ai';
 ⋮----
 import { Task } from '@/task/task';
 import { Project } from '@/project/project';
@@ -11288,28 +11337,90 @@ import logger from '@/logger';
 import { ResponseMessage } from '@/messages';
 ⋮----
 export interface HookEventMap {
-  onTaskCreated: { task: TaskData };
-  onTaskInitialized: { task: TaskData };
-  onTaskClosed: { task: TaskData };
-  onPromptSubmitted: { prompt: string; mode: Mode };
-  onPromptStarted: { prompt: string | null; mode: Mode };
-  onPromptFinished: { responses: ResponseCompletedData[] };
-  onAgentStarted: { prompt: string | null };
-  onAgentFinished: { resultMessages: unknown[] };
-  onAgentStepFinished: { stepResult: unknown };
-  onToolCalled: { toolName: string; args: Record<string, unknown> | undefined };
-  onToolFinished: { toolName: string; args: Record<string, unknown> | undefined; result: unknown };
-  onFileAdded: { file: ContextFile };
-  onFileDropped: { filePath: string };
-  onCommandExecuted: { command: string };
-  onAiderPromptStarted: { prompt: string; mode: Mode };
-  onAiderPromptFinished: { responses: ResponseCompletedData[] };
-  onQuestionAsked: { question: QuestionData };
-  onQuestionAnswered: { question: QuestionData; answer: string; userInput?: string };
-  onHandleApproval: { key: string; text: string; subject?: string };
-  onSubagentStarted: { subagentId: string; prompt: string };
-  onSubagentFinished: { subagentId: string; resultMessages: unknown[] };
-  onResponseMessageProcessed: { message: ResponseMessage };
+  onTaskCreated: {
+    task: TaskData;
+  };
+  onTaskInitialized: {
+    task: TaskData;
+  };
+  onTaskClosed: {
+    task: TaskData;
+  };
+  onPromptSubmitted: {
+    prompt: string;
+    mode: Mode;
+  };
+  onPromptStarted: {
+    prompt: string | null;
+    mode: Mode;
+  };
+  onPromptFinished: {
+    responses: ResponseCompletedData[];
+  };
+  onAgentStarted: {
+    prompt: string | null;
+    contextMessages: ContextMessage[];
+    contextFiles: ContextFile[];
+  };
+  onAgentFinished: {
+    contextMessages: ContextMessage[];
+    resultMessages: ContextMessage[];
+    aborted: boolean;
+  };
+  onAgentStepFinished: {
+    stepResult: unknown;
+    finishReason: FinishReason;
+    responseMessages: ContextMessage[];
+  };
+  onToolCalled: {
+    toolName: string;
+    args: Record<string, unknown> | undefined;
+  };
+  onToolFinished: {
+    toolName: string;
+    args: Record<string, unknown> | undefined;
+    result: unknown;
+  };
+  onFileAdded: {
+    file: ContextFile;
+  };
+  onFileDropped: {
+    filePath: string;
+  };
+  onCommandExecuted: {
+    command: string;
+  };
+  onAiderPromptStarted: {
+    prompt: string;
+    mode: Mode;
+  };
+  onAiderPromptFinished: {
+    responses: ResponseCompletedData[];
+  };
+  onQuestionAsked: {
+    question: QuestionData;
+  };
+  onQuestionAnswered: {
+    question: QuestionData;
+    answer: string;
+    userInput?: string;
+  };
+  onHandleApproval: {
+    key: string;
+    text: string;
+    subject?: string;
+  };
+  onSubagentStarted: {
+    subagentId: string;
+    prompt: string;
+  };
+  onSubagentFinished: {
+    subagentId: string;
+    resultMessages: ContextMessage[];
+  };
+  onResponseMessageProcessed: {
+    message: ResponseMessage;
+  };
 }
 ⋮----
 export type HookFunctions = {
@@ -11860,6 +11971,70 @@ export const calculateCost = (model: Model, sentTokens: number, receivedTokens: 
 export const getDefaultUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData =>
 
 ================
+File: src/main/models/providers/gemini-cli.ts
+================
+import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isGeminiCliProvider } from '@common/agent';
+import { type LanguageModelUsage, type ToolSet } from 'ai';
+⋮----
+import { getDefaultUsageReport } from './default';
+⋮----
+import type { LanguageModelV2 } from '@ai-sdk/provider';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import { Task } from '@/task/task';
+import logger from '@/logger';
+import { findExecutableInPath } from '@/utils';
+⋮----
+// Gemini CLI models with token limits
+⋮----
+export const loadGeminiCliModels = async (profile: ProviderProfile, _settings: SettingsData): Promise<LoadModelsResponse> =>
+⋮----
+export const hasGeminiCliEnvVars = (): boolean =>
+⋮----
+// Check for gemini CLI in PATH
+⋮----
+const getGeminiCliAiderMapping = (provider: ProviderProfile, modelId: string, _settings: SettingsData, _projectDir: string): AiderModelMapping =>
+⋮----
+// Pass projectId as GOOGLE_CLOUD_PROJECT if configured (for organization/enterprise accounts)
+⋮----
+export const createGeminiCliLlm = async (
+  profile: ProviderProfile,
+  model: Model,
+  _settings: SettingsData,
+  _projectDir: string,
+  _toolSet?: ToolSet,
+  _systemPrompt?: string,
+  _providerMetadata?: unknown,
+): Promise<LanguageModelV2> =>
+⋮----
+// Dynamic import required: ai-sdk-provider-gemini-cli is an ESM module
+// and cannot be loaded synchronously in Electron's CommonJS environment
+⋮----
+// Set GOOGLE_CLOUD_PROJECT env var if projectId is configured (for organization/enterprise accounts)
+// Note: The underlying @google/gemini-cli-core library only reads projectId from process.env,
+// so we must set it here. This is a limitation of the library, not our implementation.
+⋮----
+const getGeminiCliUsageReport = (
+  task: Task,
+  provider: ProviderProfile,
+  model: Model,
+  usage: LanguageModelUsage,
+  _providerMetadata?: unknown,
+): UsageReportData =>
+⋮----
+// Use default usage report for now
+// Gemini CLI may provide custom metadata like Claude does
+⋮----
+const getGeminiCliProviderParameters = (): Record<string, unknown> =>
+⋮----
+const isGeminiCliRetryable = (error: unknown): boolean =>
+⋮----
+// Gemini CLI: Project ID required for workspace accounts - non-retryable
+⋮----
+// All other errors are retryable by default
+
+================
 File: src/main/models/providers/gemini.ts
 ================
 import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
@@ -11924,6 +12099,12 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
 // Create ephemeral token
 // The token is valid for 1 minute for session initiation, and 30 minutes for the session duration by default.
 ⋮----
+const isGeminiRetryable = (error: unknown): boolean =>
+⋮----
+// Gemini: thought_signature errors (occurs when resuming from another model's conversation) - non-retryable
+⋮----
+// All other errors are retryable by default
+⋮----
 // === Complete Strategy Implementation ===
 ⋮----
 // Core LLM functions
@@ -11931,6 +12112,8 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
 // Model discovery functions
 ⋮----
 // Message normalization
+⋮----
+// Error handling
 
 ================
 File: src/main/models/providers/gpustack.ts
@@ -12828,6 +13011,7 @@ import { cerebrasProviderStrategy } from './providers/cerebras';
 import { claudeAgentSdkProviderStrategy } from './providers/claude-agent-sdk';
 import { deepseekProviderStrategy } from './providers/deepseek';
 import { geminiProviderStrategy } from './providers/gemini';
+import { geminiCliProviderStrategy } from './providers/gemini-cli';
 import { gpustackProviderStrategy } from './providers/gpustack';
 import { groqProviderStrategy } from './providers/groq';
 import { kimiPlanProviderStrategy } from './providers/kimi-plan';
@@ -12976,7 +13160,7 @@ createLlm(
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
-): LanguageModelV2
+): LanguageModelV2 | Promise<LanguageModelV2>
 ⋮----
 // Resolve Model object if string is provided
 ⋮----
@@ -13016,6 +13200,14 @@ async createVoiceSession(provider: ProviderProfile): Promise<VoiceSession>
 normalizeMessages(provider: ProviderProfile, model: string | Model, messages: ModelMessage[]): ModelMessage[]
 ⋮----
 // Resolve Model object
+⋮----
+/**
+   * Determines if an error is retryable for the given provider and model
+   * Defaults to true (retryable) if the provider doesn't implement isRetryable
+   */
+isRetryable(provider: ProviderProfile, _modelId: string, error: unknown): boolean
+⋮----
+// Default to retryable if provider doesn't implement this method
 
 ================
 File: src/main/models/types.ts
@@ -13067,7 +13259,7 @@ export interface LlmProviderStrategy {
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
-  ) => LanguageModelV2;
+  ) => LanguageModelV2 | Promise<LanguageModelV2>;
 
   /**
    * Generates usage reports with provider-specific metadata and calculates cost internally
@@ -13125,6 +13317,13 @@ export interface LlmProviderStrategy {
    * Normalizes messages for provider-specific requirements
    */
   normalizeMessages?: (provider: LlmProvider, model: Model, messages: ModelMessage[]) => ModelMessage[];
+
+  /**
+   * Determines if an error is retryable for this provider
+   * Returns false for non-retryable errors (e.g., auth issues, invalid requests)
+   * Returns true for transient errors that may succeed on retry
+   */
+  isRetryable?: (error: unknown) => boolean;
 }
 ⋮----
 // === LLM Creation and Usage Functions ===
@@ -13177,6 +13376,12 @@ export interface LlmProviderStrategy {
 ⋮----
 /**
    * Normalizes messages for provider-specific requirements
+   */
+⋮----
+/**
+   * Determines if an error is retryable for this provider
+   * Returns false for non-retryable errors (e.g., auth issues, invalid requests)
+   * Returns true for transient errors that may succeed on retry
    */
 ⋮----
 export type LlmProviderRegistry = Record<LlmProviderName, LlmProviderStrategy>;
@@ -22227,6 +22432,24 @@ label=
 <Checkbox label=
 
 ================
+File: src/renderer/src/components/ModelLibrary/providers/GeminiCliParameters.tsx
+================
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { GeminiCliProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+⋮----
+type Props = {
+  provider: GeminiCliProvider;
+  onChange: (updated: GeminiCliProvider) => void;
+};
+⋮----
+const handleProjectIdChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+
+================
 File: src/renderer/src/components/ModelLibrary/providers/GeminiModelOverrides.tsx
 ================
 import { getDefaultProviderParams, GeminiProvider, LlmProvider } from '@common/agent';
@@ -23310,6 +23533,7 @@ import {
   CerebrasIcon,
   ClaudeAgentSdkIcon,
   DeepseekIcon,
+  GeminiCliIcon,
   GeminiIcon,
   GpustackIcon,
   GroqIcon,
@@ -23425,6 +23649,7 @@ import {
   BedrockParameters,
   ClaudeAgentSdkParameters,
   DeepseekParameters,
+  GeminiCliParameters,
   GeminiParameters,
   GpustackParameters,
   GroqParameters,
@@ -23513,6 +23738,7 @@ import {
   CerebrasIcon,
   ClaudeAgentSdkIcon,
   DeepseekIcon,
+  GeminiCliIcon,
   GeminiIcon,
   GpustackIcon,
   GroqIcon,
@@ -27680,6 +27906,17 @@ export const DeepseekIcon = ({ width = 48, height = 48, className }: Props) => (
 );
 
 ================
+File: src/renderer/src/icons/GeminiCliIcon.tsx
+================
+import geminiCliIcon from './gemini-cli.png';
+⋮----
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+
+================
 File: src/renderer/src/icons/GeminiIcon.tsx
 ================
 type Props = {
@@ -31356,6 +31593,7 @@ File: package.json
     "@xterm/xterm": "^5.5.0",
     "ai": "5.0.119",
     "ai-sdk-provider-claude-code": "2.3.0",
+    "ai-sdk-provider-gemini-cli": "^1.5.1",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
