@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.54.0]
 
 - added support for message queue while task is processing
 - making sure to include user message when using Gemini models to avoid signature error
