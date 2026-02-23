@@ -1,5 +1,7 @@
 import {
   AiderRunOptions,
+  ConnectorMessage,
+  ConnectorMessageContent,
   ContextFile,
   ContextFileSourceType,
   EditFormat,
@@ -71,7 +73,7 @@ export interface PromptMessage extends Message {
   mode: Mode | null;
   architectModel: string | null;
   promptContext: PromptContext;
-  messages?: { role: MessageRole; content: string }[];
+  messages?: ConnectorMessage[];
   files?: ContextFile[];
   options?: AiderRunOptions;
 }
@@ -121,7 +123,7 @@ export const isDropFileMessage = (message: Message): message is DropFileMessage 
 export interface RunCommandMessage extends Message {
   action: 'run-command';
   command: string;
-  messages?: { role: MessageRole; content: string }[];
+  messages?: ConnectorMessage[];
   files?: ContextFile[];
 }
 
@@ -201,7 +203,7 @@ export const isTokensInfoMessage = (message: Message): message is TokensInfoMess
 
 export interface AddMessageMessage extends Message {
   action: 'add-message';
-  content: string;
+  content: ConnectorMessageContent;
   role: MessageRole;
   acknowledge: boolean;
   usageReport?: UsageReportData;
@@ -263,7 +265,7 @@ export const isUpdateModelsInfoMessage = (message: Message): message is UpdateMo
 
 export interface RequestContextInfoMessage extends Message {
   action: 'request-context-info';
-  messages?: { role: MessageRole; content: string }[];
+  messages?: ConnectorMessage[];
   files?: ContextFile[];
 }
 
