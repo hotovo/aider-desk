@@ -1,4 +1,4 @@
-import { WorkflowMetadata, WorkflowPhase } from './bmad-types';
+import { WorkflowMetadata, WorkflowPhase } from './types';
 
 /**
  * Registry of all BMAD workflows with metadata

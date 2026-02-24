@@ -6,8 +6,8 @@ import importPlugin from 'eslint-plugin-import';
 import prettierPlugin from 'eslint-plugin-prettier/recommended';
 import reactPlugin from 'eslint-plugin-react';
 
-export default tseslint.config({ ignores: ['dist', 'node_modules', 'out', '**/__fixtures__/**'] }, {
-  ignores: ['dist', 'node_modules', 'out', '**/__fixtures__/**'],
+export default tseslint.config({ ignores: ['build', 'dist', 'node_modules', 'out', '**/__fixtures__/**'] }, {
+  ignores: ['build', 'dist', 'node_modules', 'out', '**/__fixtures__/**'],
   extends: [
     js.configs.recommended,
     ...tseslint.configs.recommended,

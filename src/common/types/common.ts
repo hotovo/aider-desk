@@ -18,8 +18,9 @@ import {
 } from '@common/agent';
 import { z } from 'zod';
 
+import { ContextFile, ContextMemoryMode, ContextMessage, PromptContext, UsageReportData } from './context';
+
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
-import type { AssistantContent, ToolContent, UserContent } from 'ai';
 
 // Worktree schema definition
 export const WorktreeSchema = z.object({
@@ -88,11 +89,6 @@ export interface WorktreeIntegrationStatusUpdatedData {
   status: WorktreeIntegrationStatus | null;
 }
 
-export interface LocalizedString {
-  key: string;
-  params?: Record<string, unknown>;
-}
-
 export type Mode = 'code' | 'ask' | 'architect' | 'context' | 'agent' | 'bmad';
 
 export const AGENT_MODES: Mode[] = ['agent', 'bmad'];
@@ -125,12 +121,6 @@ export enum ReasoningEffort {
   Low = 'low',
   Minimal = 'minimal',
   None = 'none',
-}
-
-export enum ContextMemoryMode {
-  Off = 'off',
-  FullContext = 'full-context',
-  LastMessage = 'last-message',
 }
 
 export interface ResponseChunkData {
@@ -272,55 +262,6 @@ export enum OS {
 export interface CloudflareTunnelStatus {
   isRunning: boolean;
   url?: string;
-}
-
-export enum MessageRole {
-  User = 'user',
-  Assistant = 'assistant',
-}
-
-// Base interface for all context messages with usage reporting
-interface BaseContextMessage {
-  id: string;
-  usageReport?: UsageReportData;
-  promptContext?: PromptContext;
-}
-
-// User message with usage report
-export interface ContextUserMessage extends BaseContextMessage {
-  role: 'user';
-  content: UserContent;
-}
-
-// Assistant message with full response metadata
-export interface ContextAssistantMessage extends BaseContextMessage {
-  role: 'assistant';
-  content: AssistantContent;
-  reflectedMessage?: string;
-  editedFiles?: string[];
-  commitHash?: string;
-  commitMessage?: string;
-  diff?: string;
-}
-
-// Tool message with usage report
-export interface ContextToolMessage extends BaseContextMessage {
-  role: 'tool';
-  content: ToolContent;
-}
-
-// Union type for enhanced context messages
-export type ContextMessage = ContextUserMessage | ContextAssistantMessage | ContextToolMessage;
-
-export interface ConnectorMessage {
-  role: MessageRole;
-  content: string;
-}
-
-export interface ContextFile {
-  path: string;
-  readOnly?: boolean;
-  source?: 'global-rule' | 'project-rule' | 'agent-rule';
 }
 
 export interface WindowState {
@@ -667,19 +608,6 @@ export interface VoiceSession {
   idleTimeoutMs: number;
 }
 
-export interface Group {
-  id: string;
-  name?: string | LocalizedString;
-  color?: string;
-  finished?: boolean;
-  interruptId?: string;
-}
-
-export interface PromptContext {
-  id: string;
-  group?: Group;
-}
-
 export interface ProjectStartedData {
   baseDir: string;
 }
@@ -689,17 +617,6 @@ export interface ClearTaskData {
   taskId: string;
   clearMessages: boolean;
   clearSession: boolean;
-}
-
-export interface UsageReportData {
-  model: string;
-  sentTokens: number;
-  receivedTokens: number;
-  messageCost: number;
-  cacheWriteTokens?: number;
-  cacheReadTokens?: number;
-  aiderTotalCost?: number;
-  agentTotalCost?: number;
 }
 
 export interface TokensCost {
@@ -991,5 +908,3 @@ export interface NotificationData {
   title: string;
   body: string;
 }
-
-export * from './bmad-types';

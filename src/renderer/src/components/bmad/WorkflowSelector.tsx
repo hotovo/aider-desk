@@ -1,4 +1,4 @@
-import { WorkflowMetadata, WorkflowPhase } from '@common/bmad-types';
+import { WorkflowMetadata, WorkflowPhase } from '@common/types';
 import { useRef, useState, useEffect, RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';

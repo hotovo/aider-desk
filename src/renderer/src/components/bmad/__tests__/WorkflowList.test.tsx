@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { BmadStatus, WorkflowPhase } from '@common/bmad-types';
+import { BmadStatus, WorkflowPhase } from '@common/types';
 import { BMAD_WORKFLOWS } from '@common/bmad-workflows';
 
 // Mock useBmadState hook

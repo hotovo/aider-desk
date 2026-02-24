@@ -1,4 +1,4 @@
-import { IncompleteWorkflowMetadata, WorkflowMetadata } from '@common/bmad-types';
+import { IncompleteWorkflowMetadata, WorkflowMetadata } from '@common/types';
 import { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiFile, FiExternalLink } from 'react-icons/fi';

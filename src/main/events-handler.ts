@@ -33,7 +33,7 @@ import {
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 
-import type { BmadStatus, InstallResult } from '@common/bmad-types';
+import type { BmadStatus, InstallResult } from '@common/types';
 import type { BrowserWindow } from 'electron';
 
 import { McpManager, AgentProfileManager } from '@/agent';

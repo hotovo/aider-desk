@@ -68,7 +68,7 @@ const createMockDeps = () => ({
 const createValidTool = (overrides: Partial<ToolDefinition> = {}): ToolDefinition => ({
   name: 'test-tool',
   description: 'A test tool',
-  parameters: z.object({
+  inputSchema: z.object({
     input: z.string(),
   }),
   async execute(args, _signal, _context) {
@@ -210,40 +210,6 @@ describe('Extension Tool Integration with Agent', () => {
       expect(contextArg.getCurrentTask()?.id).toBe('test-task-id');
     });
 
-    it('should validate args with Zod before execution', async () => {
-      const executeMock = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'success' }] } as ToolResult);
-      const testTool = createValidTool({
-        parameters: z.object({
-          count: z.number().min(1),
-        }),
-        execute: executeMock,
-      });
-      const extension = createMockExtension({
-        getTools: () => [testTool],
-      });
-      const metadata = createMockMetadata({ name: 'test-extension' });
-
-      const registry = (manager as any).registry as ExtensionRegistry;
-      registry.register(extension, metadata, '/test/path.ts');
-      registry.registerTool(metadata.name, testTool);
-
-      const task = createMockTask();
-      const profile = createMockProfile();
-      const abortSignal = new AbortController().signal;
-
-      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
-
-      // Execute with invalid args
-      const toolKey = 'test-extension-test-tool';
-      const toolDef = toolset[toolKey];
-      expect(toolDef).toBeDefined();
-      const result = await toolDef!.execute!({ count: -1 }, { toolCallId: 'call-123' } as ToolCallOptions);
-
-      // Should not call execute with invalid args
-      expect(executeMock).not.toHaveBeenCalled();
-      expect(result).toContain('Error');
-    });
-
     it('should pass AbortSignal to execute', async () => {
       const executeMock = vi.fn().mockResolvedValue({ content: [{ type: 'text', text: 'success' }] } as ToolResult);
       const testTool = createValidTool({ execute: executeMock });
@@ -304,46 +270,10 @@ describe('Extension Tool Integration with Agent', () => {
       expect(result).toContain('Error');
     });
 
-    it('should format ToolResult to string', async () => {
-      const testTool = createValidTool({
-        async execute(_args) {
-          return {
-            content: [
-              { type: 'text', text: 'First line' },
-              { type: 'text', text: 'Second line' },
-            ],
-          } as ToolResult;
-        },
-      });
-      const extension = createMockExtension({
-        getTools: () => [testTool],
-      });
-      const metadata = createMockMetadata({ name: 'test-extension' });
-
-      const registry = (manager as any).registry as ExtensionRegistry;
-      registry.register(extension, metadata, '/test/path.ts');
-      registry.registerTool(metadata.name, testTool);
-
-      const task = createMockTask();
-      const profile = createMockProfile();
-      const abortSignal = new AbortController().signal;
-
-      const toolset = manager.createExtensionToolset(task, profile, abortSignal);
-
-      const toolKey = 'test-extension-test-tool';
-      const toolDef = toolset[toolKey];
-      expect(toolDef).toBeDefined();
-      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
-
-      expect(result).toBeDefined();
-      expect(result).toContain('First line');
-      expect(result).toContain('Second line');
-    });
-
     it('should return string directly if result is string', async () => {
       const testTool = createValidTool({
         async execute() {
-          return 'Simple string result' as unknown as ToolResult;
+          return 'Simple string result';
         },
       });
       const extension = createMockExtension({
@@ -522,7 +452,7 @@ describe('Extension Tool Integration with Agent', () => {
         input: z.string(),
         count: z.number().optional(),
       });
-      const testTool = createValidTool({ parameters: schema });
+      const testTool = createValidTool({ inputSchema: schema });
       const extension = createMockExtension({
         getTools: () => [testTool],
       });

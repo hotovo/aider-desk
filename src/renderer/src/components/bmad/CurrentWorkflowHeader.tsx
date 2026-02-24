@@ -1,4 +1,4 @@
-import { WorkflowMetadata, WorkflowPhase, IncompleteWorkflowMetadata } from '@common/bmad-types';
+import { WorkflowMetadata, WorkflowPhase, IncompleteWorkflowMetadata } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { FiEdit2 } from 'react-icons/fi';
 import { clsx } from 'clsx';

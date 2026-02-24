@@ -10,13 +10,15 @@ import type { ToolDefinition, ToolResult, ExtensionContext } from '@common/exten
 
 describe('ToolDefinition', () => {
   it('should infer types from Zod schema', () => {
-    const tool: ToolDefinition = {
+    const schema = z.object({
+      input: z.string(),
+      count: z.number().optional(),
+    });
+
+    const tool: ToolDefinition<typeof schema> = {
       name: 'test-tool',
       description: 'A test tool',
-      parameters: z.object({
-        input: z.string(),
-        count: z.number().optional(),
-      }),
+      inputSchema: schema,
       async execute(args, _signal, _context) {
         return { content: [{ type: 'text', text: args.input }] };
       },
@@ -24,43 +26,20 @@ describe('ToolDefinition', () => {
 
     expect(tool.name).toBe('test-tool');
     expect(tool.description).toBe('A test tool');
-    expect(tool.parameters).toBeDefined();
+    expect(tool.inputSchema).toBeDefined();
     expect(typeof tool.execute).toBe('function');
   });
 
-  it('should support optional label and render functions', () => {
-    const tool: ToolDefinition = {
-      name: 'search',
-      label: 'Search Files',
-      description: 'Search for files',
-      parameters: z.object({ pattern: z.string() }),
-      async execute(args) {
-        return { content: [{ type: 'text', text: args.pattern }] };
-      },
-      renderCall(args) {
-        return `Search: ${args.pattern}`;
-      },
-      renderResult(result) {
-        return result.isError ? 'Error' : 'Success';
-      },
-    };
-
-    expect(tool.label).toBe('Search Files');
-    expect(tool.renderCall).toBeDefined();
-    expect(tool.renderResult).toBeDefined();
-    expect(tool.renderCall?.({ pattern: 'test' })).toBe('Search: test');
-    expect(tool.renderResult?.({ content: [{ type: 'text', text: 'ok' }] }, false)).toBe('Success');
-    expect(tool.renderResult?.({ content: [{ type: 'text', text: 'err' }], isError: true }, false)).toBe('Error');
-  });
-
   it('should execute with type-safe args from Zod inference', async () => {
-    const tool: ToolDefinition = {
+    const schema = z.object({
+      message: z.string(),
+      repeat: z.number().default(1),
+    });
+
+    const tool: ToolDefinition<typeof schema> = {
       name: 'echo',
       description: 'Echo the input',
-      parameters: z.object({
-        message: z.string(),
-        repeat: z.number().default(1),
-      }),
+      inputSchema: schema,
       async execute(args, _signal, _context) {
         return {
           content: [{ type: 'text', text: Array(args.repeat).fill(args.message).join(' ') }],
@@ -68,21 +47,25 @@ describe('ToolDefinition', () => {
       },
     };
 
-    const result = await tool.execute({ message: 'hello', repeat: 3 }, new AbortController().signal, {} as ExtensionContext);
+    const result = (await tool.execute({ message: 'hello', repeat: 3 }, new AbortController().signal, {} as ExtensionContext)) as {
+      content: Array<{ type: 'text'; text: string }>;
+    };
     expect(result.content[0]).toEqual({ type: 'text', text: 'hello hello hello' });
   });
 
   it('should support complex nested Zod schemas', () => {
-    const tool: ToolDefinition = {
+    const schema = z.object({
+      config: z.object({
+        enabled: z.boolean(),
+        options: z.array(z.string()),
+      }),
+      metadata: z.record(z.string(), z.unknown()).optional(),
+    });
+
+    const tool: ToolDefinition<typeof schema> = {
       name: 'complex-tool',
       description: 'Tool with complex schema',
-      parameters: z.object({
-        config: z.object({
-          enabled: z.boolean(),
-          options: z.array(z.string()),
-        }),
-        metadata: z.record(z.string(), z.unknown()).optional(),
-      }),
+      inputSchema: schema,
       async execute(args, _signal, _context) {
         return {
           content: [
@@ -96,7 +79,7 @@ describe('ToolDefinition', () => {
     };
 
     expect(tool.name).toBe('complex-tool');
-    expect(tool.parameters).toBeDefined();
+    expect(tool.inputSchema).toBeDefined();
   });
 });
 

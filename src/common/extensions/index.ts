@@ -59,7 +59,7 @@ export type { ToolApprovalEvent, ToolCalledEvent, ToolFinishedEvent } from './ty
 export type { FilesAddedEvent, FilesDroppedEvent } from './types';
 
 // Message Event Types
-export type { ResponseMessageProcessedEvent } from './types';
+export type { ResponseChunkEvent } from './types';
 
 // Approval Event Types
 export type { HandleApprovalEvent } from './types';

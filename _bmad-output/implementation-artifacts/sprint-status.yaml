@@ -28,11 +28,11 @@ development_status:
   # Epic 3: Extension Event System Integration
   epic-3: in-progress
   3-1-extension-event-handler-methods: done
-  3-2-hookmanager-integration-for-event-dispatch: review
-  3-3-event-modification-and-chaining: backlog
-  3-4-tool-result-modification: backlog
-  3-5-agent-lifecycle-event-implementation: backlog
-  3-6-non-blocking-event-execution: backlog
+  3-2-hookmanager-integration-for-event-dispatch: done
+  3-3-event-modification-and-chaining: done
+  3-4-tool-result-modification: done
+  3-5-agent-lifecycle-event-implementation: done
+  3-6-non-blocking-event-execution: ready-for-dev
   epic-3-retrospective: optional
 
   # Epic 4: Task, Project & Settings Integration

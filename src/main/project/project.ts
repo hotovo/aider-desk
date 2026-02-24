@@ -1,11 +1,19 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { CustomCommand, DefaultTaskState, ProjectSettings, SettingsData, TaskData, CreateTaskParams, WorkflowExecutionResult } from '@common/types';
+import {
+  CustomCommand,
+  DefaultTaskState,
+  ProjectSettings,
+  SettingsData,
+  TaskData,
+  CreateTaskParams,
+  WorkflowExecutionResult,
+  BmadStatus,
+  InstallResult,
+} from '@common/types';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
-
-import type { BmadStatus, InstallResult } from '@common/bmad-types';
 
 import { AgentProfileManager, McpManager } from '@/agent';
 import { Connector } from '@/connector';

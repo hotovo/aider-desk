@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BMAD_WORKFLOWS } from '@common/bmad-workflows';
 
 import { BmadManager } from '../bmad-manager';
-import { BMAD_WORKFLOWS } from '../../../common/bmad-workflows';
 
-import type { WorkflowArtifacts } from '../../../common/bmad-types';
+import type { WorkflowArtifacts } from '@common/types';
 
 // Mock file system operations
 vi.mock('fs', () => ({

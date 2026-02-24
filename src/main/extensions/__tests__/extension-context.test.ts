@@ -147,16 +147,6 @@ describe('ExtensionContextImpl', () => {
       }
     });
 
-    it('createSubtask should throw NotImplementedError', async () => {
-      try {
-        await context.createSubtask('Subtask', 'parent-id');
-        expect.fail('Should have thrown');
-      } catch (error) {
-        expect(error).toBeInstanceOf(NotImplementedError);
-        expect((error as Error).message).toContain('createSubtask');
-      }
-    });
-
     it('showNotification should throw NotImplementedError', async () => {
       try {
         await context.showNotification('message');
@@ -288,14 +278,14 @@ describe('ExtensionContextImpl', () => {
       expect(mockProject.createNewTask).toHaveBeenCalledWith({ name: 'New Task' });
     });
 
-    it('should create task with parent ID', async () => {
+    it('should create task with params', async () => {
       const mockProject = createMockProject();
       const mockTask = { id: 'task-456', name: 'Subtask' } as TaskData;
       vi.mocked(mockProject.createNewTask).mockResolvedValue(mockTask);
 
       const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, mockProject);
 
-      const result = await contextWithProject.createTask('Subtask', 'parent-task-id');
+      const result = await contextWithProject.createTask('Subtask', { parentId: 'parent-task-id' });
 
       expect(result).toBe('task-456');
       expect(mockProject.createNewTask).toHaveBeenCalledWith({ name: 'Subtask', parentId: 'parent-task-id' });
@@ -312,35 +302,6 @@ describe('ExtensionContextImpl', () => {
       const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, mockProject);
 
       await expect(contextWithProject.createTask('New Task')).rejects.toThrow('Task creation failed');
-      expect(logger.error).toHaveBeenCalled();
-    });
-  });
-
-  describe('createSubtask', () => {
-    it('should create subtask using Project.createNewTask with parentId', async () => {
-      const mockProject = createMockProject();
-      const mockTask = { id: 'subtask-789', name: 'Subtask' } as TaskData;
-      vi.mocked(mockProject.createNewTask).mockResolvedValue(mockTask);
-
-      const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, mockProject);
-
-      const result = await contextWithProject.createSubtask('Subtask', 'parent-task-id');
-
-      expect(result).toBe('subtask-789');
-      expect(mockProject.createNewTask).toHaveBeenCalledWith({ name: 'Subtask', parentId: 'parent-task-id' });
-    });
-
-    it('should throw error when Project not available', async () => {
-      await expect(context.createSubtask('Subtask', 'parent-id')).rejects.toThrow(NotImplementedError);
-    });
-
-    it('should handle errors from Project gracefully', async () => {
-      const mockProject = createMockProject();
-      vi.mocked(mockProject.createNewTask).mockRejectedValue(new Error('Subtask creation failed'));
-
-      const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, mockProject);
-
-      await expect(contextWithProject.createSubtask('Subtask', 'parent-id')).rejects.toThrow('Subtask creation failed');
       expect(logger.error).toHaveBeenCalled();
     });
   });

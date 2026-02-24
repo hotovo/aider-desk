@@ -7,7 +7,7 @@ import { promisify } from 'util';
 
 import { v4 as uuidv4 } from 'uuid';
 import { BMAD_WORKFLOWS } from '@common/bmad-workflows';
-import { StoryStatus } from '@common/bmad-types';
+import { StoryStatus } from '@common/types';
 import { glob } from 'glob';
 import * as yaml from 'yaml';
 import * as yamlFront from 'yaml-front-matter';
@@ -22,9 +22,9 @@ import type {
   IncompleteWorkflowMetadata,
   SprintStatusData,
   WorkflowArtifacts,
-} from '@common/bmad-types';
+  ContextFile,
+} from '@common/types';
 import type { Task } from '@/task';
-import type { ContextFile } from '@common/types';
 
 import logger from '@/logger';
 

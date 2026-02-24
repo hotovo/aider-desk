@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { ContextPreparer, PreparedContext } from '../context-preparer';
 
-import type { BmadStatus } from '@common/bmad-types';
+import type { BmadStatus } from '@common/types';
 
 describe('ContextPreparer', () => {
   let contextPreparer: ContextPreparer;

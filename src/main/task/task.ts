@@ -40,6 +40,8 @@ import {
   WorkingMode,
   AIDER_COMMANDS,
   ConnectorMessage,
+  WorkflowExecutionOptions,
+  WorkflowExecutionResult,
 } from '@common/types';
 import { extractProviderModel, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
@@ -48,7 +50,6 @@ import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 
 import type { SimpleGit } from 'simple-git';
-import type { WorkflowExecutionOptions, WorkflowExecutionResult } from '@common/bmad-types';
 
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import {
@@ -767,6 +768,7 @@ export class Task {
 
     let responses = await this.sendPromptToAider(prompt, promptContext, mode, messages, files, {
       autoApprove: extensionResult.autoApprove ?? this.task.autoApprove,
+      denyCommands: extensionResult.denyCommands,
     });
     logger.debug('Responses:', { responses });
 
@@ -1113,12 +1115,9 @@ export class Task {
       message = { ...message, ...hookResult.result };
     }
 
-    const extensionResult = await this.extensionManager.dispatchEvent('onResponseMessageProcessed', { message }, this.project, this);
-    message = extensionResult.message as ResponseMessage;
-
     if (!message.finished) {
-      const sendResponseChunk = (chunk: string) => {
-        const data: ResponseChunkData = {
+      const sendResponseChunk = async (chunk: string) => {
+        let data: ResponseChunkData = {
           messageId: message.id,
           baseDir: this.project.baseDir,
           taskId: this.taskId,
@@ -1126,6 +1125,10 @@ export class Task {
           reflectedMessage: message.reflectedMessage,
           promptContext: message.promptContext,
         };
+
+        const extensionResult = await this.extensionManager.dispatchEvent('onResponseChunk', { chunk: data }, this.project, this);
+        data = extensionResult.chunk;
+
         try {
           this.eventManager.sendResponseChunk(data);
         } catch (error) {
@@ -1143,13 +1146,13 @@ export class Task {
           taskId: this.taskId,
           messageId: message.id,
         });
-        sendResponseChunk(message.content);
+        await sendResponseChunk(message.content);
 
         const messageId = message.id;
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
           const entry = this.responseChunkMap.get(messageId);
           if (entry && entry.buffer.length > 0) {
-            sendResponseChunk(entry.buffer);
+            await sendResponseChunk(entry.buffer);
             logger.debug('Sending buffered chunk', {
               baseDir: this.project.baseDir,
               taskId: this.taskId,
@@ -1208,7 +1211,7 @@ export class Task {
         logger.info(`Usage report: ${JSON.stringify(usageReport)}`);
         this.updateTotalCosts(usageReport);
       }
-      const data: ResponseCompletedData = {
+      let data: ResponseCompletedData = {
         type: 'response-completed',
         messageId: message.id,
         content: message.content,
@@ -1223,6 +1226,9 @@ export class Task {
         sequenceNumber: message.sequenceNumber,
         promptContext: message.promptContext,
       };
+
+      const extensionResult = await this.extensionManager.dispatchEvent('onResponseCompleted', { response: data }, this.project, this);
+      data = extensionResult.response;
 
       this.sendResponseCompleted(data);
       this.closeCommandOutput();

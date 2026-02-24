@@ -63,7 +63,7 @@ const createMockDeps = () => ({
 const createValidTool = (overrides: Partial<ToolDefinition> = {}): ToolDefinition => ({
   name: 'valid-tool',
   description: 'A valid tool for testing',
-  parameters: z.object({
+  inputSchema: z.object({
     input: z.string(),
   }),
   async execute(args, _signal, _context) {
@@ -130,7 +130,7 @@ describe('Tool Registration', () => {
 
     it('should validate Zod schema parameters', () => {
       const tool = createValidTool({
-        parameters: z.object({
+        inputSchema: z.object({
           input: z.string(),
           count: z.number().optional(),
         }),
@@ -139,20 +139,20 @@ describe('Tool Registration', () => {
       expect(result.isValid).toBe(true);
     });
 
-    it('should reject non-Zod schema parameters', () => {
+    it('should reject non-Zod schema inputSchema', () => {
       const tool = {
         ...createValidTool(),
-        parameters: { type: 'object' },
+        inputSchema: { type: 'object' },
       } as unknown as ToolDefinition;
       const result = manager.validateToolDefinition(tool);
       expect(result.isValid).toBe(false);
       expect(result.errors.some((e) => e.includes('Zod schema'))).toBe(true);
     });
 
-    it('should reject null parameters', () => {
+    it('should reject null inputSchema', () => {
       const tool = {
         ...createValidTool(),
-        parameters: null,
+        inputSchema: null,
       } as unknown as ToolDefinition;
       const result = manager.validateToolDefinition(tool);
       expect(result.isValid).toBe(false);
@@ -207,7 +207,7 @@ describe('Tool Registration', () => {
           throw new Error('Name getter error');
         },
         description: 'Test',
-        parameters: z.object({}),
+        inputSchema: z.object({}),
         execute: vi.fn(),
       } as unknown as ToolDefinition;
       const result = manager.validateToolDefinition(tool);
@@ -266,7 +266,7 @@ describe('Tool Registration', () => {
       const invalidTool = {
         name: 'InvalidToolName',
         description: 'Test',
-        parameters: z.object({}),
+        inputSchema: z.object({}),
         execute: vi.fn(),
       } as unknown as ToolDefinition;
       const extension = createMockExtension({

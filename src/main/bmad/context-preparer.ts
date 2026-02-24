@@ -8,7 +8,7 @@ import { ContextMessage, ContextUserMessage } from '@common/types';
 import { fileExists } from '@common/utils';
 import * as yaml from 'yaml';
 
-import type { BmadStatus } from '@common/bmad-types';
+import type { BmadStatus } from '@common/types';
 
 import logger from '@/logger';
 import { execWithShellPath } from '@/utils';

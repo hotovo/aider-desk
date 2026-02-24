@@ -1,5 +1,4 @@
-import { Model, ProviderProfile } from '@common/types';
-import { WorkflowExecutionOptions, WorkflowMetadata } from '@common/bmad-types';
+import { Model, ProviderProfile, WorkflowExecutionOptions, WorkflowMetadata } from '@common/types';
 import { getProviderModelId } from '@common/agent';
 import { extractProviderModel } from '@common/utils';
 import { MouseEvent, useCallback, useState } from 'react';

@@ -1,18 +1,22 @@
-import type { FinishReason, StepResult, ToolSet } from 'ai';
-import type { z } from 'zod';
+import { z } from 'zod';
+
 import type {
   AgentProfile,
   ConnectorMessage,
   ContextFile,
   ContextMessage,
+  CreateTaskParams,
   CustomCommand,
   Mode,
   Model,
   PromptContext,
   QuestionData,
+  ResponseChunkData,
   ResponseCompletedData,
   TaskData,
-} from '../types';
+} from '@common/types';
+
+export type AgentStepResult = unknown;
 
 /**
  * Metadata describing an extension
@@ -44,7 +48,6 @@ export interface ToolResult {
 
 /**
  * Definition of a tool that can be registered by an extension
- * @template T - Zod schema type for parameter validation
  *
  * @example
  * ```typescript
@@ -54,29 +57,22 @@ export interface ToolResult {
  *   parameters: z.object({
  *     fix: z.boolean().optional().describe('Auto-fix issues'),
  *   }),
- *   async execute(args, signal, context) {
- *     const output = await runLinter(args.fix);
- *     return { content: [{ type: 'text', text: output }] };
+ *   async execute(input, signal, context) {
+ *     const output = await runLinter(input.fix);
+ *     return output;
  *   },
  * };
  * ```
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface ToolDefinition<T extends z.ZodType<any> = z.ZodType<any, any, any>> {
+export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType<Record<string, unknown>>> {
   /** Tool identifier in kebab-case (e.g., 'run-linter') */
   name: string;
-  /** Human-readable label for UI display */
-  label?: string;
   /** Description for LLM to understand tool purpose */
   description: string;
   /** Zod schema for parameter validation */
-  parameters: T;
+  inputSchema: TSchema;
   /** Execute function with type-safe args */
-  execute: (args: z.infer<T>, signal: AbortSignal, context: ExtensionContext) => Promise<ToolResult>;
-  /** Optional: Custom render for tool call in UI */
-  renderCall?: (args: z.infer<T>) => string;
-  /** Optional: Custom render for tool result in UI */
-  renderResult?: (result: ToolResult, expanded: boolean) => string;
+  execute: (input: z.infer<TSchema>, signal: AbortSignal | undefined, context: ExtensionContext) => Promise<unknown>;
 }
 
 /** UI element types */
@@ -189,8 +185,8 @@ export interface AgentFinishedEvent {
 export interface AgentStepFinishedEvent {
   readonly agentProfile: AgentProfile;
   readonly currentResponseId: string;
-  readonly stepResult: StepResult<ToolSet>;
-  finishReason: FinishReason;
+  readonly stepResult: AgentStepResult;
+  finishReason: 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' | 'unknown';
   responseMessages: ContextMessage[];
 }
 
@@ -227,8 +223,12 @@ export interface FilesDroppedEvent {
 }
 
 /** Event payload for response message processed events */
-export interface ResponseMessageProcessedEvent {
-  message: unknown;
+export interface ResponseChunkEvent {
+  chunk: ResponseChunkData;
+}
+
+export interface ResponseCompletedEvent {
+  response: ResponseCompletedData;
 }
 
 export interface HandleApprovalEvent {
@@ -335,18 +335,10 @@ export interface ExtensionContext {
   /**
    * Create a new task
    * @param name - Task name/title
-   * @param parentId - Optional parent task ID for subtasks
+   * @param params - Optional task parameters (parentId, autoApprove, etc.)
    * @returns Promise resolving to the new task ID
    */
-  createTask(name: string, parentId?: string): Promise<string>;
-
-  /**
-   * Create a subtask under a parent task
-   * @param name - Subtask name/title
-   * @param parentTaskId - Parent task ID
-   * @returns Promise resolving to the new subtask ID
-   */
-  createSubtask(name: string, parentTaskId: string): Promise<string>;
+  createTask(name: string, params?: CreateTaskParams): Promise<string>;
 
   /**
    * Get all available agent profiles
@@ -565,10 +557,16 @@ export interface Extension {
   // Message Events
 
   /**
-   * Called after each response message is processed
+   * Called on each response chunk
    * @returns void or partial event to modify message
    */
-  onResponseMessageProcessed?(event: ResponseMessageProcessedEvent, context: ExtensionContext): Promise<void | Partial<ResponseMessageProcessedEvent>>;
+  onResponseChunk?(event: ResponseChunkEvent, context: ExtensionContext): Promise<void | Partial<ResponseChunkEvent>>;
+
+  /**
+   * Called on response completion
+   * @returns void or partial event to modify message
+   */
+  onResponseCompleted?(event: ResponseCompletedEvent, context: ExtensionContext): Promise<void | Partial<ResponseCompletedEvent>>;
 
   // Approval Events
 

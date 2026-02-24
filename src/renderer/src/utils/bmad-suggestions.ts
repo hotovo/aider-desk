@@ -1,5 +1,5 @@
 import { BMAD_WORKFLOWS } from '@common/bmad-workflows';
-import { WorkflowArtifacts, SprintStatusData, StoryStatus, WorkflowMetadata, WorkflowPhase } from '@common/bmad-types';
+import { WorkflowArtifacts, SprintStatusData, StoryStatus, WorkflowMetadata, WorkflowPhase } from '@common/types';
 
 /**
  * Simple glob pattern matching for artifact paths

@@ -29,9 +29,8 @@ const metadata: ExtensionMetadata = {
 // Test ToolDefinition type with Zod
 const testTool: ToolDefinition = {
   name: 'test-tool',
-  label: 'Test Tool',
   description: 'A test tool for type checking',
-  parameters: z.object({
+  inputSchema: z.object({
     input: z.string().describe('Input text'),
     count: z.number().optional().describe('Repeat count'),
   }),
@@ -45,12 +44,6 @@ const testTool: ToolDefinition = {
     return {
       content: [{ type: 'text', text: `${args.input} (task: ${task?.name ?? 'none'})` }],
     };
-  },
-  renderCall(args) {
-    return `Calling test-tool with: ${args.input}`;
-  },
-  renderResult(result, _expanded) {
-    return result.content.map((c) => (c.type === 'text' ? c.text : '[image]')).join('\n');
   },
 };
 
@@ -152,7 +145,7 @@ describe('Extension Types Integration (Main Process)', () => {
   it('should have correct ToolDefinition type', () => {
     expect(testTool.name).toBe('test-tool');
     expect(testTool.description).toBe('A test tool for type checking');
-    expect(testTool.parameters).toBeDefined();
+    expect(testTool.inputSchema).toBeDefined();
     expect(typeof testTool.execute).toBe('function');
   });
 

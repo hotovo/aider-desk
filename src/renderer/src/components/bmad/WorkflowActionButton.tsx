@@ -1,4 +1,4 @@
-import { WorkflowMetadata } from '@common/bmad-types';
+import { WorkflowMetadata } from '@common/types';
 import { MouseEvent, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { HiCheck, HiClock } from 'react-icons/hi';

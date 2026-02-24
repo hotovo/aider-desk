@@ -10,41 +10,41 @@ import { ExtensionRegistry, LoadedExtension, RegisteredTool } from './extension-
 import { ExtensionContextImpl } from './extension-context';
 import { ExtensionWatcher } from './extension-watcher';
 
+import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
 import type { AgentProfileManager } from '@/agent';
 import type { ModelManager } from '@/models';
 import type {
-  ToolDefinition,
-  ToolResult,
-  Extension,
-  ExtensionContext,
-  TaskCreatedEvent,
-  TaskPreparedEvent,
-  TaskInitializedEvent,
-  TaskClosedEvent,
-  PromptStartedEvent,
-  PromptFinishedEvent,
-  AgentStartedEvent,
   AgentFinishedEvent,
+  AgentStartedEvent,
   AgentStepFinishedEvent,
-  ToolApprovalEvent,
-  ToolCalledEvent,
-  ToolFinishedEvent,
-  FilesAddedEvent,
-  FilesDroppedEvent,
-  ResponseMessageProcessedEvent,
-  HandleApprovalEvent,
-  SubagentStartedEvent,
-  SubagentFinishedEvent,
-  QuestionAskedEvent,
-  QuestionAnsweredEvent,
+  AiderPromptFinishedEvent,
+  AiderPromptStartedEvent,
   CommandExecutedEvent,
   CustomCommandExecutedEvent,
-  AiderPromptStartedEvent,
-  AiderPromptFinishedEvent,
+  Extension,
+  ExtensionContext,
+  FilesAddedEvent,
+  FilesDroppedEvent,
+  HandleApprovalEvent,
+  PromptFinishedEvent,
+  PromptStartedEvent,
+  QuestionAnsweredEvent,
+  QuestionAskedEvent,
+  ResponseChunkEvent,
+  ResponseCompletedEvent,
+  SubagentFinishedEvent,
+  SubagentStartedEvent,
+  TaskClosedEvent,
+  TaskCreatedEvent,
+  TaskInitializedEvent,
+  TaskPreparedEvent,
+  ToolApprovalEvent,
+  ToolCalledEvent,
+  ToolDefinition,
+  ToolFinishedEvent,
 } from '@common/extensions/types';
-import type { AgentProfile } from '@common/types';
-import type { ToolSet, ToolCallOptions } from 'ai';
+import type { ToolCallOptions, ToolSet } from 'ai';
 
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
@@ -88,7 +88,8 @@ export type ExtensionEventMap = {
   onToolFinished: ToolFinishedEvent;
   onFilesAdded: FilesAddedEvent;
   onFilesDropped: FilesDroppedEvent;
-  onResponseMessageProcessed: ResponseMessageProcessedEvent;
+  onResponseChunk: ResponseChunkEvent;
+  onResponseCompleted: ResponseCompletedEvent;
   onHandleApproval: HandleApprovalEvent;
   onSubagentStarted: SubagentStartedEvent;
   onSubagentFinished: SubagentFinishedEvent;
@@ -506,18 +507,18 @@ export class ExtensionManager {
     const errors: string[] = [];
 
     try {
-      if (!tool.name || typeof tool.name !== 'string') {
+      if (!tool.name) {
         errors.push('Tool name must be a non-empty string');
       } else if (!ExtensionManager.KEBAB_CASE_REGEX.test(tool.name)) {
         errors.push(`Tool name '${tool.name}' must be kebab-case (e.g., 'run-linter', 'my-custom-tool')`);
       }
 
-      if (!tool.description || typeof tool.description !== 'string' || tool.description.trim() === '') {
+      if (!tool.description || tool.description.trim() === '') {
         errors.push('Tool description must be a non-empty string');
       }
 
-      if (!tool.parameters || !(tool.parameters instanceof z.ZodType)) {
-        errors.push('Tool parameters must be a Zod schema');
+      if (!tool.inputSchema || !(tool.inputSchema instanceof z.ZodType)) {
+        errors.push('Tool inputSchema must be a Zod schema');
       }
 
       if (!tool.execute || typeof tool.execute !== 'function') {
@@ -606,6 +607,7 @@ export class ExtensionManager {
 
     for (const { extensionName, tool } of registeredTools) {
       const toolId = `${extensionName}-${tool.name}`;
+      const context = new ExtensionContextImpl(extensionName, this.store, this.agentProfileManager, this.modelManager, task.project, task.task);
 
       // Skip if tool is marked as Never approved
       if (profile.toolApprovals?.[toolId] === ToolApprovalState.Never) {
@@ -615,20 +617,10 @@ export class ExtensionManager {
 
       toolSet[toolId] = {
         description: tool.description,
-        inputSchema: tool.parameters,
-        execute: async (args: Record<string, unknown> | undefined, _options: ToolCallOptions) => {
+        inputSchema: tool.inputSchema,
+        execute: async (input: Record<string, unknown>, options: ToolCallOptions) => {
           try {
-            // Validate args with Zod schema
-            const validatedArgs = tool.parameters.parse(args ?? {});
-
-            // Create ExtensionContext with Task and Project
-            const context = new ExtensionContextImpl(extensionName, this.store, this.agentProfileManager, this.modelManager, task.project, task.task);
-
-            // Execute the tool with AbortSignal
-            const result = await tool.execute(validatedArgs, abortSignal ?? new AbortController().signal, context);
-
-            // Format result for Vercel AI SDK (string expected)
-            return this.formatToolResult(result);
+            return await tool.execute(input, abortSignal || options.abortSignal, context);
           } catch (error) {
             // Error isolation - log and return error message
             const errorMsg = error instanceof Error ? error.message : String(error);
@@ -645,29 +637,6 @@ export class ExtensionManager {
     }
 
     return toolSet;
-  }
-
-  /**
-   * Formats a tool result for Vercel AI SDK compatibility.
-   * Converts ToolResult objects to strings, passes through string results.
-   */
-  private formatToolResult(result: ToolResult | string): string {
-    if (typeof result === 'string') {
-      return result;
-    }
-
-    // Extract text content from ToolResult
-    const textContent = result.content
-      .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
-      .map((c) => c.text)
-      .join('\n');
-
-    // Include error marker if applicable
-    if (result.isError) {
-      return `Error: ${textContent}`;
-    }
-
-    return textContent;
   }
 
   /**

@@ -34,9 +34,9 @@ import {
   UpdatedFilesUpdatedData,
   QueuedPromptData,
   QueuedPromptsUpdatedData,
+  BmadStatus,
 } from '@common/types';
 
-import type { BmadStatus } from '@common/bmad-types';
 import type { BrowserWindow } from 'electron';
 
 import logger from '@/logger';

@@ -1,33 +1,32 @@
-import { describe, it, expect, expectTypeOf } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import type { TaskData, ContextFile, QuestionData, ResponseCompletedData, Mode, AgentProfile, PromptContext } from '@common/types';
+import type { AgentProfile, ContextFile, Mode, PromptContext, QuestionData, ResponseCompletedData, TaskData } from '@common/types';
 import type {
+  AgentFinishedEvent,
+  AgentStartedEvent,
+  AgentStepFinishedEvent,
+  AiderPromptFinishedEvent,
+  AiderPromptStartedEvent,
+  CommandExecutedEvent,
+  CustomCommandExecutedEvent,
   Extension,
   ExtensionContext,
-  TaskCreatedEvent,
-  TaskPreparedEvent,
-  TaskInitializedEvent,
-  TaskClosedEvent,
-  PromptStartedEvent,
+  FilesAddedEvent,
+  FilesDroppedEvent,
+  HandleApprovalEvent,
   PromptFinishedEvent,
-  AgentStartedEvent,
-  AgentFinishedEvent,
-  AgentStepFinishedEvent,
+  PromptStartedEvent,
+  QuestionAnsweredEvent,
+  QuestionAskedEvent,
+  SubagentFinishedEvent,
+  SubagentStartedEvent,
+  TaskClosedEvent,
+  TaskCreatedEvent,
+  TaskInitializedEvent,
+  TaskPreparedEvent,
   ToolApprovalEvent,
   ToolCalledEvent,
   ToolFinishedEvent,
-  FilesAddedEvent,
-  FilesDroppedEvent,
-  ResponseMessageProcessedEvent,
-  HandleApprovalEvent,
-  SubagentStartedEvent,
-  SubagentFinishedEvent,
-  QuestionAskedEvent,
-  QuestionAnsweredEvent,
-  CommandExecutedEvent,
-  CustomCommandExecutedEvent,
-  AiderPromptStartedEvent,
-  AiderPromptFinishedEvent,
 } from '../types';
 
 describe('Event Payload Interfaces', () => {
@@ -76,7 +75,9 @@ describe('Event Payload Interfaces', () => {
     });
 
     it('PromptFinishedEvent should have responses field', () => {
-      const event: PromptFinishedEvent = { responses: [] as ResponseCompletedData[] };
+      const event: PromptFinishedEvent = {
+        responses: [] as ResponseCompletedData[],
+      };
       expect(event).toHaveProperty('responses');
     });
   });
@@ -112,7 +113,11 @@ describe('Event Payload Interfaces', () => {
     });
 
     it('AgentFinishedEvent should have resultMessages field', () => {
-      const event: AgentFinishedEvent = { resultMessages: [], aborted: false, contextMessages: [] };
+      const event: AgentFinishedEvent = {
+        resultMessages: [],
+        aborted: false,
+        contextMessages: [],
+      };
       expect(event).toHaveProperty('resultMessages');
     });
 
@@ -140,7 +145,12 @@ describe('Event Payload Interfaces', () => {
     });
 
     it('ToolApprovalEvent should support optional blocked and allowed fields', () => {
-      const event: ToolApprovalEvent = { toolName: 'test-tool', input: {}, blocked: true, allowed: false };
+      const event: ToolApprovalEvent = {
+        toolName: 'test-tool',
+        input: {},
+        blocked: true,
+        allowed: false,
+      };
       expect(event.blocked).toBe(true);
       expect(event.allowed).toBe(false);
     });
@@ -197,22 +207,22 @@ describe('Event Payload Interfaces', () => {
     });
   });
 
-  describe('Message Events', () => {
-    it('ResponseMessageProcessedEvent should have message field', () => {
-      const event: ResponseMessageProcessedEvent = { message: {} };
-      expect(event).toHaveProperty('message');
-    });
-  });
-
   describe('Approval Events', () => {
     it('HandleApprovalEvent should have key and text fields', () => {
-      const event: HandleApprovalEvent = { key: 'approval-key', text: 'Approval text' };
+      const event: HandleApprovalEvent = {
+        key: 'approval-key',
+        text: 'Approval text',
+      };
       expect(event).toHaveProperty('key');
       expect(event).toHaveProperty('text');
     });
 
     it('HandleApprovalEvent should have optional subject field', () => {
-      const event: HandleApprovalEvent = { key: 'approval-key', text: 'Approval text', subject: 'Subject' };
+      const event: HandleApprovalEvent = {
+        key: 'approval-key',
+        text: 'Approval text',
+        subject: 'Subject',
+      };
       expect(event.subject).toBe('Subject');
     });
 
@@ -274,18 +284,28 @@ describe('Event Payload Interfaces', () => {
     });
 
     it('QuestionAskedEvent should support optional answer field', () => {
-      const event: QuestionAskedEvent = { question: {} as QuestionData, answer: 'answer' };
+      const event: QuestionAskedEvent = {
+        question: {} as QuestionData,
+        answer: 'answer',
+      };
       expect(event.answer).toBe('answer');
     });
 
     it('QuestionAnsweredEvent should have question, answer fields', () => {
-      const event: QuestionAnsweredEvent = { question: {} as QuestionData, answer: 'user answer' };
+      const event: QuestionAnsweredEvent = {
+        question: {} as QuestionData,
+        answer: 'user answer',
+      };
       expect(event).toHaveProperty('question');
       expect(event).toHaveProperty('answer');
     });
 
     it('QuestionAnsweredEvent should have optional userInput field', () => {
-      const event: QuestionAnsweredEvent = { question: {} as QuestionData, answer: 'answer', userInput: 'raw input' };
+      const event: QuestionAnsweredEvent = {
+        question: {} as QuestionData,
+        answer: 'answer',
+        userInput: 'raw input',
+      };
       expect(event.userInput).toBe('raw input');
     });
   });
@@ -355,7 +375,9 @@ describe('Event Payload Interfaces', () => {
     });
 
     it('AiderPromptFinishedEvent should have responses field', () => {
-      const event: AiderPromptFinishedEvent = { responses: [] as ResponseCompletedData[] };
+      const event: AiderPromptFinishedEvent = {
+        responses: [] as ResponseCompletedData[],
+      };
       expect(event).toHaveProperty('responses');
     });
   });
@@ -454,13 +476,6 @@ describe('Extension Interface Event Handlers', () => {
     });
   });
 
-  describe('Message Events', () => {
-    it('should have optional onResponseMessageProcessed handler', () => {
-      const extension: Extension = {};
-      expect(extension.onResponseMessageProcessed).toBeUndefined();
-    });
-  });
-
   describe('Approval Events', () => {
     it('should have optional onHandleApproval handler', () => {
       const extension: Extension = {};
@@ -542,7 +557,14 @@ describe('Event Modification Pattern', () => {
         return { prompt: event.prompt + ' [modified]' };
       },
     };
-    const result = await extension.onPromptStarted!({ prompt: 'test', mode: 'agent' as Mode, promptContext: {} as PromptContext }, mockContext);
+    const result = await extension.onPromptStarted!(
+      {
+        prompt: 'test',
+        mode: 'agent' as Mode,
+        promptContext: {} as PromptContext,
+      },
+      mockContext,
+    );
     expect(result?.prompt).toBe('test [modified]');
   });
 
@@ -614,7 +636,14 @@ describe('Blocking Events', () => {
           return;
         },
       };
-      const result = await extension.onPromptStarted!({ prompt: 'dangerous prompt', mode: 'agent' as Mode, promptContext: {} as PromptContext }, mockContext);
+      const result = await extension.onPromptStarted!(
+        {
+          prompt: 'dangerous prompt',
+          mode: 'agent' as Mode,
+          promptContext: {} as PromptContext,
+        },
+        mockContext,
+      );
       expect(result?.blocked).toBe(true);
     });
   });
@@ -694,7 +723,12 @@ describe('Blocking Events', () => {
           return { files: event.files.filter((f) => f.path !== '/secret.txt') };
         },
       };
-      const result = await extension.onFilesAdded!({ files: [{ path: '/allowed.txt' } as ContextFile, { path: '/secret.txt' } as ContextFile] }, mockContext);
+      const result = await extension.onFilesAdded!(
+        {
+          files: [{ path: '/allowed.txt' } as ContextFile, { path: '/secret.txt' } as ContextFile],
+        },
+        mockContext,
+      );
       expect(result?.files).toHaveLength(1);
     });
   });
@@ -713,7 +747,9 @@ describe('Blocking Events', () => {
     it('extension can modify files array to add more files', async () => {
       const extension: Extension = {
         async onFilesDropped(event): Promise<void | Partial<FilesDroppedEvent>> {
-          return { files: [...event.files, { path: '/extra.txt' } as ContextFile] };
+          return {
+            files: [...event.files, { path: '/extra.txt' } as ContextFile],
+          };
         },
       };
       const result = await extension.onFilesDropped!({ files: [{ path: '/original.txt' } as ContextFile] }, mockContext);

@@ -3,8 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { useBmadState } from '../useBmadState';
 
-import type { BmadStatus } from '@common/bmad-types';
-import type { TaskData } from '@common/types';
+import type { BmadStatus, TaskData } from '@common/types';
 
 // Mock ApiContext
 vi.mock('@/contexts/ApiContext', () => ({

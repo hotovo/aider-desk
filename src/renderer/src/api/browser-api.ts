@@ -60,7 +60,7 @@ import { io, Socket } from 'socket.io-client';
 import { compareBaseDirs } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
-import type { BmadStatus } from '@common/bmad-types';
+import type { BmadStatus } from '@common/types';
 
 type EventDataMap = {
   'settings-updated': SettingsData;

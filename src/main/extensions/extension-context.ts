@@ -1,5 +1,5 @@
 import type { ExtensionContext } from '@common/extensions/types';
-import type { AgentProfile, Model, SettingsData, TaskData } from '@common/types';
+import type { AgentProfile, CreateTaskParams, Model, SettingsData, TaskData } from '@common/types';
 import type { AgentProfileManager } from '@/agent';
 import type { ModelManager } from '@/models';
 import type { Project } from '@/project';
@@ -37,34 +37,17 @@ export class ExtensionContextImpl implements ExtensionContext {
     return this.task || null;
   }
 
-  async createTask(name: string, parentId?: string): Promise<string> {
+  async createTask(name: string, params?: CreateTaskParams): Promise<string> {
     if (!this.project) {
       throw new NotImplementedError('createTask');
     }
     try {
-      const params = parentId ? { name, parentId } : { name };
-      const task = await this.project.createNewTask(params);
+      const taskParams = { name, ...params };
+      const task = await this.project.createNewTask(taskParams);
       this.log(`Created task: ${task.id}`, 'info');
       return task.id;
     } catch (error) {
       this.log(`Failed to create task: ${error instanceof Error ? error.message : String(error)}`, 'error');
-      throw error;
-    }
-  }
-
-  async createSubtask(name: string, parentTaskId: string): Promise<string> {
-    if (!this.project) {
-      throw new NotImplementedError('createSubtask');
-    }
-    try {
-      const task = await this.project.createNewTask({
-        name,
-        parentId: parentTaskId,
-      });
-      this.log(`Created subtask: ${task.id} under parent: ${parentTaskId}`, 'info');
-      return task.id;
-    } catch (error) {
-      this.log(`Failed to create subtask: ${error instanceof Error ? error.message : String(error)}`, 'error');
       throw error;
     }
   }

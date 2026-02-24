@@ -11,7 +11,7 @@
   ],
   "compilerOptions": {
     "composite": true,
-    "types": ["electron-vite/node"],
+    "types": ["electron-vite/node", "node"],
     "baseUrl": ".",
     "paths": {
       "@/*": [

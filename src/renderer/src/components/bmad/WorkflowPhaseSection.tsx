@@ -1,4 +1,4 @@
-import { WorkflowMetadata, WorkflowPhase } from '@common/bmad-types';
+import { WorkflowMetadata, WorkflowPhase } from '@common/types';
 import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaChevronDown } from 'react-icons/fa';

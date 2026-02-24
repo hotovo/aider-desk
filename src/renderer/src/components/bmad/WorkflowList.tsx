@@ -1,4 +1,4 @@
-import { WorkflowPhase, BmadStatus } from '@common/bmad-types';
+import { WorkflowPhase, BmadStatus } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { useMemo } from 'react';
 

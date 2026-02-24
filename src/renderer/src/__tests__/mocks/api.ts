@@ -24,7 +24,7 @@ import {
   MemoryEmbeddingProgress,
 } from '@common/types';
 
-import type { BmadStatus } from '@common/bmad-types';
+import type { BmadStatus } from '@common/types';
 
 /**
  * Creates a comprehensive mock for ApplicationAPI

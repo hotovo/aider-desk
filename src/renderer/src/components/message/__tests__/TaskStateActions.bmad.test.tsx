@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { BmadStatus, WorkflowMetadata, IncompleteWorkflowMetadata, WorkflowPhase } from '@common/bmad-types';
-import { DefaultTaskState } from '@common/types';
+import { BmadStatus, WorkflowMetadata, IncompleteWorkflowMetadata, WorkflowPhase, DefaultTaskState } from '@common/types';
 
 import { TaskStateActions } from '../TaskStateActions';
 

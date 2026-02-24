@@ -1,4 +1,4 @@
-import { DetectedArtifacts } from '@common/bmad-types';
+import { DetectedArtifacts } from '@common/types';
 import { useState, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiFile, FiExternalLink, FiChevronDown } from 'react-icons/fi';
