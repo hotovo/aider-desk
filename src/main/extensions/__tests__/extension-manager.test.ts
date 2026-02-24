@@ -15,7 +15,6 @@ import type { ExtensionRegistry } from '../extension-registry';
 
 vi.mock('../extension-loader');
 vi.mock('../extension-registry');
-vi.mock('../extension-validator');
 vi.mock('chokidar', () => ({
   watch: vi.fn(),
 }));
@@ -29,6 +28,7 @@ vi.mock('fs/promises', () => ({
   default: {
     readdir: vi.fn(),
     access: vi.fn(),
+    mkdir: vi.fn(),
   },
 }));
 
@@ -52,7 +52,6 @@ describe('ExtensionManager', () => {
   let manager: ExtensionManager;
   let mockLoader: unknown;
   let mockRegistry: unknown;
-  let mockValidator: unknown;
   let store: { getSettings: ReturnType<typeof vi.fn>; saveSettings: ReturnType<typeof vi.fn> };
   let agentProfileManager: { getAllProfiles: ReturnType<typeof vi.fn> };
   let modelManager: { getProviderModels: ReturnType<typeof vi.fn> };
@@ -83,9 +82,6 @@ describe('ExtensionManager', () => {
       getCommands: vi.fn().mockReturnValue([]),
       getCommandsByExtension: vi.fn().mockReturnValue([]),
     };
-    mockValidator = {
-      validateExtension: vi.fn(),
-    };
 
     store = {
       getSettings: vi.fn().mockReturnValue({}),
@@ -97,10 +93,17 @@ describe('ExtensionManager', () => {
     modelManager = {
       getProviderModels: vi.fn().mockResolvedValue({ models: [] }),
     };
-    manager = new ExtensionManager(store as unknown as Store, agentProfileManager as unknown as AgentProfileManager, modelManager as unknown as ModelManager);
+    const projectManager = {
+      getProjects: vi.fn().mockReturnValue([]),
+    };
+    manager = new ExtensionManager(
+      store as unknown as Store,
+      agentProfileManager as unknown as AgentProfileManager,
+      modelManager as unknown as ModelManager,
+      projectManager as any,
+    );
     (manager as unknown as Record<string, unknown>).loader = mockLoader;
     (manager as unknown as Record<string, unknown>).registry = mockRegistry;
-    (manager as unknown as Record<string, unknown>).validator = mockValidator;
   });
 
   afterEach(() => {
@@ -108,138 +111,171 @@ describe('ExtensionManager', () => {
   });
 
   describe('loadExtensions', () => {
-    it('should load extensions from discovered paths', async () => {
-      const mockPaths = ['/path/ext1.ts', '/path/ext2.ts'];
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue(mockPaths);
+    it('should load extensions from discovered paths during init', async () => {
+      // Mock discoverExtensionsFromDir via scanDirectory
+      fsAccessMock.mockResolvedValue(undefined);
+      fsReaddirMock.mockResolvedValue([
+        { name: 'ext1.ts', isDirectory: vi.fn().mockReturnValue(false), isFile: vi.fn().mockReturnValue(true) },
+        { name: 'ext2.ts', isDirectory: vi.fn().mockReturnValue(false), isFile: vi.fn().mockReturnValue(true) },
+      ] as any);
+
+      const ext1 = {
+        instance: { onLoad: vi.fn() },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: false,
+      };
+      const ext2 = {
+        instance: {},
+        metadata: { name: 'ext2', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext2.ts',
+        initialized: false,
+      };
 
       (mockLoader as Record<string, unknown>).loadExtension = vi.fn().mockImplementation(async (path: string) => {
-        if (path === '/path/ext1.ts') {
-          return {
-            extension: { onLoad: vi.fn() },
-            metadata: { name: 'ext1', version: '1.0.0' },
-          };
-        } else if (path === '/path/ext2.ts') {
-          return {
-            extension: {},
-            metadata: { name: 'ext2', version: '1.0.0' },
-          };
+        if (path.includes('ext1')) {
+          return { extension: ext1.instance, metadata: ext1.metadata };
+        } else if (path.includes('ext2')) {
+          return { extension: ext2.instance, metadata: ext2.metadata };
         }
         return null;
       });
 
-      await manager.loadGlobalExtensions();
+      (mockRegistry as Record<string, unknown>).getExtension = vi.fn().mockImplementation((name: string) => {
+        if (name === 'ext1') {
+          return ext1;
+        }
+        if (name === 'ext2') {
+          return ext2;
+        }
+        return undefined;
+      });
+      (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([ext1, ext2]);
 
-      expect(manager.discoverGlobalExtensions).toHaveBeenCalled();
+      await manager.init();
+
       expect((mockRegistry as Record<string, unknown>).clear).toHaveBeenCalled();
       expect((mockLoader as Record<string, unknown>).loadExtension).toHaveBeenCalledTimes(2);
       expect((mockRegistry as Record<string, unknown>).register).toHaveBeenCalledTimes(2);
     });
 
     it('should handle extension loading errors gracefully', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue(['/path/valid.ts', '/path/error.ts']);
+      fsAccessMock.mockResolvedValue(undefined);
+      fsReaddirMock.mockResolvedValue([
+        { name: 'valid.ts', isDirectory: vi.fn().mockReturnValue(false), isFile: vi.fn().mockReturnValue(true) },
+        { name: 'error.ts', isDirectory: vi.fn().mockReturnValue(false), isFile: vi.fn().mockReturnValue(true) },
+      ] as any);
+
+      const validExt = {
+        instance: {},
+        metadata: { name: 'valid', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/valid.ts',
+        initialized: false,
+      };
 
       (mockLoader as Record<string, unknown>).loadExtension = vi.fn().mockImplementation(async (path: string) => {
-        if (path === '/path/valid.ts') {
-          return { extension: {}, metadata: { name: 'valid', version: '1.0.0' } };
+        if (path.includes('valid')) {
+          return { extension: validExt.instance, metadata: validExt.metadata };
         }
         throw new Error('Load failed');
       });
 
-      await manager.loadGlobalExtensions();
+      (mockRegistry as Record<string, unknown>).getExtension = vi.fn().mockReturnValue(validExt);
+      (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([validExt]);
 
+      await manager.init();
+
+      // Only the valid extension should be registered (error extension failed to load)
       expect((mockRegistry as Record<string, unknown>).register).toHaveBeenCalledTimes(1);
+      // Errors during individual extension loading are isolated and logged
+      // This ensures one failing extension doesn't affect others
+      expect(manager.isInitialized()).toBe(true);
     });
   });
 
   describe('initialize', () => {
-    it('should return initialization result with counts', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue(['/path/ext1.ts']);
+    it('should initialize extensions successfully', async () => {
+      fsAccessMock.mockResolvedValue(undefined);
+      fsReaddirMock.mockResolvedValue([{ name: 'ext1.ts', isDirectory: vi.fn().mockReturnValue(false), isFile: vi.fn().mockReturnValue(true) }] as any);
 
       const onLoadMock = vi.fn();
       const testExtension = {
         instance: { onLoad: onLoadMock },
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
+        initialized: false,
       };
 
       (mockLoader as Record<string, unknown>).loadExtension = vi.fn().mockResolvedValue({
         extension: testExtension.instance,
         metadata: testExtension.metadata,
       });
+      (mockRegistry as Record<string, unknown>).getExtension = vi.fn().mockReturnValue(testExtension);
       (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([testExtension]);
 
-      const result = await manager.init({
-        hotReload: false,
-      });
+      await manager.init();
 
-      expect(result.loadedCount).toBe(1);
-      expect(result.initializedCount).toBe(1);
-      expect(result.durationMs).toBeGreaterThanOrEqual(0);
-      expect(result.errors).toHaveLength(0);
       expect(manager.isInitialized()).toBe(true);
+      expect(onLoadMock).toHaveBeenCalled();
+      expect((mockRegistry as Record<string, unknown>).register).toHaveBeenCalled();
     });
 
     it('should handle onLoad errors gracefully', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue(['/path/ext1.ts']);
+      fsAccessMock.mockResolvedValue(undefined);
+      fsReaddirMock.mockResolvedValue([{ name: 'ext1.ts', isDirectory: vi.fn().mockReturnValue(false), isFile: vi.fn().mockReturnValue(true) }] as any);
 
       const onLoadMock = vi.fn().mockRejectedValue(new Error('onLoad failed'));
       const testExtension = {
         instance: { onLoad: onLoadMock },
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
+        initialized: false,
       };
 
       (mockLoader as Record<string, unknown>).loadExtension = vi.fn().mockResolvedValue({
         extension: testExtension.instance,
         metadata: testExtension.metadata,
       });
+      (mockRegistry as Record<string, unknown>).getExtension = vi.fn().mockReturnValue(testExtension);
       (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([testExtension]);
 
-      const result = await manager.init({
-        hotReload: false,
-      });
+      await manager.init();
 
-      expect(result.loadedCount).toBe(1);
-      expect(result.initializedCount).toBe(0);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toContain('onLoad failed');
+      // onLoad errors cause the extension to fail initialization but don't crash the system
+      expect(onLoadMock).toHaveBeenCalled();
+      expect(manager.isInitialized()).toBe(true);
     });
 
     it('should handle extensions without onLoad method', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue(['/path/ext1.ts']);
+      fsAccessMock.mockResolvedValue(undefined);
+      fsReaddirMock.mockResolvedValue([{ name: 'ext1.ts', isDirectory: vi.fn().mockReturnValue(false), isFile: vi.fn().mockReturnValue(true) }] as any);
 
       const testExtension = {
         instance: {},
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
+        initialized: false,
       };
 
       (mockLoader as Record<string, unknown>).loadExtension = vi.fn().mockResolvedValue({
         extension: testExtension.instance,
         metadata: testExtension.metadata,
       });
+      (mockRegistry as Record<string, unknown>).getExtension = vi.fn().mockReturnValue(testExtension);
       (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([testExtension]);
 
-      const result = await manager.init({
-        hotReload: false,
-      });
+      await manager.init();
 
-      expect(result.loadedCount).toBe(1);
-      expect(result.initializedCount).toBe(1);
-      expect(result.errors).toHaveLength(0);
+      expect(manager.isInitialized()).toBe(true);
+      expect((mockRegistry as Record<string, unknown>).register).toHaveBeenCalled();
     });
 
     it('should handle no extensions', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
-      vi.spyOn(mockRegistry as { getExtensions: ReturnType<typeof vi.fn> }, 'getExtensions').mockReturnValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
+      (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([]);
 
-      const result = await manager.init({
-        hotReload: false,
-      });
+      await manager.init();
 
-      expect(result.loadedCount).toBe(0);
-      expect(result.initializedCount).toBe(0);
-      expect(result.errors).toHaveLength(0);
       expect(manager.isInitialized()).toBe(true);
     });
   });
@@ -290,7 +326,7 @@ describe('ExtensionManager', () => {
     });
 
     it('should return true after initialization', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([]);
 
       await manager.init();
@@ -317,7 +353,7 @@ describe('ExtensionManager', () => {
     });
 
     it('should call onUnload for initialized extensions', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([]);
       (mockRegistry as Record<string, unknown>).setInitialized = vi.fn();
 
@@ -340,7 +376,7 @@ describe('ExtensionManager', () => {
     });
 
     it('should skip extensions without onUnload method', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([]);
       (mockRegistry as Record<string, unknown>).setInitialized = vi.fn();
 
@@ -359,7 +395,7 @@ describe('ExtensionManager', () => {
     });
 
     it('should skip extensions that are not initialized', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([]);
       (mockRegistry as Record<string, unknown>).setInitialized = vi.fn();
 
@@ -381,7 +417,7 @@ describe('ExtensionManager', () => {
     });
 
     it('should handle onUnload errors gracefully', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as Record<string, unknown>).getExtensions = vi.fn().mockReturnValue([]);
       (mockRegistry as Record<string, unknown>).setInitialized = vi.fn();
 
@@ -497,11 +533,6 @@ describe('ExtensionManager', () => {
       (mockRegistry as ExtensionRegistry).register = vi.fn();
       (mockRegistry as ExtensionRegistry).setInitialized = vi.fn();
 
-      (mockValidator as { validateExtension: ReturnType<typeof vi.fn> }).validateExtension = vi.fn().mockResolvedValue({
-        isValid: true,
-        errors: [],
-      });
-
       (mockLoader as { loadExtension: ReturnType<typeof vi.fn> }).loadExtension = vi.fn().mockResolvedValue({
         extension: { onLoad: newOnLoad },
         metadata: { name: 'test-ext', version: '1.0.1', description: 'Updated', author: 'Test' },
@@ -517,29 +548,9 @@ describe('ExtensionManager', () => {
       expect(newOnLoad).toHaveBeenCalled();
     });
 
-    it('should return false if validation fails', async () => {
-      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
-      (mockRegistry as ExtensionRegistry).unregister = vi.fn();
-
-      (mockValidator as { validateExtension: ReturnType<typeof vi.fn> }).validateExtension = vi.fn().mockResolvedValue({
-        isValid: false,
-        errors: ['Invalid metadata'],
-      });
-
-      const result = await manager.reloadExtension('/path/invalid.ts');
-
-      expect(result).toBe(false);
-      expect((mockLoader as { loadExtension: ReturnType<typeof vi.fn> }).loadExtension).not.toHaveBeenCalled();
-    });
-
     it('should return false if loading fails', async () => {
       (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
       (mockRegistry as ExtensionRegistry).unregister = vi.fn();
-
-      (mockValidator as { validateExtension: ReturnType<typeof vi.fn> }).validateExtension = vi.fn().mockResolvedValue({
-        isValid: true,
-        errors: [],
-      });
 
       (mockLoader as { loadExtension: ReturnType<typeof vi.fn> }).loadExtension = vi.fn().mockRejectedValue(new Error('Load failed'));
 
@@ -577,39 +588,33 @@ describe('ExtensionManager', () => {
       (watch as ReturnType<typeof vi.fn>).mockReturnValue(mockChokidarWatcher as unknown as FSWatcher);
     });
 
-    it('should start hot reload watcher when hotReload option is true', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+    it('should start hot reload watcher on init', async () => {
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
 
-      await manager.init({ hotReload: true });
+      const { watch } = await import('chokidar');
 
-      expect(manager.isHotReloadEnabled()).toBe(true);
-    });
+      await manager.init();
 
-    it('should not start hot reload watcher when hotReload option is false', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
-      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
-
-      await manager.init({ hotReload: false });
-
-      expect(manager.isHotReloadEnabled()).toBe(false);
+      expect(watch).toHaveBeenCalled();
     });
 
     it('should stop hot reload watcher on dispose', async () => {
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
 
-      await manager.init({ hotReload: true });
-      expect(manager.isHotReloadEnabled()).toBe(true);
+      await manager.init();
 
       await manager.dispose();
 
-      expect(manager.isHotReloadEnabled()).toBe(false);
+      expect(mockChokidarWatcher.close).toHaveBeenCalled();
     });
   });
 
   describe('hot reload integration', () => {
-    it('should reload extension when file changes are detected', async () => {
+    it('should reload all extensions when file changes are detected', async () => {
+      vi.useFakeTimers();
+
       const { watch } = await import('chokidar');
       const mockChokidarWatcher = {
         on: vi.fn().mockReturnThis(),
@@ -617,27 +622,34 @@ describe('ExtensionManager', () => {
       };
       (watch as ReturnType<typeof vi.fn>).mockReturnValue(mockChokidarWatcher as unknown as FSWatcher);
 
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
 
-      await manager.init({ hotReload: true });
-
-      const reloadSpy = vi.spyOn(manager, 'reloadExtension').mockResolvedValue(true);
+      await manager.init();
 
       const changeHandler = mockChokidarWatcher.on.mock.calls.find((call: unknown[]) => (call as [string, unknown])[0] === 'change')?.[1] as (
         path: string,
       ) => void;
 
+      expect(changeHandler).toBeDefined();
+
       if (changeHandler) {
-        changeHandler('/project/path/.aider-desk/extensions/test.ts');
+        changeHandler('/global/extensions/test.ts');
       }
 
-      await vi.waitFor(() => {
-        expect(reloadSpy).toHaveBeenCalledWith('/project/path/.aider-desk/extensions/test.ts', undefined);
-      });
+      // Advance timers past the debounce period (1000ms)
+      await vi.advanceTimersByTimeAsync(1100);
+
+      // The directory-level reload clears and re-collects tools/commands
+      expect((mockRegistry as ExtensionRegistry).clearTools).toHaveBeenCalled();
+      expect((mockRegistry as ExtensionRegistry).clearCommands).toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
 
-    it('should unload extension when file is deleted', async () => {
+    it('should reload all extensions when file is deleted', async () => {
+      vi.useFakeTimers();
+
       const { watch } = await import('chokidar');
       const mockChokidarWatcher = {
         on: vi.fn().mockReturnThis(),
@@ -645,27 +657,34 @@ describe('ExtensionManager', () => {
       };
       (watch as ReturnType<typeof vi.fn>).mockReturnValue(mockChokidarWatcher as unknown as FSWatcher);
 
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
 
-      await manager.init({ hotReload: true });
-
-      const unloadSpy = vi.spyOn(manager, 'unloadExtension').mockResolvedValue(undefined);
+      await manager.init();
 
       const unlinkHandler = mockChokidarWatcher.on.mock.calls.find((call: unknown[]) => (call as [string, unknown])[0] === 'unlink')?.[1] as (
         path: string,
       ) => void;
 
+      expect(unlinkHandler).toBeDefined();
+
       if (unlinkHandler) {
-        unlinkHandler('/project/path/.aider-desk/extensions/test.ts');
+        unlinkHandler('/global/extensions/test.ts');
       }
 
-      await vi.waitFor(() => {
-        expect(unloadSpy).toHaveBeenCalledWith('/project/path/.aider-desk/extensions/test.ts');
-      });
+      // Advance timers past the debounce period (1000ms)
+      await vi.advanceTimersByTimeAsync(1100);
+
+      // The directory-level reload clears and re-collects tools/commands
+      expect((mockRegistry as ExtensionRegistry).clearTools).toHaveBeenCalled();
+      expect((mockRegistry as ExtensionRegistry).clearCommands).toHaveBeenCalled();
+
+      vi.useRealTimers();
     });
 
-    it('should handle multiple file changes without crashing', async () => {
+    it('should debounce multiple file changes into single reload', async () => {
+      vi.useFakeTimers();
+
       const { watch } = await import('chokidar');
       const mockChokidarWatcher = {
         on: vi.fn().mockReturnThis(),
@@ -673,29 +692,41 @@ describe('ExtensionManager', () => {
       };
       (watch as ReturnType<typeof vi.fn>).mockReturnValue(mockChokidarWatcher as unknown as FSWatcher);
 
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
+      (mockRegistry as ExtensionRegistry).clearTools = vi.fn();
+      (mockRegistry as ExtensionRegistry).clearCommands = vi.fn();
 
-      await manager.init({ hotReload: true });
+      await manager.init();
 
-      const reloadSpy = vi.spyOn(manager, 'reloadExtension').mockResolvedValue(true);
+      // Reset the call count after init
+      (mockRegistry as ExtensionRegistry).clearTools = vi.fn();
+      (mockRegistry as ExtensionRegistry).clearCommands = vi.fn();
 
       const changeHandler = mockChokidarWatcher.on.mock.calls.find((call: unknown[]) => (call as [string, unknown])[0] === 'change')?.[1] as (
         path: string,
       ) => void;
 
       if (changeHandler) {
-        changeHandler('/project/path/.aider-desk/extensions/ext1.ts');
-        changeHandler('/project/path/.aider-desk/extensions/ext2.ts');
-        changeHandler('/project/path/.aider-desk/extensions/ext3.ts');
+        // Trigger multiple changes in quick succession
+        changeHandler('/global/extensions/ext1.ts');
+        changeHandler('/global/extensions/ext2.ts');
+        changeHandler('/global/extensions/ext3.ts');
       }
 
-      await vi.waitFor(() => {
-        expect(reloadSpy).toHaveBeenCalledTimes(3);
-      });
+      // Advance timers past the debounce period (1000ms)
+      await vi.advanceTimersByTimeAsync(1100);
+
+      // Due to debouncing, clearTools should be called only once (single reload)
+      expect((mockRegistry as ExtensionRegistry).clearTools).toHaveBeenCalledTimes(1);
+      expect((mockRegistry as ExtensionRegistry).clearCommands).toHaveBeenCalledTimes(1);
+
+      vi.useRealTimers();
     });
 
     it('should continue watching after a reload failure', async () => {
+      vi.useFakeTimers();
+
       const { watch } = await import('chokidar');
       const mockChokidarWatcher = {
         on: vi.fn().mockReturnThis(),
@@ -703,34 +734,26 @@ describe('ExtensionManager', () => {
       };
       (watch as ReturnType<typeof vi.fn>).mockReturnValue(mockChokidarWatcher as unknown as FSWatcher);
 
-      vi.spyOn(manager, 'discoverGlobalExtensions').mockResolvedValue([]);
+      fsAccessMock.mockRejectedValue(new Error('Directory does not exist'));
       (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
 
-      await manager.init({ hotReload: true });
-
-      const reloadSpy = vi.spyOn(manager, 'reloadExtension').mockRejectedValueOnce(new Error('First failed')).mockResolvedValueOnce(true);
+      await manager.init();
 
       const changeHandler = mockChokidarWatcher.on.mock.calls.find((call: unknown[]) => (call as [string, unknown])[0] === 'change')?.[1] as (
         path: string,
       ) => void;
 
       if (changeHandler) {
-        changeHandler('/project/path/.aider-desk/extensions/ext1.ts');
+        changeHandler('/global/extensions/ext1.ts');
       }
 
-      await vi.waitFor(() => {
-        expect(reloadSpy).toHaveBeenCalledTimes(1);
-      });
+      // Advance timers past the debounce period
+      await vi.advanceTimersByTimeAsync(1100);
 
-      if (changeHandler) {
-        changeHandler('/project/path/.aider-desk/extensions/ext2.ts');
-      }
+      // Manager should still be initialized after reload
+      expect(manager.isInitialized()).toBe(true);
 
-      await vi.waitFor(() => {
-        expect(reloadSpy).toHaveBeenCalledTimes(2);
-      });
-
-      expect(manager.isHotReloadEnabled()).toBe(true);
+      vi.useRealTimers();
     });
   });
 

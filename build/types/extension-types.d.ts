@@ -153,6 +153,11 @@ export interface ResponseCompletedData {
 	sequenceNumber?: number;
 	promptContext?: PromptContext;
 }
+export interface CommandsData {
+	baseDir: string;
+	customCommands: Command[];
+	extensionCommands: Command[];
+}
 export interface Answer {
 	text: string;
 	shortkey: string;
@@ -168,6 +173,34 @@ export interface QuestionData {
 	internal?: boolean;
 	key?: string;
 }
+declare const ProjectSettingsSchema: z.ZodObject<{
+	mainModel: z.ZodString;
+	weakModel: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+	architectModel: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+	agentProfileId: z.ZodString;
+	modelEditFormats: z.ZodRecord<z.ZodString, z.ZodEnum<{
+		diff: "diff";
+		"diff-fenced": "diff-fenced";
+		whole: "whole";
+		udiff: "udiff";
+		"udiff-simple": "udiff-simple";
+		patch: "patch";
+	}>>;
+	reasoningEffort: z.ZodOptional<z.ZodString>;
+	thinkingTokens: z.ZodOptional<z.ZodString>;
+	currentMode: z.ZodEnum<{
+		code: "code";
+		ask: "ask";
+		architect: "architect";
+		context: "context";
+		agent: "agent";
+		bmad: "bmad";
+	}>;
+	contextCompactingThreshold: z.ZodOptional<z.ZodNumber>;
+	weakModelLocked: z.ZodOptional<z.ZodBoolean>;
+	autoApproveLocked: z.ZodOptional<z.ZodBoolean>;
+}, z.core.$strip>;
+export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
 declare enum ToolApprovalState {
 	Always = "always",
 	Never = "never",
@@ -284,6 +317,10 @@ export interface CreateTaskParams {
 	provider?: string;
 	model?: string;
 }
+export interface TodoItem {
+	name: string;
+	completed: boolean;
+}
 export interface Model {
 	id: string;
 	providerId: string;
@@ -301,14 +338,16 @@ export interface Model {
 	hasModelOverrides?: boolean;
 	providerOverrides?: Record<string, unknown>;
 }
-export interface CustomCommandArgument {
+export interface Command {
+	name: string;
+	description: string;
+	arguments: CommandArgument[];
+}
+export interface CommandArgument {
 	description: string;
 	required?: boolean;
 }
-export interface CustomCommand {
-	name: string;
-	description: string;
-	arguments: CustomCommandArgument[];
+export interface CustomCommand extends Command {
 	template: string;
 	includeContext?: boolean;
 	autoApprove?: boolean;
@@ -323,9 +362,9 @@ export interface ExtensionMetadata {
 	/** Semantic version (e.g., "1.0.0") */
 	version: string;
 	/** Brief description of extension functionality */
-	description: string;
+	description?: string;
 	/** Author name or organization */
-	author: string;
+	author?: string;
 	/** Optional list of extension capabilities (e.g., ["tools", "ui-elements"]) */
 	capabilities?: string[];
 }
@@ -423,13 +462,6 @@ export interface UIElementDefinition {
 	onClick: string;
 	/** Optional: Conditional visibility check */
 	enabled?: (context: unknown) => boolean;
-}
-/** Command argument definition */
-export interface CommandArgument {
-	/** Argument description for autocomplete/help */
-	description: string;
-	/** Whether this argument is required */
-	required?: boolean;
 }
 /**
  * Definition of a command that can be registered by an extension
@@ -620,6 +652,45 @@ export interface AiderPromptFinishedEvent {
 	responses: ResponseCompletedData[];
 }
 /**
+ * Safe subset of Task capabilities exposed to extensions.
+ * Provides read-only access to task data and safe operations.
+ */
+export interface TaskContext {
+	readonly id: string;
+	readonly name: string;
+	readonly state: string;
+	readonly baseDir: string;
+	readonly parentId: string | null;
+	getContextFiles(): Promise<ContextFile[]>;
+	addFile(path: string, readOnly?: boolean): Promise<void>;
+	addFiles(...files: ContextFile[]): Promise<void>;
+	dropFile(path: string): Promise<void>;
+	getContextMessages(): Promise<ContextMessage[]>;
+	addMessage(content: string, role?: "user" | "assistant"): Promise<void>;
+	getAddableFiles(searchRegex?: string): Promise<string[]>;
+	getRepoMap(): string;
+	getTodos(): Promise<TodoItem[]>;
+	addTodo(name: string): Promise<TodoItem[]>;
+	updateTodo(name: string, updates: Partial<TodoItem>): Promise<TodoItem[]>;
+	deleteTodo(name: string): Promise<TodoItem[]>;
+	generateContextMarkdown(): Promise<string | null>;
+	isInitialized(): boolean;
+}
+/**
+ * Safe subset of Project capabilities exposed to extensions.
+ * Provides read-only access to project data and safe operations.
+ */
+export interface ProjectContext {
+	readonly baseDir: string;
+	createTask(params: CreateTaskParams): Promise<TaskData>;
+	getTask(taskId: string): TaskContext | null;
+	getTasks(): Promise<TaskData[]>;
+	getMostRecentTask(): TaskContext | null;
+	getCommands(): CommandsData;
+	getProjectSettings(): ProjectSettings;
+	loadInputHistory(): Promise<string[]>;
+}
+/**
  * Context object passed to extension methods providing access to AiderDesk APIs
  *
  * @example
@@ -648,6 +719,16 @@ export interface ExtensionContext {
 	 * @returns Current task data or null if no task is active
 	 */
 	getCurrentTask(): TaskData | null;
+	/**
+	 * Get the current task context for safe task operations
+	 * @returns TaskContext or null if no task is active
+	 */
+	getTaskContext(): TaskContext | null;
+	/**
+	 * Get the project context for safe project operations
+	 * @returns ProjectContext
+	 */
+	getProjectContext(): ProjectContext;
 	/**
 	 * Create a new task
 	 * @param name - Task name/title
@@ -722,7 +803,7 @@ export interface ExtensionContext {
  *     context.log('My extension loaded!', 'info');
  *   }
  *
- *   getTools(): ToolDefinition[] {
+ *   getTools(context: ExtensionContext): ToolDefinition[] {
  *     return [{
  *       name: 'my-tool',
  *       description: 'My custom tool',
@@ -754,7 +835,7 @@ export interface Extension {
 	 * Return array of tools this extension provides
 	 * Called when extension is loaded and when tools need to be refreshed
 	 */
-	getTools?(): ToolDefinition[];
+	getTools?(context: ExtensionContext): ToolDefinition[];
 	/**
 	 * Return array of UI elements this extension provides
 	 * Called when extension is loaded and when UI needs to be refreshed
@@ -764,7 +845,7 @@ export interface Extension {
 	 * Return array of commands this extension provides
 	 * Called when extension is loaded and when commands need to be refreshed
 	 */
-	getCommands?(): CommandDefinition[];
+	getCommands?(context: ExtensionContext): CommandDefinition[];
 	/**
 	 * Called when a new task is created
 	 * @returns void or partial event to modify task data

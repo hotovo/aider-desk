@@ -10,7 +10,7 @@ import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 
 import type { ToolCallOptions } from 'ai';
-import type { ExtensionApi, ExtensionMetadata, ToolDefinition, ExtensionContext, ToolResult } from '@common/extensions';
+import type { Extension, ExtensionMetadata, ToolDefinition, ExtensionContext, ToolResult } from '@common/extensions';
 import type { TaskData, AgentProfile, ContextMemoryMode, InvocationMode } from '@common/types';
 import type { Task } from '@/task';
 import type { Project } from '@/project';
@@ -40,7 +40,7 @@ vi.mock('../extension-watcher', () => ({
   ExtensionWatcher: vi.fn(),
 }));
 
-const createMockExtension = (overrides: Partial<ExtensionApi> = {}): ExtensionApi => ({
+const createMockExtension = (overrides: Partial<Extension> = {}): Extension => ({
   onLoad: vi.fn(),
   onUnload: vi.fn(),
   ...overrides,
@@ -62,6 +62,9 @@ const createMockDeps = () => ({
   modelManager: {
     getAllModels: vi.fn().mockResolvedValue([]),
     getProviderModels: vi.fn().mockResolvedValue({ models: [] }),
+  } as any,
+  projectManager: {
+    getProjects: vi.fn().mockReturnValue([]),
   } as any,
 });
 
@@ -140,7 +143,7 @@ describe('Extension Tool Integration with Agent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeps = createMockDeps();
-    manager = new ExtensionManager(mockDeps.store, mockDeps.agentProfileManager, mockDeps.modelManager);
+    manager = new ExtensionManager(mockDeps.store, mockDeps.agentProfileManager, mockDeps.modelManager, mockDeps.projectManager);
   });
 
   afterEach(() => {
@@ -474,7 +477,7 @@ describe('Extension Tool Integration with Agent', () => {
 
   describe('Extension Command Registration Examples', () => {
     it('should demonstrate command registration with getCommands', () => {
-      const extension: ExtensionApi = {
+      const extension: Extension = {
         getCommands: () => [
           {
             name: 'generate-tests',
@@ -506,7 +509,7 @@ describe('Extension Tool Integration with Agent', () => {
       const registry = new ExtensionRegistry();
       registry.register(extension, metadata, '/test/path.ts');
 
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
       (manager as any).registry = registry;
 
       const commands = manager.collectCommands();
@@ -522,7 +525,7 @@ describe('Extension Tool Integration with Agent', () => {
         context.log('Executing command', 'info');
       });
 
-      const extension: ExtensionApi = {
+      const extension: Extension = {
         getCommands: () => [
           {
             name: 'test-command',
@@ -536,7 +539,7 @@ describe('Extension Tool Integration with Agent', () => {
       const registry = new ExtensionRegistry();
       registry.register(extension, metadata, '/test/path.ts');
 
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
       (manager as any).registry = registry;
 
       manager.collectCommands();

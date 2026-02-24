@@ -9,7 +9,6 @@ import type {
   ContextMessage,
   CreateTaskParams,
   CustomCommand,
-  DefaultTaskState,
   Mode,
   Model,
   ProjectSettings,
@@ -357,7 +356,7 @@ export interface TaskContext {
   // Identity
   readonly id: string;
   readonly name: string;
-  readonly state: DefaultTaskState | undefined;
+  readonly state: string;
   readonly baseDir: string;
   readonly parentId: string | null;
 
@@ -554,7 +553,7 @@ export interface ExtensionContext {
  * }
  * ```
  */
-export interface ExtensionApi {
+export interface Extension {
   // Lifecycle methods
 
   /**
@@ -779,6 +778,6 @@ export interface ExtensionApi {
  * Constructor type for extension classes
  */
 export interface ExtensionConstructor {
-  new (): ExtensionApi;
+  new (): Extension;
   metadata?: ExtensionMetadata;
 }

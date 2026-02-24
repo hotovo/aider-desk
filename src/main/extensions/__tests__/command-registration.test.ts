@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 
-import type { ExtensionApi, CommandDefinition } from '@common/extensions';
+import type { Extension, CommandDefinition } from '@common/extensions';
 
 describe('Extension Command Registration', () => {
   let registry: ExtensionRegistry;
@@ -14,7 +14,7 @@ describe('Extension Command Registration', () => {
 
   describe('CommandDefinition Validation', () => {
     it('should accept valid command definition', () => {
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
 
       const command: CommandDefinition = {
         name: 'test-command',
@@ -30,7 +30,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should reject command with invalid name format', () => {
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
 
       const command: CommandDefinition = {
         name: 'TestCommand', // PascalCase not allowed
@@ -46,7 +46,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should reject command with empty description', () => {
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
 
       const command: CommandDefinition = {
         name: 'test-command',
@@ -62,7 +62,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should reject command without execute function', () => {
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
 
       const command = {
         name: 'test-command',
@@ -75,7 +75,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should accept command with arguments array', () => {
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
 
       const command: CommandDefinition = {
         name: 'test-command',
@@ -179,7 +179,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should remove commands when unregistering extension', () => {
-      const extension: ExtensionApi = {
+      const extension: Extension = {
         getCommands: () => [
           {
             name: 'test-command',
@@ -221,7 +221,7 @@ describe('Extension Command Registration', () => {
 
       registry.registerCommand('test-extension', command);
 
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
       // Inject the registry (normally done internally)
       (manager as any).registry = registry;
 
@@ -231,7 +231,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should throw error for non-existent command', async () => {
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
       (manager as any).registry = registry;
 
       await expect(manager.executeCommand('non-existent', [], {} as any)).rejects.toThrow("Extension command 'non-existent' not found");
@@ -250,7 +250,7 @@ describe('Extension Command Registration', () => {
 
       registry.registerCommand('test-extension', command);
 
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
       (manager as any).registry = registry;
 
       await expect(manager.executeCommand('failing-command', [], {} as any)).rejects.toThrow("Extension command 'failing-command' failed");
@@ -259,7 +259,7 @@ describe('Extension Command Registration', () => {
 
   describe('Extension getCommands Method', () => {
     it('should collect commands from extension', () => {
-      const extension: ExtensionApi = {
+      const extension: Extension = {
         getCommands: () => [
           {
             name: 'command-one',
@@ -281,7 +281,7 @@ describe('Extension Command Registration', () => {
 
       registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
 
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
       (manager as any).registry = registry;
 
       const commands = manager.collectCommands();
@@ -293,13 +293,13 @@ describe('Extension Command Registration', () => {
     });
 
     it('should skip extension without getCommands method', () => {
-      const extension: ExtensionApi = {
+      const extension: Extension = {
         // No getCommands method
       };
 
       registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
 
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
       (manager as any).registry = registry;
 
       const commands = manager.collectCommands();
@@ -307,7 +307,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should skip invalid commands', () => {
-      const extension: ExtensionApi = {
+      const extension: Extension = {
         getCommands: () => [
           {
             name: 'InvalidName', // Not kebab-case
@@ -328,7 +328,7 @@ describe('Extension Command Registration', () => {
 
       registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
 
-      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      const manager = new ExtensionManager({} as any, {} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
       (manager as any).registry = registry;
 
       const commands = manager.collectCommands();

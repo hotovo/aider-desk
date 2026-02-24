@@ -128,6 +128,10 @@ export class ProjectManager {
     return this.getProject(baseDir).getCommands();
   }
 
+  public getProjects(): Project[] {
+    return this.projects;
+  }
+
   agentProfileUpdated(oldProfile: AgentProfile, profile: AgentProfile) {
     this.projects.forEach((project) => {
       project.forEachTask((task) => task.agentProfileUpdated(oldProfile, profile));

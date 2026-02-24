@@ -1,7 +1,9 @@
-import { ExtensionApi, ExtensionMetadata, ToolDefinition, CommandDefinition } from '@common/extensions';
+import { Extension, ExtensionMetadata, ToolDefinition, CommandDefinition } from '@common/extensions';
+
+import logger from '@/logger';
 
 export interface LoadedExtension {
-  instance: ExtensionApi;
+  instance: Extension;
   metadata: ExtensionMetadata;
   filePath: string;
   initialized: boolean;
@@ -23,14 +25,18 @@ export class ExtensionRegistry {
   private tools = new Map<string, RegisteredTool>();
   private commands = new Map<string, RegisteredCommand>();
 
-  register(extension: ExtensionApi, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
+  register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
+    logger.info(`[Extensions] Registering extension: ${metadata.name}`);
     this.extensions.set(metadata.name, { instance: extension, metadata, filePath, initialized: false, projectDir });
   }
 
   setInitialized(name: string, initialized: boolean): void {
     const extension = this.extensions.get(name);
     if (extension) {
+      logger.info(`[Extensions] Set initialized: ${name} to ${initialized}`);
       extension.initialized = initialized;
+    } else {
+      logger.warn(`[Extensions] Failed to set initialized: ${name} to ${initialized}, extension not found`);
     }
   }
 
@@ -38,7 +44,7 @@ export class ExtensionRegistry {
     if (projectDir) {
       return Array.from(this.extensions.values()).filter((ext) => ext.projectDir === projectDir || !ext.projectDir);
     }
-    return Array.from(this.extensions.values()).filter((ext) => !ext.projectDir);
+    return Array.from(this.extensions.values());
   }
 
   getExtension(name: string): LoadedExtension | undefined {
@@ -46,6 +52,7 @@ export class ExtensionRegistry {
   }
 
   unregister(name: string): boolean {
+    logger.info(`[Extensions] Unregistering extension: ${name}`);
     for (const [toolKey, registered] of this.tools) {
       if (registered.extensionName === name) {
         this.tools.delete(toolKey);
@@ -66,6 +73,7 @@ export class ExtensionRegistry {
   }
 
   registerTool(extensionName: string, tool: ToolDefinition): void {
+    logger.info(`[Extensions] Registered tool '${tool.name}' from extension '${extensionName}'`);
     const toolKey = `${extensionName}:${tool.name}`;
     this.tools.set(toolKey, { extensionName, tool });
   }
@@ -79,10 +87,12 @@ export class ExtensionRegistry {
   }
 
   clearTools(): void {
+    logger.info('[Extensions] Cleared all tools');
     this.tools.clear();
   }
 
   registerCommand(extensionName: string, command: CommandDefinition): void {
+    logger.info(`[Extensions] Registered command '${command.name}' from extension '${extensionName}'`);
     const commandKey = `${extensionName}:${command.name}`;
     this.commands.set(commandKey, { extensionName, command });
   }
@@ -105,6 +115,7 @@ export class ExtensionRegistry {
   }
 
   clearCommands(): void {
+    logger.info('[Extensions] Cleared all commands');
     this.commands.clear();
   }
 }

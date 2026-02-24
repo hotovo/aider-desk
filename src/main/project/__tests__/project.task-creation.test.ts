@@ -206,7 +206,7 @@ describe('Project - createNewTask', () => {
     (mockPromptsManager as any).start = vi.fn(() => Promise.resolve());
     mockExtensionManager = {
       reloadProjectExtensions: vi.fn(() => Promise.resolve()),
-      stopWatchingProject: vi.fn(),
+      stopProjectWatcher: vi.fn(),
       dispatchEvent: vi.fn(() => Promise.resolve({} as any)),
     };
 

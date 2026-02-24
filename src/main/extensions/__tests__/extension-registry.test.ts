@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ExtensionApi, ExtensionMetadata } from '@common/extensions';
+import { Extension, ExtensionMetadata } from '@common/extensions';
 
 import { ExtensionRegistry } from '../extension-registry';
 
 describe('ExtensionRegistry', () => {
   let registry: ExtensionRegistry;
-  let mockExtension: ExtensionApi;
+  let mockExtension: Extension;
   let mockMetadata: ExtensionMetadata;
 
   beforeEach(() => {
     registry = new ExtensionRegistry();
-    mockExtension = {} as ExtensionApi;
+    mockExtension = {} as Extension;
     mockMetadata = {
       name: 'test-ext',
       version: '1.0.0',

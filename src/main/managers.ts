@@ -66,20 +66,23 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   const agentProfileManager = new AgentProfileManager(eventManager);
   await agentProfileManager.start();
 
-  // Initialize extension manager (non-blocking - errors should not crash app per NFR6)
-  const extensionManager = new ExtensionManager(store, agentProfileManager, modelManager);
-  const extensionInitPromise = extensionManager.init().catch((error) => {
-    logger.error('[Extensions] Extension system initialization failed, continuing without extensions:', error);
-    return {
-      loadedCount: 0,
-      initializedCount: 0,
-      durationMs: 0,
-      errors: [error instanceof Error ? error.message : String(error)],
-    };
-  });
+  // Create a temporary project manager reference for circular dependency resolution
+  // eslint-disable-next-line prefer-const
+  let projectManager: ProjectManager;
+
+  // Initialize extension manager with lazy project manager access (non-blocking - errors should not crash app per NFR6)
+  const extensionManager = new ExtensionManager(
+    store,
+    agentProfileManager,
+    modelManager,
+    // Lazy getter for project manager to resolve circular dependency
+    {
+      getProjects: () => projectManager.getProjects(),
+    } as ProjectManager,
+  );
 
   // Initialize project manager
-  const projectManager = new ProjectManager(
+  projectManager = new ProjectManager(
     store,
     mcpManager,
     telemetryManager,
@@ -93,6 +96,10 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     promptsManager,
     extensionManager,
   );
+
+  const extensionInitPromise = extensionManager.init().catch((error) => {
+    logger.error('[Extensions] Extension system initialization failed, continuing without extensions:', error);
+  });
 
   // Initialize terminal manager
   const terminalManager = new TerminalManager(eventManager, worktreeManager, telemetryManager);

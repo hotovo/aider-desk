@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ExtensionApi, ExtensionMetadata } from '@common/extensions';
+import { Extension, ExtensionMetadata } from '@common/extensions';
 import { createJiti } from 'jiti';
 
 import { ExtensionLoader } from '../extension-loader';
@@ -41,7 +41,7 @@ describe('ExtensionLoader', () => {
       author: 'Tester',
     };
 
-    class TestExtension implements ExtensionApi {
+    class TestExtension implements Extension {
       static metadata = mockMetadata;
     }
 

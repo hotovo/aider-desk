@@ -1,14 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import { FSWatcher, watch } from 'chokidar';
+import debounce from 'lodash/debounce';
 import { z } from 'zod';
 import { ToolApprovalState } from '@common/types';
 
-import { ExtensionValidator } from './extension-validator';
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension, RegisteredTool, RegisteredCommand } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
-import { ExtensionWatcher } from './extension-watcher';
 
 import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
@@ -22,7 +22,7 @@ import type {
   AiderPromptStartedEvent,
   CommandExecutedEvent,
   CustomCommandExecutedEvent,
-  ExtensionApi,
+  Extension,
   ExtensionContext,
   FilesAddedEvent,
   FilesDroppedEvent,
@@ -46,27 +46,18 @@ import type {
   CommandDefinition,
 } from '@common/extensions';
 import type { ToolCallOptions, ToolSet } from 'ai';
+import type { ProjectManager } from '@/project/project-manager';
 
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { Project } from '@/project';
 import { Task } from '@/task';
 
-export interface ExtensionInitOptions {
-  hotReload?: boolean;
-}
-
-export interface ExtensionInitResult {
-  loadedCount: number;
-  initializedCount: number;
-  durationMs: number;
-  errors: string[];
-}
-
 export interface ExtensionManagerDeps {
   store: Store;
   agentProfileManager: AgentProfileManager;
   modelManager: ModelManager;
+  projectManager: ProjectManager;
 }
 
 /**
@@ -101,83 +92,40 @@ export type ExtensionEventMap = {
 };
 
 export class ExtensionManager {
-  private validator: ExtensionValidator;
   private loader: ExtensionLoader;
   private registry: ExtensionRegistry;
-  private globalWatcher: ExtensionWatcher | null = null;
-  private projectWatchers: Map<string, ExtensionWatcher> = new Map();
+  private globalWatcher: FSWatcher | null = null;
+  private projectWatchers: Map<string, FSWatcher> = new Map();
   private initialized = false;
-  private hotReloadEnabled = false;
 
   constructor(
     private readonly store: Store,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly modelManager: ModelManager,
+    private readonly projectManager: ProjectManager,
   ) {
-    this.validator = new ExtensionValidator();
     this.loader = new ExtensionLoader();
     this.registry = new ExtensionRegistry();
     this.store = store;
     this.agentProfileManager = agentProfileManager;
     this.modelManager = modelManager;
+    this.projectManager = projectManager;
   }
 
-  async init(options?: ExtensionInitOptions): Promise<ExtensionInitResult> {
-    const startTime = Date.now();
-    const errors: string[] = [];
-    let initializedCount = 0;
-
+  async init(): Promise<void> {
     logger.info('[Extensions] Starting extension system initialization...');
 
     try {
-      await this.loadGlobalExtensions();
+      this.registry.clear();
 
-      const loadedExtensions = this.registry.getExtensions();
-      const loadedCount = loadedExtensions.length;
+      await this.loadExtensionsForDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
 
-      for (const loaded of loadedExtensions) {
-        try {
-          const success = await this.initializeExtension(loaded);
-          if (success) {
-            initializedCount++;
-          }
-        } catch (error) {
-          const errorMsg = `Failed to initialize extension '${loaded.metadata.name}': ${error instanceof Error ? error.message : String(error)}`;
-          logger.error(`[Extensions] ${errorMsg}`);
-          errors.push(errorMsg);
-        }
-      }
-
-      this.collectTools();
-      this.collectCommands();
-
-      const durationMs = Date.now() - startTime;
       this.initialized = true;
 
-      const enableHotReload = options?.hotReload ?? true;
-      if (enableHotReload) {
-        this.startHotReloadWatcher();
-      }
-
-      logger.info(`[Extensions] Initialization complete: ${initializedCount}/${loadedCount} extensions initialized in ${durationMs}ms`);
-
-      return {
-        loadedCount,
-        initializedCount,
-        durationMs,
-        errors,
-      };
+      await this.startHotReloadWatcher();
     } catch (error) {
-      const errorMsg = `Extension system initialization failed: ${error instanceof Error ? error.message : String(error)}`;
-      logger.error(`[Extensions] ${errorMsg}`);
-      errors.push(errorMsg);
-
-      return {
-        loadedCount: 0,
-        initializedCount: 0,
-        durationMs: Date.now() - startTime,
-        errors,
-      };
+      logger.error(`[Extensions] Extension system initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
     }
   }
 
@@ -204,7 +152,7 @@ export class ExtensionManager {
 
   /**
    * Loads, registers, and initializes an extension from a file path.
-   * Combines the common pattern of load → register → initialize → collect tools.
+   * Combines the common pattern of load → register → initialize.
    */
   private async loadAndInitializeExtension(filePath: string, project?: Project): Promise<boolean> {
     try {
@@ -236,34 +184,50 @@ export class ExtensionManager {
     }
   }
 
-  async loadGlobalExtensions(): Promise<void> {
-    const extensionPaths = await this.discoverGlobalExtensions();
+  /**
+   * Unified method to load all extensions from a directory.
+   * Discovers, loads, initializes, and collects tools/commands for all extensions in the directory.
+   * Used for both global initialization and project-specific loading.
+   *
+   * @param dir - The directory to load extensions from
+   * @param project - Optional project instance (for project-specific extensions)
+   * @returns Object with loadedCount, initializedCount, and errors
+   */
+  private async loadExtensionsForDir(dir: string, project?: Project): Promise<void> {
+    let initializedCount = 0;
 
-    this.registry.clear();
+    const extensionPaths = await this.discoverExtensionsFromDir(dir);
+    const loadedCount = extensionPaths.length;
 
     for (const filePath of extensionPaths) {
       try {
-        const result = await this.loader.loadExtension(filePath);
-        if (result) {
-          const { extension, metadata } = result;
-          this.registry.register(extension, metadata, filePath);
-          logger.info(`[Extensions] Loaded: ${metadata.name} v${metadata.version}`);
+        const success = await this.loadAndInitializeExtension(filePath, project);
+        if (success) {
+          initializedCount++;
         }
       } catch (error) {
-        logger.error(`[Extensions] Failed to load extension from ${filePath}:`, error);
+        const errorMsg = `Failed to load extension from ${filePath}: ${error instanceof Error ? error.message : String(error)}`;
+        logger.error(`[Extensions] ${errorMsg}`);
       }
     }
 
-    const count = this.registry.getExtensions().length;
-    if (count > 0) {
-      logger.info(`[Extensions] Successfully loaded ${count} extension(s)`);
-    } else {
-      logger.info('[Extensions] No extensions loaded');
-    }
-  }
+    this.registry.clearTools();
+    this.registry.clearCommands();
+    this.collectTools();
+    this.collectCommands();
 
-  async discoverGlobalExtensions(): Promise<string[]> {
-    return this.discoverExtensionsFromDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
+    if (project) {
+      project.sendCommandsUpdated();
+    } else {
+      // Global extensions loaded - notify all projects
+      this.sendCommandsUpdatedToAllProjects();
+    }
+
+    if (loadedCount > 0) {
+      logger.info(`[Extensions] Loaded ${initializedCount}/${loadedCount} extension(s) from ${dir}`);
+    } else {
+      logger.debug(`[Extensions] No extensions found in ${dir}`);
+    }
   }
 
   getExtensions(): LoadedExtension[] {
@@ -285,10 +249,10 @@ export class ExtensionManager {
 
     logger.info('[Extensions] Disposing extension system...');
 
-    this.stopHotReloadWatcher();
+    await this.stopGlobalWatcher();
 
     for (const projectDir of this.projectWatchers.keys()) {
-      this.stopWatchingProject(projectDir);
+      await this.stopProjectWatcher(projectDir);
     }
 
     const extensions = this.registry.getExtensions();
@@ -339,12 +303,6 @@ export class ExtensionManager {
     try {
       await this.unloadExtension(filePath);
 
-      const validationResult = await this.validator.validateExtension(filePath);
-      if (!validationResult.isValid) {
-        logger.error(`[Extensions] Validation failed for ${extensionName}:`, validationResult.errors);
-        return false;
-      }
-
       const success = await this.loadAndInitializeExtension(filePath, project);
       if (!success) {
         return false;
@@ -358,6 +316,9 @@ export class ExtensionManager {
       // Notify frontend about updated commands
       if (project) {
         project.sendCommandsUpdated();
+      } else {
+        // Global extension reloaded - notify all projects
+        this.sendCommandsUpdatedToAllProjects();
       }
 
       logger.info(`[Extensions] Hot reload complete: ${extensionName}`);
@@ -391,25 +352,11 @@ export class ExtensionManager {
     const extensions = Array.from(extensionMap.values());
     extensions.sort((a, b) => path.basename(a).localeCompare(path.basename(b)));
 
-    const validExtensions: string[] = [];
-    for (const extPath of extensions) {
-      try {
-        const result = await this.validator.validateExtension(extPath);
-        if (result.isValid) {
-          validExtensions.push(extPath);
-        } else {
-          logger.error(`[Extensions] Validation failed for ${path.basename(extPath)}:`, result.errors);
-        }
-      } catch (error) {
-        logger.error(`[Extensions] Failed to validate ${path.basename(extPath)}:`, error);
-      }
+    if (extensions.length > 0) {
+      logger.info(`[Extensions] Discovered ${extensions.length} extension(s): ${extensions.map((e) => path.basename(e)).join(', ')}`);
     }
 
-    if (validExtensions.length > 0) {
-      logger.info(`[Extensions] Discovered ${validExtensions.length} valid extension(s): ${validExtensions.map((e) => path.basename(e)).join(', ')}`);
-    }
-
-    return validExtensions;
+    return extensions;
   }
 
   private async scanDirectory(dir: string): Promise<string[]> {
@@ -455,27 +402,72 @@ export class ExtensionManager {
     }
   }
 
-  isHotReloadEnabled(): boolean {
-    return this.hotReloadEnabled;
+  private async setupWatcherForDir(dir: string, onChange: () => Promise<void>): Promise<FSWatcher | null> {
+    try {
+      const dirExists = await fs
+        .access(dir)
+        .then(() => true)
+        .catch(() => false);
+      if (!dirExists) {
+        await fs.mkdir(dir, { recursive: true });
+      }
+
+      const debouncedOnChange = debounce(onChange, 1000);
+
+      const watcher = watch(dir, {
+        persistent: true,
+        usePolling: true,
+        ignoreInitial: true,
+      });
+
+      watcher
+        .on('add', debouncedOnChange)
+        .on('change', debouncedOnChange)
+        .on('unlink', debouncedOnChange)
+        .on('error', (error) => {
+          logger.error(`[Extensions] Watcher error for directory ${dir}:`, error);
+        });
+
+      return watcher;
+    } catch (error) {
+      logger.error(`[Extensions] Failed to setup watcher for directory ${dir}:`, error);
+      return null;
+    }
   }
 
-  private startHotReloadWatcher(): void {
+  private async startHotReloadWatcher(): Promise<void> {
     if (this.globalWatcher) {
       return;
     }
 
-    this.globalWatcher = new ExtensionWatcher(this, AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
-    this.globalWatcher.start();
-    this.hotReloadEnabled = true;
+    this.globalWatcher = await this.setupWatcherForDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR, async () => {
+      logger.info('[Extensions] Global extensions changed, reloading...');
+      await this.reloadGlobalExtensions();
+    });
 
-    logger.info('[Extensions] Hot reload enabled for global directory');
+    if (this.globalWatcher) {
+      logger.info('[Extensions] Hot reload enabled for global directory');
+    }
   }
 
-  private stopHotReloadWatcher(): void {
+  private async reloadGlobalExtensions(): Promise<void> {
+    await this.unloadExtensionsForDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
+    await this.loadExtensionsForDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
+  }
+
+  private async unloadExtensionsForDir(dir: string): Promise<void> {
+    const extensions = this.registry.getExtensions();
+    const extensionsInDir = extensions.filter((ext) => ext.filePath.startsWith(dir));
+
+    for (const ext of extensionsInDir) {
+      await this.unloadExtension(ext.filePath);
+    }
+  }
+
+  private async stopGlobalWatcher(): Promise<void> {
     if (this.globalWatcher) {
-      this.globalWatcher.stop();
+      await this.globalWatcher.close();
       this.globalWatcher = null;
-      this.hotReloadEnabled = false;
       logger.info('[Extensions] Hot reload disabled');
     }
   }
@@ -483,31 +475,35 @@ export class ExtensionManager {
   async reloadProjectExtensions(project: Project): Promise<void> {
     const projectDir = project.baseDir;
     const projectExtensionsDir = path.join(projectDir, AIDER_DESK_EXTENSIONS_DIR);
-    const extensionPaths = await this.scanDirectory(projectExtensionsDir);
 
-    for (const filePath of extensionPaths) {
-      await this.loadAndInitializeExtension(filePath, project);
-    }
+    logger.info(`[Extensions] Reloading extensions for project: ${projectDir}`);
+
+    await this.unloadExtensionsForDir(projectExtensionsDir);
+    await this.loadExtensionsForDir(projectExtensionsDir, project);
 
     if (!this.projectWatchers.has(projectDir)) {
-      const watcher = new ExtensionWatcher(this, projectExtensionsDir);
-      watcher.start();
-      this.projectWatchers.set(projectDir, watcher);
-      logger.info(`[Extensions] Started watching project extensions: ${projectDir}`);
-    }
+      const watcher = await this.setupWatcherForDir(projectExtensionsDir, async () => {
+        logger.info(`[Extensions] Project extensions changed for ${projectDir}, reloading...`);
+        await this.unloadExtensionsForDir(projectExtensionsDir);
+        await this.loadExtensionsForDir(projectExtensionsDir, project);
+        project.sendCommandsUpdated();
+      });
 
-    this.collectTools();
-    this.collectCommands();
+      if (watcher) {
+        this.projectWatchers.set(projectDir, watcher);
+        logger.info(`[Extensions] Started watching project extensions: ${projectDir}`);
+      }
+    }
 
     project.sendCommandsUpdated();
 
     logger.info(`[Extensions] Reloaded extensions for project: ${projectDir}`);
   }
 
-  stopWatchingProject(projectDir: string): void {
+  async stopProjectWatcher(projectDir: string): Promise<void> {
     const watcher = this.projectWatchers.get(projectDir);
     if (watcher) {
-      watcher.stop();
+      await watcher.close();
       this.projectWatchers.delete(projectDir);
       logger.info(`[Extensions] Stopped watching project extensions: ${projectDir}`);
     }
@@ -550,6 +546,7 @@ export class ExtensionManager {
     const collectedTools: RegisteredTool[] = [];
     const extensions = this.registry.getExtensions();
 
+    logger.info(`[Extensions] Collecting tools from ${extensions.length} extension(s)`);
     for (const loaded of extensions) {
       const { instance, metadata } = loaded;
 
@@ -687,11 +684,12 @@ export class ExtensionManager {
     const collectedCommands: RegisteredCommand[] = [];
     const extensions = this.registry.getExtensions();
 
+    logger.info(`[Extensions] Collecting commands from ${extensions.length} extension(s)`);
     for (const loaded of extensions) {
       const { instance, metadata } = loaded;
 
       if (!instance.getCommands) {
-        logger.debug(`[Extensions] Extension '${metadata.name}' has no getCommands method`);
+        logger.info(`[Extensions] Extension '${metadata.name}' has no getCommands method`);
         continue;
       }
 
@@ -804,7 +802,7 @@ export class ExtensionManager {
       const { instance, metadata } = loaded;
 
       // Get the handler method dynamically
-      const handler = (instance as ExtensionApi)[eventName];
+      const handler = (instance as Extension)[eventName];
 
       // Skip if extension doesn't handle this event
       if (typeof handler !== 'function') {
@@ -850,5 +848,28 @@ export class ExtensionManager {
     const global = extensions.filter((e) => !e.projectDir);
     const projectSpecific = extensions.filter((e) => e.projectDir === projectDir);
     return [...global, ...projectSpecific];
+  }
+
+  /**
+   * Sends commands updated notification to all projects.
+   * Used when global extensions are loaded/reloaded without a specific project context.
+   */
+  private sendCommandsUpdatedToAllProjects(): void {
+    const projects = this.projectManager.getProjects();
+
+    if (projects.length === 0) {
+      logger.debug('[Extensions] No active projects to notify about command updates');
+      return;
+    }
+
+    logger.debug(`[Extensions] Notifying ${projects.length} project(s) about command updates`);
+
+    for (const project of projects) {
+      try {
+        project.sendCommandsUpdated();
+      } catch (error) {
+        logger.error(`[Extensions] Failed to send commands updated to project ${project.baseDir}:`, error);
+      }
+    }
   }
 }

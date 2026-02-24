@@ -1,6 +1,6 @@
-import { ExtensionApi } from '@common/extensions';
+import { Extension } from '@common/extensions';
 
-export default class ExtensionWithoutMetadata implements ExtensionApi {
+export default class ExtensionWithoutMetadata implements Extension {
   onLoad?(): void {
     console.log('Loaded');
   }

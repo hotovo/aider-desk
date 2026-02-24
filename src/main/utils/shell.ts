@@ -497,7 +497,7 @@ export const getShellPath = (): string => {
       .filter((p) => p)
       .join(pathSep);
     const pathEntries = cachedPath.split(pathSep);
-    logger.info('PATH loading completed successfully', {
+    logger.debug('PATH loading completed successfully', {
       totalEntries: pathEntries.length,
       additionalPaths: additionalPaths.length,
       firstFewEntries: pathEntries.slice(0, 5).join(', '),

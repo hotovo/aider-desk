@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 
-import type { ExtensionApi, ExtensionMetadata, ToolDefinition } from '@common/extensions';
+import type { Extension, ExtensionMetadata, ToolDefinition } from '@common/extensions';
 
 vi.mock('@/logger', () => ({
   default: {
@@ -36,7 +36,7 @@ vi.mock('../extension-watcher', () => ({
   ExtensionWatcher: vi.fn(),
 }));
 
-const createMockExtension = (overrides: Partial<ExtensionApi> = {}): ExtensionApi => ({
+const createMockExtension = (overrides: Partial<Extension> = {}): Extension => ({
   onLoad: vi.fn(),
   onUnload: vi.fn(),
   ...overrides,
@@ -57,6 +57,9 @@ const createMockDeps = () => ({
   } as any,
   modelManager: {
     getAllModels: vi.fn().mockResolvedValue([]),
+  } as any,
+  projectManager: {
+    getProjects: vi.fn().mockReturnValue([]),
   } as any,
 });
 
@@ -79,7 +82,7 @@ describe('Tool Registration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeps = createMockDeps();
-    manager = new ExtensionManager(mockDeps.store, mockDeps.agentProfileManager, mockDeps.modelManager);
+    manager = new ExtensionManager(mockDeps.store, mockDeps.agentProfileManager, mockDeps.modelManager, mockDeps.projectManager);
   });
 
   afterEach(() => {

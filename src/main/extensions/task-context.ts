@@ -1,5 +1,6 @@
+import { ContextFile, ContextMessage, DefaultTaskState, TodoItem } from '@common/types';
+
 import type { TaskContext } from '@common/extensions';
-import type { ContextFile, ContextMessage, DefaultTaskState, TodoItem } from '@common/types';
 import type { Task } from '@/task';
 
 export class TaskContextImpl implements TaskContext {
@@ -13,8 +14,8 @@ export class TaskContextImpl implements TaskContext {
     return this.task.task.name;
   }
 
-  get state(): DefaultTaskState | undefined {
-    return this.task.task.state as DefaultTaskState | undefined;
+  get state(): string {
+    return this.task.task.state || DefaultTaskState.Todo;
   }
 
   get baseDir(): string {

@@ -370,6 +370,12 @@ export class Project {
       arguments: registered.command.arguments || [],
     }));
 
+    logger.info('Sending commands updated event', {
+      baseDir: this.baseDir,
+      customCommands: this.customCommandManager.getAllCommands().length,
+      extensionCommands: extensionCommands.length,
+    });
+
     return {
       baseDir: this.baseDir,
       customCommands: this.customCommandManager.getAllCommands(),
@@ -524,7 +530,7 @@ export class Project {
     this.agentProfileManager.removeProject(this.baseDir);
     await this.hookManager.stopWatchingProject(this.baseDir);
     await this.promptsManager.unwatchProject(this.baseDir);
-    this.extensionManager.stopWatchingProject(this.baseDir);
+    this.extensionManager.stopProjectWatcher(this.baseDir);
     await Promise.all(Array.from(this.tasks.values()).map((task) => task.close()));
     await this.worktreeManager.close(this.baseDir);
 

@@ -8,7 +8,7 @@ import { ToolApprovalEvent, UIPlacement } from '@common/extensions';
 import { z } from 'zod';
 
 import type {
-  ExtensionApi,
+  Extension,
   ExtensionContext,
   ExtensionMetadata,
   ToolDefinition,
@@ -61,7 +61,7 @@ const testUIElement: UIElementDefinition = {
 };
 
 // Test Extension interface
-const testExtension: ExtensionApi = {
+const testExtension: Extension = {
   async onLoad(context: ExtensionContext) {
     // context should have all methods
     const task = context.getCurrentTask();
@@ -111,7 +111,7 @@ const testExtension: ExtensionApi = {
 };
 
 // Test ExtensionConstructor type
-const TestExtensionConstructor: new () => ExtensionApi = class {
+const TestExtensionConstructor: new () => Extension = class {
   static metadata: ExtensionMetadata = metadata;
 
   async onLoad(context: ExtensionContext) {
@@ -121,10 +121,10 @@ const TestExtensionConstructor: new () => ExtensionApi = class {
   getTools(_context: ExtensionContext) {
     return [testTool];
   }
-} as unknown as new () => ExtensionApi;
+} as unknown as new () => Extension;
 
 // Type guard tests - these should compile without errors
-const isExtension = function (obj: unknown): obj is ExtensionApi {
+const isExtension = function (obj: unknown): obj is Extension {
   return typeof obj === 'object' && obj !== null && 'onLoad' in obj;
 };
 

@@ -1,14 +1,14 @@
 import path from 'path';
 
 import { createJiti } from 'jiti';
-import { ExtensionApi, ExtensionMetadata } from '@common/extensions';
+import { Extension, ExtensionMetadata } from '@common/extensions';
 
 import logger from '@/logger';
 
 // Define the interface for the loaded module
 interface ExtensionModule {
   default: {
-    new (): ExtensionApi;
+    new (): Extension;
     metadata?: ExtensionMetadata;
   };
 }
@@ -19,7 +19,8 @@ export class ExtensionLoader {
   constructor() {
     // Initialize jiti relative to the current file or project root
     // Typically we want it to resolve relative to where we are loading from
-    this.jiti = createJiti(import.meta.url || __filename);
+    // Disable cache to always load fresh file content
+    this.jiti = createJiti(import.meta.url || __filename, { fsCache: false, moduleCache: false });
   }
 
   private deriveExtensionName(filePath: string): string {
@@ -36,7 +37,7 @@ export class ExtensionLoader {
     return filename;
   }
 
-  async loadExtension(filePath: string): Promise<{ extension: ExtensionApi; metadata: ExtensionMetadata } | null> {
+  async loadExtension(filePath: string): Promise<{ extension: Extension; metadata: ExtensionMetadata } | null> {
     try {
       // Use jiti to load the file
       // jiti handles TypeScript compilation on the fly
