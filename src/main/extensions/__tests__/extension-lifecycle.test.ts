@@ -9,7 +9,7 @@ import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 import { ExtensionContextImpl } from '../extension-context';
 
-import type { Extension, ExtensionContext, ExtensionMetadata } from '@common/extensions/types';
+import type { ExtensionApi, ExtensionContext, ExtensionMetadata } from '@common/extensions';
 
 vi.mock('@/logger', () => ({
   default: {
@@ -36,7 +36,7 @@ vi.mock('../extension-watcher', () => ({
   ExtensionWatcher: vi.fn(),
 }));
 
-const createMockExtension = (overrides: Partial<Extension> = {}): Extension => ({
+const createMockExtension = (overrides: Partial<ExtensionApi> = {}): ExtensionApi => ({
   onLoad: vi.fn(),
   onUnload: vi.fn(),
   ...overrides,
@@ -89,7 +89,7 @@ describe('Extension Lifecycle', () => {
 
     it('should allow extension to initialize state in onLoad', async () => {
       let capturedContext: ExtensionContext | null = null;
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onLoad(context) {
           capturedContext = context;
           context.log('Initializing state', 'info');
@@ -106,7 +106,7 @@ describe('Extension Lifecycle', () => {
     });
 
     it('should skip initialization if extension has no onLoad method', async () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
@@ -135,7 +135,7 @@ describe('Extension Lifecycle', () => {
     it('should catch and log errors in onLoad', async () => {
       const logger = await import('@/logger');
       const error = new Error('onLoad failed');
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onLoad() {
           throw error;
         },
@@ -151,7 +151,7 @@ describe('Extension Lifecycle', () => {
     });
 
     it('should not mark extension as initialized when onLoad fails', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onLoad() {
           throw new Error('onLoad failed');
         },
@@ -198,7 +198,7 @@ describe('Extension Lifecycle', () => {
     });
 
     it('should not call onUnload if extension has no onUnload method', async () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
@@ -212,7 +212,7 @@ describe('Extension Lifecycle', () => {
     it('should catch and log errors in onUnload', async () => {
       const logger = await import('@/logger');
       const error = new Error('onUnload failed');
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onUnload() {
           throw error;
         },
@@ -251,7 +251,7 @@ describe('Extension Lifecycle', () => {
 
     it('should allow extension to release resources in onUnload', async () => {
       const resource = { disposed: false };
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onUnload() {
           resource.disposed = true;
         },
@@ -270,10 +270,10 @@ describe('Extension Lifecycle', () => {
 
     it('should continue disposing other extensions when one fails', async () => {
       const logger = await import('@/logger');
-      const extension1: Extension = {
+      const extension1: ExtensionApi = {
         onUnload: vi.fn().mockRejectedValue(new Error('Extension 1 failed')),
       };
-      const extension2: Extension = {
+      const extension2: ExtensionApi = {
         onUnload: vi.fn().mockResolvedValue(undefined),
       };
 
@@ -294,7 +294,7 @@ describe('Extension Lifecycle', () => {
 
   describe('Error Isolation', () => {
     it('should continue loading other extensions when one fails during init', async () => {
-      const failingExtension: Extension = {
+      const failingExtension: ExtensionApi = {
         async onLoad() {
           throw new Error('Load failed');
         },
@@ -310,7 +310,7 @@ describe('Extension Lifecycle', () => {
     });
 
     it('should not crash AiderDesk on extension errors', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onLoad() {
           throw new Error('Critical error');
         },

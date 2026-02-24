@@ -124,8 +124,8 @@ export class ProjectManager {
     void project.projectSettingsChanged(oldSettings, newSettings);
   }
 
-  public getCustomCommands(baseDir: string) {
-    return this.getProject(baseDir).getCustomCommands();
+  public getCommands(baseDir: string) {
+    return this.getProject(baseDir).getCommands();
   }
 
   agentProfileUpdated(oldProfile: AgentProfile, profile: AgentProfile) {

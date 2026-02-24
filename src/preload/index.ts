@@ -2,8 +2,8 @@ import {
   AutocompletionData,
   ClearTaskData,
   CommandOutputData,
+  CommandsData,
   ContextFilesUpdatedData,
-  CustomCommandsUpdatedData,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -206,16 +206,16 @@ const api: ApplicationAPI = {
     };
   },
 
-  addCustomCommandsUpdatedListener: (baseDir, callback) => {
-    const listener = (_: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => {
+  addCommandsUpdatedListener: (baseDir, callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: CommandsData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
       callback(data);
     };
-    ipcRenderer.on('custom-commands-updated', listener);
+    ipcRenderer.on('commands-updated', listener);
     return () => {
-      ipcRenderer.removeListener('custom-commands-updated', listener);
+      ipcRenderer.removeListener('commands-updated', listener);
     };
   },
 
@@ -590,7 +590,7 @@ const api: ApplicationAPI = {
     };
   },
 
-  getCustomCommands: (baseDir) => ipcRenderer.invoke('get-custom-commands', baseDir),
+  getCommands: (baseDir) => ipcRenderer.invoke('get-commands', baseDir),
   runCustomCommand: (baseDir, taskId, commandName, args, mode) => ipcRenderer.invoke('run-custom-command', baseDir, taskId, commandName, args, mode),
 
   // Terminal operations

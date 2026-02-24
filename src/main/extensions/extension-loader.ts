@@ -1,14 +1,14 @@
 import path from 'path';
 
 import { createJiti } from 'jiti';
-import { Extension, ExtensionMetadata } from '@common/extensions/types';
+import { ExtensionApi, ExtensionMetadata } from '@common/extensions';
 
 import logger from '@/logger';
 
 // Define the interface for the loaded module
 interface ExtensionModule {
   default: {
-    new (): Extension;
+    new (): ExtensionApi;
     metadata?: ExtensionMetadata;
   };
 }
@@ -22,7 +22,21 @@ export class ExtensionLoader {
     this.jiti = createJiti(import.meta.url || __filename);
   }
 
-  async loadExtension(filePath: string): Promise<{ extension: Extension; metadata: ExtensionMetadata } | null> {
+  private deriveExtensionName(filePath: string): string {
+    const parsedPath = path.parse(filePath);
+    const filename = parsedPath.name;
+
+    // If the file is index.ts or index.js, use the parent folder name
+    if (filename === 'index') {
+      const parentDir = path.basename(parsedPath.dir);
+      return parentDir;
+    }
+
+    // Otherwise, use the filename without extension
+    return filename;
+  }
+
+  async loadExtension(filePath: string): Promise<{ extension: ExtensionApi; metadata: ExtensionMetadata } | null> {
     try {
       // Use jiti to load the file
       // jiti handles TypeScript compilation on the fly
@@ -42,11 +56,15 @@ export class ExtensionLoader {
         return null;
       }
 
-      // Check for static metadata
-      const metadata = ExtensionClass.metadata;
+      // Check for static metadata, or generate from filename
+      let metadata = ExtensionClass.metadata;
       if (!metadata) {
-        logger.error(`Extension file ${path.basename(filePath)} class is missing static 'metadata' property.`);
-        return null;
+        const generatedName = this.deriveExtensionName(filePath);
+        metadata = {
+          name: generatedName,
+          version: '1.0.0',
+        };
+        logger.info(`Extension file ${path.basename(filePath)} is missing metadata. Generated name: ${generatedName}`);
       }
 
       // Instantiate the extension

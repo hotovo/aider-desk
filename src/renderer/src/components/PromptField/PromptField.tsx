@@ -29,7 +29,7 @@ import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
-import { useCustomCommands } from '@/hooks/useCustomCommands';
+import { useCommands } from '@/hooks/useCommands';
 import { useApi } from '@/contexts/ApiContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -206,7 +206,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       args?: string;
     } | null>(null);
     const editorRef = useRef<ReactCodeMirrorRef>(null);
-    const customCommands = useCustomCommands(baseDir);
+    const [customCommands, extensionCommands] = useCommands(baseDir);
     const api = useApi();
     const { projectSettings, saveProjectSettings } = useProjectSettings();
 
@@ -302,8 +302,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             };
           }
         } else {
-          // Add custom commands to the list
-          const customCmds = customCommands.map((cmd) => `/${cmd.name}`);
+          // Add custom and extension commands to the list
+          const allCommands = [...customCommands, ...extensionCommands];
+          const customCmds = allCommands.map((cmd) => `/${cmd.name}`);
           return {
             from: 0,
             options: [...COMMANDS, ...customCmds].map((cmd) => ({
@@ -631,11 +632,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       stopRecording();
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
-          // Check if it's a custom command
+          // Check if it's a custom or extension command
           const [cmd, ...args] = text.slice(1).split(' ');
-          const customCommand = customCommands.find((command) => command.name === cmd);
+          const allCommands = [...customCommands, ...extensionCommands];
+          const command = allCommands.find((command) => command.name === cmd);
 
-          if (customCommand) {
+          if (command) {
             api.runCustomCommand(baseDir, taskId, cmd, args, mode);
             prepareForNextPrompt();
             setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
@@ -673,11 +675,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
 
     const getAutocompleteDetailLabel = (item: string): [string | null, boolean] => {
       if (item.startsWith('/')) {
-        // Check if it's a custom command
+        // Check if it's a custom or extension command
         const commandName = item.slice(1);
-        const customCommand = customCommands.find((cmd) => cmd.name === commandName);
-        if (customCommand) {
-          return [customCommand.description, false];
+        const allCommands = [...customCommands, ...extensionCommands];
+        const command = allCommands.find((cmd) => cmd.name === commandName);
+        if (command) {
+          return [command.description, false];
         }
 
         if (item === '/init' && !AGENT_MODES.includes(mode)) {

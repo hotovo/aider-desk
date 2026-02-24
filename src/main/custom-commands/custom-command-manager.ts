@@ -8,7 +8,7 @@ import { watch, FSWatcher } from 'chokidar';
 import { loadFront } from 'yaml-front-matter';
 import debounce from 'lodash/debounce';
 
-import type { CustomCommand } from '@common/types';
+import type { CommandArgument, CustomCommand } from '@common/types';
 
 import { AIDER_DESK_COMMANDS_DIR } from '@/constants';
 import logger from '@/logger';
@@ -131,7 +131,7 @@ export class CustomCommandManager {
   }
 
   private notifyCommandsUpdated(): void {
-    this.project.sendCustomCommandsUpdated(Array.from(this.commands.values()));
+    this.project.sendCommandsUpdated();
   }
 
   private async loadCommandsFromDir(commandsDir: string, commands: Map<string, CustomCommand>): Promise<void> {
@@ -202,7 +202,7 @@ export class CustomCommandManager {
     return prompt;
   }
 
-  private substituteArguments(template: string, args: string[], commandArgs: CustomCommand['arguments']): string {
+  private substituteArguments(template: string, args: string[], commandArgs: CommandArgument[]): string {
     let prompt = template;
 
     // First, substitute {{ARGUMENTS}} placeholder with all arguments joined by spaces

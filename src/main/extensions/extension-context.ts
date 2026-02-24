@@ -1,9 +1,13 @@
-import type { ExtensionContext } from '@common/extensions/types';
-import type { AgentProfile, CreateTaskParams, Model, SettingsData, TaskData } from '@common/types';
+import { ProjectContextImpl } from './project-context';
+import { TaskContextImpl } from './task-context';
+
+import type { ExtensionContext, ProjectContext, TaskContext } from '@common/extensions';
+import type { AgentProfile, CreateTaskParams, Mode, Model, SettingsData, TaskData } from '@common/types';
 import type { AgentProfileManager } from '@/agent';
 import type { ModelManager } from '@/models';
 import type { Project } from '@/project';
 import type { Store } from '@/store';
+import type { Task } from '@/task';
 
 import logger from '@/logger';
 
@@ -21,7 +25,7 @@ export class ExtensionContextImpl implements ExtensionContext {
     private readonly agentProfileManager?: AgentProfileManager,
     private readonly modelManager?: ModelManager,
     private readonly project?: Project,
-    private readonly task?: TaskData,
+    private readonly taskInstance?: Task,
   ) {}
 
   log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void {
@@ -34,7 +38,18 @@ export class ExtensionContextImpl implements ExtensionContext {
   }
 
   getCurrentTask(): TaskData | null {
-    return this.task || null;
+    return this.taskInstance?.task || null;
+  }
+
+  getTaskContext(): TaskContext | null {
+    return this.taskInstance ? new TaskContextImpl(this.taskInstance) : null;
+  }
+
+  getProjectContext(): ProjectContext {
+    if (!this.project) {
+      throw new Error('Project context not available');
+    }
+    return new ProjectContextImpl(this.project);
   }
 
   async createTask(name: string, params?: CreateTaskParams): Promise<string> {
@@ -119,6 +134,19 @@ export class ExtensionContextImpl implements ExtensionContext {
       this.store.saveSettings(newSettings);
     } catch (error) {
       this.log(`Failed to update settings: ${error}`, 'error');
+      throw error;
+    }
+  }
+
+  async runPrompt(prompt: string, mode: Mode = 'agent'): Promise<void> {
+    if (!this.taskInstance) {
+      throw new NotImplementedError('runPrompt');
+    }
+    try {
+      this.log(`Running prompt in mode: ${mode}`, 'info');
+      await this.taskInstance.runPrompt(prompt, mode);
+    } catch (error) {
+      this.log(`Failed to run prompt: ${error instanceof Error ? error.message : String(error)}`, 'error');
       throw error;
     }
   }

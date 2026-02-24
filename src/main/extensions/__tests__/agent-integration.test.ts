@@ -10,7 +10,7 @@ import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 
 import type { ToolCallOptions } from 'ai';
-import type { Extension, ExtensionMetadata, ToolDefinition, ExtensionContext, ToolResult } from '@common/extensions/types';
+import type { ExtensionApi, ExtensionMetadata, ToolDefinition, ExtensionContext, ToolResult } from '@common/extensions';
 import type { TaskData, AgentProfile, ContextMemoryMode, InvocationMode } from '@common/types';
 import type { Task } from '@/task';
 import type { Project } from '@/project';
@@ -40,7 +40,7 @@ vi.mock('../extension-watcher', () => ({
   ExtensionWatcher: vi.fn(),
 }));
 
-const createMockExtension = (overrides: Partial<Extension> = {}): Extension => ({
+const createMockExtension = (overrides: Partial<ExtensionApi> = {}): ExtensionApi => ({
   onLoad: vi.fn(),
   onUnload: vi.fn(),
   ...overrides,
@@ -469,6 +469,81 @@ describe('Extension Tool Integration with Agent', () => {
       const toolset = manager.createExtensionToolset(task, profile, abortSignal);
 
       expect(toolset['test-extension-test-tool']!.inputSchema).toBe(schema);
+    });
+  });
+
+  describe('Extension Command Registration Examples', () => {
+    it('should demonstrate command registration with getCommands', () => {
+      const extension: ExtensionApi = {
+        getCommands: () => [
+          {
+            name: 'generate-tests',
+            description: 'Generate unit tests for a file',
+            arguments: [
+              { description: 'File path', required: true },
+              { description: 'Framework (jest, vitest, mocha)', required: false },
+            ],
+            execute: async (args, context) => {
+              const filePath = args[0];
+              const framework = args[1] || 'vitest';
+              const prompt = `Generate comprehensive unit tests for ${filePath} using ${framework} framework.\n\nInclude:\n- Edge cases\n- Error handling\n- Mock examples`;
+              await context.runPrompt(prompt);
+            },
+          },
+          {
+            name: 'review-code',
+            description: 'Review code for best practices',
+            execute: async (args, context) => {
+              const files = args.join(', ');
+              const prompt = `Review the following files for:\n- Code quality\n- Best practices\n- Potential bugs\n- Security concerns\n\nFiles: ${files}`;
+              await context.runPrompt(prompt);
+            },
+          },
+        ],
+      };
+
+      const metadata = createMockMetadata();
+      const registry = new ExtensionRegistry();
+      registry.register(extension, metadata, '/test/path.ts');
+
+      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      (manager as any).registry = registry;
+
+      const commands = manager.collectCommands();
+
+      expect(commands).toHaveLength(2);
+      expect(commands[0].command.name).toBe('generate-tests');
+      expect(commands[0].command.arguments).toHaveLength(2);
+      expect(commands[1].command.name).toBe('review-code');
+    });
+
+    it('should execute command with ExtensionContext', async () => {
+      const mockExecute = vi.fn(async (_args: string[], context: ExtensionContext) => {
+        context.log('Executing command', 'info');
+      });
+
+      const extension: ExtensionApi = {
+        getCommands: () => [
+          {
+            name: 'test-command',
+            description: 'A test command',
+            execute: mockExecute,
+          },
+        ],
+      };
+
+      const metadata = createMockMetadata();
+      const registry = new ExtensionRegistry();
+      registry.register(extension, metadata, '/test/path.ts');
+
+      const manager = new ExtensionManager({} as any, {} as any, {} as any);
+      (manager as any).registry = registry;
+
+      manager.collectCommands();
+
+      await manager.executeCommand('test-command', ['arg1', 'arg2'], {} as any);
+
+      expect(mockExecute).toHaveBeenCalledWith(['arg1', 'arg2'], expect.any(Object));
     });
   });
 });

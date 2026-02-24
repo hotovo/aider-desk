@@ -2,15 +2,16 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import {
-  CustomCommand,
+  BmadStatus,
+  Command,
+  CommandsData,
+  CreateTaskParams,
   DefaultTaskState,
+  InstallResult,
   ProjectSettings,
   SettingsData,
   TaskData,
-  CreateTaskParams,
   WorkflowExecutionResult,
-  BmadStatus,
-  InstallResult,
 } from '@common/types';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
@@ -362,12 +363,22 @@ export class Project {
     this.eventManager.sendInputHistoryUpdated(this.baseDir, INTERNAL_TASK_ID, history);
   }
 
-  public getCustomCommands() {
-    return this.customCommandManager.getAllCommands();
+  public getCommands(): CommandsData {
+    const extensionCommands: Command[] = this.extensionManager.getCommands().map((registered) => ({
+      name: registered.command.name,
+      description: registered.command.description,
+      arguments: registered.command.arguments || [],
+    }));
+
+    return {
+      baseDir: this.baseDir,
+      customCommands: this.customCommandManager.getAllCommands(),
+      extensionCommands,
+    };
   }
 
-  public sendCustomCommandsUpdated(commands: CustomCommand[]) {
-    this.eventManager.sendCustomCommandsUpdated(this.baseDir, INTERNAL_TASK_ID, commands);
+  public sendCommandsUpdated(commands: CommandsData = this.getCommands()) {
+    this.eventManager.sendCommandsUpdated(commands);
   }
 
   private async deleteTaskInternal(taskId: string): Promise<void> {

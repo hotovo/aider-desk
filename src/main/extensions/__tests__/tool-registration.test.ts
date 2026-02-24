@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 
-import type { Extension, ExtensionMetadata, ToolDefinition } from '@common/extensions/types';
+import type { ExtensionApi, ExtensionMetadata, ToolDefinition } from '@common/extensions';
 
 vi.mock('@/logger', () => ({
   default: {
@@ -36,7 +36,7 @@ vi.mock('../extension-watcher', () => ({
   ExtensionWatcher: vi.fn(),
 }));
 
-const createMockExtension = (overrides: Partial<Extension> = {}): Extension => ({
+const createMockExtension = (overrides: Partial<ExtensionApi> = {}): ExtensionApi => ({
   onLoad: vi.fn(),
   onUnload: vi.fn(),
   ...overrides,

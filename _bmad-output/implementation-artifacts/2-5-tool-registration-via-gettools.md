@@ -231,7 +231,7 @@ for (const tool of tools) {
 ```typescript
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExtensionManager } from '../extension-manager';
-import type { ToolDefinition, Extension } from '@common/extensions/types';
+import type { ToolDefinition, Extension } from '@common/extensions';
 import { z } from 'zod';
 
 describe('Tool Registration', () => {
@@ -570,7 +570,7 @@ for (const tool of tools) {
 ```typescript
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExtensionManager } from '../extension-manager';
-import type { ToolDefinition, Extension } from '@common/extensions/types';
+import type { ToolDefinition, Extension } from '@common/extensions';
 import { z } from 'zod';
 
 describe('Tool Registration', () => {

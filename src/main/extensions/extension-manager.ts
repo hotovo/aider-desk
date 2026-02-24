@@ -6,7 +6,7 @@ import { ToolApprovalState } from '@common/types';
 
 import { ExtensionValidator } from './extension-validator';
 import { ExtensionLoader } from './extension-loader';
-import { ExtensionRegistry, LoadedExtension, RegisteredTool } from './extension-registry';
+import { ExtensionRegistry, LoadedExtension, RegisteredTool, RegisteredCommand } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
 import { ExtensionWatcher } from './extension-watcher';
 
@@ -22,7 +22,7 @@ import type {
   AiderPromptStartedEvent,
   CommandExecutedEvent,
   CustomCommandExecutedEvent,
-  Extension,
+  ExtensionApi,
   ExtensionContext,
   FilesAddedEvent,
   FilesDroppedEvent,
@@ -43,7 +43,8 @@ import type {
   ToolCalledEvent,
   ToolDefinition,
   ToolFinishedEvent,
-} from '@common/extensions/types';
+  CommandDefinition,
+} from '@common/extensions';
 import type { ToolCallOptions, ToolSet } from 'ai';
 
 import logger from '@/logger';
@@ -148,6 +149,7 @@ export class ExtensionManager {
       }
 
       this.collectTools();
+      this.collectCommands();
 
       const durationMs = Date.now() - startTime;
       this.initialized = true;
@@ -349,7 +351,14 @@ export class ExtensionManager {
       }
 
       this.registry.clearTools();
+      this.registry.clearCommands();
       this.collectTools();
+      this.collectCommands();
+
+      // Notify frontend about updated commands
+      if (project) {
+        project.sendCommandsUpdated();
+      }
 
       logger.info(`[Extensions] Hot reload complete: ${extensionName}`);
       return true;
@@ -488,6 +497,9 @@ export class ExtensionManager {
     }
 
     this.collectTools();
+    this.collectCommands();
+
+    project.sendCommandsUpdated();
 
     logger.info(`[Extensions] Reloaded extensions for project: ${projectDir}`);
   }
@@ -547,7 +559,8 @@ export class ExtensionManager {
       }
 
       try {
-        const tools = instance.getTools();
+        const context = new ExtensionContextImpl(metadata.name, this.store, this.agentProfileManager, this.modelManager);
+        const tools = instance.getTools(context);
 
         if (!Array.isArray(tools)) {
           logger.error(`[Extensions] Extension '${metadata.name}' getTools() did not return an array`);
@@ -607,7 +620,7 @@ export class ExtensionManager {
 
     for (const { extensionName, tool } of registeredTools) {
       const toolId = `${extensionName}-${tool.name}`;
-      const context = new ExtensionContextImpl(extensionName, this.store, this.agentProfileManager, this.modelManager, task.project, task.task);
+      const context = new ExtensionContextImpl(extensionName, this.store, this.agentProfileManager, this.modelManager, task.project, task);
 
       // Skip if tool is marked as Never approved
       if (profile.toolApprovals?.[toolId] === ToolApprovalState.Never) {
@@ -637,6 +650,119 @@ export class ExtensionManager {
     }
 
     return toolSet;
+  }
+
+  validateCommandDefinition(command: CommandDefinition): { isValid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    try {
+      if (!command.name) {
+        errors.push('Command name must be a non-empty string');
+      } else if (!ExtensionManager.KEBAB_CASE_REGEX.test(command.name)) {
+        errors.push(`Command name '${command.name}' must be kebab-case (e.g., 'generate-tests', 'my-command')`);
+      }
+
+      if (!command.description || command.description.trim() === '') {
+        errors.push('Command description must be a non-empty string');
+      }
+
+      if (!command.execute || typeof command.execute !== 'function') {
+        errors.push('Command execute must be a function');
+      }
+
+      if (command.arguments && !Array.isArray(command.arguments)) {
+        errors.push('Command arguments must be an array');
+      }
+    } catch (error) {
+      errors.push(`Validation error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
+
+  collectCommands(): RegisteredCommand[] {
+    const collectedCommands: RegisteredCommand[] = [];
+    const extensions = this.registry.getExtensions();
+
+    for (const loaded of extensions) {
+      const { instance, metadata } = loaded;
+
+      if (!instance.getCommands) {
+        logger.debug(`[Extensions] Extension '${metadata.name}' has no getCommands method`);
+        continue;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(metadata.name, this.store, this.agentProfileManager, this.modelManager);
+        const commands = instance.getCommands(context);
+
+        if (!Array.isArray(commands)) {
+          logger.error(`[Extensions] Extension '${metadata.name}' getCommands() did not return an array`);
+          continue;
+        }
+
+        if (commands.length === 0) {
+          logger.debug(`[Extensions] Extension '${metadata.name}' returned empty commands array`);
+          continue;
+        }
+
+        for (const command of commands) {
+          const validation = this.validateCommandDefinition(command);
+
+          if (!validation.isValid) {
+            logger.error(`[Extensions] Invalid command '${command.name}' from extension '${metadata.name}': ${validation.errors.join(', ')}`);
+            continue;
+          }
+
+          this.registry.registerCommand(metadata.name, command);
+          collectedCommands.push({ extensionName: metadata.name, command });
+          logger.debug(`[Extensions] Collected command '${command.name}' from extension '${metadata.name}'`);
+        }
+      } catch (error) {
+        logger.error(`[Extensions] Failed to collect commands from extension '${metadata.name}':`, error);
+      }
+    }
+
+    const commandCount = collectedCommands.length;
+    if (commandCount > 0) {
+      logger.info(`[Extensions] Collected ${commandCount} command(s) from extensions`);
+    }
+
+    return collectedCommands;
+  }
+
+  getCommands(): RegisteredCommand[] {
+    return this.registry.getCommands();
+  }
+
+  getCommandsByExtension(extensionName: string): RegisteredCommand[] {
+    return this.registry.getCommandsByExtension(extensionName);
+  }
+
+  async executeCommand(commandName: string, args: string[], project: Project, task?: Task): Promise<void> {
+    const registered = this.registry.getCommandByName(commandName);
+
+    if (!registered) {
+      throw new Error(`Extension command '${commandName}' not found`);
+    }
+
+    const { extensionName, command } = registered;
+
+    try {
+      const context = new ExtensionContextImpl(extensionName, this.store, this.agentProfileManager, this.modelManager, project, task);
+
+      logger.info(`[Extensions] Executing command '${commandName}' from extension '${extensionName}'`);
+      await command.execute(args, context);
+
+      logger.debug(`[Extensions] Command '${commandName}' executed successfully`);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error(`[Extensions] Command '${commandName}' failed in extension '${extensionName}':`, error);
+      throw new Error(`Extension command '${commandName}' failed: ${errorMsg}`);
+    }
   }
 
   /**
@@ -678,7 +804,7 @@ export class ExtensionManager {
       const { instance, metadata } = loaded;
 
       // Get the handler method dynamically
-      const handler = (instance as Extension)[eventName];
+      const handler = (instance as ExtensionApi)[eventName];
 
       // Skip if extension doesn't handle this event
       if (typeof handler !== 'function') {
@@ -687,7 +813,7 @@ export class ExtensionManager {
 
       try {
         // Create ExtensionContext for this extension
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.agentProfileManager, this.modelManager, project, task?.task);
+        const context = new ExtensionContextImpl(metadata.name, this.store, this.agentProfileManager, this.modelManager, project, task);
 
         // Call the extension handler
         // Using type assertion to handle dynamic dispatch across different event types

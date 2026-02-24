@@ -9,7 +9,7 @@ import type {
   AiderPromptStartedEvent,
   CommandExecutedEvent,
   CustomCommandExecutedEvent,
-  Extension,
+  ExtensionApi,
   ExtensionContext,
   FilesAddedEvent,
   FilesDroppedEvent,
@@ -27,7 +27,7 @@ import type {
   ToolApprovalEvent,
   ToolCalledEvent,
   ToolFinishedEvent,
-} from '../types';
+} from '@common/extensions';
 
 describe('Event Payload Interfaces', () => {
   describe('Task Events', () => {
@@ -388,12 +388,12 @@ describe('Extension Interface Event Handlers', () => {
 
   describe('Task Events', () => {
     it('should have optional onTaskCreated handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onTaskCreated).toBeUndefined();
     });
 
     it('onTaskCreated should accept TaskCreatedEvent and return Promise', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onTaskCreated(event, context) {
           expect(event.task).toBeDefined();
           expect(context).toBe(mockContext);
@@ -403,130 +403,130 @@ describe('Extension Interface Event Handlers', () => {
     });
 
     it('should have optional onTaskPrepared handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onTaskPrepared).toBeUndefined();
     });
 
     it('should have optional onTaskInitialized handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onTaskInitialized).toBeUndefined();
     });
 
     it('should have optional onTaskClosed handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onTaskClosed).toBeUndefined();
     });
   });
 
   describe('Prompt Events', () => {
     it('should have optional onPromptStarted handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onPromptStarted).toBeUndefined();
     });
 
     it('should have optional onPromptFinished handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onPromptFinished).toBeUndefined();
     });
   });
 
   describe('Agent Events', () => {
     it('should have optional onAgentStarted handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onAgentStarted).toBeUndefined();
     });
 
     it('should have optional onAgentFinished handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onAgentFinished).toBeUndefined();
     });
 
     it('should have optional onAgentStepFinished handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onAgentStepFinished).toBeUndefined();
     });
   });
 
   describe('Tool Events', () => {
     it('should have optional onToolApproval handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onToolApproval).toBeUndefined();
     });
 
     it('should have optional onToolCalled handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onToolCalled).toBeUndefined();
     });
 
     it('should have optional onToolFinished handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onToolFinished).toBeUndefined();
     });
   });
 
   describe('File Events', () => {
     it('should have optional onFilesAdded handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onFilesAdded).toBeUndefined();
     });
 
     it('should have optional onFilesDropped handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onFilesDropped).toBeUndefined();
     });
   });
 
   describe('Approval Events', () => {
     it('should have optional onHandleApproval handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onHandleApproval).toBeUndefined();
     });
   });
 
   describe('Subagent Events', () => {
     it('should have optional onSubagentStarted handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onSubagentStarted).toBeUndefined();
     });
 
     it('should have optional onSubagentFinished handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onSubagentFinished).toBeUndefined();
     });
   });
 
   describe('Question Events', () => {
     it('should have optional onQuestionAsked handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onQuestionAsked).toBeUndefined();
     });
 
     it('should have optional onQuestionAnswered handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onQuestionAnswered).toBeUndefined();
     });
   });
 
   describe('Command Events', () => {
     it('should have optional onCommandExecuted handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onCommandExecuted).toBeUndefined();
     });
 
     it('should have optional onCustomCommandExecuted handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onCustomCommandExecuted).toBeUndefined();
     });
   });
 
   describe('Aider Events (Legacy)', () => {
     it('should have optional onAiderPromptStarted handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onAiderPromptStarted).toBeUndefined();
     });
 
     it('should have optional onAiderPromptFinished handler', () => {
-      const extension: Extension = {};
+      const extension: ExtensionApi = {};
       expect(extension.onAiderPromptFinished).toBeUndefined();
     });
   });
@@ -542,7 +542,7 @@ describe('Event Modification Pattern', () => {
   });
 
   it('event handlers can return partial event for TaskCreatedEvent', async () => {
-    const extension: Extension = {
+    const extension: ExtensionApi = {
       async onTaskCreated(event) {
         return { task: { ...event.task, id: 'modified-id' } as TaskData };
       },
@@ -552,7 +552,7 @@ describe('Event Modification Pattern', () => {
   });
 
   it('event handlers can return partial event for PromptStartedEvent', async () => {
-    const extension: Extension = {
+    const extension: ExtensionApi = {
       async onPromptStarted(event) {
         return { prompt: event.prompt + ' [modified]' };
       },
@@ -569,7 +569,7 @@ describe('Event Modification Pattern', () => {
   });
 
   it('event handlers can modify responses in PromptFinishedEvent', async () => {
-    const extension: Extension = {
+    const extension: ExtensionApi = {
       async onPromptFinished(event) {
         return { responses: [...event.responses, {} as ResponseCompletedData] };
       },
@@ -579,7 +579,7 @@ describe('Event Modification Pattern', () => {
   });
 
   it('event handlers can modify tool result in ToolFinishedEvent', async () => {
-    const extension: Extension = {
+    const extension: ExtensionApi = {
       async onToolFinished(_event) {
         return { output: 'modified result' };
       },
@@ -603,7 +603,7 @@ describe('Blocking Events', () => {
     });
 
     it('extension can return blocked to prevent execution', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onToolApproval(event): Promise<void | Partial<ToolApprovalEvent>> {
           if (event.toolName === 'dangerous-tool') {
             return { blocked: true };
@@ -628,7 +628,7 @@ describe('Blocking Events', () => {
     });
 
     it('extension can return blocked to prevent prompt processing', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onPromptStarted(event): Promise<void | Partial<PromptStartedEvent>> {
           if (event.prompt.includes('dangerous')) {
             return { blocked: true };
@@ -659,7 +659,7 @@ describe('Blocking Events', () => {
     });
 
     it('extension can return blocked to prevent approval handling', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onHandleApproval(event): Promise<void | Partial<HandleApprovalEvent>> {
           if (event.key === 'restricted') {
             return { blocked: true };
@@ -685,7 +685,7 @@ describe('Blocking Events', () => {
     });
 
     it('extension can return blocked to prevent subagent spawning', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onSubagentStarted(event): Promise<void | Partial<SubagentStartedEvent>> {
           if (event.subagentProfile.id === 'restricted-agent') {
             return { blocked: true };
@@ -708,7 +708,7 @@ describe('Blocking Events', () => {
 
   describe('FilesAddedEvent', () => {
     it('extension can return empty files array to prevent addition', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onFilesAdded(_event): Promise<void | Partial<FilesAddedEvent>> {
           return { files: [] };
         },
@@ -718,7 +718,7 @@ describe('Blocking Events', () => {
     });
 
     it('extension can modify files array to filter files', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onFilesAdded(event): Promise<void | Partial<FilesAddedEvent>> {
           return { files: event.files.filter((f) => f.path !== '/secret.txt') };
         },
@@ -735,7 +735,7 @@ describe('Blocking Events', () => {
 
   describe('FilesDroppedEvent', () => {
     it('extension can return empty files array to prevent drop', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onFilesDropped(_event): Promise<void | Partial<FilesDroppedEvent>> {
           return { files: [] };
         },
@@ -745,7 +745,7 @@ describe('Blocking Events', () => {
     });
 
     it('extension can modify files array to add more files', async () => {
-      const extension: Extension = {
+      const extension: ExtensionApi = {
         async onFilesDropped(event): Promise<void | Partial<FilesDroppedEvent>> {
           return {
             files: [...event.files, { path: '/extra.txt' } as ContextFile],

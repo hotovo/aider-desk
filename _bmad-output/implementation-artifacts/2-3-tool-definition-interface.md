@@ -120,7 +120,7 @@ export interface ToolResult {
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import type { ToolDefinition, ToolResult } from '@common/extensions/types';
+import type { ToolDefinition, ToolResult } from '@common/extensions';
 
 describe('ToolDefinition', () => {
   it('should infer types from Zod schema', () => {

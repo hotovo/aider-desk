@@ -16,7 +16,7 @@ import { ipcMain, clipboard } from 'electron';
 
 import { EventsHandler } from './events-handler';
 
-import type { ExtensionMetadata } from '@common/extensions/types';
+import type { ExtensionMetadata } from '@common/extensions';
 import type { ExtensionManager } from './extensions/extension-manager';
 
 import { ServerController } from '@/server';
@@ -339,8 +339,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.openPath(path);
   });
 
-  ipcMain.handle('get-custom-commands', async (_, baseDir: string) => {
-    return eventsHandler.getCustomCommands(baseDir);
+  ipcMain.handle('get-commands', async (_, baseDir: string) => {
+    return eventsHandler.getCommands(baseDir);
   });
 
   ipcMain.handle('run-custom-command', async (_, baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode) => {

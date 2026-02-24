@@ -1,6 +1,6 @@
-import { Extension, ExtensionMetadata } from '@common/extensions/types';
+import { ExtensionApi, ExtensionMetadata } from '@common/extensions';
 
-export default class TestExtension implements Extension {
+export default class TestExtension implements ExtensionApi {
   static metadata: ExtensionMetadata = {
     name: 'test-extension',
     version: '1.0.0',

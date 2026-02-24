@@ -6,7 +6,7 @@ import {
   SettingsData,
   TaskData,
   TaskStateData,
-  CustomCommand,
+  CommandsData,
   VersionsInfo,
   OS,
   UsageDataRow,
@@ -169,7 +169,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addLogListener: vi.fn(() => vi.fn()),
     addContextFilesUpdatedListener: vi.fn(() => vi.fn()),
     addUpdatedFilesUpdatedListener: vi.fn(() => vi.fn()),
-    addCustomCommandsUpdatedListener: vi.fn(() => vi.fn()),
+    addCommandsUpdatedListener: vi.fn(() => vi.fn()),
     addUpdateAutocompletionListener: vi.fn(() => vi.fn()),
     addAskQuestionListener: vi.fn(() => vi.fn()),
     addQuestionAnsweredListener: vi.fn(() => vi.fn()),
@@ -204,7 +204,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addTaskDeletedListener: vi.fn(() => vi.fn()),
 
     // Custom commands
-    getCustomCommands: vi.fn((): Promise<CustomCommand[]> => Promise.resolve([])),
+    getCommands: vi.fn((): Promise<CommandsData> => Promise.resolve({ baseDir: '', customCommands: [], extensionCommands: [] })),
     runCustomCommand: vi.fn((): Promise<void> => Promise.resolve()),
 
     // Terminal operations

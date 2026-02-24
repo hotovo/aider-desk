@@ -122,7 +122,7 @@ describe('ExtensionContextImpl', () => {
     });
 
     it('should return task when provided', () => {
-      const mockTask = {
+      const mockTaskData = {
         id: 'task-1',
         baseDir: '/project',
         name: 'Test Task',
@@ -130,9 +130,12 @@ describe('ExtensionContextImpl', () => {
         agentTotalCost: 0,
         mainModel: 'test-model',
       };
+      const mockTask = {
+        task: mockTaskData,
+      } as any;
       const contextWithTask = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, undefined, mockTask);
 
-      expect(contextWithTask.getCurrentTask()).toEqual(mockTask);
+      expect(contextWithTask.getCurrentTask()).toEqual(mockTaskData);
     });
   });
 

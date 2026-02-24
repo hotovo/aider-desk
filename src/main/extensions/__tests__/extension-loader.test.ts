@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Extension, ExtensionMetadata } from '@common/extensions/types';
+import { ExtensionApi, ExtensionMetadata } from '@common/extensions';
 import { createJiti } from 'jiti';
 
 import { ExtensionLoader } from '../extension-loader';
@@ -41,7 +41,7 @@ describe('ExtensionLoader', () => {
       author: 'Tester',
     };
 
-    class TestExtension implements Extension {
+    class TestExtension implements ExtensionApi {
       static metadata = mockMetadata;
     }
 
@@ -62,13 +62,6 @@ describe('ExtensionLoader', () => {
 
   it('should return null if default export is not a class', async () => {
     mockJitiImport.mockResolvedValue({ default: {} });
-    const result = await loader.loadExtension('/path/to/ext.ts');
-    expect(result).toBeNull();
-  });
-
-  it('should return null if metadata is missing', async () => {
-    class TestExtension {}
-    mockJitiImport.mockResolvedValue({ default: TestExtension });
     const result = await loader.loadExtension('/path/to/ext.ts');
     expect(result).toBeNull();
   });

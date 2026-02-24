@@ -9,8 +9,7 @@ import {
   CommandOutputData,
   ContextFilesUpdatedData,
   CreateTaskParams,
-  CustomCommand,
-  CustomCommandsUpdatedData,
+  CommandsData,
   EditFormat,
   EnvironmentVariable,
   FileEdit,
@@ -169,7 +168,7 @@ export interface ApplicationAPI {
   addLogListener: (baseDir: string, taskId: string, callback: (data: LogData) => void) => () => void;
   addContextFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void) => () => void;
   addUpdatedFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void) => () => void;
-  addCustomCommandsUpdatedListener: (baseDir: string, callback: (data: CustomCommandsUpdatedData) => void) => () => void;
+  addCommandsUpdatedListener: (baseDir: string, callback: (data: CommandsData) => void) => () => void;
   addUpdateAutocompletionListener: (baseDir: string, taskId: string, callback: (data: AutocompletionData) => void) => () => void;
   addAskQuestionListener: (baseDir: string, taskId: string, callback: (data: QuestionData) => void) => () => void;
   addQuestionAnsweredListener: (baseDir: string, taskId: string, callback: (data: QuestionAnsweredData) => void) => () => void;
@@ -203,7 +202,7 @@ export interface ApplicationAPI {
   addTaskCancelledListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
   addTaskDeletedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
 
-  getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
+  getCommands: (baseDir: string) => Promise<CommandsData>;
   runCustomCommand: (baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
 
   // Terminal operations

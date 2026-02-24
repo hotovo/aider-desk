@@ -50,6 +50,7 @@ import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 
 import type { SimpleGit } from 'simple-git';
+import type { RegisteredCommand } from '@/extensions/extension-registry';
 
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import {
@@ -3002,7 +3003,46 @@ export class Task {
     }
   }
 
+  private async runExtensionCommand(extensionCommand: RegisteredCommand, args: string[], _mode: Mode): Promise<void> {
+    const { command } = extensionCommand;
+
+    // Validate required arguments
+    const requiredArgs = command.arguments?.filter((arg) => arg.required !== false) || [];
+    if (args.length < requiredArgs.length) {
+      this.addLogMessage(
+        'error',
+        `Not enough arguments for command '${command.name}'. Expected arguments:\n${command.arguments?.map((arg, idx) => `${idx + 1}: ${arg.description}${arg.required === false ? ' (optional)' : ''}`).join('\n')}`,
+      );
+      this.eventManager.sendCustomCommandError(this.project.baseDir, this.taskId, `Argument mismatch for command: ${command.name}`);
+      return;
+    }
+
+    logger.info('Running extension command:', { commandName: command.name, args });
+    this.telemetryManager.captureCustomCommand(command.name, args.length, 'agent');
+
+    try {
+      // Execute the command - extension is fully responsible for its logic
+      await this.extensionManager.executeCommand(command.name, args, this.project, this);
+    } catch (error) {
+      logger.error('Extension command execution failed:', error);
+      this.addLogMessage('error', `Extension command failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.eventManager.sendCustomCommandError(this.project.baseDir, this.taskId, `Extension command execution failed: ${command.name}`);
+    }
+
+    await this.project.addToInputHistory(`/${command.name}${args.length > 0 ? ' ' + args.join(' ') : ''}`);
+  }
+
   public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void> {
+    // First, check if this is an extension command
+    const extensionCommand = this.extensionManager.getCommands().find((c) => c.command.name === commandName);
+
+    if (extensionCommand) {
+      // Handle extension command execution
+      await this.runExtensionCommand(extensionCommand, args, mode);
+      return;
+    }
+
+    // Fall back to file-based custom command
     let command = this.customCommandManager.getCommand(commandName);
     if (!command) {
       this.addLogMessage('error', `Custom command '${commandName}' not found.`);

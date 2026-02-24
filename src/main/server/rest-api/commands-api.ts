@@ -5,7 +5,7 @@ import { BaseApi } from './base-api';
 
 import { EventsHandler } from '@/events-handler';
 
-const GetCustomCommandsSchema = z.object({
+const GetCommandsSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
 });
 
@@ -23,18 +23,21 @@ export class CommandsApi extends BaseApi {
   }
 
   registerRoutes(router: Router): void {
-    // Get custom commands
+    // Get commands
     router.get(
-      '/project/custom-commands',
+      '/project/commands',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(GetCustomCommandsSchema, req.query, res);
+        const parsed = this.validateRequest(GetCommandsSchema, req.query, res);
         if (!parsed) {
           return;
         }
 
         const { projectDir } = parsed;
-        const commands = await this.eventsHandler.getCustomCommands(projectDir);
-        res.status(200).json(commands);
+        const commandsData = await this.eventsHandler.getCommands(projectDir);
+        res.status(200).json({
+          extensionCommands: commandsData.extensionCommands,
+          customCommands: commandsData.customCommands,
+        });
       }),
     );
 

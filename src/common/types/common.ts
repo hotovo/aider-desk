@@ -200,10 +200,10 @@ export interface UpdatedFilesUpdatedData {
   files: UpdatedFile[];
 }
 
-export interface CustomCommandsUpdatedData {
+export interface CommandsData {
   baseDir: string;
-  taskId: string;
-  commands: CustomCommand[];
+  customCommands: Command[];
+  extensionCommands: Command[];
 }
 
 export interface AutocompletionData {
@@ -854,15 +854,18 @@ export interface ModelOverrides {
   models: Model[];
 }
 
-export interface CustomCommandArgument {
+export interface Command {
+  name: string;
+  description: string;
+  arguments: CommandArgument[];
+}
+
+export interface CommandArgument {
   description: string;
   required?: boolean;
 }
 
-export interface CustomCommand {
-  name: string;
-  description: string;
-  arguments: CustomCommandArgument[];
+export interface CustomCommand extends Command {
   template: string;
   includeContext?: boolean;
   autoApprove?: boolean;

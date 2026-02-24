@@ -424,6 +424,56 @@ export interface UIElementDefinition {
 	/** Optional: Conditional visibility check */
 	enabled?: (context: unknown) => boolean;
 }
+/** Command argument definition */
+export interface CommandArgument {
+	/** Argument description for autocomplete/help */
+	description: string;
+	/** Whether this argument is required */
+	required?: boolean;
+}
+/**
+ * Definition of a command that can be registered by an extension
+ *
+ * Extension commands are fully responsible for their own execution logic.
+ * The execute function should handle everything including:
+ * - Processing arguments
+ * - Performing any operations (file I/O, API calls, etc.)
+ * - Sending prompts to agent/aider if needed via context methods
+ * - Displaying results to the user
+ *
+ * @example
+ * ```typescript
+ * const myCommand: CommandDefinition = {
+ *   name: 'generate-tests',
+ *   description: 'Generate unit tests for the current file',
+ *   arguments: [
+ *     { description: 'File path to generate tests for', required: true },
+ *     { description: 'Test framework (jest, vitest, mocha)', required: false }
+ *   ],
+ *   async execute(args, context) {
+ *     const filePath = args[0];
+ *     const framework = args[1] || 'vitest';
+ *
+ *     // Read file, process it, send prompt to agent, etc.
+ *     const fileContent = await readFile(filePath);
+ *     const prompt = `Generate tests for ${filePath} using ${framework}...`;
+ *
+ *     // Extension handles sending the prompt
+ *     // (context would provide methods to do this)
+ *   },
+ * };
+ * ```
+ */
+export interface CommandDefinition {
+	/** Command name in kebab-case (e.g., 'generate-tests') */
+	name: string;
+	/** Description shown in autocomplete */
+	description: string;
+	/** Command arguments */
+	arguments?: CommandArgument[];
+	/** Execute function that handles the complete command logic */
+	execute: (args: string[], context: ExtensionContext) => Promise<void>;
+}
 /** Event payload for task creation events */
 export interface TaskCreatedEvent {
 	task: TaskData;
@@ -650,6 +700,13 @@ export interface ExtensionContext {
 	 * @returns Promise resolving to the user input or undefined if cancelled
 	 */
 	showInput(prompt: string, placeholder?: string, defaultValue?: string): Promise<string | undefined>;
+	/**
+	 * Send a prompt to the agent or aider for execution
+	 * @param prompt - The prompt text to send
+	 * @param mode - Execution mode (agent, code, ask, architect)
+	 * @returns Promise that resolves when prompt execution is complete
+	 */
+	runPrompt(prompt: string, mode?: "agent" | "code" | "ask" | "architect"): Promise<void>;
 }
 /**
  * Main extension interface that all extensions must implement
@@ -703,6 +760,11 @@ export interface Extension {
 	 * Called when extension is loaded and when UI needs to be refreshed
 	 */
 	getUIElements?(): UIElementDefinition[];
+	/**
+	 * Return array of commands this extension provides
+	 * Called when extension is loaded and when commands need to be refreshed
+	 */
+	getCommands?(): CommandDefinition[];
 	/**
 	 * Called when a new task is created
 	 * @returns void or partial event to modify task data

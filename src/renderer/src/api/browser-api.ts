@@ -5,8 +5,7 @@ import {
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
-  CustomCommand,
-  CustomCommandsUpdatedData,
+  CommandsData,
   EditFormat,
   EnvironmentVariable,
   FileEdit,
@@ -68,7 +67,7 @@ type EventDataMap = {
   'response-completed': ResponseCompletedData;
   log: LogData;
   'context-files-updated': ContextFilesUpdatedData;
-  'custom-commands-updated': CustomCommandsUpdatedData;
+  'commands-updated': CommandsData;
   'update-autocompletion': AutocompletionData;
   'ask-question': QuestionData;
   'question-answered': QuestionAnsweredData;
@@ -138,7 +137,7 @@ export class BrowserApi implements ApplicationAPI {
       'response-completed': new Map(),
       log: new Map(),
       'context-files-updated': new Map(),
-      'custom-commands-updated': new Map(),
+      'commands-updated': new Map(),
       'update-autocompletion': new Map(),
       'ask-question': new Map(),
       'question-answered': new Map(),
@@ -698,8 +697,8 @@ export class BrowserApi implements ApplicationAPI {
   addUpdatedFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void {
     return this.addListener('updated-files-updated', callback, baseDir, taskId);
   }
-  addCustomCommandsUpdatedListener(baseDir: string, callback: (data: CustomCommandsUpdatedData) => void): () => void {
-    return this.addListener('custom-commands-updated', callback, baseDir);
+  addCommandsUpdatedListener(baseDir: string, callback: (data: CommandsData) => void): () => void {
+    return this.addListener('commands-updated', callback, baseDir);
   }
   addUpdateAutocompletionListener(baseDir: string, taskId: string, callback: (data: AutocompletionData) => void): () => void {
     return this.addListener('update-autocompletion', callback, baseDir, taskId);
@@ -809,8 +808,13 @@ export class BrowserApi implements ApplicationAPI {
     void callback;
     return () => {};
   }
-  getCustomCommands(baseDir: string): Promise<CustomCommand[]> {
-    return this.get('/project/custom-commands', { projectDir: baseDir });
+  async getCommands(baseDir: string): Promise<CommandsData> {
+    const response = await this.get<CommandsData>('/project/commands', { projectDir: baseDir });
+    return {
+      baseDir,
+      customCommands: response.customCommands,
+      extensionCommands: response.extensionCommands,
+    };
   }
   runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void> {
     return this.post('/project/custom-commands', {

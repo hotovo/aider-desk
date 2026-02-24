@@ -409,7 +409,7 @@ function formatToolResult(result: ToolResult | string): string {
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
-import type { ToolDefinition, Extension, ExtensionContext } from '@common/extensions/types';
+import type { ToolDefinition, Extension, ExtensionContext } from '@common/extensions';
 import { z } from 'zod';
 
 // Mock dependencies

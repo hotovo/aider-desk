@@ -4,8 +4,8 @@ import fs from 'fs/promises';
 import {
   AgentProfile,
   CloudflareTunnelStatus,
+  CommandsData,
   CreateTaskParams,
-  CustomCommand,
   EditFormat,
   EnvironmentVariable,
   FileEdit,
@@ -382,8 +382,8 @@ export class EventsHandler {
     void this.projectManager.getProject(baseDir).getTask(taskId)?.runCommand(command);
   }
 
-  async getCustomCommands(baseDir: string): Promise<CustomCommand[]> {
-    return this.projectManager.getCustomCommands(baseDir);
+  async getCommands(baseDir: string): Promise<CommandsData> {
+    return this.projectManager.getCommands(baseDir);
   }
 
   async runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void> {

@@ -1,7 +1,7 @@
-import { Extension, ExtensionMetadata, ToolDefinition } from '@common/extensions/types';
+import { ExtensionApi, ExtensionMetadata, ToolDefinition, CommandDefinition } from '@common/extensions';
 
 export interface LoadedExtension {
-  instance: Extension;
+  instance: ExtensionApi;
   metadata: ExtensionMetadata;
   filePath: string;
   initialized: boolean;
@@ -13,11 +13,17 @@ export interface RegisteredTool {
   tool: ToolDefinition;
 }
 
+export interface RegisteredCommand {
+  extensionName: string;
+  command: CommandDefinition;
+}
+
 export class ExtensionRegistry {
   private extensions = new Map<string, LoadedExtension>();
   private tools = new Map<string, RegisteredTool>();
+  private commands = new Map<string, RegisteredCommand>();
 
-  register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
+  register(extension: ExtensionApi, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
     this.extensions.set(metadata.name, { instance: extension, metadata, filePath, initialized: false, projectDir });
   }
 
@@ -45,12 +51,18 @@ export class ExtensionRegistry {
         this.tools.delete(toolKey);
       }
     }
+    for (const [commandKey, registered] of this.commands) {
+      if (registered.extensionName === name) {
+        this.commands.delete(commandKey);
+      }
+    }
     return this.extensions.delete(name);
   }
 
   clear() {
     this.extensions.clear();
     this.tools.clear();
+    this.commands.clear();
   }
 
   registerTool(extensionName: string, tool: ToolDefinition): void {
@@ -68,5 +80,31 @@ export class ExtensionRegistry {
 
   clearTools(): void {
     this.tools.clear();
+  }
+
+  registerCommand(extensionName: string, command: CommandDefinition): void {
+    const commandKey = `${extensionName}:${command.name}`;
+    this.commands.set(commandKey, { extensionName, command });
+  }
+
+  getCommands(): RegisteredCommand[] {
+    return Array.from(this.commands.values());
+  }
+
+  getCommandsByExtension(extensionName: string): RegisteredCommand[] {
+    return Array.from(this.commands.values()).filter((registered) => registered.extensionName === extensionName);
+  }
+
+  getCommandByName(name: string): RegisteredCommand | undefined {
+    for (const registered of this.commands.values()) {
+      if (registered.command.name === name) {
+        return registered;
+      }
+    }
+    return undefined;
+  }
+
+  clearCommands(): void {
+    this.commands.clear();
   }
 }

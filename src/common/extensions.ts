@@ -2,18 +2,23 @@ import { z } from 'zod';
 
 import type {
   AgentProfile,
+  CommandArgument,
+  CommandsData,
   ConnectorMessage,
   ContextFile,
   ContextMessage,
   CreateTaskParams,
   CustomCommand,
+  DefaultTaskState,
   Mode,
   Model,
+  ProjectSettings,
   PromptContext,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
   TaskData,
+  TodoItem,
 } from '@common/types';
 
 export type AgentStepResult = unknown;
@@ -27,9 +32,9 @@ export interface ExtensionMetadata {
   /** Semantic version (e.g., "1.0.0") */
   version: string;
   /** Brief description of extension functionality */
-  description: string;
+  description?: string;
   /** Author name or organization */
-  author: string;
+  author?: string;
   /** Optional list of extension capabilities (e.g., ["tools", "ui-elements"]) */
   capabilities?: string[];
 }
@@ -126,6 +131,50 @@ export interface UIElementDefinition {
   onClick: string;
   /** Optional: Conditional visibility check */
   enabled?: (context: unknown) => boolean;
+}
+
+/**
+ * Definition of a command that can be registered by an extension
+ *
+ * Extension commands are fully responsible for their own execution logic.
+ * The execute function should handle everything including:
+ * - Processing arguments
+ * - Performing any operations (file I/O, API calls, etc.)
+ * - Sending prompts to agent/aider if needed via context methods
+ * - Displaying results to the user
+ *
+ * @example
+ * ```typescript
+ * const myCommand: CommandDefinition = {
+ *   name: 'generate-tests',
+ *   description: 'Generate unit tests for the current file',
+ *   arguments: [
+ *     { description: 'File path to generate tests for', required: true },
+ *     { description: 'Test framework (jest, vitest, mocha)', required: false }
+ *   ],
+ *   async execute(args, context) {
+ *     const filePath = args[0];
+ *     const framework = args[1] || 'vitest';
+ *
+ *     // Read file, process it, send prompt to agent, etc.
+ *     const fileContent = await readFile(filePath);
+ *     const prompt = `Generate tests for ${filePath} using ${framework}...`;
+ *
+ *     // Extension handles sending the prompt
+ *     // (context would provide methods to do this)
+ *   },
+ * };
+ * ```
+ */
+export interface CommandDefinition {
+  /** Command name in kebab-case (e.g., 'generate-tests') */
+  name: string;
+  /** Description shown in autocomplete */
+  description: string;
+  /** Command arguments */
+  arguments?: CommandArgument[];
+  /** Execute function that handles the complete command logic */
+  execute: (args: string[], context: ExtensionContext) => Promise<void>;
 }
 
 // Event Payload Interfaces
@@ -301,6 +350,67 @@ export interface AiderPromptFinishedEvent {
 }
 
 /**
+ * Safe subset of Task capabilities exposed to extensions.
+ * Provides read-only access to task data and safe operations.
+ */
+export interface TaskContext {
+  // Identity
+  readonly id: string;
+  readonly name: string;
+  readonly state: DefaultTaskState | undefined;
+  readonly baseDir: string;
+  readonly parentId: string | null;
+
+  // Context Files (Read + Safe Write)
+  getContextFiles(): Promise<ContextFile[]>;
+  addFile(path: string, readOnly?: boolean): Promise<void>;
+  addFiles(...files: ContextFile[]): Promise<void>;
+  dropFile(path: string): Promise<void>;
+
+  // Messages (Read + Safe Write)
+  getContextMessages(): Promise<ContextMessage[]>;
+  addMessage(content: string, role?: 'user' | 'assistant'): Promise<void>;
+
+  // Files & Repo (Read-only)
+  getAddableFiles(searchRegex?: string): Promise<string[]>;
+  getRepoMap(): string;
+
+  // Todos (Read + Safe Write)
+  getTodos(): Promise<TodoItem[]>;
+  addTodo(name: string): Promise<TodoItem[]>;
+  updateTodo(name: string, updates: Partial<TodoItem>): Promise<TodoItem[]>;
+  deleteTodo(name: string): Promise<TodoItem[]>;
+
+  // Utility
+  generateContextMarkdown(): Promise<string | null>;
+  isInitialized(): boolean;
+}
+
+/**
+ * Safe subset of Project capabilities exposed to extensions.
+ * Provides read-only access to project data and safe operations.
+ */
+export interface ProjectContext {
+  // Identity
+  readonly baseDir: string;
+
+  // Task Management
+  createTask(params: CreateTaskParams): Promise<TaskData>;
+  getTask(taskId: string): TaskContext | null;
+  getTasks(): Promise<TaskData[]>;
+  getMostRecentTask(): TaskContext | null;
+
+  // Commands (Read-only)
+  getCommands(): CommandsData;
+
+  // Settings (Read-only)
+  getProjectSettings(): ProjectSettings;
+
+  // Input History (Read-only)
+  loadInputHistory(): Promise<string[]>;
+}
+
+/**
  * Context object passed to extension methods providing access to AiderDesk APIs
  *
  * @example
@@ -331,6 +441,18 @@ export interface ExtensionContext {
    * @returns Current task data or null if no task is active
    */
   getCurrentTask(): TaskData | null;
+
+  /**
+   * Get the current task context for safe task operations
+   * @returns TaskContext or null if no task is active
+   */
+  getTaskContext(): TaskContext | null;
+
+  /**
+   * Get the project context for safe project operations
+   * @returns ProjectContext
+   */
+  getProjectContext(): ProjectContext;
 
   /**
    * Create a new task
@@ -391,6 +513,14 @@ export interface ExtensionContext {
    * @returns Promise resolving to the user input or undefined if cancelled
    */
   showInput(prompt: string, placeholder?: string, defaultValue?: string): Promise<string | undefined>;
+
+  /**
+   * Send a prompt to the agent or aider for execution
+   * @param prompt - The prompt text to send
+   * @param mode - Execution mode (agent, code, ask, architect)
+   * @returns Promise that resolves when prompt execution is complete
+   */
+  runPrompt(prompt: string, mode?: 'agent' | 'code' | 'ask' | 'architect'): Promise<void>;
 }
 
 /**
@@ -407,7 +537,7 @@ export interface ExtensionContext {
  *     context.log('My extension loaded!', 'info');
  *   }
  *
- *   getTools(): ToolDefinition[] {
+ *   getTools(context: ExtensionContext): ToolDefinition[] {
  *     return [{
  *       name: 'my-tool',
  *       description: 'My custom tool',
@@ -424,7 +554,7 @@ export interface ExtensionContext {
  * }
  * ```
  */
-export interface Extension {
+export interface ExtensionApi {
   // Lifecycle methods
 
   /**
@@ -445,7 +575,7 @@ export interface Extension {
    * Return array of tools this extension provides
    * Called when extension is loaded and when tools need to be refreshed
    */
-  getTools?(): ToolDefinition[];
+  getTools?(context: ExtensionContext): ToolDefinition[];
 
   // UI element registration
 
@@ -454,6 +584,14 @@ export interface Extension {
    * Called when extension is loaded and when UI needs to be refreshed
    */
   getUIElements?(): UIElementDefinition[];
+
+  // Command registration
+
+  /**
+   * Return array of commands this extension provides
+   * Called when extension is loaded and when commands need to be refreshed
+   */
+  getCommands?(context: ExtensionContext): CommandDefinition[];
 
   // Task Events
 
@@ -641,6 +779,6 @@ export interface Extension {
  * Constructor type for extension classes
  */
 export interface ExtensionConstructor {
-  new (): Extension;
+  new (): ExtensionApi;
   metadata?: ExtensionMetadata;
 }

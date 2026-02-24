@@ -155,7 +155,7 @@ if (instance.onUnload) {
 ```typescript
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ExtensionManager } from '../extension-manager';
-import type { Extension, ExtensionContext } from '@common/extensions/types';
+import type { Extension, ExtensionContext } from '@common/extensions';
 
 // Mock dependencies
 vi.mock('@/logger', () => ({

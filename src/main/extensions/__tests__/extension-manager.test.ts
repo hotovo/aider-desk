@@ -75,9 +75,13 @@ describe('ExtensionManager', () => {
       unregister: vi.fn(),
       setInitialized: vi.fn(),
       clearTools: vi.fn(),
+      clearCommands: vi.fn(),
       registerTool: vi.fn(),
       getTools: vi.fn().mockReturnValue([]),
       getToolsByExtension: vi.fn().mockReturnValue([]),
+      registerCommand: vi.fn(),
+      getCommands: vi.fn().mockReturnValue([]),
+      getCommandsByExtension: vi.fn().mockReturnValue([]),
     };
     mockValidator = {
       validateExtension: vi.fn(),
@@ -481,7 +485,12 @@ describe('ExtensionManager', () => {
         initialized: false,
       };
 
-      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValueOnce([oldExtension]).mockReturnValueOnce([]);
+      (mockRegistry as ExtensionRegistry).getExtensions = vi
+        .fn()
+        .mockReturnValueOnce([oldExtension])
+        .mockReturnValueOnce([oldExtension])
+        .mockReturnValueOnce([])
+        .mockReturnValueOnce([]);
       (mockRegistry as ExtensionRegistry).getExtension = vi.fn().mockReturnValue(newExtension);
 
       (mockRegistry as ExtensionRegistry).unregister = vi.fn();
