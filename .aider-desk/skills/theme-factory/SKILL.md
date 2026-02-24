@@ -1,6 +1,6 @@
 ---
 name: theme-factory
-description: Step-by-step guide to add a new UI theme to AiderDesk (SCSS + CSS variables + types + i18n).
+description: Create new AiderDesk UI themes by defining SCSS color variables, registering theme types, and adding i18n display names. Use when adding a theme, creating a color scheme, customizing appearance, or implementing dark mode and light mode variants.
 ---
 
 # Theme Factory
