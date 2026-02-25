@@ -6,11 +6,12 @@ import { spawn } from 'child_process';
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
-import { AgentProfile, BashToolSettings, FileWriteMode, PromptContext, ToolApprovalState } from '@common/types';
+import { AgentProfile, BashToolSettings, FileDeleteToolSettings, FileWriteMode, PromptContext, ToolApprovalState } from '@common/types';
 import {
   POWER_TOOL_BASH as TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FETCH as TOOL_FETCH,
+  POWER_TOOL_FILE_DELETE as TOOL_FILE_DELETE,
   POWER_TOOL_FILE_EDIT as TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ as TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE as TOOL_FILE_WRITE,
@@ -24,6 +25,7 @@ import {
 import { isBinary } from 'istextorbinary';
 import { isURL } from '@common/utils';
 import { search } from '@probelabs/probe';
+import { minimatch } from 'minimatch';
 
 import { ApprovalManager } from './approval-manager';
 
@@ -32,6 +34,7 @@ import { Task } from '@/task';
 import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
+import { isValidProjectFile } from '@/utils/file-system';
 
 /**
  * Expands a tilde (~) at the beginning of a path to the user's home directory.
@@ -846,10 +849,334 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     },
   });
 
+  const fileDeleteTool = tool({
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_DELETE],
+    inputSchema: z.object({
+      filePath: z
+        .string()
+        .describe(
+          'The path to the file or directory to delete (relative to the <WorkingDirectory>). Cannot be outside the task directory. Tilde (~) expansion supported.',
+        ),
+      dryRun: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('If true, simulate deletion without modifying filesystem. Returns preview of what would be deleted. Default: false.'),
+      isDirectory: z
+        .boolean()
+        .optional()
+        .describe(
+          'Whether the target is a directory. If not provided, the tool will auto-detect by checking the filesystem. ' +
+            'Set to true when you want to explicitly delete a directory that might be empty or when the path might not exist yet. ' +
+            'Set to false when you want to explicitly delete a file. ' +
+            'Useful when the path does not exist yet and auto-detection is not possible.',
+        ),
+    }),
+    execute: async ({ filePath, dryRun, isDirectory }, { toolCallId }) => {
+      const expandedPath = expandTilde(filePath);
+
+      // Log tool invocation
+      task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_DELETE, { filePath, dryRun, isDirectory }, undefined, undefined, promptContext);
+
+      // Get settings from profile
+      const deleteSettings = (profile.toolSettings?.[`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_DELETE}`] as FileDeleteToolSettings) || {};
+
+      // Resolve absolute path
+      const absolutePath = path.resolve(task.getTaskDir(), expandedPath);
+
+      // Debug logging for path resolution
+      logger.debug('[fileDeleteTool] Path resolution:', {
+        originalPath: filePath,
+        expandedPath,
+        taskDir: task.getTaskDir(),
+        resolvedPath: absolutePath,
+      });
+
+      // Path traversal protection - validate boundary
+      if (!isValidProjectFile(absolutePath, task.getTaskDir())) {
+        logger.warn('[fileDeleteTool] Path traversal attempt:', {
+          userProvidedPath: filePath,
+          expandedPath,
+          resolvedPath: absolutePath,
+          taskDir: task.getTaskDir(),
+        });
+        return `Error: Path traversal detected: target path '${filePath}' resolves outside the task directory. Resolved path: '${absolutePath}'`;
+      }
+
+      // Check if parent directory exists
+      const parentDir = path.dirname(absolutePath);
+      try {
+        const parentStats = await fs.stat(parentDir);
+        if (!parentStats.isDirectory()) {
+          return `Error: Parent path '${parentDir}' is not a directory.`;
+        }
+      } catch (error) {
+        const errnoException = error as NodeJS.ErrnoException;
+        if (errnoException.code === 'ENOENT') {
+          logger.warn('[fileDeleteTool] Parent directory not found:', {
+            filePath,
+            expandedPath,
+            resolvedPath: absolutePath,
+            parentDir,
+          });
+          return `Error: Parent directory does not exist for path '${expandedPath}'. Checked directory: '${parentDir}'. Ensure the path is correct and the parent directory exists.`;
+        }
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return `Error: Could not access parent directory '${parentDir}': ${errorMessage}`;
+      }
+
+      // Check if path exists and get stats
+      let stats;
+      try {
+        stats = await fs.stat(absolutePath);
+      } catch (error) {
+        if (isAbortError(error)) {
+          return 'Operation was cancelled by user.';
+        }
+        const errnoException = error as NodeJS.ErrnoException;
+        if (errnoException.code === 'ENOENT') {
+          logger.debug('[fileDeleteTool] Path not found:', {
+            userProvidedPath: filePath,
+            expandedPath,
+            resolvedPath: absolutePath,
+          });
+          return `Error: Path '${expandedPath}' not found. Resolved absolute path: '${absolutePath}'. Please verify the file or directory exists.`;
+        }
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('[fileDeleteTool] Unexpected error accessing path:', {
+          userProvidedPath: filePath,
+          expandedPath,
+          resolvedPath: absolutePath,
+          error: errorMessage,
+        });
+        return `Error: Could not access path '${expandedPath}' (resolved to '${absolutePath}'): ${errorMessage}`;
+      }
+
+      const relativePath = path.relative(task.getTaskDir(), absolutePath);
+      // Use explicit isDirectory parameter if provided, otherwise auto-detect from filesystem
+      const isDirectoryPath = isDirectory ?? stats.isDirectory();
+
+      // Handle directory deletion
+      if (isDirectoryPath) {
+        // Directory-specific settings checks
+        if (deleteSettings.allowedDirectoryPatterns && deleteSettings.allowedDirectoryPatterns.length > 0) {
+          const matchesAllowed = deleteSettings.allowedDirectoryPatterns.some((pattern) => minimatch(relativePath, pattern, { dot: true }));
+          if (!matchesAllowed) {
+            return `Error: Directory '${relativePath}' does not match any allowed directory patterns.`;
+          }
+        }
+
+        if (deleteSettings.deniedDirectoryPatterns && deleteSettings.deniedDirectoryPatterns.length > 0) {
+          const matchesDenied = deleteSettings.deniedDirectoryPatterns.some((pattern) => minimatch(relativePath, pattern, { dot: true }));
+          if (matchesDenied) {
+            return `Error: Directory '${relativePath}' matches a protected directory pattern.`;
+          }
+        }
+
+        // Check if directory is empty (for non-recursive deletion)
+        let dirContents: string[] = [];
+        let isEmpty = false;
+        try {
+          dirContents = await fs.readdir(absolutePath);
+          isEmpty = dirContents.length === 0;
+        } catch (readError) {
+          const errorMessage = readError instanceof Error ? readError.message : String(readError);
+          return `Error: Could not read directory contents '${expandedPath}': ${errorMessage}`;
+        }
+
+        // Determine deletion method based on settings and whether directory is empty
+        const canDeleteNonEmpty = deleteSettings.allowRecursiveDirectoryDeletion === true;
+
+        if (!isEmpty && !canDeleteNonEmpty) {
+          return `Error: Directory '${relativePath}' is not empty. Enable recursive directory deletion to delete non-empty directories.`;
+        }
+
+        // Dry-run mode for directories
+        if (dryRun) {
+          let previewContents: string[] = [];
+          if (canDeleteNonEmpty) {
+            // List all contents recursively for preview
+            const listContentsRecursive = async (dir: string, prefix = ''): Promise<string[]> => {
+              const items: string[] = [];
+              const entries = await fs.readdir(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                const itemPath = path.join(prefix, entry.name);
+                if (entry.isDirectory()) {
+                  items.push(`${itemPath}/`);
+                  items.push(...(await listContentsRecursive(fullPath, `${itemPath}/`)));
+                } else {
+                  items.push(itemPath);
+                }
+              }
+              return items;
+            };
+            previewContents = await listContentsRecursive(absolutePath);
+          }
+
+          return JSON.stringify(
+            {
+              path: relativePath,
+              type: 'directory',
+              dryRun: true,
+              isEmpty,
+              recursive: canDeleteNonEmpty,
+              itemCount: canDeleteNonEmpty ? dirContents.length : undefined,
+              totalItemsToDelete: canDeleteNonEmpty ? previewContents.length : undefined,
+              contents: previewContents.length > 0 ? previewContents : isEmpty ? [] : undefined,
+              wouldDelete: true,
+            },
+            null,
+            2,
+          );
+        }
+
+        // Get user approval for directory deletion
+        const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_DELETE}`;
+        const questionText = `Approve deleting directory '${relativePath}'?`;
+        const questionSubject = `Path: ${relativePath}\nType: Directory${isEmpty ? ' (empty)' : ` (${dirContents.length} items${canDeleteNonEmpty ? ', will be deleted recursively' : ''})`}`;
+
+        const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+
+        if (!isApproved) {
+          return `Directory deletion of '${relativePath}' denied by user. Reason: ${userInput}`;
+        }
+
+        // Perform actual directory deletion
+        try {
+          if (isEmpty) {
+            await fs.rmdir(absolutePath);
+          } else {
+            await fs.rm(absolutePath, { recursive: true, force: true });
+          }
+          return `Successfully deleted directory '${relativePath}'.`;
+        } catch (error) {
+          if (isAbortError(error)) {
+            return 'Operation was cancelled by user.';
+          }
+          const errnoException = error as NodeJS.ErrnoException;
+          if (errnoException.code === 'ENOENT') {
+            logger.warn('[fileDeleteTool] Directory not found during deletion:', {
+              userProvidedPath: filePath,
+              expandedPath,
+              resolvedPath: absolutePath,
+            });
+            return `Error: Directory '${expandedPath}' not found. Resolved absolute path: '${absolutePath}'. The file may have been moved or deleted already.`;
+          }
+          if (errnoException.code === 'EACCES') {
+            logger.warn('[fileDeleteTool] Permission denied for directory:', {
+              userProvidedPath: filePath,
+              expandedPath,
+              resolvedPath: absolutePath,
+            });
+            return `Error: Permission denied: cannot delete '${expandedPath}'. Resolved path: '${absolutePath}'. Check file permissions.`;
+          }
+          if (errnoException.code === 'ENOTEMPTY') {
+            return `Error: Directory '${expandedPath}' is not empty. Enable recursive directory deletion to delete non-empty directories.`;
+          }
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('[fileDeleteTool] Unexpected error deleting directory:', {
+            userProvidedPath: filePath,
+            expandedPath,
+            resolvedPath: absolutePath,
+            error: errorMessage,
+          });
+          return `Error deleting directory '${expandedPath}' (resolved to '${absolutePath}'): ${errorMessage}`;
+        }
+      }
+
+      // Handle file deletion (existing behavior)
+      // Size limit check
+      if (deleteSettings.maxFileSizeBytes !== undefined) {
+        if (stats.size > deleteSettings.maxFileSizeBytes) {
+          return `Error: File size (${stats.size} bytes) exceeds maximum allowed size (${deleteSettings.maxFileSizeBytes} bytes).`;
+        }
+      }
+
+      // File pattern checks
+      if (deleteSettings.allowedPatterns && deleteSettings.allowedPatterns.length > 0) {
+        const matchesAllowed = deleteSettings.allowedPatterns.some((pattern) => minimatch(relativePath, pattern, { dot: true }));
+        if (!matchesAllowed) {
+          return `Error: File '${relativePath}' does not match any allowed patterns.`;
+        }
+      }
+
+      if (deleteSettings.deniedPatterns && deleteSettings.deniedPatterns.length > 0) {
+        const matchesDenied = deleteSettings.deniedPatterns.some((pattern) => minimatch(relativePath, pattern, { dot: true }));
+        if (matchesDenied) {
+          return `Error: File '${relativePath}' matches a protected pattern.`;
+        }
+      }
+
+      // Dry-run mode for files
+      if (dryRun) {
+        return JSON.stringify(
+          {
+            path: relativePath,
+            type: 'file',
+            dryRun: true,
+            fileSize: stats.size,
+            lastModified: stats.mtime.toISOString(),
+            wouldDelete: true,
+          },
+          null,
+          2,
+        );
+      }
+
+      // Get user approval for file deletion
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_DELETE}`;
+      const questionText = `Approve deleting file '${relativePath}'?`;
+      const questionSubject = `Path: ${relativePath}\nSize: ${stats.size} bytes\nLast Modified: ${stats.mtime.toISOString()}`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+
+      if (!isApproved) {
+        return `File deletion of '${relativePath}' denied by user. Reason: ${userInput}`;
+      }
+
+      // Perform actual file deletion
+      try {
+        await fs.unlink(absolutePath);
+        return `Successfully deleted '${relativePath}'.`;
+      } catch (error) {
+        if (isAbortError(error)) {
+          return 'Operation was cancelled by user.';
+        }
+        const errnoException = error as NodeJS.ErrnoException;
+        if (errnoException.code === 'ENOENT') {
+          logger.warn('[fileDeleteTool] File not found during deletion:', {
+            userProvidedPath: filePath,
+            expandedPath,
+            resolvedPath: absolutePath,
+          });
+          return `Error: File '${expandedPath}' not found. Resolved absolute path: '${absolutePath}'. The file may have been moved or deleted already.`;
+        }
+        if (errnoException.code === 'EACCES') {
+          logger.warn('[fileDeleteTool] Permission denied for file:', {
+            userProvidedPath: filePath,
+            expandedPath,
+            resolvedPath: absolutePath,
+          });
+          return `Error: Permission denied: cannot delete '${expandedPath}'. Resolved path: '${absolutePath}'. Check file permissions.`;
+        }
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('[fileDeleteTool] Unexpected error deleting file:', {
+          userProvidedPath: filePath,
+          expandedPath,
+          resolvedPath: absolutePath,
+          error: errorMessage,
+        });
+        return `Error deleting file '${expandedPath}' (resolved to '${absolutePath}'): ${errorMessage}`;
+      }
+    },
+  });
+
   const allTools = {
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_EDIT}`]: fileEditTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_READ}`]: fileReadTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_WRITE}`]: fileWriteTool,
+    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_DELETE}`]: fileDeleteTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GLOB}`]: globTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`]: grepTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`]: searchTool,
