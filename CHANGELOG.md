@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.55.0]
 
 - added support for commiting changes via the Updated Files page
 - added comprehensive Extention system
