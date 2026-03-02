@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- initializing aider when repo map is included in Agent profile
+
 ## [0.55.0]
 
 - added support for commiting changes via the Updated Files page

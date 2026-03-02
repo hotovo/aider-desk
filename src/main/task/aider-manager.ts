@@ -456,10 +456,6 @@ export class AiderManager {
     this.repoMap = repoMap;
   }
 
-  public updateRepoMapFromConnector(repoMap: string): void {
-    this.setRepoMap(repoMap);
-  }
-
   public openCommandOutput(command: string): void {
     this.currentCommand = command;
     this.commandOutputs.set(command, '');

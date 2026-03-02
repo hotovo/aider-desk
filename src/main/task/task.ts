@@ -1500,7 +1500,7 @@ export class Task {
     command = extensionResult.command;
 
     if (this.currentQuestion) {
-      this.answerQuestion('n');
+      await this.answerQuestion('n');
     }
 
     let sendToConnectors = true;
@@ -2021,12 +2021,8 @@ export class Task {
     return this.aiderManager.getRepoMap();
   }
 
-  public setRepoMap(repoMap: string): void {
-    this.aiderManager.setRepoMap(repoMap);
-  }
-
   public updateRepoMapFromConnector(repoMap: string): void {
-    this.aiderManager.updateRepoMapFromConnector(repoMap);
+    this.aiderManager.setRepoMap(repoMap);
   }
 
   public openCommandOutput(command: string) {
@@ -2432,7 +2428,7 @@ export class Task {
 
   private async shouldStartAider(): Promise<boolean> {
     const agentProfile = await this.getTaskAgentProfile();
-    return AIDER_MODES.includes(this.getCurrentMode()) || (agentProfile?.useAiderTools ?? false);
+    return AIDER_MODES.includes(this.getCurrentMode()) || (agentProfile?.useAiderTools ?? false) || (agentProfile?.includeRepoMap ?? false);
   }
 
   private async reloadConnectorMessages() {
