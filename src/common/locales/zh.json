@@ -1128,7 +1128,8 @@
         "exitCode": "退出码",
         "stdout": "标准输出",
         "stderr": "标准错误",
-        "commandFailed": "命令失败"
+        "commandFailed": "命令失败",
+        "timeout": "超时"
       },
       "semanticSearch": {
         "title": "语义搜索:",

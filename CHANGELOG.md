@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - initializing aider when repo map is included in Agent profile
+- added Timeout info to Bash tool message
 
 ## [0.55.0]
 

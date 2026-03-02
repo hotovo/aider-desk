@@ -1152,7 +1152,8 @@
         "exitCode": "Exit Code",
         "stdout": "Stdout",
         "stderr": "Stderr",
-        "commandFailed": "Command failed"
+        "commandFailed": "Command failed",
+        "timeout": "Timeout"
       },
       "semanticSearch": {
         "title": "Semantic search:",

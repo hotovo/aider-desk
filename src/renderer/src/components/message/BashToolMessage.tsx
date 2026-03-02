@@ -37,6 +37,7 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
   const { t } = useTranslation();
 
   const command = message.args.command as string;
+  const timeout = message.args.timeout as number | undefined;
   const content = message.content && JSON.parse(message.content);
   const isStandardOutput = isStandardBashOutput(content);
   const hasError = hasErrorProperty(content);
@@ -179,6 +180,12 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
                       />
                     </div>
                   )}
+                </div>
+              )}
+              {timeout !== undefined && timeout !== null && (
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-text-secondary">{t('toolMessage.power.bash.timeout')}:</div>
+                  <div>{timeout}ms</div>
                 </div>
               )}
               {isFinished && isStandardOutput && content.exitCode !== null && content.exitCode !== undefined && (
