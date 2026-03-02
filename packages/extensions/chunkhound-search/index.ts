@@ -1,8 +1,9 @@
 /**
- * ChunkHound Extension - Semantic search using ChunkHound
+ * ChunkHound Search Tool Extension
  *
- * Overrides the built-in power---semantic_search tool to use ChunkHound
- * for semantic code search instead of the default probe-based search.
+ * Provides a 'chunkhound-search' tool via getTools() that uses ChunkHound
+ * for semantic code search. This demonstrates how to register custom tools
+ * that extend AiderDesk's capabilities.
  *
  * ChunkHound provides:
  * - Better semantic understanding of code
@@ -59,7 +60,9 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { Extension, ExtensionContext, ToolCalledEvent, ToolFinishedEvent, ProjectOpenedEvent } from '../../../build/types/extension-types';
+import { z } from 'zod';
+
+import type { Extension, ExtensionContext, ProjectOpenedEvent, ToolFinishedEvent, ToolDefinition } from '@aiderdesk/extensions';
 
 const CHUNKHOUND_DB_NAME = '.chunkhound.db';
 const CHUNKHOUND_CONFIG_NAME = '.chunkhound.json';
@@ -275,9 +278,10 @@ const ensureIndexed = async function (projectDir: string, context: ExtensionCont
 const chunkhoundSearch = async function (
   query: string,
   projectDir: string,
-  maxTokens: number,
   context: ExtensionContext,
   signal?: AbortSignal,
+  pageSize?: number,
+  offset?: number,
 ): Promise<string> {
   const indexed = await ensureIndexed(projectDir, context, signal);
   if (!indexed) {
@@ -294,6 +298,12 @@ const chunkhoundSearch = async function (
   if (configPath) {
     args.push('--config', configPath);
   }
+  if (pageSize !== undefined) {
+    args.push('--page-size', String(pageSize));
+  }
+  if (offset !== undefined && offset > 0) {
+    args.push('--offset', String(offset));
+  }
 
   try {
     const { stdout, stderr } = await execCommand('chunkhound', args, projectDir, signal, runningSearchProcesses, configPath);
@@ -303,14 +313,7 @@ const chunkhoundSearch = async function (
       return `Error: ChunkHound search failed: ${stderr}`;
     }
 
-    let result = stdout.trim();
-
-    if (result.length > maxTokens * 4) {
-      result = result.substring(0, maxTokens * 4);
-      result += '\n\n[Results truncated due to token limit]';
-    }
-
-    return result || 'No results found.';
+    return stdout.trim() || 'No results found.';
   } catch (error) {
     if (error instanceof Error && error.message === 'Operation aborted') {
       return 'Error: Search was aborted.';
@@ -321,11 +324,19 @@ const chunkhoundSearch = async function (
   }
 };
 
-class ChunkhoundExtension implements Extension {
+const inputSchema = z.object({
+  query: z.string().describe('Search query with Elasticsearch syntax. Use + for important terms.'),
+  pageSize: z.number().optional().default(10).describe('Number of results per page'),
+  offset: z.number().optional().default(0).describe('Page offset for results (0-based)'),
+});
+
+class ChunkhoundSearchExtension implements Extension {
   private initialized = false;
+  private context: ExtensionContext | null = null;
 
   async onLoad(context: ExtensionContext): Promise<void> {
-    context.log('ChunkHound Extension loading...', 'info');
+    this.context = context;
+    context.log('ChunkHound Search Tool Extension loading...', 'info');
 
     const installed = await isChunkhoundInstalled();
     if (!installed) {
@@ -338,7 +349,7 @@ class ChunkhoundExtension implements Extension {
       return;
     }
 
-    context.log('ChunkHound Extension loaded successfully', 'info');
+    context.log('ChunkHound Search Tool Extension loaded successfully', 'info');
     this.initialized = true;
   }
 
@@ -372,39 +383,6 @@ class ChunkhoundExtension implements Extension {
     return undefined;
   }
 
-  async onToolCalled(event: ToolCalledEvent, context: ExtensionContext, signal?: AbortSignal): Promise<void | Partial<ToolCalledEvent>> {
-    if (!this.initialized) {
-      return undefined;
-    }
-
-    if (event.toolName !== 'power---semantic_search') {
-      return undefined;
-    }
-
-    context.log('Intercepting semantic_search tool call', 'debug');
-
-    const input = event.input as
-      | {
-          query?: string;
-          path?: string;
-          maxTokens?: number;
-        }
-      | undefined;
-
-    if (!input?.query) {
-      return undefined;
-    }
-
-    const projectDir = context.getProjectDir();
-    const maxTokens = input.maxTokens ?? 5000;
-
-    context.log(`Running ChunkHound search: query="${input.query}", path="${projectDir}"`, 'info');
-
-    const result = await chunkhoundSearch(input.query, projectDir, maxTokens, context, signal);
-
-    return { output: result };
-  }
-
   async onToolFinished(event: ToolFinishedEvent, context: ExtensionContext): Promise<void | Partial<ToolFinishedEvent>> {
     if (!this.initialized) {
       return undefined;
@@ -432,14 +410,44 @@ class ChunkhoundExtension implements Extension {
 
     return undefined;
   }
+
+  getTools(_context: ExtensionContext): ToolDefinition[] {
+    if (!this.initialized || !this.context) {
+      return [];
+    }
+
+    const context = this.context;
+
+    const searchTool: ToolDefinition<typeof inputSchema> = {
+      // override power---semantic_search tool
+      name: 'power---semantic_search',
+      description:
+        'Search code in repository using semantic search powered by ChunkHound. Use natural language queries with 2-5 descriptive words including key concepts and context. Can filter results with hints like ext:ts, dir:src, or lang:typescript. Use this tool first for any code-related questions to find relationships between files and identify files to change.',
+      inputSchema,
+      execute: async (input, signal) => {
+        const { query, pageSize, offset } = input;
+
+        if (!context) {
+          return 'Error: Extension context not available.';
+        }
+
+        const projectDir = context.getProjectDir();
+        context.log(`Running ChunkHound search: query="${query}", path="${projectDir}", pageSize=${pageSize ?? 10}, offset=${offset ?? 0}`, 'info');
+
+        return chunkhoundSearch(query, projectDir, context, signal, pageSize, offset);
+      },
+    };
+
+    return [searchTool];
+  }
 }
 
 export const metadata = {
-  name: 'ChunkHound Search Extension',
-  version: '1.5.0',
-  description: 'Overrides power---semantic_search to use ChunkHound for semantic code search with better understanding',
+  name: 'ChunkHound Search Tool Extension',
+  version: '1.0.0',
+  description: 'Provides chunkhound-search tool using ChunkHound for semantic code search with better understanding',
   author: 'AiderDesk',
-  capabilities: ['events'],
+  capabilities: ['tools'],
 };
 
-export default ChunkhoundExtension;
+export default ChunkhoundSearchExtension;

@@ -6,7 +6,7 @@ import {
   ToolApprovalState,
   InvocationMode,
   ContextMemoryMode
-} from "../../../build/types/extension-types";
+} from '@aiderdesk/extensions';
 
 let currentPirateProfile: AgentProfile | null = null;
 

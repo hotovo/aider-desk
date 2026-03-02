@@ -10,7 +10,7 @@ import { join } from 'node:path';
 
 import { config } from 'dotenv';
 
-import type { Extension, ExtensionContext, ToolFinishedEvent } from '../../../../build/types/extension-types';
+import type { Extension, ExtensionContext, ToolFinishedEvent } from '@aiderdesk/extensions';
 
 const SECRET_PATTERNS = [
   /API[_-]?KEY/i,

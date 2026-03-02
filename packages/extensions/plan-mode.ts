@@ -16,7 +16,7 @@ import type {
   ExtensionContext,
   ModeDefinition,
   AgentStartedEvent,
-} from "../../../build/types/extension-types";
+} from '@aiderdesk/extensions';
 
 const PLAN_USER_MESSAGE = `You are in planning mode. Before making any code changes, you must first create or update a detailed implementation plan in a file called plan.md.
 

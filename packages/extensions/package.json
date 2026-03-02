@@ -1,0 +1,71 @@
+{
+  "name": "@aiderdesk/extensions",
+  "version": "0.1.0",
+  "description": "Type definitions and examples for AiderDesk extensions",
+  "author": "Hotovo",
+  "homepage": "https://aiderdesk.hotovo.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hotovo/aider-desk.git",
+    "directory": "packages/extensions"
+  },
+  "bugs": {
+    "url": "https://github.com/hotovo/aider-desk/issues"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "./extensions.d.ts",
+  "types": "./extensions.d.ts",
+  "bin": {
+    "aiderdesk-extensions": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./extensions.d.ts",
+      "default": "./extensions.d.ts"
+    }
+  },
+  "files": [
+    "extensions.d.ts",
+    "README.md",
+    "dist/cli.js",
+    "examples.json"
+  ],
+  "scripts": {
+    "build": "dts-bundle-generator --external-imports zod node --project ../../tsconfig.node.json --no-check --no-banner -o extensions.d.ts ../../src/common/extensions.ts",
+    "build:cli": "node scripts/build-cli.mjs",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run build:cli"
+  },
+  "keywords": [
+    "aiderdesk",
+    "extensions",
+    "typescript",
+    "types",
+    "ai",
+    "coding-assistant"
+  ],
+  "dependencies": {
+    "@inquirer/prompts": "^7.3.1",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "execa": "^9.5.2",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "dts-bundle-generator": "^9.2.1",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.4",
+    "zod": "^3.24.2"
+  },
+  "peerDependencies": {
+    "zod": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

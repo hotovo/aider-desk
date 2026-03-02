@@ -16,7 +16,7 @@
  *   botanical-garden, botanical-garden-dark
  */
 
-import type { Extension, ExtensionContext, CommandDefinition } from '../../../build/types/extension-types';
+import type { Extension, ExtensionContext, CommandDefinition } from '@aiderdesk/extensions';
 
 const AVAILABLE_THEMES = [
   'dark',

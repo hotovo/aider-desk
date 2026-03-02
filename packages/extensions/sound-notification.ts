@@ -12,7 +12,7 @@ import { join } from 'path';
 import { promisify } from 'util';
 import https from 'https';
 
-import type { Extension, ExtensionContext, PromptFinishedEvent } from '../../../build/types/extension-types';
+import type { Extension, ExtensionContext, PromptFinishedEvent } from '@aiderdesk/extensions';
 
 const execAsync = promisify(exec);
 

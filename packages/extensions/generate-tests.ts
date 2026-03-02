@@ -11,7 +11,7 @@
  * /generate-tests src/utils/helpers.ts
  */
 
-import type { Extension, ExtensionContext, CommandDefinition } from '../../../build/types/extension-types';
+import type { Extension, ExtensionContext, CommandDefinition } from '@aiderdesk/extensions';
 
 const GENERATE_TESTS_COMMAND: CommandDefinition = {
   name: 'generate-tests',

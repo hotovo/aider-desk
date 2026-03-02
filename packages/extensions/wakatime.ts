@@ -15,7 +15,7 @@ import type {
   PromptFinishedEvent,
   PromptStartedEvent,
   ToolFinishedEvent,
-} from '../../../build/types/extension-types';
+} from '@aiderdesk/extensions';
 
 const WAKATIME_CLI = process.platform === 'win32' ? 'wakatime-cli.exe' : 'wakatime-cli';
 const HEARTBEAT_THROTTLE_MS = 60000; // 1 minute

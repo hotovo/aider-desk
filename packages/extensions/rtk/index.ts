@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { CommandDefinition, Extension, ExtensionContext, ToolCalledEvent } from '../../../../build/types/extension-types';
+import type { CommandDefinition, Extension, ExtensionContext, ToolCalledEvent } from '@aiderdesk/extensions';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REWRITE_SCRIPT_PATH = join(__dirname, 'rtk-rewrite.sh');

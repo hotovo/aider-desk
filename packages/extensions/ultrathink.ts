@@ -8,7 +8,7 @@
  * - Other models get 'high' reasoning effort
  */
 
-import type { Extension, ExtensionContext, AgentStartedEvent } from '../../../build/types/extension-types';
+import type { Extension, ExtensionContext, AgentStartedEvent } from '@aiderdesk/extensions';
 
 const TRIGGER_PHRASES = ['ultrathink', 'think hard', 'think deeply', 'think carefully', 'think thoroughly', 'extra thinking', 'deep think'];
 

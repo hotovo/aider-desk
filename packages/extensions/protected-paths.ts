@@ -9,7 +9,7 @@ import type {
   Extension,
   ExtensionContext,
   ToolCalledEvent,
-} from "../../../build/types/extension-types";
+} from '@aiderdesk/extensions';
 
 const protectedPaths = ['.env', '.git/', 'node_modules/'];
 

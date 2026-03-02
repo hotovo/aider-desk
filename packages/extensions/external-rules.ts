@@ -14,7 +14,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-import type { Extension, ExtensionContext, RuleFilesRetrievedEvent } from '../../../build/types/extension-types';
+import type { Extension, ExtensionContext, RuleFilesRetrievedEvent } from '@aiderdesk/extensions';
 
 // External rule directories to scan for .md and .mdc files
 const EXTERNAL_RULE_DIRECTORIES = ['.cursor/rules', '.roo/rules'];
