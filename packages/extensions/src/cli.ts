@@ -2,11 +2,11 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
-import { existsSync, mkdirSync, cpSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, cpSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 
 import { Command } from 'commander';
-import { checkbox, confirm } from '@inquirer/prompts';
+import { checkbox } from '@inquirer/prompts';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -17,6 +17,9 @@ const __dirname = dirname(__filename);
 const EXTENSIONS_JSON_PATH = join(__dirname, '..', 'extensions.json');
 const EXTENSIONS_DIR = join(__dirname, '..', 'extensions');
 const PACKAGE_VERSION = require('../package.json').version;
+const CACHE_FILE = join(homedir(), '.aider-desk', 'extension-cache.json');
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
+const GITHUB_API_URL = 'https://api.github.com/repos/hotovo/aider-desk/contents/packages/extensions/extensions';
 
 interface Extension {
   id: string;
@@ -33,11 +36,146 @@ interface ExamplesConfig {
   extensions: Extension[];
 }
 
-function loadExtensions(): ExamplesConfig {
+interface CacheData {
+  timestamp: number;
+  extensions: Extension[];
+}
+
+interface GitHubContent {
+  name: string;
+  type: 'file' | 'dir';
+  download_url: string | null;
+}
+
+function loadFromCache(): CacheData | null {
+  try {
+    if (!existsSync(CACHE_FILE)) {
+      return null;
+    }
+
+    const cacheContent = readFileSync(CACHE_FILE, 'utf-8');
+    const cache: CacheData = JSON.parse(cacheContent);
+
+    // Check if cache is still valid
+    if (Date.now() - cache.timestamp < CACHE_TTL) {
+      return cache;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveToCache(extensions: Extension[]): void {
+  try {
+    const cacheDir = dirname(CACHE_FILE);
+    if (!existsSync(cacheDir)) {
+      mkdirSync(cacheDir, { recursive: true });
+    }
+
+    const cacheData: CacheData = {
+      timestamp: Date.now(),
+      extensions,
+    };
+
+    writeFileSync(CACHE_FILE, JSON.stringify(cacheData, null, 2), 'utf-8');
+  } catch {
+    // Silently fail if cache cannot be saved
+  }
+}
+
+function loadLocalExtensionsMap(): Map<string, Extension> {
+  try {
+    const localConfig: ExamplesConfig = require(EXTENSIONS_JSON_PATH);
+    const map = new Map<string, Extension>();
+    localConfig.extensions.forEach((ext) => {
+      map.set(ext.id, ext);
+    });
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+async function fetchExtensions(): Promise<Extension[] | null> {
+  try {
+    const response = await fetch(GITHUB_API_URL, {
+      headers: {
+        'User-Agent': 'aiderdesk-extensions-cli',
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const contents = (await response.json()) as GitHubContent[];
+    const localExtensionsMap = loadLocalExtensionsMap();
+
+    const extensions: Extension[] = contents
+      .filter((item) => item.type === 'file' || item.type === 'dir')
+      .filter((item) => {
+        // Filter out non-extension files
+        if (item.type === 'file') {
+          return item.name.endsWith('.ts') || item.name.endsWith('.js');
+        }
+        return true;
+      })
+      .map((item) => {
+        const isFile = item.type === 'file';
+        const id = isFile ? item.name.replace(/\.(ts|js)$/, '') : item.name;
+
+        // Check if we have metadata in local extensions.json
+        const localExt = localExtensionsMap.get(id);
+        if (localExt) {
+          // Use local metadata as-is (it has correct file/folder names and type)
+          return localExt;
+        }
+
+        // No local metadata - create basic extension entry without description
+        const name = id
+          .split('-')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+
+        return {
+          id,
+          name,
+          description: '',
+          type: isFile ? ('single' as const) : ('folder' as const),
+          file: isFile ? item.name : undefined,
+          folder: isFile ? undefined : item.name,
+          capabilities: [],
+        };
+      });
+
+    return extensions;
+  } catch {
+    return null;
+  }
+}
+
+async function loadExtensions(): Promise<ExamplesConfig> {
+  // Try fetching from GitHub first
+  const dynamicExtensions = await fetchExtensions();
+  if (dynamicExtensions && dynamicExtensions.length > 0) {
+    // Save to cache
+    saveToCache(dynamicExtensions);
+    return { extensions: dynamicExtensions };
+  }
+
+  // Try loading from cache
+  const cachedData = loadFromCache();
+  if (cachedData && cachedData.extensions.length > 0) {
+    return { extensions: cachedData.extensions };
+  }
+
+  // Fallback to local JSON
   try {
     return require(EXTENSIONS_JSON_PATH);
   } catch {
-    console.error(chalk.red('Error: Could not load extensions.json'));
+    console.error(chalk.red('Error: Could not load extensions from any source'));
     process.exit(1);
   }
 }
@@ -123,16 +261,9 @@ async function installExtensionById(extId: string, extensions: Extension[], targ
         cpSync(localPath, targetPath, { recursive: true });
         spinner.succeed(chalk.green(`✓ Installed ${ext.name}`));
 
-        // Install dependencies if needed
-        if (ext.hasDependencies && existsSync(join(targetPath, 'package.json'))) {
-          const installDeps = await confirm({
-            message: `${ext.name} has dependencies. Install them now?`,
-            default: true,
-          });
-
-          if (installDeps) {
-            await installDependencies(targetPath);
-          }
+        // Install dependencies if package.json exists
+        if (existsSync(join(targetPath, 'package.json'))) {
+          await installDependencies(targetPath);
         }
       } else {
         // Clone from GitHub
@@ -155,16 +286,9 @@ async function installExtensionById(extId: string, extensions: Extension[], targ
           cpSync(sourceDir, targetPath, { recursive: true });
           spinner.succeed(chalk.green(`✓ Installed ${ext.name} from GitHub`));
 
-          // Install dependencies if needed
-          if (ext.hasDependencies && existsSync(join(targetPath, 'package.json'))) {
-            const installDeps = await confirm({
-              message: `${ext.name} has dependencies. Install them now?`,
-              default: true,
-            });
-
-            if (installDeps) {
-              await installDependencies(targetPath);
-            }
+          // Install dependencies if package.json exists
+          if (existsSync(join(targetPath, 'package.json'))) {
+            await installDependencies(targetPath);
           }
         } finally {
           // Cleanup temp directory
@@ -232,16 +356,9 @@ async function installFromUrl(url: string, targetDir: string): Promise<void> {
             cpSync(sourceDir, targetPath, { recursive: true });
             spinner.succeed(chalk.green(`✓ Installed ${extName} to ${targetDir}`));
 
-            // Check for package.json and install dependencies
+            // Install dependencies if package.json exists
             if (existsSync(join(targetPath, 'package.json'))) {
-              const installDeps = await confirm({
-                message: 'This extension has dependencies. Install them now?',
-                default: true,
-              });
-
-              if (installDeps) {
-                await installDependencies(targetPath);
-              }
+              await installDependencies(targetPath);
             }
           } else {
             throw new Error('Extension folder not found in repository');
@@ -266,7 +383,7 @@ async function installFromExamples(extensions: Extension[], targetDir: string): 
   console.log(chalk.cyan('\n📦 Available AiderDesk Extensions\n'));
 
   const choices = extensions.map((ext) => ({
-    name: `${ext.name} - ${ext.description}`,
+    name: ext.description ? `${ext.name} - ${ext.description}` : ext.name,
     value: ext.id,
     disabled: false,
   }));
@@ -290,57 +407,8 @@ async function installFromExamples(extensions: Extension[], targetDir: string): 
   console.log(chalk.cyan(`\nInstalling to: ${targetDir}\n`));
 
   for (const extId of selectedIds) {
-    const ext = extensions.find((e) => e.id === extId);
-    if (!ext) {
-      continue;
-    }
-
-    const spinner = ora(`Installing ${ext.name}...`).start();
-
-    try {
-      if (ext.type === 'single' && ext.file) {
-        const sourcePath = join(EXTENSIONS_DIR, ext.file);
-        const targetPath = join(targetDir, ext.file);
-
-        if (!existsSync(sourcePath)) {
-          spinner.fail(chalk.yellow(`⚠ ${ext.name} source file not found, skipping`));
-          continue;
-        }
-
-        cpSync(sourcePath, targetPath);
-        spinner.succeed(chalk.green(`✓ Installed ${ext.name}`));
-      } else if (ext.type === 'folder' && ext.folder) {
-        const sourcePath = join(EXTENSIONS_DIR, ext.folder);
-        const targetPath = join(targetDir, ext.folder);
-
-        if (!existsSync(sourcePath)) {
-          spinner.fail(chalk.yellow(`⚠ ${ext.name} source folder not found, skipping`));
-          continue;
-        }
-
-        cpSync(sourcePath, targetPath, { recursive: true });
-        spinner.succeed(chalk.green(`✓ Installed ${ext.name}`));
-
-        // Install dependencies if needed
-        if (ext.hasDependencies && existsSync(join(targetPath, 'package.json'))) {
-          const installDeps = await confirm({
-            message: `${ext.name} has dependencies. Install them now?`,
-            default: true,
-          });
-
-          if (installDeps) {
-            await installDependencies(targetPath);
-          }
-        }
-      }
-    } catch (error) {
-      spinner.fail(chalk.red(`✗ Failed to install ${ext.name}: ${error}`));
-    }
+    await installExtensionById(extId, extensions, targetDir);
   }
-
-  console.log(chalk.cyan('\n✨ Installation complete!\n'));
-  console.log(chalk.gray('Extensions will be automatically loaded when you restart AiderDesk.'));
-  console.log(chalk.gray('Or they will hot-reload if AiderDesk is already running.\n'));
 }
 
 async function installDependencies(targetPath: string): Promise<void> {
@@ -386,7 +454,7 @@ async function main() {
     .option('-g, --global', 'Install to global directory (~/.aider-desk/extensions)')
     .action(async (extension: string | undefined, options: { directory?: string; global?: boolean }) => {
       const targetDir = getInstallDirectory(options);
-      const examples = loadExtensions();
+      const examples = await loadExtensions();
 
       console.log(chalk.cyan.bold('\n🚀 AiderDesk Extension Installer\n'));
 
@@ -407,14 +475,16 @@ async function main() {
   program
     .command('list')
     .description('List all available example extensions')
-    .action(() => {
-      const examples = loadExtensions();
+    .action(async () => {
+      const examples = await loadExtensions();
 
       console.log(chalk.cyan.bold('\n📦 Available AiderDesk Extensions\n'));
 
       examples.extensions.forEach((ext) => {
         console.log(chalk.white.bold(`  ${ext.name}`));
-        console.log(chalk.gray(`    ${ext.description}`));
+        if (ext.description) {
+          console.log(chalk.gray(`    ${ext.description}`));
+        }
         console.log(chalk.gray(`    Type: ${ext.type}`));
         if (ext.hasDependencies) {
           console.log(chalk.yellow('    ⚠ Has dependencies'));
