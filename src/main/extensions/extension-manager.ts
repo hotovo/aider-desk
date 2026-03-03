@@ -406,18 +406,35 @@ export class ExtensionManager {
         await fs.mkdir(dir, { recursive: true });
       }
 
-      const debouncedOnChange = debounce(onChange, 1000);
+      const debouncedOnChange = debounce(onChange, 3000);
+
+      const isRelevantFile = (filePath: string): boolean => {
+        return ['.ts', '.js', '.tsx', '.jsx'].includes(path.extname(filePath));
+      };
 
       const watcher = watch(dir, {
         persistent: true,
         usePolling: true,
         ignoreInitial: true,
+        ignored: (filePath: string) => {
+          const basename = path.basename(filePath);
+          if (basename.startsWith('.') || basename === 'node_modules') {
+            return true;
+          }
+          if (!path.extname(filePath)) {
+            return false;
+          }
+          return !isRelevantFile(filePath);
+        },
       });
 
       watcher
-        .on('add', debouncedOnChange)
-        .on('change', debouncedOnChange)
-        .on('unlink', debouncedOnChange)
+        .on('all', (_eventName, filePath) => {
+          logger.info(`[Extensions] File changed: ${filePath}`);
+          if (isRelevantFile(filePath)) {
+            debouncedOnChange();
+          }
+        })
         .on('error', (error) => {
           logger.error(`[Extensions] Watcher error for directory ${dir}:`, error);
         });
