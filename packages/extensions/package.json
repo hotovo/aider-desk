@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/extensions",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Type definitions and examples for AiderDesk extensions",
   "author": "Hotovo",
   "homepage": "https://aiderdesk.hotovo.com",
@@ -29,7 +29,7 @@
     "extensions.d.ts",
     "README.md",
     "dist/cli.js",
-    "examples.json"
+    "extensions.json"
   ],
   "scripts": {
     "build": "dts-bundle-generator --external-imports zod node --project ../../tsconfig.node.json --no-check --no-banner -o extensions.d.ts ../../src/common/extensions.ts",

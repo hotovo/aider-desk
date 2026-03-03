@@ -44,21 +44,21 @@ For comprehensive documentation on creating and using extensions, see the [Exten
 
 | Extension | Description | Extension Functions |
 |-----------|-------------|---------------------|
-| **[theme.ts](./theme.ts)** | Adds `/theme` command to switch AiderDesk themes | `onLoad`, `getCommands` |
-| **[sound-notification.ts](./sound-notification.ts)** | Plays a "Jobs Done" sound when a prompt finishes | `onLoad`, `onPromptFinished` |
-| **[protected-paths.ts](./protected-paths.ts)** | Blocks file operations on protected paths (`.env`, `.git/`, `node_modules/`) | `onLoad`, `onToolCalled` |
-| **[plan-mode.ts](./plan-mode.ts)** | Adds a Plan mode that enforces planning before coding | `onLoad`, `getModes`, `onAgentStarted` |
-| **[pirate.ts](./pirate.ts)** | Adds a Pirate agent that speaks like a swashbuckling sea dog | `onLoad`, `getAgents`, `onAgentProfileUpdated` |
-| **[permission-gate.ts](./permission-gate.ts)** | Prompts for confirmation before running dangerous bash commands (`rm -rf`, `sudo`, `chmod/chown 777`) | `onLoad`, `onToolCalled` |
-| **[generate-tests.ts](./generate-tests.ts)** | Adds `/generate-tests` command to generate unit tests for files | `onLoad`, `getCommands` |
-| **[sandbox/](./sandbox/)** | OS-level sandboxing for bash commands using `@anthropic-ai/sandbox-runtime` | `onLoad`, `onUnload`, `onTaskInitialized`, `onTaskClosed`, `onToolCalled` |
-| **[rtk/](./rtk/)** | Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90% | `onLoad`, `getCommands`, `onToolCalled` |
-| **[chunkhound-search/](./chunkhound-search/)** | Provides `chunkhound-search` tool using ChunkHound for semantic code search | `onLoad`, `onUnload`, `onProjectOpen`, `onToolFinished`, `getTools` |
-| **[chunkhound-on-semantic-search-tool/](./chunkhound-on-semantic-search-tool/)** | Overrides `power---semantic_search` to use ChunkHound for better semantic understanding | `onLoad`, `onUnload`, `onProjectOpen`, `onToolCalled`, `onToolFinished` |
-| **[wakatime.ts](./wakatime.ts)** | Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli | `onLoad`, `onPromptStarted`, `onPromptFinished`, `onToolFinished`, `onFilesAdded` |
-| **[redact-secrets/](./redact-secrets/)** | Redacts secret values from `.env*` files in file read results | `onLoad`, `onProjectOpen`, `onToolFinished` |
-| **[external-rules.ts](./external-rules.ts)** | Includes rule files from Cursor, Claude Code, and Roo Code configurations | `onLoad`, `onRuleFilesRetrieved` |
-| **[ultrathink.ts](./ultrathink.ts)** | Detects prompts like "ultrathink" / "think hard" and increases OpenAI/OpenAI-compatible reasoning effort (`xhigh` for `-max` models, otherwise `high`) | `onLoad`, `onAgentStarted` |
+| **[theme.ts](./extensions/theme.ts)** | Adds `/theme` command to switch AiderDesk themes | `onLoad`, `getCommands` |
+| **[sound-notification.ts](./extensions/sound-notification.ts)** | Plays a "Jobs Done" sound when a prompt finishes | `onLoad`, `onPromptFinished` |
+| **[protected-paths.ts](./extensions/protected-paths.ts)** | Blocks file operations on protected paths (`.env`, `.git/`, `node_modules/`) | `onLoad`, `onToolCalled` |
+| **[plan-mode.ts](./extensions/plan-mode.ts)** | Adds a Plan mode that enforces planning before coding | `onLoad`, `getModes`, `onAgentStarted` |
+| **[pirate.ts](./extensions/pirate.ts)** | Adds a Pirate agent that speaks like a swashbuckling sea dog | `onLoad`, `getAgents`, `onAgentProfileUpdated` |
+| **[permission-gate.ts](./extensions/permission-gate.ts)** | Prompts for confirmation before running dangerous bash commands (`rm -rf`, `sudo`, `chmod/chown 777`) | `onLoad`, `onToolCalled` |
+| **[generate-tests.ts](./extensions/generate-tests.ts)** | Adds `/generate-tests` command to generate unit tests for files | `onLoad`, `getCommands` |
+| **[sandbox/](./extensions/sandbox/)** | OS-level sandboxing for bash commands using `@anthropic-ai/sandbox-runtime` | `onLoad`, `onUnload`, `onTaskInitialized`, `onTaskClosed`, `onToolCalled` |
+| **[rtk/](./extensions/rtk/)** | Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90% | `onLoad`, `getCommands`, `onToolCalled` |
+| **[chunkhound-search/](./extensions/chunkhound-search/)** | Provides `chunkhound-search` tool using ChunkHound for semantic code search | `onLoad`, `onUnload`, `onProjectOpen`, `onToolFinished`, `getTools` |
+| **[chunkhound-on-semantic-search-tool/](./extensions/chunkhound-on-semantic-search-tool/)** | Overrides `power---semantic_search` to use ChunkHound for better semantic understanding | `onLoad`, `onUnload`, `onProjectOpen`, `onToolCalled`, `onToolFinished` |
+| **[wakatime.ts](./extensions/wakatime.ts)** | Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli | `onLoad`, `onPromptStarted`, `onPromptFinished`, `onToolFinished`, `onFilesAdded` |
+| **[redact-secrets/](./extensions/redact-secrets/)** | Redacts secret values from `.env*` files in file read results | `onLoad`, `onProjectOpen`, `onToolFinished` |
+| **[external-rules.ts](./extensions/external-rules.ts)** | Includes rule files from Cursor, Claude Code, and Roo Code configurations | `onLoad`, `onRuleFilesRetrieved` |
+| **[ultrathink.ts](./extensions/ultrathink.ts)** | Detects prompts like "ultrathink" / "think hard" and increases OpenAI/OpenAI-compatible reasoning effort (`xhigh` for `-max` models, otherwise `high`) | `onLoad`, `onAgentStarted` |
 
 ## Quick Start
 
@@ -77,10 +77,10 @@ Copy the extension file(s) to your AiderDesk extensions directory:
 
 ```bash
 # Global extensions (available to all projects)
-cp sound-notification.ts ~/.aider-desk/extensions/
+cp extensions/sound-notification.ts ~/.aider-desk/extensions/
 
 # Project-specific extensions
-cp sound-notification.ts .aider-desk/extensions/
+cp extensions/sound-notification.ts .aider-desk/extensions/
 ```
 
 ### 3. Hot Reload

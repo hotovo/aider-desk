@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, cpSync, writeFileSync, rmSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 
 import { Command } from 'commander';
-import { select, checkbox, confirm, input } from '@inquirer/prompts';
+import { checkbox, confirm } from '@inquirer/prompts';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -14,7 +14,8 @@ const require = createRequire(import.meta.url);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const EXAMPLES_JSON_PATH = join(__dirname, '..', 'examples.json');
+const EXTENSIONS_JSON_PATH = join(__dirname, '..', 'extensions.json');
+const EXTENSIONS_DIR = join(__dirname, '..', 'extensions');
 const PACKAGE_VERSION = require('../package.json').version;
 
 interface Extension {
@@ -32,11 +33,11 @@ interface ExamplesConfig {
   extensions: Extension[];
 }
 
-function loadExamples(): ExamplesConfig {
+function loadExtensions(): ExamplesConfig {
   try {
-    return require(EXAMPLES_JSON_PATH);
-  } catch (error) {
-    console.error(chalk.red('Error: Could not load examples.json'));
+    return require(EXTENSIONS_JSON_PATH);
+  } catch {
+    console.error(chalk.red('Error: Could not load extensions.json'));
     process.exit(1);
   }
 }
@@ -83,13 +84,12 @@ async function installExtensionById(extId: string, extensions: Extension[], targ
   const spinner = ora(`Installing ${ext.name}...`).start();
 
   try {
-    const packageDir = join(__dirname, '..');
-    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions';
+    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions';
     const GITHUB_REPO = 'https://github.com/hotovo/aider-desk';
 
     if (ext.type === 'single' && ext.file) {
       // Try local file first (for development)
-      const localPath = join(packageDir, ext.file);
+      const localPath = join(EXTENSIONS_DIR, ext.file);
 
       if (existsSync(localPath)) {
         spinner.text = `Copying ${ext.name} from package...`;
@@ -115,7 +115,7 @@ async function installExtensionById(extId: string, extensions: Extension[], targ
       }
     } else if (ext.type === 'folder' && ext.folder) {
       // Try local folder first (for development)
-      const localPath = join(packageDir, ext.folder);
+      const localPath = join(EXTENSIONS_DIR, ext.folder);
 
       if (existsSync(localPath)) {
         spinner.text = `Copying ${ext.name} from package...`;
@@ -145,7 +145,7 @@ async function installExtensionById(extId: string, extensions: Extension[], targ
           await runCommand('git', ['clone', '--depth', '1', GITHUB_REPO, tempDir]);
 
           // Copy extension folder
-          const sourceDir = join(tempDir, 'packages', 'extensions', ext.folder);
+          const sourceDir = join(tempDir, 'packages', 'extensions', 'extensions', ext.folder);
           const targetPath = join(targetDir, ext.folder);
 
           if (!existsSync(sourceDir)) {
@@ -298,10 +298,8 @@ async function installFromExamples(extensions: Extension[], targetDir: string): 
     const spinner = ora(`Installing ${ext.name}...`).start();
 
     try {
-      const packageDir = join(__dirname, '..');
-
       if (ext.type === 'single' && ext.file) {
-        const sourcePath = join(packageDir, ext.file);
+        const sourcePath = join(EXTENSIONS_DIR, ext.file);
         const targetPath = join(targetDir, ext.file);
 
         if (!existsSync(sourcePath)) {
@@ -312,7 +310,7 @@ async function installFromExamples(extensions: Extension[], targetDir: string): 
         cpSync(sourcePath, targetPath);
         spinner.succeed(chalk.green(`✓ Installed ${ext.name}`));
       } else if (ext.type === 'folder' && ext.folder) {
-        const sourcePath = join(packageDir, ext.folder);
+        const sourcePath = join(EXTENSIONS_DIR, ext.folder);
         const targetPath = join(targetDir, ext.folder);
 
         if (!existsSync(sourcePath)) {
@@ -388,7 +386,7 @@ async function main() {
     .option('-g, --global', 'Install to global directory (~/.aider-desk/extensions)')
     .action(async (extension: string | undefined, options: { directory?: string; global?: boolean }) => {
       const targetDir = getInstallDirectory(options);
-      const examples = loadExamples();
+      const examples = loadExtensions();
 
       console.log(chalk.cyan.bold('\n🚀 AiderDesk Extension Installer\n'));
 
@@ -410,7 +408,7 @@ async function main() {
     .command('list')
     .description('List all available example extensions')
     .action(() => {
-      const examples = loadExamples();
+      const examples = loadExtensions();
 
       console.log(chalk.cyan.bold('\n📦 Available AiderDesk Extensions\n'));
 
