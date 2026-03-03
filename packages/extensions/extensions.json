@@ -133,6 +133,15 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["onLoad", "onAgentStarted", "getCommands"]
+    },
+    {
+      "id": "lsp",
+      "name": "LSP Integration",
+      "description": "Language Server Protocol integration for code intelligence and error detection",
+      "folder": "lsp",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onUnload", "onProjectStarted", "onProjectStopped", "getTools", "onToolFinished"]
     }
   ]
 }
