@@ -58,6 +58,7 @@ For comprehensive documentation on creating and using extensions, see the [Exten
 | **[wakatime.ts](./extensions/wakatime.ts)** | Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli | `onLoad`, `onPromptStarted`, `onPromptFinished`, `onToolFinished`, `onFilesAdded` |
 | **[redact-secrets/](./extensions/redact-secrets/)** | Redacts secret values from `.env*` files in file read results | `onLoad`, `onProjectOpen`, `onToolFinished` |
 | **[external-rules.ts](./extensions/external-rules.ts)** | Includes rule files from Cursor, Claude Code, and Roo Code configurations | `onLoad`, `onRuleFilesRetrieved` |
+| **[lsp/](./extensions/lsp/)** | LSP integration for automatic error detection after file edits and code intelligence tools (find references) | `onLoad`, `onUnload`, `getTools`, `onProjectStarted`, `onProjectStopped`, `onToolFinished` |
 | **[ultrathink.ts](./extensions/ultrathink.ts)** | Detects prompts like "ultrathink" / "think hard" and increases OpenAI/OpenAI-compatible reasoning effort (`xhigh` for `-max` models, otherwise `high`) | `onLoad`, `onAgentStarted` |
 
 ## Quick Start
