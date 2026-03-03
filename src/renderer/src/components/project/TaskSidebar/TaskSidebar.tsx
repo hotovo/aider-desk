@@ -13,8 +13,10 @@ import { useDebounce } from '@reactuses/core';
 
 import { TaskSidebarMultiSelectMenu } from './TaskSidebarMultiSelectMenu';
 import { TaskItem } from './TaskItem';
+import { TaskSectionHeader } from './TaskSectionHeader';
 
 import { getSortedVisibleTasks } from '@/utils/task-utils';
+import { groupTasksByDate } from '@/utils/date-utils';
 import { Input } from '@/components/common/Input';
 import { IconButton } from '@/components/common/IconButton';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -510,42 +512,68 @@ const TaskSidebarComponent = ({
                   </div>
                 ) : (
                   <div>
-                    {deferredTasks
-                      .filter((task) => !task.parentId || !deferredTasks.some((t) => t.id === task.parentId))
-                      .map((task) => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          tasks={tasks}
-                          level={0}
-                          selectedTasks={selectedTasks}
-                          deleteConfirmTaskId={deleteConfirmTaskId}
-                          showArchived={showArchived}
-                          searchQuery={debouncedSearchQuery}
-                          isMultiselectMode={isMultiselectMode}
-                          setIsMultiselectMode={setIsMultiselectMode}
-                          activeTaskId={optimisticActiveTaskId}
-                          onTaskClick={handleTaskClick}
-                          createNewTask={createNewTask}
-                          editingTaskId={editingTaskId}
-                          onEditClick={handleEditClick}
-                          onEditConfirm={handleEditConfirm}
-                          onEditCancel={handleEditCancel}
-                          onDeleteClick={handleDeleteClick}
-                          onArchiveTask={handleArchiveTask}
-                          onUnarchiveTask={handleUnarchiveTask}
-                          onTogglePin={handleTogglePin}
-                          onChangeState={handleChangeState}
-                          onCopyAsMarkdown={onCopyAsMarkdown}
-                          onExportToMarkdown={onExportToMarkdown}
-                          onExportToImage={onExportToImage}
-                          onDuplicateTask={onDuplicateTask}
-                          updateTask={updateTask}
-                          deleteTask={deleteTask}
-                          handleConfirmDelete={handleConfirmDelete}
-                          handleCancelDelete={handleCancelDelete}
-                        />
-                      ))}
+                    {(() => {
+                      const topLevelTasks = deferredTasks.filter((task) => !task.parentId || !deferredTasks.some((t) => t.id === task.parentId));
+                      const pinnedTasks = topLevelTasks.filter((task) => task.pinned);
+                      const nonPinnedTasks = topLevelTasks.filter((task) => !task.pinned);
+                      const groupedTasks = groupTasksByDate(nonPinnedTasks);
+                      const taskItemCommonProps = {
+                        tasks,
+                        level: 0,
+                        selectedTasks,
+                        deleteConfirmTaskId,
+                        showArchived,
+                        searchQuery: debouncedSearchQuery,
+                        isMultiselectMode,
+                        setIsMultiselectMode,
+                        activeTaskId: optimisticActiveTaskId,
+                        onTaskClick: handleTaskClick,
+                        createNewTask,
+                        editingTaskId,
+                        onEditClick: handleEditClick,
+                        onEditConfirm: handleEditConfirm,
+                        onEditCancel: handleEditCancel,
+                        onDeleteClick: handleDeleteClick,
+                        onArchiveTask: handleArchiveTask,
+                        onUnarchiveTask: handleUnarchiveTask,
+                        onTogglePin: handleTogglePin,
+                        onChangeState: handleChangeState,
+                        onCopyAsMarkdown,
+                        onExportToMarkdown,
+                        onExportToImage,
+                        onDuplicateTask,
+                        updateTask,
+                        deleteTask,
+                        handleConfirmDelete,
+                        handleCancelDelete,
+                      };
+
+                      return (
+                        <>
+                          {pinnedTasks.map((task) => (
+                            <TaskItem key={task.id} task={task} {...taskItemCommonProps} />
+                          ))}
+                          {Array.from(groupedTasks.entries()).map(([dateGroup, groupTasks]) => (
+                            <div key={dateGroup}>
+                              <TaskSectionHeader
+                                title={
+                                  dateGroup === 'today'
+                                    ? t('taskSidebar.today')
+                                    : dateGroup === 'yesterday'
+                                      ? t('taskSidebar.yesterday')
+                                      : dateGroup === 'unknown'
+                                        ? t('taskSidebar.noDate')
+                                        : dateGroup
+                                }
+                              />
+                              {groupTasks.map((task) => (
+                                <TaskItem key={task.id} task={task} {...taskItemCommonProps} />
+                              ))}
+                            </div>
+                          ))}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </motion.div>
