@@ -603,7 +603,13 @@ export class Task {
     return !!this.currentPromptContext || this.agent.isRunning();
   }
 
-  public async runPrompt(prompt: string, mode: Mode = 'code', addToInputHistory = true, userMessageId = uuidv4()): Promise<ResponseCompletedData[]> {
+  public async runPrompt(
+    prompt: string,
+    mode: Mode = 'code',
+    addToInputHistory = true,
+    userMessageId = uuidv4(),
+    sendNotification = true,
+  ): Promise<ResponseCompletedData[]> {
     if (this.currentQuestion) {
       if (await this.answerQuestion('n', prompt)) {
         logger.debug('Processed by the answerQuestion function.');
@@ -670,9 +676,9 @@ export class Task {
         throw new Error('No active Agent profile found');
       }
 
-      responses = await this.runPromptInAgent(profile, mode, prompt, promptContext);
+      responses = await this.runPromptInAgent(profile, mode, prompt, promptContext, undefined, undefined, undefined, true, sendNotification);
     } else {
-      responses = await this.runPromptInAider(mode, prompt, promptContext);
+      responses = await this.runPromptInAider(mode, prompt, promptContext, sendNotification);
     }
 
     const promptFinishedExtensionResult = await this.extensionManager.dispatchEvent('onPromptFinished', { responses }, this.project, this);
@@ -717,14 +723,14 @@ export class Task {
         this.addUserMessage(nextPrompt.id, nextPrompt.text);
         this.addLogMessage('loading');
         this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
-        return this.runPrompt(nextPrompt.text, nextPrompt.mode, true, nextPrompt.id);
+        return this.runPrompt(nextPrompt.text, nextPrompt.mode, true, nextPrompt.id, false);
       }
     }
 
     return [];
   }
 
-  public async runPromptInAider(mode: Mode, prompt: string, promptContext: PromptContext): Promise<ResponseCompletedData[]> {
+  public async runPromptInAider(mode: Mode, prompt: string, promptContext: PromptContext, sendNotification = true): Promise<ResponseCompletedData[]> {
     await this.waitForCurrentPromptToFinish();
 
     await this.hookManager.trigger('onPromptStarted', { prompt, mode }, this, this.project);
@@ -809,7 +815,6 @@ export class Task {
     void this.sendRequestContextInfo();
     void this.sendWorktreeIntegrationStatusUpdated();
     void this.sendUpdatedFilesUpdated();
-    this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
 
     await this.hookManager.trigger('onAiderPromptFinished', { responses }, this, this.project);
     await this.hookManager.trigger('onPromptFinished', { responses }, this, this.project);
@@ -824,6 +829,10 @@ export class Task {
     const nextResponses = await this.runNextQueuedPrompt();
     responses.push(...nextResponses);
 
+    if (sendNotification) {
+      this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+    }
+
     return responses;
   }
 
@@ -836,6 +845,7 @@ export class Task {
     contextFiles?: ContextFile[],
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
+    sendNotification = true,
   ): Promise<ResponseCompletedData[]> {
     await this.hookManager.trigger('onPromptStarted', { prompt, mode: 'agent' }, this, this.project);
 
@@ -863,6 +873,8 @@ export class Task {
     void this.sendWorktreeIntegrationStatusUpdated();
     void this.sendUpdatedFilesUpdated();
 
+    this.resolveAgentRunPromises();
+
     if (waitForCurrentAgentToFinish) {
       await this.runNextQueuedPrompt();
     }
@@ -882,8 +894,9 @@ export class Task {
       });
     }
 
-    this.resolveAgentRunPromises();
-    this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+    if (sendNotification) {
+      this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+    }
 
     return [];
   }
