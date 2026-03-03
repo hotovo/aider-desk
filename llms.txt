@@ -2573,7 +2573,8 @@ File: src/common/locales/en.json
         "exitCode": "Exit Code",
         "stdout": "Stdout",
         "stderr": "Stderr",
-        "commandFailed": "Command failed"
+        "commandFailed": "Command failed",
+        "timeout": "Timeout"
       },
       "semanticSearch": {
         "title": "Semantic search:",
@@ -4298,7 +4299,8 @@ File: src/common/locales/zh.json
         "exitCode": "退出码",
         "stdout": "标准输出",
         "stderr": "标准错误",
-        "commandFailed": "命令失败"
+        "commandFailed": "命令失败",
+        "timeout": "超时"
       },
       "semanticSearch": {
         "title": "语义搜索:",
@@ -6529,7 +6531,7 @@ export interface ApplicationAPI {
   removeMessagesUpTo: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
   compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
   handoffConversation: (baseDir: string, taskId: string, focus?: string) => Promise<void>;
-  runCodeInlineRequest: (baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string) => void;
+  runCodeInlineRequest: (baseDir: string, filename: string, lineNumber: number, userComment: string) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
   getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
@@ -15956,6 +15958,8 @@ async close()
 // Remove watch-files lock file if it exists
 ⋮----
 // Ignore error if file doesn't exist
+⋮----
+async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, contextSize: number = 5): Promise<void>
 
 ================
 File: src/main/prompts/helpers/conditional.ts
@@ -17332,8 +17336,6 @@ public getRepoMap(): string
 ⋮----
 public setRepoMap(repoMap: string): void
 ⋮----
-public updateRepoMapFromConnector(repoMap: string): void
-⋮----
 public openCommandOutput(command: string): void
 ⋮----
 private addCommandOutput(command: string, output: string): void
@@ -18009,8 +18011,6 @@ public async getRuleFilesAsContextFiles(profile?: AgentProfile): Promise<Context
 ⋮----
 public getRepoMap(): string
 ⋮----
-public setRepoMap(repoMap: string): void
-⋮----
 public updateRepoMapFromConnector(repoMap: string): void
 ⋮----
 public openCommandOutput(command: string)
@@ -18154,8 +18154,6 @@ public async handoffConversation(
 // Transfer context files
 ⋮----
 // Send task-created event to trigger activation and handoff
-⋮----
-public async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, contextSize: number = 5): Promise<void>
 ⋮----
 public async generateContextMarkdown(): Promise<string | null>
 ⋮----
@@ -19787,7 +19785,7 @@ async compactConversation(baseDir: string, taskId: string, mode: Mode, customIns
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
-async runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string): Promise<void>
+async runCodeInlineRequest(baseDir: string, filename: string, lineNumber: number, userComment: string): Promise<void>
 ⋮----
 async loadInputHistory(baseDir: string): Promise<string[]>
 ⋮----
@@ -20949,7 +20947,7 @@ compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructi
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
-runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string): void
+runCodeInlineRequest(baseDir: string, filename: string, lineNumber: number, userComment: string): void
 ⋮----
 setZoomLevel(level: number): Promise<void>
 ⋮----
@@ -23454,6 +23452,7 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignment } from 'react-icons/md';
+import { ContextFile } from '@common/types';
 ⋮----
 import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
@@ -23469,11 +23468,6 @@ type Props = {
   onRemoveUpTo?: () => void;
   hideMessageBar?: boolean;
 };
-⋮----
-type ContextFile = {
-    path: string;
-    readOnly?: boolean;
-  };
 ⋮----
 const renderStatusIcon = () =>
 ⋮----
@@ -34009,7 +34003,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.55.0-dev",
+  "version": "0.56.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -34030,7 +34024,8 @@ File: package.json
     "dev": "electron-vite dev",
     "dev:no-hmr": "NO_HMR=true electron-vite dev",
     "build:mcp": "esbuild src/mcp-server/aider-desk-mcp-server.ts --bundle --platform=node --outdir=out/mcp-server",
-    "build:extension-types": "dts-bundle-generator --external-imports zod node --project tsconfig.node.json --no-check --no-banner -o build/types/extension-types.d.ts src/common/extensions.ts",
+    "build:extensions": "npm run build --workspace=packages/extensions",
+    "publish:extensions": "npm publish --workspace=packages/extensions",
     "prebuild:server": "electron-vite build && npm run build:mcp",
     "build:server": "vite build --config vite.config.server.ts && mkdir -p out/resources && cp -r resources/* out/resources",
     "postbuild:server": "npm rebuild",
@@ -34252,6 +34247,9 @@ File: package.json
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.0.16"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "lint-staged": {
     "*.{ts,tsx}": "npm run lint"
   }
