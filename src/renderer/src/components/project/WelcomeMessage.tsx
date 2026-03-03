@@ -44,8 +44,8 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
   }
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted-light overflow-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary">
-      <div className="text-center max-w-2xl h-full pt-10 px-4">
+    <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted-light overflow-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary py-10 px-4">
+      <div className="text-center max-w-2xl">
         <img src={icon} alt="AiderDesk" className="h-20 w-20 mx-auto mb-2 opacity-90" />
 
         <h1 className="text-xl font-semibold text-text-primary mb-2">{t('welcomeMessage.title')}</h1>
