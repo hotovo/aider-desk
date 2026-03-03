@@ -230,7 +230,11 @@ export const AgentSelector = memo(
           {activeTaskProfile ? (
             <>
               <span className="text-2xs truncate max-w-[250px] -mb-0.5">{activeTaskProfile.name}</span>
-              <span className="text-2xs font-mono text-text-muted">({enabledToolsCount ?? '...'})</span>
+              {enabledToolsCount === null ? (
+                <span className="text-2xs font-mono text-text-muted">(...)</span>
+              ) : enabledToolsCount > 0 ? (
+                <span className="text-2xs font-mono text-text-muted">({enabledToolsCount})</span>
+              ) : null}
 
               {activeTaskProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-agent-aider-tools opacity-90" />}
               {activeTaskProfile.usePowerTools && <MdFlashOn className="w-3.5 h-3.5 text-agent-power-tools opacity-70" />}
