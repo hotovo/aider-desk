@@ -12,7 +12,8 @@
  * tree-sitter based implementation.
  */
 
-import { RepoMapManager } from './repo-map-manager';
+import { getRepoMap } from '@aiderdesk/tree-sitter-utils';
+
 import { loadConfig, saveConfig } from './config';
 
 import type { Extension, ExtensionContext, AgentStartedEvent, CommandDefinition } from '@aiderdesk/extensions';
@@ -106,11 +107,8 @@ const REPO_MAP_COMMAND: CommandDefinition = {
 };
 
 class TreeSitterRepoMapExtension implements Extension {
-  private repoMapManager: RepoMapManager | null = null;
-
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Tree-Sitter Repo Map Extension loaded', 'info');
-    this.repoMapManager = RepoMapManager.getInstance();
   }
 
   getCommands(_context: ExtensionContext): CommandDefinition[] {
@@ -126,11 +124,6 @@ class TreeSitterRepoMapExtension implements Extension {
     context.log('Generating tree-sitter based repository map', 'info');
 
     try {
-      // Initialize the repo map manager if needed
-      if (!this.repoMapManager) {
-        this.repoMapManager = RepoMapManager.getInstance();
-      }
-
       // Get project directory
       const projectDir = context.getProjectDir();
       if (!projectDir) {
@@ -166,9 +159,8 @@ class TreeSitterRepoMapExtension implements Extension {
         }
       }
 
-      // Generate the repository map with maxLines for smart distribution
-      const repoMap = await this.repoMapManager.getRepositoryMap({
-        root: projectDir,
+      // Generate the repository map using the library
+      const repoMap = await getRepoMap(projectDir, {
         excludePatterns: config.exclude,
         mentionedFiles,
         mentionedIdents,

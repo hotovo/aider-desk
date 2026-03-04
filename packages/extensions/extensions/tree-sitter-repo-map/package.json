@@ -11,15 +11,7 @@
   ],
   "author": "AiderDesk",
   "license": "MIT",
-  "scripts": {
-    "postinstall": "node scripts/download-wasm.mjs",
-    "download-wasm": "node scripts/download-wasm.mjs"
-  },
   "dependencies": {
-    "graphology": "^0.26.0",
-    "graphology-metrics": "^2.4.0",
-    "glob": "^13.0.6",
-    "simple-git": "^3.32.3",
-    "web-tree-sitter": "^0.26.6"
+    "@aiderdesk/tree-sitter-utils": "^0.1.0"
   }
 }
