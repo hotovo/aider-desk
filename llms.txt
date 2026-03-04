@@ -470,6 +470,7 @@ src/
           TaskSidebar/
             TaskItem.tsx
             TaskMenuButton.tsx
+            TaskSectionHeader.tsx
             TaskSidebar.tsx
             TaskSidebarMultiSelectMenu.tsx
             TaskStatusIcon.tsx
@@ -668,6 +669,7 @@ src/
         agents.ts
         bmad-suggestions.ts
         browser-notifications.ts
+        date-utils.ts
         highlighter.tsx
         hotkeys.ts
         indexedDB.ts
@@ -2868,6 +2870,9 @@ File: src/common/locales/en.json
     "duplicateTask": "Duplicate task",
     "search": "Search tasks",
     "searchPlaceholder": "Search tasks...",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "noDate": "No date",
     "archiveTask": "Archive task",
     "unarchiveTask": "Unarchive task",
     "showArchived": "Show archived",
@@ -4629,6 +4634,9 @@ File: src/common/locales/zh.json
     "duplicateTask": "复制任务",
     "search": "搜索任务",
     "searchPlaceholder": "搜索任务...",
+    "today": "今天",
+    "yesterday": "昨天",
+    "noDate": "无日期",
     "archiveTask": "归档任务",
     "unarchiveTask": "取消归档任务",
     "showArchived": "显示已归档",
@@ -13198,6 +13206,8 @@ private async fileExists(filePath: string): Promise<boolean>
 ⋮----
 private async setupWatcherForDir(dir: string, onChange: () => Promise<void>): Promise<FSWatcher | null>
 ⋮----
+const isRelevantFile = (filePath: string): boolean =>
+⋮----
 private async startHotReloadWatcher(): Promise<void>
 ⋮----
 private async reloadGlobalExtensions(): Promise<void>
@@ -17784,7 +17794,13 @@ private resolveAgentRunPromises()
 ⋮----
 private isPromptRunning()
 ⋮----
-public async runPrompt(prompt: string, mode: Mode = 'code', addToInputHistory = true, userMessageId = uuidv4()): Promise<ResponseCompletedData[]>
+public async runPrompt(
+    prompt: string,
+    mode: Mode = 'code',
+    addToInputHistory = true,
+    userMessageId = uuidv4(),
+    sendNotification = true,
+): Promise<ResponseCompletedData[]>
 ⋮----
 // Queue the prompt for later execution
 ⋮----
@@ -17796,7 +17812,7 @@ public async savePromptOnly(prompt: string, addInputHistory = true): Promise<voi
 ⋮----
 private async runNextQueuedPrompt(): Promise<ResponseCompletedData[]>
 ⋮----
-public async runPromptInAider(mode: Mode, prompt: string, promptContext: PromptContext): Promise<ResponseCompletedData[]>
+public async runPromptInAider(mode: Mode, prompt: string, promptContext: PromptContext, sendNotification = true): Promise<ResponseCompletedData[]>
 ⋮----
 // Detect files in prompt and ask to add them to context (only for aider modes)
 ⋮----
@@ -17813,6 +17829,7 @@ public async runPromptInAgent(
     contextFiles?: ContextFile[],
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
+    sendNotification = true,
 ): Promise<ResponseCompletedData[]>
 ⋮----
 // send messages to connectors
@@ -26435,6 +26452,20 @@ e.stopPropagation();
 handleStateSubmenuToggle();
 
 ================
+File: src/renderer/src/components/project/TaskSidebar/TaskSectionHeader.tsx
+================
+import { clsx } from 'clsx';
+⋮----
+type Props = {
+  title: string;
+  className?: string;
+};
+⋮----
+export const TaskSectionHeader = (
+⋮----
+return <div className=
+
+================
 File: src/renderer/src/components/project/TaskSidebar/TaskSidebar.tsx
 ================
 import { TaskData } from '@common/types';
@@ -26452,8 +26483,10 @@ import { useDebounce } from '@reactuses/core';
 ⋮----
 import { TaskSidebarMultiSelectMenu } from './TaskSidebarMultiSelectMenu';
 import { TaskItem } from './TaskItem';
+import { TaskSectionHeader } from './TaskSectionHeader';
 ⋮----
 import { getSortedVisibleTasks } from '@/utils/task-utils';
+import { groupTasksByDate } from '@/utils/date-utils';
 import { Input } from '@/components/common/Input';
 import { IconButton } from '@/components/common/IconButton';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -33274,6 +33307,21 @@ export const requestNotificationPermission = async (): Promise<boolean> =>
 // eslint-disable-next-line no-console
 ⋮----
 export const showNotification = async (title: string, body: string): Promise<void> =>
+
+================
+File: src/renderer/src/utils/date-utils.ts
+================
+import { TaskData } from '@common/types';
+⋮----
+export const isToday = (dateString: string): boolean =>
+⋮----
+export const isYesterday = (dateString: string): boolean =>
+⋮----
+export const formatDateShort = (dateString: string): string =>
+⋮----
+export const getTaskDateGroup = (task: TaskData): string =>
+⋮----
+export const groupTasksByDate = (tasks: TaskData[]): Map<string, TaskData[]> =>
 
 ================
 File: src/renderer/src/utils/highlighter.tsx
