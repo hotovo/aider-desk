@@ -135,6 +135,15 @@
       "capabilities": ["onLoad", "onAgentStarted", "getCommands"]
     },
     {
+      "id": "context-autocompletion-words",
+      "name": "Context Autocompletion Words",
+      "description": "Automatically extracts symbols from context files and adds them to autocompletion",
+      "folder": "context-autocompletion-words",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onFilesAdded", "onFilesDropped"]
+    },
+    {
       "id": "lsp",
       "name": "LSP Integration",
       "description": "Language Server Protocol integration for code intelligence and error detection",
