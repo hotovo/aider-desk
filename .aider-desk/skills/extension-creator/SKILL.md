@@ -7,217 +7,153 @@ description: Create AiderDesk extensions by setting up extension files, defining
 
 Create AiderDesk extensions that extend functionality through events, commands, tools, agents, and modes.
 
-## Extension Types
+## When to Use
 
-1. **Single-file extensions** - Simple extensions in one `.ts` file (e.g., `theme.ts`)
-2. **Folder extensions** - Complex extensions with dependencies and multiple files (e.g., `tree-sitter-repo-map/`)
+Use this skill when:
 
-## Quick Workflow
+- Building a new AiderDesk extension
+- Creating extension commands, tools, or event handlers
+- Implementing the Extension interface
+- Setting up extension metadata and documentation
 
-1. **Determine type**: Single-file (no dependencies) or folder (has npm dependencies, resources)
-2. **Create location**: `packages/extensions/extensions/` directory
-3. **Implement Extension interface** with required methods
-4. **Add metadata export**
-5. **Update documentation files**
-6. **Verify with code-checker**
+Do not use when:
 
-## Files to Create
+- Simply activating an existing extension
+- Making general code changes unrelated to extensions
+- Running tests or builds
 
-### Single-File Extension
+## Rules
 
-```
-packages/extensions/extensions/my-extension.ts
-```
+### Rule: Determine extension type first
 
-### Folder Extension
+**When:** Starting extension creation
 
-```
-packages/extensions/extensions/my-extension/
-├── index.ts           # Main extension file (implements Extension)
-├── package.json       # npm dependencies
-├── tsconfig.json      # TypeScript config (module: ES2020+)
-├── README.md          # Documentation
-├── config.ts          # Optional: persistent config storage
-├── logger.ts          # Optional: local logger
-├── constants.ts       # Optional: extension constants
-└── resources/         # Optional: WASM, queries, assets
-```
+**Then:** Check if extension needs npm dependencies or multiple files
 
-## Extension Structure
+**If:** Extension needs dependencies or multiple files
 
-```typescript
-import type { Extension, ExtensionContext, AgentStartedEvent } from '@aiderdesk/extensions';
+**Then:** Create folder extension in `packages/extensions/extensions/my-extension/`
 
-class MyExtension implements Extension {
-  async onLoad(context: ExtensionContext): Promise<void> {
-    context.log('Extension loaded', 'info');
-  }
+**If:** Extension is simple with no dependencies
 
-  // Optional: Register commands
-  getCommands(_context: ExtensionContext): CommandDefinition[] {
-    return [MY_COMMAND];
-  }
+**Then:** Create single-file extension in `packages/extensions/extensions/my-extension.ts`
 
-  // Optional: Handle events
-  async onAgentStarted(
-    event: AgentStartedEvent,
-    context: ExtensionContext
-  ): Promise<void | Partial<AgentStartedEvent>> {
-    // Modify event or return partial
-    return { contextMessages: [...event.contextMessages] };
-  }
-}
+### Rule: Implement Extension interface
 
-export const metadata = {
-  name: 'My Extension',
-  version: '1.0.0',
-  description: 'What this extension does',
-  author: 'Author Name',
-  capabilities: ['events', 'commands'], // or: 'tools', 'agents', 'modes'
-};
+**When:** Creating extension file
 
-export default MyExtension;
-```
+**Then:** Implement required methods from Extension interface
 
-## Files to Update
+**Must:** Export `metadata` object with name, version, description, author, capabilities
 
-After creating the extension, update:
+**Must:** Export class as `default`
 
-### 1. packages/extensions/extensions.json
+**Never:** Use `@/` imports in extension files
 
-Add entry to `extensions` array:
+### Rule: Update extensions.json
 
-```json
-{
-  "id": "my-extension",
-  "name": "My Extension",
-  "description": "Description of what it does",
-  "file": "extensions/my-extension.ts",        // Single-file
-  "type": "single",
-  "capabilities": ["onLoad", "onAgentStarted"]
-}
-```
+**When:** Extension file created
 
-Or for folder:
+**Then:** Add entry to `packages/extensions/extensions.json`
 
-```json
-{
-  "id": "my-extension",
-  "name": "My Extension",
-  "description": "Description",
-  "folder": "extensions/my-extension",
-  "type": "folder",
-  "hasDependencies": true,
-  "capabilities": ["onLoad", "getCommands", "onAgentStarted"]
-}
-```
+**Must:** Include id, name, description, file or folder path, type, capabilities
 
-### 2. docs-site/docs/extensions/examples.md
+**Must:** Set `hasDependencies: true` for folder extensions
 
-Add to the examples table:
+### Rule: Update documentation
 
-```markdown
-| [my-extension](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/my-extension/) | Description | `onLoad`, `onAgentStarted` | Folder |
-```
+**When:** Extension is complete
 
-## Capabilities List
+**Then:** Add entry to `docs-site/docs/extensions/examples.md` table
 
-| Capability | Method | Description |
-|------------|--------|-------------|
-| `events` | Various `on*` methods | Handle agent/task events |
-| `commands` | `getCommands()` | Register slash commands |
-| `tools` | `getTools()` | Register AI tools |
-| `agents` | `getAgents()` | Register agent profiles |
-| `modes` | `getModes()` | Register conversation modes |
+**Must:** Include extension name, description, capabilities, and type
 
-### Event Capabilities
+### Rule: Use proper TypeScript config for folders
 
-- `onLoad` - Extension loaded
-- `onAgentStarted` - Agent execution started (modifying)
-- `onAgentFinished` - Agent execution finished
-- `onToolCalled` - Tool about to execute (blocking)
-- `onToolFinished` - Tool finished executing (modifying)
-- `onPromptSubmitted` - Prompt submitted (blocking/modifying)
-- `onTaskCreated` - Task created
+**When:** Creating folder extension
 
-## Common Patterns
+**Then:** Include `tsconfig.json` with `module: ES2020+`
 
-### Command with Config Storage
+**Must:** Include `package.json` with name, version, main, dependencies
 
-```typescript
-// config.ts
-export interface MyConfig { setting: number; }
-export async function loadConfig(): Promise<MyConfig> { ... }
-export async function saveConfig(config: MyConfig): Promise<void> { ... }
+### Rule: Store config in extension directory
 
-// index.ts - in command execute()
-const config = await loadConfig();
-config.setting = newValue;
-await saveConfig(config);
-```
+**When:** Extension needs persistent config
 
-### Event Modification
+**Then:** Store config files in extension directory
 
-```typescript
-async onAgentStarted(event, context): Promise<Partial<AgentStartedEvent>> {
-  // Prepend messages
-  const newMessage = { id: 'custom', role: 'user', content: '...' };
-  return {
-    contextMessages: [newMessage, ...event.contextMessages]
-  };
-}
-```
+**Never:** Store config outside extension directory
 
-### Prevent Default Behavior
+## Process
 
-```typescript
-return {
-  agentProfile: {
-    ...event.agentProfile,
-    includeRepoMap: false  // Prevent default repo map
-  }
-};
-```
+1. Determine extension type (single-file or folder)
+2. Create extension file or directory structure
+3. Implement Extension interface methods
+4. Export metadata and default class
+5. Update extensions.json
+6. Update docs-site/docs/extensions/examples.md
+7. Verify with code-checker
 
-## Folder Extension Requirements
+**Between steps 3 and 4:**
 
-### package.json
+- If extension needs config storage, create config.ts
+- If extension needs logging, create logger.ts
+- If extension needs constants, create constants.ts
 
-```json
-{
-  "name": "my-extension",
-  "version": "1.0.0",
-  "main": "index.ts",
-  "dependencies": {
-    // Required packages
-  }
-}
-```
+## Preconditions
 
-### tsconfig.json
+Before using this skill, verify:
 
-```json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "ES2020",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "strict": true
-  }
-}
-```
+- Extension purpose and required capabilities are clear
+- Extension type (single-file or folder) is determined
+- Extension interface and types are understood
 
-## Validation Checklist
+If any precondition fails:
 
-- [ ] Extension implements `Extension` interface
-- [ ] `metadata` export with all required fields
-- [ ] `default` export is the class
-- [ ] No `@/` imports (use local imports or npm packages)
-- [ ] Config files stored in extension directory
-- [ ] `extensions.json` updated
-- [ ] `docs-site/docs/extensions/examples.md` updated
-- [ ] Passes `code-checker` verification
+- Review [packages/extensions/extensions.d.ts]({projectDir}/packages/extensions/extensions.d.ts)
+- Check [references/event-types.md](references/event-types.md) for event types
+- Check [references/command-definition.md](references/command-definition.md) for command structure
+
+## Postconditions
+
+After completing this skill, verify:
+
+- Extension implements Extension interface correctly
+- Metadata export includes all required fields
+- Default export is the extension class
+- No `@/` imports used
+- extensions.json updated correctly
+- docs-site/docs/extensions/examples.md updated
+- Passes code-checker verification
+
+**Success metrics:**
+
+- Extension loads without errors
+- Extension appears in extensions list
+- Extension capabilities work as expected
+
+## Common Situations
+
+**Situation:** Extension needs to handle events
+
+**Pattern:**
+- When: Extension needs to modify agent behavior
+- Then: Implement event handler methods (onAgentStarted, onToolCalled, etc.)
+- Return: Partial event object to modify behavior
+
+**Situation:** Extension needs to register commands
+
+**Pattern:**
+- When: Extension provides slash commands
+- Then: Implement getCommands() method
+- Return: Array of CommandDefinition objects
+
+**Situation:** Extension needs config storage
+
+**Pattern:**
+- Check: Extension needs persistent settings
+- If yes: Create config.ts with loadConfig and saveConfig functions
+- Store: Config files in extension directory
 
 ## References
 
@@ -225,6 +161,7 @@ return {
 - [event-types.md](references/event-types.md) - All event types and payloads
 - [command-definition.md](references/command-definition.md) - Command structure
 - [examples-gallery.md](references/examples-gallery.md) - Real extension examples
+- [extension-types.md](references/extension-types.md) - Single-file vs folder extensions
 
 ## Assets
 
