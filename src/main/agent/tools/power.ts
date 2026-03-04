@@ -643,6 +643,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             cwd: absoluteCwd,
             shell: true,
             env: process.env,
+            stdio: ['ignore', 'pipe', 'pipe'], // Explicitly pipe stdout and stderr to capture output from piped commands
           });
 
           // Set timeout

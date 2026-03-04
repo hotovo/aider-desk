@@ -138,14 +138,14 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
             </div>
           ) : (
             <>
-              {isStandardOutput && !content.stderr && (
+              {isStandardOutput && content.stdout && (
                 <div className="relative">
                   <div
                     ref={stdoutRef}
                     {...eventHandlers}
                     className="whitespace-pre-wrap bg-bg-primary-light p-3 rounded text-2xs text-text-secondary max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth font-mono"
                   >
-                    {content.stdout || ''}
+                    {content.stdout}
                   </div>
                   {scrollingPaused && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10">
