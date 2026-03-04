@@ -23,6 +23,8 @@
     "build:mcp": "esbuild src/mcp-server/aider-desk-mcp-server.ts --bundle --platform=node --outdir=out/mcp-server",
     "build:extensions": "npm run build --workspace=packages/extensions",
     "publish:extensions": "npm publish --workspace=packages/extensions",
+    "build:tree-sitter-utils": "npm run build --workspace=packages/tree-sitter-utils",
+    "publish:tree-sitter-utils": "npm publish --workspace=packages/tree-sitter-utils",
     "prebuild:server": "electron-vite build && npm run build:mcp",
     "build:server": "vite build --config vite.config.server.ts && mkdir -p out/resources && cp -r resources/* out/resources",
     "postbuild:server": "npm rebuild",
