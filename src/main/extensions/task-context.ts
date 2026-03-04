@@ -230,6 +230,10 @@ export class TaskContextImpl implements TaskContext {
     return this.task.isInitialized();
   }
 
+  async updateAutocompletionWords(words?: string[]): Promise<void> {
+    await this.task.updateAutocompletionData(words);
+  }
+
   // Queued Prompts
 
   getQueuedPrompts(): QueuedPromptData[] {

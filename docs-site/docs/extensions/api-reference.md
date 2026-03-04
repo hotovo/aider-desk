@@ -129,6 +129,7 @@ interface TaskContext {
   resetContext(): Promise<void>;
   compactConversation(instructions?: string): Promise<void>;
   handoffConversation(focus?: string, execute?: boolean): Promise<void>;
+  updateAutocompletionWords(words?: string[]): Promise<void>;
 
   // Git
   addToGit(path: string): Promise<void>;

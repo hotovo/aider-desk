@@ -418,7 +418,7 @@ export class ExtensionManager {
         ignoreInitial: true,
         ignored: (filePath: string) => {
           const basename = path.basename(filePath);
-          if (basename.startsWith('.') || basename === 'node_modules') {
+          if (basename.startsWith('.')) {
             return true;
           }
           if (!path.extname(filePath)) {
