@@ -508,19 +508,13 @@ export class ContextPreparer {
     context.contextMessages.push(userMessage);
   }
 
-  private async injectQuickSpecContext(context: PreparedContext, status: BmadStatus): Promise<void> {
+  private async injectQuickSpecContext(context: PreparedContext, _status: BmadStatus): Promise<void> {
     const wipFilePath = '_bmad-output/implementation-artifacts/tech-spec-wip.md';
     const fullWipPath = path.join(this.projectDir, wipFilePath);
 
-    const quickSpecArtifact = status.detectedArtifacts['quick-spec'];
-    const quickDevCompleted = status.completedWorkflows.includes('quick-dev');
-
-    const hasReadyTechSpec = quickSpecArtifact?.status === 'ready-for-dev';
     const wipFileExists = await fileExists(fullWipPath);
 
-    const shouldStartFresh = !wipFileExists && (hasReadyTechSpec || quickDevCompleted);
-
-    if (shouldStartFresh) {
+    if (!wipFileExists) {
       const userMessage: ContextUserMessage = {
         id: uuidv4(),
         role: 'user',
