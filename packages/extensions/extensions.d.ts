@@ -1123,6 +1123,7 @@ export interface TaskContext {
 	compactConversation(instructions?: string): Promise<void>;
 	generateContextMarkdown(): Promise<string | null>;
 	isInitialized(): boolean;
+	updateAutocompletionWords(words?: string[]): Promise<void>;
 	getQueuedPrompts(): QueuedPromptData[];
 	sendQueuedPromptNow(promptId: string): Promise<void>;
 	removeQueuedPrompt(promptId: string): void;
