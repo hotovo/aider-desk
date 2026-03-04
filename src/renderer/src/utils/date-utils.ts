@@ -23,7 +23,7 @@ export const formatDateShort = (dateString: string): string => {
 export const getTaskDateGroup = (task: TaskData): string => {
   const dateStr = task.updatedAt || task.createdAt;
   if (!dateStr) {
-    return 'unknown';
+    return 'today';
   }
 
   if (isToday(dateStr)) {
