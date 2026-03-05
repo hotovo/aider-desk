@@ -2,7 +2,66 @@
 
 Extensions can be installed at two levels: global (available to all projects) or project-specific (only for the current project). Both locations support hot reload, so changes take effect immediately without restarting AiderDesk.
 
-## Installation Locations
+## Installing via CLI (Recommended)
+
+The easiest way to install extensions is using the `@aiderdesk/extensions` CLI tool. It can install extensions interactively, by ID, or from a URL.
+
+### Interactive Installation
+
+Run the CLI without arguments to see all available extensions and select which ones to install:
+
+```bash
+# Install to project extensions (default)
+npx @aiderdesk/extensions install
+
+# Install to global extensions
+npx @aiderdesk/extensions install --global
+
+# Install to custom directory
+npx @aiderdesk/extensions install --directory /path/to/extensions
+```
+
+### Install by Extension ID
+
+Install a specific extension by its ID:
+
+```bash
+# Install sound-notification extension to project
+npx @aiderdesk/extensions install sound-notification
+
+# Install to global extensions
+npx @aiderdesk/extensions install sound-notification --global
+```
+
+### Install from URL
+
+Install an extension directly from a URL:
+
+```bash
+# Install from a direct file URL
+npx @aiderdesk/extensions install https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/sound-notification.ts
+
+# Install from GitHub repository
+npx @aiderdesk/extensions install https://github.com/hotovo/aider-desk --global
+```
+
+### List Available Extensions
+
+View all available example extensions:
+
+```bash
+npx @aiderdesk/extensions list
+```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `-g, --global` | Install to global directory (`~/.aider-desk/extensions`) |
+| `-d, --directory <path>` | Custom installation directory |
+| No option | Install to project directory (`./.aider-desk/extensions`) |
+
+## Manual Installation Locations
 
 ### Global Extensions
 
@@ -78,7 +137,18 @@ vim ~/.aider-desk/extensions/my-extension.ts
 
 ## Installing from Examples
 
-To install an example from the AiderDesk repository:
+The recommended way to install example extensions is using the CLI:
+
+```bash
+# Interactive selection
+npx @aiderdesk/extensions install
+
+# Install specific extension
+npx @aiderdesk/extensions install sound-notification
+npx @aiderdesk/extensions install sandbox --global
+```
+
+Alternatively, you can manually download examples from the AiderDesk repository:
 
 ```bash
 # Single file example
@@ -97,7 +167,21 @@ npm install
 
 ## TypeScript Setup
 
-For TypeScript support in your extensions:
+For TypeScript support in your extensions, you can either install the npm package or download the type definitions.
+
+### Option 1: Install via npm (Recommended)
+
+```bash
+npm install @aiderdesk/extensions
+```
+
+Then import in your extension:
+
+```typescript
+import type { Extension, ExtensionContext } from '@aiderdesk/extensions';
+```
+
+### Option 2: Download Type Definitions
 
 ```bash
 # Download type definitions to your extensions directory

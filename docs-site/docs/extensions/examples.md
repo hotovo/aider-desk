@@ -27,7 +27,36 @@ This page provides an overview of all available extension examples in the AiderD
 
 ## Using Examples
 
-### Download a Single-File Example
+### Install via CLI (Recommended)
+
+The easiest way to install example extensions is using the CLI tool:
+
+```bash
+# Interactive selection - choose from all available extensions
+npx @aiderdesk/extensions install
+
+# Install a specific extension by ID
+npx @aiderdesk/extensions install sound-notification
+npx @aiderdesk/extensions install pirate --global
+
+# Install to global extensions (available to all projects)
+npx @aiderdesk/extensions install --global
+
+# List all available extensions
+npx @aiderdesk/extensions list
+```
+
+The CLI automatically handles:
+- Downloading single-file extensions
+- Cloning and setting up folder-based extensions
+- Installing dependencies for folder extensions
+- Both global and project-level installation
+
+### Manual Download
+
+Alternatively, you can manually download examples:
+
+#### Single-File Example
 
 ```bash
 # Download to global extensions
@@ -35,7 +64,7 @@ curl -o ~/.aider-desk/extensions/sound-notification.ts \
   https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/sound-notification.ts
 ```
 
-### Clone a Folder Example
+#### Folder-Based Example
 
 ```bash
 # Clone and copy

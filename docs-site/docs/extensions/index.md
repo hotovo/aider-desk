@@ -52,7 +52,19 @@ Extensions are **automatically reloaded** when changes are detected. There's no 
 ## Getting Started
 
 1. [Create an Extension](./creating-extensions.md) - Learn how to build your first extension
-2. [Installation Guide](./installation.md) - Install extensions globally or per-project
+2. [Installation Guide](./installation.md) - Install extensions via CLI or manually
 3. [API Reference](./api-reference.md) - Complete API documentation
 4. [Events Reference](./events.md) - All available events and their properties
 5. [Examples](./examples.md) - Browse example extensions for inspiration
+
+## Quick Install
+
+The fastest way to install extensions is using the CLI:
+
+```bash
+# Interactive installation
+npx @aiderdesk/extensions install
+
+# Install specific extension
+npx @aiderdesk/extensions install sound-notification --global
+```

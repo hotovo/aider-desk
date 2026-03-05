@@ -4,7 +4,30 @@ Extensions are TypeScript or JavaScript files that export a class implementing t
 
 ## TypeScript Support
 
-For the best development experience with autocompletion and type checking, download the type definitions:
+For the best development experience with autocompletion and type checking, you can either install the npm package or download the type definitions directly.
+
+### Option 1: Install via npm (Recommended)
+
+Install the `@aiderdesk/extensions` package to get type definitions:
+
+```bash
+npm install @aiderdesk/extensions
+```
+
+Then import types in your extension:
+
+```typescript
+import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/extensions';
+import { z } from 'zod';
+
+export default class MyExtension implements Extension {
+  // Your implementation
+}
+```
+
+### Option 2: Download Type Definitions
+
+Alternatively, download the type definitions file:
 
 ```bash
 # Download to your project
