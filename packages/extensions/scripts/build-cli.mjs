@@ -14,9 +14,16 @@ if (!existsSync(distDir)) {
   mkdirSync(distDir, { recursive: true });
 }
 
-// Build with esbuild
+// Build CLI with esbuild
 console.log('Building CLI with esbuild...');
 execSync('esbuild src/cli.ts --bundle --platform=node --outfile=dist/cli.js --format=esm --packages=external', {
+  cwd: rootDir,
+  stdio: 'inherit'
+});
+
+// Build runtime module with esbuild
+console.log('Building runtime module with esbuild...');
+execSync('esbuild src/runtime.ts --bundle --platform=node --outfile=dist/runtime.js --format=esm', {
   cwd: rootDir,
   stdio: 'inherit'
 });

@@ -74,12 +74,20 @@ const THEME_COMMAND: CommandDefinition = {
       return;
     }
 
-    await context.updateSettings({ theme: themeName });
+    await context.updateSettings({ theme: themeName as any });
     taskContext.addLogMessage('info', `Theme changed to: ${themeName}`);
   },
 };
 
-class ThemeExtension implements Extension {
+export default class ThemeExtension implements Extension {
+  static metadata = {
+    name: 'Theme Extension',
+    version: '1.0.0',
+    description: 'Adds a /theme command to switch AiderDesk themes',
+    author: 'AiderDesk',
+    capabilities: ['commands'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Theme Extension loaded', 'info');
   }
@@ -88,13 +96,3 @@ class ThemeExtension implements Extension {
     return [THEME_COMMAND];
   }
 }
-
-export const metadata = {
-  name: 'Theme Extension',
-  version: '1.0.0',
-  description: 'Adds a /theme command to switch AiderDesk themes',
-  author: 'AiderDesk',
-  capabilities: ['commands'],
-};
-
-export default ThemeExtension;

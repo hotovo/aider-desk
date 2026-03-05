@@ -53,7 +53,15 @@ Instructions:
   },
 };
 
-class GenerateTestsExtension implements Extension {
+export default class GenerateTestsExtension implements Extension {
+  static metadata = {
+    name: 'Generate Tests Extension',
+    version: '1.0.0',
+    description: 'Adds a /generate-tests command that generates unit tests for a specified file',
+    author: 'AiderDesk',
+    capabilities: ['commands'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Generate Tests Extension loaded', 'info');
   }
@@ -62,13 +70,3 @@ class GenerateTestsExtension implements Extension {
     return [GENERATE_TESTS_COMMAND];
   }
 }
-
-export const metadata = {
-  name: 'Generate Tests Extension',
-  version: '1.0.0',
-  description: 'Adds a /generate-tests command that generates unit tests for a specified file',
-  author: 'AiderDesk',
-  capabilities: ['commands'],
-};
-
-export default GenerateTestsExtension;

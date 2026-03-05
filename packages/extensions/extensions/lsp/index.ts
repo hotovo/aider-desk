@@ -43,7 +43,7 @@ const FILE_WRITE_TOOL = 'power---file_write';
 
 const DIAGNOSTIC_WAIT_TIMEOUT_MS = 3000;
 
-export const metadata = {
+const metadata = {
   name: 'LSP Integration',
   version: '1.0.0',
   description: 'Language Server Protocol integration for code intelligence and error detection',
@@ -52,6 +52,7 @@ export const metadata = {
 };
 
 export default class LspExtension implements Extension {
+  static metadata = metadata;
   private managers: Map<string, LspManager> = new Map();
 
   async onLoad(context: ExtensionContext): Promise<void> {

@@ -155,7 +155,15 @@ Current state: ${rewriteEnabled ? 'enabled' : 'disabled'}`);
   },
 };
 
-class RTKExtension implements Extension {
+export default class RTKExtension implements Extension {
+  static metadata = {
+    name: 'RTK Auto-Rewrite',
+    version: '1.0.0',
+    description: 'Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90%',
+    author: 'AiderDesk',
+    capabilities: ['events', 'commands'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('RTK Extension loaded', 'info');
 
@@ -202,13 +210,3 @@ class RTKExtension implements Extension {
     };
   }
 }
-
-export const metadata = {
-  name: 'RTK Auto-Rewrite',
-  version: '1.0.0',
-  description: 'Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90%',
-  author: 'AiderDesk',
-  capabilities: ['events', 'commands'],
-};
-
-export default RTKExtension;

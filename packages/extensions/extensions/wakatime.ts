@@ -20,7 +20,15 @@ import type {
 const WAKATIME_CLI = process.platform === 'win32' ? 'wakatime-cli.exe' : 'wakatime-cli';
 const HEARTBEAT_THROTTLE_MS = 60000; // 1 minute
 
-class WakaTimeExtension implements Extension {
+export default class WakaTimeExtension implements Extension {
+  static metadata = {
+    name: 'WakaTime',
+    version: '1.0.0',
+    description: 'Tracks coding activity by sending heartbeats to WakaTime',
+    author: 'AiderDesk',
+    capabilities: ['events'],
+  };
+
   private lastHeartbeats = new Map<string, number>();
 
   async onLoad(context: ExtensionContext): Promise<void> {
@@ -132,13 +140,3 @@ class WakaTimeExtension implements Extension {
     return basename(context.getProjectDir());
   }
 }
-
-export const metadata = {
-  name: 'WakaTime',
-  version: '1.0.0',
-  description: 'Tracks coding activity by sending heartbeats to WakaTime',
-  author: 'AiderDesk',
-  capabilities: ['events'],
-};
-
-export default WakaTimeExtension;

@@ -20,7 +20,15 @@ const SOUND_URL = 'https://www.myinstants.com/media/sounds/jobs_done.mp3';
 const CACHE_DIR = join(tmpdir(), 'aider-desk-sound-notification');
 const SOUND_FILE = join(CACHE_DIR, 'jobs_done.mp3');
 
-class SoundNotificationExtension implements Extension {
+export default class SoundNotificationExtension implements Extension {
+  static metadata = {
+    name: 'Sound Notification',
+    version: '1.0.0',
+    description: 'Plays a "Jobs Done" sound when a prompt finishes',
+    author: 'AiderDesk',
+    capabilities: ['events'],
+  };
+
   private soundDownloaded = false;
   private downloadPromise: Promise<void> | null = null;
 
@@ -148,13 +156,3 @@ class SoundNotificationExtension implements Extension {
     }
   }
 }
-
-export const metadata = {
-  name: 'Sound Notification',
-  version: '1.0.0',
-  description: 'Plays a "Jobs Done" sound when a prompt finishes',
-  author: 'AiderDesk',
-  capabilities: ['events'],
-};
-
-export default SoundNotificationExtension;

@@ -59,7 +59,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { Extension, ExtensionContext, ToolCalledEvent, ToolFinishedEvent, ProjectOpenedEvent } from '@aiderdesk/extensions';
+import type { Extension, ExtensionContext, ToolCalledEvent, ToolFinishedEvent, ProjectStartedEvent } from '@aiderdesk/extensions';
 
 const CHUNKHOUND_DB_NAME = '.chunkhound.db';
 const CHUNKHOUND_CONFIG_NAME = '.chunkhound.json';
@@ -321,7 +321,15 @@ const chunkhoundSearch = async function (
   }
 };
 
-class ChunkhoundExtension implements Extension {
+export default class ChunkhoundExtension implements Extension {
+  static metadata = {
+    name: 'ChunkHound Search Extension',
+    version: '1.5.0',
+    description: 'Overrides power---semantic_search to use ChunkHound for semantic code search with better understanding',
+    author: 'AiderDesk',
+    capabilities: ['events'],
+  };
+
   private initialized = false;
 
   async onLoad(context: ExtensionContext): Promise<void> {
@@ -354,12 +362,12 @@ class ChunkhoundExtension implements Extension {
     runningSearchProcesses.clear();
   }
 
-  async onProjectOpen(event: ProjectOpenedEvent, context: ExtensionContext): Promise<void | Partial<ProjectOpenedEvent>> {
+  async onProjectStarted(event: ProjectStartedEvent, context: ExtensionContext): Promise<void> {
     if (!this.initialized) {
       return undefined;
     }
 
-    const projectDir = event.project.baseDir;
+    const projectDir = event.baseDir;
     context.log(`Project opened: ${projectDir}`, 'info');
 
     if (!hasIndex(projectDir)) {
@@ -433,13 +441,3 @@ class ChunkhoundExtension implements Extension {
     return undefined;
   }
 }
-
-export const metadata = {
-  name: 'ChunkHound Search Extension',
-  version: '1.5.0',
-  description: 'Overrides power---semantic_search to use ChunkHound for semantic code search with better understanding',
-  author: 'AiderDesk',
-  capabilities: ['events'],
-};
-
-export default ChunkhoundExtension;

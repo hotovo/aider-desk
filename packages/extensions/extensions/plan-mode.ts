@@ -35,53 +35,51 @@ const PLAN_USER_MESSAGE = `You are in planning mode. Before making any code chan
 
 const PLAN_ASSISTANT_MESSAGE = `OK, I will follow the instructions and create a plan file for you.`;
 
-class PlanModeExtension implements Extension {
-	async onLoad(context: ExtensionContext) {
-		context.log('Plan Mode Extension loaded', 'info');
-	}
+export default class PlanModeExtension implements Extension {
+  static metadata = {
+    name: 'Plan Mode Extension',
+    version: '1.1.0',
+    description: 'Adds a Plan mode that enforces planning and analysis before making code changes',
+    author: 'AiderDesk',
+    capabilities: ['modes', 'events'],
+  };
 
-	getModes(): ModeDefinition[] {
-		return [
-			{
-				name: 'plan',
-				label: 'Plan',
-				description: 'Plan and analyze before coding',
-				icon: 'GoProjectRoadmap',
-			},
-		];
-	}
+  async onLoad(context: ExtensionContext) {
+    context.log('Plan Mode Extension loaded', 'info');
+  }
 
-	async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext): Promise<void | Partial<AgentStartedEvent>> {
-		if (event.mode !== 'plan') {
-			return undefined;
-		}
+  getModes(): ModeDefinition[] {
+    return [
+      {
+        name: 'plan',
+        label: 'Plan',
+        description: 'Plan and analyze before coding',
+        icon: 'GoProjectRoadmap',
+      },
+    ];
+  }
 
-		context.log('Plan mode active - prepending planning instructions to context messages', 'info');
+  async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext): Promise<void | Partial<AgentStartedEvent>> {
+    if (event.mode !== 'plan') {
+      return undefined;
+    }
 
-		const planUserMessage = {
-			id: 'plan-mode-instructions-user',
-			role: 'user' as const,
-			content: PLAN_USER_MESSAGE,
-		};
+    context.log('Plan mode active - prepending planning instructions to context messages', 'info');
 
-		const planAssistantMessage = {
-			id: 'plan-mode-instructions-assistant',
-			role: 'assistant' as const,
-			content: PLAN_ASSISTANT_MESSAGE,
-		};
+    const planUserMessage = {
+      id: 'plan-mode-instructions-user',
+      role: 'user' as const,
+      content: PLAN_USER_MESSAGE,
+    };
 
-		const modifiedContextMessages = [planUserMessage, planAssistantMessage, ...event.contextMessages];
+    const planAssistantMessage = {
+      id: 'plan-mode-instructions-assistant',
+      role: 'assistant' as const,
+      content: PLAN_ASSISTANT_MESSAGE,
+    };
 
-		return { contextMessages: modifiedContextMessages };
-	}
+    const modifiedContextMessages = [planUserMessage, planAssistantMessage, ...event.contextMessages];
+
+    return { contextMessages: modifiedContextMessages };
+  }
 }
-
-export const metadata = {
-	name: 'Plan Mode Extension',
-	version: '1.1.0',
-	description: 'Adds a Plan mode that enforces planning and analysis before making code changes',
-	author: 'AiderDesk',
-	capabilities: ['modes', 'events'],
-};
-
-export default PlanModeExtension;

@@ -22,7 +22,15 @@ const EXTERNAL_RULE_DIRECTORIES = ['.cursor/rules', '.roo/rules'];
 // Root-level rule files to include if they exist
 const ROOT_RULE_FILES = ['CLAUDE.md'];
 
-class ExternalRulesExtension implements Extension {
+export default class ExternalRulesExtension implements Extension {
+  static metadata = {
+    name: 'External Rules Extension',
+    version: '1.0.0',
+    description: 'Includes rule files from Cursor, Claude Code, and Roo Code configurations',
+    author: 'AiderDesk',
+    capabilities: ['events'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('External Rules Extension loaded', 'info');
   }
@@ -100,13 +108,3 @@ class ExternalRulesExtension implements Extension {
     return ruleFiles;
   }
 }
-
-export const metadata = {
-  name: 'External Rules Extension',
-  version: '1.0.0',
-  description: 'Includes rule files from Cursor, Claude Code, and Roo Code configurations',
-  author: 'AiderDesk',
-  capabilities: ['events'],
-};
-
-export default ExternalRulesExtension;

@@ -14,7 +14,15 @@ const TRIGGER_PHRASES = ['ultrathink', 'think hard', 'think deeply', 'think care
 
 const SUPPORTED_PROVIDERS = ['openai', 'openai-compatible'];
 
-class UltrathinkExtension implements Extension {
+export default class UltrathinkExtension implements Extension {
+  static metadata = {
+    name: 'Ultrathink Extension',
+    version: '1.0.0',
+    description: 'Automatically increases reasoning effort when prompts contain thinking-related trigger phrases',
+    author: 'AiderDesk',
+    capabilities: ['events'],
+  };
+
   async onLoad(context: ExtensionContext) {
     context.log('Ultrathink Extension loaded', 'info');
   }
@@ -42,19 +50,10 @@ class UltrathinkExtension implements Extension {
         ...event.providerProfile,
         provider: {
           ...event.providerProfile.provider,
-          reasoningEffort,
+          name: providerName as any,
+          reasoningEffort: reasoningEffort as any,
         },
       },
     };
   }
 }
-
-export const metadata = {
-  name: 'Ultrathink Extension',
-  version: '1.0.0',
-  description: 'Automatically increases reasoning effort when prompts contain thinking-related trigger phrases',
-  author: 'AiderDesk',
-  capabilities: ['events'],
-};
-
-export default UltrathinkExtension;

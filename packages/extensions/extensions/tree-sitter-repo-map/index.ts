@@ -106,7 +106,15 @@ const REPO_MAP_COMMAND: CommandDefinition = {
   },
 };
 
-class TreeSitterRepoMapExtension implements Extension {
+export default class TreeSitterRepoMapExtension implements Extension {
+  static metadata = {
+    name: 'Tree-Sitter Repo Map',
+    version: '1.0.0',
+    description: 'Provides enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking',
+    author: 'AiderDesk',
+    capabilities: ['events', 'commands'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Tree-Sitter Repo Map Extension loaded', 'info');
   }
@@ -208,13 +216,3 @@ class TreeSitterRepoMapExtension implements Extension {
     }
   }
 }
-
-export const metadata = {
-  name: 'Tree-Sitter Repo Map',
-  version: '1.0.0',
-  description: 'Provides enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking',
-  author: 'AiderDesk',
-  capabilities: ['events', 'commands'],
-};
-
-export default TreeSitterRepoMapExtension;

@@ -9,68 +9,66 @@ import type { Extension, ExtensionContext, ToolCalledEvent } from '@aiderdesk/ex
 
 const dangerousPatterns = [/\brm\s+(-rf?|--recursive)/i, /\bsudo\b/i, /\b(chmod|chown)\b.*777/i];
 
-class PermissionGateExtension implements Extension {
-	async onLoad(context: ExtensionContext) {
-		context.log('Permission Gate Extension loaded', 'info');
-	}
+export default class PermissionGateExtension implements Extension {
+  static metadata = {
+    name: 'Permission Gate Extension',
+    version: '1.0.0',
+    description: 'Prompts for confirmation before running potentially dangerous bash commands (rm -rf, sudo, chmod/chown 777)',
+    author: 'AiderDesk',
+    capabilities: ['events'],
+  };
 
-	async onToolCalled(event: ToolCalledEvent, context: ExtensionContext): Promise<void | Partial<ToolCalledEvent>> {
-		context.log(`onToolCalled triggered: toolName=${event.toolName}`, 'debug');
+  async onLoad(context: ExtensionContext) {
+    context.log('Permission Gate Extension loaded', 'info');
+  }
 
-		if (event.toolName !== 'power---bash') {
-			context.log(`Ignoring non-bash tool: ${event.toolName}`, 'debug');
-			return undefined;
-		}
+  async onToolCalled(event: ToolCalledEvent, context: ExtensionContext): Promise<void | Partial<ToolCalledEvent>> {
+    context.log(`onToolCalled triggered: toolName=${event.toolName}`, 'debug');
 
-		const command = (event.input as { command?: string })?.command;
-		context.log(`Bash command detected: ${command}`, 'debug');
+    if (event.toolName !== 'power---bash') {
+      context.log(`Ignoring non-bash tool: ${event.toolName}`, 'debug');
+      return undefined;
+    }
 
-		if (typeof command !== 'string') {
-			context.log('Command is not a string, skipping', 'warn');
-			return undefined;
-		}
+    const command = (event.input as { command?: string })?.command;
+    context.log(`Bash command detected: ${command}`, 'debug');
 
-		const isDangerous = dangerousPatterns.some((p) => p.test(command));
-		context.log(`Dangerous check result: ${isDangerous}`, 'debug');
+    if (typeof command !== 'string') {
+      context.log('Command is not a string, skipping', 'warn');
+      return undefined;
+    }
 
-		if (isDangerous) {
-			context.log(`Dangerous command detected: ${command}`, 'warn');
+    const isDangerous = dangerousPatterns.some((p) => p.test(command));
+    context.log(`Dangerous check result: ${isDangerous}`, 'debug');
 
-			const taskContext = context.getTaskContext();
-			if (!taskContext) {
-				context.log('Dangerous command blocked (no task context for confirmation)', 'warn');
-				return { output: 'Bash command execution denied by extension. Reason: Internal error in extension.' };
-			}
+    if (isDangerous) {
+      context.log(`Dangerous command detected: ${command}`, 'warn');
 
-			context.log('Asking user for confirmation...', 'info');
-			const answer = await taskContext.askQuestion(`⚠️ Dangerous command:\n\n  ${command}\n\nAllow?`, {
-				answers: [
-					{ text: '(Y)es', shortkey: 'y' },
-					{ text: '(N)o', shortkey: 'n' },
-				],
-				defaultAnswer: 'No',
-			});
+      const taskContext = context.getTaskContext();
+      if (!taskContext) {
+        context.log('Dangerous command blocked (no task context for confirmation)', 'warn');
+        return { output: 'Bash command execution denied by extension. Reason: Internal error in extension.' };
+      }
 
-			context.log(`User answered: ${answer}`, 'debug');
+      context.log('Asking user for confirmation...', 'info');
+      const answer = await taskContext.askQuestion(`⚠️ Dangerous command:\n\n  ${command}\n\nAllow?`, {
+        answers: [
+          { text: '(Y)es', shortkey: 'y' },
+          { text: '(N)o', shortkey: 'n' },
+        ],
+        defaultAnswer: 'No',
+      });
 
-			if (answer !== '(Y)es') {
-				context.log(`Blocked dangerous command: ${command}`, 'info');
-				return { output: 'Bash command execution denied by extension. Reason: This is dangerous command and should not be executed.'};
-			}
+      context.log(`User answered: ${answer}`, 'debug');
 
-			context.log(`Allowed dangerous command: ${command}`, 'info');
-		}
+      if (answer !== '(Y)es') {
+        context.log(`Blocked dangerous command: ${command}`, 'info');
+        return { output: 'Bash command execution denied by extension. Reason: This is dangerous command and should not be executed.'};
+      }
 
-		return undefined;
-	}
+      context.log(`Allowed dangerous command: ${command}`, 'info');
+    }
+
+    return undefined;
+  }
 }
-
-export const metadata = {
-	name: 'Permission Gate Extension',
-	version: '1.0.0',
-	description: 'Prompts for confirmation before running potentially dangerous bash commands (rm -rf, sudo, chmod/chown 777)',
-	author: 'AiderDesk',
-	capabilities: ['events'],
-};
-
-export default PermissionGateExtension;

@@ -107,7 +107,15 @@ const redactObject = function (obj: unknown, secretValues: Set<string>): unknown
   return obj;
 };
 
-class RedactSecretsExtension implements Extension {
+export default class RedactSecretsExtension implements Extension {
+  static metadata = {
+    name: 'Redact Secrets Extension',
+    version: '1.0.0',
+    description: 'Redacts secret values from .env* files in file read results',
+    author: 'AiderDesk',
+    capabilities: ['events'],
+  };
+
   async onToolFinished(event: ToolFinishedEvent, context: ExtensionContext): Promise<void | Partial<ToolFinishedEvent>> {
     if (event.toolName !== 'power---file_read') {
       return undefined;
@@ -127,13 +135,3 @@ class RedactSecretsExtension implements Extension {
     };
   }
 }
-
-export const metadata = {
-  name: 'Redact Secrets Extension',
-  version: '1.0.0',
-  description: 'Redacts secret values from .env* files in file read results',
-  author: 'AiderDesk',
-  capabilities: ['events'],
-};
-
-export default RedactSecretsExtension;

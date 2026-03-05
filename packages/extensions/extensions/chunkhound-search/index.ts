@@ -62,7 +62,7 @@ import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
-import type { Extension, ExtensionContext, ProjectOpenedEvent, ToolFinishedEvent, ToolDefinition } from '@aiderdesk/extensions';
+import type { Extension, ExtensionContext, ProjectStartedEvent, ToolFinishedEvent, ToolDefinition } from '@aiderdesk/extensions';
 
 const CHUNKHOUND_DB_NAME = '.chunkhound.db';
 const CHUNKHOUND_CONFIG_NAME = '.chunkhound.json';
@@ -330,7 +330,15 @@ const inputSchema = z.object({
   offset: z.number().optional().default(0).describe('Page offset for results (0-based)'),
 });
 
-class ChunkhoundSearchExtension implements Extension {
+export default class ChunkhoundSearchExtension implements Extension {
+  static metadata = {
+    name: 'ChunkHound Search Tool Extension',
+    version: '1.0.0',
+    description: 'Provides chunkhound-search tool using ChunkHound for semantic code search with better understanding',
+    author: 'AiderDesk',
+    capabilities: ['tools'],
+  };
+
   private initialized = false;
   private context: ExtensionContext | null = null;
 
@@ -365,12 +373,12 @@ class ChunkhoundSearchExtension implements Extension {
     runningSearchProcesses.clear();
   }
 
-  async onProjectOpen(event: ProjectOpenedEvent, context: ExtensionContext): Promise<void | Partial<ProjectOpenedEvent>> {
+  async onProjectStarted(event: ProjectStartedEvent, context: ExtensionContext): Promise<void | Partial<ProjectStartedEvent>> {
     if (!this.initialized) {
       return undefined;
     }
 
-    const projectDir = event.project.baseDir;
+    const projectDir = event.baseDir;
     context.log(`Project opened: ${projectDir}`, 'info');
 
     if (!hasIndex(projectDir)) {
@@ -441,13 +449,3 @@ class ChunkhoundSearchExtension implements Extension {
     return [searchTool];
   }
 }
-
-export const metadata = {
-  name: 'ChunkHound Search Tool Extension',
-  version: '1.0.0',
-  description: 'Provides chunkhound-search tool using ChunkHound for semantic code search with better understanding',
-  author: 'AiderDesk',
-  capabilities: ['tools'],
-};
-
-export default ChunkhoundSearchExtension;

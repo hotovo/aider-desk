@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/extensions",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Type definitions and examples for AiderDesk extensions",
   "author": "Hotovo",
   "homepage": "https://aiderdesk.hotovo.com",
@@ -23,12 +23,17 @@
     ".": {
       "types": "./extensions.d.ts",
       "default": "./extensions.d.ts"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "default": "./dist/runtime.js"
     }
   },
   "files": [
     "extensions.d.ts",
     "README.md",
     "dist/cli.js",
+    "dist/runtime.js",
     "extensions.json"
   ],
   "scripts": {

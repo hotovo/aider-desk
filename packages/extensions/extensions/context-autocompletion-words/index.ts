@@ -8,7 +8,15 @@ import { extractSymbols } from '@aiderdesk/tree-sitter-utils';
 
 import type { ContextFile, Extension, ExtensionContext, FilesAddedEvent, FilesDroppedEvent } from '@aiderdesk/extensions';
 
-class ContextAutocompletionWordsExtension implements Extension {
+export default class ContextAutocompletionWordsExtension implements Extension {
+  static metadata = {
+    name: 'Context Autocompletion Words',
+    version: '1.0.0',
+    description: 'Automatically extracts symbols from context files and adds them to autocompletion',
+    author: 'AiderDesk',
+    capabilities: ['onLoad', 'onFilesAdded', 'onFilesDropped'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Context Autocompletion Words Extension loaded', 'info');
   }
@@ -85,13 +93,3 @@ class ContextAutocompletionWordsExtension implements Extension {
     return Array.from(uniqueNames);
   }
 }
-
-export const metadata = {
-  name: 'Context Autocompletion Words',
-  version: '1.0.0',
-  description: 'Automatically extracts symbols from context files and adds them to autocompletion',
-  author: 'AiderDesk',
-  capabilities: ['onLoad', 'onFilesAdded', 'onFilesDropped'],
-};
-
-export default ContextAutocompletionWordsExtension;
