@@ -7242,6 +7242,7 @@ export interface TaskContext {
   compactConversation(instructions?: string): Promise<void>;
   generateContextMarkdown(): Promise<string | null>;
   isInitialized(): boolean;
+  updateAutocompletionWords(words?: string[]): Promise<void>;
 
   // Queued Prompts
   getQueuedPrompts(): QueuedPromptData[];
@@ -7324,6 +7325,7 @@ resetContext(): Promise<void>;
 compactConversation(instructions?: string): Promise<void>;
 generateContextMarkdown(): Promise<string | null>;
 isInitialized(): boolean;
+updateAutocompletionWords(words?: string[]): Promise<void>;
 ⋮----
 // Queued Prompts
 getQueuedPrompts(): QueuedPromptData[];
@@ -8481,6 +8483,8 @@ const resolveWithResult = () =>
 const abortListener = () =>
 ⋮----
 // Listen for abort signal
+⋮----
+stdio: ['ignore', 'pipe', 'pipe'], // Explicitly pipe stdout and stderr to capture output from piped commands
 ⋮----
 // Set timeout
 ⋮----
@@ -12460,7 +12464,7 @@ private async injectQuickDevContext(context: PreparedContext, status: BmadStatus
 ⋮----
 // Create and add user message
 ⋮----
-private async injectQuickSpecContext(context: PreparedContext, status: BmadStatus): Promise<void>
+private async injectQuickSpecContext(context: PreparedContext, _status: BmadStatus): Promise<void>
 
 ================
 File: src/main/connector/connector-manager.ts
@@ -13512,6 +13516,8 @@ async compactConversation(instructions?: string): Promise<void>
 async generateContextMarkdown(): Promise<string | null>
 ⋮----
 isInitialized(): boolean
+⋮----
+async updateAutocompletionWords(words?: string[]): Promise<void>
 ⋮----
 // Queued Prompts
 ⋮----
@@ -33964,6 +33970,7 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
   - '!.aider-desk/*'
   - '!llms.txt'
+  - '!packages/*'
 extraResources:
   - from: ./resources/connector
     to: connector
@@ -34074,6 +34081,8 @@ File: package.json
     "build:mcp": "esbuild src/mcp-server/aider-desk-mcp-server.ts --bundle --platform=node --outdir=out/mcp-server",
     "build:extensions": "npm run build --workspace=packages/extensions",
     "publish:extensions": "npm publish --workspace=packages/extensions",
+    "build:tree-sitter-utils": "npm run build --workspace=packages/tree-sitter-utils",
+    "publish:tree-sitter-utils": "npm publish --workspace=packages/tree-sitter-utils",
     "prebuild:server": "electron-vite build && npm run build:mcp",
     "build:server": "vite build --config vite.config.server.ts && mkdir -p out/resources && cp -r resources/* out/resources",
     "postbuild:server": "npm rebuild",
