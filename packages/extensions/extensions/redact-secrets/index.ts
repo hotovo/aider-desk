@@ -112,7 +112,7 @@ export default class RedactSecretsExtension implements Extension {
     name: 'Redact Secrets Extension',
     version: '1.0.0',
     description: 'Redacts secret values from .env* files in file read results',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['events'],
   };
 

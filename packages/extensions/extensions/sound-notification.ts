@@ -25,7 +25,7 @@ export default class SoundNotificationExtension implements Extension {
     name: 'Sound Notification',
     version: '1.0.0',
     description: 'Plays a "Jobs Done" sound when a prompt finishes',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['events'],
   };
 

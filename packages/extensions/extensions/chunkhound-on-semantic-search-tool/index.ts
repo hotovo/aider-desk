@@ -325,8 +325,8 @@ export default class ChunkhoundExtension implements Extension {
   static metadata = {
     name: 'ChunkHound Search Extension',
     version: '1.5.0',
-    description: 'Overrides power---semantic_search to use ChunkHound for semantic code search with better understanding',
-    author: 'AiderDesk',
+    description: 'Utilizes onToolCalled to override power---semantic_search tool with ChunkHound semantic search',
+    author: 'wladimiiir',
     capabilities: ['events'],
   };
 

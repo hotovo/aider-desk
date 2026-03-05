@@ -27,7 +27,7 @@ export default class ExternalRulesExtension implements Extension {
     name: 'External Rules Extension',
     version: '1.0.0',
     description: 'Includes rule files from Cursor, Claude Code, and Roo Code configurations',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['events'],
   };
 

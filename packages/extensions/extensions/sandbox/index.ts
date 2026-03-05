@@ -282,7 +282,7 @@ export default class SandboxExtension implements Extension {
     name: 'Sandbox Extension',
     version: '1.0.0',
     description: 'OS-level sandboxing for bash commands using @anthropic-ai/sandbox-runtime (sandbox-exec on macOS, bubblewrap on Linux)',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['events', 'tools'],
   };
 

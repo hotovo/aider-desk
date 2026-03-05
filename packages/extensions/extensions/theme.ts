@@ -84,7 +84,7 @@ export default class ThemeExtension implements Extension {
     name: 'Theme Extension',
     version: '1.0.0',
     description: 'Adds a /theme command to switch AiderDesk themes',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['commands'],
   };
 

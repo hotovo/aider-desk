@@ -13,7 +13,7 @@ export default class ContextAutocompletionWordsExtension implements Extension {
     name: 'Context Autocompletion Words',
     version: '1.0.0',
     description: 'Automatically extracts symbols from context files and adds them to autocompletion',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['onLoad', 'onFilesAdded', 'onFilesDropped'],
   };
 

@@ -19,7 +19,7 @@ export default class UltrathinkExtension implements Extension {
     name: 'Ultrathink Extension',
     version: '1.0.0',
     description: 'Automatically increases reasoning effort when prompts contain thinking-related trigger phrases',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['events'],
   };
 

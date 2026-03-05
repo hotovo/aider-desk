@@ -561,6 +561,10 @@ export interface MemoryConfig {
 	model: string;
 	maxDistance: number;
 }
+export interface ExtensionsConfig {
+	repositories: string[];
+	disabled: string[];
+}
 export interface SettingsData {
 	onboardingFinished?: boolean;
 	language: string;
@@ -617,6 +621,7 @@ export interface SettingsData {
 	memory: MemoryConfig;
 	taskSettings: TaskSettings;
 	hotkeyConfig?: HotkeyConfig;
+	extensions?: ExtensionsConfig;
 }
 export interface ProviderProfile {
 	id: string;
@@ -728,6 +733,7 @@ export interface CustomCommand extends Command {
 	autoApprove?: boolean;
 }
 export type AgentStepResult = unknown;
+export declare const AIDER_DESK_EXTENSIONS_REPO_URL = "https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/";
 export interface ResponseMessage {
 	id: string;
 	content: string;

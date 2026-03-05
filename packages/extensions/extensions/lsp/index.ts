@@ -47,7 +47,7 @@ const metadata = {
   name: 'LSP Integration',
   version: '1.0.0',
   description: 'Language Server Protocol integration for code intelligence and error detection',
-  author: 'AiderDesk',
+  author: 'wladimiiir',
   capabilities: ['tools', 'hooks'],
 };
 

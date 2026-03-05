@@ -160,7 +160,7 @@ export default class RTKExtension implements Extension {
     name: 'RTK Auto-Rewrite',
     version: '1.0.0',
     description: 'Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90%',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['events', 'commands'],
   };
 

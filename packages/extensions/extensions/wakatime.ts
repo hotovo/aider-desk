@@ -25,7 +25,7 @@ export default class WakaTimeExtension implements Extension {
     name: 'WakaTime',
     version: '1.0.0',
     description: 'Tracks coding activity by sending heartbeats to WakaTime',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['events'],
   };
 

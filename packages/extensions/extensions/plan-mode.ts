@@ -40,7 +40,7 @@ export default class PlanModeExtension implements Extension {
     name: 'Plan Mode Extension',
     version: '1.1.0',
     description: 'Adds a Plan mode that enforces planning and analysis before making code changes',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['modes', 'events'],
   };
 

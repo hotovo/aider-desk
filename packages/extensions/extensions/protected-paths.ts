@@ -18,7 +18,7 @@ export default class ProtectedPathsExtension implements Extension {
     name: 'Protected Paths Extension',
     version: '1.0.0',
     description: 'Blocks write and edit operations to protected paths (.env, .git/, node_modules/)',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['events'],
   };
 
