@@ -28,7 +28,7 @@ export default class ExternalRulesExtension implements Extension {
     version: '1.0.0',
     description: 'Includes rule files from Cursor, Claude Code, and Roo Code configurations',
     author: 'wladimiiir',
-    capabilities: ['events'],
+    capabilities: ['context'],
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {

@@ -161,7 +161,7 @@ export default class RTKExtension implements Extension {
     version: '1.0.0',
     description: 'Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90%',
     author: 'wladimiiir',
-    capabilities: ['events', 'commands'],
+    capabilities: ['optimization', 'commands'],
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {

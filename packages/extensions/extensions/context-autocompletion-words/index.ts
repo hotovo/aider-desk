@@ -14,7 +14,7 @@ export default class ContextAutocompletionWordsExtension implements Extension {
     version: '1.0.0',
     description: 'Automatically extracts symbols from context files and adds them to autocompletion',
     author: 'wladimiiir',
-    capabilities: ['onLoad', 'onFilesAdded', 'onFilesDropped'],
+    capabilities: ['context'],
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {

@@ -113,7 +113,7 @@ export default class RedactSecretsExtension implements Extension {
     version: '1.0.0',
     description: 'Redacts secret values from .env* files in file read results',
     author: 'wladimiiir',
-    capabilities: ['events'],
+    capabilities: ['security'],
   };
 
   async onToolFinished(event: ToolFinishedEvent, context: ExtensionContext): Promise<void | Partial<ToolFinishedEvent>> {

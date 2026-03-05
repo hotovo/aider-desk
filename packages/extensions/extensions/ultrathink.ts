@@ -20,7 +20,7 @@ export default class UltrathinkExtension implements Extension {
     version: '1.0.0',
     description: 'Automatically increases reasoning effort when prompts contain thinking-related trigger phrases',
     author: 'wladimiiir',
-    capabilities: ['events'],
+    capabilities: ['optimization'],
   };
 
   async onLoad(context: ExtensionContext) {

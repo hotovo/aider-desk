@@ -336,7 +336,7 @@ export default class ChunkhoundSearchExtension implements Extension {
     version: '1.0.0',
     description: 'Replaces power semantic_search tool with ChunkHound for semantic code search',
     author: 'wladimiiir',
-    capabilities: ['tools'],
+    capabilities: ['search'],
   };
 
   private initialized = false;

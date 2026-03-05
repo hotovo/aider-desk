@@ -41,7 +41,7 @@ export default class PlanModeExtension implements Extension {
     version: '1.1.0',
     description: 'Adds a Plan mode that enforces planning and analysis before making code changes',
     author: 'wladimiiir',
-    capabilities: ['modes', 'events'],
+    capabilities: ['modes'],
   };
 
   async onLoad(context: ExtensionContext) {

@@ -48,7 +48,7 @@ const metadata = {
   version: '1.0.0',
   description: 'Language Server Protocol integration for code intelligence and error detection',
   author: 'wladimiiir',
-  capabilities: ['tools', 'hooks'],
+  capabilities: ['tools', 'code-intelligence'],
 };
 
 export default class LspExtension implements Extension {

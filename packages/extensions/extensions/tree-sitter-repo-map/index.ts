@@ -112,7 +112,7 @@ export default class TreeSitterRepoMapExtension implements Extension {
     version: '1.0.0',
     description: 'Provides enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking',
     author: 'wladimiiir',
-    capabilities: ['events', 'commands'],
+    capabilities: ['context', 'commands'],
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {

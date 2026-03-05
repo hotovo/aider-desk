@@ -15,7 +15,7 @@ export default class PermissionGateExtension implements Extension {
     version: '1.0.0',
     description: 'Prompts for confirmation before running potentially dangerous bash commands (rm -rf, sudo, chmod/chown 777)',
     author: 'wladimiiir',
-    capabilities: ['events'],
+    capabilities: ['security'],
   };
 
   async onLoad(context: ExtensionContext) {

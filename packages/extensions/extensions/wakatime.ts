@@ -26,7 +26,7 @@ export default class WakaTimeExtension implements Extension {
     version: '1.0.0',
     description: 'Tracks coding activity by sending heartbeats to WakaTime',
     author: 'wladimiiir',
-    capabilities: ['events'],
+    capabilities: ['tracking'],
   };
 
   private lastHeartbeats = new Map<string, number>();
