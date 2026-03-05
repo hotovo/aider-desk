@@ -68,14 +68,6 @@ export const Settings = ({
 
   const [activePage, setActivePage] = useState<PageId>((initialPageId as PageId) || 'general');
   const [selectedProfileContext, setSelectedProfileContext] = useState<string>('global');
-  const [expandedPages, setExpandedPages] = useState<Record<string, boolean>>({
-    general: true,
-    aider: true,
-    agents: true,
-    memory: true,
-    server: true,
-    extensions: true,
-  });
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -199,22 +191,9 @@ export const Settings = ({
     }, 100);
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedPages((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
   const handleItemClick = (item: SidebarItem) => {
     setSelectedProfileContext('global');
     setActivePage(item.pageId);
-    if (item.children) {
-      setExpandedPages((prev) => ({
-        ...prev,
-        [item.id]: true,
-      }));
-    }
   };
 
   const handleChildClick = (pageId: PageId, sectionId: string) => {
@@ -304,10 +283,9 @@ export const Settings = ({
                     className="mr-2 p-0.5 rounded hover:bg-bg-tertiary-strong transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleExpand(item.id);
                     }}
                   >
-                    {expandedPages[item.id] ? <FaChevronDown className="w-3 h-3" /> : <FaChevronRight className="w-3 h-3" />}
+                    {activePage === item.id ? <FaChevronDown className="w-3 h-3" /> : <FaChevronRight className="w-3 h-3" />}
                   </div>
                 )}
                 {!item.children?.length && <span className="w-6" />} {/* Spacer for items without children */}
@@ -316,7 +294,7 @@ export const Settings = ({
               </div>
 
               {/* Children */}
-              {item.children && expandedPages[item.id] && (
+              {item.children && activePage === item.id && (
                 <div className="ml-9 space-y-0.5 mt-0.5 border-l border-border-default pl-2">
                   {item.children.map((child) => (
                     <div

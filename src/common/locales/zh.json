@@ -445,6 +445,12 @@
         "extensionsCount": "扩展",
         "installedCount": "已安装"
       },
+      "search": {
+        "placeholder": "搜索扩展..."
+      },
+      "capabilities": {
+        "all": "全部"
+      },
       "repositories": {
         "title": "仓库",
         "placeholder": "输入仓库URL...",

@@ -446,6 +446,12 @@
         "extensionsCount": "extensions",
         "installedCount": "installed"
       },
+      "search": {
+        "placeholder": "Search extensions..."
+      },
+      "capabilities": {
+        "all": "All"
+      },
       "repositories": {
         "title": "Repositories",
         "placeholder": "Enter repository URL...",

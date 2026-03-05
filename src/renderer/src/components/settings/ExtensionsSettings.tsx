@@ -1,7 +1,7 @@
 import { AvailableExtension, LoadedExtension, ProjectData, SettingsData } from '@common/types';
 import { Activity, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaDownload, FaPlus, FaTrash, FaCheck, FaSync } from 'react-icons/fa';
+import { FaDownload, FaPlus, FaTrash, FaCheck, FaSync, FaSearch } from 'react-icons/fa';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 import { clsx } from 'clsx';
 
@@ -38,6 +38,8 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
   const [uninstallingExtensions, setUninstallingExtensions] = useState<Set<string>>(new Set());
   const [newRepositoryUrl, setNewRepositoryUrl] = useState('');
   const [expandedRepositories, setExpandedRepositories] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCapabilities, setSelectedCapabilities] = useState<Set<string>>(new Set());
 
   const projectDir = selectedProjectContext && selectedProjectContext !== 'global' ? selectedProjectContext : undefined;
 
@@ -245,15 +247,38 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
               handleAddRepository();
             }
           }}
+          className="bg-bg-secondary border"
           wrapperClassName="flex-1"
         />
-        <Button onClick={handleAddRepository} variant="contained" size="sm" disabled={!newRepositoryUrl.trim()}>
+        <Button onClick={handleAddRepository} variant="text" size="sm" disabled={!newRepositoryUrl.trim()}>
           <FaPlus className="mr-1.5 w-3 h-3" />
           {t('settings.extensions.repositories.add')}
         </Button>
       </div>
     );
   };
+
+  const filteredInstalledExtensions = installedExtensions.filter((ext) => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch =
+      ext.metadata.name.toLowerCase().includes(searchLower) ||
+      ext.metadata.description?.toLowerCase().includes(searchLower) ||
+      ext.metadata.author?.toLowerCase().includes(searchLower);
+
+    if (!matchesSearch) {
+      return false;
+    }
+
+    if (selectedCapabilities.size > 0) {
+      const extCapabilities = ext.metadata.capabilities || [];
+      const hasSelectedCapability = Array.from(selectedCapabilities).some((cap) => extCapabilities.includes(cap));
+      if (!hasSelectedCapability) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   const renderInstalledTab = () => {
     if (loadingInstalled) {
@@ -264,7 +289,7 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
       );
     }
 
-    if (installedExtensions.length === 0) {
+    if (filteredInstalledExtensions.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <p className="text-sm text-text-muted mb-2">{t('settings.extensions.installed.empty')}</p>
@@ -273,15 +298,35 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
       );
     }
 
-    return <div className="space-y-2">{installedExtensions.map(renderInstalledExtensionCard)}</div>;
+    return <div className="space-y-2">{filteredInstalledExtensions.map(renderInstalledExtensionCard)}</div>;
   };
+
+  const filteredAvailableExtensions = availableExtensions.filter((ext) => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch =
+      ext.name.toLowerCase().includes(searchLower) || ext.description?.toLowerCase().includes(searchLower) || ext.author?.toLowerCase().includes(searchLower);
+
+    if (!matchesSearch) {
+      return false;
+    }
+
+    if (selectedCapabilities.size > 0) {
+      const extCapabilities = ext.capabilities || [];
+      const hasSelectedCapability = Array.from(selectedCapabilities).some((cap) => extCapabilities.includes(cap));
+      if (!hasSelectedCapability) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   const renderAvailableTab = () => {
     // Group all extensions by repository URL
     const extensionsByRepository = new Map<string, AvailableExtension[]>();
 
     // Add all available extensions to the map
-    availableExtensions.forEach((extension) => {
+    filteredAvailableExtensions.forEach((extension) => {
       const repo = extension.repositoryUrl;
       if (!extensionsByRepository.has(repo)) {
         extensionsByRepository.set(repo, []);
@@ -416,9 +461,8 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
     };
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {renderAddRepository()}
-
         {loadingAvailable ? (
           <div className="flex items-center justify-center py-12 text-2xs">
             <div className="text-sm text-text-muted">{t('settings.extensions.loading')}</div>
@@ -428,7 +472,7 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
             <p className="text-xs text-text-muted">{t('settings.extensions.available.empty')}</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {Array.from(extensionsByRepository.entries()).map(([repoUrl, extensions]) => renderRepositoryAccordion(repoUrl, extensions))}
           </div>
         )}
@@ -438,16 +482,20 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
 
   const isLoading = loadingInstalled || loadingAvailable;
 
+  const allCapabilities = Array.from(
+    new Set([...installedExtensions.flatMap((ext) => ext.metadata.capabilities || []), ...availableExtensions.flatMap((ext) => ext.capabilities || [])]),
+  ).sort();
+
   return (
     <div className="space-y-4">
       {/* Tab Navigation */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-1 p-1 bg-bg-secondary rounded-lg border border-border-default">
+        <div className="flex gap-1 p-1 bg-bg-primary rounded-lg border border-border-default">
           <button
             onClick={() => setActiveTab(Tab.Available)}
             className={clsx(
               'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
-              activeTab === Tab.Available ? 'bg-bg-fourth text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
+              activeTab === Tab.Available ? 'bg-bg-tertiary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
             )}
           >
             {t('settings.extensions.tabs.available')}
@@ -457,7 +505,7 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
             onClick={() => setActiveTab(Tab.Installed)}
             className={clsx(
               'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
-              activeTab === Tab.Installed ? 'bg-bg-fourth text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
+              activeTab === Tab.Installed ? 'bg-bg-tertiary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
             )}
           >
             {t('settings.extensions.tabs.installed')}
@@ -468,6 +516,50 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
           <FaSync className={clsx('mr-1.5 w-3 h-3', isLoading && 'animate-spin')} />
           {t('common.refresh')}
         </Button>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="space-y-2">
+        <div className="relative">
+          <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('settings.extensions.search.placeholder')}
+            className="pl-10 bg-bg-primary border w-full"
+            wrapperClassName="w-full"
+          />
+        </div>
+
+        {allCapabilities.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {allCapabilities.map((capability) => {
+              const isSelected = selectedCapabilities.has(capability);
+              return (
+                <button
+                  key={capability}
+                  onClick={() => {
+                    setSelectedCapabilities((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(capability)) {
+                        next.delete(capability);
+                      } else {
+                        next.add(capability);
+                      }
+                      return next;
+                    });
+                  }}
+                  className={clsx(
+                    'px-3 py-1 text-3xs font-medium rounded-full transition-colors border border-border-default',
+                    isSelected ? 'bg-bg-secondary-light text-text-primary' : 'bg-bg-primary text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
+                  )}
+                >
+                  {capability}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Tab Content */}

@@ -933,6 +933,7 @@ export interface LoadedExtension {
     version: string;
     description?: string;
     author?: string;
+    capabilities?: string[];
   };
   filePath: string;
   initialized: boolean;
@@ -945,6 +946,7 @@ export interface AvailableExtension {
   description?: string;
   version: string;
   author?: string;
+  capabilities?: string[];
   type: 'single' | 'folder';
   file?: string;
   folder?: string;

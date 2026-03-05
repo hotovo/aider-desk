@@ -8,6 +8,34 @@ import { ExtensionsSettings } from '../ExtensionsSettings';
 import { useApi } from '@/contexts/ApiContext';
 import { createMockApi } from '@/__tests__/mocks/api';
 
+// Test data factories with capabilities support
+const createMockAvailableExtension = (overrides: Partial<AvailableExtension> = {}): AvailableExtension => ({
+  id: 'test-extension',
+  name: 'Test Extension',
+  version: '1.0.0',
+  description: 'A test extension',
+  author: 'Test Author',
+  type: 'single',
+  repositoryUrl: AIDER_DESK_EXTENSIONS_REPO_URL,
+  hasDependencies: false,
+  capabilities: ['tools'],
+  ...overrides,
+});
+
+const createMockLoadedExtension = (overrides: Partial<LoadedExtension> = {}): LoadedExtension => ({
+  id: 'test-extension',
+  metadata: {
+    name: 'Test Extension',
+    version: '1.0.0',
+    description: 'A test extension',
+    author: 'Test Author',
+    capabilities: ['tools'],
+  },
+  filePath: '/mock/path/to/extension.js',
+  initialized: true,
+  ...overrides,
+});
+
 // Type definitions for mocked components
 interface MotionDivProps {
   children?: React.ReactNode;
@@ -118,7 +146,14 @@ vi.mock('@/components/common/IconButton', () => ({
 
 vi.mock('@/components/common/Input', () => ({
   Input: ({ value, onChange, placeholder, onKeyDown, wrapperClassName }: InputProps) => (
-    <input value={value} onChange={onChange} placeholder={placeholder} onKeyDown={onKeyDown} className={wrapperClassName} data-testid="repository-url-input" />
+    <input
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      onKeyDown={onKeyDown}
+      className={wrapperClassName}
+      data-testid={placeholder?.includes('search') ? 'search-input' : 'repository-url-input'}
+    />
   ),
 }));
 
@@ -130,32 +165,6 @@ vi.mock('@/components/common/Checkbox', () => ({
     </label>
   ),
 }));
-
-// Test data factories
-const createMockAvailableExtension = (overrides: Partial<AvailableExtension> = {}): AvailableExtension => ({
-  id: 'test-extension',
-  name: 'Test Extension',
-  version: '1.0.0',
-  description: 'A test extension',
-  author: 'Test Author',
-  type: 'single',
-  repositoryUrl: AIDER_DESK_EXTENSIONS_REPO_URL,
-  hasDependencies: false,
-  ...overrides,
-});
-
-const createMockLoadedExtension = (overrides: Partial<LoadedExtension> = {}): LoadedExtension => ({
-  id: 'test-extension',
-  metadata: {
-    name: 'Test Extension',
-    version: '1.0.0',
-    description: 'A test extension',
-    author: 'Test Author',
-  },
-  filePath: '/mock/path/to/extension.js',
-  initialized: true,
-  ...overrides,
-});
 
 describe('ExtensionsSettings', () => {
   let mockApi: ReturnType<typeof createMockApi>;
@@ -958,6 +967,645 @@ describe('ExtensionsSettings', () => {
 
       await waitFor(() => {
         expect(mockApi.getInstalledExtensions).toHaveBeenCalledWith(undefined);
+      });
+    });
+  });
+
+  describe('Search Functionality', () => {
+    it('should render search input field', async () => {
+      mockApi.getInstalledExtensions.mockResolvedValue([]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('settings.extensions.search.placeholder')).toBeInTheDocument();
+      });
+    });
+
+    it('should filter installed extensions by name', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Alpha Extension', version: '1.0.0' },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'Beta Extension', version: '1.0.0' },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Extension')).toBeInTheDocument();
+        expect(screen.getByText('Beta Extension')).toBeInTheDocument();
+      });
+
+      // Search for "Alpha"
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'Alpha' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Extension')).toBeInTheDocument();
+        expect(screen.queryByText('Beta Extension')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should filter installed extensions by description', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Extension One', version: '1.0.0', description: 'A tool for testing' },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'Extension Two', version: '1.0.0', description: 'A utility for deployment' },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Extension One')).toBeInTheDocument();
+        expect(screen.getByText('Extension Two')).toBeInTheDocument();
+      });
+
+      // Search for "testing"
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'testing' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Extension One')).toBeInTheDocument();
+        expect(screen.queryByText('Extension Two')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should filter installed extensions by author', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Extension One', version: '1.0.0', author: 'John Doe' },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'Extension Two', version: '1.0.0', author: 'Jane Smith' },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Extension One')).toBeInTheDocument();
+        expect(screen.getByText('Extension Two')).toBeInTheDocument();
+      });
+
+      // Search for "John"
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'John' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Extension One')).toBeInTheDocument();
+        expect(screen.queryByText('Extension Two')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should filter available extensions by name', async () => {
+      const extension1 = createMockAvailableExtension({ id: 'ext-1', name: 'Alpha Extension' });
+      const extension2 = createMockAvailableExtension({ id: 'ext-2', name: 'Beta Extension' });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([]);
+      mockApi.getAvailableExtensions.mockResolvedValue([extension1, extension2]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      // Switch to Available tab
+      const availableTab = screen.getByText('settings.extensions.tabs.available');
+      fireEvent.click(availableTab);
+
+      // Expand the repository accordion
+      await waitFor(() => {
+        expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
+      });
+
+      const accordionToggle = screen.getByTestId('accordion-toggle');
+      fireEvent.click(accordionToggle);
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Extension')).toBeInTheDocument();
+        expect(screen.getByText('Beta Extension')).toBeInTheDocument();
+      });
+
+      // Search for "Alpha"
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'Alpha' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Extension')).toBeInTheDocument();
+        expect(screen.queryByText('Beta Extension')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show empty state when search has no results', async () => {
+      const extension = createMockLoadedExtension();
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Extension')).toBeInTheDocument();
+      });
+
+      // Search for non-existent extension
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'NonExistent' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('settings.extensions.installed.empty')).toBeInTheDocument();
+      });
+    });
+
+    it('should be case-insensitive', async () => {
+      const extension = createMockLoadedExtension({
+        metadata: { name: 'Test Extension', version: '1.0.0' },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Extension')).toBeInTheDocument();
+      });
+
+      // Search with different cases
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'TEST' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Extension')).toBeInTheDocument();
+      });
+
+      fireEvent.change(searchInput, { target: { value: 'extension' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Extension')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Capability Chips', () => {
+    it('should display capability chips when extensions have capabilities', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools', 'commands'] },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'commands' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'tools' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'ui-elements' })).toBeInTheDocument();
+      });
+    });
+
+    it('should not display capability chips when no extensions have capabilities', async () => {
+      const extension = createMockLoadedExtension({
+        metadata: { name: 'Basic Extension', version: '1.0.0', capabilities: undefined },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Basic Extension')).toBeInTheDocument();
+      });
+
+      // No capability buttons should be present
+      const capabilityButtons = screen.queryAllByRole('button').filter((btn) => ['tools', 'commands', 'ui-elements'].includes(btn.textContent || ''));
+      expect(capabilityButtons.length).toBe(0);
+    });
+
+    it('should filter installed extensions by selected capability', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.getByText('UI Extension')).toBeInTheDocument();
+      });
+
+      // Click on "tools" capability chip
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should filter available extensions by selected capability', async () => {
+      const extension1 = createMockAvailableExtension({ id: 'ext-1', name: 'Tool Extension', capabilities: ['tools'] });
+      const extension2 = createMockAvailableExtension({ id: 'ext-2', name: 'UI Extension', capabilities: ['ui-elements'] });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([]);
+      mockApi.getAvailableExtensions.mockResolvedValue([extension1, extension2]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      // Switch to Available tab
+      const availableTab = screen.getByText('settings.extensions.tabs.available');
+      fireEvent.click(availableTab);
+
+      await waitFor(() => {
+        expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
+      });
+
+      // Expand the repository accordion
+      const accordionToggle = screen.getByTestId('accordion-toggle');
+      fireEvent.click(accordionToggle);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.getByText('UI Extension')).toBeInTheDocument();
+      });
+
+      // Click on "tools" capability chip
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should allow selecting multiple capabilities (OR filter)', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
+      });
+      const extension3 = createMockLoadedExtension({
+        id: 'ext-3',
+        metadata: { name: 'Command Extension', version: '1.0.0', capabilities: ['commands'] },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2, extension3]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.getByText('UI Extension')).toBeInTheDocument();
+        expect(screen.getByText('Command Extension')).toBeInTheDocument();
+      });
+
+      // Click on "tools" capability chip
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
+        expect(screen.queryByText('Command Extension')).not.toBeInTheDocument();
+      });
+
+      // Click on "ui-elements" capability chip (multi-select)
+      const uiChip = screen.getByRole('button', { name: 'ui-elements' });
+      fireEvent.click(uiChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.getByText('UI Extension')).toBeInTheDocument();
+        expect(screen.queryByText('Command Extension')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should deselect capability when clicked again', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.getByText('UI Extension')).toBeInTheDocument();
+      });
+
+      // Select capability
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
+      });
+
+      // Deselect capability
+      fireEvent.click(toolsChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.getByText('UI Extension')).toBeInTheDocument();
+      });
+    });
+
+    it('should show extensions with at least one selected capability', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Multi Extension', version: '1.0.0', capabilities: ['tools', 'commands'] },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Multi Extension')).toBeInTheDocument();
+        expect(screen.getByText('UI Extension')).toBeInTheDocument();
+      });
+
+      // Click on "tools" capability chip
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      await waitFor(() => {
+        // Multi Extension should still be visible because it has "tools" capability
+        expect(screen.getByText('Multi Extension')).toBeInTheDocument();
+        // UI Extension should be hidden because it doesn't have "tools"
+        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should handle extensions without capabilities when capability filter is active', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'No Cap Extension', version: '1.0.0', capabilities: undefined },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.getByText('No Cap Extension')).toBeInTheDocument();
+      });
+
+      // Click on "tools" capability chip
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+        expect(screen.queryByText('No Cap Extension')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show empty state when no extensions match capability filter', async () => {
+      const extension = createMockLoadedExtension({
+        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
+      });
+      // Add an available extension with 'ui-elements' capability so the chip appears
+      const availableExtension = createMockAvailableExtension({
+        id: 'ui-ext',
+        name: 'UI Extension',
+        capabilities: ['ui-elements'],
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([availableExtension]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+      });
+
+      // Click on "ui-elements" capability chip (not present in any installed extension)
+      const uiChip = screen.getByRole('button', { name: 'ui-elements' });
+      fireEvent.click(uiChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('settings.extensions.installed.empty')).toBeInTheDocument();
+      });
+    });
+
+    it('should sort capabilities alphabetically', async () => {
+      const extension = createMockLoadedExtension({
+        metadata: {
+          name: 'Multi Extension',
+          version: '1.0.0',
+          capabilities: ['zebra', 'alpha', 'middle'],
+        },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        const buttons = screen.getAllByRole('button').filter((btn) => ['zebra', 'alpha', 'middle'].includes(btn.textContent || ''));
+        const buttonTexts = buttons.map((btn) => btn.textContent);
+        expect(buttonTexts).toEqual(['alpha', 'middle', 'zebra']);
+      });
+    });
+  });
+
+  describe('Combined Search and Capability Filtering', () => {
+    it('should filter by both search query and selected capabilities', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Alpha Tools', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'Beta Tools', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const extension3 = createMockLoadedExtension({
+        id: 'ext-3',
+        metadata: { name: 'Alpha UI', version: '1.0.0', capabilities: ['ui-elements'] },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2, extension3]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Tools')).toBeInTheDocument();
+        expect(screen.getByText('Beta Tools')).toBeInTheDocument();
+        expect(screen.getByText('Alpha UI')).toBeInTheDocument();
+      });
+
+      // Filter by capability "tools"
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Tools')).toBeInTheDocument();
+        expect(screen.getByText('Beta Tools')).toBeInTheDocument();
+        expect(screen.queryByText('Alpha UI')).not.toBeInTheDocument();
+      });
+
+      // Additionally filter by search "Alpha"
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'Alpha' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Tools')).toBeInTheDocument();
+        expect(screen.queryByText('Beta Tools')).not.toBeInTheDocument();
+        expect(screen.queryByText('Alpha UI')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show empty state when combined filters match nothing', async () => {
+      const extension = createMockLoadedExtension({
+        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
+      });
+
+      // Filter by capability "tools"
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      // Search for non-matching text
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'NonExistent' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('settings.extensions.installed.empty')).toBeInTheDocument();
+      });
+    });
+
+    it('should preserve capability filter when search query changes', async () => {
+      const extension1 = createMockLoadedExtension({
+        id: 'ext-1',
+        metadata: { name: 'Alpha Tools', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const extension2 = createMockLoadedExtension({
+        id: 'ext-2',
+        metadata: { name: 'Beta Tools', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const extension3 = createMockLoadedExtension({
+        id: 'ext-3',
+        metadata: { name: 'Alpha UI', version: '1.0.0', capabilities: ['ui-elements'] },
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2, extension3]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Tools')).toBeInTheDocument();
+      });
+
+      // Filter by capability "tools"
+      const toolsChip = screen.getByRole('button', { name: 'tools' });
+      fireEvent.click(toolsChip);
+
+      // Search for "Alpha"
+      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
+      fireEvent.change(searchInput, { target: { value: 'Alpha' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Alpha Tools')).toBeInTheDocument();
+        expect(screen.queryByText('Beta Tools')).not.toBeInTheDocument();
+      });
+
+      // Clear search
+      fireEvent.change(searchInput, { target: { value: '' } });
+
+      await waitFor(() => {
+        // Both tool extensions should be visible again
+        expect(screen.getByText('Alpha Tools')).toBeInTheDocument();
+        expect(screen.getByText('Beta Tools')).toBeInTheDocument();
+        // UI extension should still be hidden by capability filter
+        expect(screen.queryByText('Alpha UI')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should collect capabilities from both installed and available extensions', async () => {
+      const installedExtension = createMockLoadedExtension({
+        metadata: { name: 'Installed Tool', version: '1.0.0', capabilities: ['tools'] },
+      });
+      const availableExtension = createMockAvailableExtension({
+        id: 'available-ui',
+        name: 'Available UI',
+        capabilities: ['ui-elements'],
+      });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([installedExtension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([availableExtension]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        // Both capabilities should be visible
+        expect(screen.getByRole('button', { name: 'tools' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'ui-elements' })).toBeInTheDocument();
       });
     });
   });

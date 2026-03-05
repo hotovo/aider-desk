@@ -203,6 +203,7 @@ export class ExtensionFetcher {
         version: metadata.version,
         description: metadata.description,
         author: metadata.author,
+        capabilities: metadata.capabilities,
       };
     } catch (error) {
       logger.error(`[ExtensionFetcher] Failed to extract metadata from ${filePath}:`, error);
