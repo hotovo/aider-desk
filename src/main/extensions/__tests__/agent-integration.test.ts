@@ -55,7 +55,13 @@ const createMockMetadata = (overrides: Partial<ExtensionMetadata> = {}): Extensi
 });
 
 const createMockDeps = () => ({
-  store: {} as any,
+  store: {
+    getSettings: vi.fn().mockReturnValue({
+      extensions: {
+        disabled: [],
+      },
+    }),
+  } as any,
   modelManager: {
     getAllModels: vi.fn().mockResolvedValue([]),
     getProviderModels: vi.fn().mockResolvedValue({ models: [] }),
@@ -505,7 +511,11 @@ describe('Extension Tool Integration with Agent', () => {
       const registry = new ExtensionRegistry();
       registry.register(extension, metadata, '/test/path.ts');
 
-      const manager = new ExtensionManager({} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
+      const mockDeps = createMockDeps();
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, {
+        ...mockDeps.eventManager,
+        getProjects: vi.fn().mockReturnValue([]),
+      } as any);
       (manager as any).registry = registry;
 
       const commands = manager.getCommands(createMockProject());
@@ -535,7 +545,11 @@ describe('Extension Tool Integration with Agent', () => {
       const registry = new ExtensionRegistry();
       registry.register(extension, metadata, '/test/path.ts');
 
-      const manager = new ExtensionManager({} as any, {} as any, { getProjects: vi.fn().mockReturnValue([]) } as any);
+      const mockDeps = createMockDeps();
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, {
+        ...mockDeps.eventManager,
+        getProjects: vi.fn().mockReturnValue([]),
+      } as any);
       (manager as any).registry = registry;
 
       manager.getCommands(createMockProject());

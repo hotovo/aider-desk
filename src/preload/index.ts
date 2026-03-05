@@ -103,6 +103,13 @@ const api: ApplicationAPI = {
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),
   reloadMcpServer: (serverName: string, config: McpServerConfig) => ipcRenderer.invoke('reload-mcp-server', serverName, config),
 
+  // Extension operations
+  getInstalledExtensions: (projectDir?: string) => ipcRenderer.invoke('get-installed-extensions', projectDir),
+  getAvailableExtensions: (repositories: string[], forceRefresh?: boolean) => ipcRenderer.invoke('get-available-extensions', repositories, forceRefresh),
+  installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) =>
+    ipcRenderer.invoke('install-extension', extensionId, repositoryUrl, projectDir),
+  uninstallExtension: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('uninstall-extension', extensionId, projectDir),
+
   createNewTask: (baseDir, params?: CreateTaskParams) => ipcRenderer.invoke('create-new-task', baseDir, params),
   updateTask: (baseDir, id, updates) => ipcRenderer.invoke('update-task', baseDir, id, updates),
   deleteTask: (baseDir, id) => ipcRenderer.invoke('delete-task', baseDir, id),

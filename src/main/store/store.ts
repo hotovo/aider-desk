@@ -12,6 +12,7 @@ import {
   SuggestionMode,
   WindowState,
 } from '@common/types';
+import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 import { normalizeBaseDir } from '@common/utils';
 
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
@@ -35,6 +36,7 @@ import { migrateSettingsV14toV15 } from '@/store/migrations/v14-to-v15';
 import { migrateSettingsV15toV16 } from '@/store/migrations/v15-to-v16';
 import { migrateSettingsV16toV17 } from '@/store/migrations/v16-to-v17';
 import { migrateSettingsV17toV18 } from '@/store/migrations/v17-to-v18';
+import { migrateSettingsV18toV19 } from '@/store/migrations/v18-to-v19';
 
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',
@@ -94,6 +96,10 @@ export const DEFAULT_SETTINGS: SettingsData = {
     contextCompactingThreshold: 0,
     contextCompactionType: ContextCompactionType.Compact,
   },
+  extensions: {
+    repositories: [AIDER_DESK_EXTENSIONS_REPO_URL],
+    disabled: [],
+  },
 };
 
 const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean => {
@@ -111,7 +117,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 18;
+const CURRENT_SETTINGS_VERSION = 19;
 
 export class Store {
   // @ts-expect-error expected to be initialized
@@ -279,6 +285,11 @@ export class Store {
       if (settingsVersion === 17) {
         settings = migrateSettingsV17toV18(settings);
         settingsVersion = 18;
+      }
+
+      if (settingsVersion === 18) {
+        settings = migrateSettingsV18toV19(settings);
+        settingsVersion = 19;
       }
 
       this.store.set('settings', settings as SettingsData);

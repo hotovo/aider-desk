@@ -54,6 +54,8 @@ import {
   QueuedPromptsUpdatedData,
   WorkflowExecutionOptions,
   WorkflowExecutionResult,
+  LoadedExtension,
+  AvailableExtension,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -1107,5 +1109,31 @@ export class BrowserApi implements ApplicationAPI {
 
   addBmadStatusChangedListener(baseDir: string, callback: (status: BmadStatus) => void): () => void {
     return this.addListener('bmad-status-changed', callback, baseDir);
+  }
+
+  getInstalledExtensions(projectDir?: string): Promise<LoadedExtension[]> {
+    return this.get('/extensions', { projectDir });
+  }
+
+  getAvailableExtensions(repositories: string[], forceRefresh?: boolean): Promise<AvailableExtension[]> {
+    return this.get('/extensions/available', {
+      repositories: repositories.join(','),
+      forceRefresh,
+    });
+  }
+
+  installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean> {
+    return this.post('/extensions/install', {
+      extensionId,
+      repositoryUrl,
+      projectDir,
+    });
+  }
+
+  uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean> {
+    return this.post('/extensions/uninstall', {
+      extensionId,
+      projectDir,
+    });
   }
 }

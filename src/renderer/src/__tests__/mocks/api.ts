@@ -24,6 +24,8 @@ import {
   MemoryEmbeddingProgress,
   BmadStatus,
   ModeDefinition,
+  LoadedExtension,
+  AvailableExtension,
 } from '@common/types';
 
 /**
@@ -234,6 +236,12 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     updateAgentProfile: vi.fn((): Promise<AgentProfile[]> => Promise.resolve([])),
     deleteAgentProfile: vi.fn((): Promise<AgentProfile[]> => Promise.resolve([])),
     updateAgentProfilesOrder: vi.fn((): Promise<void> => Promise.resolve()),
+
+    // Extension operations
+    getInstalledExtensions: vi.fn((): Promise<LoadedExtension[]> => Promise.resolve([])),
+    getAvailableExtensions: vi.fn((): Promise<AvailableExtension[]> => Promise.resolve([])),
+    installExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),
+    uninstallExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),
 
     // Memory operations
     getMemoryEmbeddingProgress: vi.fn((): Promise<MemoryEmbeddingProgress> => Promise.resolve({} as MemoryEmbeddingProgress)),

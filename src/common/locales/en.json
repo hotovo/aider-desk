@@ -30,6 +30,7 @@
     "info": "Info",
     "yes": "Yes",
     "no": "No",
+    "refresh": "Refresh",
     "retry": "Retry",
     "open": "Open",
     "openProject": "Open Project",
@@ -426,8 +427,54 @@
       "memory": "Memory",
       "voice": "Voice",
       "hotkeys": "Hotkeys",
+      "extensions": "Extensions",
       "server": "Server",
       "about": "About"
+    },
+    "extensions": {
+      "loading": "Loading extensions...",
+      "tabs": {
+        "installed": "Installed",
+        "available": "Available"
+      },
+      "installed": {
+        "empty": "No extensions installed",
+        "emptyHint": "Browse the Available tab to discover and install extensions"
+      },
+      "available": {
+        "empty": "All available extensions are already installed",
+        "extensionsCount": "extensions",
+        "installedCount": "installed"
+      },
+      "repositories": {
+        "title": "Repositories",
+        "placeholder": "Enter repository URL...",
+        "add": "Add",
+        "remove": "Remove repository",
+        "default": "Default repository"
+      },
+      "by": "by",
+      "enabled": "Enabled",
+      "active": "Active",
+      "projectSpecific": "Project",
+      "hasDependencies": "Has dependencies",
+      "install": "Install",
+      "installing": "Installing...",
+      "uninstall": "Uninstall",
+      "success": {
+        "install": "Successfully installed {{name}}",
+        "uninstall": "Successfully uninstalled {{name}}",
+        "addRepository": "Repository added successfully",
+        "removeRepository": "Repository removed successfully"
+      },
+      "errors": {
+        "loadInstalled": "Failed to load installed extensions",
+        "loadAvailable": "Failed to load available extensions",
+        "install": "Failed to install extension",
+        "uninstall": "Failed to uninstall extension",
+        "repositoryExists": "This repository is already added",
+        "cannotRemoveDefault": "Cannot remove the default repository"
+      }
     },
     "hotkeys": {
       "projectHotkeys": "Project",

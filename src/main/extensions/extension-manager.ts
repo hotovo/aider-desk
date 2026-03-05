@@ -1,18 +1,16 @@
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { ToolApprovalState } from '@common/types';
+import { ToolApprovalState, AvailableExtension } from '@common/types';
 
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
-
-export type { LoadedExtension } from './extension-registry';
-
-export type ExtensionsChangeListener = (extensions: LoadedExtension[]) => void;
+import { ExtensionFetcher } from './extension-fetcher';
 
 import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
@@ -58,10 +56,15 @@ import type {
 } from '@common/extensions';
 import type { ToolCallOptions, ToolSet } from 'ai';
 
+import { execWithShellPath } from '@/utils/shell';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { Project } from '@/project';
 import { Task } from '@/task';
+
+export type { LoadedExtension } from './extension-registry';
+
+export type ExtensionsChangeListener = (extensions: LoadedExtension[]) => void;
 
 export interface RegisteredTool {
   extensionName: string;
@@ -122,6 +125,7 @@ export type ExtensionEventMap = {
 
 export class ExtensionManager {
   private loader: ExtensionLoader;
+  private fetcher: ExtensionFetcher;
   private globalWatcher: FSWatcher | null = null;
   private projectWatchers: Map<string, FSWatcher> = new Map();
   private initialized = false;
@@ -134,6 +138,7 @@ export class ExtensionManager {
     private readonly registry: ExtensionRegistry = new ExtensionRegistry(),
   ) {
     this.loader = new ExtensionLoader();
+    this.fetcher = new ExtensionFetcher();
   }
 
   private debouncedNotifyListeners = debounce(() => {
@@ -142,6 +147,18 @@ export class ExtensionManager {
       listener(extensions);
     }
   }, 100);
+
+  /**
+   * Filter extensions based on disabled list from settings
+   * @param extensions - All loaded extensions
+   * @returns Filtered extensions excluding disabled ones
+   */
+  private filterEnabledExtensions(extensions: LoadedExtension[]): LoadedExtension[] {
+    const settings = this.store.getSettings();
+    const disabledExtensions = settings.extensions?.disabled || [];
+
+    return extensions.filter((ext) => !disabledExtensions.includes(ext.metadata.name));
+  }
 
   addListener(listener: ExtensionsChangeListener): void {
     this.listeners.push(listener);
@@ -262,8 +279,8 @@ export class ExtensionManager {
     this.debouncedNotifyListeners();
   }
 
-  getExtensions(): LoadedExtension[] {
-    return this.registry.getExtensions();
+  getExtensions(projectDir?: string): LoadedExtension[] {
+    return this.registry.getExtensions(projectDir);
   }
 
   getExtension(name: string): LoadedExtension | undefined {
@@ -557,7 +574,8 @@ export class ExtensionManager {
 
   getTools(task: Task, mode: string, profile: AgentProfile): RegisteredTool[] {
     const collectedTools: RegisteredTool[] = [];
-    const extensions = this.registry.getExtensions(task.getProjectDir());
+    const allExtensions = this.registry.getExtensions(task.getProjectDir());
+    const extensions = this.filterEnabledExtensions(allExtensions);
 
     for (const loaded of extensions) {
       const { instance, metadata } = loaded;
@@ -679,7 +697,8 @@ export class ExtensionManager {
 
   getCommands(project: Project): RegisteredCommand[] {
     const collectedCommands: RegisteredCommand[] = [];
-    const extensions = this.registry.getExtensions(project.baseDir);
+    const allExtensions = this.registry.getExtensions(project.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
 
     for (const loaded of extensions) {
       const { instance, metadata } = loaded;
@@ -717,7 +736,8 @@ export class ExtensionManager {
 
   getAgents(projectDir?: string): RegisteredAgent[] {
     const collectedAgents: RegisteredAgent[] = [];
-    const extensions = this.registry.getExtensions(projectDir);
+    const allExtensions = this.registry.getExtensions(projectDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
 
     for (const loaded of extensions) {
       const { instance, metadata } = loaded;
@@ -762,7 +782,8 @@ export class ExtensionManager {
 
   getModes(project: Project): RegisteredMode[] {
     const collectedModes: RegisteredMode[] = [];
-    const extensions = this.registry.getExtensions(project.baseDir);
+    const allExtensions = this.registry.getExtensions(project.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
 
     for (const loaded of extensions) {
       const { instance, metadata } = loaded;
@@ -898,6 +919,208 @@ export class ExtensionManager {
   }
 
   /**
+   * Fetch available extensions from a repository URL
+   * @param repositories - Array of repository URLs
+   * @param forceRefresh - Force refresh cache and refetch
+   * @returns Array of available extensions with metadata
+   */
+  async getAvailableExtensions(repositories: string[], forceRefresh = false): Promise<AvailableExtension[]> {
+    return this.fetcher.getAvailableExtensions(repositories, forceRefresh);
+  }
+
+  /**
+   * Install an extension from a repository
+   * @param extensionId - Extension identifier
+   * @param repositoryUrl - Repository URL where the extension is located
+   * @param projectDir - Optional project directory for project-level install
+   * @returns true if installation succeeded
+   */
+  async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean> {
+    try {
+      logger.info(`[Extensions] Installing extension '${extensionId}' from ${repositoryUrl}`);
+
+      const targetDir = projectDir ? path.join(projectDir, AIDER_DESK_EXTENSIONS_DIR) : AIDER_DESK_GLOBAL_EXTENSIONS_DIR;
+
+      await fs.mkdir(targetDir, { recursive: true });
+
+      const availableExtensions = await this.getAvailableExtensions([repositoryUrl]);
+      const extension = availableExtensions.find((ext) => ext.id === extensionId);
+
+      if (!extension) {
+        throw new Error(`Extension '${extensionId}' not found in repository`);
+      }
+
+      const githubRawBase = this.fetcher.getRawUrl(repositoryUrl);
+      if (!githubRawBase) {
+        throw new Error('Invalid GitHub repository URL');
+      }
+
+      if (extension.type === 'single' && extension.file) {
+        const url = `${githubRawBase}/${extension.file}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`Failed to download: ${response.statusText}`);
+        }
+
+        const code = await response.text();
+        const targetPath = path.join(targetDir, extension.file);
+        await fs.writeFile(targetPath, code, 'utf-8');
+
+        logger.info(`[Extensions] Installed single-file extension: ${extension.file}`);
+      } else if (extension.type === 'folder' && extension.folder) {
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ext-install-'));
+
+        try {
+          const cloneUrl = this.getCloneUrl(repositoryUrl);
+          if (!cloneUrl) {
+            throw new Error('Invalid repository URL for cloning');
+          }
+
+          logger.debug(`[Extensions] Cloning repository to ${tempDir}`);
+          await execWithShellPath(`git clone --depth 1 "${cloneUrl}" "${tempDir}"`);
+
+          const extensionsPath = this.getExtensionsPath(repositoryUrl, tempDir);
+          const sourcePath = path.join(extensionsPath, extension.folder);
+          const targetPath = path.join(targetDir, extension.folder);
+
+          if (!(await this.fileExists(sourcePath))) {
+            throw new Error(`Extension folder not found in repository: ${extension.folder}`);
+          }
+
+          await fs.cp(sourcePath, targetPath, { recursive: true });
+
+          if (extension.hasDependencies) {
+            logger.info(`[Extensions] Installing dependencies for ${extension.name}...`);
+            await this.installDependencies(targetPath);
+          }
+
+          logger.info(`[Extensions] Installed folder extension: ${extension.folder}`);
+        } finally {
+          try {
+            await fs.rm(tempDir, { recursive: true, force: true });
+          } catch (cleanupError) {
+            logger.warn(`[Extensions] Failed to cleanup temp directory ${tempDir}:`, cleanupError);
+          }
+        }
+      }
+
+      await this.loadExtensionsForDir(targetDir);
+
+      logger.info(`[Extensions] Successfully installed ${extension.name}`);
+      return true;
+    } catch (error) {
+      logger.error(`[Extensions] Failed to install extension '${extensionId}':`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Install npm dependencies for a folder extension
+   */
+  private async installDependencies(extensionPath: string): Promise<void> {
+    const { spawn } = await import('child_process');
+
+    return new Promise((resolve, reject) => {
+      const child = spawn('npm', ['install'], {
+        cwd: extensionPath,
+        stdio: 'inherit',
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`npm install failed with code ${code}`));
+        }
+      });
+
+      child.on('error', reject);
+    });
+  }
+
+  private getCloneUrl(webUrl: string): string | null {
+    try {
+      const url = new URL(webUrl);
+      if (url.hostname !== 'github.com') {
+        return null;
+      }
+
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      if (pathParts.length < 2) {
+        return null;
+      }
+
+      const owner = pathParts[0];
+      const repo = pathParts[1];
+      return `https://github.com/${owner}/${repo}.git`;
+    } catch {
+      return null;
+    }
+  }
+
+  private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string {
+    try {
+      const url = new URL(repoUrl);
+      const pathParts = url.pathname.split('/').filter(Boolean);
+
+      if (pathParts.length > 4 && pathParts[2] === 'tree') {
+        const extensionPath = pathParts.slice(4).join('/');
+        return path.join(clonedRepoPath, extensionPath);
+      }
+
+      return clonedRepoPath;
+    } catch {
+      return clonedRepoPath;
+    }
+  }
+
+  /**
+   * Uninstall an extension
+   * @param extensionId - Extension identifier (name)
+   * @param projectDir - Optional project directory for project-level uninstall
+   * @returns true if uninstallation succeeded
+   */
+  async uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean> {
+    try {
+      logger.info(`[Extensions] Uninstalling extension '${extensionId}'`);
+
+      const extension = this.registry.getExtension(extensionId);
+      if (!extension) {
+        throw new Error(`Extension '${extensionId}' not found`);
+      }
+
+      if (projectDir && extension.projectDir !== projectDir) {
+        throw new Error(`Extension '${extensionId}' does not belong to project ${projectDir}`);
+      }
+
+      if (!extension.filePath) {
+        throw new Error(`Extension '${extensionId}' has no file path`);
+      }
+
+      const parsedPath = path.parse(extension.filePath);
+      const isFolderExtension = parsedPath.name === 'index';
+
+      if (isFolderExtension) {
+        const folderPath = parsedPath.dir;
+        await fs.rm(folderPath, { recursive: true, force: true });
+        logger.info(`[Extensions] Removed folder: ${folderPath}`);
+      } else {
+        await fs.unlink(extension.filePath);
+        logger.info(`[Extensions] Removed file: ${extension.filePath}`);
+      }
+
+      this.registry.unregister(extensionId);
+
+      logger.info(`[Extensions] Successfully uninstalled ${extensionId}`);
+      return true;
+    } catch (error) {
+      logger.error(`[Extensions] Failed to uninstall extension '${extensionId}':`, error);
+      return false;
+    }
+  }
+
+  /**
    * Dispatches an event to all loaded and initialized extensions.
    * Runs in parallel with HookManager triggers, allowing extensions to respond
    * to the same events as hooks. Events can be modified or blocked by extensions.
@@ -916,14 +1139,15 @@ export class ExtensionManager {
   ): Promise<ExtensionEventMap[K]> {
     // Get all extensions (global + project-specific)
     const allExtensions = this.registry.getExtensions();
+    const enabledExtensions = this.filterEnabledExtensions(allExtensions);
 
     // Early exit if no extensions
-    if (allExtensions.length === 0) {
+    if (enabledExtensions.length === 0) {
       return event;
     }
 
     // Sort extensions: global first, then project-specific
-    const sortedExtensions = this.sortExtensionsForDispatch(allExtensions, project.baseDir);
+    const sortedExtensions = this.sortExtensionsForDispatch(enabledExtensions, project.baseDir);
 
     let currentEvent = { ...event };
 

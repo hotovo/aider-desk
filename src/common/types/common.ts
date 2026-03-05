@@ -517,6 +517,11 @@ export interface MemoryConfig {
   maxDistance: number;
 }
 
+export interface ExtensionsConfig {
+  repositories: string[];
+  disabled: string[];
+}
+
 export enum MemoryEmbeddingProgressPhase {
   Idle = 'idle',
   LoadingModel = 'loading-model',
@@ -591,6 +596,7 @@ export interface SettingsData {
   memory: MemoryConfig;
   taskSettings: TaskSettings;
   hotkeyConfig?: HotkeyConfig;
+  extensions?: ExtensionsConfig;
 }
 
 export interface ProviderProfile {
@@ -918,4 +924,30 @@ export interface NotificationData {
   baseDir: string;
   title: string;
   body: string;
+}
+
+export interface LoadedExtension {
+  id: string;
+  metadata: {
+    name: string;
+    version: string;
+    description?: string;
+    author?: string;
+  };
+  filePath: string;
+  initialized: boolean;
+  projectDir?: string;
+}
+
+export interface AvailableExtension {
+  id: string;
+  name: string;
+  description?: string;
+  version: string;
+  author?: string;
+  type: 'single' | 'folder';
+  file?: string;
+  folder?: string;
+  repositoryUrl: string;
+  hasDependencies?: boolean;
 }

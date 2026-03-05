@@ -8,6 +8,7 @@
 - added day grouping to task list in task sidebar
 - properly capturing stdout when bash tool executes piped commands
 - starting empty quick spec flow in BMAD mode now correctly sets the initial context
+- added settings page for Extension
 
 ## [0.55.0]
 

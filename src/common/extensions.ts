@@ -33,6 +33,8 @@ export type { ToolApprovalState, InvocationMode, ContextMemoryMode };
 export type AgentStepResult = unknown;
 export type { ModeDefinition };
 
+export const AIDER_DESK_EXTENSIONS_REPO_URL = 'https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/';
+
 export interface ResponseMessage {
   id: string;
   content: string;

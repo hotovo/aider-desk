@@ -56,6 +56,8 @@ import {
   WorktreeIntegrationStatusUpdatedData,
   UpdatedFile,
   UpdatedFilesUpdatedData,
+  LoadedExtension,
+  AvailableExtension,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -121,6 +123,12 @@ export interface ApplicationAPI {
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
   reloadMcpServer: (serverName: string, config: McpServerConfig) => Promise<McpTool[]>;
+
+  // Extension operations
+  getInstalledExtensions: (projectDir?: string) => Promise<LoadedExtension[]>;
+  getAvailableExtensions: (repositories: string[], forceRefresh?: boolean) => Promise<AvailableExtension[]>;
+  installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
+  uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
 
   createNewTask: (baseDir: string, params?: CreateTaskParams) => Promise<TaskData>;
   updateTask: (baseDir: string, id: string, updates: Partial<TaskData>) => Promise<boolean>;

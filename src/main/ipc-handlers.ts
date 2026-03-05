@@ -271,6 +271,42 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.reloadMcpServer(serverName, config);
   });
 
+  // Extension handlers
+  ipcMain.handle('get-installed-extensions', (_, projectDir?: string) => {
+    if (!extensionManager) {
+      return [];
+    }
+    const extensions = extensionManager.getExtensions(projectDir);
+    return extensions.map((ext) => ({
+      id: ext.id,
+      metadata: ext.metadata,
+      filePath: ext.filePath,
+      initialized: ext.initialized,
+      projectDir: ext.projectDir,
+    }));
+  });
+
+  ipcMain.handle('get-available-extensions', async (_, repositories: string[], forceRefresh?: boolean) => {
+    if (!extensionManager) {
+      return [];
+    }
+    return await extensionManager.getAvailableExtensions(repositories, forceRefresh);
+  });
+
+  ipcMain.handle('install-extension', async (_, extensionId: string, repositoryUrl: string, projectDir?: string) => {
+    if (!extensionManager) {
+      return false;
+    }
+    return await extensionManager.installExtension(extensionId, repositoryUrl, projectDir);
+  });
+
+  ipcMain.handle('uninstall-extension', async (_, extensionId: string, projectDir?: string) => {
+    if (!extensionManager) {
+      return false;
+    }
+    return await extensionManager.uninstallExtension(extensionId, projectDir);
+  });
+
   ipcMain.handle('export-task-to-markdown', async (_, baseDir: string, taskId: string, copyOnly: boolean = false) => {
     return await eventsHandler.exportTaskToMarkdown(baseDir, taskId, copyOnly);
   });

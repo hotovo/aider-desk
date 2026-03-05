@@ -54,7 +54,13 @@ const createMockMetadata = (overrides: Partial<ExtensionMetadata> = {}): Extensi
 });
 
 const createMockDeps = () => ({
-  store: {} as any,
+  store: {
+    getSettings: vi.fn().mockReturnValue({
+      extensions: {
+        disabled: [],
+      },
+    }),
+  } as any,
   modelManager: {
     getAllModels: vi.fn().mockResolvedValue([]),
   } as any,

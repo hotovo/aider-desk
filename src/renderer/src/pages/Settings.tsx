@@ -2,7 +2,7 @@ import { Font, ProjectData, SettingsData, Theme, AgentProfile, ProviderProfile }
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone, FaKeyboard } from 'react-icons/fa';
+import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone, FaKeyboard, FaPuzzlePiece } from 'react-icons/fa';
 import { MdTerminal } from 'react-icons/md';
 import { LuClipboardList } from 'react-icons/lu';
 
@@ -17,6 +17,7 @@ import { MemorySettings } from '@/components/settings/MemorySettings';
 import { VoiceSettings } from '@/components/settings/VoiceSettings';
 import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
 import { TaskSettings } from '@/components/settings/TaskSettings';
+import { ExtensionsSettings } from '@/components/settings/ExtensionsSettings';
 
 type Props = {
   settings: SettingsData;
@@ -35,7 +36,7 @@ type Props = {
   setProviders?: (providers: ProviderProfile[]) => void;
 };
 
-type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'about';
+type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
 
 interface SidebarItem {
   id: string;
@@ -73,6 +74,7 @@ export const Settings = ({
     agents: true,
     memory: true,
     server: true,
+    extensions: true,
   });
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -147,6 +149,18 @@ export const Settings = ({
       label: t('settings.tabs.hotkeys'),
       icon: <FaKeyboard className="w-4 h-4" />,
     },
+    {
+      id: 'extensions',
+      pageId: 'extensions',
+      label: t('settings.tabs.extensions'),
+      icon: <FaPuzzlePiece className="w-4 h-4" />,
+      children: [
+        ...(openProjects || []).map((project) => ({
+          id: `extension-${project.baseDir}`,
+          label: getPathBasename(project.baseDir),
+        })),
+      ],
+    },
     ...(isServerManagementSupported
       ? [
           {
@@ -211,6 +225,10 @@ export const Settings = ({
       // Extract project baseDir from sectionId (format: agent-{baseDir})
       const projectBaseDir = sectionId.replace('agent-', '');
       setSelectedProfileContext(projectBaseDir);
+    } else if (pageId === 'extensions' && sectionId.startsWith('extension-')) {
+      // Extract project baseDir from sectionId (format: extension-{baseDir})
+      const projectBaseDir = sectionId.replace('extension-', '');
+      setSelectedProfileContext(projectBaseDir);
     } else {
       scrollToSection(sectionId);
     }
@@ -252,6 +270,10 @@ export const Settings = ({
         return <VoiceSettings providers={providers} setProviders={setProviders} initialProviderId={initialOptions?.providerId as string | undefined} />;
       case 'hotkeys':
         return <HotkeysSettings settings={settings} setSettings={updateSettings} />;
+      case 'extensions':
+        return (
+          <ExtensionsSettings settings={settings} setSettings={updateSettings} openProjects={openProjects} selectedProjectContext={selectedProfileContext} />
+        );
       case 'server':
         return <ServerSettings settings={settings} setSettings={updateSettings} />;
       case 'about':

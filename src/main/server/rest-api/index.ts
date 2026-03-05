@@ -13,3 +13,4 @@ export * from './memory-api';
 export * from './voice-api';
 export * from './terminal-api';
 export * from './bmad-api';
+export * from './extensions-api';

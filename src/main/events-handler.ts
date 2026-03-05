@@ -71,6 +71,10 @@ export class EventsHandler {
     private readonly extensionManager: ExtensionManager,
   ) {}
 
+  getExtensionManager(): ExtensionManager {
+    return this.extensionManager;
+  }
+
   loadSettings(): SettingsData {
     return this.store.getSettings();
   }
