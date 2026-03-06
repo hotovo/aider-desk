@@ -2,8 +2,10 @@ import { MouseEvent, startTransition, useCallback, useEffect, useMemo, useOptimi
 import { HiChevronDown, HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { RiExpandWidthLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { useLocalStorage } from '@reactuses/core';
 import { DiffViewMode, UpdatedFile } from '@common/types';
 import { getLanguageFromPath } from '@common/utils';
 import { clsx } from 'clsx';
@@ -49,6 +51,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   const [commitError, setCommitError] = useState<string | null>(null);
   const [isAllFilesView, setIsAllFilesView] = useState(false);
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(() => new Set(files.map((f) => f.path)));
+  const [isFullWidth, setIsFullWidth] = useLocalStorage('diff-modal-full-width', false);
 
   const currentFile = files[currentIndex];
 
@@ -199,6 +202,10 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
     resetLineState();
   }, [resetLineState]);
 
+  const handleToggleFullWidth = useCallback(() => {
+    setIsFullWidth((prev) => !prev);
+  }, [setIsFullWidth]);
+
   const handleToggleFileExpansion = useCallback((filePath: string) => {
     setExpandedFiles((prev) => {
       const next = new Set(prev);
@@ -270,7 +277,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   return (
     <ModalOverlayLayout title={t('contextFiles.updatedFiles')} onClose={onClose} closeOnEscape={true}>
       <div className="flex items-center border-b border-border-default justify-center bg-bg-secondary min-h-[44px] px-4">
-        <div className="flex items-center justify-between w-full max-w-6xl">
+        <div className={clsx('flex items-center justify-between w-full', !isFullWidth && 'max-w-6xl')}>
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-3xs sm:text-xs font-medium text-text-primary truncate" title={isAllFilesView ? t('contextFiles.allFiles') : currentFile.path}>
               {isAllFilesView ? t('contextFiles.allFiles') : currentFile.path}
@@ -323,6 +330,15 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
               </div>
             )}
             <IconButton
+              icon={<RiExpandWidthLine className="h-5 w-5" />}
+              onClick={handleToggleFullWidth}
+              tooltip={isFullWidth ? t('contextFiles.collapseWidth') : t('contextFiles.expandWidth')}
+              className={clsx(
+                'p-1.5 rounded-md transition-colors',
+                isFullWidth ? 'bg-bg-tertiary text-text-primary' : 'hover:bg-bg-tertiary text-text-secondary',
+              )}
+            />
+            <IconButton
               icon={<MdUndo className="h-5 w-5" />}
               onClick={handleRevertClick}
               tooltip={t('contextFiles.revertFile')}
@@ -333,7 +349,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
       </div>
       <div className="flex-1 overflow-auto p-4 bg-bg-primary-light scrollbar scrollbar-thumb-bg-tertiary scrollbar-track-transparent">
         {isAllFilesView ? (
-          <div className="max-w-6xl mx-auto space-y-3">
+          <div className={clsx('mx-auto space-y-3', !isFullWidth && 'max-w-6xl')}>
             {files.map((file, index) => {
               const fileLanguage = file.path ? getLanguageFromPath(file.path) : 'text';
               const isExpanded = expandedFiles.has(file.path);
@@ -388,7 +404,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
             })}
           </div>
         ) : (
-          <div className="max-w-6xl mx-auto select-text bg-bg-code-block rounded-lg p-4 text-xs relative">
+          <div className={clsx('mx-auto select-text bg-bg-code-block rounded-lg p-4 text-xs relative', !isFullWidth && 'max-w-6xl')}>
             {diffViewMode === DiffViewMode.Compact ? (
               <CompactDiffViewer udiff={currentFile.diff || ''} language={language} showFilename={false} />
             ) : (
@@ -410,7 +426,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
 
       {/* Footer with Commit Section */}
       <div className="flex items-center border-t border-border-default justify-center bg-bg-secondary px-4 py-3">
-        <div className="flex flex-col w-full max-w-6xl gap-3">
+        <div className={clsx('flex flex-col w-full gap-3', !isFullWidth && 'max-w-6xl')}>
           {/* Error Display */}
           {commitError && (
             <div className="border border-border-default bg-bg-primary-light rounded-md p-3 max-h-40 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">

@@ -941,6 +941,8 @@
     "confirmRevertTitle": "恢复文件更改？",
     "confirmRevertMessage": "这将丢弃此文件的所有更改。此操作无法撤销。",
     "revert": "恢复",
+    "expandWidth": "展开至全宽",
+    "collapseWidth": "收起宽度",
     "commitSection": "提交更改",
     "commitMessage": "提交信息",
     "commitMessagePlaceholder": "输入提交信息...",

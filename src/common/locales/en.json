@@ -984,6 +984,8 @@
     "confirmRevertTitle": "Revert file changes?",
     "confirmRevertMessage": "This will discard all changes to this file. This action cannot be undone.",
     "revert": "Revert",
+    "expandWidth": "Expand to full width",
+    "collapseWidth": "Collapse width",
     "commitSection": "Commit Changes",
     "commitMessage": "Commit message",
     "commitMessagePlaceholder": "Enter commit message...",
