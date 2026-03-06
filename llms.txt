@@ -127,6 +127,7 @@ src/
         prohibited-import.ts
         valid-extension.ts
       extension-context.ts
+      extension-fetcher.ts
       extension-loader.ts
       extension-manager.ts
       extension-registry.ts
@@ -190,6 +191,7 @@ src/
         bmad-api.ts
         commands-api.ts
         context-api.ts
+        extensions-api.ts
         index.ts
         mcp-api.ts
         memory-api.ts
@@ -218,6 +220,7 @@ src/
         v15-to-v16.ts
         v16-to-v17.ts
         v17-to-v18.ts
+        v18-to-v19.ts
         v2-to-v3.ts
         v3-to-v4.ts
         v4-to-v5.ts
@@ -517,6 +520,7 @@ src/
             SortableAgentProfileItem.tsx
           AboutSettings.tsx
           AiderSettings.tsx
+          ExtensionsSettings.tsx
           GeneralSettings.tsx
           HotkeyConfig.tsx
           HotkeysSettings.tsx
@@ -1453,6 +1457,7 @@ File: src/common/locales/en.json
     "info": "Info",
     "yes": "Yes",
     "no": "No",
+    "refresh": "Refresh",
     "retry": "Retry",
     "open": "Open",
     "openProject": "Open Project",
@@ -1849,8 +1854,60 @@ File: src/common/locales/en.json
       "memory": "Memory",
       "voice": "Voice",
       "hotkeys": "Hotkeys",
+      "extensions": "Extensions",
       "server": "Server",
       "about": "About"
+    },
+    "extensions": {
+      "loading": "Loading extensions...",
+      "tabs": {
+        "installed": "Installed",
+        "available": "Available"
+      },
+      "installed": {
+        "empty": "No extensions installed",
+        "emptyHint": "Browse the Available tab to discover and install extensions"
+      },
+      "available": {
+        "empty": "All available extensions are already installed",
+        "extensionsCount": "extensions",
+        "installedCount": "installed"
+      },
+      "search": {
+        "placeholder": "Search extensions..."
+      },
+      "capabilities": {
+        "all": "All"
+      },
+      "repositories": {
+        "title": "Repositories",
+        "placeholder": "Enter repository URL...",
+        "add": "Add",
+        "remove": "Remove repository",
+        "default": "Default repository"
+      },
+      "by": "by",
+      "enabled": "Enabled",
+      "active": "Active",
+      "projectSpecific": "Project",
+      "hasDependencies": "Has dependencies",
+      "install": "Install",
+      "installing": "Installing...",
+      "uninstall": "Uninstall",
+      "success": {
+        "install": "Successfully installed {{name}}",
+        "uninstall": "Successfully uninstalled {{name}}",
+        "addRepository": "Repository added successfully",
+        "removeRepository": "Repository removed successfully"
+      },
+      "errors": {
+        "loadInstalled": "Failed to load installed extensions",
+        "loadAvailable": "Failed to load available extensions",
+        "install": "Failed to install extension",
+        "uninstall": "Failed to uninstall extension",
+        "repositoryExists": "This repository is already added",
+        "cannotRemoveDefault": "Cannot remove the default repository"
+      }
     },
     "hotkeys": {
       "projectHotkeys": "Project",
@@ -2354,6 +2411,8 @@ File: src/common/locales/en.json
     "confirmRevertTitle": "Revert file changes?",
     "confirmRevertMessage": "This will discard all changes to this file. This action cannot be undone.",
     "revert": "Revert",
+    "expandWidth": "Expand to full width",
+    "collapseWidth": "Collapse width",
     "commitSection": "Commit Changes",
     "commitMessage": "Commit message",
     "commitMessagePlaceholder": "Enter commit message...",
@@ -2966,14 +3025,14 @@ File: src/common/locales/en.json
     "title": "AiderDesk",
     "subtitle": "Your AI-powered coding assistant",
     "features": {
-      "title": "What you can do:",
+      "title": "What you can do",
       "aiCoding": "Generate and modify code with AI assistance",
       "contextManagement": "Add files to context for better results",
       "multiModel": "Choose from multiple AI models and providers",
       "commands": "Execute commands and run tests"
     },
     "tips": {
-      "title": "Getting started:",
+      "title": "Getting started",
       "addFiles": "Add files to context using the sidebar or /add command",
       "askQuestion": "Type your request in the prompt field below",
       "useCommands": "Use / commands for quick actions",
@@ -2993,7 +3052,8 @@ File: src/common/locales/en.json
         "title": "BMAD Mode",
         "description": "Guided workflows for planning, spec'ing, and implementing features. Best for structured development processes."
       }
-    }
+    },
+    "selectMode": "Select"
   },
   "bmad": {
     "welcome": {
@@ -3206,6 +3266,7 @@ File: src/common/locales/zh.json
     "info": "信息",
     "yes": "是",
     "no": "否",
+    "refresh": "刷新",
     "retry": "重试",
     "open": "打开",
     "openProject": "打开项目",
@@ -3598,11 +3659,63 @@ File: src/common/locales/zh.json
       "aider": "Aider",
       "agents": "代理",
       "hotkeys": "快捷键",
+      "extensions": "扩展",
       "server": "服务器",
       "memory": "记忆",
       "tasks": "任务",
       "voice": "语音",
       "about": "关于"
+    },
+    "extensions": {
+      "loading": "正在加载扩展...",
+      "tabs": {
+        "installed": "已安装",
+        "available": "可用"
+      },
+      "installed": {
+        "empty": "没有已安装的扩展",
+        "emptyHint": "浏览「可用」选项卡以发现并安装扩展"
+      },
+      "available": {
+        "empty": "所有可用扩展都已安装",
+        "extensionsCount": "扩展",
+        "installedCount": "已安装"
+      },
+      "search": {
+        "placeholder": "搜索扩展..."
+      },
+      "capabilities": {
+        "all": "全部"
+      },
+      "repositories": {
+        "title": "仓库",
+        "placeholder": "输入仓库URL...",
+        "add": "添加",
+        "remove": "移除仓库",
+        "default": "默认仓库"
+      },
+      "by": "作者",
+      "enabled": "启用",
+      "active": "激活",
+      "projectSpecific": "项目",
+      "hasDependencies": "有依赖",
+      "install": "安装",
+      "installing": "安装中...",
+      "uninstall": "卸载",
+      "success": {
+        "install": "成功安装 {{name}}",
+        "uninstall": "成功卸载 {{name}}",
+        "addRepository": "仓库添加成功",
+        "removeRepository": "仓库移除成功"
+      },
+      "errors": {
+        "loadInstalled": "加载已安装扩展失败",
+        "loadAvailable": "加载可用扩展失败",
+        "install": "安装扩展失败",
+        "uninstall": "卸载扩展失败",
+        "repositoryExists": "此仓库已添加",
+        "cannotRemoveDefault": "无法移除默认仓库"
+      }
     },
     "hotkeys": {
       "projectHotkeys": "项目快捷键",
@@ -4064,6 +4177,8 @@ File: src/common/locales/zh.json
     "confirmRevertTitle": "恢复文件更改？",
     "confirmRevertMessage": "这将丢弃此文件的所有更改。此操作无法撤销。",
     "revert": "恢复",
+    "expandWidth": "展开至全宽",
+    "collapseWidth": "收起宽度",
     "commitSection": "提交更改",
     "commitMessage": "提交信息",
     "commitMessagePlaceholder": "输入提交信息...",
@@ -4730,14 +4845,14 @@ File: src/common/locales/zh.json
     "title": "AiderDesk",
     "subtitle": "您的 AI 驱动编程助手",
     "features": {
-      "title": "您可以做什么：",
+      "title": "您可以做什么",
       "aiCoding": "使用 AI 辅助生成和修改代码",
       "contextManagement": "添加文件到上下文以获得更好的结果",
       "multiModel": "选择多种 AI 模型和提供商",
       "commands": "执行命令和运行测试"
     },
     "tips": {
-      "title": "入门指南：",
+      "title": "入门指南",
       "addFiles": "使用侧边栏或 /add 命令添加文件到上下文",
       "askQuestion": "在下方的提示字段中输入您的请求",
       "useCommands": "使用 / 命令进行快速操作",
@@ -4757,7 +4872,8 @@ File: src/common/locales/zh.json
         "title": "BMAD 模式",
         "description": "用于规划、规范和实现功能的引导式工作流程。最适合结构化的开发流程。"
       }
-    }
+    },
+    "selectMode": "选择"
   },
   "bmad": {
     "welcome": {
@@ -5541,6 +5657,11 @@ export interface MemoryConfig {
   maxDistance: number;
 }
 ⋮----
+export interface ExtensionsConfig {
+  repositories: string[];
+  disabled: string[];
+}
+⋮----
 export enum MemoryEmbeddingProgressPhase {
   Idle = 'idle',
   LoadingModel = 'loading-model',
@@ -5615,6 +5736,7 @@ export interface SettingsData {
   memory: MemoryConfig;
   taskSettings: TaskSettings;
   hotkeyConfig?: HotkeyConfig;
+  extensions?: ExtensionsConfig;
 }
 ⋮----
 export interface ProviderProfile {
@@ -5895,6 +6017,34 @@ export interface NotificationData {
   baseDir: string;
   title: string;
   body: string;
+}
+⋮----
+export interface LoadedExtension {
+  id: string;
+  metadata: {
+    name: string;
+    version: string;
+    description?: string;
+    author?: string;
+    capabilities?: string[];
+  };
+  filePath: string;
+  initialized: boolean;
+  projectDir?: string;
+}
+⋮----
+export interface AvailableExtension {
+  id: string;
+  name: string;
+  description?: string;
+  version: string;
+  author?: string;
+  capabilities?: string[];
+  type: 'single' | 'folder';
+  file?: string;
+  folder?: string;
+  repositoryUrl: string;
+  hasDependencies?: boolean;
 }
 
 ================
@@ -6454,6 +6604,8 @@ import {
   WorktreeIntegrationStatusUpdatedData,
   UpdatedFile,
   UpdatedFilesUpdatedData,
+  LoadedExtension,
+  AvailableExtension,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -6519,6 +6671,12 @@ export interface ApplicationAPI {
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
   reloadMcpServer: (serverName: string, config: McpServerConfig) => Promise<McpTool[]>;
+
+  // Extension operations
+  getInstalledExtensions: (projectDir?: string) => Promise<LoadedExtension[]>;
+  getAvailableExtensions: (repositories: string[], forceRefresh?: boolean) => Promise<AvailableExtension[]>;
+  installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
+  uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
 
   createNewTask: (baseDir: string, params?: CreateTaskParams) => Promise<TaskData>;
   updateTask: (baseDir: string, id: string, updates: Partial<TaskData>) => Promise<boolean>;
@@ -6654,6 +6812,8 @@ export interface ApplicationAPI {
 }
 ⋮----
 // Todo operations
+⋮----
+// Extension operations
 ⋮----
 // Voice API
 ⋮----
@@ -12981,6 +13141,62 @@ async getSetting(key: string): Promise<unknown>
 async updateSettings(updates: Partial<SettingsData>): Promise<void>
 
 ================
+File: src/main/extensions/extension-fetcher.ts
+================
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+⋮----
+import { AvailableExtension } from '@common/types';
+import { ExtensionMetadata } from '@common/extensions';
+⋮----
+import logger from '@/logger';
+import { execWithShellPath } from '@/utils/shell';
+⋮----
+interface CacheEntry {
+  timestamp: number;
+  extensions: AvailableExtension[];
+}
+⋮----
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+⋮----
+export class ExtensionFetcher
+⋮----
+async getAvailableExtensions(repositories: string[], forceRefresh = false): Promise<AvailableExtension[]>
+⋮----
+private async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]>
+⋮----
+private async fetchExtensionsViaGitClone(repoUrl: string): Promise<AvailableExtension[]>
+⋮----
+private getCloneUrl(webUrl: string): string | null
+⋮----
+private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string
+⋮----
+private async scanForExtensions(extensionsPath: string, repoUrl: string): Promise<AvailableExtension[]>
+⋮----
+private async fileExists(filePath: string): Promise<boolean>
+⋮----
+private async extractMetadataFromLocalFile(filePath: string): Promise<Omit<AvailableExtension, 'id' | 'type' | 'repositoryUrl'> | null>
+⋮----
+private getStaticMetadata(filePath: string): ExtensionMetadata | null
+⋮----
+const visitor = (node: ts.Node) =>
+⋮----
+private findVariableDeclaration(sourceFile: ts.SourceFile, variableName: string): ts.ObjectLiteralExpression | null
+⋮----
+private parseObjectLiteral(node: ts.ObjectLiteralExpression): Record<string, unknown>
+⋮----
+private parsePropertyValue(node: ts.Node): unknown
+⋮----
+private convertToGitHubRawUrl(webUrl: string): string | null
+⋮----
+// Match URL with specific path: github.com/{owner}/{repo}/tree/{branch}/{path}
+⋮----
+// Match repository root URL: github.com/{owner}/{repo}
+⋮----
+getRawUrl(webUrl: string): string | null
+
+================
 File: src/main/extensions/extension-loader.ts
 ================
 import path from 'path';
@@ -13038,22 +13254,23 @@ File: src/main/extensions/extension-manager.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 ⋮----
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { ToolApprovalState } from '@common/types';
+import { ToolApprovalState, AvailableExtension } from '@common/types';
 ⋮----
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
-⋮----
-export type ExtensionsChangeListener = (extensions: LoadedExtension[]) => void;
+import { ExtensionFetcher } from './extension-fetcher';
 ⋮----
 import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
 import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
+import type { TelemetryManager } from '@/telemetry';
 import type {
   AgentFinishedEvent,
   AgentStartedEvent,
@@ -13094,10 +13311,13 @@ import type {
 } from '@common/extensions';
 import type { ToolCallOptions, ToolSet } from 'ai';
 ⋮----
+import { execWithShellPath } from '@/utils/shell';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { Project } from '@/project';
 import { Task } from '@/task';
+⋮----
+export type ExtensionsChangeListener = (extensions: LoadedExtension[]) => void;
 ⋮----
 export interface RegisteredTool {
   extensionName: string;
@@ -13162,8 +13382,16 @@ constructor(
     private readonly store: Store,
     private readonly modelManager: ModelManager,
     private readonly eventManager: EventManager,
+    private readonly telemetryManager: TelemetryManager,
     private readonly registry: ExtensionRegistry = new ExtensionRegistry(),
 )
+⋮----
+/**
+   * Filter extensions based on disabled list from settings
+   * @param extensions - All loaded extensions
+   * @returns Filtered extensions excluding disabled ones
+   */
+private filterEnabledExtensions(extensions: LoadedExtension[]): LoadedExtension[]
 ⋮----
 addListener(listener: ExtensionsChangeListener): void
 ⋮----
@@ -13190,11 +13418,13 @@ private async loadAndInitializeExtension(filePath: string, project?: Project): P
    */
 private async loadExtensionsForDir(dir: string, project?: Project): Promise<void>
 ⋮----
-getExtensions(): LoadedExtension[]
+getExtensions(projectDir?: string): LoadedExtension[]
 ⋮----
 getExtension(name: string): LoadedExtension | undefined
 ⋮----
 isInitialized(): boolean
+⋮----
+private captureExtensionsTelemetry()
 ⋮----
 async dispose(): Promise<void>
 ⋮----
@@ -13261,6 +13491,40 @@ async updateAgentProfile(profile: AgentProfile): Promise<AgentProfile | null>
 async executeCommand(commandName: string, args: string[], project: Project, task?: Task): Promise<void>
 ⋮----
 /**
+   * Fetch available extensions from a repository URL
+   * @param repositories - Array of repository URLs
+   * @param forceRefresh - Force refresh cache and refetch
+   * @returns Array of available extensions with metadata
+   */
+async getAvailableExtensions(repositories: string[], forceRefresh = false): Promise<AvailableExtension[]>
+⋮----
+/**
+   * Install an extension from a repository
+   * @param extensionId - Extension identifier
+   * @param repositoryUrl - Repository URL where the extension is located
+   * @param projectDir - Optional project directory for project-level install
+   * @returns true if installation succeeded
+   */
+async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean>
+⋮----
+/**
+   * Install npm dependencies for a folder extension
+   */
+private async installDependencies(extensionPath: string): Promise<void>
+⋮----
+private getCloneUrl(webUrl: string): string | null
+⋮----
+private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string
+⋮----
+/**
+   * Uninstall an extension
+   * @param extensionId - Extension identifier (name)
+   * @param projectDir - Optional project directory for project-level uninstall
+   * @returns true if uninstallation succeeded
+   */
+async uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean>
+⋮----
+/**
    * Dispatches an event to all loaded and initialized extensions.
    * Runs in parallel with HookManager triggers, allowing extensions to respond
    * to the same events as hooks. Events can be modified or blocked by extensions.
@@ -13314,11 +13578,14 @@ private sortExtensionsForDispatch(extensions: LoadedExtension[], projectDir: str
 ================
 File: src/main/extensions/extension-registry.ts
 ================
+import path from 'path';
+⋮----
 import { Extension, ExtensionMetadata } from '@common/extensions';
 ⋮----
 import logger from '@/logger';
 ⋮----
 export interface LoadedExtension {
+  id: string;
   instance: Extension;
   metadata: ExtensionMetadata;
   filePath: string;
@@ -13327,6 +13594,12 @@ export interface LoadedExtension {
 }
 ⋮----
 export class ExtensionRegistry
+⋮----
+private deriveExtensionId(filePath: string): string
+⋮----
+// If the file is index.ts or index.js, use the parent folder name
+⋮----
+// Otherwise, use the filename without extension
 ⋮----
 register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string)
 ⋮----
@@ -16380,6 +16653,32 @@ registerRoutes(router: Router): void
 // Get addable files
 
 ================
+File: src/main/server/rest-api/extensions-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import type { ExtensionManager } from '@/extensions/extension-manager';
+⋮----
+repositories: z.string().optional(), // Comma-separated URLs
+⋮----
+export class ExtensionsApi extends BaseApi
+⋮----
+constructor(private readonly extensionManager: ExtensionManager)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Get installed extensions
+⋮----
+// Get available extensions from repositories
+⋮----
+// Install extension
+⋮----
+// Uninstall extension
+
+================
 File: src/main/server/rest-api/index.ts
 ================
 
@@ -16840,6 +17139,7 @@ import {
   VoiceApi,
   TerminalApi,
   BmadApi,
+  ExtensionsApi,
 } from '@/server/rest-api';
 import { AUTH_PASSWORD, AUTH_USERNAME, SERVER_PORT } from '@/constants';
 import logger from '@/logger';
@@ -17031,6 +17331,15 @@ import { SettingsData } from '@common/types';
 export const migrateSettingsV17toV18 = (settings: any): SettingsData =>
 
 ================
+File: src/main/store/migrations/v18-to-v19.ts
+================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
+import { SettingsData } from '@common/types';
+⋮----
+export const migrateSettingsV18toV19 = (settings: any): SettingsData =>
+
+================
 File: src/main/store/migrations/v2-to-v3.ts
 ================
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -17131,6 +17440,7 @@ import {
   SuggestionMode,
   WindowState,
 } from '@common/types';
+import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 import { normalizeBaseDir } from '@common/utils';
 ⋮----
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
@@ -17154,6 +17464,7 @@ import { migrateSettingsV14toV15 } from '@/store/migrations/v14-to-v15';
 import { migrateSettingsV15toV16 } from '@/store/migrations/v15-to-v16';
 import { migrateSettingsV16toV17 } from '@/store/migrations/v16-to-v17';
 import { migrateSettingsV17toV18 } from '@/store/migrations/v17-to-v18';
+import { migrateSettingsV18toV19 } from '@/store/migrations/v18-to-v19';
 ⋮----
 const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean =>
 ⋮----
@@ -18454,6 +18765,12 @@ captureAgentRun(profile: AgentProfile, task?: TaskData)
 captureCustomCommand(commandName: string, argsCount: number, mode: Mode)
 ⋮----
 captureTerminalCreated()
+⋮----
+captureExtensionsLoaded(totalExtensions: number, globalExtensions: number, projectExtensions: number, enabledExtensions: number, disabledExtensions: number)
+⋮----
+captureExtensionInstalled(extensionName: string, location: 'global' | 'project')
+⋮----
+captureExtensionUninstalled(extensionName: string, location: 'global' | 'project')
 
 ================
 File: src/main/terminal/index.ts
@@ -19754,6 +20071,8 @@ export class EventsHandler
 ⋮----
 constructor(
 ⋮----
+getExtensionManager(): ExtensionManager
+⋮----
 loadSettings(): SettingsData
 ⋮----
 async saveSettings(newSettings: SettingsData): Promise<SettingsData>
@@ -20116,6 +20435,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 ⋮----
 // Voice handlers
 ⋮----
+// Extension handlers
+⋮----
 // Terminal handlers
 ⋮----
 // Worktree merge handlers
@@ -20194,9 +20515,9 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
 ⋮----
 // Initialize hook manager (non-blocking - has lazy init in trigger method)
 ⋮----
-// Initialize prompts manager (non-blocking - templates compile lazily)
-⋮----
 // Initialize extension manager (non-blocking - errors should not crash app)
+⋮----
+// Initialize prompts manager (non-blocking - templates compile lazily)
 ⋮----
 // Initialize agent profile manager with extension manager for unified profile access
 ⋮----
@@ -20671,6 +20992,8 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { ApplicationAPI } from '@common/api';
 import { compareBaseDirs } from '@common/utils';
 ⋮----
+// Extension operations
+⋮----
 // Voice API
 ⋮----
 const listener = (_: Electron.IpcRendererEvent, data: SettingsData) =>
@@ -20805,6 +21128,8 @@ import {
   QueuedPromptsUpdatedData,
   WorkflowExecutionOptions,
   WorkflowExecutionResult,
+  LoadedExtension,
+  AvailableExtension,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -21134,6 +21459,14 @@ updateAgentProfilesOrder(agentProfiles: AgentProfile[]): Promise<void>
 addNotificationListener(baseDir: string, callback: (data: NotificationData) => void): () => void
 ⋮----
 addBmadStatusChangedListener(baseDir: string, callback: (status: BmadStatus) => void): () => void
+⋮----
+getInstalledExtensions(projectDir?: string): Promise<LoadedExtension[]>
+⋮----
+getAvailableExtensions(repositories: string[], forceRefresh?: boolean): Promise<AvailableExtension[]>
+⋮----
+installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean>
+⋮----
+uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean>
 
 ================
 File: src/renderer/src/components/AgentSelector/AgentSelector.tsx
@@ -22976,8 +23309,10 @@ import { MouseEvent, startTransition, useCallback, useEffect, useMemo, useOptimi
 import { HiChevronDown, HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { RiExpandWidthLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { useLocalStorage } from '@reactuses/core';
 import { DiffViewMode, UpdatedFile } from '@common/types';
 import { getLanguageFromPath } from '@common/utils';
 import { clsx } from 'clsx';
@@ -23012,6 +23347,8 @@ type Props = {
 // eslint-disable-next-line no-console
 ⋮----
 <ModalOverlayLayout title=
+⋮----
+<div className=
 ⋮----
 onLineClick=
 ⋮----
@@ -27340,8 +27677,10 @@ File: src/renderer/src/components/project/WelcomeMessage.tsx
 ================
 import { RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { FiCode, FiFile, FiLayers, FiTerminal } from 'react-icons/fi';
+import { FiCode, FiFile, FiLayers, FiTerminal, FiArrowRight } from 'react-icons/fi';
 import { CgTerminal } from 'react-icons/cg';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
 ⋮----
 // @ts-expect-error TypeScript is not aware of asset import
 import icon from '../../../../../resources/icon.png?asset';
@@ -27358,6 +27697,10 @@ type Props = {
 };
 ⋮----
 const handleModeClick = (mode: Mode) =>
+⋮----
+className=
+⋮----
+<div className=
 
 ================
 File: src/renderer/src/components/project/WorktreeActionDialog.tsx
@@ -28436,6 +28779,78 @@ setSettings({
 https://aider.chat/docs/config/options.html
 ⋮----
 https://aider.chat/docs/config/dotenv.html
+
+================
+File: src/renderer/src/components/settings/ExtensionsSettings.tsx
+================
+import { AvailableExtension, LoadedExtension, ProjectData, SettingsData } from '@common/types';
+import { Activity, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FaDownload, FaPlus, FaTrash, FaCheck, FaSync, FaSearch } from 'react-icons/fa';
+import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
+import { clsx } from 'clsx';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
+import { Input } from '@/components/common/Input';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Accordion } from '@/components/common/Accordion';
+import { showSuccessNotification, showErrorNotification } from '@/utils/notifications';
+⋮----
+enum Tab {
+  Available = 'available',
+  Installed = 'installed',
+}
+⋮----
+type Props = {
+  settings: SettingsData;
+  setSettings: (settings: SettingsData) => void;
+  openProjects?: ProjectData[];
+  selectedProjectContext?: string;
+};
+⋮----
+const loadInstalledExtensions = async () =>
+⋮----
+const loadAvailableExtensions = async (forceRefresh = false) =>
+⋮----
+const handleRefresh = async () =>
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+const handleToggleDisabled = (extensionName: string, isCurrentlyDisabled: boolean) =>
+⋮----
+const handleUninstall = async (extensionName: string) =>
+⋮----
+const handleInstall = async (extension: AvailableExtension) =>
+⋮----
+const handleAddRepository = () =>
+⋮----
+const handleRemoveRepository = (repositoryUrl: string) =>
+⋮----
+className=
+⋮----
+<Button onClick=
+⋮----
+// Group all extensions by repository URL
+⋮----
+// Add all available extensions to the map
+⋮----
+// Render extension card with appropriate controls based on installation status
+⋮----
+label=
+⋮----
+const handleToggleRepository = (repositoryUrl: string) =>
+⋮----
+// Render repository accordion
+⋮----
+onClick=
+⋮----
+{/* Tab Navigation */}
+⋮----
+{/* Search and Filters */}
+⋮----
+setSelectedCapabilities((prev) =>
 
 ================
 File: src/renderer/src/components/settings/GeneralSettings.tsx
@@ -31132,7 +31547,7 @@ import { Font, ProjectData, SettingsData, Theme, AgentProfile, ProviderProfile }
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone, FaKeyboard } from 'react-icons/fa';
+import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone, FaKeyboard, FaPuzzlePiece } from 'react-icons/fa';
 import { MdTerminal } from 'react-icons/md';
 import { LuClipboardList } from 'react-icons/lu';
 ⋮----
@@ -31147,6 +31562,7 @@ import { MemorySettings } from '@/components/settings/MemorySettings';
 import { VoiceSettings } from '@/components/settings/VoiceSettings';
 import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
 import { TaskSettings } from '@/components/settings/TaskSettings';
+import { ExtensionsSettings } from '@/components/settings/ExtensionsSettings';
 ⋮----
 type Props = {
   settings: SettingsData;
@@ -31165,7 +31581,7 @@ type Props = {
   setProviders?: (providers: ProviderProfile[]) => void;
 };
 ⋮----
-type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'about';
+type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
 ⋮----
 interface SidebarItem {
   id: string;
@@ -31194,8 +31610,6 @@ export const Settings = ({
 ⋮----
 const scrollToSection = (sectionId: string) =>
 ⋮----
-const toggleExpand = (id: string) =>
-⋮----
 const handleItemClick = (item: SidebarItem) =>
 ⋮----
 const handleChildClick = (pageId: PageId, sectionId: string) =>
@@ -31204,6 +31618,8 @@ const handleChildClick = (pageId: PageId, sectionId: string) =>
 ⋮----
 // Extract project baseDir from sectionId (format: agent-{baseDir})
 ⋮----
+// Extract project baseDir from sectionId (format: extension-{baseDir})
+⋮----
 const renderContent = () =>
 ⋮----
 {/* Sidebar */}
@@ -31211,7 +31627,6 @@ const renderContent = () =>
 className=
 ⋮----
 e.stopPropagation();
-toggleExpand(item.id);
 ⋮----
 {!item.children?.length && <span className="w-6" />} {/* Spacer for items without children */}
 ⋮----
@@ -34245,6 +34660,7 @@ File: package.json
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@aiderdesk/extensions": "workspace:*",
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@electron/notarize": "^3.0.2",
     "@eslint/js": "^9.33.0",
