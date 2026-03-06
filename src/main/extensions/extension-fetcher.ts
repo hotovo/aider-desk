@@ -18,8 +18,24 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export class ExtensionFetcher {
   private cache = new Map<string, CacheEntry>();
+  private getAvailableExtensionsPromise: Promise<AvailableExtension[]> | null = null;
 
   async getAvailableExtensions(repositories: string[], forceRefresh = false): Promise<AvailableExtension[]> {
+    if (!forceRefresh && this.getAvailableExtensionsPromise) {
+      return await this.getAvailableExtensionsPromise;
+    }
+
+    this.getAvailableExtensionsPromise = this.getAvailableExtensionsInternal(repositories, forceRefresh);
+
+    try {
+      return await this.getAvailableExtensionsPromise;
+    } catch (error) {
+      this.getAvailableExtensionsPromise = null;
+      throw error;
+    }
+  }
+
+  private async getAvailableExtensionsInternal(repositories: string[], forceRefresh: boolean): Promise<AvailableExtension[]> {
     const allExtensions: AvailableExtension[] = [];
 
     for (const repoUrl of repositories) {
@@ -147,6 +163,18 @@ export class ExtensionFetcher {
             const metadata = await this.extractMetadataFromLocalFile(indexFile);
             const hasDeps = await this.fileExists(path.join(extensionsPath, entry.name, 'package.json'));
 
+            // Try to read README.md for folder-based extensions
+            let readmeContent: string | undefined;
+            const readmePath = path.join(extensionsPath, entry.name, 'README.md');
+            try {
+              const content = await fs.readFile(readmePath, 'utf-8');
+              if (content.trim()) {
+                readmeContent = content;
+              }
+            } catch {
+              // README.md doesn't exist or can't be read, that's fine
+            }
+
             if (metadata) {
               extensions.push({
                 ...metadata,
@@ -155,6 +183,7 @@ export class ExtensionFetcher {
                 folder: entry.name,
                 repositoryUrl: repoUrl,
                 hasDependencies: hasDeps,
+                readmeContent,
               });
             }
           }

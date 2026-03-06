@@ -5,26 +5,21 @@ import os from 'os';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { ToolApprovalState, AvailableExtension } from '@common/types';
+import { AvailableExtension, ToolApprovalState } from '@common/types';
+import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
 import { ExtensionFetcher } from './extension-fetcher';
 
-import type { AgentProfile } from '@common/types';
-import type { Store } from '@/store';
-import type { ModelManager } from '@/models';
-import type { EventManager } from '@/events';
-import type { TelemetryManager } from '@/telemetry';
 import type {
   AgentFinishedEvent,
   AgentStartedEvent,
   AgentStepFinishedEvent,
-  OptimizeMessagesEvent,
-  ImportantRemindersEvent,
   AiderPromptFinishedEvent,
   AiderPromptStartedEvent,
+  CommandDefinition,
   CommandExecutedEvent,
   CustomCommandExecutedEvent,
   Extension,
@@ -32,7 +27,11 @@ import type {
   FilesAddedEvent,
   FilesDroppedEvent,
   HandleApprovalEvent,
+  ImportantRemindersEvent,
   ModeDefinition,
+  OptimizeMessagesEvent,
+  ProjectStartedEvent,
+  ProjectStoppedEvent,
   PromptFinishedEvent,
   PromptStartedEvent,
   QuestionAnsweredEvent,
@@ -51,10 +50,12 @@ import type {
   ToolCalledEvent,
   ToolDefinition,
   ToolFinishedEvent,
-  CommandDefinition,
-  ProjectStartedEvent,
-  ProjectStoppedEvent,
 } from '@common/extensions';
+import type { AgentProfile } from '@common/types';
+import type { Store } from '@/store';
+import type { ModelManager } from '@/models';
+import type { EventManager } from '@/events';
+import type { TelemetryManager } from '@/telemetry';
 import type { ToolCallOptions, ToolSet } from 'ai';
 
 import { execWithShellPath } from '@/utils/shell';
@@ -186,8 +187,34 @@ export class ExtensionManager {
       await this.startHotReloadWatcher();
 
       this.captureExtensionsTelemetry();
+
+      // Preload available extensions from repositories in background
+      this.preloadAvailableExtensions().catch((error) => {
+        logger.warn('[Extensions] Failed to preload available extensions:', error);
+      });
     } catch (error) {
       logger.error(`[Extensions] Extension system initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Preload available extensions from configured repositories.
+   * This warms the fetcher cache so Settings page loads instantly.
+   */
+  private async preloadAvailableExtensions(): Promise<void> {
+    const settings = this.store.getSettings();
+    const repositories = settings.extensions?.repositories || [AIDER_DESK_EXTENSIONS_REPO_URL];
+
+    logger.info('[Extensions] Preloading available extensions from repositories...');
+
+    try {
+      const extensions = await this.fetcher.getAvailableExtensions(repositories);
+      logger.info(
+        `[Extensions] Preloaded ${extensions.length} available extension(s) from ${repositories.length} repositor${repositories.length === 1 ? 'y' : 'ies'}`,
+      );
+    } catch (error) {
+      logger.error('[Extensions] Failed to preload available extensions:', error);
       throw error;
     }
   }
@@ -226,7 +253,7 @@ export class ExtensionManager {
       }
 
       const { extension, metadata } = result;
-      this.registry.register(extension, metadata, filePath, project?.baseDir);
+      await this.registry.register(extension, metadata, filePath, project?.baseDir);
 
       const loaded = this.registry.getExtension(metadata.name);
       if (!loaded) {

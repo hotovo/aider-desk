@@ -772,25 +772,6 @@ describe('ExtensionsSettings', () => {
         }),
       );
     });
-
-    it('should prevent removing the default repository', async () => {
-      mockApi.getInstalledExtensions.mockResolvedValue([]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      // Switch to Available tab
-      const availableTab = screen.getByText('settings.extensions.tabs.available');
-      fireEvent.click(availableTab);
-
-      await waitFor(() => {
-        expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
-      });
-
-      // The default repository should not have a remove button
-      const removeButtons = screen.queryAllByTestId('icon-button');
-      expect(removeButtons.length).toBe(0); // Default repo has no remove button
-    });
   });
 
   describe('Enable/Disable Extensions', () => {

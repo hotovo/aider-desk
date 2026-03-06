@@ -1,17 +1,19 @@
 import { AvailableExtension, LoadedExtension, ProjectData, SettingsData } from '@common/types';
-import { Activity, useEffect, useState } from 'react';
+import { Activity, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaDownload, FaPlus, FaTrash, FaCheck, FaSync, FaSearch } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 import { clsx } from 'clsx';
 
 import { useApi } from '@/contexts/ApiContext';
+import { getPathBasename } from '@/utils/path-utils';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { Input } from '@/components/common/Input';
-import { Checkbox } from '@/components/common/Checkbox';
 import { Accordion } from '@/components/common/Accordion';
-import { showSuccessNotification, showErrorNotification } from '@/utils/notifications';
+import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
+import { LoadingOverlay } from '@/components/common/LoadingOverlay';
+import { ExtensionCard } from '@/components/settings/ExtensionCard';
 
 enum Tab {
   Available = 'available',
@@ -22,10 +24,10 @@ type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
   openProjects?: ProjectData[];
-  selectedProjectContext?: string;
+  selectedProjectContext?: 'global' | string;
 };
 
-export const ExtensionsSettings = ({ settings, setSettings, selectedProjectContext }: Props) => {
+export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], selectedProjectContext }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
 
@@ -41,7 +43,39 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCapabilities, setSelectedCapabilities] = useState<Set<string>>(new Set());
 
-  const projectDir = selectedProjectContext && selectedProjectContext !== 'global' ? selectedProjectContext : undefined;
+  // Context state for project-level extensions
+  const contexts = useMemo(() => ['global', ...openProjects.map((p) => p.baseDir)], [openProjects]);
+  const [contextIndex, setContextIndex] = useState(0);
+  const [profileContext, setProfileContext] = useState<'global' | string>(selectedProjectContext || 'global');
+
+  // Sync internal profileContext with selectedProjectContext prop
+  useEffect(() => {
+    if (selectedProjectContext !== undefined) {
+      setProfileContext(selectedProjectContext);
+      const newIndex = contexts.indexOf(selectedProjectContext);
+      if (newIndex !== -1) {
+        setContextIndex(newIndex);
+      }
+    }
+  }, [selectedProjectContext, contexts]);
+
+  // Context navigation logic
+  const navigateContext = (direction: 'prev' | 'next') => {
+    const newIndex = direction === 'prev' ? (contextIndex - 1 + contexts.length) % contexts.length : (contextIndex + 1) % contexts.length;
+    setContextIndex(newIndex);
+    setProfileContext(contexts[newIndex]);
+  };
+
+  // Get context display name
+  const getContextDisplayName = () => {
+    if (profileContext === 'global') {
+      return 'Global';
+    }
+    const project = openProjects.find((p) => p.baseDir === profileContext);
+    return project ? getPathBasename(project.baseDir) : profileContext;
+  };
+
+  const projectDir = profileContext !== 'global' ? profileContext : undefined;
 
   const loadInstalledExtensions = async () => {
     setLoadingInstalled(true);
@@ -184,57 +218,6 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
 
   const disabledExtensions = settings.extensions?.disabled || [];
 
-  const renderInstalledExtensionCard = (extension: LoadedExtension) => {
-    const isDisabled = disabledExtensions.includes(extension.metadata.name);
-    const isUninstalling = uninstallingExtensions.has(extension.metadata.name);
-
-    return (
-      <div
-        key={extension.metadata.name}
-        className={clsx(
-          'group relative rounded-lg border transition-all duration-200',
-          isDisabled ? 'bg-bg-secondary border-border-default opacity-70' : 'bg-bg-secondary border-border-default',
-        )}
-      >
-        <div className="p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="text-sm font-semibold text-text-primary truncate">{extension.metadata.name}</h4>
-                <span className="text-2xs px-1.5 py-0.5 rounded bg-bg-tertiary text-text-muted font-medium">v{extension.metadata.version}</span>
-                {!isDisabled && (
-                  <span className="text-2xs px-1.5 py-0.5 rounded bg-success/10 text-success font-medium flex items-center gap-1">
-                    <FaCheck className="w-2 h-2" />
-                    {t('settings.extensions.active')}
-                  </span>
-                )}
-                {extension.projectDir && (
-                  <span className="text-2xs px-1.5 py-0.5 rounded bg-info/10 text-info font-medium">{t('settings.extensions.projectSpecific')}</span>
-                )}
-              </div>
-              {extension.metadata.description && <p className="text-xs text-text-secondary mt-1.5 line-clamp-2">{extension.metadata.description}</p>}
-              {extension.metadata.author && (
-                <p className="text-2xs text-text-muted mt-2">
-                  {t('settings.extensions.by')} {extension.metadata.author}
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <Checkbox
-                checked={!isDisabled}
-                onChange={() => handleToggleDisabled(extension.metadata.name, isDisabled)}
-                label={t('settings.extensions.enabled')}
-              />
-              <Button onClick={() => handleUninstall(extension.metadata.name)} disabled={isUninstalling} variant="outline" size="xs" color="danger">
-                {t('settings.extensions.uninstall')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderAddRepository = () => {
     return (
       <div className="flex gap-2">
@@ -259,6 +242,20 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
   };
 
   const filteredInstalledExtensions = installedExtensions.filter((ext) => {
+    // Filter by context: in Global context, hide project-level extensions
+    // In project context, show both global extensions and extensions for that specific project
+    if (profileContext === 'global') {
+      // In global context, only show global extensions (no projectDir)
+      if (ext.projectDir) {
+        return false;
+      }
+    } else {
+      // In project context, show extensions for this project OR global extensions
+      if (ext.projectDir && ext.projectDir !== profileContext) {
+        return false;
+      }
+    }
+
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch =
       ext.metadata.name.toLowerCase().includes(searchLower) ||
@@ -284,7 +281,7 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
     if (loadingInstalled) {
       return (
         <div className="flex items-center justify-center py-12 text-2xs">
-          <div className="text-sm text-text-muted">{t('settings.extensions.loading')}</div>
+          <LoadingOverlay message={t('settings.extensions.loading')} spinnerSize="sm" transparent={true} />
         </div>
       );
     }
@@ -298,7 +295,20 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
       );
     }
 
-    return <div className="space-y-2">{filteredInstalledExtensions.map(renderInstalledExtensionCard)}</div>;
+    return (
+      <div className="space-y-2">
+        {filteredInstalledExtensions.map((extension) => (
+          <ExtensionCard
+            key={extension.metadata.name}
+            extension={extension}
+            isDisabled={disabledExtensions.includes(extension.metadata.name)}
+            isUninstalling={uninstallingExtensions.has(extension.metadata.name)}
+            onToggle={handleToggleDisabled}
+            onUninstall={handleUninstall}
+          />
+        ))}
+      </div>
+    );
   };
 
   const filteredAvailableExtensions = availableExtensions.filter((ext) => {
@@ -336,75 +346,35 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
 
     // Render extension card with appropriate controls based on installation status
     const renderExtensionCard = (extension: AvailableExtension) => {
-      const installedExtension = installedExtensions.find((inst) => inst.id === extension.id);
-      const isInstalled = !!installedExtension;
-      const isInstalling = installingExtensions.has(extension.id);
-      const isDisabled = isInstalled && disabledExtensions.includes(installedExtension.metadata.name);
-      const isUninstalling = isInstalled && uninstallingExtensions.has(installedExtension.metadata.name);
+      // Check if extension is installed in the current context
+      const installedExtension = installedExtensions.find((inst) => {
+        if (inst.id !== extension.id) {
+          return false;
+        }
+        // In global context, only consider global extensions
+        if (profileContext === 'global') {
+          return !inst.projectDir;
+        }
+        // In project context, consider extensions for this project or global extensions
+        return !inst.projectDir || inst.projectDir === profileContext;
+      });
 
-      return (
-        <div
-          key={extension.id}
-          className={clsx(
-            'group relative rounded-lg border transition-all duration-200',
-            isInstalled && isDisabled ? 'bg-bg-secondary border-border-default opacity-70' : 'bg-bg-secondary border-border-default',
-          )}
-        >
-          <div className="p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-sm font-semibold text-text-primary truncate">{extension.name}</h4>
-                  <span className="text-2xs px-1.5 py-0.5 rounded bg-bg-tertiary text-text-muted font-medium">v{extension.version}</span>
-                  {isInstalled && !isDisabled && (
-                    <span className="text-2xs px-1.5 py-0.5 rounded bg-success/10 text-success font-medium flex items-center gap-1">
-                      <FaCheck className="w-2 h-2" />
-                      {t('settings.extensions.active')}
-                    </span>
-                  )}
-                  {extension.hasDependencies && (
-                    <span className="text-2xs px-1.5 py-0.5 rounded bg-warning/10 text-warning font-medium">{t('settings.extensions.hasDependencies')}</span>
-                  )}
-                  {isInstalled && installedExtension.projectDir && (
-                    <span className="text-2xs px-1.5 py-0.5 rounded bg-info/10 text-info font-medium">{t('settings.extensions.projectSpecific')}</span>
-                  )}
-                </div>
-                {extension.description && <p className="text-xs text-text-secondary mt-1.5 line-clamp-2">{extension.description}</p>}
-                {extension.author && (
-                  <p className="text-2xs text-text-muted mt-2">
-                    {t('settings.extensions.by')} {extension.author}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                {isInstalled ? (
-                  <>
-                    <Checkbox
-                      checked={!isDisabled}
-                      onChange={() => handleToggleDisabled(installedExtension.metadata.name, isDisabled)}
-                      label={t('settings.extensions.enabled')}
-                    />
-                    <Button
-                      onClick={() => handleUninstall(installedExtension.metadata.name)}
-                      disabled={isUninstalling}
-                      variant="outline"
-                      size="xs"
-                      color="danger"
-                    >
-                      {t('settings.extensions.uninstall')}
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => handleInstall(extension)} disabled={isInstalling} variant="contained" size="xs">
-                    <FaDownload className="mr-1.5 w-3 h-3" />
-                    {isInstalling ? t('settings.extensions.installing') : t('settings.extensions.install')}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
+      // If installed, render with installed extension (LoadedExtension)
+      if (installedExtension) {
+        return (
+          <ExtensionCard
+            key={extension.id}
+            extension={installedExtension}
+            isDisabled={disabledExtensions.includes(installedExtension.metadata.name)}
+            isUninstalling={uninstallingExtensions.has(installedExtension.metadata.name)}
+            onToggle={handleToggleDisabled}
+            onUninstall={handleUninstall}
+          />
+        );
+      }
+
+      // If not installed, render with available extension (AvailableExtension)
+      return <ExtensionCard key={extension.id} extension={extension} isInstalling={installingExtensions.has(extension.id)} onInstall={handleInstall} />;
     };
 
     const handleToggleRepository = (repositoryUrl: string) => {
@@ -421,7 +391,17 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
 
     // Render repository accordion
     const renderRepositoryAccordion = (repositoryUrl: string, extensions: AvailableExtension[]) => {
-      const installedCount = extensions.filter((ext) => installedExtensions.some((inst) => inst.id === ext.id)).length;
+      const installedCount = extensions.filter((ext) =>
+        installedExtensions.some((inst) => {
+          if (inst.id !== ext.id) {
+            return false;
+          }
+          if (profileContext === 'global') {
+            return !inst.projectDir;
+          }
+          return !inst.projectDir || inst.projectDir === profileContext;
+        }),
+      ).length;
       const isDefault = repositoryUrl === AIDER_DESK_EXTENSIONS_REPO_URL;
       const isExpanded = expandedRepositories.has(repositoryUrl);
 
@@ -430,21 +410,16 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
           key={repositoryUrl}
           title={
             <div className="flex items-center gap-2 text-sm font-medium text-text-primary w-full pr-2">
-              <div className="flex items-center gap-2 flex-1">
-                <span className="truncate text-xs">{repositoryUrl}</span>
-                <span className="text-2xs px-1.5 py-0.5 rounded-full bg-bg-tertiary text-text-muted">{extensions.length}</span>
-                {installedCount > 0 && (
-                  <span className="text-2xs px-1.5 py-0.5 rounded-full bg-success/10 text-success">
-                    {installedCount} {t('settings.extensions.available.installedCount')}
-                  </span>
-                )}
-              </div>
+              <span className="truncate text-xs flex-1 text-left">{repositoryUrl}</span>
+              <span className="text-2xs text-text-tertiary">
+                {installedCount}/{extensions.length} {t('settings.extensions.available.installedExtensions')}
+              </span>
               {!isDefault && (
                 <IconButton
                   icon={<FaTrash />}
                   onClick={() => handleRemoveRepository(repositoryUrl)}
                   tooltip={t('settings.extensions.repositories.remove')}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="hidden group-hover:block ml-2 text-error hover:text-error-light transition-colors"
                 />
               )}
             </div>
@@ -452,7 +427,8 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
           isOpen={isExpanded}
           onOpenChange={() => handleToggleRepository(repositoryUrl)}
           noMaxHeight={true}
-          className="rounded-lg border border-border-default bg-bg-secondary group"
+          chevronPosition="right"
+          className="rounded-lg border border-border-default bg-bg-primary-light group relative"
           buttonClassName="px-4 py-3"
         >
           <div className="px-4 pb-4 pt-2 space-y-2">{extensions.map(renderExtensionCard)}</div>
@@ -464,8 +440,8 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
       <div className="space-y-3">
         {renderAddRepository()}
         {loadingAvailable ? (
-          <div className="flex items-center justify-center py-12 text-2xs">
-            <div className="text-sm text-text-muted">{t('settings.extensions.loading')}</div>
+          <div className="flex items-center justify-center py-12 text-2xs relative">
+            <LoadingOverlay message={t('settings.extensions.loading')} spinnerSize="sm" transparent={true} />
           </div>
         ) : extensionsByRepository.size === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -511,6 +487,23 @@ export const ExtensionsSettings = ({ settings, setSettings, selectedProjectConte
             {t('settings.extensions.tabs.installed')}
             {installedExtensions.length > 0 && <span className="ml-2 text-2xs px-1.5 py-0.5 rounded-full bg-bg-tertiary">{installedExtensions.length}</span>}
           </button>
+        </div>
+        <div className="flex items-center justify-between w-[200px]">
+          <IconButton
+            icon={<FaChevronLeft className="w-3 h-3" />}
+            onClick={() => navigateContext('prev')}
+            tooltip={t('settings.extensions.previousContext')}
+            disabled={contexts.length <= 1}
+            className="p-1"
+          />
+          <div className="text-xs text-text-secondary truncate flex-1 text-center">{getContextDisplayName()}</div>
+          <IconButton
+            icon={<FaChevronRight className="w-3 h-3" />}
+            onClick={() => navigateContext('next')}
+            tooltip={t('settings.extensions.nextContext')}
+            disabled={contexts.length <= 1}
+            className="p-1"
+          />
         </div>
         <Button onClick={handleRefresh} disabled={isLoading} variant="outline" size="sm">
           <FaSync className={clsx('mr-1.5 w-3 h-3', isLoading && 'animate-spin')} />

@@ -74,7 +74,13 @@ export const Button = ({
       disabled={disabled}
       autoFocus={autoFocus}
       title={title}
-      className={twMerge('flex items-center space-x-1 rounded-lg font-medium transition-colors', borderClass, baseColorClasses, baseSizeClasses, className)}
+      className={twMerge(
+        'flex items-center space-x-1 rounded-lg font-medium transition-colors select-none',
+        borderClass,
+        baseColorClasses,
+        baseSizeClasses,
+        className,
+      )}
     >
       {children}
     </button>

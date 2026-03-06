@@ -444,7 +444,8 @@
       "available": {
         "empty": "All available extensions are already installed",
         "extensionsCount": "extensions",
-        "installedCount": "installed"
+        "installedCount": "installed",
+        "installedExtensions": "installed extensions"
       },
       "search": {
         "placeholder": "Search extensions..."
@@ -480,7 +481,11 @@
         "uninstall": "Failed to uninstall extension",
         "repositoryExists": "This repository is already added",
         "cannotRemoveDefault": "Cannot remove the default repository"
-      }
+      },
+      "previousContext": "Previous context",
+      "nextContext": "Next context",
+      "expandReadme": "Expand README",
+      "collapseReadme": "Collapse README"
     },
     "hotkeys": {
       "projectHotkeys": "Project",

@@ -938,6 +938,7 @@ export interface LoadedExtension {
   filePath: string;
   initialized: boolean;
   projectDir?: string;
+  readmeContent?: string;
 }
 
 export interface AvailableExtension {
@@ -952,4 +953,5 @@ export interface AvailableExtension {
   folder?: string;
   repositoryUrl: string;
   hasDependencies?: boolean;
+  readmeContent?: string;
 }

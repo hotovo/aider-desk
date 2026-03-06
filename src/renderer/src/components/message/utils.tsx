@@ -22,8 +22,8 @@ const ALL_FENCES = [
   ['<sourcecode>', '</sourcecode>'],
 ] as const;
 
-const REMARK_PLUGINS = [remarkGfm];
-const MARKDOWN_COMPONENTS: Components = {
+export const REMARK_PLUGINS = [remarkGfm];
+export const MARKDOWN_COMPONENTS: Components = {
   h1: (props) => <h1 className="text-2xl font-bold my-4 first:mt-0 last:mb-0" {...props} />,
   h2: (props) => <h2 className="text-xl font-bold my-3 first:mt-0 last:mb-0" {...props} />,
   h3: (props) => <h3 className="text-lg font-bold my-2 first:mt-0 last:mb-0" {...props} />,
@@ -52,7 +52,7 @@ const MARKDOWN_COMPONENTS: Components = {
     return <CodeInline {...props} />;
   },
   // Basic styling for preformatted blocks (e.g., indented code)
-  pre: (props) => <pre className="bg-bg-primary-light p-2 rounded my-2 overflow-x-auto" {...props} />,
+  pre: (props) => <pre className="p-2 rounded my-2 overflow-x-auto" {...props} />,
   // Table styling
   table: (props) => <table className="divide-y divide-border-default border-border-default mb-2 rounded-sm" {...props} />,
   thead: (props) => <thead className="bg-bg-secondary-light" {...props} />,
