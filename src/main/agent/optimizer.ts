@@ -142,10 +142,7 @@ const addImportantReminders = async (
     }
   }
 
-  let remindersContent = '';
-  if (reminders.length > 0) {
-    remindersContent = `\n\n<ThisIsImportant>\n${reminders.map((reminder) => `<Reminder>\n${reminder}\n</Reminder>`).join('\n ')}\n</ThisIsImportant>`;
-  }
+  let remindersContent = reminders.map((reminder) => `<Reminder>\n${reminder}\n</Reminder>`).join('\n ');
   // Dispatch event to extensions to allow modification of reminders
   if (extensionManager) {
     const extensionResult = await extensionManager.dispatchEvent(
@@ -160,8 +157,12 @@ const addImportantReminders = async (
     remindersContent = extensionResult.remindersContent ?? remindersContent;
   }
 
-  if (!remindersContent) {
+  if (!remindersContent.trim()) {
     return messages;
+  }
+
+  if (remindersContent.trim()) {
+    remindersContent = `\n\n<ThisIsImportant>\n${remindersContent}\n</ThisIsImportant>`;
   }
 
   const updatedFirstUserMessage = {
