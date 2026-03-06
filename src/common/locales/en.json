@@ -1598,14 +1598,14 @@
     "title": "AiderDesk",
     "subtitle": "Your AI-powered coding assistant",
     "features": {
-      "title": "What you can do:",
+      "title": "What you can do",
       "aiCoding": "Generate and modify code with AI assistance",
       "contextManagement": "Add files to context for better results",
       "multiModel": "Choose from multiple AI models and providers",
       "commands": "Execute commands and run tests"
     },
     "tips": {
-      "title": "Getting started:",
+      "title": "Getting started",
       "addFiles": "Add files to context using the sidebar or /add command",
       "askQuestion": "Type your request in the prompt field below",
       "useCommands": "Use / commands for quick actions",
@@ -1625,7 +1625,8 @@
         "title": "BMAD Mode",
         "description": "Guided workflows for planning, spec'ing, and implementing features. Best for structured development processes."
       }
-    }
+    },
+    "selectMode": "Select"
   },
   "bmad": {
     "welcome": {

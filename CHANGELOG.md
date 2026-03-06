@@ -10,6 +10,7 @@
 - starting empty quick spec flow in BMAD mode now correctly sets the initial context
 - added settings page for Extension
 - added full-width toggle to Updated files page
+- refined welcome message layout
 
 ## [0.55.0]
 

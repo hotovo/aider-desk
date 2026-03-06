@@ -1609,14 +1609,14 @@
     "title": "AiderDesk",
     "subtitle": "您的 AI 驱动编程助手",
     "features": {
-      "title": "您可以做什么：",
+      "title": "您可以做什么",
       "aiCoding": "使用 AI 辅助生成和修改代码",
       "contextManagement": "添加文件到上下文以获得更好的结果",
       "multiModel": "选择多种 AI 模型和提供商",
       "commands": "执行命令和运行测试"
     },
     "tips": {
-      "title": "入门指南：",
+      "title": "入门指南",
       "addFiles": "使用侧边栏或 /add 命令添加文件到上下文",
       "askQuestion": "在下方的提示字段中输入您的请求",
       "useCommands": "使用 / 命令进行快速操作",
@@ -1636,7 +1636,8 @@
         "title": "BMAD 模式",
         "description": "用于规划、规范和实现功能的引导式工作流程。最适合结构化的开发流程。"
       }
-    }
+    },
+    "selectMode": "选择"
   },
   "bmad": {
     "welcome": {
