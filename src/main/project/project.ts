@@ -568,7 +568,7 @@ export class Project {
     }
 
     const internalTask = this.getInternalTask();
-    const prompt = this.promptsManager.getCodeInlineRequestPrompt(internalTask!, {
+    const prompt = await this.promptsManager.getCodeInlineRequestPrompt(internalTask!, {
       filename,
       lineNumber,
       fileExtension,

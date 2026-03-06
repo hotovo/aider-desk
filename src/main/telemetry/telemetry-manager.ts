@@ -151,4 +151,49 @@ export class TelemetryManager {
       event: 'terminal-created',
     });
   }
+
+  captureExtensionsLoaded(totalExtensions: number, globalExtensions: number, projectExtensions: number, enabledExtensions: number, disabledExtensions: number) {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
+    this.client?.capture({
+      distinctId: this.distinctId,
+      event: 'extensions-loaded',
+      properties: {
+        totalExtensions,
+        globalExtensions,
+        projectExtensions,
+        enabledExtensions,
+        disabledExtensions,
+      },
+    });
+  }
+
+  captureExtensionInstalled(extensionName: string, location: 'global' | 'project') {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
+    this.client?.capture({
+      distinctId: this.distinctId,
+      event: 'extension-installed',
+      properties: {
+        extensionName,
+        location,
+      },
+    });
+  }
+
+  captureExtensionUninstalled(extensionName: string, location: 'global' | 'project') {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
+    this.client?.capture({
+      distinctId: this.distinctId,
+      event: 'extension-uninstalled',
+      properties: {
+        extensionName,
+        location,
+      },
+    });
+  }
 }

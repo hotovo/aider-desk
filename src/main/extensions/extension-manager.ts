@@ -16,6 +16,7 @@ import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
 import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
+import type { TelemetryManager } from '@/telemetry';
 import type {
   AgentFinishedEvent,
   AgentStartedEvent,
@@ -135,6 +136,7 @@ export class ExtensionManager {
     private readonly store: Store,
     private readonly modelManager: ModelManager,
     private readonly eventManager: EventManager,
+    private readonly telemetryManager: TelemetryManager,
     private readonly registry: ExtensionRegistry = new ExtensionRegistry(),
   ) {
     this.loader = new ExtensionLoader();
@@ -182,6 +184,8 @@ export class ExtensionManager {
       this.initialized = true;
 
       await this.startHotReloadWatcher();
+
+      this.captureExtensionsTelemetry();
     } catch (error) {
       logger.error(`[Extensions] Extension system initialization failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
@@ -289,6 +293,18 @@ export class ExtensionManager {
 
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  private captureExtensionsTelemetry() {
+    const allExtensions = this.registry.getExtensions();
+    const settings = this.store.getSettings();
+    const disabledExtensions = settings.extensions?.disabled || [];
+
+    const globalExtensions = allExtensions.filter((ext) => !ext.projectDir).length;
+    const projectExtensions = allExtensions.filter((ext) => ext.projectDir).length;
+    const enabledCount = allExtensions.filter((ext) => !disabledExtensions.includes(ext.metadata.name)).length;
+
+    this.telemetryManager.captureExtensionsLoaded(allExtensions.length, globalExtensions, projectExtensions, enabledCount, disabledExtensions.length);
   }
 
   async dispose(): Promise<void> {
@@ -1008,6 +1024,7 @@ export class ExtensionManager {
       await this.loadExtensionsForDir(targetDir);
 
       logger.info(`[Extensions] Successfully installed ${extension.name}`);
+      this.telemetryManager.captureExtensionInstalled(extension.name, projectDir ? 'project' : 'global');
       return true;
     } catch (error) {
       logger.error(`[Extensions] Failed to install extension '${extensionId}':`, error);
@@ -1113,6 +1130,7 @@ export class ExtensionManager {
       this.registry.unregister(extensionId);
 
       logger.info(`[Extensions] Successfully uninstalled ${extensionId}`);
+      this.telemetryManager.captureExtensionUninstalled(extensionId, extension.projectDir ? 'project' : 'global');
       return true;
     } catch (error) {
       logger.error(`[Extensions] Failed to uninstall extension '${extensionId}':`, error);

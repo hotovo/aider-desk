@@ -69,6 +69,7 @@ const createMockDeps = () => ({
   eventManager: {
     sendSettingsUpdated: vi.fn(),
   } as any,
+  telemetryManager: {} as any,
 });
 
 const createValidTool = (overrides: Partial<ToolDefinition> = {}): ToolDefinition => ({
@@ -152,7 +153,7 @@ describe('Extension Tool Integration with Agent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeps = createMockDeps();
-    manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+    manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
   });
 
   afterEach(() => {
@@ -512,10 +513,15 @@ describe('Extension Tool Integration with Agent', () => {
       registry.register(extension, metadata, '/test/path.ts');
 
       const mockDeps = createMockDeps();
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, {
-        ...mockDeps.eventManager,
-        getProjects: vi.fn().mockReturnValue([]),
-      } as any);
+      const manager = new ExtensionManager(
+        mockDeps.store,
+        mockDeps.modelManager,
+        {
+          ...mockDeps.eventManager,
+          getProjects: vi.fn().mockReturnValue([]),
+        } as any,
+        mockDeps.telemetryManager,
+      );
       (manager as any).registry = registry;
 
       const commands = manager.getCommands(createMockProject());
@@ -546,10 +552,15 @@ describe('Extension Tool Integration with Agent', () => {
       registry.register(extension, metadata, '/test/path.ts');
 
       const mockDeps = createMockDeps();
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, {
-        ...mockDeps.eventManager,
-        getProjects: vi.fn().mockReturnValue([]),
-      } as any);
+      const manager = new ExtensionManager(
+        mockDeps.store,
+        mockDeps.modelManager,
+        {
+          ...mockDeps.eventManager,
+          getProjects: vi.fn().mockReturnValue([]),
+        } as any,
+        mockDeps.telemetryManager,
+      );
       (manager as any).registry = registry;
 
       manager.getCommands(createMockProject());

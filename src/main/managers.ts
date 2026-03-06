@@ -64,6 +64,12 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     logger.error('[Hooks] Hook system initialization failed:', error);
   });
 
+  // Initialize extension manager (non-blocking - errors should not crash app)
+  const extensionManager = new ExtensionManager(store, modelManager, eventManager, telemetryManager);
+  extensionManager.init().catch((error) => {
+    logger.error('[Extensions] Extension system initialization failed, continuing without extensions:', error);
+  });
+
   // Initialize prompts manager (non-blocking - templates compile lazily)
   const promptsManager = new PromptsManager();
   promptsManager.init().catch((error) => {
@@ -71,12 +77,6 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   });
 
   const worktreeManager = new WorktreeManager();
-
-  // Initialize extension manager (non-blocking - errors should not crash app)
-  const extensionManager = new ExtensionManager(store, modelManager, eventManager);
-  extensionManager.init().catch((error) => {
-    logger.error('[Extensions] Extension system initialization failed, continuing without extensions:', error);
-  });
 
   // Initialize agent profile manager with extension manager for unified profile access
   const agentProfileManager = new AgentProfileManager(eventManager, extensionManager);

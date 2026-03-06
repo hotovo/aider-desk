@@ -46,6 +46,7 @@ const createMockDeps = () => ({
   } as any,
   modelManager: {} as any,
   eventManager: {} as any,
+  telemetryManager: {} as any,
 });
 
 describe('Extension Command Registration', () => {
@@ -59,7 +60,7 @@ describe('Extension Command Registration', () => {
 
   describe('CommandDefinition Validation', () => {
     it('should accept valid command definition', () => {
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
 
       const command: CommandDefinition = {
         name: 'test-command',
@@ -75,7 +76,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should reject command with invalid name format', () => {
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
 
       const command: CommandDefinition = {
         name: 'TestCommand', // PascalCase not allowed
@@ -93,7 +94,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should reject command with empty description', () => {
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
 
       const command: CommandDefinition = {
         name: 'test-command',
@@ -109,7 +110,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should reject command without execute function', () => {
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
 
       const command = {
         name: 'test-command',
@@ -122,7 +123,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should accept command with arguments array', () => {
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
 
       const command: CommandDefinition = {
         name: 'test-command',
@@ -166,7 +167,7 @@ describe('Extension Command Registration', () => {
 
       registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
 
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
       (manager as any).registry = registry;
 
       const commands = manager.getCommands(createMockProject());
@@ -184,7 +185,7 @@ describe('Extension Command Registration', () => {
 
       registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
 
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
       (manager as any).registry = registry;
 
       const commands = manager.getCommands(createMockProject());
@@ -213,7 +214,7 @@ describe('Extension Command Registration', () => {
 
       registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
 
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
       (manager as any).registry = registry;
 
       const commands = manager.getCommands(createMockProject());
@@ -247,7 +248,7 @@ describe('Extension Command Registration', () => {
       registry.register(globalExtension, { name: 'global-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/global/ext.ts');
       registry.register(projectExtension, { name: 'project-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/project/ext.ts', '/project/dir');
 
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
       (manager as any).registry = registry;
 
       const commandsForProject = manager.getCommands(createMockProject('/project/dir'));
@@ -279,7 +280,7 @@ describe('Extension Command Registration', () => {
 
       registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
 
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
       (manager as any).registry = registry;
 
       await manager.executeCommand('test-command', ['arg1', 'arg2'], createMockProject());
@@ -288,7 +289,7 @@ describe('Extension Command Registration', () => {
     });
 
     it('should throw error for non-existent command', async () => {
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
       (manager as any).registry = registry;
 
       await expect(manager.executeCommand('non-existent', [], createMockProject())).rejects.toThrow("Extension command 'non-existent' not found");
@@ -311,7 +312,7 @@ describe('Extension Command Registration', () => {
 
       registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
 
-      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager);
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
       (manager as any).registry = registry;
 
       await expect(manager.executeCommand('failing-command', [], createMockProject())).rejects.toThrow("Extension command 'failing-command' failed");

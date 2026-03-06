@@ -11,6 +11,8 @@ import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
 import type { FSWatcher } from 'chokidar';
 
+import { TelemetryManager } from '@/telemetry';
+
 // Import fs to get the mocked module
 
 vi.mock('../extension-loader');
@@ -61,6 +63,7 @@ describe('ExtensionManager', () => {
   let store: { getSettings: ReturnType<typeof vi.fn>; saveSettings: ReturnType<typeof vi.fn> };
   let modelManager: { getProviderModels: ReturnType<typeof vi.fn> };
   let eventManager: { sendSettingsUpdated: ReturnType<typeof vi.fn> };
+  let telemetryManager: Partial<TelemetryManager>;
 
   // Get references to mocked fs functions
   const fsAccessMock = vi.mocked(fs.access);
@@ -91,10 +94,14 @@ describe('ExtensionManager', () => {
     eventManager = {
       sendSettingsUpdated: vi.fn(),
     };
+    telemetryManager = {
+      captureExtensionsLoaded: vi.fn(),
+    };
     manager = new ExtensionManager(
       store as unknown as Store,
       modelManager as unknown as ModelManager,
       eventManager as unknown as EventManager,
+      telemetryManager as any,
       mockRegistry as any,
     );
     (manager as unknown as Record<string, unknown>).loader = mockLoader;
