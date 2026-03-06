@@ -24,6 +24,7 @@ interface Extension {
 
   // Event Handlers - See Events Reference for details
   onTaskCreated?(event, context): Promise<void | Partial<Event>>;
+  onPromptTemplate?(event, context): Promise<void | Partial<PromptTemplateEvent>>;
   // ... and more event handlers
 }
 ```

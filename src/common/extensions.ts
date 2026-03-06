@@ -21,14 +21,9 @@ import {
   TodoItem,
   UpdatedFile,
   UsageReportData,
-  ToolApprovalState,
-  InvocationMode,
-  ContextMemoryMode,
   SettingsData,
   ProviderProfile,
 } from '@common/types';
-
-export type { ToolApprovalState, InvocationMode, ContextMemoryMode };
 
 export type AgentStepResult = unknown;
 export type { ModeDefinition };
@@ -246,6 +241,16 @@ export interface PromptStartedEvent {
 /** Event payload for prompt finished events */
 export interface PromptFinishedEvent {
   responses: ResponseCompletedData[];
+}
+
+/** Event payload for prompt template events */
+export interface PromptTemplateEvent {
+  /** Template name (e.g., 'system-prompt', 'init-project', etc.) */
+  readonly name: string;
+  /** Template data object */
+  readonly data: unknown;
+  /** Rendered prompt that can be overridden by extension */
+  prompt: string;
 }
 
 /** Event payload for agent started events */
@@ -746,6 +751,13 @@ export interface Extension {
    * @returns void or partial event to modify
    */
   onPromptFinished?(event: PromptFinishedEvent, context: ExtensionContext): Promise<void | Partial<PromptFinishedEvent>>;
+
+  /**
+   * Called when a prompt template is rendered
+   * Modify event.prompt to override the rendered prompt
+   * @returns void or partial event to modify prompt
+   */
+  onPromptTemplate?(event: PromptTemplateEvent, context: ExtensionContext): Promise<void | Partial<PromptTemplateEvent>>;
 
   // Agent Events
 

@@ -53,6 +53,8 @@ import {
   UpdateTaskStateData,
 } from './types';
 
+import type { ExtensionManager } from '@/extensions/extension-manager';
+
 import { AIDER_DESK_DEFAULT_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Task } from '@/task';
@@ -63,6 +65,7 @@ export class PromptsManager {
   private watchers = new Map<string, FSWatcher>();
 
   constructor(
+    private readonly extensionManager: ExtensionManager,
     private readonly defaultTemplatesDir = AIDER_DESK_DEFAULT_PROMPTS_DIR,
     private readonly globalPromptsDir = AIDER_DESK_GLOBAL_PROMPTS_DIR,
   ) {
@@ -251,20 +254,35 @@ export class PromptsManager {
     logger.info('PromptsManager disposed');
   }
 
-  private render(name: PromptTemplateName, data: unknown, projectDir?: string): string {
-    if (projectDir) {
-      const projectTemplates = this.projectTemplatesCache.get(projectDir);
-      const projectTemplate = projectTemplates?.get(name);
-      if (projectTemplate) {
-        return projectTemplate(data);
+  private async render(name: PromptTemplateName, data: unknown, projectDir: string, task?: Task): Promise<string> {
+    const projectTemplates = this.projectTemplatesCache.get(projectDir);
+    const projectTemplate = projectTemplates?.get(name);
+
+    let prompt: string;
+    if (projectTemplate) {
+      prompt = projectTemplate(data);
+    } else {
+      const template = this.globalTemplates.get(name);
+      if (!template) {
+        throw new Error(`Template ${name} not found`);
       }
+      prompt = template(data);
     }
 
-    const template = this.globalTemplates.get(name);
-    if (!template) {
-      throw new Error(`Template ${name} not found`);
+    // Dispatch onPromptTemplate event to allow extensions to override the prompt
+    const project = task?.project;
+    if (project) {
+      const event = {
+        name,
+        data,
+        prompt,
+      };
+
+      const modifiedEvent = await this.extensionManager.dispatchEvent('onPromptTemplate', event, project, task);
+      return modifiedEvent.prompt;
     }
-    return template(data);
+
+    return prompt;
   }
 
   private calculateToolPermissions = (settings: SettingsData, agentProfile: AgentProfile, autoApprove: boolean): ToolPermissions => {
@@ -359,9 +377,9 @@ export class PromptsManager {
     };
 
     const projectDir = task.getProjectDir();
-    data.workflow = this.render('workflow', data, projectDir);
+    data.workflow = await this.render('workflow', data, projectDir, task);
 
-    return this.render('system-prompt', data, projectDir);
+    return await this.render('system-prompt', data, projectDir, task);
   };
 
   private getRulesContent = async (task: Task, agentProfile?: AgentProfile) => {
@@ -393,36 +411,36 @@ export class PromptsManager {
     return ruleFilesContent.filter(Boolean).join('\n');
   };
 
-  public getInitProjectPrompt = (task: Task) => {
+  public getInitProjectPrompt = async (task: Task) => {
     const data: InitProjectPromptData = {};
-    return this.render('init-project', data, task.getProjectDir());
+    return await this.render('init-project', data, task.getProjectDir(), task);
   };
 
-  public getCompactConversationPrompt = (task: Task, customInstructions?: string) => {
+  public getCompactConversationPrompt = async (task: Task, customInstructions?: string) => {
     const data: CompactConversationPromptData = { customInstructions };
-    return this.render('compact-conversation', data, task.getProjectDir());
+    return await this.render('compact-conversation', data, task.getProjectDir(), task);
   };
 
-  public getGenerateCommitMessageSystemPrompt = (task: Task) => {
+  public getGenerateCommitMessageSystemPrompt = async (task: Task) => {
     const data: CommitMessagePromptData = {};
-    return this.render('commit-message', data, task.getProjectDir());
+    return await this.render('commit-message', data, task.getProjectDir(), task);
   };
 
-  public getGenerateTaskNamePrompt = (task: Task) => {
+  public getGenerateTaskNamePrompt = async (task: Task) => {
     const data: TaskNamePromptData = {};
-    return this.render('task-name', data, task.getProjectDir());
+    return await this.render('task-name', data, task.getProjectDir(), task);
   };
 
-  public getConflictResolutionSystemPrompt = (task: Task) => {
+  public getConflictResolutionSystemPrompt = async (task: Task) => {
     const data: ConflictResolutionSystemPromptData = {
       POWER_TOOL_GROUP_NAME,
       TOOL_GROUP_NAME_SEPARATOR,
       POWER_TOOL_FILE_EDIT,
     };
-    return this.render('conflict-resolution-system', data, task.getProjectDir());
+    return await this.render('conflict-resolution-system', data, task.getProjectDir(), task);
   };
 
-  public getConflictResolutionPrompt = (
+  public getConflictResolutionPrompt = async (
     task: Task,
     filePath: string,
     ctx: ConflictResolutionFileContext & {
@@ -437,12 +455,12 @@ export class PromptsManager {
       oursPath: ctx.oursPath,
       theirsPath: ctx.theirsPath,
     };
-    return this.render('conflict-resolution', data, task.getProjectDir());
+    return await this.render('conflict-resolution', data, task.getProjectDir(), task);
   };
 
-  public getUpdateTaskStatePrompt = (task: Task) => {
+  public getUpdateTaskStatePrompt = async (task: Task) => {
     const data: UpdateTaskStateData = {};
-    return this.render('update-task-state', data, task.getProjectDir());
+    return await this.render('update-task-state', data, task.getProjectDir(), task);
   };
 
   public getHandoffPrompt = async (task: Task, focus?: string) => {
@@ -451,10 +469,10 @@ export class PromptsManager {
       focus,
       contextFiles,
     };
-    return this.render('handoff', data, task.getProjectDir());
+    return await this.render('handoff', data, task.getProjectDir(), task);
   };
 
-  public getCodeInlineRequestPrompt = (task: Task, data: CodeInlineRequestPromptData) => {
-    return this.render('code-inline-request', data, task.getProjectDir());
+  public getCodeInlineRequestPrompt = async (task: Task, data: CodeInlineRequestPromptData) => {
+    return await this.render('code-inline-request', data, task.getProjectDir(), task);
   };
 }

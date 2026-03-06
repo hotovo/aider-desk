@@ -34,6 +34,7 @@ import type {
   ProjectStoppedEvent,
   PromptFinishedEvent,
   PromptStartedEvent,
+  PromptTemplateEvent,
   QuestionAnsweredEvent,
   QuestionAskedEvent,
   ResponseChunkEvent,
@@ -101,6 +102,7 @@ export type ExtensionEventMap = {
   onTaskUpdated: TaskUpdatedEvent;
   onPromptStarted: PromptStartedEvent;
   onPromptFinished: PromptFinishedEvent;
+  onPromptTemplate: PromptTemplateEvent;
   onAgentStarted: AgentStartedEvent;
   onAgentFinished: AgentFinishedEvent;
   onAgentStepFinished: AgentStepFinishedEvent;

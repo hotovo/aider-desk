@@ -68,6 +68,7 @@ async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext) {
 | **Tool** | Approval, Called, Finished | Tool execution |
 | **File** | Added, Dropped, Rule Files Retrieved | File context management |
 | **Prompt** | Started, Finished | Prompt processing |
+| **Prompt Template** | Template Rendered | Prompt template customization |
 | **Response** | Chunk, Completed | Response streaming |
 | **Approval** | Handle Approval | User approvals |
 | **Subagent** | Started, Finished | Subagent execution |
@@ -168,6 +169,72 @@ Called when prompt processing finishes.
 ```typescript
 interface PromptFinishedEvent {
   responses: ResponseCompletedData[];
+}
+```
+
+---
+
+## Prompt Template Events
+
+### PromptTemplateEvent
+Called when a prompt template is rendered. Use to customize or override prompt templates.
+
+```typescript
+interface PromptTemplateEvent {
+  /** Template name (e.g., 'system-prompt', 'init-project', etc.) */
+  readonly name: string;
+  /** Template data object */
+  readonly data: unknown;
+  /** Rendered prompt that can be overridden by extension */
+  prompt: string;
+}
+```
+
+**Available Template Names:**
+- `system-prompt` - System prompt for the agent
+- `init-project` - Project initialization prompt
+- `workflow` - Workflow execution prompt
+- `compact-conversation` - Conversation compaction prompt
+- `commit-message` - Git commit message generation prompt
+- `task-name` - Task name generation prompt
+- `conflict-resolution` - Conflict resolution prompt
+- `conflict-resolution-system` - Conflict resolution system prompt
+- `update-task-state` - Task state update prompt
+- `handoff` - Task handoff prompt
+- `code-inline-request` - Inline code request prompt
+
+#### Example: Customizing System Prompt
+
+```typescript
+async onPromptTemplate(event: PromptTemplateEvent, context: ExtensionContext) {
+  // Customize the system prompt
+  if (event.name === 'system-prompt') {
+    return {
+      prompt: event.prompt + '\n\nAdditional instructions: Always be concise.',
+    };
+  }
+}
+```
+
+#### Example: Project-Specific Prompt Customization
+
+```typescript
+async onPromptTemplate(event: PromptTemplateEvent, context: ExtensionContext) {
+  const projectDir = context.getProjectDir();
+  
+  // Add project-specific context to init-project prompt
+  if (event.name === 'init-project') {
+    const customInstructions = `
+    
+## Project-Specific Guidelines
+This project uses TypeScript with strict mode enabled.
+Always prefer type-safe implementations over any types.
+    `;
+    
+    return {
+      prompt: event.prompt + customInstructions,
+    };
+  }
 }
 ```
 

@@ -1,4 +1,5 @@
 import path from 'path';
+import { promises as fs } from 'fs';
 
 import { Extension, ExtensionMetadata } from '@common/extensions';
 
@@ -11,6 +12,7 @@ export interface LoadedExtension {
   filePath: string;
   initialized: boolean;
   projectDir?: string;
+  readmeContent?: string;
 }
 
 export class ExtensionRegistry {
@@ -30,10 +32,27 @@ export class ExtensionRegistry {
     return filename;
   }
 
-  register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
+  async register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
     const id = this.deriveExtensionId(filePath);
     logger.info(`[Extensions] Registering extension: ${metadata.name} (id: ${id})`);
-    this.extensions.set(metadata.name, { id, instance: extension, metadata, filePath, initialized: false, projectDir });
+
+    // Try to load README.md for folder-based extensions
+    let readmeContent: string | undefined;
+    const parsedPath = path.parse(filePath);
+    if (parsedPath.name === 'index') {
+      const readmePath = path.join(parsedPath.dir, 'README.md');
+      try {
+        const content = await fs.readFile(readmePath, 'utf-8');
+        if (content.trim()) {
+          readmeContent = content;
+          logger.info(`[Extensions] Loaded README.md for extension: ${metadata.name}`);
+        }
+      } catch {
+        // README.md doesn't exist or can't be read, that's fine
+      }
+    }
+
+    this.extensions.set(metadata.name, { id, instance: extension, metadata, filePath, initialized: false, projectDir, readmeContent });
   }
 
   setInitialized(name: string, initialized: boolean): void {

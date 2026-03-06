@@ -951,7 +951,7 @@ export class Task {
       const maxPromptLength = 1000;
       const taskName = await this.agent.generateText(
         agentProfile,
-        this.promptsManager.getGenerateTaskNamePrompt(this),
+        await this.promptsManager.getGenerateTaskNamePrompt(this),
         `Generate a concise task name for this request:\n\n${prompt.length > maxPromptLength ? prompt.substring(0, maxPromptLength) + '...' : prompt}\n\nOnly answer with the task name, nothing else.`,
         this.getProjectDir(),
         undefined,
@@ -1004,7 +1004,12 @@ export class Task {
 
       this.addLogMessage('loading', 'Updating task state...');
 
-      const answer = await this.agent.generateText(agentProfile, this.promptsManager.getUpdateTaskStatePrompt(this), wrappedMessage, this.getProjectDir());
+      const answer = await this.agent.generateText(
+        agentProfile,
+        await this.promptsManager.getUpdateTaskStatePrompt(this),
+        wrappedMessage,
+        this.getProjectDir(),
+      );
       if (!answer) {
         logger.warn('Task state determination interrupted');
         return null;
@@ -2507,7 +2512,7 @@ export class Task {
         const agentMessages = await this.agent.runAgent(
           this,
           compactConversationAgentProfile,
-          this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          await this.promptsManager.getCompactConversationPrompt(this, customInstructions),
           'compact-conversation',
           promptContext,
           contextMessages,
@@ -2531,7 +2536,7 @@ export class Task {
         }
       } else {
         const responses = await this.sendPromptToAider(
-          this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          await this.promptsManager.getCompactConversationPrompt(this, customInstructions),
           undefined,
           'ask',
           undefined,
@@ -2934,7 +2939,7 @@ export class Task {
       };
 
       // Run the agent with the modified profile
-      await this.runPromptInAgent(initProjectRulesAgentProfile, 'init-project-agents-file', this.promptsManager.getInitProjectPrompt(this));
+      await this.runPromptInAgent(initProjectRulesAgentProfile, 'init-project-agents-file', await this.promptsManager.getInitProjectPrompt(this));
 
       // Check if the AGENTS.md file was created
       const projectAgentsPath = path.join(this.project.baseDir, 'AGENTS.md');
@@ -3277,7 +3282,7 @@ ${error.stderr}`,
             try {
               effectiveCommitMessage = await this.agent.generateText(
                 agentProfile,
-                this.promptsManager.getGenerateCommitMessageSystemPrompt(this),
+                await this.promptsManager.getGenerateCommitMessageSystemPrompt(this),
                 `Generate a concise conventional commit message for these changes:\n\n${changesDiff}\n\nOnly answer with the commit message, nothing else.`,
                 this.getProjectDir(),
                 undefined,
@@ -3483,7 +3488,7 @@ ${error.stderr}`,
 
     const commitMessage = await this.agent.generateText(
       agentProfile,
-      this.promptsManager.getGenerateCommitMessageSystemPrompt(this),
+      await this.promptsManager.getGenerateCommitMessageSystemPrompt(this),
       `Here is the git diff of uncommitted changes:\n\n\`\`\`diff\n${diff}\n\`\`\`${commitHistoryText}`,
       this.getProjectDir(),
       undefined,
@@ -3667,13 +3672,13 @@ ${error.stderr}`,
         ]);
 
         try {
-          const prompt = this.promptsManager.getConflictResolutionPrompt(this, filePath, {
+          const prompt = await this.promptsManager.getConflictResolutionPrompt(this, filePath, {
             ...ctx,
             basePath: ctx.base ? basePath : undefined,
             oursPath: ctx.ours ? oursPath : undefined,
             theirsPath: ctx.theirs ? theirsPath : undefined,
           });
-          const systemPrompt = this.promptsManager.getConflictResolutionSystemPrompt(this);
+          const systemPrompt = await this.promptsManager.getConflictResolutionSystemPrompt(this);
 
           await this.agent.runAgent(
             this,

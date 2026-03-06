@@ -21,6 +21,7 @@ Extensions can listen to and modify events throughout AiderDesk:
 - **Tool Events** - Tool approval, execution, and completion
 - **File Events** - Files added to or dropped from context
 - **Prompt Events** - Prompt submission and processing
+- **Prompt Template Events** - Customize prompt templates before rendering
 - **Response Events** - Response chunks and completion
 - **And more...**
 

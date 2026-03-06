@@ -200,6 +200,12 @@ These events fire during each iteration of the LLM processing:
 | `onAgentStarted` | Modify prompt, context files, or system prompt before agent execution | ✅ Yes |
 | `onOptimizeMessages` | Modify message history sent to LLM (e.g., remove sensitive data, add context) | ❌ No |
 
+### Want to Customize Prompt Templates?
+
+| Event | When to Use | Can Block? |
+|-------|------------|------------|
+| `onPromptTemplate` | Customize or override prompt templates (system prompts, init-project, etc.) before they're rendered | ❌ No |
+
 ### Want to Control Tool Execution?
 
 | Event | When to Use | Can Block? |
@@ -376,6 +382,39 @@ async onTaskCreated(event: TaskCreatedEvent, context: ExtensionContext): Promise
     const defaultName = `Task-${Date.now()}`;
     return {
       task: { ...task, name: defaultName }
+    };
+  }
+  
+  return {};
+}
+```
+
+### 9. Customize Prompt Templates
+
+Implement `onPromptTemplate` to customize prompt templates before they're rendered:
+
+```typescript
+async onPromptTemplate(event: PromptTemplateEvent, context: ExtensionContext): Promise<Partial<PromptTemplateEvent>> {
+  // Customize the system prompt
+  if (event.name === 'system-prompt') {
+    const projectDir = context.getProjectDir();
+    const customInstructions = `
+    
+## Project-Specific Guidelines
+- This project uses TypeScript with strict mode
+- Always prefer type-safe implementations
+- Follow the existing code patterns
+    `;
+    
+    return {
+      prompt: event.prompt + customInstructions
+    };
+  }
+  
+  // Customize the init-project prompt
+  if (event.name === 'init-project') {
+    return {
+      prompt: event.prompt.replace('[DEFAULT INSTRUCTIONS]', '[CUSTOM PROJECT INSTRUCTIONS]')
     };
   }
   

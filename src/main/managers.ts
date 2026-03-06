@@ -40,7 +40,9 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
 
   // Initialize MCP manager
   const mcpManager = new McpManager();
-  await mcpManager.init();
+  mcpManager.init().catch((error) => {
+    logger.error('[MCP] MCP manager initialization failed, continuing without MCP:', error);
+  });
 
   // Initialize event manager (no main window in headless)
   const eventManager = new EventManager(mainWindow);
@@ -71,7 +73,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   });
 
   // Initialize prompts manager (non-blocking - templates compile lazily)
-  const promptsManager = new PromptsManager();
+  const promptsManager = new PromptsManager(extensionManager);
   promptsManager.init().catch((error) => {
     logger.error('[Prompts] Prompts system initialization failed:', error);
   });
@@ -80,7 +82,9 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
 
   // Initialize agent profile manager with extension manager for unified profile access
   const agentProfileManager = new AgentProfileManager(eventManager, extensionManager);
-  await agentProfileManager.init();
+  agentProfileManager.init().catch((error) => {
+    logger.error('[AgentProfile] Agent profile system initialization failed:', error);
+  });
 
   // Initialize project manager
   const projectManager = new ProjectManager(
