@@ -77,6 +77,7 @@ const sidebars: SidebarsConfig = {
         "extensions/installation",
         "extensions/api-reference",
         "extensions/events",
+        "extensions/event-flow",
         "extensions/examples",
       ],
     },

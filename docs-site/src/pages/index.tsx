@@ -67,7 +67,11 @@ const Home = () => {
                 <h1 className={styles.brandTitle}>AiderDesk</h1>
               </div>
               <div className={styles.heroText}>
-                <h2 className={styles.heroTagline}>Supercharge Your Coding with AI</h2>
+                <h2 className={styles.heroTagline}>
+                  <span className={styles.gradientText}>Platform for AI-powered</span>
+                  <br />
+                  <span className={styles.gradientText}>software engineers</span>
+                </h2>
                 <p className={styles.heroSubtitle}>The smart way to integrate AI into your development workflow</p>
                 <div className={styles.floatingCard}>
                   <div className={styles.cardContent}>
