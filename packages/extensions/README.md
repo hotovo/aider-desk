@@ -14,16 +14,24 @@ pnpm add @aiderdesk/extensions
 
 ## Usage
 
+Import both types and runtime values from a single entry point:
+
 ```typescript
 import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/extensions';
+import { ToolApprovalState } from '@aiderdesk/extensions';
 import { z } from 'zod';
 
 export default class MyExtension implements Extension {
   async onLoad(context: ExtensionContext) {
     context.log('Extension loaded!', 'info');
+    
+    // Runtime values are available too
+    const approval = ToolApprovalState.Always;
   }
 }
 ```
+
+**Note**: The package provides both TypeScript type definitions and runtime JavaScript values (like enum values) from the same entry point. You can use `import type` for type-only imports, or regular imports for runtime values.
 
 ## Example Extensions
 

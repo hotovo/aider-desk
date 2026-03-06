@@ -28,6 +28,18 @@ execSync('esbuild src/runtime.ts --bundle --platform=node --outfile=dist/runtime
   stdio: 'inherit'
 });
 
+// Build index module with esbuild (unified entry point)
+console.log('Building index module with esbuild...');
+execSync('esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --format=esm', {
+  cwd: rootDir,
+  stdio: 'inherit'
+});
+
+// Copy extensions.d.ts to dist/index.d.ts for type definitions
+console.log('Copying type definitions...');
+const extensionsDts = readFileSync(join(rootDir, 'extensions.d.ts'), 'utf-8');
+writeFileSync(join(distDir, 'index.d.ts'), extensionsDts);
+
 // Read the built file
 const content = readFileSync(outputFile, 'utf-8');
 

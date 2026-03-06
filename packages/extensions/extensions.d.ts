@@ -285,7 +285,7 @@ export interface ContextFile {
 	readOnly?: boolean;
 	source?: "global-rule" | "project-rule" | "agent-rule";
 }
-export declare enum ContextMemoryMode {
+declare enum ContextMemoryMode {
 	Off = "off",
 	FullContext = "full-context",
 	LastMessage = "last-message"
@@ -391,7 +391,7 @@ declare const ProjectSettingsSchema: z.ZodObject<{
 	autoApproveLocked: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strip>;
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
-export declare enum ToolApprovalState {
+declare enum ToolApprovalState {
 	Always = "always",
 	Never = "never",
 	Ask = "ask"
@@ -417,7 +417,7 @@ export interface PromptBehavior {
 	};
 	useVimBindings: boolean;
 }
-export declare enum InvocationMode {
+declare enum InvocationMode {
 	OnDemand = "on-demand",
 	Automatic = "automatic"
 }
@@ -934,6 +934,15 @@ export interface PromptStartedEvent {
 export interface PromptFinishedEvent {
 	responses: ResponseCompletedData[];
 }
+/** Event payload for prompt template events */
+export interface PromptTemplateEvent {
+	/** Template name (e.g., 'system-prompt', 'init-project', etc.) */
+	readonly name: string;
+	/** Template data object */
+	readonly data: unknown;
+	/** Rendered prompt that can be overridden by extension */
+	prompt: string;
+}
 /** Event payload for agent started events */
 export interface AgentStartedEvent {
 	readonly mode: Mode;
@@ -1328,6 +1337,12 @@ export interface Extension {
 	 * @returns void or partial event to modify
 	 */
 	onPromptFinished?(event: PromptFinishedEvent, context: ExtensionContext): Promise<void | Partial<PromptFinishedEvent>>;
+	/**
+	 * Called when a prompt template is rendered
+	 * Modify event.prompt to override the rendered prompt
+	 * @returns void or partial event to modify prompt
+	 */
+	onPromptTemplate?(event: PromptTemplateEvent, context: ExtensionContext): Promise<void | Partial<PromptTemplateEvent>>;
 	/**
 	 * Called when agent mode starts
 	 * @returns void or partial event to modify prompt

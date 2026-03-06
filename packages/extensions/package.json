@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/extensions",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Type definitions and examples for AiderDesk extensions",
   "author": "Hotovo",
   "homepage": "https://aiderdesk.hotovo.com",
@@ -14,33 +14,29 @@
   },
   "license": "MIT",
   "type": "module",
-  "main": "./extensions.d.ts",
-  "types": "./extensions.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "aiderdesk-extensions": "./dist/cli.js"
   },
   "exports": {
     ".": {
-      "types": "./extensions.d.ts",
-      "default": "./extensions.d.ts"
-    },
-    "./runtime": {
-      "types": "./dist/runtime.d.ts",
-      "default": "./dist/runtime.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
   "files": [
     "extensions.d.ts",
     "README.md",
     "dist/cli.js",
-    "dist/runtime.js",
+    "dist/index.js",
+    "dist/index.d.ts",
     "extensions.json"
   ],
   "scripts": {
-    "build": "dts-bundle-generator --external-imports zod node --project ../../tsconfig.node.json --no-check --no-banner -o extensions.d.ts ../../src/common/extensions.ts",
-    "build:cli": "node scripts/build-cli.mjs",
+    "build": "dts-bundle-generator --external-imports zod node --project ../../tsconfig.node.json --no-check --no-banner -o extensions.d.ts ../../src/common/extensions.ts && node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build && npm run build:cli"
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "aiderdesk",
