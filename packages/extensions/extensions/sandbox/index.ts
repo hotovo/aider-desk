@@ -81,6 +81,7 @@ const DEFAULT_CONFIG: SandboxConfig = {
 let sandboxEnabled = false;
 let sandboxInitialized = false;
 let SandboxManager: typeof import('@anthropic-ai/sandbox-runtime').SandboxManager | null = null;
+let cleanupAfterCommand: (() => void) | null = null;
 
 function loadConfig(cwd: string): SandboxConfig {
   const projectConfigPath = join(cwd, '.aider-desk', 'sandbox.json');
@@ -181,6 +182,7 @@ async function execSandboxedCommand(command: string, cwd: string, signal: AbortS
       if (timeoutHandle) {
         clearTimeout(timeoutHandle);
       }
+      cleanupAfterCommand?.();
       reject(err);
     });
 
@@ -201,6 +203,9 @@ async function execSandboxedCommand(command: string, cwd: string, signal: AbortS
         clearTimeout(timeoutHandle);
       }
       signal?.removeEventListener('abort', onAbort);
+
+      // Clean up bwrap mount points (ghost files created for non-existent deny paths)
+      cleanupAfterCommand?.();
 
       if (signal?.aborted) {
         reject(new Error('aborted'));
@@ -223,6 +228,16 @@ async function initializeSandbox(config: SandboxConfig, context: ExtensionContex
   try {
     const sandboxModule = await import('@anthropic-ai/sandbox-runtime');
     SandboxManager = sandboxModule.SandboxManager;
+
+    // Import cleanupAfterCommand from internal module (not exported from main index)
+    try {
+      const sandboxManagerModule = await import(
+        /* webpackIgnore: true */ '@anthropic-ai/sandbox-runtime/dist/sandbox/sandbox-manager.js'
+      );
+      cleanupAfterCommand = sandboxManagerModule.cleanupAfterCommand;
+    } catch {
+      context.log('Could not load cleanupAfterCommand, mount point cleanup disabled', 'warn');
+    }
 
     await SandboxManager.initialize({
       network: config.network,
