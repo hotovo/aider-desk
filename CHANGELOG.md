@@ -11,6 +11,7 @@
 - added settings page for Extension
 - added full-width toggle to Updated files page
 - refined welcome message layout
+- added connection timeout during startup and support for AIDER_DESK_NO_UPDATES environment variable
 
 ## [0.55.0]
 
