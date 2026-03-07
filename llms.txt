@@ -520,6 +520,7 @@ src/
             SortableAgentProfileItem.tsx
           AboutSettings.tsx
           AiderSettings.tsx
+          ExtensionCard.tsx
           ExtensionsSettings.tsx
           GeneralSettings.tsx
           HotkeyConfig.tsx
@@ -1871,7 +1872,8 @@ File: src/common/locales/en.json
       "available": {
         "empty": "All available extensions are already installed",
         "extensionsCount": "extensions",
-        "installedCount": "installed"
+        "installedCount": "installed",
+        "installedExtensions": "installed extensions"
       },
       "search": {
         "placeholder": "Search extensions..."
@@ -1907,7 +1909,11 @@ File: src/common/locales/en.json
         "uninstall": "Failed to uninstall extension",
         "repositoryExists": "This repository is already added",
         "cannotRemoveDefault": "Cannot remove the default repository"
-      }
+      },
+      "previousContext": "Previous context",
+      "nextContext": "Next context",
+      "expandReadme": "Expand README",
+      "collapseReadme": "Collapse README"
     },
     "hotkeys": {
       "projectHotkeys": "Project",
@@ -3679,7 +3685,8 @@ File: src/common/locales/zh.json
       "available": {
         "empty": "所有可用扩展都已安装",
         "extensionsCount": "扩展",
-        "installedCount": "已安装"
+        "installedCount": "已安装",
+        "installedExtensions": "已安装扩展"
       },
       "search": {
         "placeholder": "搜索扩展..."
@@ -3715,7 +3722,11 @@ File: src/common/locales/zh.json
         "uninstall": "卸载扩展失败",
         "repositoryExists": "此仓库已添加",
         "cannotRemoveDefault": "无法移除默认仓库"
-      }
+      },
+      "previousContext": "上一个上下文",
+      "nextContext": "下一个上下文",
+      "expandReadme": "展开 README",
+      "collapseReadme": "收起 README"
     },
     "hotkeys": {
       "projectHotkeys": "项目快捷键",
@@ -6031,6 +6042,7 @@ export interface LoadedExtension {
   filePath: string;
   initialized: boolean;
   projectDir?: string;
+  readmeContent?: string;
 }
 ⋮----
 export interface AvailableExtension {
@@ -6045,6 +6057,7 @@ export interface AvailableExtension {
   folder?: string;
   repositoryUrl: string;
   hasDependencies?: boolean;
+  readmeContent?: string;
 }
 
 ================
@@ -6863,26 +6876,26 @@ import {
   ConnectorMessage,
   ContextFile,
   ContextMessage,
+  ContextMemoryMode,
   CreateTaskParams,
   CustomCommand,
+  InvocationMode,
   Mode,
   ModeDefinition,
   Model,
   ProjectSettings,
   PromptContext,
+  ProviderProfile,
   QuestionData,
   QueuedPromptData,
   ResponseChunkData,
   ResponseCompletedData,
+  SettingsData,
   TaskData,
   TodoItem,
+  ToolApprovalState,
   UpdatedFile,
   UsageReportData,
-  ToolApprovalState,
-  InvocationMode,
-  ContextMemoryMode,
-  SettingsData,
-  ProviderProfile,
 } from '@common/types';
 ⋮----
 export type AgentStepResult = unknown;
@@ -7157,6 +7170,22 @@ export interface PromptStartedEvent {
 export interface PromptFinishedEvent {
   responses: ResponseCompletedData[];
 }
+⋮----
+/** Event payload for prompt template events */
+export interface PromptTemplateEvent {
+  /** Template name (e.g., 'system-prompt', 'init-project', etc.) */
+  readonly name: string;
+  /** Template data object */
+  readonly data: unknown;
+  /** Rendered prompt that can be overridden by extension */
+  prompt: string;
+}
+⋮----
+/** Template name (e.g., 'system-prompt', 'init-project', etc.) */
+⋮----
+/** Template data object */
+⋮----
+/** Rendered prompt that can be overridden by extension */
 ⋮----
 /** Event payload for agent started events */
 export interface AgentStartedEvent {
@@ -7807,6 +7836,13 @@ export interface Extension {
    */
   onPromptFinished?(event: PromptFinishedEvent, context: ExtensionContext): Promise<void | Partial<PromptFinishedEvent>>;
 
+  /**
+   * Called when a prompt template is rendered
+   * Modify event.prompt to override the rendered prompt
+   * @returns void or partial event to modify prompt
+   */
+  onPromptTemplate?(event: PromptTemplateEvent, context: ExtensionContext): Promise<void | Partial<PromptTemplateEvent>>;
+
   // Agent Events
 
   /**
@@ -8090,6 +8126,13 @@ onPromptStarted?(event: PromptStartedEvent, context: ExtensionContext): Promise<
    * @returns void or partial event to modify
    */
 onPromptFinished?(event: PromptFinishedEvent, context: ExtensionContext): Promise<void | Partial<PromptFinishedEvent>>;
+⋮----
+/**
+   * Called when a prompt template is rendered
+   * Modify event.prompt to override the rendered prompt
+   * @returns void or partial event to modify prompt
+   */
+onPromptTemplate?(event: PromptTemplateEvent, context: ExtensionContext): Promise<void | Partial<PromptTemplateEvent>>;
 ⋮----
 // Agent Events
 ⋮----
@@ -13164,6 +13207,8 @@ export class ExtensionFetcher
 ⋮----
 async getAvailableExtensions(repositories: string[], forceRefresh = false): Promise<AvailableExtension[]>
 ⋮----
+private async getAvailableExtensionsInternal(repositories: string[], forceRefresh: boolean): Promise<AvailableExtension[]>
+⋮----
 private async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]>
 ⋮----
 private async fetchExtensionsViaGitClone(repoUrl: string): Promise<AvailableExtension[]>
@@ -13173,6 +13218,10 @@ private getCloneUrl(webUrl: string): string | null
 private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string
 ⋮----
 private async scanForExtensions(extensionsPath: string, repoUrl: string): Promise<AvailableExtension[]>
+⋮----
+// Try to read README.md for folder-based extensions
+⋮----
+// README.md doesn't exist or can't be read, that's fine
 ⋮----
 private async fileExists(filePath: string): Promise<boolean>
 ⋮----
@@ -13259,26 +13308,21 @@ import os from 'os';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { ToolApprovalState, AvailableExtension } from '@common/types';
+import { AvailableExtension, ToolApprovalState } from '@common/types';
+import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 ⋮----
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
 import { ExtensionFetcher } from './extension-fetcher';
 ⋮----
-import type { AgentProfile } from '@common/types';
-import type { Store } from '@/store';
-import type { ModelManager } from '@/models';
-import type { EventManager } from '@/events';
-import type { TelemetryManager } from '@/telemetry';
 import type {
   AgentFinishedEvent,
   AgentStartedEvent,
   AgentStepFinishedEvent,
-  OptimizeMessagesEvent,
-  ImportantRemindersEvent,
   AiderPromptFinishedEvent,
   AiderPromptStartedEvent,
+  CommandDefinition,
   CommandExecutedEvent,
   CustomCommandExecutedEvent,
   Extension,
@@ -13286,9 +13330,14 @@ import type {
   FilesAddedEvent,
   FilesDroppedEvent,
   HandleApprovalEvent,
+  ImportantRemindersEvent,
   ModeDefinition,
+  OptimizeMessagesEvent,
+  ProjectStartedEvent,
+  ProjectStoppedEvent,
   PromptFinishedEvent,
   PromptStartedEvent,
+  PromptTemplateEvent,
   QuestionAnsweredEvent,
   QuestionAskedEvent,
   ResponseChunkEvent,
@@ -13305,10 +13354,12 @@ import type {
   ToolCalledEvent,
   ToolDefinition,
   ToolFinishedEvent,
-  CommandDefinition,
-  ProjectStartedEvent,
-  ProjectStoppedEvent,
 } from '@common/extensions';
+import type { AgentProfile } from '@common/types';
+import type { Store } from '@/store';
+import type { ModelManager } from '@/models';
+import type { EventManager } from '@/events';
+import type { TelemetryManager } from '@/telemetry';
 import type { ToolCallOptions, ToolSet } from 'ai';
 ⋮----
 import { execWithShellPath } from '@/utils/shell';
@@ -13352,6 +13403,7 @@ export type ExtensionEventMap = {
   onTaskUpdated: TaskUpdatedEvent;
   onPromptStarted: PromptStartedEvent;
   onPromptFinished: PromptFinishedEvent;
+  onPromptTemplate: PromptTemplateEvent;
   onAgentStarted: AgentStartedEvent;
   onAgentFinished: AgentFinishedEvent;
   onAgentStepFinished: AgentStepFinishedEvent;
@@ -13398,6 +13450,14 @@ addListener(listener: ExtensionsChangeListener): void
 removeListener(listener: ExtensionsChangeListener): void
 ⋮----
 async init(): Promise<void>
+⋮----
+// Preload available extensions from repositories in background
+⋮----
+/**
+   * Preload available extensions from configured repositories.
+   * This warms the fetcher cache so Settings page loads instantly.
+   */
+private async preloadAvailableExtensions(): Promise<void>
 ⋮----
 private async initializeExtension(loaded: LoadedExtension, project?: Project): Promise<boolean>
 ⋮----
@@ -13579,6 +13639,7 @@ private sortExtensionsForDispatch(extensions: LoadedExtension[], projectDir: str
 File: src/main/extensions/extension-registry.ts
 ================
 import path from 'path';
+import { promises as fs } from 'fs';
 ⋮----
 import { Extension, ExtensionMetadata } from '@common/extensions';
 ⋮----
@@ -13591,6 +13652,7 @@ export interface LoadedExtension {
   filePath: string;
   initialized: boolean;
   projectDir?: string;
+  readmeContent?: string;
 }
 ⋮----
 export class ExtensionRegistry
@@ -13601,7 +13663,11 @@ private deriveExtensionId(filePath: string): string
 ⋮----
 // Otherwise, use the filename without extension
 ⋮----
-register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string)
+async register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string)
+⋮----
+// Try to load README.md for folder-based extensions
+⋮----
+// README.md doesn't exist or can't be read, that's fine
 ⋮----
 setInitialized(name: string, initialized: boolean): void
 ⋮----
@@ -16349,6 +16415,8 @@ import {
   UpdateTaskStateData,
 } from './types';
 ⋮----
+import type { ExtensionManager } from '@/extensions/extension-manager';
+⋮----
 import { AIDER_DESK_DEFAULT_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Task } from '@/task';
@@ -16356,6 +16424,7 @@ import { Task } from '@/task';
 export class PromptsManager
 ⋮----
 constructor(
+    private readonly extensionManager: ExtensionManager,
     private readonly defaultTemplatesDir = AIDER_DESK_DEFAULT_PROMPTS_DIR,
     private readonly globalPromptsDir = AIDER_DESK_GLOBAL_PROMPTS_DIR,
 )
@@ -16386,7 +16455,9 @@ public async unwatchProject(projectDir: string): Promise<void>
 ⋮----
 public async dispose(): Promise<void>
 ⋮----
-private render(name: PromptTemplateName, data: unknown, projectDir?: string): string
+private async render(name: PromptTemplateName, data: unknown, projectDir: string, task?: Task): Promise<string>
+⋮----
+// Dispatch onPromptTemplate event to allow extensions to override the prompt
 ⋮----
 const isAllowed = (tool: string)
 ⋮----
@@ -22703,9 +22774,14 @@ type Props = {
   message: string;
   spinnerSize?: 'sm' | 'md' | 'lg';
   animateOpacity?: boolean;
+  transparent?: boolean;
 };
 ⋮----
 export const LoadingOverlay = (
+⋮----
+className=
+⋮----
+<div className=
 
 ================
 File: src/renderer/src/components/common/LoadingText.tsx
@@ -28781,22 +28857,97 @@ https://aider.chat/docs/config/options.html
 https://aider.chat/docs/config/dotenv.html
 
 ================
+File: src/renderer/src/components/settings/ExtensionCard.tsx
+================
+import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { useTranslation } from 'react-i18next';
+import { FaCheck, FaChevronDown, FaDownload } from 'react-icons/fa';
+import { clsx } from 'clsx';
+⋮----
+import type { AvailableExtension, LoadedExtension } from '@common/types';
+⋮----
+import { Button } from '@/components/common/Button';
+import { Checkbox } from '@/components/common/Checkbox';
+import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
+⋮----
+type Props = {
+  extension: LoadedExtension | AvailableExtension;
+  isDisabled?: boolean;
+  isUninstalling?: boolean;
+  isInstalling?: boolean;
+  onToggle?: (extensionName: string, isDisabled: boolean) => void;
+  onUninstall?: (extensionName: string) => void;
+  onInstall?: (extension: AvailableExtension) => void;
+};
+⋮----
+// Helper to normalize extension data
+const getExtensionData = (extension: LoadedExtension | AvailableExtension) =>
+⋮----
+const handleToggleExpand = () =>
+⋮----
+const handleToggleDisabled = () =>
+⋮----
+const handleUninstall = () =>
+⋮----
+const handleInstall = () =>
+⋮----
+className=
+⋮----
+<div className=
+⋮----
+<Checkbox checked=
+⋮----
+
+⋮----
+{/* Expandable README section */}
+⋮----
+{/* Chevron button at bottom center */}
+⋮----
+aria-label={isExpanded ? t('settings.extensions.collapseReadme') : t('settings.extensions.expandReadme')}
+            >
+              <FaChevronDown className={clsx('w-3 h-3 text-text-muted transition-transform duration-200', isExpanded && 'rotate-180')} />
+            </button>
+          </div>
+
+          {/* README content */}
+          {isExpanded && (
+            <div className="border-t border-border-default p-6">
+              <div className="text-4xs text-text-primary max-w-none max-h-96 overflow-y-auto bg-bg-primary-light rounded-md p-4 scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
+                <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+                  {data.readmeContent!}
+                </ReactMarkdown>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+⋮----
+<FaChevronDown className=
+⋮----
+{/* README content */}
+
+================
 File: src/renderer/src/components/settings/ExtensionsSettings.tsx
 ================
 import { AvailableExtension, LoadedExtension, ProjectData, SettingsData } from '@common/types';
-import { Activity, useEffect, useState } from 'react';
+import { Activity, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaDownload, FaPlus, FaTrash, FaCheck, FaSync, FaSearch } from 'react-icons/fa';
+import { FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 import { clsx } from 'clsx';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
+import { getPathBasename } from '@/utils/path-utils';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { Input } from '@/components/common/Input';
-import { Checkbox } from '@/components/common/Checkbox';
 import { Accordion } from '@/components/common/Accordion';
-import { showSuccessNotification, showErrorNotification } from '@/utils/notifications';
+import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
+import { LoadingOverlay } from '@/components/common/LoadingOverlay';
+import { ExtensionCard } from '@/components/settings/ExtensionCard';
 ⋮----
 enum Tab {
   Available = 'available',
@@ -28807,8 +28958,18 @@ type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
   openProjects?: ProjectData[];
-  selectedProjectContext?: string;
+  selectedProjectContext?: 'global' | string;
 };
+⋮----
+// Context state for project-level extensions
+⋮----
+// Sync internal profileContext with selectedProjectContext prop
+⋮----
+// Context navigation logic
+const navigateContext = (direction: 'prev' | 'next') =>
+⋮----
+// Get context display name
+const getContextDisplayName = () =>
 ⋮----
 const loadInstalledExtensions = async () =>
 ⋮----
@@ -28828,9 +28989,14 @@ const handleAddRepository = () =>
 ⋮----
 const handleRemoveRepository = (repositoryUrl: string) =>
 ⋮----
-className=
+// Filter by context: in Global context, hide project-level extensions
+// In project context, show both global extensions and extensions for that specific project
 ⋮----
-<Button onClick=
+// In global context, only show global extensions (no projectDir)
+⋮----
+// In project context, show extensions for this project OR global extensions
+⋮----
+isUninstalling=
 ⋮----
 // Group all extensions by repository URL
 ⋮----
@@ -28838,9 +29004,15 @@ className=
 ⋮----
 // Render extension card with appropriate controls based on installation status
 ⋮----
-label=
+// Check if extension is installed in the current context
 ⋮----
-const handleToggleRepository = (repositoryUrl: string) =>
+// In global context, only consider global extensions
+⋮----
+// In project context, consider extensions for this project or global extensions
+⋮----
+// If installed, render with installed extension (LoadedExtension)
+⋮----
+// If not installed, render with available extension (AvailableExtension)
 ⋮----
 // Render repository accordion
 ⋮----
@@ -28851,6 +29023,8 @@ onClick=
 {/* Search and Filters */}
 ⋮----
 setSelectedCapabilities((prev) =>
+⋮----
+className=
 
 ================
 File: src/renderer/src/components/settings/GeneralSettings.tsx
@@ -34502,7 +34676,7 @@ File: package.json
     "build:server": "vite build --config vite.config.server.ts && mkdir -p out/resources && cp -r resources/* out/resources",
     "postbuild:server": "npm rebuild",
     "build": "npm run typecheck && electron-vite build && npm run build:mcp",
-    "postinstall": "electron-builder install-app-deps && node scripts/download-uv.mjs && node scripts/download-probe.mjs && patch-package",
+    "postinstall": "electron-builder install-app-deps && node scripts/download-uv.mjs && node scripts/download-probe.mjs && patch-package && npm run build:extensions",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
@@ -34519,15 +34693,16 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^3.0.73",
-    "@ai-sdk/anthropic": "^2.0.57",
-    "@ai-sdk/azure": "^2.0.91",
-    "@ai-sdk/cerebras": "^1.0.34",
-    "@ai-sdk/deepseek": "^1.0.33",
-    "@ai-sdk/google": "^2.0.52",
-    "@ai-sdk/google-vertex": "^3.0.97",
-    "@ai-sdk/groq": "^2.0.34",
-    "@ai-sdk/openai": "^2.0.89",
+    "@aiderdesk/extensions": "workspace:*",
+    "@ai-sdk/amazon-bedrock": "^3.0.85",
+    "@ai-sdk/anthropic": "^2.0.68",
+    "@ai-sdk/azure": "^2.0.98",
+    "@ai-sdk/cerebras": "^1.0.38",
+    "@ai-sdk/deepseek": "^1.0.34",
+    "@ai-sdk/google": "^2.0.57",
+    "@ai-sdk/google-vertex": "^3.0.112",
+    "@ai-sdk/groq": "^2.0.35",
+    "@ai-sdk/openai": "^2.0.96",
     "@ai-sdk/provider": "^2.0.1",
     "@aws-crypto/sha256-js": "^5.0.0",
     "@aws-sdk/client-bedrock": "^3.887.0",
@@ -34572,7 +34747,7 @@ File: package.json
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "ai": "5.0.119",
+    "ai": "^5.0.145",
     "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "^1.5.1",
     "apache-arrow": "18.1.0",
@@ -34660,7 +34835,6 @@ File: package.json
     "zustand": "^5.0.9"
   },
   "devDependencies": {
-    "@aiderdesk/extensions": "workspace:*",
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@electron/notarize": "^3.0.2",
     "@eslint/js": "^9.33.0",
