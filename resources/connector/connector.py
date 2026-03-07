@@ -11,6 +11,7 @@ import threading
 import uuid
 from pathlib import Path
 from typing import Dict, Optional, Any, Coroutine
+import time
 from aider import models, utils
 from aider.models import ModelSettings
 from aider.coders import Coder
@@ -504,6 +505,10 @@ class ConnectorInputOutput(InputOutput):
       return True
     if message.endswith("is already in the chat as an editable file"):
       return True
+    if message.strip().endswith("file not found error"):
+      return True
+    if ": unable to read:" in message and "No such file or directory" in message:
+      return True
 
     return False
 
@@ -747,6 +752,7 @@ class Connector:
     self.thinking_tokens = thinking_tokens
     self.confirm_before_edit = confirm_before_edit
     self.models_info = None
+    self._initialized = False
 
     try:
       self.loop = asyncio.get_event_loop()
@@ -782,7 +788,7 @@ class Connector:
       self.file_watcher.start()
 
     self.sio = socketio.AsyncClient()
-    self._register_events()
+    self.register_events()
 
   def monkey_patch_coder_functions(self, coder, prompt_context=None):
     # self here is the Connector instance
@@ -864,21 +870,30 @@ class Connector:
 
     repo.get_commit_message = types.MethodType(_patched_get_commit_message, repo)
 
-  def _register_events(self):
+  def register_events(self):
     @self.sio.event
     async def connect():
       await self.on_connect()
 
-    @self.sio.on("message")
-    async def on_message(data):
+    @self.sio.event
+    async def message(data):
       await self.on_message(data)
 
     @self.sio.event
     async def disconnect():
       await self.on_disconnect()
 
+    @self.sio.event
+    async def connect_error(error):
+      sys.stderr.write(f"Connection error: {error}\n")
+
   async def on_connect(self):
     """Handle connection event."""
+    # Guard against duplicate initialization (can happen if event fires and we also call explicitly)
+    if self._initialized:
+      return
+
+    self._initialized = True
     self.coder.io.tool_output("---- AIDER CONNECTOR CONNECTED TO AIDER DESK ----")
 
     await self.send_action({
@@ -927,6 +942,8 @@ class Connector:
     """Handle disconnection event."""
     self.coder.io.tool_output("AIDER CONNECTOR DISCONNECTED FROM AIDER DESK")
 
+    self._initialized = False
+
     # Shutdown prompt executor
     if self.prompt_executor:
       await self.prompt_executor.shutdown()
@@ -935,8 +952,32 @@ class Connector:
       self.current_tokenization_task.cancel()
 
   async def connect(self):
-    """Connect to the server."""
-    await self.sio.connect(self.server_url)
+    """Connect to the server with retry logic."""
+    max_retries = 10
+    base_delay = 0.5  # Initial delay in seconds
+    max_delay = 5.0   # Maximum delay in seconds
+
+    for attempt in range(max_retries):
+      try:
+        # Reset initialized flag before each connection attempt
+        # This ensures on_connect runs properly after reconnection
+        self._initialized = False
+        await self.sio.connect(self.server_url)
+        # Explicitly call on_connect after successful connection
+        # This ensures init message is sent even if the event handler doesn't fire
+        # (which can happen on reconnection after namespace errors)
+        await self.on_connect()
+        return  # Connection successful
+      except Exception as e:
+        if attempt == max_retries - 1:
+          # Last attempt failed, re-raise the exception
+          raise
+
+        # Calculate delay with exponential backoff
+        delay = min(base_delay * (2 ** attempt), max_delay)
+        sys.stderr.write(f"Connection refused by the server: {e}. Retrying in {delay:.1f}s... (attempt {attempt + 1}/{max_retries})\n")
+        sys.stderr.flush()
+        await asyncio.sleep(delay)
 
   async def wait(self):
     """Wait for events."""

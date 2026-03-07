@@ -1,5 +1,5 @@
 import { useShallow } from 'zustand/react/shallow';
-import { ContextFile, ModelsData, QuestionData, TodoItem, TokensInfoData } from '@common/types';
+import { ContextFile, ModelsData, QueuedPromptData, QuestionData, TodoItem, TokensInfoData } from '@common/types';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
@@ -16,6 +16,7 @@ export interface TaskState {
   contextFiles: ContextFile[];
   aiderModelsData: ModelsData | null;
   lastActiveAt: Date | null;
+  queuedPrompts: QueuedPromptData[];
 }
 
 export const EMPTY_TASK_STATE: TaskState = {
@@ -29,6 +30,7 @@ export const EMPTY_TASK_STATE: TaskState = {
   contextFiles: [],
   aiderModelsData: null,
   lastActiveAt: null,
+  queuedPrompts: [],
 };
 
 export const EMPTY_MESSAGES: Message[] = [];
@@ -47,6 +49,7 @@ interface TaskStore {
   setTokensInfo: (taskId: string, tokensInfo: TokensInfoData | null) => void;
   setQuestion: (taskId: string, question: QuestionData | null) => void;
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
+  setQueuedPrompts: (taskId: string, queuedPrompts: QueuedPromptData[]) => void;
   clearSession: (taskId: string, messagesOnly: boolean) => void;
 }
 
@@ -133,6 +136,14 @@ export const useTaskStore = createWithEqualityFn<TaskStore>(
         const newMap = new Map(state.taskStateMap);
         const current = newMap.get(taskId) || EMPTY_TASK_STATE;
         newMap.set(taskId, { ...current, aiderModelsData: modelsData });
+        return { taskStateMap: newMap };
+      }),
+
+    setQueuedPrompts: (taskId, queuedPrompts) =>
+      set((state) => {
+        const newMap = new Map(state.taskStateMap);
+        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+        newMap.set(taskId, { ...current, queuedPrompts });
         return { taskStateMap: newMap };
       }),
 

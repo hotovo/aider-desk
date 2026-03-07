@@ -1,6 +1,8 @@
 import { InputHTMLAttributes, ReactNode } from 'react';
 import { clsx } from 'clsx';
 
+import { Tooltip } from '@/components/ui/Tooltip';
+
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> & {
   label?: ReactNode;
   checked: boolean;
@@ -8,14 +10,11 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> & 
   className?: string;
   size?: 'xs' | 'sm' | 'md';
   tooltip?: string;
-  tooltipId?: string;
 };
 
-export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm', tooltip, tooltipId, ...props }: Props) => {
-  return (
+export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm', tooltip, ...props }: Props) => {
+  const checkbox = (
     <div
-      data-tooltip-id={tooltipId}
-      data-tooltip-content={tooltip}
       className={clsx(
         'flex items-center cursor-pointer',
         {
@@ -67,4 +66,10 @@ export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm'
       {label && <span className="ml-2">{label}</span>}
     </div>
   );
+
+  if (tooltip) {
+    return <Tooltip content={tooltip}>{checkbox}</Tooltip>;
+  }
+
+  return checkbox;
 };

@@ -1,5 +1,5 @@
 import { normalizeBaseDir } from '@common/utils';
-import { AgentProfile, ProjectSettings, SettingsData } from '@common/types';
+import { AgentProfile, ProjectSettings, SettingsData, ModeDefinition } from '@common/types';
 
 import { TelemetryManager } from '@/telemetry';
 import { AgentProfileManager, McpManager } from '@/agent';
@@ -13,6 +13,7 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
+import { ExtensionManager } from '@/extensions/extension-manager';
 
 export class ProjectManager {
   public readonly worktreeManager: WorktreeManager;
@@ -30,6 +31,7 @@ export class ProjectManager {
     private readonly memoryManager: MemoryManager,
     private readonly hookManager: HookManager,
     private readonly promptsManager: PromptsManager,
+    private readonly extensionManager: ExtensionManager,
   ) {
     this.worktreeManager = worktreeManager;
   }
@@ -53,6 +55,7 @@ export class ProjectManager {
       this.memoryManager,
       this.hookManager,
       this.promptsManager,
+      this.extensionManager,
     );
     this.projects.push(project);
     return project;
@@ -121,8 +124,16 @@ export class ProjectManager {
     void project.projectSettingsChanged(oldSettings, newSettings);
   }
 
-  public getCustomCommands(baseDir: string) {
-    return this.getProject(baseDir).getCustomCommands();
+  public getCommands(baseDir: string) {
+    return this.getProject(baseDir).getCustomCommandManager().getAllCommands();
+  }
+
+  public getCustomModes(baseDir: string): ModeDefinition[] {
+    return this.getProject(baseDir).getCustomModes();
+  }
+
+  public getProjects(): Project[] {
+    return this.projects;
   }
 
   agentProfileUpdated(oldProfile: AgentProfile, profile: AgentProfile) {

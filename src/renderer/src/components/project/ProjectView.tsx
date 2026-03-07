@@ -18,14 +18,17 @@ import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
+import { showNotification } from '@/utils/browser-notifications';
+import { showInfoNotification } from '@/utils/notifications';
 
 type Props = {
   projectDir: string;
   isProjectActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
+  initialTaskId?: string;
 };
 
-export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsPage }: Props) => {
+export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsPage, initialTaskId }: Props) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const { projectSettings } = useProjectSettings();
@@ -113,6 +116,15 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
 
   useEffect(() => {
     const handleStartupMode = async (tasks: TaskData[]) => {
+      // Check if URL specifies a task to activate
+      if (initialTaskId) {
+        const initialTask = tasks.find((task) => task.id === initialTaskId);
+        if (initialTask) {
+          activateTask(initialTask.id);
+          return;
+        }
+      }
+
       const mode = settings?.startupMode ?? ProjectStartMode.Empty;
       const existingNewTask = tasks.find((task) => !task.createdAt);
       let startupTask: TaskData | null = null;
@@ -205,6 +217,10 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     const removeTaskCancelledListener = api.addTaskCancelledListener(projectDir, handleTaskCancelled);
     const removeTaskDeletedListener = api.addTaskDeletedListener(projectDir, handleTaskDeleted);
 
+    const removeNotificationListener = api.addNotificationListener(projectDir, (data) => {
+      void showNotification(data.title, data.body);
+    });
+
     const removeInputHistoryListener = api.addInputHistoryUpdatedListener(projectDir, handleInputHistoryUpdate);
 
     const initProject = async () => {
@@ -239,10 +255,22 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
       removeTaskCompletedListener();
       removeTaskCancelledListener();
       removeTaskDeletedListener();
+      removeNotificationListener();
       removeInputHistoryListener();
       clearProjectTasks(projectDir);
     };
-  }, [activateTask, api, projectDir, settings?.startupMode, clearProjectTasks, setProjectTasks, updateProjectTask, addProjectTask, removeProjectTask]);
+  }, [
+    activateTask,
+    api,
+    projectDir,
+    settings?.startupMode,
+    clearProjectTasks,
+    setProjectTasks,
+    updateProjectTask,
+    addProjectTask,
+    removeProjectTask,
+    initialTaskId,
+  ]);
 
   const handleTaskSelect = useCallback(
     (taskId: string) => {
@@ -355,13 +383,6 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     }
   }, [activeTaskId, handleDeleteTask]);
 
-  const handleProceed = useCallback(() => {
-    if (!activeTask) {
-      return;
-    }
-    api.runPrompt(projectDir, activeTask.id, 'Proceed.', activeTask.currentMode || 'code');
-  }, [activeTask, api, projectDir]);
-
   const handleArchiveActiveTask = useCallback(async () => {
     if (activeTaskId) {
       await handleUpdateTask(activeTaskId, { archived: true });
@@ -404,6 +425,22 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
       }
     },
     [api, projectDir],
+  );
+
+  const handleCopyTaskAsMarkdown = useCallback(
+    async (taskId: string) => {
+      try {
+        const markdown = await api.exportTaskToMarkdown(projectDir, taskId, true);
+        if (markdown) {
+          await api.writeToClipboard(markdown);
+          showInfoNotification(t('taskSidebar.copiedAsMarkdown'));
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to copy task as markdown:', error);
+      }
+    },
+    [api, projectDir, t],
   );
 
   const handleDuplicateTask = useCallback(
@@ -459,6 +496,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
             onToggleCollapse={handleToggleCollapse}
             updateTask={handleUpdateTask}
             deleteTask={handleDeleteTask}
+            onCopyAsMarkdown={handleCopyTaskAsMarkdown}
             onExportToMarkdown={handleExportTaskToMarkdown}
             onExportToImage={handleExportTaskToImage}
             onDuplicateTask={handleDuplicateTask}
@@ -486,7 +524,6 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
                 isActive={activeTaskId === activeTask.id}
                 shouldFocusPrompt={shouldFocusNewTask}
                 showSettingsPage={showSettingsPage}
-                onProceed={handleProceed}
                 onArchiveTask={handleArchiveActiveTask}
                 onUnarchiveTask={handleUnarchiveActiveTask}
                 onDeleteTask={handleDeleteActiveTask}

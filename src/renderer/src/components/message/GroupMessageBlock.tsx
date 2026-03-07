@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useState, MouseEvent } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { LocalizedString, UsageReportData } from '@common/types';
@@ -9,7 +9,8 @@ import { MessageBar } from './MessageBar';
 import { areMessagesEqual } from './utils';
 
 import { Accordion } from '@/components/common/Accordion';
-import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage, isUserMessage } from '@/types/message';
+import { GroupMessage, isResponseMessage, isToolMessage, isUserMessage, Message, ResponseMessage, ToolMessage } from '@/types/message';
+import { Button } from '@/components/common/Button';
 
 type Props = {
   baseDir: string;
@@ -20,7 +21,7 @@ type Props = {
   remove?: (message: Message) => void;
   redo?: () => void;
   edit?: (content: string) => void;
-  onInterrupt?: () => void;
+  onInterrupt?: (interruptId?: string) => void;
 };
 
 const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, remove, redo, edit, onInterrupt }: Props) => {
@@ -84,9 +85,21 @@ const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, render
     return t(name.key, name.params || {});
   };
 
+  const handleInterrupt = (e: MouseEvent<HTMLButtonElement>) => {
+    if (onInterrupt && message.group.interruptId) {
+      e.stopPropagation();
+      onInterrupt(message.group.interruptId);
+    }
+  };
+
   const header = (
-    <div className={clsx('w-full px-3 py-1 group', !message.group.finished && 'animate-pulse')}>
+    <div className={clsx('w-full px-3 py-1 group flex items-center justify-between', !message.group.finished && 'animate-pulse')}>
       <div className="text-xs text-left">{getGroupDisplayName(message.group.name)}</div>
+      {!message.group.finished && message.group.interruptId && (
+        <Button onClick={handleInterrupt} size="xs" variant="outline" color="danger">
+          {t('common.cancel')}
+        </Button>
+      )}
     </div>
   );
 
@@ -164,7 +177,8 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     prevProps.renderMarkdown !== nextProps.renderMarkdown ||
     (prevProps.remove !== nextProps.remove && (prevProps.remove === undefined) !== (nextProps.remove === undefined)) ||
     (prevProps.redo !== nextProps.redo && (prevProps.redo === undefined) !== (nextProps.redo === undefined)) ||
-    (prevProps.edit !== nextProps.edit && (prevProps.edit === undefined) !== (nextProps.edit === undefined))
+    (prevProps.edit !== nextProps.edit && (prevProps.edit === undefined) !== (nextProps.edit === undefined)) ||
+    (prevProps.onInterrupt !== nextProps.onInterrupt && (prevProps.onInterrupt === undefined) !== (nextProps.onInterrupt === undefined))
   ) {
     return false;
   }
@@ -182,7 +196,8 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     prevMessage.group.id !== nextMessage.group.id ||
     prevMessage.group.name !== nextMessage.group.name ||
     prevMessage.group.finished !== nextMessage.group.finished ||
-    prevMessage.group.color !== nextMessage.group.color
+    prevMessage.group.color !== nextMessage.group.color ||
+    prevMessage.group.interruptId !== nextMessage.group.interruptId
   ) {
     return false;
   }

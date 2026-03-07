@@ -9,12 +9,15 @@ import { ToolMessage } from '@/types/message';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
 const formatName = (name: string): string => {
@@ -25,7 +28,7 @@ const formatName = (name: string): string => {
     .join(' ');
 };
 
-export const FileWriteToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const FileWriteToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
   const expandableRef = useRef<ExpandableMessageBlockRef>(null);
 
@@ -33,9 +36,9 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false }: Pro
   const filePath = (message.args.filePath as string) || '';
   const language = getLanguageFromPath(filePath);
   const content = message.content && JSON.parse(message.content);
-  const isError = content && content.startsWith('Error:');
-  const isDenied = content && content.startsWith('File write to');
-  const shouldCloseOnError = content && !content.startsWith('Successfully');
+  const isError = typeof content === 'string' && content.startsWith('Error:');
+  const isDenied = typeof content === 'string' && content.startsWith('File write to');
+  const shouldCloseOnError = typeof content === 'string' && content && !content.startsWith('Successfully');
 
   useLayoutEffect(() => {
     if (shouldCloseOnError && expandableRef.current) {
@@ -72,15 +75,13 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false }: Pro
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
         (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`file-write-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`file-write-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiErrorWarningFill className="w-3 h-3 text-error" />
+          </Tooltip>
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`file-write-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`file-write-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiCloseCircleFill className="w-3 h-3 text-warning" />
+          </Tooltip>
         ) : (
           <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
         ))}
@@ -115,6 +116,9 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false }: Pro
       usageReport={message.usageReport}
       onRemove={onRemove}
       initialExpanded={true}
+      onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
     />
   );
 };

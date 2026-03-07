@@ -6,15 +6,18 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export const GrepToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const filePattern = message.args.filePattern as string;
@@ -24,13 +27,24 @@ export const GrepToolMessage = ({ message, onRemove, compact = false }: Props) =
   const isError = content && !Array.isArray(content) && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Grep search for');
 
+  const matchCount = Array.isArray(content) ? content.length : 0;
+
   const title = (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex items-center gap-2 w-full text-left">
       <div className="text-text-muted">
         <LuFileSearch className="w-4 h-4" />
       </div>
       <div className="text-xs text-text-primary flex flex-wrap gap-1">
-        <span>{t('toolMessage.power.grep.title')}</span>
+        {!content ? (
+          <span>{t('toolMessage.power.grep.findingMatches')}</span>
+        ) : isError || isDenied ? (
+          <span>{t('toolMessage.power.grep.title')}</span>
+        ) : matchCount > 0 ? (
+          <span>{t('toolMessage.power.grep.foundMatches', { count: matchCount })}</span>
+        ) : (
+          <span>{t('toolMessage.power.grep.noMatches')}</span>
+        )}
+        <span>{t('toolMessage.power.grep.in')}</span>
         <span>
           <CodeInline className="bg-bg-primary-light">{filePattern}</CodeInline>
         </span>
@@ -42,22 +56,31 @@ export const GrepToolMessage = ({ message, onRemove, compact = false }: Props) =
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
         (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`grep-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`grep-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiErrorWarningFill className="w-3 h-3 text-error flex-shrink-0" />
+          </Tooltip>
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`grep-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`grep-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : (
+          <Tooltip content={content}>
+            <RiCloseCircleFill className="w-3 h-3 text-warning flex-shrink-0" />
+          </Tooltip>
+        ) : matchCount > 0 ? (
           <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
-        ))}
+        ) : null)}
     </div>
   );
 
   const renderContent = () => {
+    if (!content) {
+      return (
+        <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
+          <div className="flex items-center gap-2">
+            <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />
+            <span>{t('toolMessage.power.grep.findingMatches')}</span>
+          </div>
+        </div>
+      );
+    }
+
     if (isError) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
@@ -78,7 +101,7 @@ export const GrepToolMessage = ({ message, onRemove, compact = false }: Props) =
       );
     }
 
-    if (!content || !Array.isArray(content) || content.length === 0) {
+    if (!Array.isArray(content) || content.length === 0) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
           <div className="text-text-muted">{t('toolMessage.power.grep.noMatches')}</div>
@@ -139,5 +162,15 @@ export const GrepToolMessage = ({ message, onRemove, compact = false }: Props) =
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
+  return (
+    <ExpandableMessageBlock
+      title={title}
+      content={renderContent()}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
+    />
+  );
 };

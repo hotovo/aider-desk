@@ -4,11 +4,14 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
+  ContextCompactionType,
   ContextFile,
   ContextMessage,
   ContextUserMessage,
+  DefaultTaskState,
   McpTool,
   McpToolInputSchema,
+  Mode,
   PromptContext,
   ProviderProfile,
   ToolApprovalState,
@@ -23,12 +26,13 @@ import {
   jsonSchema,
   type ModelMessage,
   NoSuchToolError,
+  smoothStream,
   type StepResult,
   streamText,
-  smoothStream,
   type Tool,
   type ToolCallOptions,
   type ToolSet,
+  type TypedToolResult,
   wrapLanguageModel,
 } from 'ai';
 import { delay, extractServerNameToolName } from '@common/utils';
@@ -38,19 +42,28 @@ import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.j
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { fileTypeFromBuffer } from 'file-type';
-import { HELPERS_TOOL_GROUP_NAME, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_SEARCH_PARENT_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import {
+  HELPERS_TOOL_GROUP_NAME,
+  POWER_TOOL_FILE_READ,
+  POWER_TOOL_GROUP_NAME,
+  TASKS_TOOL_GROUP_NAME,
+  TASKS_TOOL_SEARCH_PARENT_TASK,
+  TOOL_GROUP_NAME_SEPARATOR,
+} from '@common/tools';
 
-import { createPowerToolset } from './tools/power';
+import { createPowerToolset, readFileContent } from './tools/power';
 import { createTodoToolset } from './tools/todo';
 import { createSearchParentTaskTool, createTasksToolset } from './tools/tasks';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
 import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
-import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
+import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, findLastUserMessage, THINKING_RESPONSE_STAR_TAG } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
+
+import type { JSONSchema7Definition } from '@ai-sdk/provider';
 
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
@@ -64,6 +77,7 @@ import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
 import { createSubagentsToolset } from '@/agent/tools/subagents';
 import { AgentProfileManager } from '@/agent/agent-profile-manager';
+import { ExtensionManager } from '@/extensions/extension-manager';
 
 const MAX_RETRIES = 3;
 
@@ -79,6 +93,7 @@ export class Agent {
     private readonly telemetryManager: TelemetryManager,
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
+    private readonly extensionManager: ExtensionManager,
   ) {}
 
   private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: ImagePart[] }> {
@@ -245,24 +260,80 @@ export class Agent {
     return messages;
   }
 
-  private async getWorkingFilesMessages(contextFiles: ContextFile[]): Promise<ModelMessage[]> {
+  private async getWorkingFilesMessages(task: Task, contextFiles: ContextFile[]): Promise<ModelMessage[]> {
     const messages: ModelMessage[] = [];
 
     if (contextFiles.length > 0) {
-      const fileList = contextFiles
-        .map((file) => {
-          return `- ${file.path}`;
-        })
-        .join('\n');
+      const imageParts: ImagePart[] = [];
+      const nonImageFiles: ContextFile[] = [];
 
-      messages.push({
-        role: 'user',
-        content: `The following files are currently in the working context:\n\n${fileList}`,
-      });
-      messages.push({
-        role: 'assistant',
-        content: 'OK, I have noted the files in the context.',
-      });
+      // Separate image files from non-image files
+      for (const file of contextFiles) {
+        try {
+          const filePath = path.resolve(task.getTaskDir(), file.path);
+          const fileContentBuffer = await fs.readFile(filePath);
+
+          if (isBinary(filePath, fileContentBuffer)) {
+            try {
+              const detected = await fileTypeFromBuffer(fileContentBuffer);
+              if (detected?.mime.startsWith('image/')) {
+                const imageBase64 = fileContentBuffer.toString('base64');
+                imageParts.push({
+                  type: 'image',
+                  image: `data:${detected.mime};base64,${imageBase64}`,
+                  mediaType: detected.mime,
+                });
+                continue;
+              }
+            } catch (e) {
+              logger.warn(`image-type failed to detect image for ${file.path}`, { error: e instanceof Error ? e.message : String(e) });
+            }
+          }
+          nonImageFiles.push(file);
+        } catch (error) {
+          logger.error('Error reading context file:', {
+            path: file.path,
+            error,
+          });
+          nonImageFiles.push(file);
+        }
+      }
+
+      // Add file list for non-image files
+      if (nonImageFiles.length > 0) {
+        logger.debug('Adding file list for non-image files', {
+          files: nonImageFiles.map((f) => f.path),
+        });
+        const fileList = nonImageFiles
+          .map((file) => {
+            return `- ${file.path}`;
+          })
+          .join('\n');
+
+        messages.push({
+          role: 'user',
+          content: `The following files are currently in the working context:\n\n${fileList}`,
+        });
+        messages.push({
+          role: 'assistant',
+          content: 'OK, I have noted the files in the context.',
+        });
+      }
+
+      // Add images as separate messages
+      if (imageParts.length > 0) {
+        logger.debug('Adding images as separate messages', {
+          count: imageParts.length,
+        });
+        messages.push({
+          role: 'user',
+          content: imageParts,
+        });
+        messages.push({
+          role: 'assistant',
+          content: 'I can see the provided images and will use them for reference.',
+        });
+      }
     }
 
     return messages;
@@ -270,8 +341,11 @@ export class Agent {
 
   private async getAvailableTools(
     task: Task,
+    mode: Mode,
     profile: AgentProfile,
     provider: ProviderProfile,
+    model: string,
+    mcpConnectors: McpConnector[] = [],
     messages?: ContextMessage[],
     resultMessages?: ContextMessage[],
     abortSignal?: AbortSignal,
@@ -282,7 +356,6 @@ export class Agent {
       promptContext,
     });
 
-    const mcpConnectors = await this.mcpManager.getConnectors();
     const approvalManager = new ApprovalManager(task, profile);
 
     // Build the toolSet directly from enabled clients and tools
@@ -374,31 +447,68 @@ export class Agent {
     Object.assign(toolSet, helperTools);
 
     // Add provider-specific tools
-    const providerTools = await this.modelManager.getProviderTools(provider, profile.model);
+    const providerTools = await this.modelManager.getProviderTools(provider, model);
     Object.assign(toolSet, providerTools);
 
-    return this.wrapToolsWithHooks(task, toolSet);
+    // Add extension tools
+    if (this.extensionManager.isInitialized() && profile.useExtensionTools !== false) {
+      const extensionTools = this.extensionManager.createExtensionToolset(task, mode, profile, abortSignal);
+      Object.assign(toolSet, extensionTools);
+    }
+
+    return this.wrapToolsWithHooks(task, toolSet, abortSignal, promptContext);
   }
 
-  private wrapToolsWithHooks(task: Task, toolSet: ToolSet): ToolSet {
+  private wrapToolsWithHooks(task: Task, toolSet: ToolSet, abortSignal?: AbortSignal, promptContext?: PromptContext): ToolSet {
     const wrappedToolSet: ToolSet = {};
 
     for (const [toolName, toolDef] of Object.entries(toolSet)) {
       wrappedToolSet[toolName] = {
         ...toolDef,
-        execute: async (args: Record<string, unknown> | undefined, options: ToolCallOptions) => {
-          const hookResult = await task.hookManager.trigger('onToolCalled', { toolName, args }, task, task.project);
+        execute: async (input: Record<string, unknown> | undefined, options: ToolCallOptions) => {
+          const hookResult = await task.hookManager.trigger('onToolCalled', { toolName, args: input }, task, task.project);
           if (hookResult.blocked) {
             logger.warn(`Tool execution blocked by hook: ${toolName}`);
             return 'Tool execution blocked by hook.';
           }
-          const effectiveArgs = hookResult.event.args as Record<string, unknown> | undefined;
+          let effectiveInput = hookResult.event.args ?? (input as Record<string, unknown> | undefined);
+          const [serverName, messageToolName] = extractServerNameToolName(toolName);
 
-          const result = await toolDef.execute!(effectiveArgs, options);
+          task.addToolMessage(options.toolCallId, serverName, messageToolName, effectiveInput, undefined, undefined, promptContext);
 
-          void task.hookManager.trigger('onToolFinished', { toolName, args: effectiveArgs, result }, task, task.project);
+          const toolCalledExtensionResult = await this.extensionManager.dispatchEvent(
+            'onToolCalled',
+            { toolName, input: effectiveInput, abortSignal: options.abortSignal || abortSignal },
+            task.project,
+            task,
+          );
+          if (toolCalledExtensionResult.output) {
+            return toolCalledExtensionResult.output;
+          }
 
-          return result;
+          // Use modified input from extension if provided
+          effectiveInput = (toolCalledExtensionResult.input ?? effectiveInput) as Record<string, unknown> | undefined;
+
+          if (!options.abortSignal && abortSignal) {
+            options.abortSignal = abortSignal;
+          }
+
+          const result = await toolDef.execute!(effectiveInput, options);
+          const toolFinishedHookResult = await task.hookManager.trigger('onToolFinished', { toolName, args: effectiveInput, result }, task, task.project);
+          const toolFinishedExtensionResult = await this.extensionManager.dispatchEvent(
+            'onToolFinished',
+            { toolName, input: effectiveInput, output: result },
+            task.project,
+            task,
+          );
+
+          if (toolFinishedExtensionResult.output) {
+            return toolFinishedExtensionResult.output;
+          } else if (toolFinishedHookResult.event.result) {
+            return toolFinishedHookResult.event.result;
+          } else {
+            return result;
+          }
         },
       };
     }
@@ -422,11 +532,12 @@ export class Agent {
       task.addToolMessage(toolCallId, serverName, toolDef.name, args, undefined, undefined, promptContext);
 
       // --- Tool Approval Logic ---
+      const toolName = toolId;
       const questionKey = toolId;
       const questionText = `Approve tool ${toolDef.name} from ${serverName} MCP server?`;
       const questionSubject = args ? JSON.stringify(args) : undefined;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, args, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         logger.warn(`Tool execution denied by user: ${toolId}`);
@@ -486,47 +597,98 @@ export class Agent {
   }
 
   /**
-   * Fixes the input schema for various providers.
+   * Recursively strips unsupported JSON Schema 2019-09 keywords that are not
+   * recognized by some MCP servers (like gemini-cli).
    */
+  private stripUnsupportedSchemaKeywords(schema: Record<string, unknown>): Record<string, unknown> {
+    // JSON Schema 2019-09 keywords to remove
+    const unsupportedKeywords = [
+      'propertyNames',
+      'unevaluatedProperties',
+      'dependentSchemas',
+      'dependentRequired',
+      'contains',
+      'contentMediaType',
+      'contentEncoding',
+      'examples',
+      '$defs',
+      '$anchor',
+      '$recursiveRef',
+      '$recursiveAnchor',
+    ];
+
+    // Recursive helper to process schema objects
+    const processObject = (obj: Record<string, unknown>): Record<string, unknown> => {
+      const result: Record<string, unknown> = {};
+
+      for (const [key, value] of Object.entries(obj)) {
+        // Skip unsupported keywords
+        if (unsupportedKeywords.includes(key)) {
+          continue;
+        }
+
+        // Recursively process objects
+        if (value !== null && typeof value === 'object') {
+          if (Array.isArray(value)) {
+            // Process arrays (e.g., anyOf, oneOf, allOf, enum items)
+            result[key] = value.map((item) => (item !== null && typeof item === 'object' ? processObject(item as Record<string, unknown>) : item));
+          } else {
+            // Process nested objects (e.g., properties, items, additionalProperties)
+            result[key] = processObject(value as Record<string, unknown>);
+          }
+        } else {
+          result[key] = value;
+        }
+      }
+
+      return result;
+    };
+
+    return processObject(schema);
+  }
+
   private fixInputSchema(provider: LlmProviderName, inputSchema: McpToolInputSchema): McpToolInputSchema {
-    if (provider === 'gemini') {
+    if (provider === 'gemini' || provider === 'gemini-cli') {
       // Deep clone to avoid modifying the original schema
       const fixedSchema = JSON.parse(JSON.stringify(inputSchema));
 
-      if (fixedSchema.properties) {
-        for (const key of Object.keys(fixedSchema.properties)) {
-          const property = fixedSchema.properties[key];
+      // First, strip JSON Schema 2019-09 keywords that are not supported
+      const strippedSchema = this.stripUnsupportedSchemaKeywords(fixedSchema) as unknown as McpToolInputSchema;
 
+      if (strippedSchema.properties) {
+        for (const key of Object.keys(strippedSchema.properties)) {
+          let property = strippedSchema.properties[key] as Record<string, unknown>;
+
+          // Gemini requires that when any_of/one_of/all_of is present,
+          // it must be the ONLY field in the property
           if (property.anyOf) {
-            property.any_of = property.anyOf;
-            delete property.anyOf;
-          }
-          if (property.oneOf) {
-            property.one_of = property.oneOf;
-            delete property.oneOf;
-          }
-          if (property.allOf) {
-            property.all_of = property.allOf;
-            delete property.allOf;
-          }
+            property = { any_of: property.anyOf };
+            strippedSchema.properties[key] = property as JSONSchema7Definition;
+          } else if (property.oneOf) {
+            property = { one_of: property.oneOf };
+            strippedSchema.properties[key] = property as JSONSchema7Definition;
+          } else if (property.allOf) {
+            property = { all_of: property.allOf };
+            strippedSchema.properties[key] = property as JSONSchema7Definition;
+          } else {
+            // gemini does not like "default" in the schema
+            if (property.default !== undefined) {
+              delete property.default;
+            }
 
-          // gemini does not like "default" in the schema
-          if (property.default !== undefined) {
-            delete property.default;
-          }
+            if (property.type === 'string' && property.format && !['enum', 'date-time'].includes(property.format as string)) {
+              logger.debug(`Removing unsupported format '${property.format}' for property '${key}' in Gemini schema`);
+              delete property.format;
+            }
 
-          if (property.type === 'string' && property.format && !['enum', 'date-time'].includes(property.format)) {
-            logger.debug(`Removing unsupported format '${property.format}' for property '${key}' in Gemini schema`);
-            delete property.format;
-          }
-
-          if (!property.type || property.type === 'null') {
-            property.type = 'string';
+            if (!property.type || property.type === 'null') {
+              property.type = 'string';
+            }
           }
         }
-        if (Object.keys(fixedSchema.properties).length === 0) {
+        if (Object.keys(strippedSchema.properties).length === 0) {
           // gemini requires at least one property in the schema
-          fixedSchema.properties = {
+          strippedSchema.properties = {
             placeholder: {
               type: 'string',
               description: 'Placeholder property to satisfy Gemini schema requirements',
@@ -535,7 +697,7 @@ export class Agent {
         }
       }
 
-      return fixedSchema;
+      return strippedSchema;
     }
 
     return inputSchema;
@@ -545,21 +707,33 @@ export class Agent {
     task: Task,
     profile: AgentProfile,
     prompt: string | null,
+    mode: Mode = 'agent',
     promptContext?: PromptContext,
     initialContextMessages?: ContextMessage[],
     initialContextFiles?: ContextFile[],
     systemPrompt?: string,
+    includeInContext = true,
     abortSignal?: AbortSignal,
   ): Promise<ContextMessage[]> {
-    const hookResult = await task.hookManager.trigger('onAgentStarted', { prompt }, task, task.project);
+    let contextMessages = initialContextMessages ?? (await task.getContextMessages());
+    let contextFiles = initialContextFiles ?? (await task.getContextFiles());
+
+    const hookResult = await task.hookManager.trigger('onAgentStarted', { prompt, contextMessages, contextFiles }, task, task.project);
     if (hookResult.blocked) {
       logger.info('Agent execution blocked by hook');
       return [];
     }
     prompt = hookResult.event.prompt;
-    // Set default values inside function body since await can't be used in parameter initializers
-    const contextMessages = initialContextMessages ?? (await task.getContextMessages());
-    const contextFiles = initialContextFiles ?? (await task.getContextFiles());
+    if (hookResult.event.contextMessages) {
+      contextMessages = hookResult.event.contextMessages;
+    }
+    if (hookResult.event.contextFiles) {
+      contextFiles = hookResult.event.contextFiles;
+    }
+
+    if (!systemPrompt) {
+      systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
+    }
 
     const userRequestMessage: ContextUserMessage | null = prompt
       ? {
@@ -572,15 +746,54 @@ export class Agent {
 
     const settings = this.store.getSettings();
     const projectProfiles = this.agentProfileManager.getProjectProfiles(task.getProjectDir());
-    const resultMessages: ContextMessage[] = userRequestMessage ? [userRequestMessage] : [];
+    let resultMessages: ContextMessage[] = userRequestMessage ? [userRequestMessage] : [];
 
     const providers = this.store.getProviders();
-    const provider = providers.find((p) => p.id === profile.provider);
+    let provider = providers.find((p) => p.id === profile.provider);
+    let modelName = profile.model;
+
+    if (provider) {
+      const extensionResult = await this.extensionManager.dispatchEvent(
+        'onAgentStarted',
+        {
+          mode,
+          prompt,
+          agentProfile: profile,
+          providerProfile: provider,
+          model: modelName,
+          promptContext,
+          contextMessages,
+          contextFiles,
+          systemPrompt,
+        },
+        task.project,
+        task,
+      );
+      if (extensionResult.blocked) {
+        logger.info('Agent execution blocked by extension');
+        return [];
+      }
+      profile = extensionResult.agentProfile;
+      provider = extensionResult.providerProfile;
+      modelName = extensionResult.model;
+      prompt = extensionResult.prompt;
+      promptContext = extensionResult.promptContext;
+      contextMessages = extensionResult.contextMessages;
+      contextFiles = extensionResult.contextFiles;
+      systemPrompt = extensionResult.systemPrompt;
+    }
+
+    if (userRequestMessage && includeInContext) {
+      await task.addContextMessage(userRequestMessage);
+    }
     if (!provider) {
       logger.error(`Provider ${profile.provider} not found`);
       task.addLogMessage('error', 'Selected model is not configured. Select another model and try again.', true, promptContext);
       return resultMessages;
     }
+
+    // Store resolved provider for use in retry logic
+    const resolvedProvider = provider;
 
     this.telemetryManager.captureAgentRun(profile, task.task);
 
@@ -591,7 +804,7 @@ export class Agent {
       promptContext,
       contextMessages,
       contextFiles,
-      systemPrompt,
+      systemPrompt: systemPrompt?.substring(0, 100),
     });
 
     // Create new abort controller for this run only if abortSignal is not provided
@@ -610,21 +823,46 @@ export class Agent {
     const effectiveAbortSignal = abortSignal || (controllerId ? this.abortControllers.get(controllerId)?.signal : undefined);
 
     const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
-    const providerOptions = this.modelManager.getProviderOptions(provider, profile.model);
-    const providerParameters = this.modelManager.getProviderParameters(provider, profile.model);
+    const providerOptions = this.modelManager.getProviderOptions(provider, modelName);
+    const providerParameters = this.modelManager.getProviderParameters(provider, modelName);
 
-    const messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
-    const initialUserRequestMessageIndex = messages.length - contextMessages.length;
+    const firstUserMessage = contextMessages.length > 0 ? contextMessages[0] : null;
+    let messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
+    const initialUserRequestMessageIndex = firstUserMessage
+      ? messages.findIndex((message) => message.role === 'user' && message.content === firstUserMessage.content)
+      : messages.length;
 
     // add user message
     messages.push(...resultMessages);
 
+    // Normalize messages for provider-specific requirements
+    messages = this.modelManager.normalizeMessages(provider, modelName, messages);
+
+    let mcpConnectors: McpConnector[] = [];
     try {
-      // reinitialize MCP clients for the current task and wait for them to be ready
-      await this.mcpManager.initMcpConnectors(settings.mcpServers, task.getProjectDir(), task.getTaskDir(), false, profile.enabledServers);
+      // Lazily initialize MCP clients for the current task
+      const initStartTime = Date.now();
+      let loadingMessageShown = false;
+
+      const loadingTimeout = setTimeout(() => {
+        loadingMessageShown = true;
+        task.addLogMessage('loading', 'Initializing MCP servers...', false, promptContext);
+      }, 3000);
+
+      try {
+        mcpConnectors = await this.mcpManager.initMcpConnectors(settings.mcpServers, task.getProjectDir(), task.getTaskDir(), false, profile.enabledServers);
+      } finally {
+        clearTimeout(loadingTimeout);
+        if (loadingMessageShown) {
+          task.addLogMessage('loading', undefined, false, promptContext);
+        }
+      }
+
+      const initTime = Date.now() - initStartTime;
+      logger.debug(`MCP servers initialized in ${initTime}ms`);
     } catch (error) {
-      logger.error('Error reinitializing MCP clients:', error);
-      task.addLogMessage('error', `Error reinitializing MCP clients: ${error}`, false, promptContext);
+      logger.error('Error initializing MCP clients:', error);
+      task.addLogMessage('error', `Error initializing MCP clients: ${error}`, false, promptContext);
     }
 
     if (effectiveAbortSignal?.aborted) {
@@ -632,7 +870,18 @@ export class Agent {
       return resultMessages;
     }
 
-    const toolSet = await this.getAvailableTools(task, profile, provider, contextMessages, resultMessages, effectiveAbortSignal, promptContext);
+    const toolSet = await this.getAvailableTools(
+      task,
+      mode,
+      profile,
+      provider,
+      modelName,
+      mcpConnectors,
+      contextMessages,
+      resultMessages,
+      effectiveAbortSignal,
+      promptContext,
+    );
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
     logger.debug('Tools:', {
@@ -645,22 +894,24 @@ export class Agent {
       logger.debug('Creating LLM model', {
         providerId: provider.id,
         providerName: provider.provider.name,
-        modelName: profile.model,
+        modelName: modelName,
       });
 
-      const model = this.modelManager.createLlm(provider, profile.model, settings, task.getProjectDir());
+      const model = await this.modelManager.createLlm(
+        provider,
+        modelName,
+        settings,
+        task.getProjectDir(),
+        toolSet,
+        systemPrompt,
+        task.task.lastAgentProviderMetadata,
+      );
       logger.debug('LLM model created successfully', {
         model: model.modelId,
       });
 
-      if (!systemPrompt) {
-        systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
-      }
-
       // repairToolCall function that attempts to repair tool calls
       const repairToolCall = async ({ toolCall, tools, error, messages, system }) => {
-        logger.warn('Error during tool call:', { error, toolCall });
-
         if (NoSuchToolError.isInstance(error)) {
           // If the tool doesn't exist, return a call to the helper tool
           // to inform the LLM about the missing tool.
@@ -751,7 +1002,7 @@ export class Agent {
       };
 
       // Get the model to use its temperature and max output tokens settings
-      const modelSettings = this.modelManager.getModel(profile.provider, profile.model);
+      const modelSettings = this.modelManager.getModelSettings(provider.provider.name, modelName);
       const effectiveTemperature = profile.temperature ?? modelSettings?.temperature;
       const effectiveMaxOutputTokens = profile.maxTokens ?? modelSettings?.maxOutputTokens;
 
@@ -763,7 +1014,34 @@ export class Agent {
         ...providerParameters,
       });
 
-      const getBaseModelCallParams = () => {
+      const getBaseModelCallParams = async () => {
+        const getOptimizedMessages = async () => {
+          const originalMessages = messages as ContextMessage[];
+          const optimized = await optimizeMessages(
+            messages,
+            cacheControl,
+            task,
+            profile,
+            projectProfiles,
+            initialUserRequestMessageIndex,
+            this.extensionManager,
+          );
+
+          const extensionResult = await this.extensionManager.dispatchEvent(
+            'onOptimizeMessages',
+            {
+              originalMessages,
+              optimizedMessages: optimized as ContextMessage[],
+            },
+            task.project,
+            task,
+          );
+
+          return (extensionResult.optimizedMessages as ModelMessage[]) ?? optimized;
+        };
+
+        const optimizedMessages = await getOptimizedMessages();
+
         return {
           providerOptions,
           model: wrapLanguageModel({
@@ -773,7 +1051,7 @@ export class Agent {
             }),
           }),
           system: systemPrompt,
-          messages: optimizeMessages(messages, cacheControl, task, profile, projectProfiles, initialUserRequestMessageIndex),
+          messages: optimizedMessages,
           tools: toolSet,
           abortSignal: effectiveAbortSignal,
           maxOutputTokens: effectiveMaxOutputTokens,
@@ -808,7 +1086,7 @@ export class Agent {
         let hasReasoning: boolean = false;
         let finishReason: null | FinishReason = null;
         let responseMessages: ContextMessage[] = [];
-        let currentTextResponse = '';
+        let responseMessageIndex: number = 0;
 
         const onStepFinish = async (stepResult: StepResult<typeof toolSet>) => {
           finishReason = stepResult.finishReason;
@@ -823,15 +1101,40 @@ export class Agent {
             return;
           }
 
-          responseMessages = await this.processStep(currentResponseId, stepResult, task, profile, provider, promptContext, abortSignal);
-          void task.hookManager.trigger('onAgentStepFinished', { stepResult }, task, task.project);
+          responseMessages = await this.processStep(currentResponseId, stepResult, task, provider, modelName, promptContext, abortSignal);
+          const hookResult = await task.hookManager.trigger('onAgentStepFinished', { stepResult, finishReason, responseMessages }, task, task.project);
+          if (hookResult?.event?.finishReason) {
+            finishReason = hookResult.event.finishReason;
+          }
+          if (hookResult?.event?.responseMessages) {
+            responseMessages = hookResult.event.responseMessages;
+          }
+          const extensionResult = await this.extensionManager.dispatchEvent(
+            'onAgentStepFinished',
+            {
+              mode,
+              agentProfile: profile,
+              currentResponseId,
+              stepResult,
+              finishReason,
+              responseMessages,
+            },
+            task.project,
+            task,
+          );
+          responseMessages = extensionResult.responseMessages;
+          finishReason = extensionResult.finishReason;
+
           currentResponseId = uuidv4();
+          responseMessageIndex = 0;
           hasReasoning = false;
         };
 
-        await this.compactMessagesIfNeeded(
+        const shouldContinue = await this.compactMessagesIfNeeded(
           task,
           profile,
+          provider,
+          modelName,
           userRequestMessage || findLastUserMessage(contextMessages)!,
           contextMessages,
           contextFiles,
@@ -841,17 +1144,25 @@ export class Agent {
           effectiveAbortSignal,
         );
 
-        if (this.modelManager.isStreamingDisabled(provider, profile.model)) {
+        if (!shouldContinue) {
+          logger.debug('Agent run aborted due to context compaction');
+          await task.updateTask({
+            state: DefaultTaskState.Interrupted,
+          });
+          break;
+        }
+
+        if (this.modelManager.isStreamingDisabled(provider, modelName)) {
           logger.debug('Streaming disabled, using generateText');
           await generateText({
-            ...getBaseModelCallParams(),
+            ...(await getBaseModelCallParams()),
             onStepFinish,
             experimental_repairToolCall: repairToolCall,
           });
         } else {
           logger.debug('Streaming enabled, using streamText');
           const result = streamText({
-            ...getBaseModelCallParams(),
+            ...(await getBaseModelCallParams()),
             experimental_transform: smoothStream({
               delayInMs: 20,
               chunking: 'line',
@@ -874,66 +1185,74 @@ export class Agent {
                 task.addLogMessage('error', JSON.stringify(error), false, promptContext);
               }
             },
-            onChunk: async ({ chunk }) => {
-              if (chunk.type === 'text-delta') {
-                if (hasReasoning) {
-                  await task.processResponseMessage({
-                    id: currentResponseId,
-                    action: 'response',
-                    content: ANSWER_RESPONSE_START_TAG,
-                    finished: false,
-                    promptContext,
-                  });
-                  hasReasoning = false;
-                }
+            onStepFinish,
+            experimental_repairToolCall: repairToolCall,
+          });
 
-                if (chunk.text.trim() || currentTextResponse.trim()) {
-                  await task.processResponseMessage({
-                    id: currentResponseId,
-                    action: 'response',
-                    content: chunk.text,
-                    finished: false,
-                    promptContext,
-                  });
-                  currentTextResponse += chunk.text;
-                }
-              } else if (chunk.type === 'reasoning-delta') {
-                if (!hasReasoning) {
-                  await task.processResponseMessage({
-                    id: currentResponseId,
-                    action: 'response',
-                    content: THINKING_RESPONSE_STAR_TAG,
-                    finished: false,
-                    promptContext,
-                  });
-                  hasReasoning = true;
-                }
+          for await (const chunk of result.fullStream) {
+            logger.debug('Chunk:', { chunk: chunk.type, responseMessageIndex });
 
+            const responseMessageId = responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId;
+            if (chunk.type === 'text-start') {
+              if (hasReasoning) {
                 await task.processResponseMessage({
-                  id: currentResponseId,
+                  id: responseMessageId,
+                  action: 'response',
+                  content: ANSWER_RESPONSE_START_TAG,
+                  finished: false,
+                  promptContext,
+                });
+                hasReasoning = false;
+              }
+            } else if (chunk.type === 'text-end') {
+              responseMessageIndex++;
+            } else if (chunk.type === 'text-delta') {
+              if (chunk.text.trim()) {
+                await task.processResponseMessage({
+                  id: responseMessageId,
                   action: 'response',
                   content: chunk.text,
                   finished: false,
                   promptContext,
                 });
-              } else if (chunk.type === 'tool-input-start') {
-                task.addLogMessage('loading', 'Preparing tool...', false, promptContext);
-              } else if (chunk.type === 'tool-call') {
-                task.addLogMessage('loading', 'Executing tool...', false, promptContext);
-              } else if (chunk.type === 'tool-result') {
-                task.addLogMessage('loading', undefined, false, promptContext);
               }
-            },
-            onStepFinish,
-            experimental_repairToolCall: repairToolCall,
-          });
-
-          await result.consumeStream();
+            } else if (chunk.type === 'reasoning-start') {
+              await task.processResponseMessage({
+                id: responseMessageId,
+                action: 'response',
+                content: THINKING_RESPONSE_STAR_TAG,
+                finished: false,
+                promptContext,
+              });
+              hasReasoning = true;
+            } else if (chunk.type === 'reasoning-delta') {
+              await task.processResponseMessage({
+                id: responseMessageId,
+                action: 'response',
+                content: chunk.text,
+                finished: false,
+                promptContext,
+              });
+            } else if (chunk.type === 'tool-input-start') {
+              task.addLogMessage('loading', 'Preparing tool...', false, promptContext);
+            } else if (chunk.type === 'tool-call') {
+              task.addLogMessage('loading', 'Executing tool...', false, promptContext);
+            } else if (chunk.type === 'tool-result') {
+              const [serverName, toolName] = extractServerNameToolName(chunk.toolName);
+              const toolPromptContext = extractPromptContextFromToolResult(chunk.output) ?? promptContext;
+              task.addToolMessage(chunk.toolCallId, serverName, toolName, chunk.input, JSON.stringify(chunk.output), undefined, toolPromptContext);
+              task.addLogMessage('loading', undefined, false, promptContext);
+            }
+          }
         }
 
         if (iterationError) {
           logger.error('Error during prompt:', iterationError);
-          if (iterationError instanceof APICallError && iterationError.isRetryable) {
+          if (
+            iterationError instanceof APICallError &&
+            iterationError.isRetryable &&
+            this.modelManager.isRetryable(resolvedProvider, modelName, iterationError)
+          ) {
             // try again
             continue;
           } else {
@@ -942,8 +1261,23 @@ export class Agent {
           }
         }
 
+        const newMessages = this.filterResultMessages(responseMessages);
         messages.push(...responseMessages);
-        resultMessages.push(...this.filterResultMessages(responseMessages));
+        resultMessages.push(...newMessages);
+
+        if (includeInContext) {
+          // Persist new messages incrementally after each iteration
+          try {
+            for (const message of newMessages) {
+              await task.addContextMessage(message);
+            }
+          } catch (error) {
+            logger.error('Failed to persist messages incrementally:', {
+              taskId: task.taskId,
+              error,
+            });
+          }
+        }
 
         if (effectiveAbortSignal?.aborted) {
           logger.info('Prompt aborted by user (inside loop)');
@@ -966,6 +1300,12 @@ export class Agent {
 
         retryCount = 0;
 
+        if (lastMessage?.role === 'user') {
+          // if response messages have been modified by other means (e.g. hooks), we need to continue when the last message is a user message
+          logger.debug('Last message is a user message. Continuing...');
+          continue;
+        }
+
         if (finishReason === 'length') {
           task.addLogMessage(
             'warning',
@@ -980,13 +1320,49 @@ export class Agent {
           break;
         }
       }
+
+      const hookResult = await task.hookManager.trigger('onAgentFinished', { aborted: false, contextMessages, resultMessages }, task, task.project);
+      if (hookResult?.event?.resultMessages) {
+        resultMessages = hookResult.event.resultMessages;
+      }
+      const extensionResult = await this.extensionManager.dispatchEvent(
+        'onAgentFinished',
+        {
+          mode,
+          aborted: false,
+          contextMessages,
+          resultMessages,
+        },
+        task.project,
+        task,
+      );
+      resultMessages = extensionResult.resultMessages;
     } catch (error) {
       if (effectiveAbortSignal?.aborted) {
         logger.info('Prompt aborted by user');
+
+        const hookResult = await task.hookManager.trigger('onAgentFinished', { aborted: true, contextMessages, resultMessages }, task, task.project);
+        if (hookResult?.event?.resultMessages) {
+          resultMessages = hookResult.event.resultMessages;
+        }
+        const extensionResult = await this.extensionManager.dispatchEvent(
+          'onAgentFinished',
+          {
+            mode,
+            aborted: true,
+            contextMessages,
+            resultMessages,
+          },
+          task.project,
+          task,
+        );
+        resultMessages = extensionResult.resultMessages;
+
         return resultMessages;
       }
 
       logger.error('Error running prompt:', error);
+
       if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
         task.addLogMessage('error', `${error.message}. Configure credentials in the Model Library.`, false, promptContext);
       } else {
@@ -1001,16 +1377,6 @@ export class Agent {
           controllerId: controllerId,
         });
       }
-
-      // Always send a final "finished" message, regardless of whether there was text or tools
-      await task.processResponseMessage({
-        id: currentResponseId,
-        action: 'response',
-        content: '',
-        finished: true,
-        promptContext,
-      });
-      void task.hookManager.trigger('onAgentFinished', { resultMessages }, task, task.project);
     }
 
     return resultMessages;
@@ -1036,6 +1402,183 @@ export class Agent {
     });
   }
 
+  private async getContextFilesAsToolCallMessages(task: Task, profile: AgentProfile, contextFiles: ContextFile[]): Promise<ModelMessage[]> {
+    const messages: ModelMessage[] = [];
+
+    // Check if power file_read tool is available (not 'Never')
+    const fileReadToolId = `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`;
+    const fileReadApprovalState = profile.toolApprovals[fileReadToolId];
+    const useToolCallFormat = fileReadApprovalState !== ToolApprovalState.Never;
+
+    // Filter out rule files as they are already included in the system prompt
+    const filteredContextFiles = contextFiles.filter((file) => {
+      const normalizedPath = path.normalize(file.path);
+      const normalizedRulesDir = path.normalize(AIDER_DESK_PROJECT_RULES_DIR);
+
+      return (
+        !normalizedPath.startsWith(normalizedRulesDir + path.sep) &&
+        !normalizedPath.startsWith(normalizedRulesDir + '/') &&
+        normalizedPath !== normalizedRulesDir
+      );
+    });
+
+    if (filteredContextFiles.length === 0) {
+      return messages;
+    }
+
+    // Separate readonly and editable files
+    const [readOnlyFiles, editableFiles] = filteredContextFiles.reduce(
+      ([readOnly, editable], file) => (file.readOnly ? [[...readOnly, file], editable] : [readOnly, [...editable, file]]),
+      [[], []] as [ContextFile[], ContextFile[]],
+    );
+
+    // If tool call format is not available, fall back to the old user message format
+    if (!useToolCallFormat) {
+      return await this.getContextFilesMessages(task, profile, contextFiles);
+    }
+
+    // Use tool call format
+    const createToolCallAndResult = async (files: ContextFile[], readOnlyFile: boolean): Promise<ModelMessage[]> => {
+      if (files.length === 0) {
+        return [];
+      }
+
+      const fileMessages: ModelMessage[] = [];
+      const nonBinaryFiles: Array<{ path: string; relativePath: string }> = [];
+      const imageFiles: Array<{
+        path: string;
+        relativePath: string;
+        mimeType: string;
+        imageBase64: string;
+      }> = [];
+
+      // Read all files and categorize them
+      for (const file of files) {
+        try {
+          const filePath = path.resolve(task.getTaskDir(), file.path);
+          const fileContentBuffer = await fs.readFile(filePath);
+          const relativePath = path.isAbsolute(file.path) ? path.relative(task.getTaskDir(), file.path) : file.path;
+
+          // If binary, try to detect if it's an image
+          if (isBinary(filePath, fileContentBuffer)) {
+            try {
+              const detected = await fileTypeFromBuffer(fileContentBuffer);
+              if (detected?.mime.startsWith('image/')) {
+                imageFiles.push({
+                  path: filePath,
+                  relativePath,
+                  mimeType: detected.mime,
+                  imageBase64: fileContentBuffer.toString('base64'),
+                });
+                continue;
+              }
+            } catch (e) {
+              logger.warn(`image-type failed to detect image for ${file.path}`, { error: e instanceof Error ? e.message : String(e) });
+            }
+            continue;
+          }
+
+          nonBinaryFiles.push({
+            path: filePath,
+            relativePath,
+          });
+        } catch (error) {
+          logger.error('Error reading context file:', {
+            path: file.path,
+            error,
+          });
+        }
+      }
+
+      // Process non-binary files: each file gets its own assistant message with tool-call and tool-result
+      for (const { path: filePath, relativePath } of nonBinaryFiles) {
+        try {
+          const content = await readFileContent(filePath, true);
+          const toolCallId = uuidv4();
+
+          const assistantMessage: ModelMessage = {
+            role: 'assistant',
+            content: [
+              {
+                type: 'text',
+                text: readOnlyFile
+                  ? 'The following file is part of the working context as read-only reference material.'
+                  : 'The following file is part of the working context and can be edited.',
+              },
+              {
+                type: 'tool-call' as const,
+                toolCallId,
+                toolName: fileReadToolId,
+                input: {
+                  filePath: relativePath,
+                  withLines: true,
+                },
+              },
+            ],
+          };
+
+          const toolResultMessage: ModelMessage = {
+            role: 'tool' as const,
+            content: [
+              {
+                type: 'tool-result',
+                toolCallId,
+                toolName: fileReadToolId,
+                output: {
+                  type: 'text',
+                  value: content,
+                },
+              },
+            ],
+          };
+
+          fileMessages.push(assistantMessage, toolResultMessage);
+        } catch (error) {
+          logger.error('Error processing context file with readFileContent:', {
+            path: relativePath,
+            error,
+          });
+        }
+      }
+
+      // Process image files: keep current behavior
+      for (const imageData of imageFiles) {
+        fileMessages.push({
+          role: 'assistant',
+          content: `Provide content of image file: ${imageData.relativePath}`,
+        });
+
+        const imageMessage: ModelMessage = {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              image: `data:${imageData.mimeType};base64,${imageData.imageBase64}`,
+              mediaType: imageData.mimeType,
+            },
+          ],
+        };
+        fileMessages.push(imageMessage);
+      }
+
+      return fileMessages;
+    };
+
+    // Process read-only files
+    if (readOnlyFiles.length > 0) {
+      const readOnlyMessages = await createToolCallAndResult(readOnlyFiles, true);
+      messages.push(...readOnlyMessages);
+    }
+
+    // Process editable files
+    if (editableFiles.length > 0) {
+      const editableMessages = await createToolCallAndResult(editableFiles, false);
+      messages.push(...editableMessages);
+    }
+
+    return messages;
+  }
+
   private async prepareMessages(task: Task, profile: AgentProfile, contextMessages: ModelMessage[], contextFiles: ContextFile[]): Promise<ModelMessage[]> {
     const messages: ModelMessage[] = [];
 
@@ -1056,15 +1599,16 @@ export class Agent {
 
     // Add context files with content or just list of working files
     if (profile.includeContextFiles) {
-      const contextFilesMessages = await this.getContextFilesMessages(task, profile, contextFiles);
+      const contextFilesMessages = await this.getContextFilesAsToolCallMessages(task, profile, contextFiles);
+      // Add message history before context files
+      messages.push(...contextMessages);
       messages.push(...contextFilesMessages);
     } else {
-      const workingFilesMessages = await this.getWorkingFilesMessages(contextFiles);
+      const workingFilesMessages = await this.getWorkingFilesMessages(task, contextFiles);
       messages.push(...workingFilesMessages);
+      // Add message history after working files
+      messages.push(...contextMessages);
     }
-
-    // Add message history
-    messages.push(...contextMessages);
 
     return messages;
   }
@@ -1073,6 +1617,7 @@ export class Agent {
     agentProfile: AgentProfile,
     systemPrompt: string,
     prompt: string,
+    projectDir: string,
     messages: ContextMessage[] = [],
     abortable = true,
     abortSignal?: AbortSignal,
@@ -1084,7 +1629,7 @@ export class Agent {
     }
 
     const settings = this.store.getSettings();
-    const model = this.modelManager.createLlm(provider, agentProfile.model, settings, '');
+    const model = await this.modelManager.createLlm(provider, agentProfile.model, settings, projectDir, undefined, systemPrompt, undefined);
     const providerOptions = this.modelManager.getProviderOptions(provider, agentProfile.model);
     const providerParameters = this.modelManager.getProviderParameters(provider, agentProfile.model);
 
@@ -1113,7 +1658,7 @@ export class Agent {
       const result = await generateText({
         model,
         system: systemPrompt,
-        messages: optimizeMessages(messages),
+        messages: await optimizeMessages(messages),
         abortSignal: effectiveAbortSignal,
         providerOptions,
         ...providerParameters,
@@ -1145,7 +1690,7 @@ export class Agent {
       }
 
       const messages = await this.prepareMessages(task, profile, await task.getContextMessages(), await task.getContextFiles());
-      const toolSet = await this.getAvailableTools(task, profile, provider);
+      const toolSet = await this.getAvailableTools(task, 'agent', profile, provider, profile.model);
       const systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
 
       const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
@@ -1153,7 +1698,7 @@ export class Agent {
       const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
       const userRequestMessageIndex = lastUserIndex >= 0 ? lastUserIndex : 0;
 
-      const optimizedMessages = optimizeMessages(
+      const optimizedMessages = await optimizeMessages(
         messages,
         cacheControl,
         task,
@@ -1205,14 +1750,15 @@ export class Agent {
 
   private async processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
+    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
     task: Task,
-    profile: AgentProfile,
     provider: ProviderProfile,
+    model: string,
     promptContext?: PromptContext,
     abortSignal?: AbortSignal,
   ): Promise<ContextMessage[]> {
     logger.info(`Step finished. Reason: ${finishReason}`, {
+      currentResponseId,
       reasoningText: reasoningText?.substring(0, 100), // Log truncated reasoning
       text: text?.substring(0, 100), // Log truncated text
       toolCalls: toolCalls?.map((tc) => tc.toolName),
@@ -1226,25 +1772,15 @@ export class Agent {
     });
 
     const messages: ContextMessage[] = [];
-    const usageReport: UsageReportData = this.modelManager.getUsageReport(task, provider, profile.model, usage, providerMetadata);
+    const usageReport: UsageReportData = this.modelManager.getUsageReport(task, provider, model, usage, providerMetadata);
 
-    // Process text/reasoning content
-    if (reasoningText?.trim() || text?.trim()) {
-      const message: ResponseMessage = {
-        id: currentResponseId,
-        action: 'response',
-        content: reasoningText?.trim() ? `${THINKING_RESPONSE_STAR_TAG}${reasoningText.trim()}${ANSWER_RESPONSE_START_TAG}${text.trim()}` : text,
-        finished: true,
-        // only send usage report if there are no tool results
-        usageReport: toolResults?.length ? undefined : usageReport,
-        promptContext,
-      };
-      await task.processResponseMessage(message);
+    if (providerMetadata) {
+      await task.updateTask({ lastAgentProviderMetadata: providerMetadata });
     }
 
-    // Process successful tool results *after* sending text/reasoning and handling errors
-    for (let i = 0; i < toolResults.length; i++) {
-      const toolResult = toolResults[i];
+    let responseMessageIndex: number = 0;
+
+    const processToolResult = (toolResult: TypedToolResult<TOOLS>, isLast = true) => {
       const [serverName, toolName] = extractServerNameToolName(toolResult.toolName);
       const toolPromptContext = extractPromptContextFromToolResult(toolResult.output) ?? promptContext;
 
@@ -1255,9 +1791,51 @@ export class Agent {
         toolName,
         toolResult.input,
         JSON.stringify(toolResult.output),
-        i === toolResults.length - 1 ? usageReport : undefined, // Only add usage report to the last tool message
+        isLast ? usageReport : undefined, // Only add usage report to the last tool message
         toolPromptContext,
       );
+    };
+
+    for (let i = 0; i < content.length; i++) {
+      let part = content[i];
+      if (part.type === 'reasoning') {
+        reasoningText = part.text;
+        // move to the next one right away
+        part = content[++i];
+      }
+      if (part?.type === 'text') {
+        text = part.text;
+      }
+
+      if (text || reasoningText) {
+        const message: ResponseMessage = {
+          id: responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId,
+          action: 'response',
+          content: reasoningText?.trim() ? `${THINKING_RESPONSE_STAR_TAG}${reasoningText.trim()}${ANSWER_RESPONSE_START_TAG}${text.trim()}` : text,
+          finished: true,
+          usageReport: i === content.length - 1 && toolResults.length === 0 ? usageReport : undefined,
+          promptContext,
+        };
+        await task.processResponseMessage(message);
+
+        text = '';
+        reasoningText = undefined;
+        responseMessageIndex++;
+      }
+
+      if (part?.type === 'tool-result') {
+        const toolResult = toolResults.find((toolResult) => toolResult.toolCallId === part.toolCallId);
+        if (toolResult) {
+          toolResults = toolResults.filter((toolResult) => toolResult.toolCallId !== part.toolCallId);
+          processToolResult(toolResult, i === content.length - 1 && toolResults.length === 0);
+        }
+      }
+    }
+
+    // Process successful tool results *after* sending text/reasoning and handling errors
+    for (let i = 0; i < toolResults.length; i++) {
+      const toolResult = toolResults[i];
+      processToolResult(toolResult, i === toolResults.length - 1);
     }
 
     if (!abortSignal?.aborted) {
@@ -1268,9 +1846,8 @@ export class Agent {
       if (message.role === 'assistant') {
         messages.push({
           ...message,
-          // @ts-expect-error the id is there
-          id: message.id || currentResponseId,
-          usageReport: toolResults?.length ? undefined : usageReport,
+          id: currentResponseId,
+          usageReport: toolResults?.length && responseMessageIndex === 0 ? undefined : usageReport,
           promptContext,
         });
       } else if (message.role === 'tool') {
@@ -1290,6 +1867,8 @@ export class Agent {
   private async compactMessagesIfNeeded(
     task: Task,
     profile: AgentProfile,
+    provider: ProviderProfile,
+    model: string,
     userRequestMessage: ContextUserMessage,
     contextMessages: ContextMessage[],
     contextFiles: ContextFile[],
@@ -1300,33 +1879,62 @@ export class Agent {
   ) {
     const contextCompactingThreshold =
       task.task.contextCompactingThreshold ?? this.store.getProjectSettings(task.getProjectDir())?.contextCompactingThreshold ?? 0;
+    const contextCompactionType = profile.isSubagent
+      ? ContextCompactionType.Compact
+      : (this.store.getSettings().taskSettings.contextCompactionType ?? ContextCompactionType.Compact);
     const usageReport = resultMessages[resultMessages.length - 1]?.usageReport;
-    const maxTokens = this.modelManager.getModel(profile.provider, profile.model)?.maxInputTokens;
+    const maxTokens = this.modelManager.getModelSettings(provider.provider.name, model)?.maxInputTokens;
 
     if (contextCompactingThreshold === 0 || !usageReport || !maxTokens) {
-      return;
+      return true;
     }
 
     // Check for context compacting
     const totalTokens = usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0);
     if (maxTokens && totalTokens > (maxTokens * contextCompactingThreshold) / 100) {
-      logger.info(`Token usage ${totalTokens} exceeds threshold of ${contextCompactingThreshold}%. Compacting conversation.`);
-      task.addLogMessage('info', 'Token usage exceeds threshold. Compacting conversation...', false, promptContext);
+      logger.info(
+        `Token usage ${totalTokens} exceeds threshold of ${contextCompactingThreshold}%. Compacting conversation with type: ${contextCompactionType}.`,
+      );
 
-      await task.compactConversation('agent', undefined, profile, [...contextMessages, ...resultMessages], promptContext, abortSignal, false);
+      if (contextCompactionType === ContextCompactionType.Compact) {
+        await task.compactConversation(
+          'agent',
+          undefined,
+          profile,
+          [...contextMessages, ...resultMessages],
+          promptContext,
+          abortSignal,
+          false,
+          'Token usage exceeds threshold. Compacting conversation...',
+        );
 
-      // reload messages after compacting
-      messages.length = 0;
-      resultMessages.length = 0;
+        // reload messages after compacting
+        messages.length = 0;
+        resultMessages.length = 0;
 
-      messages.push(...(await this.prepareMessages(task, profile, await task.getContextMessages(), contextFiles)));
-      resultMessages.push({
-        id: uuidv4(),
-        role: 'user',
-        content: `Based on your compacted summary of our previous conversation, please continue our work with my request:\n\n${userRequestMessage.content}`,
-        promptContext,
-      });
-      messages.push(...resultMessages);
+        messages.push(...(await this.prepareMessages(task, profile, await task.getContextMessages(), contextFiles)));
+        resultMessages.push({
+          id: uuidv4(),
+          role: 'user',
+          content: `Based on your compacted summary of our previous conversation, please continue our work with my request:\n\n${userRequestMessage.content}`,
+          promptContext,
+        });
+        messages.push(...resultMessages);
+      } else if (contextCompactionType === ContextCompactionType.Handoff) {
+        // Perform handoff
+        await task.handoffConversation(
+          'agent',
+          'Continue with the task based on the last user message',
+          true,
+          [...contextMessages, ...resultMessages],
+          false,
+          'Token usage exceeds threshold. Handing off conversation to new task...',
+        );
+
+        return false;
+      }
     }
+
+    return true;
   }
 }

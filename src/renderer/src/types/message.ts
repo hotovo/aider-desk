@@ -2,7 +2,7 @@ import { Group, PromptContext, TaskData, TokensInfoData, UsageReportData } from 
 
 export interface Message {
   id: string;
-  type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool' | 'group' | 'task-info';
+  type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool' | 'group' | 'task-info' | 'assistant-group';
   content: string;
   promptContext?: PromptContext;
   children?: Message[];
@@ -104,4 +104,14 @@ export interface TaskInfoMessage extends Message {
 
 export const isTaskInfoMessage = (message: Message): message is TaskInfoMessage => {
   return message.type === 'task-info';
+};
+
+export interface AssistantGroupMessage extends Message {
+  type: 'assistant-group';
+  responseMessage: ResponseMessage;
+  toolMessages: ToolMessage[];
+}
+
+export const isAssistantGroupMessage = (message: Message): message is AssistantGroupMessage => {
+  return message.type === 'assistant-group';
 };

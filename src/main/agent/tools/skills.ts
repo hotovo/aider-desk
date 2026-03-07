@@ -123,14 +123,16 @@ export const createSkillsToolset = async (task: Task, profile: AgentProfile, pro
     inputSchema: z.object({
       skill: z.string().describe('The skill name to activate. Use the skill name only (no additional arguments).'),
     }),
-    execute: async ({ skill }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { skill } = input;
       task.addToolMessage(toolCallId, SKILLS_TOOL_GROUP_NAME, SKILLS_TOOL_ACTIVATE_SKILL, { skill }, undefined, undefined, promptContext);
 
-      const toolId = `${SKILLS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SKILLS_TOOL_ACTIVATE_SKILL}`;
+      const toolName = `${SKILLS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SKILLS_TOOL_ACTIVATE_SKILL}`;
+      const toolId = toolName;
       const questionText = 'Approve activating a skill?';
       const questionSubject = `Skill: ${skill}`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(toolId, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, toolId, questionText, questionSubject);
       if (!isApproved) {
         return `Activating skill denied by user. Reason: ${userInput}`;
       }

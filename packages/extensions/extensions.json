@@ -1,0 +1,156 @@
+{
+  "extensions": [
+    {
+      "id": "wakatime",
+      "name": "WakaTime",
+      "description": "Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli",
+      "file": "wakatime.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "onPromptStarted", "onPromptFinished", "onToolFinished", "onFilesAdded"]
+    },
+    {
+      "id": "pirate",
+      "name": "Pirate Agent",
+      "description": "Adds a Pirate agent that speaks like a swashbuckling sea dog",
+      "file": "pirate.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "getAgents", "onAgentProfileUpdated"]
+    },
+    {
+      "id": "generate-tests",
+      "name": "Generate Tests",
+      "description": "Adds /generate-tests command to generate unit tests for files",
+      "file": "generate-tests.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "getCommands"]
+    },
+    {
+      "id": "theme",
+      "name": "Theme Switcher",
+      "description": "Adds /theme command to switch AiderDesk themes",
+      "file": "theme.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "getCommands"]
+    },
+    {
+      "id": "plan-mode",
+      "name": "Plan Mode",
+      "description": "Adds a Plan mode that enforces planning before coding",
+      "file": "plan-mode.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "getModes", "onAgentStarted"]
+    },
+    {
+      "id": "protected-paths",
+      "name": "Protected Paths",
+      "description": "Blocks file operations on protected paths (.env, .git/, node_modules/)",
+      "file": "protected-paths.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "onToolCalled"]
+    },
+    {
+      "id": "permission-gate",
+      "name": "Permission Gate",
+      "description": "Prompts for confirmation before running dangerous bash commands",
+      "file": "permission-gate.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "onToolCalled"]
+    },
+    {
+      "id": "ultrathink",
+      "name": "Ultrathink",
+      "description": "Detects 'ultrathink' / 'think hard' and increases reasoning effort",
+      "file": "ultrathink.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "onAgentStarted"]
+    },
+    {
+      "id": "external-rules",
+      "name": "External Rules",
+      "description": "Includes rule files from Cursor, Claude Code, and Roo Code",
+      "file": "external-rules.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "onRuleFilesRetrieved"]
+    },
+    {
+      "id": "sound-notification",
+      "name": "Sound Notification",
+      "description": "Plays a 'Jobs Done' sound when a prompt finishes",
+      "file": "sound-notification.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "onPromptFinished"]
+    },
+    {
+      "id": "sandbox",
+      "name": "Sandbox",
+      "description": "OS-level sandboxing for bash commands using @anthropic-ai/sandbox-runtime",
+      "folder": "sandbox",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onUnload", "onTaskInitialized", "onTaskClosed", "onToolCalled"]
+    },
+    {
+      "id": "rtk",
+      "name": "RTK Auto-Rewrite",
+      "description": "Rewrites shell commands to RTK equivalents, reducing token usage by 60-90%",
+      "folder": "rtk",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["onLoad", "getCommands", "onToolCalled"]
+    },
+    {
+      "id": "redact-secrets",
+      "name": "Redact Secrets",
+      "description": "Redacts secret values from .env* files in file read results",
+      "folder": "redact-secrets",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onProjectOpen", "onToolFinished"]
+    },
+    {
+      "id": "chunkhound-search",
+      "name": "ChunkHound Search",
+      "description": "Provides chunkhound-search tool for semantic code search",
+      "folder": "chunkhound-search",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["onLoad", "onUnload", "onProjectOpen", "onToolFinished", "getTools"]
+    },
+    {
+      "id": "chunkhound-on-semantic-search-tool",
+      "name": "ChunkHound Semantic Search Override",
+      "description": "Overrides power---semantic_search to use ChunkHound for better semantic understanding",
+      "folder": "chunkhound-on-semantic-search-tool",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["onLoad", "onUnload", "onProjectOpen", "onToolCalled", "onToolFinished"]
+    },
+    {
+      "id": "tree-sitter-repo-map",
+      "name": "Tree-Sitter Repo Map",
+      "description": "Enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking",
+      "folder": "tree-sitter-repo-map",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onAgentStarted", "getCommands"]
+    },
+    {
+      "id": "context-autocompletion-words",
+      "name": "Context Autocompletion Words",
+      "description": "Automatically extracts symbols from context files and adds them to autocompletion",
+      "folder": "context-autocompletion-words",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onFilesAdded", "onFilesDropped"]
+    },
+    {
+      "id": "lsp",
+      "name": "LSP Integration",
+      "description": "Language Server Protocol integration for code intelligence and error detection",
+      "folder": "lsp",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onUnload", "onProjectStarted", "onProjectStopped", "getTools", "onToolFinished"]
+    }
+  ]
+}

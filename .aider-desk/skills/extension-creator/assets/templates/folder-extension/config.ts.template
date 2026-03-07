@@ -1,0 +1,29 @@
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export interface {EXTENSION_NAME}Config {
+  // Add config properties
+}
+
+const DEFAULT_CONFIG: {EXTENSION_NAME}Config = {
+  // Add default values
+};
+
+const CONFIG_FILE = path.join(__dirname, 'config.json');
+
+export const loadConfig = async (): Promise<{EXTENSION_NAME}Config> => {
+  try {
+    const data = await fs.readFile(CONFIG_FILE, 'utf-8');
+    const config = JSON.parse(data);
+    return { ...DEFAULT_CONFIG, ...config };
+  } catch {
+    return { ...DEFAULT_CONFIG };
+  }
+};
+
+export const saveConfig = async (config: {EXTENSION_NAME}Config): Promise<void> => {
+  await fs.writeFile(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+};

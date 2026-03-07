@@ -1,17 +1,29 @@
 import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoMdClose } from 'react-icons/io';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 import { IconButton } from './IconButton';
 
 type Props = {
   title: string;
-  onClose?: () => void;
   children: ReactNode;
+  onClose?: () => void;
+  closeOnEscape?: boolean;
 };
 
-export const ModalOverlayLayout = ({ title, onClose, children }: Props) => {
+export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = false }: Props) => {
   const { t } = useTranslation();
+
+  useHotkeys(
+    'escape',
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClose?.();
+    },
+    { enabled: !!onClose && closeOnEscape, enableOnFormTags: true, enableOnContentEditable: true },
+  );
 
   return (
     <div className="fixed inset-[6px] bg-bg-primary-light z-50 flex flex-col overflow-hidden">

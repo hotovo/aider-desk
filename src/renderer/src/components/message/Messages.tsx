@@ -1,17 +1,17 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, memo, useRef } from 'react';
+import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { DefaultTaskState, TaskData } from '@common/types';
+import { DefaultTaskState, MessageViewMode, TaskData } from '@common/types';
 import { TaskStateActions } from 'src/renderer/src/components/message/TaskStateActions';
 
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
+import { AssistantMessageBlock } from './AssistantMessageBlock';
 
-import { isGroupMessage, isLoadingMessage, isUserMessage, Message } from '@/types/message';
+import { isAssistantGroupMessage, isGroupMessage, isLoadingMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { groupMessagesByPromptContext } from '@/components/message/utils';
+import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -34,11 +34,13 @@ type Props = {
   redoLastUserPrompt: () => void;
   editLastUserMessage: (content: string) => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
   onInterrupt?: () => void;
+  onForkFromMessage?: (message: Message) => void;
+  onRemoveUpToMessage?: (message: Message) => void;
 };
 
 const MessagesComponent = forwardRef<MessagesRef, Props>(
@@ -55,11 +57,13 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
       redoLastUserPrompt,
       editLastUserMessage,
       onMarkAsDone,
-      onProceed,
+      onRunPrompt,
       onArchiveTask,
       onUnarchiveTask,
       onDeleteTask,
       onInterrupt,
+      onForkFromMessage,
+      onRemoveUpToMessage,
     },
     ref,
   ) => {
@@ -67,9 +71,13 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
     const { t } = useTranslation();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const isCompactMode = settings?.messageViewMode === MessageViewMode.Compact;
 
-    // Group messages by promptContext.group.id
-    const processedMessages = groupMessagesByPromptContext(messages);
+    // Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
+    const processedMessages = useMemo(() => {
+      const grouped = groupMessagesByPromptContext(messages);
+      return isCompactMode ? groupAssistantMessages(grouped) : grouped;
+    }, [messages, isCompactMode]);
     const lastUserMessageIndex = processedMessages.findLastIndex(isUserMessage);
     const isLastLoadingMessage = processedMessages.length > 0 && isLoadingMessage(processedMessages[processedMessages.length - 1]);
     const inProgress = task.state === DefaultTaskState.InProgress;
@@ -128,32 +136,17 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
     }));
 
     return (
-      <div className="group relative flex flex-col h-full">
+      <div className="relative flex flex-col h-full">
         <div
           ref={messagesContainerRef}
           className="flex flex-col flex-grow overflow-y-auto max-h-full p-4 scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth"
           {...eventHandlers}
         >
-          <StyledTooltip id="usage-info-tooltip" />
-          <div className="absolute left-1/2 -translate-x-1/2 w-[50%] bottom-0 z-10 flex justify-center gap-1 pt-10 pb-2 group">
-            {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToPrevious()}
-            {scrollingPaused && (
-              <IconButton
-                icon={<MdKeyboardDoubleArrowDown className="h-6 w-6" />}
-                onClick={scrollToBottom}
-                tooltip={t('messages.scrollToBottom')}
-                className="bg-bg-primary-light border border-border-default shadow-lg hover:bg-bg-secondary transition-colors duration-200"
-                aria-label={t('messages.scrollToBottom')}
-              />
-            )}
-            {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToNext()}
-          </div>
-
           {processedMessages.map((message, index) => {
             if (isGroupMessage(message)) {
               return (
                 <GroupMessageBlock
-                  key={message.id || index}
+                  key={message.id}
                   baseDir={baseDir}
                   taskId={taskId}
                   message={message}
@@ -166,9 +159,24 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
                 />
               );
             }
+            if (isAssistantGroupMessage(message)) {
+              return (
+                <AssistantMessageBlock
+                  key={message.id}
+                  baseDir={baseDir}
+                  taskId={taskId}
+                  message={message}
+                  allFiles={allFiles}
+                  renderMarkdown={renderMarkdown}
+                  remove={inProgress ? undefined : () => removeMessage(message)}
+                  onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
+                  onRemoveUpTo={onRemoveUpToMessage ? () => onRemoveUpToMessage(message) : undefined}
+                />
+              );
+            }
             return (
               <MessageBlock
-                key={message.id || index}
+                key={message.id}
                 baseDir={baseDir}
                 taskId={taskId}
                 message={message}
@@ -178,18 +186,39 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
                 redo={index === lastUserMessageIndex && !inProgress ? redoLastUserPrompt : undefined}
                 edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
                 onInterrupt={onInterrupt}
+                onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
+                onRemoveUpTo={onRemoveUpToMessage ? () => onRemoveUpToMessage(message) : undefined}
               />
             );
           })}
           <div ref={messagesEndRef} />
         </div>
+        <div className="relative">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[140px] z-10 flex justify-center gap-1 pt-6 pb-1 group">
+            {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToPrevious()}
+            {scrollingPaused && (
+              <IconButton
+                icon={<MdKeyboardDoubleArrowDown className="h-6 w-6" />}
+                onClick={scrollToBottom}
+                tooltip={t('messages.scrollToBottom')}
+                className="bg-bg-primary-light border border-border-default shadow-lg hover:bg-bg-secondary transition-colors duration-200"
+                aria-label={t('messages.scrollToBottom')}
+              />
+            )}
+            {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToNext()}
+          </div>
+        </div>
         {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
           <TaskStateActions
             state={task.state}
+            mode={task.currentMode}
             isArchived={task.archived}
+            task={task}
+            projectDir={baseDir}
+            taskId={taskId}
             onResumeTask={resumeTask}
             onMarkAsDone={onMarkAsDone}
-            onProceed={onProceed}
+            onRunPrompt={onRunPrompt}
             onArchiveTask={onArchiveTask}
             onUnarchiveTask={onUnarchiveTask}
             onDeleteTask={onDeleteTask}

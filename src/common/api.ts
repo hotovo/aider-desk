@@ -2,14 +2,14 @@ import {
   AgentProfile,
   AgentProfilesUpdatedData,
   AutocompletionData,
+  BmadStatus,
   BranchInfo,
   ClearTaskData,
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
   CreateTaskParams,
-  CustomCommand,
-  CustomCommandsUpdatedData,
+  CommandsData,
   EditFormat,
   EnvironmentVariable,
   FileEdit,
@@ -21,8 +21,10 @@ import {
   MemoryEntry,
   MessageRemovedData,
   Mode,
+  ModeDefinition,
   Model,
   ModelsData,
+  NotificationData,
   OS,
   ProjectData,
   ProjectSettings,
@@ -30,6 +32,7 @@ import {
   ProviderModelsData,
   ProviderProfile,
   ProvidersUpdatedData,
+  QueuedPromptsUpdatedData,
   QuestionAnsweredData,
   QuestionData,
   ResponseChunkData,
@@ -47,8 +50,14 @@ import {
   UserMessageData,
   VersionsInfo,
   VoiceSession,
+  WorkflowExecutionOptions,
+  WorkflowExecutionResult,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
+  UpdatedFile,
+  UpdatedFilesUpdatedData,
+  LoadedExtension,
+  AvailableExtension,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -71,6 +80,8 @@ export interface ApplicationAPI {
   redoLastUserPrompt: (baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string) => void;
   resumeTask: (baseDir: string, taskId: string) => void;
   answerQuestion: (baseDir: string, taskId: string, answer: string) => void;
+  removeQueuedPrompt: (baseDir: string, taskId: string, promptId: string) => void;
+  sendQueuedPromptNow: (baseDir: string, taskId: string, promptId: string) => void;
   loadInputHistory: (baseDir: string) => Promise<string[]>;
   isOpenDialogSupported: () => boolean;
   showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
@@ -89,12 +100,16 @@ export interface ApplicationAPI {
   getFilePathSuggestions: (currentPath: string, directoriesOnly?: boolean) => Promise<string[]>;
   getAddableFiles: (baseDir: string, taskId: string) => Promise<string[]>;
   getAllFiles: (baseDir: string, taskId: string, useGit?: boolean) => Promise<string[]>;
+  getUpdatedFiles: (baseDir: string, taskId: string) => Promise<UpdatedFile[]>;
+  restoreFile: (baseDir: string, taskId: string, filePath: string) => Promise<void>;
+  generateCommitMessage: (baseDir: string, taskId: string) => Promise<string>;
+  commitChanges: (baseDir: string, taskId: string, message: string, amend: boolean) => Promise<void>;
   addFile: (baseDir: string, taskId: string, filePath: string, readOnly?: boolean) => void;
   isValidPath: (baseDir: string, path: string) => Promise<boolean>;
   isProjectPath: (path: string) => Promise<boolean>;
   dropFile: (baseDir: string, taskId: string, path: string) => void;
   runCommand: (baseDir: string, taskId: string, command: string) => void;
-  pasteImage: (baseDir: string, taskId: string) => void;
+  pasteImage: (baseDir: string, taskId: string, imageBuffer?: ArrayBuffer) => void;
   scrapeWeb: (baseDir: string, taskId: string, url: string, filePath?: string) => Promise<void>;
   initProjectRulesFile: (baseDir: string, taskId: string) => Promise<void>;
 
@@ -107,24 +122,34 @@ export interface ApplicationAPI {
 
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
+  reloadMcpServer: (serverName: string, config: McpServerConfig) => Promise<McpTool[]>;
+
+  // Extension operations
+  getInstalledExtensions: (projectDir?: string) => Promise<LoadedExtension[]>;
+  getAvailableExtensions: (repositories: string[], forceRefresh?: boolean) => Promise<AvailableExtension[]>;
+  installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
+  uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
 
   createNewTask: (baseDir: string, params?: CreateTaskParams) => Promise<TaskData>;
   updateTask: (baseDir: string, id: string, updates: Partial<TaskData>) => Promise<boolean>;
   deleteTask: (baseDir: string, id: string) => Promise<boolean>;
   duplicateTask: (baseDir: string, taskId: string) => Promise<TaskData>;
+  forkTask: (baseDir: string, taskId: string, messageId: string) => Promise<TaskData>;
   getTasks: (baseDir: string) => Promise<TaskData[]>;
   loadTask: (baseDir: string, taskId: string) => Promise<TaskStateData>;
-  exportTaskToMarkdown: (baseDir: string, taskId: string) => Promise<void>;
+  exportTaskToMarkdown: (baseDir: string, taskId: string, copyOnly?: boolean) => Promise<string | void>;
   getRecentProjects: () => Promise<string[]>;
   addRecentProject: (baseDir: string) => Promise<void>;
   removeRecentProject: (baseDir: string) => Promise<void>;
-  interruptResponse: (baseDir: string, taskId: string) => void;
+  interruptResponse: (baseDir: string, taskId: string, interruptId?: string) => void;
   applyEdits: (baseDir: string, taskId: string, edits: FileEdit[]) => void;
   clearContext: (baseDir: string, taskId: string) => void;
   removeLastMessage: (baseDir: string, taskId: string) => void;
   removeMessage: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
+  removeMessagesUpTo: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
   compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
   handoffConversation: (baseDir: string, taskId: string, focus?: string) => Promise<void>;
+  runCodeInlineRequest: (baseDir: string, filename: string, lineNumber: number, userComment: string) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
   getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
@@ -151,10 +176,12 @@ export interface ApplicationAPI {
   addResponseCompletedListener: (baseDir: string, taskId: string, callback: (data: ResponseCompletedData) => void) => () => void;
   addLogListener: (baseDir: string, taskId: string, callback: (data: LogData) => void) => () => void;
   addContextFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void) => () => void;
-  addCustomCommandsUpdatedListener: (baseDir: string, callback: (data: CustomCommandsUpdatedData) => void) => () => void;
+  addUpdatedFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void) => () => void;
+  addCommandsUpdatedListener: (baseDir: string, callback: (data: CommandsData) => void) => () => void;
   addUpdateAutocompletionListener: (baseDir: string, taskId: string, callback: (data: AutocompletionData) => void) => () => void;
   addAskQuestionListener: (baseDir: string, taskId: string, callback: (data: QuestionData) => void) => () => void;
   addQuestionAnsweredListener: (baseDir: string, taskId: string, callback: (data: QuestionAnsweredData) => void) => () => void;
+  addQueuedPromptsUpdatedListener: (baseDir: string, taskId: string, callback: (data: QueuedPromptsUpdatedData) => void) => () => void;
   addUpdateAiderModelsListener: (baseDir: string, taskId: string, callback: (data: ModelsData) => void) => () => void;
   addCommandOutputListener: (baseDir: string, taskId: string, callback: (data: CommandOutputData) => void) => () => void;
   addTokensInfoListener: (baseDir: string, taskId: string, callback: (data: TokensInfoData) => void) => () => void;
@@ -184,7 +211,8 @@ export interface ApplicationAPI {
   addTaskCancelledListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
   addTaskDeletedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
 
-  getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
+  getCommands: (baseDir: string) => Promise<CommandsData>;
+  getCustomModes: (baseDir: string) => Promise<ModeDefinition[]>;
   runCustomCommand: (baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
 
   // Terminal operations
@@ -206,6 +234,7 @@ export interface ApplicationAPI {
   abortWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
   continueWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
   resolveWorktreeConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
+  resolveConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
 
   // Agent profile operations
   getAllAgentProfiles: () => Promise<AgentProfile[]>;
@@ -223,4 +252,13 @@ export interface ApplicationAPI {
   // Clipboard operations
   writeToClipboard: (text: string) => Promise<void>;
   openPath: (path: string) => Promise<boolean>;
+
+  addNotificationListener: (baseDir: string, callback: (data: NotificationData) => void) => () => void;
+
+  // BMAD operations
+  installBmad: (projectDir: string) => Promise<{ success: boolean; message?: string }>;
+  getBmadStatus: (projectDir: string) => Promise<BmadStatus>;
+  executeWorkflow: (projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions) => Promise<WorkflowExecutionResult>;
+  resetBmadWorkflow: (projectDir: string) => Promise<{ success: boolean; message?: string }>;
+  addBmadStatusChangedListener: (baseDir: string, callback: (status: BmadStatus) => void) => () => void;
 }

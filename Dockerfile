@@ -5,6 +5,13 @@ FROM node:24-slim AS builder
 # These are set automatically by buildx - amd64, arm64
 ARG TARGETARCH=amd64
 
+# Install Python and build tools for native module compilation (node-pty)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3 \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /app
 

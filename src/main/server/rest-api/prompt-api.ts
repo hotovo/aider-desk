@@ -9,7 +9,7 @@ const RunPromptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task ID is required'),
   prompt: z.string().min(1, 'Prompt is required'),
-  mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']).optional(),
+  mode: z.enum(['agent', 'code', 'ask', 'architect', 'context', 'bmad']).optional(),
 });
 
 const SavePromptSchema = z.object({

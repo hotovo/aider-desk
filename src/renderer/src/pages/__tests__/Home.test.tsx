@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HotkeysProvider } from 'react-hotkeys-hook';
+import { MemoryRouter } from 'react-router-dom';
 import { ApplicationAPI } from '@common/api';
 import { ProjectData } from '@common/types';
 
@@ -79,13 +80,21 @@ describe('Home', () => {
       getOpenProjects: vi.fn(() => Promise.resolve([])),
     });
     vi.mocked(useApi).mockReturnValue(mockApi as unknown as ApplicationAPI);
+
+    // Clear all mock implementations to prevent test pollution
+    mockApi.setActiveProject.mockReset();
+    mockApi.addOpenProject.mockReset();
+    mockApi.getOpenProjects.mockReset();
+    mockApi.setActiveProject.mockImplementation(() => Promise.resolve([]));
   });
 
   it('renders and shows NoProjectsOpen when no projects are loaded', async () => {
     render(
-      <HotkeysProvider initiallyActiveScopes={['home']}>
-        <Home />
-      </HotkeysProvider>,
+      <MemoryRouter initialEntries={['/home']}>
+        <HotkeysProvider initiallyActiveScopes={['home']}>
+          <Home />
+        </HotkeysProvider>
+      </MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -95,9 +104,11 @@ describe('Home', () => {
 
   it('opens Model Library when icon is clicked', async () => {
     render(
-      <HotkeysProvider initiallyActiveScopes={['home']}>
-        <Home />
-      </HotkeysProvider>,
+      <MemoryRouter initialEntries={['/home']}>
+        <HotkeysProvider initiallyActiveScopes={['home']}>
+          <Home />
+        </HotkeysProvider>
+      </MemoryRouter>,
     );
 
     const modelLibraryButton = screen.getByTitle('projectBar.modelLibrary');
@@ -119,9 +130,11 @@ describe('Home', () => {
     });
 
     render(
-      <HotkeysProvider initiallyActiveScopes={['home']}>
-        <Home />
-      </HotkeysProvider>,
+      <MemoryRouter initialEntries={['/home']}>
+        <HotkeysProvider initiallyActiveScopes={['home']}>
+          <Home />
+        </HotkeysProvider>
+      </MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -144,9 +157,11 @@ describe('Home', () => {
     mockApi.getOpenProjects.mockResolvedValue(mockProjects);
 
     render(
-      <HotkeysProvider initiallyActiveScopes={['home']}>
-        <Home />
-      </HotkeysProvider>,
+      <MemoryRouter initialEntries={['/home']}>
+        <HotkeysProvider initiallyActiveScopes={['home']}>
+          <Home />
+        </HotkeysProvider>
+      </MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -170,6 +185,96 @@ describe('Home', () => {
 
     await waitFor(() => {
       expect(mockApi.setActiveProject).toHaveBeenCalledWith('/project/1');
+    });
+  });
+
+  describe('URL Navigation', () => {
+    it('activates existing project from URL', async () => {
+      const mockProjects = [
+        { baseDir: '/project/existing', active: false },
+        { baseDir: '/project/other', active: true },
+      ] as ProjectData[];
+      mockApi.getOpenProjects.mockResolvedValue(mockProjects);
+      mockApi.setActiveProject.mockResolvedValue(mockProjects.map((p) => ({ ...p, active: p.baseDir === '/project/existing' })));
+
+      render(
+        <MemoryRouter initialEntries={['/home?project=%2Fproject%2Fexisting']}>
+          <HotkeysProvider initiallyActiveScopes={['home']}>
+            <Home />
+          </HotkeysProvider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(mockApi.setActiveProject).toHaveBeenCalledWith('/project/existing');
+      });
+    });
+
+    it('adds and activates new project from URL', async () => {
+      const existingProjects = [{ baseDir: '/project/other', active: true }] as ProjectData[];
+      const updatedProjects = [{ baseDir: '/project/new', active: false }, ...existingProjects] as ProjectData[];
+      const finalProjects = [
+        { baseDir: '/project/new', active: true },
+        { baseDir: '/project/other', active: false },
+      ] as ProjectData[];
+
+      mockApi.getOpenProjects.mockResolvedValueOnce(existingProjects).mockResolvedValue(updatedProjects);
+      mockApi.addOpenProject.mockResolvedValue(updatedProjects);
+      mockApi.setActiveProject.mockResolvedValue(finalProjects);
+
+      render(
+        <MemoryRouter initialEntries={['/home?project=%2Fproject%2Fnew']}>
+          <HotkeysProvider initiallyActiveScopes={['home']}>
+            <Home />
+          </HotkeysProvider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(mockApi.addOpenProject).toHaveBeenCalledWith('/project/new');
+        expect(mockApi.setActiveProject).toHaveBeenCalledWith('/project/new');
+      });
+    });
+
+    it('passes task ID to ProjectView from URL', async () => {
+      const mockProjects = [{ baseDir: '/project/existing', active: true }] as ProjectData[];
+      mockApi.getOpenProjects.mockResolvedValue(mockProjects);
+
+      render(
+        <MemoryRouter initialEntries={['/home?project=%2Fproject%2Fexisting&task=task-123']}>
+          <HotkeysProvider initiallyActiveScopes={['home']}>
+            <Home />
+          </HotkeysProvider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('project-view')).toBeInTheDocument();
+      });
+    });
+
+    it('does not trigger URL navigation multiple times', async () => {
+      const mockProjects = [{ baseDir: '/project/existing', active: true }] as ProjectData[];
+      mockApi.getOpenProjects.mockResolvedValue(mockProjects);
+      mockApi.setActiveProject.mockResolvedValue(mockProjects);
+
+      render(
+        <MemoryRouter initialEntries={['/home?project=%2Fproject%2Fexisting']}>
+          <HotkeysProvider initiallyActiveScopes={['home']}>
+            <Home />
+          </HotkeysProvider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('project-view')).toBeInTheDocument();
+      });
+
+      // Wait a bit more to ensure no additional calls happen
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Should not call setActiveProject since the project is already active
+      expect(mockApi.setActiveProject).not.toHaveBeenCalled();
     });
   });
 });

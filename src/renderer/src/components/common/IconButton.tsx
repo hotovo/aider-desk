@@ -1,21 +1,18 @@
-import { MouseEvent, ReactNode, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { MouseEvent, ReactNode } from 'react';
 import { twMerge } from 'tailwind-merge';
 
-import { StyledTooltip } from './StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   icon: ReactNode;
   onClick?: () => void;
   tooltip?: ReactNode;
   className?: string;
-  tooltipId?: string;
   disabled?: boolean;
+  'data-testid'?: string;
 };
 
-export const IconButton = ({ icon, onClick, tooltip, className, tooltipId, disabled }: Props) => {
-  const [dataTooltipId] = useState(tooltipId || `icon-button-tooltip-${uuidv4()}`);
-
+export const IconButton = ({ icon, onClick, tooltip, className, disabled, 'data-testid': testId }: Props) => {
   const combinedClassName = twMerge(
     'text-text-muted',
     'transition-opacity',
@@ -29,17 +26,15 @@ export const IconButton = ({ icon, onClick, tooltip, className, tooltipId, disab
     onClick?.();
   };
 
-  return (
-    <>
-      <div
-        onClick={disabled || !onClick ? undefined : handleClick}
-        data-tooltip-id={tooltip ? dataTooltipId : undefined}
-        data-tooltip-content={typeof tooltip === 'string' && tooltipId ? tooltip : undefined}
-        className={combinedClassName}
-      >
-        {icon}
-      </div>
-      {tooltip && !tooltipId && <StyledTooltip id={dataTooltipId} content={tooltip} />}
-    </>
+  const content = (
+    <div onClick={disabled || !onClick ? undefined : handleClick} className={combinedClassName} data-testid={testId}>
+      {icon}
+    </div>
   );
+
+  if (tooltip) {
+    return <Tooltip content={tooltip}>{content}</Tooltip>;
+  }
+
+  return content;
 };

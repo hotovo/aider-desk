@@ -8,11 +8,13 @@ import { watch, FSWatcher } from 'chokidar';
 import { loadFront } from 'yaml-front-matter';
 import debounce from 'lodash/debounce';
 
-import type { CustomCommand } from '@common/types';
+import type { Command, CommandArgument, CommandsData, CustomCommand } from '@common/types';
+import type { EventManager } from '@/events';
+import type { ExtensionManager, ExtensionsChangeListener } from '@/extensions';
 
 import { AIDER_DESK_COMMANDS_DIR } from '@/constants';
 import logger from '@/logger';
-import { Project } from '@/project/project';
+import { Project } from '@/project';
 
 // Constants for shell command formatting
 const SHELL_COMMAND_TAGS = {
@@ -48,12 +50,20 @@ const execAsync = promisify(exec);
 export class CustomCommandManager {
   private commands: Map<string, CustomCommand> = new Map();
   private watchers: FSWatcher[] = [];
+  private readonly extensionChangeListener: ExtensionsChangeListener = () => {
+    this.sendCommandsUpdated();
+  };
 
-  constructor(private readonly project: Project) {}
+  constructor(
+    private readonly project: Project,
+    private readonly eventManager: EventManager,
+    private readonly extensionManager: ExtensionManager,
+  ) {}
 
   public async start(): Promise<void> {
     await this.initializeCommands();
     await this.setupFileWatchers();
+    this.extensionManager.addListener(this.extensionChangeListener);
   }
 
   private async initializeCommands(): Promise<void> {
@@ -66,7 +76,7 @@ export class CustomCommandManager {
     const projectCommandsDir = path.join(this.project.baseDir, AIDER_DESK_COMMANDS_DIR);
     await this.loadCommandsFromDir(projectCommandsDir, this.commands);
 
-    this.notifyCommandsUpdated();
+    this.sendCommandsUpdated();
   }
 
   private async setupFileWatchers(): Promise<void> {
@@ -130,8 +140,9 @@ export class CustomCommandManager {
     await this.initializeCommands();
   }
 
-  private notifyCommandsUpdated(): void {
-    this.project.sendCustomCommandsUpdated(Array.from(this.commands.values()));
+  public sendCommandsUpdated(): void {
+    const commandsData = this.getAllCommands();
+    this.eventManager.sendCommandsUpdated(commandsData);
   }
 
   private async loadCommandsFromDir(commandsDir: string, commands: Map<string, CustomCommand>): Promise<void> {
@@ -192,8 +203,22 @@ export class CustomCommandManager {
     return this.commands.get(name);
   }
 
-  getAllCommands(): CustomCommand[] {
-    return Array.from(this.commands.values());
+  getAllCommands(): CommandsData {
+    // Get extension commands first
+    const extensionCommands: Command[] = this.extensionManager.getCommands(this.project).map((registered) => ({
+      name: registered.command.name,
+      description: registered.command.description,
+      arguments: registered.command.arguments || [],
+    }));
+
+    // Get custom commands from files
+    const customCommands = Array.from(this.commands.values());
+
+    return {
+      baseDir: this.project.baseDir,
+      customCommands,
+      extensionCommands,
+    };
   }
 
   async processCommandTemplate(command: CustomCommand, args: string[]): Promise<string> {
@@ -202,7 +227,7 @@ export class CustomCommandManager {
     return prompt;
   }
 
-  private substituteArguments(template: string, args: string[], commandArgs: CustomCommand['arguments']): string {
+  private substituteArguments(template: string, args: string[], commandArgs: CommandArgument[]): string {
     let prompt = template;
 
     // First, substitute {{ARGUMENTS}} placeholder with all arguments joined by spaces
@@ -330,6 +355,7 @@ export class CustomCommandManager {
   }
 
   dispose(): void {
+    this.extensionManager.removeListener(this.extensionChangeListener);
     this.watchers.forEach((watcher) => watcher.close());
     this.watchers = [];
   }

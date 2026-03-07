@@ -1,0 +1,373 @@
+diff --git a/node_modules/ai-sdk-provider-gemini-cli/dist/index.mjs b/node_modules/ai-sdk-provider-gemini-cli/dist/index.mjs
+index de27b24..b04605e 100644
+--- a/node_modules/ai-sdk-provider-gemini-cli/dist/index.mjs
++++ b/node_modules/ai-sdk-provider-gemini-cli/dist/index.mjs
+@@ -1,8 +1,10 @@
+ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
+   get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
+ }) : x)(function(x) {
+-  if (typeof require !== "undefined") return require.apply(this, arguments);
+-  throw Error('Dynamic require of "' + x + '" is not supported');
++  if (typeof require !== "undefined") {
++    return require.apply(this, arguments);
++  }
++  throw Error("Dynamic require of \"" + x + "\" is not supported");
+ });
+ 
+ // src/gemini-provider.ts
+@@ -18,6 +20,7 @@ import {
+   createContentGeneratorConfig,
+   AuthType
+ } from "@google/gemini-cli-core";
++
+ async function initializeGeminiClient(options, modelId) {
+   let authType;
+   if (options.authType === "api-key" || options.authType === "gemini-api-key") {
+@@ -173,6 +176,7 @@ function mapPromptToGeminiFormat(options) {
+   }
+   return { contents, systemInstruction };
+ }
++
+ function mapUserMessage(message) {
+   const parts = [];
+   for (const part of message.content) {
+@@ -193,25 +197,41 @@ function mapUserMessage(message) {
+   }
+   return { role: "user", parts };
+ }
++
+ function mapAssistantMessage(message) {
+   const parts = [];
+   for (const part of message.content) {
++    const thoughtSignature = part.providerOptions == null ? void 0 : part.providerOptions["gemini-cli"] == null
++      ? void 0
++      : part.providerOptions["gemini-cli"].thoughtSignature;
+     switch (part.type) {
+       case "text":
+-        parts.push({ text: part.text });
++        parts.push({
++          text: part.text,
++          thoughtSignature
++        });
++        break;
++      case "reasoning":
++        parts.push({
++          text: part.text,
++          thought: true,
++          thoughtSignature
++        });
+         break;
+       case "tool-call":
+         parts.push({
+           functionCall: {
+             name: part.toolName,
+             args: part.input || {}
+-          }
++          },
++          thoughtSignature
+         });
+         break;
+     }
+   }
+   return { role: "model", parts };
+ }
++
+ function mapFilePart(part) {
+   if (part.data instanceof URL) {
+     throw new Error(
+@@ -240,6 +260,7 @@ import {
+   FunctionCallingConfigMode
+ } from "@google/genai";
+ import { z } from "zod";
++
+ function mapToolsToGeminiFormat(tools) {
+   const functionDeclarations = [];
+   for (const tool of tools) {
+@@ -251,6 +272,7 @@ function mapToolsToGeminiFormat(tools) {
+   }
+   return [{ functionDeclarations }];
+ }
++
+ function convertZodToJsonSchema(zodSchema) {
+   const zodWithToJSONSchema = z;
+   if (zodWithToJSONSchema.toJSONSchema && typeof zodWithToJSONSchema.toJSONSchema === "function") {
+@@ -269,6 +291,7 @@ function convertZodToJsonSchema(zodSchema) {
+   );
+   return { type: "object" };
+ }
++
+ function convertToolParameters(parameters) {
+   if (isJsonSchema(parameters)) {
+     return cleanJsonSchema(parameters);
+@@ -279,12 +302,15 @@ function convertToolParameters(parameters) {
+   }
+   return parameters;
+ }
++
+ function isJsonSchema(obj) {
+   return typeof obj === "object" && obj !== null && ("type" in obj || "properties" in obj || "$schema" in obj);
+ }
++
+ function isZodSchema(obj) {
+   return typeof obj === "object" && obj !== null && "_def" in obj && typeof obj._def === "object";
+ }
++
+ function cleanJsonSchema(schema) {
+   if (typeof schema !== "object" || schema === null) {
+     return schema;
+@@ -319,6 +345,7 @@ function cleanJsonSchema(schema) {
+   }
+   return cleaned;
+ }
++
+ function mapGeminiToolConfig(options) {
+   if (options.toolChoice) {
+     const allowedFunctionNames = options.toolChoice.type === "tool" ? [options.toolChoice.toolName] : void 0;
+@@ -331,6 +358,7 @@ function mapGeminiToolConfig(options) {
+   }
+   return void 0;
+ }
++
+ function mapToolChoiceToGeminiFormat(toolChoice) {
+   switch (toolChoice.type) {
+     case "auto":
+@@ -347,15 +375,16 @@ function mapToolChoiceToGeminiFormat(toolChoice) {
+ 
+ // src/error.ts
+ import { APICallError, LoadAPIKeyError } from "@ai-sdk/provider";
++
+ function createAPICallError({
+-  message,
+-  code,
+-  exitCode,
+-  stderr,
+-  promptExcerpt,
+-  isRetryable = false,
+-  statusCode = 500
+-}) {
++                              message,
++                              code,
++                              exitCode,
++                              stderr,
++                              promptExcerpt,
++                              isRetryable = false,
++                              statusCode = 500
++                            }) {
+   return new APICallError({
+     url: "gemini-cli-core://command",
+     requestBodyValues: promptExcerpt ? { prompt: promptExcerpt } : {},
+@@ -370,17 +399,19 @@ function createAPICallError({
+     isRetryable
+   });
+ }
++
+ function createAuthenticationError({
+-  message
+-}) {
++                                     message
++                                   }) {
+   return new LoadAPIKeyError({
+     message
+   });
+ }
++
+ function createTimeoutError({
+-  message,
+-  promptExcerpt
+-}) {
++                              message,
++                              promptExcerpt
++                            }) {
+   return createAPICallError({
+     message,
+     code: "TIMEOUT",
+@@ -389,6 +420,7 @@ function createTimeoutError({
+     statusCode: 504
+   });
+ }
++
+ function isAuthenticationError(error) {
+   if (error instanceof LoadAPIKeyError) {
+     return true;
+@@ -399,6 +431,7 @@ function isAuthenticationError(error) {
+   }
+   return false;
+ }
++
+ function isTimeoutError(error) {
+   if (error instanceof APICallError) {
+     return error.statusCode === 504 || error.data?.code === "TIMEOUT";
+@@ -409,6 +442,7 @@ function isTimeoutError(error) {
+   }
+   return false;
+ }
++
+ function mapGeminiError(error) {
+   if (error instanceof Error) {
+     if (error.name === "AbortError") {
+@@ -481,6 +515,7 @@ var noopLogger = {
+   error: () => {
+   }
+ };
++
+ function getLogger(logger) {
+   if (logger === false) {
+     return noopLogger;
+@@ -490,6 +525,7 @@ function getLogger(logger) {
+   }
+   return logger;
+ }
++
+ function createVerboseLogger(logger, verbose = false) {
+   if (verbose) {
+     return logger;
+@@ -514,6 +550,7 @@ var ThinkingLevel = /* @__PURE__ */ ((ThinkingLevel2) => {
+   ThinkingLevel2["MINIMAL"] = "MINIMAL";
+   return ThinkingLevel2;
+ })(ThinkingLevel || {});
++
+ function normalizeThinkingLevel(level) {
+   const normalized = level.toUpperCase();
+   switch (normalized) {
+@@ -529,6 +566,7 @@ function normalizeThinkingLevel(level) {
+       return void 0;
+   }
+ }
++
+ function mapGeminiFinishReason(geminiReason) {
+   switch (geminiReason) {
+     case "STOP":
+@@ -544,6 +582,7 @@ function mapGeminiFinishReason(geminiReason) {
+       return "unknown";
+   }
+ }
++
+ function buildThinkingConfig(input) {
+   const config = {};
+   if (input.thinkingLevel !== void 0) {
+@@ -564,6 +603,7 @@ function buildThinkingConfig(input) {
+   }
+   return config;
+ }
++
+ function prepareGenerationConfig(options, settings) {
+   const warnings = [];
+   const responseFormat = options.responseFormat;
+@@ -608,6 +648,7 @@ function prepareGenerationConfig(options, settings) {
+   };
+   return { generationConfig, warnings };
+ }
++
+ var GeminiLanguageModel = class {
+   constructor(options) {
+     this.specificationVersion = "v2";
+@@ -627,6 +668,7 @@ var GeminiLanguageModel = class {
+       options.settings?.verbose ?? false
+     );
+   }
++
+   async ensureInitialized() {
+     if (this.contentGenerator && this.config) {
+       return { contentGenerator: this.contentGenerator, config: this.config };
+@@ -637,6 +679,7 @@ var GeminiLanguageModel = class {
+     await this.initPromise;
+     return { contentGenerator: this.contentGenerator, config: this.config };
+   }
++
+   async initialize() {
+     try {
+       const { client, config } = await initializeGeminiClient(
+@@ -649,6 +692,7 @@ var GeminiLanguageModel = class {
+       throw new Error(`Failed to initialize Gemini model: ${String(error)}`);
+     }
+   }
++
+   /**
+    * Non-streaming generation method
+    */
+@@ -660,7 +704,9 @@ var GeminiLanguageModel = class {
+       const { contentGenerator } = await this.ensureInitialized();
+       const { contents, systemInstruction } = mapPromptToGeminiFormat(options);
+       this.logger.debug(
+-        `[gemini-cli] Request mode: ${options.responseFormat?.type === "json" ? "object-json" : "regular"}, response format: ${options.responseFormat?.type ?? "none"}`
++        `[gemini-cli] Request mode: ${options.responseFormat?.type === "json"
++          ? "object-json"
++          : "regular"}, response format: ${options.responseFormat?.type ?? "none"}`
+       );
+       this.logger.debug(
+         `[gemini-cli] Converted ${options.prompt.length} messages`
+@@ -727,17 +773,20 @@ var GeminiLanguageModel = class {
+       const content = [];
+       if (responseContent?.parts) {
+         for (const part of responseContent.parts) {
++          const thoughtSignatureMetadata = part.thoughtSignature ? { 'gemini-cli': { thoughtSignature: part.thoughtSignature } } : void 0;
+           if (part.text) {
+             content.push({
+-              type: "text",
+-              text: part.text
++              type: part.thought === true ? "reasoning" : "text",
++              text: part.text,
++              providerMetadata: thoughtSignatureMetadata
+             });
+           } else if (part.functionCall) {
+             content.push({
+               type: "tool-call",
+               toolCallId: randomUUID2(),
+               toolName: part.functionCall.name || "",
+-              input: JSON.stringify(part.functionCall.args || {})
++              input: JSON.stringify(part.functionCall.args || {}),
++              providerMetadata: thoughtSignatureMetadata
+             });
+           }
+         }
+@@ -780,6 +829,7 @@ var GeminiLanguageModel = class {
+       throw mapGeminiError(error);
+     }
+   }
++
+   /**
+    * Streaming generation method
+    */
+@@ -791,7 +841,9 @@ var GeminiLanguageModel = class {
+       const { contentGenerator } = await this.ensureInitialized();
+       const { contents, systemInstruction } = mapPromptToGeminiFormat(options);
+       this.logger.debug(
+-        `[gemini-cli] Stream mode: ${options.responseFormat?.type === "json" ? "object-json" : "regular"}, response format: ${options.responseFormat?.type ?? "none"}`
++        `[gemini-cli] Stream mode: ${options.responseFormat?.type === "json"
++          ? "object-json"
++          : "regular"}, response format: ${options.responseFormat?.type ?? "none"}`
+       );
+       this.logger.debug(
+         `[gemini-cli] Converted ${options.prompt.length} messages for streaming`
+@@ -886,18 +938,21 @@ var GeminiLanguageModel = class {
+               }
+               if (content?.parts) {
+                 for (const part of content.parts) {
++                  const thoughtSignatureMetadata = part.thoughtSignature ? { 'gemini-cli': { thoughtSignature: part.thoughtSignature } } : void 0;
+                   if (part.text) {
+                     controller.enqueue({
+                       type: "text-delta",
+                       id: randomUUID2(),
+-                      delta: part.text
++                      delta: part.text,
++                      providerMetadata: thoughtSignatureMetadata
+                     });
+                   } else if (part.functionCall) {
+                     controller.enqueue({
+                       type: "tool-call",
+                       toolCallId: randomUUID2(),
+                       toolName: part.functionCall.name || "",
+-                      input: JSON.stringify(part.functionCall.args || {})
++                      input: JSON.stringify(part.functionCall.args || {}),
++                      providerMetadata: thoughtSignatureMetadata
+                     });
+                   }
+                 }
+@@ -1051,6 +1106,7 @@ function createGeminiProvider(options = {}) {
+   );
+   return provider;
+ }
++
+ export {
+   ThinkingLevel,
+   createGeminiProvider as createGeminiCliCoreProvider,

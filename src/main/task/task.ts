@@ -6,6 +6,7 @@ import { simpleGit } from 'simple-git';
 import YAML from 'yaml';
 import {
   AiderRunOptions,
+  AIDER_MODES,
   AgentProfile,
   ContextAssistantMessage,
   ContextFile,
@@ -17,32 +18,38 @@ import {
   LogLevel,
   MessageRole,
   Mode,
+  ModelInfo,
   ModelsData,
   ProjectSettings,
   PromptContext,
+  QueuedPromptData,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
-  TaskContext,
-  TaskStateData,
   TaskData,
+  TaskStateData,
+  TaskStateEmoji,
   TodoItem,
   TokensInfoData,
   ToolData,
+  UpdatedFile,
   UsageReportData,
   UserMessageData,
   WorkingMode,
-  ModelInfo,
-  TaskStateEmoji,
+  AIDER_COMMANDS,
+  ConnectorMessage,
+  WorkflowExecutionOptions,
+  WorkflowExecutionResult,
 } from '@common/types';
-import { extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import { extractProviderModel, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 
 import type { SimpleGit } from 'simple-git';
+import type { RegisteredCommand } from '@/extensions/extension-manager';
 
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import {
@@ -72,6 +79,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
+import { ExtensionManager, ExtensionEventMap } from '@/extensions/extension-manager';
 
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
@@ -88,6 +96,7 @@ export const EMPTY_TASK_DATA: TaskData = {
   contextCompactingThreshold: 0,
   weakModelLocked: false,
   parentId: null,
+  lastAgentProviderMetadata: undefined,
 };
 
 const getTaskFinishedNotificationText = (task: TaskData) => {
@@ -117,6 +126,9 @@ export class Task {
   private git: SimpleGit | null = null;
   private responseChunkMap: Map<string, { buffer: string; interval: NodeJS.Timeout }> = new Map();
   private isDeterminingTaskState = false;
+  private resolutionAbortControllers: Record<string, AbortController> = {};
+  private tokensInfo: TokensInfoData;
+  private queuedPrompts: QueuedPromptData[] = [];
 
   private readonly taskDataPath: string;
   private readonly contextManager: ContextManager;
@@ -140,6 +152,7 @@ export class Task {
     private readonly memoryManager: MemoryManager,
     public readonly hookManager: HookManager,
     private readonly promptsManager: PromptsManager,
+    private readonly extensionManager: ExtensionManager,
     initialTaskData?: Partial<TaskData>,
   ) {
     this.task = {
@@ -158,13 +171,23 @@ export class Task {
       this.telemetryManager,
       this.memoryManager,
       this.promptsManager,
+      this.extensionManager,
     );
+    this.tokensInfo = {
+      baseDir: this.getProjectDir(),
+      taskId: this.taskId,
+      chatHistory: { cost: 0, tokens: 0 },
+      files: {},
+      repoMap: { cost: 0, tokens: 0 },
+      systemMessages: { cost: 0, tokens: 0 },
+      agent: { cost: 0, tokens: 0 },
+    };
     this.aiderManager = new AiderManager(this, this.store, this.modelManager, this.eventManager, () => this.connectors);
 
     void this.loadTaskData();
   }
 
-  private async getTaskAgentProfile(): Promise<AgentProfile | null> {
+  public async getTaskAgentProfile(): Promise<AgentProfile | null> {
     // Check task-level agent profile first
     let agentProfileId = this.task.agentProfileId;
 
@@ -184,7 +207,7 @@ export class Task {
       return null;
     }
 
-    // If profile not found, try to create a temporary one from task-level provider/model
+    // Apply task-level provider/model overrides if present
     if (this.task.provider && this.task.model) {
       // Create a temporary profile with task-level overrides
       profile = {
@@ -206,7 +229,7 @@ export class Task {
       const content = await fs.readFile(this.taskDataPath, 'utf8');
       const data = JSON.parse(content) as TaskData;
 
-      logger.info('Loaded task data', {
+      logger.debug('Loaded task data', {
         baseDir: this.project.baseDir,
         taskId: this.taskId,
         data,
@@ -215,86 +238,8 @@ export class Task {
       for (const key of Object.keys(data)) {
         this.task[key] = data[key];
       }
-    }
-
-    // Migrate missing task-level settings from project settings
-    await this.migrateFromProjectSettings();
-
-    // Migrate task state based on last message in context
-    await this.migrateTaskState();
-  }
-
-  /**
-   * @deprecated Migrate missing task-level settings from project settings
-   */
-  private async migrateFromProjectSettings() {
-    const projectSettings = this.project.getProjectSettings();
-
-    if (!this.task.mainModel || !this.task.currentMode) {
-      this.task.currentMode = projectSettings.currentMode;
-      this.task.mainModel = projectSettings.mainModel;
-      this.task.weakModel = projectSettings.weakModel;
-      this.task.architectModel = projectSettings.architectModel;
-      this.task.reasoningEffort = projectSettings.reasoningEffort;
-      this.task.thinkingTokens = projectSettings.thinkingTokens;
-      this.task.contextCompactingThreshold = projectSettings.contextCompactingThreshold;
-      this.task.weakModelLocked = projectSettings.weakModelLocked ?? false;
-
-      await this.saveTask(undefined, false);
-    }
-  }
-
-  /**
-   * @deprecated Migrate task state based on last message in context
-   */
-  private async migrateTaskState() {
-    // Skip if state is already set
-    if (this.task.state) {
-      return;
-    }
-
-    const contextPath = path.join(this.getProjectDir(), AIDER_DESK_TASKS_DIR, this.taskId, 'context.json');
-
-    if (!(await fileExists(contextPath))) {
-      logger.debug('No existing task context found for state migration', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-      });
-      return;
-    }
-
-    try {
-      const content = await fs.readFile(contextPath, 'utf8');
-      const contextData = JSON.parse(content) as TaskContext;
-      const messages = contextData.contextMessages || [];
-
-      if (messages.length === 0) {
-        logger.debug('No messages found in context for state migration', {
-          baseDir: this.project.baseDir,
-          taskId: this.taskId,
-        });
-        return;
-      }
-
-      const lastMessage = messages[messages.length - 1];
-
-      // Set state based on last message role
-      const newState = lastMessage.role === MessageRole.User ? DefaultTaskState.Todo : DefaultTaskState.ReadyForReview;
-
-      logger.info('Migrated task state', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-        lastMessageRole: lastMessage.role,
-        newState,
-      });
-
-      await this.saveTask({ state: newState }, false);
-    } catch (error) {
-      logger.error('Failed to migrate task state', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      // make sure we always have the most recent project baseDir, in case the task was migrated from another path
+      this.task.baseDir = this.project.baseDir;
     }
   }
 
@@ -354,6 +299,14 @@ export class Task {
         this.task.createdAt = new Date().toISOString();
       }
       this.task.updatedAt = new Date().toISOString();
+    }
+
+    // Allow extensions to modify task data before saving
+    const extensionResult = await this.extensionManager.dispatchEvent('onTaskUpdated', { task: this.task }, this.project, this);
+    if (extensionResult.task) {
+      for (const key of Object.keys(extensionResult.task)) {
+        this.task[key] = extensionResult.task[key];
+      }
     }
 
     await fs.mkdir(path.dirname(this.taskDataPath), { recursive: true });
@@ -438,13 +391,17 @@ export class Task {
     }
 
     await this.loadContext();
-    await Promise.all([this.aiderManager.start(), this.updateContextInfo()]);
+    if (await this.shouldStartAider()) {
+      await this.aiderManager.start();
+    }
+    await this.updateContextInfo();
     await this.updateAutocompletionData();
 
     this.eventManager.sendTaskInitialized(this.task);
 
     this.initialized = true;
     await this.hookManager.trigger('onTaskInitialized', { task: this.task }, this, this.project);
+    await this.extensionManager.dispatchEvent('onTaskInitialized', { task: this.task }, this.project, this);
   }
 
   public async load(): Promise<TaskStateData> {
@@ -458,9 +415,10 @@ export class Task {
     const mode = this.getCurrentMode();
     return {
       messages: this.contextManager.getContextMessagesData(),
-      files: await this.getContextFiles(mode === 'agent'),
+      files: await this.getContextFiles(!AIDER_MODES.includes(mode)),
       todoItems: await this.getTodos(),
       question: this.currentQuestion,
+      queuedPrompts: this.queuedPrompts,
       workingMode: this.task.workingMode || 'local',
     };
   }
@@ -528,6 +486,19 @@ export class Task {
     return this.task.worktree ? this.task.worktree.path : this.project.baseDir;
   }
 
+  /**
+   * Dispatches an extension event through the ExtensionManager.
+   * This public method provides controlled access to extension event dispatch
+   * without exposing the ExtensionManager instance directly.
+   *
+   * @param eventName - The name of the event to dispatch
+   * @param event - The event payload
+   * @returns Object containing potentially modified event, blocked status, and modified result
+   */
+  public dispatchExtensionEvent<K extends keyof ExtensionEventMap>(eventName: K, event: ExtensionEventMap[K]): Promise<ExtensionEventMap[K]> {
+    return this.extensionManager.dispatchEvent(eventName, event, this.project, this);
+  }
+
   private normalizeFilePath(filePath: string): string {
     const normalizedPath = path.normalize(filePath);
 
@@ -555,10 +526,11 @@ export class Task {
       taskId: this.taskId,
     });
     await this.hookManager.trigger('onTaskClosed', { task: this.task }, this, this.project);
+    await this.extensionManager.dispatchEvent('onTaskClosed', { task: this.task }, this.project, this);
     if (clearContext) {
       this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, true);
     }
-    this.interruptResponse();
+    await this.interruptResponse();
     this.resolveAgentRunPromises();
     this.cleanupChunkBuffers();
 
@@ -627,15 +599,36 @@ export class Task {
     }
   }
 
-  public async runPrompt(prompt: string, mode: Mode = 'code', addToInputHistory = true, userMessageId = uuidv4()): Promise<ResponseCompletedData[]> {
+  private isPromptRunning() {
+    return !!this.currentPromptContext || this.agent.isRunning();
+  }
+
+  public async runPrompt(
+    prompt: string,
+    mode: Mode = 'code',
+    addToInputHistory = true,
+    userMessageId = uuidv4(),
+    sendNotification = true,
+  ): Promise<ResponseCompletedData[]> {
     if (this.currentQuestion) {
-      if (this.answerQuestion('n', prompt)) {
+      if (await this.answerQuestion('n', prompt)) {
         logger.debug('Processed by the answerQuestion function.');
         return [];
       }
     }
 
-    await this.waitForCurrentPromptToFinish();
+    if (this.isPromptRunning()) {
+      // Queue the prompt for later execution
+      const queuedPrompt: QueuedPromptData = {
+        id: userMessageId,
+        text: prompt,
+        mode,
+        timestamp: Date.now(),
+      };
+      this.queuedPrompts.push(queuedPrompt);
+      this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+      return [];
+    }
 
     const hookResult = await this.hookManager.trigger('onPromptSubmitted', { prompt, mode }, this, this.project);
     if (hookResult.blocked) {
@@ -645,27 +638,37 @@ export class Task {
     prompt = hookResult.event.prompt;
     mode = hookResult.event.mode;
 
+    let promptContext: PromptContext = {
+      id: userMessageId,
+    };
+
+    const extensionResult = await this.extensionManager.dispatchEvent('onPromptStarted', { prompt, mode, promptContext }, this.project, this);
+    if (extensionResult.blocked) {
+      logger.info('Prompt blocked by extension');
+      return [];
+    }
+    prompt = extensionResult.prompt;
+    mode = extensionResult.mode;
+    promptContext = extensionResult.promptContext;
+
     logger.info('Running prompt:', {
       baseDir: this.project.baseDir,
-      prompt,
+      prompt: prompt.substring(0, 100),
       mode,
+      promptContext,
     });
 
     if (addToInputHistory) {
       await this.project.addToInputHistory(prompt);
     }
 
-    const promptContext: PromptContext = {
-      id: userMessageId,
-    };
-
     this.addUserMessage(userMessageId, prompt);
     this.addLogMessage('loading');
 
     this.telemetryManager.captureRunPrompt(mode);
-    // Generate promptContext for this run
 
-    if (mode === 'agent') {
+    let responses: ResponseCompletedData[] = [];
+    if (!AIDER_MODES.includes(mode)) {
       const profile = await this.getTaskAgentProfile();
       logger.debug('AgentProfile:', profile);
 
@@ -673,10 +676,13 @@ export class Task {
         throw new Error('No active Agent profile found');
       }
 
-      return this.runPromptInAgent(profile, prompt, promptContext);
+      responses = await this.runPromptInAgent(profile, mode, prompt, promptContext, undefined, undefined, undefined, true, sendNotification);
     } else {
-      return this.runPromptInAider(prompt, promptContext, mode);
+      responses = await this.runPromptInAider(mode, prompt, promptContext, sendNotification);
     }
+
+    const promptFinishedExtensionResult = await this.extensionManager.dispatchEvent('onPromptFinished', { responses }, this.project, this);
+    return promptFinishedExtensionResult.responses;
   }
 
   public async savePromptOnly(prompt: string, addInputHistory = true): Promise<void> {
@@ -706,25 +712,43 @@ export class Task {
 
     await this.saveTask({
       name: this.task.name || this.getTaskNameFromPrompt(prompt),
+      state: DefaultTaskState.Todo,
     });
   }
 
-  public async runPromptInAider(prompt: string, promptContext: PromptContext, mode?: Mode): Promise<ResponseCompletedData[]> {
-    await this.hookManager.trigger('onPromptStarted', { prompt, mode: mode || 'code' }, this, this.project);
-    const aiderHookResult = await this.hookManager.trigger('onAiderPromptStarted', { prompt, mode: mode || 'code' }, this, this.project);
+  private async runNextQueuedPrompt(): Promise<ResponseCompletedData[]> {
+    if (this.queuedPrompts.length > 0) {
+      const nextPrompt = this.queuedPrompts.shift();
+      if (nextPrompt) {
+        this.addUserMessage(nextPrompt.id, nextPrompt.text);
+        this.addLogMessage('loading');
+        this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+        return this.runPrompt(nextPrompt.text, nextPrompt.mode, true, nextPrompt.id, false);
+      }
+    }
+
+    return [];
+  }
+
+  public async runPromptInAider(mode: Mode, prompt: string, promptContext: PromptContext, sendNotification = true): Promise<ResponseCompletedData[]> {
+    await this.waitForCurrentPromptToFinish();
+
+    await this.hookManager.trigger('onPromptStarted', { prompt, mode }, this, this.project);
+
+    const aiderHookResult = await this.hookManager.trigger('onAiderPromptStarted', { prompt, mode }, this, this.project);
     if (aiderHookResult.blocked) {
       logger.info('Aider prompt blocked by hook');
       return [];
     }
+
+    prompt = aiderHookResult.event.prompt;
+    mode = aiderHookResult.event.mode;
 
     await this.saveTask({
       name: this.task.name || this.getTaskNameFromPrompt(prompt),
       startedAt: new Date().toISOString(),
       state: DefaultTaskState.InProgress,
     });
-
-    prompt = aiderHookResult.event.prompt;
-    mode = aiderHookResult.event.mode;
 
     await this.aiderManager.waitForStart();
 
@@ -739,10 +763,35 @@ export class Task {
       promptContext,
     });
 
-    const responses = await this.sendPromptToAider(prompt, promptContext, mode, undefined, undefined, {
-      autoApprove: this.task.autoApprove,
+    let messages = this.contextManager.toConnectorMessages();
+    let files = this.contextManager.getContextFiles();
+
+    const extensionResult = await this.extensionManager.dispatchEvent(
+      'onAiderPromptStarted',
+      { prompt, mode, promptContext, messages, files },
+      this.project,
+      this,
+    );
+    if (extensionResult.blocked) {
+      logger.info('Aider prompt blocked by extension');
+      return [];
+    }
+
+    prompt = extensionResult.prompt;
+    mode = extensionResult.mode;
+    promptContext = extensionResult.promptContext;
+    messages = extensionResult.messages;
+    files = extensionResult.files;
+
+    let responses = await this.sendPromptToAider(prompt, promptContext, mode, messages, files, {
+      autoApprove: extensionResult.autoApprove ?? this.task.autoApprove,
+      denyCommands: extensionResult.denyCommands,
     });
     logger.debug('Responses:', { responses });
+
+    const finishedExtensionResult = await this.extensionManager.dispatchEvent('onAiderPromptFinished', { responses }, this.project, this);
+
+    responses = finishedExtensionResult.responses;
 
     for (const response of responses) {
       if (response.content || response.reflectedMessage) {
@@ -765,7 +814,7 @@ export class Task {
 
     void this.sendRequestContextInfo();
     void this.sendWorktreeIntegrationStatusUpdated();
-    this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+    void this.sendUpdatedFilesUpdated();
 
     await this.hookManager.trigger('onAiderPromptFinished', { responses }, this, this.project);
     await this.hookManager.trigger('onPromptFinished', { responses }, this, this.project);
@@ -777,17 +826,26 @@ export class Task {
       });
     }
 
+    const nextResponses = await this.runNextQueuedPrompt();
+    responses.push(...nextResponses);
+
+    if (sendNotification) {
+      this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+    }
+
     return responses;
   }
 
   public async runPromptInAgent(
     profile: AgentProfile,
+    mode: Mode,
     prompt: string | null,
     promptContext: PromptContext = { id: uuidv4() },
     contextMessages?: ContextMessage[],
     contextFiles?: ContextFile[],
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
+    sendNotification = true,
   ): Promise<ResponseCompletedData[]> {
     await this.hookManager.trigger('onPromptStarted', { prompt, mode: 'agent' }, this, this.project);
 
@@ -801,11 +859,8 @@ export class Task {
       state: DefaultTaskState.InProgress,
     });
 
-    const agentMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt);
-    this.resolveAgentRunPromises();
+    const agentMessages = await this.agent.runAgent(this, profile, prompt, mode, promptContext, contextMessages, contextFiles, systemPrompt);
     if (agentMessages.length > 0) {
-      agentMessages.forEach((message) => this.contextManager.addContextMessage(message));
-
       // send messages to connectors
       this.contextManager.toConnectorMessages(agentMessages).forEach((message) => {
         this.sendAddMessage(message.role, message.content, false);
@@ -813,6 +868,16 @@ export class Task {
     }
 
     await this.hookManager.trigger('onPromptFinished', { responses: [] }, this, this.project);
+
+    void this.sendRequestContextInfo();
+    void this.sendWorktreeIntegrationStatusUpdated();
+    void this.sendUpdatedFilesUpdated();
+
+    this.resolveAgentRunPromises();
+
+    if (waitForCurrentAgentToFinish) {
+      await this.runNextQueuedPrompt();
+    }
 
     if (this.task.state === DefaultTaskState.InProgress) {
       // Determine task state based on the last assistant message
@@ -829,11 +894,32 @@ export class Task {
       });
     }
 
-    void this.sendRequestContextInfo();
-    void this.sendWorktreeIntegrationStatusUpdated();
-    this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+    if (sendNotification) {
+      this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+    }
 
     return [];
+  }
+
+  public async executeBmadWorkflow(workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult> {
+    if (options?.asSubtask) {
+      // Create a new subtask. If the current task already has a parentId (is a subtask),
+      // use that parentId to maintain only 1 level of subtasks
+      const parentId = this.task.parentId || this.taskId;
+      const subtaskData = await this.project.createNewTask({
+        parentId,
+        activate: true,
+        provider: options?.provider,
+        model: options?.model,
+      });
+      const subtask = this.project.getTask(subtaskData.id);
+      if (!subtask) {
+        throw new Error('Failed to create subtask');
+      }
+      return await subtask.executeBmadWorkflow(workflowId);
+    }
+
+    return await this.project.executeBmadWorkflow(workflowId, this);
   }
 
   private getTaskNameFromPrompt(prompt: string): string {
@@ -865,8 +951,9 @@ export class Task {
       const maxPromptLength = 1000;
       const taskName = await this.agent.generateText(
         agentProfile,
-        this.promptsManager.getGenerateTaskNamePrompt(this),
+        await this.promptsManager.getGenerateTaskNamePrompt(this),
         `Generate a concise task name for this request:\n\n${prompt.length > maxPromptLength ? prompt.substring(0, maxPromptLength) + '...' : prompt}\n\nOnly answer with the task name, nothing else.`,
+        this.getProjectDir(),
         undefined,
         false,
       );
@@ -917,7 +1004,12 @@ export class Task {
 
       this.addLogMessage('loading', 'Updating task state...');
 
-      const answer = await this.agent.generateText(agentProfile, this.promptsManager.getUpdateTaskStatePrompt(this), wrappedMessage);
+      const answer = await this.agent.generateText(
+        agentProfile,
+        await this.promptsManager.getUpdateTaskStatePrompt(this),
+        wrappedMessage,
+        this.getProjectDir(),
+      );
       if (!answer) {
         logger.warn('Task state determination interrupted');
         return null;
@@ -952,20 +1044,80 @@ export class Task {
   public async runSubagent(
     profile: AgentProfile,
     prompt: string,
-    contextMessages: ContextMessage[],
-    contextFiles: ContextFile[],
+    contextMessages?: ContextMessage[],
+    contextFiles?: ContextFile[],
     systemPrompt?: string,
     abortSignal?: AbortSignal,
     promptContext?: PromptContext,
   ): Promise<ContextMessage[]> {
+    profile = {
+      ...profile,
+      isSubagent: true,
+    };
+
     const hookResult = await this.hookManager.trigger('onSubagentStarted', { subagentId: profile.id, prompt }, this, this.project);
     if (hookResult.blocked) {
       logger.info('Subagent execution blocked by hook');
       return [];
     }
     prompt = hookResult.event.prompt;
-    const resultMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt, abortSignal);
-    await this.hookManager.trigger('onSubagentFinished', { subagentId: profile.id, resultMessages }, this, this.project);
+
+    if (!contextMessages) {
+      contextMessages = await this.getContextMessages();
+    }
+    if (!contextFiles) {
+      contextFiles = await this.getContextFiles();
+    }
+
+    const extensionResult = await this.extensionManager.dispatchEvent(
+      'onSubagentStarted',
+      {
+        subagentProfile: profile,
+        prompt,
+        contextMessages,
+        contextFiles,
+        systemPrompt,
+        promptContext,
+      },
+      this.project,
+      this,
+    );
+    if (extensionResult.blocked) {
+      logger.info('Subagent execution blocked by extension');
+      return [];
+    }
+    prompt = extensionResult.prompt;
+    contextMessages = extensionResult.contextMessages;
+    contextFiles = extensionResult.contextFiles;
+    systemPrompt = extensionResult.systemPrompt;
+    promptContext = extensionResult.promptContext;
+
+    let resultMessages = await this.agent.runAgent(
+      this,
+      profile,
+      prompt,
+      'subagent',
+      promptContext,
+      contextMessages,
+      contextFiles,
+      systemPrompt,
+      false,
+      abortSignal,
+    );
+    const finishedHookResult = await this.hookManager.trigger('onSubagentFinished', { subagentId: profile.id, resultMessages }, this, this.project);
+
+    if (finishedHookResult.event.resultMessages) {
+      resultMessages = finishedHookResult.event.resultMessages;
+    }
+
+    const subagentFinishedExtensionResult = await this.extensionManager.dispatchEvent(
+      'onSubagentFinished',
+      { subagentProfile: profile, resultMessages },
+      this.project,
+      this,
+    );
+    resultMessages = subagentFinishedExtensionResult.resultMessages;
+
     return resultMessages;
   }
 
@@ -973,10 +1125,7 @@ export class Task {
     prompt: string,
     promptContext: PromptContext = { id: uuidv4() },
     mode?: Mode,
-    messages: {
-      role: MessageRole;
-      content: string;
-    }[] = this.contextManager.toConnectorMessages(),
+    messages: ConnectorMessage[] = this.contextManager.toConnectorMessages(),
     files: ContextFile[] = this.contextManager.getContextFiles(),
     options?: AiderRunOptions,
   ): Promise<ResponseCompletedData[]> {
@@ -1027,8 +1176,8 @@ export class Task {
     }
 
     if (!message.finished) {
-      const sendResponseChunk = (chunk: string) => {
-        const data: ResponseChunkData = {
+      const sendResponseChunk = async (chunk: string) => {
+        let data: ResponseChunkData = {
           messageId: message.id,
           baseDir: this.project.baseDir,
           taskId: this.taskId,
@@ -1036,6 +1185,10 @@ export class Task {
           reflectedMessage: message.reflectedMessage,
           promptContext: message.promptContext,
         };
+
+        const extensionResult = await this.extensionManager.dispatchEvent('onResponseChunk', { chunk: data }, this.project, this);
+        data = extensionResult.chunk;
+
         try {
           this.eventManager.sendResponseChunk(data);
         } catch (error) {
@@ -1053,13 +1206,13 @@ export class Task {
           taskId: this.taskId,
           messageId: message.id,
         });
-        sendResponseChunk(message.content);
+        await sendResponseChunk(message.content);
 
         const messageId = message.id;
-        const interval = setInterval(() => {
+        const interval = setInterval(async () => {
           const entry = this.responseChunkMap.get(messageId);
           if (entry && entry.buffer.length > 0) {
-            sendResponseChunk(entry.buffer);
+            await sendResponseChunk(entry.buffer);
             logger.debug('Sending buffered chunk', {
               baseDir: this.project.baseDir,
               taskId: this.taskId,
@@ -1118,7 +1271,7 @@ export class Task {
         logger.info(`Usage report: ${JSON.stringify(usageReport)}`);
         this.updateTotalCosts(usageReport);
       }
-      const data: ResponseCompletedData = {
+      let data: ResponseCompletedData = {
         type: 'response-completed',
         messageId: message.id,
         content: message.content,
@@ -1133,6 +1286,9 @@ export class Task {
         sequenceNumber: message.sequenceNumber,
         promptContext: message.promptContext,
       };
+
+      const extensionResult = await this.extensionManager.dispatchEvent('onResponseCompleted', { response: data }, this.project, this);
+      data = extensionResult.response;
 
       this.sendResponseCompleted(data);
       this.closeCommandOutput();
@@ -1149,12 +1305,17 @@ export class Task {
   }
 
   private notifyIfEnabled(title: string, text: string) {
-    const app = getElectronApp();
     const settings = this.store.getSettings();
-    if (!settings.notificationsEnabled || !app) {
+    if (!settings.notificationsEnabled) {
       return;
     }
 
+    this.eventManager.sendNotification(this.getProjectDir(), title, text);
+
+    const app = getElectronApp();
+    if (!app) {
+      return;
+    }
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Notification } = require('electron');
     if (Notification.isSupported()) {
@@ -1172,12 +1333,20 @@ export class Task {
     return question.key || `${question.text}_${question.subject || ''}`;
   }
 
-  public answerQuestion(answer: string, userInput?: string): boolean {
+  public async answerQuestion(answer: string, userInput?: string): Promise<boolean> {
     if (!this.currentQuestion) {
       return false;
     }
 
     void this.hookManager.trigger('onQuestionAnswered', { question: this.currentQuestion, answer, userInput }, this, this.project);
+    const extensionResult = await this.extensionManager.dispatchEvent(
+      'onQuestionAnswered',
+      { question: this.currentQuestion, answer, userInput },
+      this.project,
+      this,
+    );
+    answer = extensionResult.answer;
+    userInput = extensionResult.userInput;
 
     logger.info('Answering question:', {
       baseDir: this.project.baseDir,
@@ -1244,6 +1413,14 @@ export class Task {
       }
       contextFile = hookResult.event.file;
 
+      // Extension event uses plural name
+      const extensionResult = await this.extensionManager.dispatchEvent('onFilesAdded', { files: [contextFile] }, this.project, this);
+      if (extensionResult.files.length === 0) {
+        logger.info('File addition blocked by extension (empty files array)');
+        return false;
+      }
+      contextFile = extensionResult.files[0];
+
       const normalizedPath = this.normalizeFilePath(contextFile.path);
       logger.debug('Adding file or folder:', {
         path: normalizedPath,
@@ -1271,8 +1448,10 @@ export class Task {
     this.findMessageConnectors('add-file').forEach((connector) => connector.sendAddFileMessage(contextFile, noUpdate));
   }
 
-  public dropFile(filePath: string) {
-    void this.hookManager.trigger('onFileDropped', { filePath }, this, this.project);
+  public async dropFile(filePath: string) {
+    await this.hookManager.trigger('onFileDropped', { filePath }, this, this.project);
+    // Extension event uses plural name and ContextFile array
+    await this.extensionManager.dispatchEvent('onFilesDropped', { files: [{ path: filePath }] }, this.project, this);
     const normalizedPath = this.normalizeFilePath(filePath);
     logger.info('Dropping file or folder:', { path: normalizedPath });
     const droppedFiles = this.contextManager.dropContextFile(normalizedPath);
@@ -1282,8 +1461,8 @@ export class Task {
       this.sendDropFile(droppedFile.path, droppedFile.readOnly);
     }
 
-    void this.sendContextFilesUpdated();
-    void this.updateContextInfo(true, true);
+    await this.sendContextFilesUpdated();
+    await this.updateContextInfo(true, true);
   }
 
   public sendDropFile(filePath: string, readOnly?: boolean, noUpdate?: boolean): void {
@@ -1296,20 +1475,29 @@ export class Task {
   }
 
   public async addToGit(absolutePath: string, promptContext?: PromptContext): Promise<void> {
+    if (!this.git) {
+      return;
+    }
+
     try {
+      // Check if the project is a git repository before attempting to add
+      const isRepo = await this.git.checkIsRepo();
+      if (!isRepo) {
+        return;
+      }
+
       // Add the new file to git staging
-      await this.git?.add(absolutePath);
+      await this.git.add(absolutePath);
       await this.updateAutocompletionData(undefined, true);
     } catch (gitError) {
       const gitErrorMessage = gitError instanceof Error ? gitError.message : String(gitError);
       this.addLogMessage('warning', `Failed to add new file ${absolutePath} to git staging area: ${gitErrorMessage}`, false, promptContext);
-      // Continue even if git add fails, as the file was created successfully
     }
   }
 
   private async sendContextFilesUpdated() {
     const mode = this.getCurrentMode();
-    const allFiles = await this.getContextFiles(mode === 'agent');
+    const allFiles = await this.getContextFiles(!AIDER_MODES.includes(mode));
 
     this.eventManager.sendContextFilesUpdated(this.project.baseDir, this.taskId, allFiles);
   }
@@ -1322,8 +1510,15 @@ export class Task {
     }
     command = hookResult.event.command;
 
+    const extensionResult = await this.extensionManager.dispatchEvent('onCommandExecuted', { command }, this.project, this);
+    if (extensionResult.blocked) {
+      logger.info('Command execution blocked by extension');
+      return;
+    }
+    command = extensionResult.command;
+
     if (this.currentQuestion) {
-      this.answerQuestion('n');
+      await this.answerQuestion('n');
     }
 
     let sendToConnectors = true;
@@ -1388,6 +1583,13 @@ export class Task {
     }
 
     if (sendToConnectors) {
+      if (AIDER_COMMANDS.includes(command.trim()) && !this.aiderManager.isStarted()) {
+        logger.info('Starting Aider for command:', { command });
+        this.addLogMessage('loading', 'Starting Aider...');
+        await this.aiderManager.waitForStart();
+        this.addLogMessage('loading', undefined, true);
+      }
+
       this.findMessageConnectors('run-command').forEach((connector) =>
         connector.sendRunCommandMessage(command, this.contextManager.toConnectorMessages(), this.contextManager.getContextFiles()),
       );
@@ -1409,6 +1611,16 @@ export class Task {
       });
       return [hookResult.result, undefined];
     }
+
+    const extensionResult = await this.extensionManager.dispatchEvent('onQuestionAsked', { question: questionData }, this.project, this);
+    if (extensionResult.answer) {
+      logger.info('Question answered by extension', {
+        question: questionData.text,
+        answer: extensionResult.answer,
+      });
+      return [extensionResult.answer, undefined];
+    }
+    questionData = extensionResult.question;
 
     if (this.currentQuestion) {
       // Wait if another question is already pending
@@ -1448,7 +1660,7 @@ export class Task {
 
       if (!questionData.internal) {
         // Auto-answer based on stored preference
-        this.answerQuestion(storedAnswer);
+        await this.answerQuestion(storedAnswer);
       } else {
         this.currentQuestion = null;
       }
@@ -1514,15 +1726,13 @@ export class Task {
         return null;
       }
 
-      // Parse providerId and actual modelId from the modelId string
-      const [providerId, ...modelIdParts] = modelName.split('/');
-      const modelId = modelIdParts.join('/');
+      const [providerId, modelId] = extractProviderModel(modelName);
 
       if (!providerId || !modelId) {
         return null;
       }
 
-      const model = this.modelManager.getModel(providerId, modelId, true);
+      const model = this.modelManager.getModelSettings(providerId, modelId, true);
       if (!model) {
         return null;
       }
@@ -1717,6 +1927,10 @@ export class Task {
     return getAllFiles(this.getTaskDir(), useGit);
   }
 
+  public async getUpdatedFiles(): Promise<UpdatedFile[]> {
+    return await this.worktreeManager.getUpdatedFiles(this.getTaskDir());
+  }
+
   public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]> {
     const contextFiles = await this.contextManager.getContextFilesEnsureLoaded();
 
@@ -1816,19 +2030,17 @@ export class Task {
       }
     }
 
-    return ruleFiles;
+    // Dispatch extension event to allow modification of rule files
+    const extensionResult = await this.extensionManager.dispatchEvent('onRuleFilesRetrieved', { files: ruleFiles }, this.project, this);
+    return extensionResult.files;
   }
 
   public getRepoMap(): string {
     return this.aiderManager.getRepoMap();
   }
 
-  public setRepoMap(repoMap: string): void {
-    this.aiderManager.setRepoMap(repoMap);
-  }
-
   public updateRepoMapFromConnector(repoMap: string): void {
-    this.aiderManager.updateRepoMapFromConnector(repoMap);
+    this.aiderManager.setRepoMap(repoMap);
   }
 
   public openCommandOutput(command: string) {
@@ -1857,8 +2069,8 @@ export class Task {
     return this.contextManager.getContextMessages();
   }
 
-  public async addContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData) {
-    logger.debug('Adding context message to session:', {
+  public async addRoleContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData) {
+    logger.debug('Adding role message to session:', {
       baseDir: this.project.baseDir,
       role,
       content: content.substring(0, 30),
@@ -1866,6 +2078,13 @@ export class Task {
 
     this.contextManager.addContextMessage(role, content, usageReport);
     await this.updateContextInfo();
+  }
+
+  public async addContextMessage(message: ContextMessage, updateContextInfo = false) {
+    this.contextManager.addContextMessage(message);
+    if (updateContextInfo) {
+      await this.updateContextInfo();
+    }
   }
 
   public sendAddMessage(role: MessageRole = MessageRole.User, content: string, acknowledge = true) {
@@ -1907,6 +2126,9 @@ export class Task {
       updateContextInfo,
     });
 
+    await this.updateTask({
+      lastAgentProviderMetadata: null,
+    });
     this.contextManager.clearMessages();
     await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
@@ -1916,7 +2138,53 @@ export class Task {
     }
   }
 
-  public interruptResponse() {
+  public async resetContext() {
+    logger.debug('Reset task context', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+    });
+    this.contextManager.clearContextFiles();
+    this.contextManager.clearMessages();
+    await this.contextManager.save();
+  }
+
+  /**
+   * Load context messages into the task context and send them to the UI.
+   * This is used for loading pre-authored context (e.g., BMAD workflow context).
+   */
+  public async loadContextMessages(messages: ContextMessage[]) {
+    logger.info('Loading context messages:', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      messagesCount: messages.length,
+    });
+
+    await this.contextManager.loadMessages(messages);
+  }
+
+  public async interruptResponse(interruptId?: string) {
+    if (interruptId) {
+      // Interrupt specific conflict resolution agent
+      logger.info('Interrupting specific conflict resolution agent:', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        interruptId,
+      });
+
+      const abortController = this.resolutionAbortControllers[interruptId];
+      if (abortController) {
+        abortController.abort();
+        delete this.resolutionAbortControllers[interruptId];
+        logger.info('Aborted conflict resolution agent', { interruptId });
+      } else {
+        logger.warn('Conflict resolution agent not found for interruptId', {
+          interruptId,
+        });
+      }
+      return;
+    }
+
+    // Default behavior: interrupt all agents
     logger.info('Interrupting response:', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
@@ -1924,7 +2192,7 @@ export class Task {
     });
 
     if (this.currentQuestion) {
-      this.answerQuestion('n', 'Cancelled');
+      await this.answerQuestion('n', 'Cancelled');
     }
 
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
@@ -1934,6 +2202,7 @@ export class Task {
 
     if (this.initialized && this.task.state === DefaultTaskState.InProgress) {
       if (this.isDeterminingTaskState) {
+        // cancel the task state determination and set the task to ready for review
         void this.saveTask({
           state: DefaultTaskState.ReadyForReview,
           completedAt: new Date().toISOString(),
@@ -1945,6 +2214,36 @@ export class Task {
         });
       }
     }
+  }
+
+  public getQueuedPrompts(): QueuedPromptData[] {
+    return this.queuedPrompts;
+  }
+
+  public removeQueuedPrompt(promptId: string): void {
+    this.queuedPrompts = this.queuedPrompts.filter((qp) => qp.id !== promptId);
+    this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+  }
+
+  public async sendQueuedPromptNow(promptId: string): Promise<void> {
+    const queuedPromptIndex = this.queuedPrompts.findIndex((qp) => qp.id === promptId);
+    if (queuedPromptIndex === -1) {
+      logger.warn('Queued prompt not found:', { promptId });
+      return;
+    }
+
+    const queuedPrompt = this.queuedPrompts[queuedPromptIndex];
+
+    if (queuedPromptIndex > 0) {
+      logger.debug('Moving queued prompt to top:', { promptId });
+      this.queuedPrompts.splice(queuedPromptIndex, 1);
+      this.queuedPrompts.unshift(queuedPrompt);
+    }
+
+    // interrupting to allow the next queued prompt to be sent
+    this.addUserMessage(queuedPrompt.id, queuedPrompt.text);
+    this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
+    this.agent.interrupt();
   }
 
   public applyEdits(edits: FileEdit[]) {
@@ -1963,6 +2262,11 @@ export class Task {
     saveToDb = true,
     finished = !!response,
   ) {
+    if (!id && !finished) {
+      logger.debug('No tool id provided for new tool message, skipping...');
+      return;
+    }
+
     logger.debug('Sending tool message:', {
       id,
       baseDir: this.project.baseDir,
@@ -2011,7 +2315,7 @@ export class Task {
       this.updateTokensInfo({
         agent: {
           cost: usageReport.agentTotalCost,
-          tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0) + (usageReport.cacheWriteTokens ?? 0),
+          tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0),
         },
       });
     }
@@ -2021,7 +2325,7 @@ export class Task {
     }
   }
 
-  private addUserMessage(id: string, content: string, promptContext?: PromptContext) {
+  addUserMessage(id: string, content: string, promptContext?: PromptContext) {
     logger.info('Adding user message:', {
       baseDir: this.project.baseDir,
       content: content.substring(0, 100),
@@ -2037,7 +2341,6 @@ export class Task {
     };
 
     this.eventManager.sendUserMessage(data);
-    void this.saveTask({ state: DefaultTaskState.Todo });
   }
 
   public async removeLastMessage() {
@@ -2049,6 +2352,14 @@ export class Task {
 
   public async removeMessage(messageId: string): Promise<string[]> {
     const removedIds = this.contextManager.removeMessageById(messageId);
+    await this.reloadConnectorMessages();
+
+    await this.updateContextInfo();
+    return removedIds;
+  }
+
+  public async removeMessagesUpTo(messageId: string): Promise<string[]> {
+    const removedIds = this.contextManager.removeMessagesAfter(messageId);
     await this.reloadConnectorMessages();
 
     await this.updateContextInfo();
@@ -2099,7 +2410,7 @@ export class Task {
 
     const mode = this.getCurrentMode();
 
-    if (mode === 'agent') {
+    if (!AIDER_MODES.includes(mode)) {
       const profile = await this.getTaskAgentProfile();
       if (!profile) {
         logger.error('No active Agent profile found for resume');
@@ -2110,7 +2421,7 @@ export class Task {
       logger.info('Resuming agent task...');
       this.addLogMessage('loading', 'Resuming task...');
 
-      void this.runPromptInAgent(profile, null);
+      void this.runPromptInAgent(profile, mode, null);
     } else {
       // In other modes, check if last message is user
       const contextMessages = await this.contextManager.getContextMessages();
@@ -2133,6 +2444,11 @@ export class Task {
     return this.task.currentMode || this.store.getProjectSettings(this.project.baseDir).currentMode || 'agent';
   }
 
+  private async shouldStartAider(): Promise<boolean> {
+    const agentProfile = await this.getTaskAgentProfile();
+    return AIDER_MODES.includes(this.getCurrentMode()) || (agentProfile?.useAiderTools ?? false) || (agentProfile?.includeRepoMap ?? false);
+  }
+
   private async reloadConnectorMessages() {
     await this.runCommand('clear', false);
     this.contextManager.toConnectorMessages().forEach((message) => {
@@ -2148,7 +2464,7 @@ export class Task {
     promptContext?: PromptContext,
     abortSignal?: AbortSignal,
     waitForAgentCompletion = true,
-    logMessage = 'Compacting conversation...',
+    loadingMessage = 'Compacting conversation...',
   ) {
     // Get profile if not provided
     if (!profile) {
@@ -2165,7 +2481,7 @@ export class Task {
       return;
     }
 
-    this.addLogMessage('loading', logMessage);
+    this.addLogMessage('loading', loadingMessage);
 
     const extractSummary = (content: string): string => {
       const lines = content.split('\n');
@@ -2178,7 +2494,7 @@ export class Task {
     };
 
     try {
-      if (mode === 'agent') {
+      if (!AIDER_MODES.includes(mode)) {
         // Agent mode logic
         if (!profile) {
           throw new Error('No active Agent profile found');
@@ -2196,11 +2512,13 @@ export class Task {
         const agentMessages = await this.agent.runAgent(
           this,
           compactConversationAgentProfile,
-          this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          await this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          'compact-conversation',
           promptContext,
           contextMessages,
           [],
           undefined,
+          false,
           abortSignal,
         );
         if (waitForAgentCompletion) {
@@ -2218,7 +2536,7 @@ export class Task {
         }
       } else {
         const responses = await this.sendPromptToAider(
-          this.promptsManager.getCompactConversationPrompt(this, customInstructions),
+          await this.promptsManager.getCompactConversationPrompt(this, customInstructions),
           undefined,
           'ask',
           undefined,
@@ -2256,25 +2574,32 @@ export class Task {
       });
       this.addLogMessage('error', 'Failed to compact conversation. Original conversation preserved.');
       // Prevent memory leaks by cleaning up pending prompt resources
-      if (mode === 'agent' && waitForAgentCompletion) {
+      if (!AIDER_MODES.includes(mode) && waitForAgentCompletion) {
         this.resolveAgentRunPromises();
-      } else if (mode !== 'agent') {
+      } else if (AIDER_MODES.includes(mode)) {
         this.promptFinished();
       }
     }
   }
 
-  public async handoffConversation(mode: Mode, focus: string = ''): Promise<void> {
-    // Get context messages
-    const contextMessages = await this.contextManager.getContextMessages();
+  public async handoffConversation(
+    mode: Mode,
+    focus: string = '',
+    execute = false,
+    contextMessages?: ContextMessage[],
+    waitForAgentCompletion = true,
+    loadingMessage = 'Preparing handoff...',
+  ): Promise<void> {
+    if (!contextMessages) {
+      // Get context messages
+      contextMessages = await this.contextManager.getContextMessages();
+      const userMessage = contextMessages[0];
 
-    const userMessage = contextMessages[0];
-
-    if (!userMessage) {
-      throw new Error('No conversation to handoff. Please send at least one message before using /handoff.');
+      if (!userMessage) {
+        throw new Error('No conversation to handoff. Please send at least one message before using /handoff.');
+      }
     }
 
-    const loadingMessage = 'Preparing handoff...';
     this.addLogMessage('loading', loadingMessage, false, undefined, ['interrupt']);
 
     // Get context files to transfer
@@ -2284,7 +2609,7 @@ export class Task {
     const handoffPrompt = await this.promptsManager.getHandoffPrompt(this, focus.trim().length ? focus.trim() : undefined);
     let generatedPrompt: string | undefined;
 
-    if (mode === 'agent') {
+    if (!AIDER_MODES.includes(mode)) {
       // Agent mode logic
       const profile = await this.getTaskAgentProfile();
       if (!profile) {
@@ -2297,8 +2622,17 @@ export class Task {
         model: profile.model,
       };
 
-      await this.waitForCurrentAgentToFinish();
-      generatedPrompt = await this.agent.generateText(handoffAgentProfile, '', handoffPrompt, await this.contextManager.getContextMessages(), true);
+      if (waitForAgentCompletion) {
+        await this.waitForCurrentAgentToFinish();
+      }
+      generatedPrompt = await this.agent.generateText(
+        handoffAgentProfile,
+        '',
+        handoffPrompt,
+        this.getProjectDir(),
+        await this.contextManager.getContextMessages(),
+        true,
+      );
     } else {
       // Other modes (ask, edit)
       const responses = await this.sendPromptToAider(handoffPrompt, undefined, 'ask');
@@ -2319,8 +2653,8 @@ export class Task {
     const newTaskData = await this.project.createNewTask({
       parentId: this.task.parentId || this.taskId,
       sendEvent: false,
+      autoApprove: execute ? this.task.autoApprove : undefined,
       activate: true,
-      handoff: true,
     });
 
     // Get the newly created Task instance
@@ -2329,11 +2663,17 @@ export class Task {
       throw new Error('Failed to get newly created task');
     }
 
+    await newTask.init();
+
     // Add prompt to new task
     await newTask.savePromptOnly(generatedPrompt, false);
 
     // Transfer context files
     await newTask.addFiles(...contextFiles);
+
+    if (execute) {
+      await newTask.resumeTask();
+    }
 
     // Send task-created event to trigger activation and handoff
     this.eventManager.sendTaskCreated(newTask.task, true);
@@ -2347,7 +2687,12 @@ export class Task {
   }
 
   updateTokensInfo(data: Partial<TokensInfoData>) {
-    this.aiderManager.updateTokensInfo(data);
+    this.tokensInfo = {
+      ...this.tokensInfo,
+      ...data,
+    };
+
+    this.eventManager.sendUpdateTokensInfo(this.tokensInfo);
   }
 
   async updateContextInfo(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {
@@ -2447,9 +2792,12 @@ export class Task {
     const aiderCachingEnabledChanged = oldSettings.aider.cachingEnabled !== newSettings?.aider.cachingEnabled;
     const aiderConfirmBeforeEditChanged = oldSettings.aider.confirmBeforeEdit !== newSettings?.aider.confirmBeforeEdit;
 
-    if (aiderOptionsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged || aiderCachingEnabledChanged || aiderConfirmBeforeEditChanged) {
+    if (
+      (aiderOptionsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged || aiderCachingEnabledChanged || aiderConfirmBeforeEditChanged) &&
+      (await this.shouldStartAider())
+    ) {
       logger.debug('Aider options changed, restarting Aider.');
-      void this.aiderManager.start();
+      void this.aiderManager.start(true);
     } else if (aiderEnvVarsChanged) {
       logger.debug('Aider environment variables changed, updating connectors.');
       const updatedEnvironmentVariables = getEnvironmentVariablesForAider(newSettings, this.project.baseDir);
@@ -2591,7 +2939,7 @@ export class Task {
       };
 
       // Run the agent with the modified profile
-      await this.runPromptInAgent(initProjectRulesAgentProfile, this.promptsManager.getInitProjectPrompt(this));
+      await this.runPromptInAgent(initProjectRulesAgentProfile, 'init-project-agents-file', await this.promptsManager.getInitProjectPrompt(this));
 
       // Check if the AGENTS.md file was created
       const projectAgentsPath = path.join(this.project.baseDir, 'AGENTS.md');
@@ -2671,16 +3019,44 @@ export class Task {
     }
   }
 
+  private async runExtensionCommand(extensionCommand: RegisteredCommand, args: string[], mode: Mode): Promise<void> {
+    const { command } = extensionCommand;
+
+    logger.info('Running extension command:', {
+      commandName: command.name,
+      args,
+    });
+    this.telemetryManager.captureCustomCommand(command.name, args.length, mode);
+
+    try {
+      // Execute the command - extension is fully responsible for its logic
+      await this.extensionManager.executeCommand(command.name, args, this.project, this);
+    } catch (error) {
+      logger.error('Extension command execution failed:', error);
+      this.addLogMessage('error', `Extension command failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.eventManager.sendCustomCommandError(this.project.baseDir, this.taskId, `Extension command execution failed: ${command.name}`);
+    }
+
+    await this.project.addToInputHistory(`/${command.name}${args.length > 0 ? ' ' + args.join(' ') : ''}`);
+  }
+
   public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void> {
-    const command = this.customCommandManager.getCommand(commandName);
+    // First, check if this is an extension command
+    const extensionCommand = this.extensionManager.getCommands(this.project).find((c) => c.command.name === commandName);
+
+    if (extensionCommand) {
+      // Handle extension command execution
+      await this.runExtensionCommand(extensionCommand, args, mode);
+      return;
+    }
+
+    // Fall back to file-based custom command
+    let command = this.customCommandManager.getCommand(commandName);
     if (!command) {
       this.addLogMessage('error', `Custom command '${commandName}' not found.`);
       this.eventManager.sendCustomCommandError(this.project.baseDir, this.taskId, `Invalid command: ${commandName}`);
       return;
     }
-
-    logger.info('Running custom command:', { commandName, args, mode });
-    this.telemetryManager.captureCustomCommand(commandName, args.length, mode);
 
     if (args.length < command.arguments.filter((arg) => arg.required !== false).length) {
       this.addLogMessage(
@@ -2695,22 +3071,37 @@ export class Task {
 
     this.addLogMessage('loading', 'Executing custom command...');
 
-    let prompt: string;
-    try {
-      prompt = await this.customCommandManager.processCommandTemplate(command, args);
-    } catch (error) {
-      // Handle shell command execution errors
-      if (error instanceof ShellCommandError) {
-        this.addLogMessage(
-          'error',
-          `Shell command failed: ${error.command}
+    const extensionResult = await this.extensionManager.dispatchEvent('onCustomCommandExecuted', { command, mode }, this.project, this);
+    if (extensionResult.blocked) {
+      logger.info('Custom command execution blocked by extension');
+      this.addLogMessage('loading', '', true);
+      return;
+    }
+
+    let prompt = extensionResult.prompt;
+    command = extensionResult.command;
+    mode = extensionResult.mode;
+
+    logger.info('Running custom command:', { commandName, args, mode });
+    this.telemetryManager.captureCustomCommand(commandName, args.length, mode);
+
+    if (!prompt) {
+      try {
+        prompt = await this.customCommandManager.processCommandTemplate(command, args);
+      } catch (error) {
+        // Handle shell command execution errors
+        if (error instanceof ShellCommandError) {
+          this.addLogMessage(
+            'error',
+            `Shell command failed: ${error.command}
 ${error.stderr}`,
-          true,
-        );
-        return;
+            true,
+          );
+          return;
+        }
+        // Re-throw other errors
+        throw error;
       }
-      // Re-throw other errors
-      throw error;
     }
 
     await this.project.addToInputHistory(`/${commandName}${args.length > 0 ? ' ' + args.join(' ') : ''}`);
@@ -2723,7 +3114,7 @@ ${error.stderr}`,
     this.addLogMessage('loading', 'Executing custom command...');
 
     try {
-      if (mode === 'agent') {
+      if (!AIDER_MODES.includes(mode)) {
         // Agent mode logic
         const profile = await this.getTaskAgentProfile();
         if (!profile) {
@@ -2735,10 +3126,10 @@ ${error.stderr}`,
 
         const messages = command.includeContext === false ? [] : undefined;
         const contextFiles = command.includeContext === false ? [] : undefined;
-        await this.runPromptInAgent(profile, prompt, promptContext, messages, contextFiles, systemPrompt);
+        await this.runPromptInAgent(profile, mode, prompt, promptContext, messages, contextFiles, systemPrompt);
       } else {
         // All other modes (code, ask, architect)
-        await this.runPromptInAider(prompt, promptContext, mode);
+        await this.runPromptInAider(mode, prompt, promptContext);
       }
     } finally {
       // Clear loading message after execution completes (success or failure)
@@ -2751,7 +3142,7 @@ ${error.stderr}`,
       return;
     }
 
-    this.interruptResponse();
+    await this.interruptResponse();
     await this.close(false, false);
     await this.init();
     if (this.task.createdAt) {
@@ -2772,9 +3163,28 @@ ${error.stderr}`,
       }
     }
 
+    // Check if currentMode changed and start aider if new mode requires it
+    const oldMode = this.getCurrentMode();
+    if (updates.currentMode !== undefined && updates.currentMode !== oldMode && AIDER_MODES.includes(updates.currentMode)) {
+      logger.debug('Task currentMode changed to aider-requiring mode, starting Aider.', {
+        oldMode,
+        newMode: updates.currentMode,
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+      });
+      void this.aiderManager.start();
+    }
+
     this.task.updatedAt = new Date().toISOString();
     for (const key of Object.keys(updates)) {
       this.task[key] = updates[key];
+    }
+
+    if (updates.agentProfileId !== undefined) {
+      void this.updateAgentEstimatedTokens();
+      if (await this.shouldStartAider()) {
+        void this.aiderManager.start();
+      }
     }
 
     // setting a name will also save the task
@@ -2793,6 +3203,11 @@ ${error.stderr}`,
 
   private async sendWorktreeIntegrationStatusUpdated() {
     this.eventManager.sendWorktreeIntegrationStatusUpdated(this.project.baseDir, this.taskId, await this.getWorktreeIntegrationStatus());
+  }
+
+  private async sendUpdatedFilesUpdated() {
+    const updatedFiles = await this.getUpdatedFiles();
+    this.eventManager.sendUpdatedFilesUpdated(this.project.baseDir, this.taskId, updatedFiles);
   }
 
   private async applyWorkingMode(mode: WorkingMode) {
@@ -2826,7 +3241,9 @@ ${error.stderr}`,
     }
 
     this.git = simpleGit(this.getTaskDir());
-    await this.aiderManager.start();
+    if (await this.shouldStartAider()) {
+      await this.aiderManager.start(true);
+    }
 
     return true;
   }
@@ -2865,8 +3282,9 @@ ${error.stderr}`,
             try {
               effectiveCommitMessage = await this.agent.generateText(
                 agentProfile,
-                this.promptsManager.getGenerateCommitMessagePrompt(this),
+                await this.promptsManager.getGenerateCommitMessageSystemPrompt(this),
                 `Generate a concise conventional commit message for these changes:\n\n${changesDiff}\n\nOnly answer with the commit message, nothing else.`,
+                this.getProjectDir(),
                 undefined,
                 false,
               );
@@ -2884,6 +3302,9 @@ ${error.stderr}`,
         }
       }
 
+      const settings = this.store.getSettings();
+      const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
+
       const mergeState = await this.worktreeManager.mergeWorktreeToMainWithUncommitted(
         this.project.baseDir,
         this.task.id,
@@ -2891,6 +3312,7 @@ ${error.stderr}`,
         squash,
         effectiveCommitMessage || this.task.name || `Task ${this.taskId} changes`,
         targetBranch,
+        symlinkFolders,
       );
 
       // Store merge state for potential revert
@@ -2945,7 +3367,16 @@ ${error.stderr}`,
 
       this.addLogMessage('loading', `Applying uncommitted changes to ${effectiveTargetBranch} branch...`);
 
-      await this.worktreeManager.applyUncommittedChangesToMain(this.project.baseDir, this.task.id, this.task.worktree.path, effectiveTargetBranch);
+      const settings = this.store.getSettings();
+      const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
+
+      await this.worktreeManager.applyUncommittedChangesToMain(
+        this.project.baseDir,
+        this.task.id,
+        this.task.worktree.path,
+        effectiveTargetBranch,
+        symlinkFolders,
+      );
 
       this.addLogMessage('info', `Successfully applied uncommitted changes to ${effectiveTargetBranch} branch`, true);
     } catch (error) {
@@ -2993,7 +3424,10 @@ ${error.stderr}`,
     try {
       this.addLogMessage('loading', 'Reverting last merge...');
 
-      await this.worktreeManager.revertMerge(this.project.baseDir, this.task.id, this.task.worktree.path, this.task.lastMergeState);
+      const settings = this.store.getSettings();
+      const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
+
+      await this.worktreeManager.revertMerge(this.project.baseDir, this.task.id, this.task.worktree.path, this.task.lastMergeState, symlinkFolders);
 
       // Clear merge state after successful revert
       await this.saveTask({ lastMergeState: undefined });
@@ -3008,6 +3442,76 @@ ${error.stderr}`,
       );
     }
 
+    await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  public async restoreFile(filePath: string): Promise<void> {
+    logger.info('Restoring file', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      filePath,
+    });
+
+    await this.worktreeManager.restoreFile(this.getTaskDir(), filePath);
+  }
+
+  public async generateCommitMessage(): Promise<string> {
+    logger.info('Generating commit message', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+    });
+
+    const taskDir = this.getTaskDir();
+    const diff = await this.worktreeManager.getUncommittedDiff(taskDir);
+
+    if (!diff) {
+      throw new Error('No uncommitted changes to commit');
+    }
+
+    const agentProfile = await this.getTaskAgentProfile();
+    if (!agentProfile) {
+      throw new Error('No agent profile configured');
+    }
+
+    // Get last 10 commit messages for context
+    let commitHistoryText = '';
+    try {
+      const commits = await this.worktreeManager.getLastCommits(taskDir, 10, false);
+      if (commits.length > 0) {
+        const commitMessages = commits.map((commit) => commit.message);
+        commitHistoryText = `\n\nHere are the last ${commits.length} commit messages for reference:\n\n${commitMessages.map((msg, i) => `${i + 1}. ${msg}`).join('\n')}`;
+      }
+    } catch (error) {
+      logger.warn('Failed to get commit history:', error);
+      // Continue without commit history
+    }
+
+    const commitMessage = await this.agent.generateText(
+      agentProfile,
+      await this.promptsManager.getGenerateCommitMessageSystemPrompt(this),
+      `Here is the git diff of uncommitted changes:\n\n\`\`\`diff\n${diff}\n\`\`\`${commitHistoryText}`,
+      this.getProjectDir(),
+      undefined,
+      false,
+    );
+
+    if (!commitMessage) {
+      throw new Error('Failed to generate commit message');
+    }
+
+    return commitMessage.trim();
+  }
+
+  public async commitChanges(message: string, amend: boolean): Promise<void> {
+    logger.info('Committing changes', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      amend,
+    });
+
+    const taskDir = this.getTaskDir();
+    await this.worktreeManager.commitChanges(taskDir, message, amend);
+    await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
@@ -3107,23 +3611,16 @@ ${error.stderr}`,
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
-  public async resolveWorktreeConflictsWithAgent(): Promise<void> {
-    if (!this.task.worktree) {
-      throw new Error('No worktree exists for this task');
-    }
-
-    await this.waitForCurrentPromptToFinish();
-
-    const worktreePath = this.task.worktree.path;
+  private async executeConflictResolution(directoryPath: string, directoryName: string): Promise<void> {
     const activeProfile = await this.getTaskAgentProfile();
     if (!activeProfile) {
       throw new Error('No active agent profile found');
     }
 
     try {
-      this.addLogMessage('loading', 'Resolving conflicts with agent...');
+      this.addLogMessage('loading', `Resolving conflicts in ${directoryName}...`);
 
-      const files = await this.worktreeManager.listConflictedFiles(worktreePath);
+      const files = await this.worktreeManager.listConflictedFiles(directoryPath);
       if (files.length === 0) {
         this.addLogMessage('info', 'No conflicted files found', true);
         return;
@@ -3135,7 +3632,13 @@ ${error.stderr}`,
         model: activeProfile.model,
       };
 
+      let interruptedCount = 0;
+
       const resolutionPromises = files.map(async (filePath) => {
+        const interruptId = uuidv4();
+        const abortController = new AbortController();
+        this.resolutionAbortControllers[interruptId] = abortController;
+
         const promptContext: PromptContext = {
           id: uuidv4(),
           group: {
@@ -3143,12 +3646,13 @@ ${error.stderr}`,
             color: 'var(--color-agent-conflict-resolution)',
             name: `Resolving ${filePath}...`,
             finished: false,
+            interruptId,
           },
         };
 
         this.addLogMessage('loading', `Resolving ${filePath}...`, false, promptContext);
 
-        const ctx = await this.worktreeManager.collectConflictContext(worktreePath, filePath);
+        const ctx = await this.worktreeManager.collectConflictContext(directoryPath, filePath);
 
         // Create temp directory structure for conflict files
         const conflictsDir = path.join(this.project.baseDir, AIDER_DESK_TMP_DIR, 'conflicts');
@@ -3168,36 +3672,63 @@ ${error.stderr}`,
         ]);
 
         try {
-          const prompt = this.promptsManager.getConflictResolutionPrompt(this, filePath, {
+          const prompt = await this.promptsManager.getConflictResolutionPrompt(this, filePath, {
             ...ctx,
             basePath: ctx.base ? basePath : undefined,
             oursPath: ctx.ours ? oursPath : undefined,
             theirsPath: ctx.theirs ? theirsPath : undefined,
           });
-          const systemPrompt = this.promptsManager.getConflictResolutionSystemPrompt(this);
+          const systemPrompt = await this.promptsManager.getConflictResolutionSystemPrompt(this);
 
-          await this.agent.runAgent(this, conflictProfile, prompt, promptContext, [], [{ path: filePath }], systemPrompt);
+          await this.agent.runAgent(
+            this,
+            conflictProfile,
+            prompt,
+            'conflict-resolution',
+            promptContext,
+            [],
+            [{ path: filePath }],
+            systemPrompt,
+            false,
+            abortController.signal,
+          );
 
-          // Update context to "Resolved"
+          // Update context based on whether it was interrupted or resolved
           if (promptContext.group) {
-            promptContext.group.name = `Resolved ${filePath}`;
-            promptContext.group.finished = true;
-          }
-          this.addLogMessage('info', `Resolved ${filePath}`, true, promptContext);
+            if (abortController.signal.aborted) {
+              promptContext.group.name = `Resolution of ${filePath} interrupted`;
+              promptContext.group.finished = true;
+              this.addLogMessage('warning', `Resolution of ${filePath} interrupted`, true, promptContext);
+              interruptedCount++;
+            } else {
+              promptContext.group.name = `Resolved ${filePath}`;
+              promptContext.group.finished = true;
+              this.addLogMessage('info', `Resolved ${filePath}`, true, promptContext);
 
-          // Stage the file
-          await execWithShellPath(`git add -- "${filePath}"`, {
-            cwd: worktreePath,
-          });
+              // Stage the file
+              await execWithShellPath(`git add -- "${filePath}"`, {
+                cwd: directoryPath,
+              });
+            }
+          }
         } finally {
           // Clean up temp files
           await Promise.allSettled([fs.unlink(basePath).catch(() => {}), fs.unlink(oursPath).catch(() => {}), fs.unlink(theirsPath).catch(() => {})]);
+          // Clean up abort controller
+          delete this.resolutionAbortControllers[interruptId];
         }
       });
 
       await Promise.all(resolutionPromises);
 
-      this.addLogMessage('info', 'Conflicts resolved and staged. You can now continue the rebase.', true, undefined, ['continue-rebase', 'abort-rebase']);
+      if (interruptedCount === 0) {
+        this.addLogMessage('info', 'Conflicts resolved and staged. You can now continue the rebase.', true, undefined, ['continue-rebase', 'abort-rebase']);
+      } else if (interruptedCount < files.length) {
+        this.addLogMessage('warning', 'Some conflicts were resolved, but some were interrupted. You can continue the rebase.', true, undefined, [
+          'continue-rebase',
+          'abort-rebase',
+        ]);
+      }
     } catch (error) {
       logger.error('Failed to resolve conflicts with agent:', error);
       this.addLogMessage(
@@ -3210,6 +3741,39 @@ ${error.stderr}`,
     }
 
     await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  public async resolveConflictsWithAgent(): Promise<void> {
+    await this.waitForCurrentPromptToFinish();
+
+    // Check worktree first
+    if (this.task.worktree) {
+      const worktreePath = this.task.worktree.path;
+      const worktreeRebaseState = await this.worktreeManager.getRebaseState(worktreePath);
+
+      if (worktreeRebaseState.hasUnmergedPaths) {
+        logger.info('Conflicts found in worktree, resolving...', {
+          worktreePath,
+        });
+        await this.executeConflictResolution(worktreePath, 'worktree');
+        return;
+      }
+    }
+
+    // Check main repository
+    const baseDir = this.project.baseDir;
+    const baseRebaseState = await this.worktreeManager.getRebaseState(baseDir);
+
+    if (baseRebaseState.hasUnmergedPaths) {
+      logger.info('Conflicts found in main repository, resolving...', {
+        baseDir,
+      });
+      await this.executeConflictResolution(baseDir, 'main repository');
+      return;
+    }
+
+    // No conflicts found
+    this.addLogMessage('info', 'No merge conflicts found in either worktree or main repository.', true);
   }
 
   public async continueWorktreeRebase(): Promise<void> {
@@ -3261,9 +3825,7 @@ ${error.stderr}`,
 
     // Copy messages
     const messages = await sourceTask.getContextMessages();
-    for (const message of messages) {
-      this.contextManager.addContextMessage(message);
-    }
+    this.contextManager.setContextMessages(messages);
 
     await this.updateContextInfo();
 
@@ -3272,6 +3834,33 @@ ${error.stderr}`,
     if (todos.length > 0) {
       await this.setTodos(todos, 'Duplicated from original task');
     }
+
+    // Copy worktree if exists
+    if (sourceData.worktree && sourceData.workingMode === 'worktree') {
+      await this.updateTask({
+        workingMode: 'worktree',
+      });
+    }
+  }
+
+  public async forkFrom(sourceTask: Task, messageId: string): Promise<void> {
+    // Copy basic task data
+    const sourceData = sourceTask.task;
+    await this.saveTask({
+      name: `${sourceData.name} (Fork)`,
+    });
+
+    // Copy ALL context files from source task (not just up to fork point)
+    const contextFiles = await sourceTask.getContextFiles();
+    await this.addFiles(...contextFiles);
+
+    // Get messages up to and including the specified message
+    const forkedMessages = sourceTask.contextManager.getMessagesUpTo(messageId);
+
+    // Save forked messages into new task
+    this.contextManager.setContextMessages(forkedMessages);
+
+    await this.updateContextInfo();
 
     // Copy worktree if exists
     if (sourceData.worktree && sourceData.workingMode === 'worktree') {
@@ -3292,6 +3881,9 @@ ${error.stderr}`,
       if (oldProfile.includeContextFiles !== newProfile.includeContextFiles || oldProfile.includeRepoMap !== newProfile.includeRepoMap) {
         void this.updateContextInfo();
       }
+      if (await this.shouldStartAider()) {
+        void this.aiderManager.start();
+      }
     }
   }
 
@@ -3301,5 +3893,9 @@ ${error.stderr}`,
 
   public isInitialized() {
     return this.initialized;
+  }
+
+  public async generateText(profile: AgentProfile, systemPrompt: string, prompt: string): Promise<string | undefined> {
+    return this.agent.generateText(profile, systemPrompt, prompt, this.getProjectDir());
   }
 }

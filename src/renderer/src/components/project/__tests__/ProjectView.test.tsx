@@ -65,6 +65,7 @@ describe('ProjectView', () => {
         messages: [],
         files: [],
         todoItems: [],
+        queuedPrompts: [],
         question: null,
         workingMode: 'local',
       } as TaskStateData),

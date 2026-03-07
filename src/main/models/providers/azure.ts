@@ -138,7 +138,7 @@ export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model):
     const mappedReasoningEffort =
       reasoningEffort === undefined || reasoningEffort === ReasoningEffort.None
         ? undefined
-        : (reasoningEffort.toLowerCase() as 'minimal' | 'low' | 'medium' | 'high');
+        : (reasoningEffort.toLowerCase() as 'minimal' | 'low' | 'medium' | 'high' | 'xhigh');
 
     const options: OpenAIResponsesProviderOptions = {};
 

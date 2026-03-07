@@ -20,23 +20,18 @@ const EMBEDDING_PROVIDERS = [{ value: 'sentence-transformers', label: 'Local' }]
 const LOCAL_MODELS = [
   {
     value: 'Xenova/all-MiniLM-L6-v2',
-    label: 'MiniLM-L6 (Fast, 100MB)',
+    label: 'MiniLM-L6 (Fast, ~90MB)',
     description: 'Fast and lightweight model',
   },
   {
     value: 'BAAI/bge-small-en-v1.5',
-    label: 'BGE-Small (Good, 400MB)',
+    label: 'BGE-Small (Good, ~130MB)',
     description: 'Good balance of speed and quality',
   },
   {
     value: 'BAAI/bge-base-en-v1.5',
-    label: 'BGE-Base (Better, 1.2GB)',
+    label: 'BGE-Base (Better, ~400MB)',
     description: 'Better quality for complex tasks',
-  },
-  {
-    value: 'BAAI/bge-large-en-v1.5',
-    label: 'BGE-Large (Best, 1.3GB)',
-    description: 'Highest quality, slower',
   },
 ];
 

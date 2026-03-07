@@ -31,7 +31,7 @@
   "usePowerTools": true,
   "useAiderTools": false,
   "useTodoTools": false,
-  "useSubagents": true,
+  "useSubagents": false,
   "customInstructions": "",
   "enabledServers": [],
   "subagent": {

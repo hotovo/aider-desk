@@ -183,7 +183,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
-  const { eventsHandler, serverController, cleanup } = await initManagers(store, mainWindow);
+  const { eventsHandler, serverController, cleanup, extensionManager } = await initManagers(store, mainWindow);
 
   let cleanedUp = false;
   const beforeQuit = async (event?: Electron.Event) => {
@@ -227,7 +227,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   }
 
   // Initialize IPC handlers
-  setupIpcHandlers(eventsHandler, serverController);
+  setupIpcHandlers(eventsHandler, serverController, extensionManager);
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.

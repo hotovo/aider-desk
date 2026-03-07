@@ -1,0 +1,12 @@
+{
+  "name": "{extension-name}",
+  "version": "1.0.0",
+  "description": "{DESCRIPTION}",
+  "main": "index.ts",
+  "keywords": ["aiderdesk", "extension"],
+  "author": "{AUTHOR}",
+  "license": "MIT",
+  "dependencies": {
+    // Add npm dependencies here
+  }
+}

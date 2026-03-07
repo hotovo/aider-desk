@@ -15,6 +15,8 @@
     "confirm": "确认",
     "back": "返回",
     "next": "下一步",
+    "previous": "上一个",
+    "of": "共",
     "finish": "完成",
     "loading": "加载中...",
     "startingUp": "正在启动...",
@@ -28,6 +30,8 @@
     "info": "信息",
     "yes": "是",
     "no": "否",
+    "refresh": "刷新",
+    "retry": "重试",
     "open": "打开",
     "openProject": "打开项目",
     "lock": "锁定",
@@ -42,7 +46,8 @@
     "noFiles": "没有找到文件",
     "clickToRefresh": "点击刷新",
     "closeTasks": "关闭任务",
-    "toggleTasks": "切换任务"
+    "toggleTasks": "切换任务",
+    "submit": "提交"
   },
   "search": {
     "placeholder": "查找...",
@@ -248,6 +253,12 @@
       "invalidTemperature": "温度必须在 0 到 2 之间",
       "duplicateId": "提供商 ID 已存在"
     },
+    "claudeAgentSdkAuthRequired": "此提供商需要安装和认证 Claude Code CLI。请从 https://claude.com/product/claude-code 安装并运行 `claude login` 进行认证。",
+    "claudeAgentSdkAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "geminiCliAuthRequired": "此提供商需要安装和认证 Gemini CLI。请从 https://geminicli.com 安装并运行 `gemini` 进行认证。",
+    "geminiCliAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "projectId": "项目 ID",
+    "projectIdPlaceholder": "可选。组织和企业账户需要此项。",
     "overrides": {
       "title": "提供商覆盖",
       "resetToDefaults": "清除覆盖",
@@ -310,7 +321,9 @@
     "thinkingEnabledTooltip": "启用时，模型将使用思考模式进行更深入的推理（默认）。对于简单任务，可以禁用以获得更快的响应速度。"
   },
   "anthropic": {
-    "apiKey": "API 密钥"
+    "apiKey": "API 密钥",
+    "baseUrl": "基础 URL",
+    "baseUrlPlaceholder": "例如 https://api.anthropic.com"
   },
   "minimax": {
     "apiKey": "API 密钥"
@@ -330,6 +343,12 @@
   "groq": {
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 moonshotai/kimi-k2-instruct"
+  },
+  "kimiPlan": {
+    "apiKey": "API 密钥"
+  },
+  "alibabaPlan": {
+    "apiKey": "API 密钥"
   },
   "deepseek": {
     "apiKey": "API 密钥"
@@ -367,11 +386,16 @@
   },
   "providers": {
     "anthropic": "Anthropic",
+    "anthropic-compatible": "Anthropic 兼容",
+    "alibaba-plan": "阿里云编码计划",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
+    "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "gemini-cli": "Gemini CLI",
     "groq": "Groq",
+    "kimi-plan": "Kimi Coding Plan",
     "gpustack": "GPUStack",
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
@@ -399,11 +423,68 @@
       "aider": "Aider",
       "agents": "代理",
       "hotkeys": "快捷键",
+      "extensions": "扩展",
       "server": "服务器",
       "memory": "记忆",
       "tasks": "任务",
       "voice": "语音",
       "about": "关于"
+    },
+    "extensions": {
+      "loading": "正在加载扩展...",
+      "tabs": {
+        "installed": "已安装",
+        "available": "可用"
+      },
+      "installed": {
+        "empty": "没有已安装的扩展",
+        "emptyHint": "浏览「可用」选项卡以发现并安装扩展"
+      },
+      "available": {
+        "empty": "所有可用扩展都已安装",
+        "extensionsCount": "扩展",
+        "installedCount": "已安装",
+        "installedExtensions": "已安装扩展"
+      },
+      "search": {
+        "placeholder": "搜索扩展..."
+      },
+      "capabilities": {
+        "all": "全部"
+      },
+      "repositories": {
+        "title": "仓库",
+        "placeholder": "输入仓库URL...",
+        "add": "添加",
+        "remove": "移除仓库",
+        "default": "默认仓库"
+      },
+      "by": "作者",
+      "enabled": "启用",
+      "active": "激活",
+      "projectSpecific": "项目",
+      "hasDependencies": "有依赖",
+      "install": "安装",
+      "installing": "安装中...",
+      "uninstall": "卸载",
+      "success": {
+        "install": "成功安装 {{name}}",
+        "uninstall": "成功卸载 {{name}}",
+        "addRepository": "仓库添加成功",
+        "removeRepository": "仓库移除成功"
+      },
+      "errors": {
+        "loadInstalled": "加载已安装扩展失败",
+        "loadAvailable": "加载可用扩展失败",
+        "install": "安装扩展失败",
+        "uninstall": "卸载扩展失败",
+        "repositoryExists": "此仓库已添加",
+        "cannotRemoveDefault": "无法移除默认仓库"
+      },
+      "previousContext": "上一个上下文",
+      "nextContext": "下一个上下文",
+      "expandReadme": "展开 README",
+      "collapseReadme": "收起 README"
     },
     "hotkeys": {
       "projectHotkeys": "项目快捷键",
@@ -475,6 +556,13 @@
       "autoGenerateTaskNameTooltip": "启用后，模型会根据您的提示生成简洁的任务名称。禁用时，将使用提示的前5个词作为任务名称。",
       "showTaskStateActions": "显示任务状态操作",
       "showTaskStateActionsTooltip": "启用后，任务状态操作将显示在消息底部。禁用以隐藏这些操作。",
+      "contextManagement": "上下文管理",
+      "contextCompactingThreshold": "自动压缩阈值",
+      "contextCompactingThresholdTooltip": "当令牌使用量超过此阈值时，将根据所选的压缩类型自动管理对话。设置为 0 可禁用。",
+      "contextCompactionType": "压缩类型",
+      "contextCompactionTypeCompact": "压缩",
+      "contextCompactionTypeHandoff": "交接",
+      "contextCompactionTypeTooltip": "选择当令牌阈值超出时如何管理对话上下文：压缩在任务内总结对话，交接则创建一个带有交接的新任务。",
       "worktree": "工作树",
       "worktreeSymlinkFoldersLabel": "符号链接文件夹",
       "worktreeSymlinkFoldersTooltip": "这些文件夹将从项目根目录符号链接到任务工作树。适用于像 node_modules 这样的大型依赖。",
@@ -582,7 +670,12 @@
       "copyProfile": "复制",
       "cutProfile": "剪切",
       "deleteProfile": "删除",
-      "pasteProfile": "粘贴代理"
+      "pasteProfile": "粘贴代理",
+      "resetProfileToDefaults": "重置为默认值",
+      "resetProfileTitle": "将 '{{name}}' 重置为默认值？",
+      "resetProfileConfirm": "这将把 '{{name}}' 恢复到原始默认设置。任何自定义修改都将丢失。",
+      "restoreProfile": "恢复",
+      "restoreProfileTooltip": "恢复此默认配置"
     },
     "aider": {
       "options": "选项",
@@ -676,6 +769,9 @@
       "display": "显示选项",
       "markdownRendering": "启用 Markdown 渲染",
       "diffViewMode": "差异视图模式",
+      "viewMode": "消息视图模式",
+      "viewModeFull": "完整",
+      "viewModeCompact": "紧凑",
       "virtualizedRendering": "使用虚拟化渲染（实验性）",
       "virtualizedRenderingTooltip": "实验性功能，当您在对话历史中有大量消息时可以通过仅渲染可见消息来提高性能。"
     },
@@ -730,6 +826,7 @@
     "delete": "删除",
     "redo": "重做",
     "edit": "编辑",
+    "forkFromHere": "从这里创建子任务",
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
     "group": "分组",
@@ -751,12 +848,15 @@
     "archive": "归档",
     "unarchive": "取消归档",
     "confirmDelete": "确认删除",
-    "remove": "移除消息"
+    "remove": "移除消息",
+    "deleteUpToHere": "删除到此为止"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
     "frozenMessage": "Aider进程似乎已冻结。您想重启任务吗?",
-    "removeMessageFailed": "删除消息失败 - 请重试"
+    "removeMessageFailed": "删除消息失败 - 请重试",
+    "forkTaskFailed": "从消息分叉任务失败 - 请重试",
+    "removeMessagesUpToFailed": "删除到此为止的消息失败 - 请重试"
   },
   "dialogs": {
     "confirm": "确认",
@@ -776,14 +876,16 @@
     "ask": "提问",
     "architect": "架构",
     "context": "上下文",
-    "agent": "代理"
+    "agent": "代理",
+    "bmad": "BMAD"
   },
   "modeTooltip": {
     "code": "使用 Aider AI 助手进行直接代码生成和编辑",
     "agent": "具有高级推理和工具使用能力的自主 AI 代理",
     "ask": "询问有关代码库的问题而不进行更改",
     "architect": "高级项目规划和架构设计",
-    "context": "搜索和探索代码库上下文"
+    "context": "搜索和探索代码库上下文",
+    "bmad": "用于规划、规范和实现功能的引导式工作流程"
   },
   "addFileDialog": {
     "title": "添加上下文文件",
@@ -810,6 +912,12 @@
   },
   "contextFiles": {
     "title": "上下文文件",
+    "updatedFiles": "已更新文件",
+    "updated": "已更新",
+    "viewChanges": "查看更改",
+    "viewAllFiles": "查看所有文件",
+    "viewSingleFile": "查看单个文件",
+    "allFiles": "所有文件",
     "add": "添加上下文文件",
     "addFileTooltip": "添加文件 (按 Ctrl/Cmd 键添加为只读)",
     "addFileTooltip.ctrl": "添加文件 (按 Ctrl 键添加为只读)",
@@ -825,12 +933,44 @@
     "agentRule": "代理规则文件",
     "projectFiles": "项目文件",
     "rules": "规则文件",
+    "diffViewer": {
+      "file": "文件"
+    },
     "search": "搜索文件",
     "searchPlaceholder": "搜索文件...",
     "refresh": "刷新",
     "useGit": "使用 Git",
     "useGitEnabled": "Git 已启用 - 点击使用文件系统",
-    "useGitDisabled": "文件系统已启用 - 点击使用 Git"
+    "useGitDisabled": "文件系统已启用 - 点击使用 Git",
+    "revertFile": "恢复更改",
+    "confirmRevertTitle": "恢复文件更改？",
+    "confirmRevertMessage": "这将丢弃此文件的所有更改。此操作无法撤销。",
+    "revert": "恢复",
+    "expandWidth": "展开至全宽",
+    "collapseWidth": "收起宽度",
+    "commitSection": "提交更改",
+    "commitMessage": "提交信息",
+    "commitMessagePlaceholder": "输入提交信息...",
+    "commitMessagePlaceholderAmend": "保持空白以使用上一次提交信息，或输入新的信息",
+    "generateMessage": "生成信息",
+    "amend": "修改",
+    "amendTooltip": "修改上一次提交而不是创建新提交",
+    "commit": "提交",
+    "generatingMessage": "生成中...",
+    "committing": "提交中...",
+    "commitError": "提交错误",
+    "empty": {
+      "title": "没有上下文文件",
+      "aiderMode": {
+        "description": "在此处添加您想要读取或修改的文件。Aider 只能访问上下文中的文件。",
+        "hint": "提示：添加相关文件（导入、类型）以获得更好的理解。"
+      },
+      "agentMode": {
+        "description": "代理可以使用工具访问项目中的任何文件。在此处添加文件是可选的，但可以通过提供即时上下文来加快任务速度。",
+        "hint": "提示：使用 Aider 工具时或希望将文件内容包含在提示中时，在此处添加文件。",
+        "includeContextFiles": "当在代理设置中启用'包含上下文文件'时，文件内容会直接嵌入到提示中以便立即访问。"
+      }
+    }
   },
   "modelSelector": {
     "mainModel": "主模型",
@@ -858,6 +998,7 @@
   },
   "mcp": {
     "noDescription": "无描述",
+    "initializingServers": "正在初始化 MCP 服务器...",
     "serverToolStatus": "已启用{{enabledCount}}个工具，共{{count}}个",
     "loading": "加载中...",
     "toolsCount_one": "{{count}}个工具",
@@ -897,7 +1038,8 @@
     "cancelTodo": "取消",
     "noTodos": "没有待办事项",
     "confirmDelete": "确定要删除这个待办事项吗？",
-    "clearAllTodos": "清除所有任务"
+    "clearAllTodos": "清除所有任务",
+    "handoffTodo": "交接到新任务"
   },
   "tool": {
     "noDescription": "无描述",
@@ -1024,15 +1166,18 @@
       },
       "glob": {
         "title": "查找匹配模式的文件:",
+        "findingFiles": "正在查找文件...",
         "foundFiles": "找到 {{count}} 文件",
-        "foundMatches": "找到 {{count}} 个匹配项",
-        "noMatches": "未找到匹配项。"
+        "noMatches": "未找到文件",
+        "matching": "匹配"
       },
       "grep": {
         "title": "在",
-        "for": "搜索",
+        "findingMatches": "正在查找...",
+        "in": "中",
+
         "foundMatches": "找到 {{count}} 个匹配项",
-        "noMatches": "未找到匹配项。",
+        "noMatches": "未找到匹配项",
         "contextLines": "({{count}} 行上下文)",
         "matchesCount": "({{count}} 个匹配)",
         "lineLabel": "第 {{lineNumber}} 行:",
@@ -1043,7 +1188,8 @@
         "exitCode": "退出码",
         "stdout": "标准输出",
         "stderr": "标准错误",
-        "commandFailed": "命令失败"
+        "commandFailed": "命令失败",
+        "timeout": "超时"
       },
       "semanticSearch": {
         "title": "语义搜索:",
@@ -1095,7 +1241,8 @@
       "groupCompleted": "{{name}}: 子代理已完成任务。",
       "running": "正在运行子代理...",
       "completed": "子代理执行了以下查询:",
-      "prompt": "提示"
+      "prompt": "提示",
+      "error": "运行子代理"
     },
     "errors": {
       "noSuchTool": "尝试使用未知工具: {{toolName}}",
@@ -1109,7 +1256,11 @@
     "sideBySide": "并排",
     "unified": "统一",
     "compact": "紧凑",
-    "noChanges": "没有进行任何更改。内容相同。"
+    "noChanges": "没有进行任何更改。内容相同。",
+    "lineComment": {
+      "placeholder": "描述您想要对此代码进行的更改...",
+      "taskName": "更新 {{filename}}"
+    }
   },
   "promptField": {
     "savePrompt": "保存提示",
@@ -1141,6 +1292,11 @@
       "19": "在 ProductList 的 fetchProducts 方法中实现分页逻辑..."
     },
     "questionPlaceholder": "...或建议其他内容",
+    "queueTitle": "排队的提示",
+    "queuedPrompt": "排队",
+    "queueMessage": "队列消息(Enter)",
+    "removeQueuedPrompt": "移除",
+    "sendQueuedPromptNow": "立即发送",
     "answers": {
       "yes": "(Y)是",
       "no": "(N)否",
@@ -1152,7 +1308,8 @@
     "sendMessage": "发送消息(Enter)",
     "clearChat": "清除聊天",
     "agentModeOnly": "仅在代理模式下可用",
-    "handoffError": "交接失败：{{error}}"
+    "handoffError": "交接失败：{{error}}",
+    "taskInfo": "任务信息"
   },
   "agentProfiles": {
     "title": "代理配置",
@@ -1196,6 +1353,7 @@
     "low": "低",
     "medium": "中",
     "high": "高",
+    "xhigh": "极高",
     "max": "最大"
   },
   "commands": {
@@ -1219,6 +1377,7 @@
     "model": "打开模型选择器",
     "read-only": "将文件添加到聊天中，这些文件仅供参考，或将添加的文件设为只读。",
     "redo": "重做上一个用户提示。",
+    "resolve-conflicts": "使用 AI 解决合并冲突",
     "reasoning-effort": "设置推理工作量级别（值：数字或低/中/高，取决于模型）",
     "reset": "删除所有文件并清除聊天历史记录",
     "run": "运行 shell 命令并可选地将输出添加到聊天中",
@@ -1352,11 +1511,16 @@
     "taskNamePlaceholder": "输入任务名称...",
     "untitled": "[未命名]",
     "exportAsMarkdown": "导出为 Markdown",
+    "copyAsMarkdown": "复制为 Markdown",
+    "copiedAsMarkdown": "已复制为 Markdown",
     "exportAsImage": "导出为图片",
     "taskIdCopied": "任务 ID {{taskId}} 已复制到剪贴板",
     "duplicateTask": "复制任务",
     "search": "搜索任务",
     "searchPlaceholder": "搜索任务...",
+    "today": "今天",
+    "yesterday": "昨天",
+    "noDate": "无日期",
     "archiveTask": "归档任务",
     "unarchiveTask": "取消归档任务",
     "showArchived": "显示已归档",
@@ -1450,14 +1614,14 @@
     "title": "AiderDesk",
     "subtitle": "您的 AI 驱动编程助手",
     "features": {
-      "title": "您可以做什么：",
+      "title": "您可以做什么",
       "aiCoding": "使用 AI 辅助生成和修改代码",
       "contextManagement": "添加文件到上下文以获得更好的结果",
       "multiModel": "选择多种 AI 模型和提供商",
       "commands": "执行命令和运行测试"
     },
     "tips": {
-      "title": "入门指南：",
+      "title": "入门指南",
       "addFiles": "使用侧边栏或 /add 命令添加文件到上下文",
       "askQuestion": "在下方的提示字段中输入您的请求",
       "useCommands": "使用 / 命令进行快速操作",
@@ -1472,7 +1636,186 @@
       "code": {
         "title": "代码模式",
         "description": "用于直接代码更改和特定任务。重要提示：将文件添加到上下文以确保 AI 处理正确的文件。"
+      },
+      "bmad": {
+        "title": "BMAD 模式",
+        "description": "用于规划、规范和实现功能的引导式工作流程。最适合结构化的开发流程。"
       }
-    }
+    },
+    "selectMode": "选择"
+  },
+  "bmad": {
+    "welcome": {
+      "title": "欢迎使用 BMAD 模式",
+      "subtitle": "用于规划、规范和实现功能的引导式工作流"
+    },
+    "workflows": {
+      "phaseProgress": "{{completed}}/{{total}} 已完成",
+      "installedVersion": "已安装 BMAD 库（v{{version}}）",
+      "comingSoon": "工作流列表将在 Story 2.4 中提供",
+      "loading": "正在加载工作流...",
+      "errorLoading": "加载工作流失败：{{error}}",
+      "noWorkflows": "没有可用的工作流",
+      "execute": "执行",
+      "executing": "正在执行...",
+      "workflowCompleted": "工作流执行成功",
+      "workflowError": "工作流执行失败",
+      "retryExecution": "重试",
+      "research": {
+        "name": "研究",
+        "description": "利用当前网络数据和可靠来源进行多领域综合研究"
+      },
+      "product-brief": {
+        "name": "产品简介",
+        "description": "定义产品愿景和目标用户"
+      },
+      "prd": {
+        "name": "创建 PRD",
+        "description": "创建全面的需求文档"
+      },
+      "architecture": {
+        "name": "架构",
+        "description": "设计技术架构和系统结构"
+      },
+      "ux-design": {
+        "name": "用户体验设计",
+        "description": "为产品界面创建用户体验设计文档"
+      },
+      "quick-spec": {
+        "name": "快速规范",
+        "description": "为明确定义的功能创建专注的规范"
+      },
+      "quick-dev": {
+        "name": "快速开发",
+        "description": "小型功能的快速规范到实现"
+      },
+      "epics-stories": {
+        "name": "史诗/故事",
+        "description": "将需求分解为可实施的史诗和故事"
+      },
+      "implementation": {
+        "name": "实施",
+        "description": "故事和功能实现的引导式开发"
+      }
+    },
+    "phase": {
+      "analysis": "分析",
+      "planning": "规划",
+      "solutioning": "解决方案",
+      "implementation": "实施",
+      "quick-flow": "快速流程"
+    },
+    "resume": {
+      "sectionTitle": "恢复工作流",
+      "button": "恢复",
+      "stepIndicator": "第 {{current}} 步，共 {{total}} 步",
+      "lastModified": "修改于 {{time}}",
+      "resuming": "恢复中...",
+      "unavailable": "无法恢复 - 工作流文件已损坏",
+      "noSteps": "未记录进度",
+      "corrupted": "已损坏",
+      "corruptedDescription": "工件前置信息无法读取。从头开始重启以恢复。",
+      "restartFromBeginning": "从头开始重启",
+      "restarting": "重启中..."
+    },
+    "errors": {
+      "npmInstallFailed": "NPM 安装失败",
+      "workflowNotFound": "未找到工作流",
+      "artifactMissing": "缺少必需的工件"
+    },
+    "hierarchy": {
+      "expand": "展开",
+      "collapse": "折叠",
+      "expandAll": "全部展开",
+      "collapseAll": "全部折叠",
+      "workflowProgress": "工作流进度",
+      "subtasksCompleted": "已完成 {{completed}}/{{total}} 个子任务",
+      "noSubtasks": "没有子任务"
+    },
+    "progress": {
+      "completed": "已完成",
+      "inProgress": "进行中",
+      "notStarted": "未开始",
+      "percentage": "完成 {{percentage}}%"
+    },
+    "install": {
+      "button": "安装 BMAD",
+      "installing": "安装中...",
+      "success": "BMAD 安装成功",
+      "error": "BMAD 安装失败",
+      "autoInstallNote": "点击上方按钮为当前项目自动安装 BMAD。",
+      "manualInstallTitle": "手动安装",
+      "manualInstallNote": "对于高级自定义，您也可以在终端中运行以下命令手动安装 BMAD。",
+      "terminalPrompt": "安装 BMAD 以访问用于规划、规范和实现功能的引导式工作流程。",
+      "commandLabel": "将要执行的命令：",
+      "openTerminal": "打开终端并安装",
+      "opening": "正在打开终端...",
+      "terminalError": "无法打开终端",
+      "autoCheckNote": "此页面将自动检测 BMAD 安装何时完成。",
+      "benefits": [
+        "从头脑风暴到实现的结构化工作流程",
+        "自动上下文准备（节省50-80%成本）",
+        "工具间无需上下文切换",
+        "智能下一步建议"
+      ]
+    },
+    "tabs": {
+      "fullWorkflow": "完整工作流",
+      "quickFlow": "快速流程"
+    },
+    "pathInfo": {
+      "fullWorkflow": {
+        "title": "完整工作流",
+        "description": "用于新项目、复杂功能或需要探索需求的情况。指导您完成分析、规划、解决方案和实施阶段。",
+        "whenToUse": "何时使用：",
+        "useCases": {
+          "newProject": "从零开始的新项目",
+          "complexFeature": "复杂功能开发",
+          "unclearRequirements": "需求不明确或不断变化",
+          "teamCollaboration": "需要团队协作"
+        }
+      },
+      "quickFlow": {
+        "title": "快速流程",
+        "description": "对于小型、易于理解的工作，跳过规划阶段。创建快速规范并直接进入实施。",
+        "whenToUse": "何时使用：",
+        "useCases": {
+          "bugFixes": "错误修复",
+          "smallFeatures": "小型功能添加",
+          "refactoring": "重构任务",
+          "wellDefined": "明确定义的变更"
+        }
+      }
+    },
+    "artifact": {
+      "openFile": "打开文件",
+      "notCreated": "尚未创建"
+    },
+    "taskActions": {
+      "loading": "正在加载 BMAD 工作流...",
+      "error": "加载 BMAD 状态失败",
+      "resumeSection": "恢复工作流",
+      "workflowsSection": "可用工作流",
+      "noWorkflows": "没有可用的工作流",
+      "execute": "执行",
+      "entryPoint": "入口点 - 从这里开始您的项目",
+      "recommendedAfter": "完成后推荐",
+      "currentWorkflow": "当前工作流",
+      "changeWorkflow": "更改工作流",
+      "outputArtifacts": "输出文件"
+    },
+    "reset": {
+      "bannerTitle": "重置工作流进度",
+      "bannerDescription": "这将永久删除 _bmad-output 文件夹中的所有文件。如果您有已完成的工作流或想保留进度，请先将 _bmad-output/ 中的文件备份到 docs/ 或其他位置。",
+      "button": "重置",
+      "resetting": "正在重置...",
+      "confirmTitle": "重置工作流进度？",
+      "confirmDescription": "此操作将永久删除 _bmad-output 文件夹中的所有生成的工件和工作流进度。此操作无法撤消。",
+      "confirmButton": "重置所有进度",
+      "success": "工作流进度已重置",
+      "error": "重置工作流进度失败"
+    },
+    "showModelSelector": "更换模型",
+    "hideModelSelector": "隐藏模型选择器"
   }
 }

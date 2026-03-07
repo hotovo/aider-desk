@@ -23,6 +23,11 @@ const ReloadMcpServersSchema = z.object({
   force: z.boolean().optional(),
 });
 
+const ReloadMcpServerSchema = z.object({
+  serverName: z.string().min(1, 'Server name is required'),
+  config: McpServerConfigSchema,
+});
+
 export class McpApi extends BaseApi {
   constructor(private readonly eventsHandler: EventsHandler) {
     super();
@@ -56,6 +61,21 @@ export class McpApi extends BaseApi {
         const { mcpServers, force } = parsed;
         await this.eventsHandler.reloadMcpServers(mcpServers, force);
         res.status(200).json({ message: 'MCP servers reloaded' });
+      }),
+    );
+
+    // Reload single MCP server
+    router.post(
+      '/mcp/reload-single',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ReloadMcpServerSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { serverName, config } = parsed;
+        const tools = await this.eventsHandler.reloadMcpServer(serverName, config);
+        res.status(200).json(tools);
       }),
     );
   }

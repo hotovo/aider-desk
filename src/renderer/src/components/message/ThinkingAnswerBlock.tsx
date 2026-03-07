@@ -44,9 +44,9 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
     <div className="flex flex-col w-full gap-1 pt-0">
       {/* Thinking section */}
       {parsedThinking && (
-        <div className="border border-border-default-dark rounded-md overflow-hidden ml-2">
+        <div className="border border-border-dark-light rounded-md overflow-hidden">
           <div
-            className="flex items-center justify-between gap-2 px-3 py-1 bg-bg-secondary-light cursor-pointer hover:bg-bg-tertiary w-full"
+            className="flex items-center justify-between gap-2 px-3 py-1 bg-bg-secondary-light-strongest cursor-pointer hover:bg-bg-tertiary w-full"
             onClick={handleToggleThinking}
           >
             <div className="flex items-center gap-2 w-full">
@@ -74,7 +74,11 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
       {answer && parsedAnswer && (
         <div className="overflow-hidden relative">
           <div
-            className={clsx('text-xs text-text-primary bg-bg-secondary', !renderMarkdown && 'whitespace-pre-wrap break-words', parsedThinking ? 'p-3' : 'p-0')}
+            className={clsx(
+              'text-xs text-text-primary bg-bg-secondary',
+              !renderMarkdown && 'whitespace-pre-wrap break-words',
+              parsedThinking ? 'p-3 pl-1 pb-0' : 'p-0',
+            )}
           >
             {parsedAnswer}
           </div>

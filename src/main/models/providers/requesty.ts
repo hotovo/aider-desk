@@ -1,8 +1,9 @@
-import { AgentProfile, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
+import { AgentProfile, ContextUserMessage, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
 import { DEFAULT_MODEL_TEMPERATURE, isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
+import { v4 as uuidv4 } from 'uuid';
 
-import type { LanguageModelUsage } from 'ai';
+import type { LanguageModelUsage, ModelMessage } from 'ai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
@@ -222,6 +223,31 @@ export const getRequestyUsageReport = (
   };
 };
 
+// === Message Normalization Functions ===
+export const normalizeRequestyMessages = (_provider: LlmProvider, model: Model, messages: ModelMessage[]): ModelMessage[] => {
+  // Apply Gemini normalization for Google/Gemini models
+  if (model.id.includes('gemini')) {
+    if (messages.length === 0) {
+      return messages;
+    }
+
+    const lastMessage = messages[messages.length - 1];
+
+    if (lastMessage.role !== 'user') {
+      const continueMessage: ContextUserMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content: 'Continue',
+      };
+
+      logger.debug('Added "Continue" user message for Requesty provider with Gemini model (last message was not a user message)');
+      return [...messages, continueMessage];
+    }
+  }
+
+  return messages;
+};
+
 // === Configuration Helper Functions ===
 export const getRequestyCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl | undefined => {
   if (isRequestyProvider(llmProvider) && !llmProvider.useAutoCache) {
@@ -253,4 +279,7 @@ export const requestyProviderStrategy: LlmProviderStrategy = {
 
   // Configuration helpers
   getCacheControl: getRequestyCacheControl,
+
+  // Message normalization
+  normalizeMessages: normalizeRequestyMessages,
 };

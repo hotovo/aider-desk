@@ -1,25 +1,37 @@
 import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
+import { FaExclamationTriangle } from 'react-icons/fa';
 
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export const SubagentToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const SubagentToolMessage = ({ message, onRemove, compact = false, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const isExecuting = message.content === '';
+  const content = message.content && JSON.parse(message.content);
+  const error = content && typeof content === 'string' && content.startsWith('Error') ? content : null;
   const promptText = message.args.prompt as string;
   const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
 
   const getToolName = (): string => {
+    if (error) {
+      return t('toolMessage.subagents.error', {
+        name: message.args.name,
+        error,
+      });
+    }
     if (isExecuting) {
       return t('toolMessage.subagents.running');
     }
@@ -33,6 +45,11 @@ export const SubagentToolMessage = ({ message, onRemove, compact = false }: Prop
       </div>
       <div className={`text-xs text-text-primary flex items-center gap-1 ${isExecuting ? 'animate-pulse' : ''}`}>
         <span>{getToolName()}</span>
+        {error && (
+          <Tooltip content={error}>
+            <FaExclamationTriangle className="w-3 h-3 text-text-error" />
+          </Tooltip>
+        )}
         {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       </div>
     </div>
@@ -57,7 +74,7 @@ export const SubagentToolMessage = ({ message, onRemove, compact = false }: Prop
         </div>
       </div>
 
-      <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} />
+      {!hideMessageBar && <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} onRemoveUpTo={onRemoveUpTo} />}
     </div>
   );
 };

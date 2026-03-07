@@ -1,4 +1,4 @@
-import { Mode, TaskData, TokensInfoData } from '@common/types';
+import { AIDER_MODES, Mode, TaskData, TokensInfoData } from '@common/types';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import debounce from 'lodash/debounce';
@@ -39,7 +39,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
 
   const handleTokenBarClick = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
-      if (!tokenBarRef.current || mode !== 'agent') {
+      if (!tokenBarRef.current || AIDER_MODES.includes(mode)) {
         return;
       }
 
@@ -64,13 +64,13 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
       const x = e.clientX - rect.left;
       const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100);
 
-      if (isDragging && mode === 'agent') {
+      if (isDragging && !AIDER_MODES.includes(mode)) {
         const roundedPercentage = Math.round(percentage);
         setLocalThreshold(roundedPercentage);
         debouncedOnContextCompactingThreshold(roundedPercentage);
       }
 
-      if (mode === 'agent' && Math.abs(percentage - localThreshold) < 2) {
+      if (!AIDER_MODES.includes(mode) && Math.abs(percentage - localThreshold) < 2) {
         setIsHoveringThreshold(true);
       } else {
         setIsHoveringThreshold(false);
@@ -85,7 +85,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
 
   const handleMouseDown = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
-      if (mode === 'agent') {
+      if (!AIDER_MODES.includes(mode)) {
         e.preventDefault();
         setIsDragging(true);
         handleTokenBarClick(e);
@@ -95,7 +95,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
   );
 
   const handleMouseEnter = useCallback(() => {
-    if (mode === 'agent') {
+    if (!AIDER_MODES.includes(mode)) {
       setShowTooltip(true);
     }
   }, [mode]);
@@ -123,8 +123,8 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
   const systemMessagesTokens = tokensInfo?.systemMessages?.tokens ?? 0;
   const agentTokens = tokensInfo?.agent?.tokens ?? 0;
 
-  const totalTokens = mode === 'agent' ? agentTokens : chatHistoryTokens + filesTotalTokens + repoMapTokens + systemMessagesTokens;
-  const tokensEstimated = mode === 'agent' ? tokensInfo?.agent?.tokensEstimated : false;
+  const totalTokens = !AIDER_MODES.includes(mode) ? agentTokens : chatHistoryTokens + filesTotalTokens + repoMapTokens + systemMessagesTokens;
+  const tokensEstimated = !AIDER_MODES.includes(mode) ? tokensInfo?.agent?.tokensEstimated : false;
   const progressPercentage = maxInputTokens > 0 ? Math.min((totalTokens / maxInputTokens) * 100, 100) : 0;
 
   return (
@@ -138,9 +138,9 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
     >
       <div className="relative flex-1">
         {!!maxInputTokens && (
-          <div ref={tokenBarRef} className={`h-1 bg-bg-secondary-light rounded-sm relative ${mode === 'agent' ? 'cursor-pointer' : ''}`}>
+          <div ref={tokenBarRef} className={`h-1 bg-bg-secondary-light rounded-sm relative ${!AIDER_MODES.includes(mode) ? 'cursor-pointer' : ''}`}>
             <div className="h-full bg-accent-light rounded-full transition-all duration-200" style={{ width: `${progressPercentage}%` }}></div>
-            {mode === 'agent' && !!maxInputTokens && (
+            {!AIDER_MODES.includes(mode) && !!maxInputTokens && (
               <div
                 className={clsx(
                   'absolute -top-1 bottom-0 w-[3px] cursor-ew-resize transition-colors',
@@ -157,7 +157,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
           </div>
         )}
 
-        {(showTooltip || isDragging) && mode === 'agent' && !!maxInputTokens && (
+        {(showTooltip || isDragging) && !AIDER_MODES.includes(mode) && !!maxInputTokens && (
           <div
             className="absolute z-50 bg-bg-primary border border-border-dark-light rounded-md p-2 text-2xs shadow-lg pointer-events-none w-[210px]"
             style={{

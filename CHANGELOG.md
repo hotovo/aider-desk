@@ -2,6 +2,124 @@
 
 ## [UNRELEASED]
 
+- initializing aider when repo map is included in Agent profile
+- added Timeout info to Bash tool message
+- avoid multiple notifications when agent finishes a queued prompt
+- added day grouping to task list in task sidebar
+- properly capturing stdout when bash tool executes piped commands
+- starting empty quick spec flow in BMAD mode now correctly sets the initial context
+- added settings page for Extension
+- added full-width toggle to Updated files page
+- refined welcome message layout
+- added connection timeout during startup and support for AIDER_DESK_NO_UPDATES environment variable
+- added onPromptTemplate event to manage system prompts in Extension
+
+## [0.55.0]
+
+- added support for commiting changes via the Updated Files page
+- added comprehensive Extention system
+- omit deleted files in Updated Files
+- added Alibaba Coding Plan provider
+- added locking of files when using edit power tool to avoid race conditions
+- moved BMAD mode out of Preview mode
+- added xhigh reasoning effort for OpenAI and OpenAI compatible providers
+- speed up startup by loading some of the long-loading managers in background
+- better handling of memory embedding process when swithing between models
+- removed BAAI/bge-large-en-v1.5 as Memory embedding model due to app crash
+- added Copy as Markdown action to task actions menu in task sidebar
+- added mode to view all files at once in Updated Files page
+
+## [0.54.0]
+
+- added support for message queue while task is processing
+- making sure to include user message when using Gemini models to avoid signature error
+- added missing tooltips to prompt field icons
+- subagent now always uses Compact context compaction type
+- added current workflow information in BMAD mode
+- improved initial context for some BMAD workflows
+- git add is not used when the project is not a git repository
+- agent with Aider tools and aider specific commands now properly start the aider connector
+- task name is now based on user story name when using BMAD create-story, dev-story and code-review workflows
+- added support for selecting a specific model when executing BMAD workflows
+- moved message navigation controls outside the scrollable container
+- added Gemini CLI as supported provider
+- enhanced hook system to allow modification of event data
+- added some example hooks
+- added button to view changes for updated context files
+
+## [0.53.0]
+
+- fixed mobile project dropdown to truncate long project names with ellipsis instead of pushing icons off-screen
+- optimized mobile layout for bmad mode - agent selector now stacks under mode selector and action buttons are absolutely positioned at top right
+- optimized MCP server initialization
+- optimized Aider connector start-up management
+- better detection of state for Quick Flow BMAD workflows
+- added support for Mermaid diagrams in messages
+- updated BMAD library installation to use the command approach
+- correctly reading the BMAD workflow files when preparing context
+- added Show task info button for quick access to task information
+- image messages are sent also when Include Context Files is disabled
+- properly initializing internal task in project
+- added Updated Files section with information about the changes and ability to request changes on specific line
+- BMAD mode consecutive prompts are now properly sending when working via browser
+- sync task baseDir with project baseDir to handle migrated tasks
+- correcly showing the project files with special characters
+- increased timeout of semantic search tool to avoid errors when the tool is running multiple times in parallel
+- added Brainstorming as another BMAD workflow option
+
+## [0.52.0]
+
+- decreased default max tokens of semantic search for better context management
+- added support for Anthropic compatible provider
+- added direct support for Kimi Coding Plan provider
+- improved UX for initial user message
+- improved handling files within the context of the agent
+- properly removing the tool calls from assistant message when using remove messages up to here action
+- added BMAD Method mode
+- files are now clearing properly on new tasks when IDE plugin is not connected
+- moved mode tooltips to right alignment for better usability
+- added option to use compact view mode for messages
+- fixed issue with Merge actions from worktrees
+- default agent profiles now do not include the context files
+- rules directory is correctly handled when using Aider modes and Worktree
+- added detaled information about the context files
+- setting Compact as default messages view mode
+- added quick actions for BMAD mode workflows
+
+## [0.51.0]
+
+- hiding the subtasks when parent task is archived
+- skipping model loading for disabled providers
+- updated visuals of model selectors
+- Claude Agent SDK provider only available when claude executable is present
+- added action to handoff a todo item to a new task
+- improved perfomance by replacing library used to render tooltips
+- filtering out unsupported language in the semantic search tool
+- removed empty tooltip from folders in context files tree and using muted color for project files not in the context
+- improving Glob and Grep tool messages to give more info to user
+- added support for 'project' and 'task' parameters in URL hash for direct navigation to a specific project and task
+- added context management task settings for automatic conversation compaction or handoff
+- properly updating the agent profile list after deletion
+- added action to restore default agent profiles
+- added /resolve-conflicts command to resolve the conflicts in the current branch
+- creating subtask correctly inherits agent profile, provider and model from parent task
+- properly loading the pending text in prompt field when switching tasks
+- added delete up to here action to remove all messages up to some message
+- added support for pasting images from clipboard in the browser
+- showing the subagent tool error message in the tool message
+- showing project tabs as dropdown on mobile devices
+- properly positioning message menu over the top content
+- added support for unknown file type in diff viewer to show without highlighting
+- storing context messages during the agent run
+- added browser notifications
+
+## [0.50.1]
+
+- setting the executably path manually for Claude Agent SDK provider in Electron
+- fixed internal TypeError when processing the response
+
+## [0.50.0]
+
 - further improvement to the rendering performance
 - properly showing the Aider cost
 - added option to disable thinking for Z.AI Coding Plan provider models
@@ -12,6 +130,11 @@
 - added support for terminals in the browser
 - added visual indicator to project tab when that project is in progress
 - improved usability of message virtual rendering
+- added Claude Agent SDK as a provider to use with Claude subscription
+- using Enter action on mobiles adds a new line instead of submitting the prompt
+- properly storing the handoff task context before executing it
+- fixed tooltip translation for TODO items actions
+- added action to fork a task from a specific message
 
 ## [0.49.0]
 

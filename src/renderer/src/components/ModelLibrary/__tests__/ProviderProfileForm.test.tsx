@@ -1,9 +1,11 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { ProviderProfile } from '@common/types';
 import { LlmProvider } from '@common/agent';
 
 import { ProviderProfileForm } from '../ProviderProfileForm';
+
+import { render } from '@/__tests__/render';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -30,13 +32,18 @@ vi.mock('@/hooks/useEffectiveEnvironmentVariable', () => ({
 // Mock providers as they might have many dependencies
 vi.mock('@/components/ModelLibrary/providers', () => ({
   OpenAiParameters: () => <div data-testid="openai-params">OpenAI Parameters</div>,
+  AlibabaPlanParameters: () => <div>Alibaba Plan Parameters</div>,
   AnthropicParameters: () => <div>Anthropic Parameters</div>,
+  AnthropicCompatibleParameters: () => <div>Anthropic Compatible Parameters</div>,
   AzureParameters: () => <div>Azure Parameters</div>,
   BedrockParameters: () => <div>Bedrock Parameters</div>,
+  ClaudeAgentSdkParameters: () => <div>Claude Agent SDK Parameters</div>,
   DeepseekParameters: () => <div>Deepseek Parameters</div>,
   GeminiParameters: () => <div>Gemini Parameters</div>,
+  GeminiCliParameters: () => <div>Gemini CLI Parameters</div>,
   GpustackParameters: () => <div>Gpustack Parameters</div>,
   GroqParameters: () => <div>Groq Parameters</div>,
+  KimiPlanParameters: () => <div>KimiPlan Parameters</div>,
   LitellmParameters: () => <div>Litellm Parameters</div>,
   LmStudioParameters: () => <div>LmStudio Parameters</div>,
   MinimaxParameters: () => <div>Minimax Parameters</div>,

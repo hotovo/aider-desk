@@ -29,7 +29,8 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
     inputSchema: z.object({
       taskDir: z.string().describe("The task directory. Can be '.' for current task."),
     }),
-    execute: async ({ taskDir }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { taskDir } = input;
       task.addToolMessage(
         toolCallId,
         TOOL_GROUP_NAME,
@@ -42,10 +43,11 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
         promptContext,
       );
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GET_CONTEXT_FILES}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GET_CONTEXT_FILES}`;
+      const questionKey = toolName;
       const questionText = 'Approve getting context files?';
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Getting context files denied by user. Reason: ${userInput}`;
@@ -64,7 +66,8 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
         .describe('One or more file paths to add to context. Relative to task directory (e.g. "src/file.ts") or absolute (e.g. "/tmp/log.txt" for read-only).'),
       readOnly: z.boolean().optional().describe('Whether the file(s) are read-only. Applies to all paths if true.'),
     }),
-    execute: async ({ paths, readOnly = false }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { paths, readOnly = false } = input;
       task.addToolMessage(
         toolCallId,
         TOOL_GROUP_NAME,
@@ -78,6 +81,7 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
         promptContext,
       );
 
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_ADD_CONTEXT_FILES}`;
       const results: string[] = [];
       for (const filePath of paths) {
         const absolutePath = path.resolve(task.getTaskDir(), filePath);
@@ -92,7 +96,7 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
         if (!fileExists) {
           const createFileQuestionKey = `tool_aider_${TOOL_ADD_CONTEXT_FILES}_create_file_${filePath.replace(/[^a-zA-Z0-9]/g, '_')}`;
           const createFileQuestionText = `File '${filePath}' does not exist. Create it?`;
-          const [createApproved] = await approvalManager.handleApproval(createFileQuestionKey, createFileQuestionText);
+          const [createApproved] = await approvalManager.handleToolApproval(toolName, input, createFileQuestionKey, createFileQuestionText);
 
           if (createApproved) {
             try {
@@ -116,7 +120,7 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
           const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_ADD_CONTEXT_FILES}_${filePath.replace(/[^a-zA-Z0-9]/g, '_')}`;
           const questionText = `Approve adding file '${filePath}' to context?`;
 
-          const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+          const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
           if (!isApproved) {
             results.push(`Adding '${filePath}' to context denied by user. Reason: ${userInput}`);
@@ -149,15 +153,17 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
     inputSchema: z.object({
       paths: z.array(z.string()).describe('One or more file paths to remove from context.'),
     }),
-    execute: async ({ paths }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { paths } = input;
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_DROP_CONTEXT_FILES, { paths }, undefined, undefined, promptContext);
 
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_DROP_CONTEXT_FILES}`;
       const results: string[] = [];
       for (const filePath of paths) {
-        const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_DROP_CONTEXT_FILES}`;
+        const questionKey = toolName;
         const questionText = `Approve dropping file '${path}' from context?`;
 
-        const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+        const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
         if (!isApproved) {
           results.push(`Dropping file '${filePath}' from context denied by user. Reason: ${userInput}`);
@@ -176,7 +182,8 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
     inputSchema: z.object({
       prompt: z.string().describe('The prompt to run in natural language.'),
     }),
-    execute: async ({ prompt }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { prompt } = input;
       const aiderPromptContext: PromptContext = {
         id: uuidv4(),
         group: {
@@ -188,11 +195,12 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
 
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_RUN_PROMPT, { prompt }, undefined, undefined, aiderPromptContext);
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_RUN_PROMPT}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_RUN_PROMPT}`;
+      const questionKey = toolName;
       const questionText = 'Approve prompt to run in Aider?';
 
       // Ask the question and wait for the answer
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, prompt);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, prompt);
 
       if (!isApproved) {
         return {

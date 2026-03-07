@@ -1,10 +1,11 @@
 import { ProjectData } from '@common/types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useState, useTransition } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useState, useTransition, useRef } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
 import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { useSearchParams } from 'react-router-dom';
 
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
@@ -22,7 +23,7 @@ import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
 import { useApi } from '@/contexts/ApiContext';
 import { ModelLibrary } from '@/components/ModelLibrary';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { URL_PARAMS, encodeBaseDir, decodeBaseDir } from '@/utils/routes';
 import { useBooleanState } from '@/hooks/useBooleanState';
 
 let hasShownUpdateNotification = false;
@@ -37,6 +38,7 @@ export const Home = () => {
   const { versions } = useVersions();
   const api = useApi();
   const { PROJECT_HOTKEYS } = useConfiguredHotkeys();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [openProjects, setOpenProjects] = useState<ProjectData[]>([]);
   const [optimisticOpenProjects, setOptimisticOpenProjects] = useOptimistic(openProjects);
   const [previousProjectBaseDir, setPreviousProjectBaseDir] = useState<string | null>(null);
@@ -47,6 +49,10 @@ export const Home = () => {
   const [isModelLibraryVisible, showModelLibrary, hideModelLibrary] = useBooleanState(false);
   const [isCtrlTabbing, setIsCtrlTabbing] = useState(false);
   const [isProjectSwitching, startProjectTransition] = useTransition();
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [initialUrlNavigationDone, setInitialUrlNavigationDone] = useState(false);
+  const [initialTaskId, setInitialTaskId] = useState<string | undefined>();
+  const isUpdatingFromUrl = useRef(false);
 
   const activeProject = (optimisticOpenProjects.find((project) => project.active) || optimisticOpenProjects[0])?.baseDir;
   const [optimisticActiveProject, setOptimisticActiveProject] = useOptimistic(activeProject);
@@ -84,6 +90,7 @@ export const Home = () => {
       try {
         const openProjects = await api.getOpenProjects();
         setOpenProjects(openProjects);
+        setProjectsLoaded(true);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Error loading projects:', error);
@@ -152,6 +159,72 @@ export const Home = () => {
     { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
     [activeProject, handleCloseProject, PROJECT_HOTKEYS.CLOSE_PROJECT],
   );
+
+  // Handle URL parameters for direct project/task navigation
+  useEffect(() => {
+    if (!projectsLoaded) {
+      return;
+    }
+
+    const projectParam = searchParams.get(URL_PARAMS.PROJECT);
+    const taskId = searchParams.get(URL_PARAMS.TASK);
+    const projectBaseDir = projectParam ? decodeBaseDir(projectParam) : null;
+
+    if (!projectBaseDir) {
+      return;
+    }
+
+    const handleUrlNavigation = async () => {
+      if (!initialUrlNavigationDone) {
+        setInitialUrlNavigationDone(true);
+      }
+
+      const existingProject = openProjects.find((p) => p.baseDir === projectBaseDir);
+
+      // Only update initial task ID on first navigation or when task changes
+      if (taskId && (!initialUrlNavigationDone || taskId !== initialTaskId)) {
+        setInitialTaskId(taskId);
+      }
+
+      if (existingProject) {
+        // Only switch if not already active
+        if (activeProject !== projectBaseDir) {
+          isUpdatingFromUrl.current = true;
+          setActiveProject(projectBaseDir);
+        }
+      } else {
+        try {
+          isUpdatingFromUrl.current = true;
+          await api.addOpenProject(projectBaseDir);
+          const updatedProjects = await api.getOpenProjects();
+          setOpenProjects(updatedProjects);
+
+          setActiveProject(projectBaseDir);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to open project from URL:', error);
+        }
+      }
+    };
+
+    void handleUrlNavigation();
+  }, [searchParams, projectsLoaded, openProjects, setActiveProject, initialUrlNavigationDone, api, activeProject, initialTaskId]);
+
+  // Update URL when project changes from user interaction (not from URL navigation)
+  useEffect(() => {
+    // Skip if the change came from URL navigation
+    if (isUpdatingFromUrl.current) {
+      isUpdatingFromUrl.current = false;
+      return;
+    }
+
+    const projectParam = searchParams.get(URL_PARAMS.PROJECT);
+    const urlProjectBaseDir = projectParam ? decodeBaseDir(projectParam) : null;
+
+    if (activeProject && urlProjectBaseDir !== activeProject && initialUrlNavigationDone) {
+      setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(activeProject) });
+    }
+  }, [activeProject, initialUrlNavigationDone, searchParams, setSearchParams]);
 
   // Open new project dialog
   useHotkeys(
@@ -374,7 +447,12 @@ export const Home = () => {
             zIndex: activeProject === project.baseDir ? 1 : 0,
           }}
         >
-          <ProjectView projectDir={project.baseDir} isProjectActive={activeProject === project.baseDir} showSettingsPage={handleShowSettingsPage} />
+          <ProjectView
+            projectDir={project.baseDir}
+            isProjectActive={activeProject === project.baseDir}
+            showSettingsPage={handleShowSettingsPage}
+            initialTaskId={activeProject === project.baseDir ? initialTaskId : undefined}
+          />
         </div>
       </ProjectSettingsProvider>
     ));
@@ -422,7 +500,6 @@ export const Home = () => {
 
   return (
     <div className="flex flex-col h-full p-[4px] bg-gradient-to-b from-bg-primary to-bg-primary-light">
-      <StyledTooltip id="top-bar-tooltip" />
       <div className="flex flex-col h-full border-2 border-border-default relative">
         <div className="flex border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light">
           <ProjectTabs
@@ -435,12 +512,11 @@ export const Home = () => {
             onCloseOtherProjects={handleCloseOtherProjects}
             onReorderProjects={handleReorderProjects}
           />
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0">
             {showUpdateIcon && (
               <IconButton
                 icon={<MdUpload className="h-5 w-5 text-text-primary animate-pulse animate-slow" />}
                 tooltip={getUpdateTooltip()}
-                tooltipId="top-bar-tooltip"
                 onClick={handleOpenAboutSettings}
                 className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
               />
@@ -448,21 +524,18 @@ export const Home = () => {
             <IconButton
               icon={<PiNotebookFill className="h-5 w-5 text-text-secondary" />}
               tooltip={t('projectBar.modelLibrary')}
-              tooltipId="top-bar-tooltip"
               onClick={showModelLibrary}
               className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
             />
             <IconButton
               icon={<MdBarChart className="h-5 w-5 text-text-secondary" />}
               tooltip={t('usageDashboard.title')}
-              tooltipId="top-bar-tooltip"
               onClick={handleOpenUsageDashboard}
               className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
             />
             <IconButton
               icon={<MdSettings className="h-5 w-5 text-text-secondary" />}
               tooltip={t('settings.title')}
-              tooltipId="top-bar-tooltip"
               onClick={handleOpenGeneralSettings}
               className="px-4 py-2 hover:bg-bg-tertiary-emphasis transition-colors duration-200"
             />

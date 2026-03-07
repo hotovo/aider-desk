@@ -33,6 +33,8 @@ export const AIDER_DESK_GLOBAL_RULES_DIR = path.join(homedir(), AIDER_DESK_DIR, 
 export const AIDER_DESK_COMMANDS_DIR = path.join(AIDER_DESK_DIR, 'commands');
 export const AIDER_DESK_HOOKS_DIR = path.join(AIDER_DESK_DIR, 'hooks');
 export const AIDER_DESK_GLOBAL_HOOKS_DIR = path.join(homedir(), AIDER_DESK_DIR, 'hooks');
+export const AIDER_DESK_EXTENSIONS_DIR = path.join(AIDER_DESK_DIR, 'extensions');
+export const AIDER_DESK_GLOBAL_EXTENSIONS_DIR = path.join(homedir(), AIDER_DESK_DIR, 'extensions');
 export const AIDER_DESK_PROMPTS_DIR = path.join(AIDER_DESK_DIR, 'prompts');
 export const AIDER_DESK_DEFAULT_PROMPTS_DIR = path.join(RESOURCES_DIR, 'prompts');
 export const AIDER_DESK_GLOBAL_PROMPTS_DIR = path.join(homedir(), AIDER_DESK_DIR, 'prompts');
@@ -63,3 +65,5 @@ export const CLOUDFLARED_BINARY_PATH = path.join(
   'bin',
   process.platform === 'win32' ? 'cloudflared.exe' : 'cloudflared',
 );
+
+export const CLAUDE_CODE_EXECUTABLE_PATH = path.join(RESOURCES_DIR, 'app.asar.unpacked', 'node_modules', '@anthropic-ai', 'claude-agent-sdk', 'cli.js');

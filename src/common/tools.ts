@@ -26,6 +26,8 @@ export const SUBAGENTS_TOOL_RUN_TASK = 'run_task';
 export const SKILLS_TOOL_GROUP_NAME = 'skills';
 export const SKILLS_TOOL_ACTIVATE_SKILL = 'activate_skill';
 
+export const EXTENSION_TOOL_GROUP_NAME = 'extensions';
+
 export const AIDER_TOOL_DESCRIPTIONS = {
   [AIDER_TOOL_GET_CONTEXT_FILES]: 'Get all files currently in the context for Aider to read or edit',
   [AIDER_TOOL_ADD_CONTEXT_FILES]: `Adds file(s) to the Aider context for reading or editing.

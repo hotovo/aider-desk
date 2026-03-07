@@ -122,6 +122,7 @@ export interface CompactDiffViewerProps extends Omit<DiffProps, 'hunks' | 'type'
   udiff?: string;
   hunks?: (HunkType | SkipBlock)[];
   type?: File['type'];
+  showFilename?: boolean;
 }
 
 export const CompactDiffViewer: FC<CompactDiffViewerProps> = ({
@@ -133,6 +134,7 @@ export const CompactDiffViewer: FC<CompactDiffViewerProps> = ({
   hunks: providedHunks,
   type: providedType,
   className,
+  showFilename = true,
   ...props
 }) => {
   const files = useMemo(() => {
@@ -176,7 +178,7 @@ export const CompactDiffViewer: FC<CompactDiffViewerProps> = ({
     <div className="flex flex-col gap-4">
       {files.map((file, index) => (
         <div key={index}>
-          {file.newPath && udiff && (
+          {showFilename && file.newPath && udiff && (
             <div className="text-xs font-semibold text-text-secondary mb-2">
               {file.oldPath !== file.newPath && file.oldPath ? (
                 <span>

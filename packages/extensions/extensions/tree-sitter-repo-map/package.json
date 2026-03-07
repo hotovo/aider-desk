@@ -1,0 +1,17 @@
+{
+  "name": "tree-sitter-repo-map",
+  "version": "1.0.0",
+  "description": "Enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking",
+  "main": "index.ts",
+  "keywords": [
+    "aiderdesk",
+    "extension",
+    "tree-sitter",
+    "repo-map"
+  ],
+  "author": "AiderDesk",
+  "license": "MIT",
+  "dependencies": {
+    "@aiderdesk/tree-sitter-utils": "^0.1.0"
+  }
+}

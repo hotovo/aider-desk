@@ -77,7 +77,6 @@ export const createSubagentsToolset = async (
         useTodoTools: false, // Disable todo tools for simplicity,
         useSubagents: false, // Disable nested subagents
         useMemoryTools: targetSubagent.useMemoryTools ?? false, // Use memory tools if enabled, false by default
-        isSubagent: true,
       };
 
       // Create promptContext with working group

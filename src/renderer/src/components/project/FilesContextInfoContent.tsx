@@ -49,6 +49,7 @@ export const FilesContextInfoContent = ({
           showFileDialog={showFileDialog}
           tokensInfo={tokensInfo}
           refreshAllFiles={refreshAllFiles}
+          mode={mode}
         />
       </div>
       <CostInfo

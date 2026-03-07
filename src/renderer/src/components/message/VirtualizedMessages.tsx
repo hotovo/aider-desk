@@ -1,18 +1,18 @@
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { DefaultTaskState, TaskData } from '@common/types';
+import { DefaultTaskState, MessageViewMode, TaskData } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
-import { TaskStateActions } from 'src/renderer/src/components/message/TaskStateActions';
 import { clsx } from 'clsx';
 
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
+import { AssistantMessageBlock } from './AssistantMessageBlock';
 
-import { isGroupMessage, isLoadingMessage, isUserMessage, Message } from '@/types/message';
+import { TaskStateActions } from '@/components/message/TaskStateActions';
+import { isAssistantGroupMessage, isGroupMessage, isLoadingMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { groupMessagesByPromptContext } from '@/components/message/utils';
+import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
@@ -36,11 +36,12 @@ type Props = {
   redoLastUserPrompt: () => void;
   editLastUserMessage: (content: string) => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
   onInterrupt?: () => void;
+  onForkFromMessage?: (message: Message) => void;
 };
 
 export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
@@ -57,20 +58,25 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
       redoLastUserPrompt,
       editLastUserMessage,
       onMarkAsDone,
-      onProceed,
+      onRunPrompt,
       onArchiveTask,
       onUnarchiveTask,
       onDeleteTask,
       onInterrupt,
+      onForkFromMessage,
     },
     ref,
   ) => {
     const { t } = useTranslation();
     const { settings } = useSettings();
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const isCompactMode = settings?.messageViewMode === MessageViewMode.Compact;
 
-    // Group messages by promptContext.group.id
-    const processedMessages = useMemo(() => groupMessagesByPromptContext(messages), [messages]);
+    // Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
+    const processedMessages = useMemo(() => {
+      const grouped = groupMessagesByPromptContext(messages);
+      return isCompactMode ? groupAssistantMessages(grouped) : grouped;
+    }, [messages, isCompactMode]);
     const lastUserMessageIndex = processedMessages.findLastIndex(isUserMessage);
     const isLastLoadingMessage = processedMessages.length > 0 && isLoadingMessage(processedMessages[processedMessages.length - 1]);
     const inProgress = task.state === DefaultTaskState.InProgress;
@@ -147,9 +153,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
     }));
 
     return (
-      <div className="group relative flex flex-col h-full">
-        <StyledTooltip id="usage-info-tooltip" />
-
+      <div className="relative flex flex-col h-full">
         <div
           ref={messagesContainerRef}
           className={clsx(
@@ -194,6 +198,16 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                       edit={editLastUserMessage}
                       onInterrupt={onInterrupt}
                     />
+                  ) : isAssistantGroupMessage(message) ? (
+                    <AssistantMessageBlock
+                      baseDir={baseDir}
+                      taskId={taskId}
+                      message={message}
+                      allFiles={allFiles}
+                      renderMarkdown={renderMarkdown}
+                      remove={inProgress ? undefined : () => removeMessage(message)}
+                      onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
+                    />
                   ) : (
                     <MessageBlock
                       baseDir={baseDir}
@@ -204,6 +218,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                       remove={inProgress ? undefined : () => removeMessage(message)}
                       redo={virtualRow.index === lastUserMessageIndex && !inProgress ? redoLastUserPrompt : undefined}
                       edit={virtualRow.index === lastUserMessageIndex ? editLastUserMessage : undefined}
+                      onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
                       onInterrupt={onInterrupt}
                     />
                   )}
@@ -213,7 +228,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
           </div>
         </div>
 
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1">
+        <div className="absolute left-1/2 -translate-x-1/2 w-[50%] bottom-0 z-10 flex justify-center gap-1 pt-10 pb-2 group">
           {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToPrevious()}
           {scrollingPaused && (
             <IconButton
@@ -229,10 +244,14 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
         {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
           <TaskStateActions
             state={task.state}
+            mode={task.currentMode}
             isArchived={task.archived}
+            task={task}
+            projectDir={baseDir}
+            taskId={taskId}
             onResumeTask={resumeTask}
             onMarkAsDone={onMarkAsDone}
-            onProceed={onProceed}
+            onRunPrompt={onRunPrompt}
             onArchiveTask={onArchiveTask}
             onUnarchiveTask={onUnarchiveTask}
             onDeleteTask={onDeleteTask}

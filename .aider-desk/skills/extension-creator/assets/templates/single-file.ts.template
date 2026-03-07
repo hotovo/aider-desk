@@ -1,0 +1,32 @@
+/**
+ * {EXTENSION_NAME} Extension
+ *
+ * {DESCRIPTION}
+ */
+
+import type { Extension, ExtensionContext } from '@aiderdesk/extensions';
+
+class {CLASS_NAME} implements Extension {
+  async onLoad(context: ExtensionContext): Promise<void> {
+    context.log('{EXTENSION_NAME} Extension loaded', 'info');
+  }
+
+  // Add methods as needed:
+  // - getCommands()
+  // - getTools()
+  // - getAgents()
+  // - getModes()
+  // - onAgentStarted()
+  // - onToolCalled()
+  // etc.
+}
+
+export const metadata = {
+  name: '{EXTENSION_NAME}',
+  version: '1.0.0',
+  description: '{DESCRIPTION}',
+  author: '{AUTHOR}',
+  capabilities: ['{CAPABILITY}'],
+};
+
+export default {CLASS_NAME};

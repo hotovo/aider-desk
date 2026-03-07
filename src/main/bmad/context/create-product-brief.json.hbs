@@ -1,0 +1,160 @@
+[
+  {
+    "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+    "role": "user",
+    "content": "IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL _bmad/bmm/workflows/1-analysis/create-product-brief/workflow.md, READ its entire contents and follow its directions exactly!",
+    "promptContext": {
+      "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+      "group": {
+        "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll load the workflow file and read its contents to understand what needs to be done."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_dc58c5d11ff7463a9371d444",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/1-analysis/create-product-brief/workflow.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "c59ccf91-7e25-4452-938d-b62f37020aad",
+    "promptContext": {
+      "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+      "group": {
+        "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_dc58c5d11ff7463a9371d444",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/1-analysis/create-product-brief/workflow.md"}}
+        }
+      }
+    ],
+    "id": "0920dd00-1c2a-4c53-b846-f428d78794e5",
+    "promptContext": {
+      "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+      "group": {
+        "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I'll load the configuration file and then read the first step."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_606166eb19774ef7884180e0",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/config.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "8b5aaecc-b244-450f-b836-1483557ecc56",
+    "promptContext": {
+      "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+      "group": {
+        "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_606166eb19774ef7884180e0",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/config.yaml"}}
+        }
+      }
+    ],
+    "id": "807a662e-bdc1-4e2e-9a2c-dab192f168a0",
+    "promptContext": {
+      "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+      "group": {
+        "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Good, I have the configuration. Now I need to read the first step file: step-01-init.md"
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_8ddcb389cfb441e684ccbca2",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/1-analysis/create-product-brief/steps/step-01-init.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "bfba2eb4-3372-425b-b5fa-27b4ae225f18",
+    "promptContext": {
+      "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+      "group": {
+        "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_8ddcb389cfb441e684ccbca2",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/1-analysis/create-product-brief/steps/step-01-init.md"}}
+        }
+      }
+    ],
+    "id": "db15a641-d8d6-472d-b973-7802d1932690",
+    "promptContext": {
+      "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+      "group": {
+        "id": "7d9c0e52-d7c7-44ca-bb3b-aba76fc85a04",
+        "name": "Create Product Brief",
+        "color": "#0ea5e9",
+        "finished": true
+      }
+    }
+  }
+]

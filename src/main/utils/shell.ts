@@ -497,7 +497,7 @@ export const getShellPath = (): string => {
       .filter((p) => p)
       .join(pathSep);
     const pathEntries = cachedPath.split(pathSep);
-    logger.info('PATH loading completed successfully', {
+    logger.debug('PATH loading completed successfully', {
       totalEntries: pathEntries.length,
       additionalPaths: additionalPaths.length,
       firstFewEntries: pathEntries.slice(0, 5).join(', '),
@@ -588,7 +588,7 @@ export const getShellPath = (): string => {
 /**
  * Find an executable in the shell PATH
  */
-export const findExecutableInPath = (executable: string): string | null => {
+export const findExecutableInPath = (executable: string, checkOnly = false): string | null => {
   logger.debug(`Finding executable: ${executable}`);
   const shellPath = getShellPath();
   const pathSep = getPathSeparator();
@@ -623,14 +623,19 @@ export const findExecutableInPath = (executable: string): string | null => {
     }
   }
 
-  logger.error(`Executable '${executable}' not found after searching ${searchedPaths} paths`, {
-    firstFewPaths: paths.slice(0, 5).join(', '),
-  });
+  if (!checkOnly) {
+    logger.error(`Executable '${executable}' not found after searching ${searchedPaths} paths`, {
+      firstFewPaths: paths.slice(0, 5).join(', '),
+    });
+  }
   return null;
 };
 
 // Wrapper for execAsync that includes enhanced PATH
-export const execWithShellPath = async (command: string, options?: { cwd?: string; env?: NodeJS.ProcessEnv }): Promise<{ stdout: string; stderr: string }> => {
+export const execWithShellPath = async (
+  command: string,
+  options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number },
+): Promise<{ stdout: string; stderr: string }> => {
   const shellPath = getShellPath();
   return execAsync(command, {
     ...options,

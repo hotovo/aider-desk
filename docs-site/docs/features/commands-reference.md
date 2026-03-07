@@ -55,4 +55,5 @@ AiderDesk provides a set of built-in commands that you can use in the prompt fie
 - **/map**: Prints the current repository map in the chat.
 - **/map-refresh**: Forces a refresh of the repository map.
 - **/commit**: Commits any unstaged changes in your repository.
+- **/resolve-conflicts**: Resolves merge conflicts using AI. This command intelligently detects conflicts in either the worktree or the main repository and resolves them using the AI agent.
 - **/init**: Initializes a `AGENTS.md` rule file for your project (only available in Agent Mode).

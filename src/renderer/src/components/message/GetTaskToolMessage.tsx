@@ -2,26 +2,25 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignment } from 'react-icons/md';
+import { ContextFile } from '@common/types';
 
 import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export const GetTaskToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const GetTaskToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
-
-  type ContextFile = {
-    path: string;
-    readOnly?: boolean;
-  };
 
   const taskId = message.args.taskId as string;
   const content = message.content && JSON.parse(message.content);
@@ -30,6 +29,27 @@ export const GetTaskToolMessage = ({ message, onRemove, compact = false }: Props
     typeof content === 'string' &&
     (content.startsWith('Error getting task:') || (content.startsWith('Task with ID') && content.includes('not found')));
   const isDenied = content && typeof content === 'string' && content.startsWith('Getting task information denied by user.');
+
+  const renderStatusIcon = () => {
+    if (!content) {
+      return <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />;
+    }
+    if (isError) {
+      return (
+        <Tooltip content={content}>
+          <RiErrorWarningFill className="w-3 h-3 text-error" />
+        </Tooltip>
+      );
+    }
+    if (isDenied) {
+      return (
+        <Tooltip content={content}>
+          <RiCloseCircleFill className="w-3 h-3 text-warning" />
+        </Tooltip>
+      );
+    }
+    return <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />;
+  };
 
   const title = (
     <div className="flex items-center gap-2 w-full">
@@ -42,21 +62,7 @@ export const GetTaskToolMessage = ({ message, onRemove, compact = false }: Props
           <CodeInline className="bg-bg-primary-light">{taskId}</CodeInline>
         </span>
       </div>
-      {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
-      {content &&
-        (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`get-task-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`get-task-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`get-task-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`get-task-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : (
-          <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
-        ))}
+      {renderStatusIcon()}
     </div>
   );
 
@@ -179,5 +185,15 @@ export const GetTaskToolMessage = ({ message, onRemove, compact = false }: Props
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
+  return (
+    <ExpandableMessageBlock
+      title={title}
+      content={renderContent()}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
+    />
+  );
 };

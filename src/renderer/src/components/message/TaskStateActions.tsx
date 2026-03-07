@@ -1,23 +1,41 @@
 import { IoPlayOutline } from 'react-icons/io5';
 import { RiAlertLine, RiCheckLine, RiPlayLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { useState, ReactNode } from 'react';
-import { DefaultTaskState } from '@common/types';
+import { ReactNode, useState } from 'react';
+import { DefaultTaskState, Mode, TaskData } from '@common/types';
 
+import { BmadTaskActions } from '@/components/bmad/BmadTaskActions';
 import { Button } from '@/components/common/Button';
 
 type Props = {
+  projectDir: string;
+  taskId: string;
   state: string | undefined;
+  mode?: Mode;
   isArchived: boolean | undefined;
+  task?: TaskData | null;
   onResumeTask: () => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
 };
 
-export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone, onProceed, onArchiveTask, onUnarchiveTask, onDeleteTask }: Props) => {
+export const TaskStateActions = ({
+  projectDir,
+  taskId,
+  state,
+  mode,
+  isArchived,
+  task,
+  onResumeTask,
+  onMarkAsDone,
+  onRunPrompt,
+  onArchiveTask,
+  onUnarchiveTask,
+  onDeleteTask,
+}: Props) => {
   const { t } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -35,7 +53,7 @@ export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone
   };
 
   const handleProceedClick = () => {
-    onProceed?.();
+    onRunPrompt?.('Proceed.');
   };
 
   const handleArchiveClick = () => {
@@ -57,6 +75,11 @@ export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone
       </div>
     );
   };
+
+  // BMAD mode rendering
+  if (mode === 'bmad' && state !== DefaultTaskState.Todo) {
+    return <BmadTaskActions projectDir={projectDir} taskId={taskId} task={task} onRunPrompt={onRunPrompt} />;
+  }
 
   if (state === DefaultTaskState.Todo) {
     return renderSection(
@@ -84,18 +107,6 @@ export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone
     );
   }
 
-  if (state === DefaultTaskState.ReadyForReview) {
-    return renderSection(
-      <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
-      t('messages.taskReadyForReview'),
-      <>
-        <Button key="markAsDone" variant="outline" color="primary" size="xs" onClick={onMarkAsDone}>
-          {t('messages.markAsDone')}
-        </Button>
-      </>,
-    );
-  }
-
   if (state === DefaultTaskState.ReadyForImplementation) {
     return renderSection(
       <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
@@ -104,6 +115,18 @@ export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone
         <Button key="proceed" variant="outline" color="primary" size="xs" onClick={handleProceedClick}>
           <IoPlayOutline className="mr-1 w-3 h-3" />
           {t('messages.proceed')}
+        </Button>
+      </>,
+    );
+  }
+
+  if (state === DefaultTaskState.ReadyForReview) {
+    return renderSection(
+      <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
+      t('messages.taskReadyForReview'),
+      <>
+        <Button key="markAsDone" variant="outline" color="primary" size="xs" onClick={onMarkAsDone}>
+          {t('messages.markAsDone')}
         </Button>
       </>,
     );

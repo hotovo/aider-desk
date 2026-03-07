@@ -1,0 +1,161 @@
+[
+  {
+    "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+    "role": "user",
+    "content": "IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL _bmad/bmm/workflows/2-plan-workflows/create-prd/workflow.md, READ its entire contents and follow its directions exactly!\n\nCreate PRD.",
+    "promptContext": {
+      "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+      "group": {
+        "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool-call",
+        "toolCallId": "tool_FXeLRrXqGuYA8P4OOWOTeHrD",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "d7cfdd71-3513-4223-9b10-b4c995f028a4",
+    "promptContext": {
+      "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+      "group": {
+        "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "tool_FXeLRrXqGuYA8P4OOWOTeHrD",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/2-plan-workflows/create-prd/workflow-create-prd.md"}}
+        }
+      }
+    ],
+    "id": "d4d14230-9f22-4ca5-aa7c-cef9c4e36c5e",
+    "promptContext": {
+      "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+      "group": {
+        "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool-call",
+        "toolCallId": "tool_LgMFbKXOMN0ZMoCCyREaOgSw",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/config.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "59fb3854-d6af-427e-8ad5-c73ba5a6d028",
+    "promptContext": {
+      "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+      "group": {
+        "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "tool_LgMFbKXOMN0ZMoCCyREaOgSw",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/config.yaml"}}
+        }
+      }
+    ],
+    "id": "6a609d18-116e-4227-98f3-5154d2b99bde",
+    "promptContext": {
+      "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+      "group": {
+        "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd"
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool-call",
+        "toolCallId": "tool_6NQsKIO7dYij9H2aIX6ffEiD",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-01-init.md",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 1000
+        }
+      }
+    ],
+    "id": "9726f399-f671-4b02-baa2-3e517ad92562",
+    "promptContext": {
+      "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+      "group": {
+        "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd"
+      }
+    }
+  },
+  {
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "tool_6NQsKIO7dYij9H2aIX6ffEiD",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent "_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-01-init.md"}}
+        }
+      }
+    ],
+    "id": "84eb696f-4a5e-4534-960b-91630c5fabd6",
+    "promptContext": {
+      "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+      "group": {
+        "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd",
+        "name": "Create PRD",
+        "color": "#22c55e",
+        "finished": true
+      }
+    }
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "**Create Mode: Creating a new PRD from scratch.**\n\nLet me check for existing workflow state and discover input documents."
+      }
+    ],
+    "id": "335abfa5-f996-4663-a67b-798e5894acad",
+    "promptContext": {
+      "id": "c42c921e-d283-40fd-bfc9-e9431f5ae7bd"
+    }
+  }
+]

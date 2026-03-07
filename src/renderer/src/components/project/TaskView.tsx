@@ -1,5 +1,5 @@
-import { DefaultTaskState, Mode, Model, ModelsData, TaskData, TodoItem } from '@common/types';
-import { forwardRef, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { AIDER_MODES, DefaultTaskState, Mode, Model, ModelsData, TaskData, TodoItem } from '@common/types';
+import { forwardRef, startTransition, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useOptimistic, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import { clsx } from 'clsx';
@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { useSidebarWidth } from './useSidebarWidth';
 
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
@@ -59,7 +59,6 @@ type Props = {
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   shouldFocusPrompt?: boolean;
-  onProceed?: () => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -77,7 +76,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       showSettingsPage,
       shouldFocusPrompt = false,
       updateOptimisticTaskState,
-      onProceed,
       onArchiveTask,
       onUnarchiveTask,
       onDeleteTask,
@@ -96,11 +94,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const { getProfiles } = useAgents();
 
     const taskState = useTaskState(task.id);
-    const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData } = taskState;
+    const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData, queuedPrompts } = taskState;
 
     const messages = useTaskMessages(task.id);
-    const displayedMessages = useDeferredValue(messages, []);
-    const messagesPending = messages.length !== displayedMessages.length;
+    const deferredMessages = useDeferredValue(messages);
+    const [displayedMessages, setDisplayedMessages] = useOptimistic(deferredMessages);
+    const messagesPending = task.updatedAt && messages.length !== displayedMessages.length;
 
     const currentMode = task.currentMode || 'agent';
 
@@ -112,6 +111,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(projectDir, task.id);
     const [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed] = useLocalStorage(`files-sidebar-collapsed-${projectDir}-${task.id}`, false);
     const { renderSearchInput } = useSearchText(searchContainer, 'absolute top-1 left-1', isActive);
+
+    const inProgress = task.state === DefaultTaskState.InProgress;
 
     const promptFieldRef = useRef<PromptFieldRef>(null);
     const projectTopBarRef = useRef<TaskBarRef>(null);
@@ -161,7 +162,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const currentModel = useMemo(() => {
       let model: Model | undefined;
-      if (currentMode === 'agent') {
+      if (!AIDER_MODES.includes(currentMode)) {
         if (activeAgentProfile) {
           model = models.find((m) => m.id === activeAgentProfile.model && m.providerId === activeAgentProfile.provider);
         }
@@ -174,7 +175,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const maxInputTokens = currentModel?.maxInputTokens || 0;
 
     const todoListVisible = useMemo(() => {
-      return currentMode === 'agent' && activeAgentProfile?.useTodoTools;
+      return !AIDER_MODES.includes(currentMode) && activeAgentProfile?.useTodoTools;
     }, [currentMode, activeAgentProfile?.useTodoTools]);
 
     const handleOpenModelSelector = useCallback(() => {
@@ -287,22 +288,35 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           });
           api.redoLastUserPrompt(projectDir, task.id, currentMode, prompt);
         } else {
-          if (!question) {
-            // OPTIMISTIC: Add user message immediately before backend response
-            setMessages(task.id, (prevMessages) => [
-              ...prevMessages,
-              {
+          if (!question && !inProgress) {
+            startTransition(() => {
+              // OPTIMISTIC: Add user message immediately before backend response
+              const optimisticUserMessage = {
                 id: uuidv4(),
                 type: 'user',
                 content: prompt,
                 isOptimistic: true,
-              } satisfies UserMessage,
-            ]);
+              } satisfies UserMessage;
+              setMessages(task.id, (prevMessages) => [...prevMessages, optimisticUserMessage]);
+              setDisplayedMessages([...displayedMessages, optimisticUserMessage]);
+            });
           }
           api.runPrompt(projectDir, task.id, prompt, currentMode);
         }
       },
-      [updateOptimisticTaskState, task.id, editingMessageIndex, setMessages, api, projectDir, currentMode, question],
+      [
+        updateOptimisticTaskState,
+        task.id,
+        editingMessageIndex,
+        setMessages,
+        api,
+        projectDir,
+        currentMode,
+        question,
+        inProgress,
+        setDisplayedMessages,
+        displayedMessages,
+      ],
     );
 
     const handleSavePrompt = useCallback(
@@ -371,9 +385,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       api.resumeTask(projectDir, task.id);
     }, [api, projectDir, task.id]);
 
-    const handleProceed = useCallback(() => {
-      onProceed?.();
-    }, [onProceed]);
+    const handleRunPrompt = useCallback(
+      (prompt: string) => {
+        api.runPrompt(projectDir, task.id, prompt, currentMode);
+      },
+      [api, currentMode, projectDir, task.id],
+    );
 
     const handleArchiveTask = useCallback(() => {
       onArchiveTask?.();
@@ -386,6 +403,19 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const handleDeleteTask = useCallback(() => {
       onDeleteTask?.();
     }, [onDeleteTask]);
+
+    const handleForkFromMessage = useCallback(
+      async (message: Message) => {
+        try {
+          await api.forkTask(projectDir, task.id, message.id);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to fork task:', error);
+          showErrorNotification(t('errors.forkTaskFailed'));
+        }
+      },
+      [api, projectDir, task.id, t],
+    );
 
     const handleRemoveMessage = useCallback(
       async (messageToRemove: Message) => {
@@ -404,6 +434,31 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           console.error('Failed to remove message:', error);
           setMessages(task.id, () => originalMessages);
           showErrorNotification(t('errors.removeMessageFailed'));
+        }
+      },
+      [displayedMessages, setMessages, task.id, api, projectDir, t],
+    );
+
+    const handleRemoveUpToMessage = useCallback(
+      async (messageToRemove: Message) => {
+        const originalMessages = displayedMessages;
+
+        // Optimistically remove the messages after it
+        setMessages(task.id, (prevMessages) => {
+          const messageIndex = prevMessages.findIndex((msg) => msg.id === messageToRemove.id);
+          if (messageIndex === -1) {
+            return prevMessages;
+          }
+          return prevMessages.slice(0, messageIndex + 1);
+        });
+
+        try {
+          await api.removeMessagesUpTo(projectDir, task.id, messageToRemove.id);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to remove messages up to:', error);
+          setMessages(task.id, () => originalMessages);
+          showErrorNotification(t('errors.removeMessagesUpToFailed'));
         }
       },
       [displayedMessages, setMessages, task.id, api, projectDir, t],
@@ -522,10 +577,30 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [answerQuestion, task.id],
     );
 
-    const handleInterruptResponse = useCallback(() => {
-      interruptResponse(task.id);
-      updateOptimisticTaskState(task.id, DefaultTaskState.Interrupted);
-    }, [interruptResponse, task.id, updateOptimisticTaskState]);
+    const handleRemoveQueuedPrompt = useCallback(
+      (id: string) => {
+        api.removeQueuedPrompt(projectDir, task.id, id);
+      },
+      [api, projectDir, task.id],
+    );
+
+    const handleSendQueuedPromptNow = useCallback(
+      (id: string) => {
+        api.sendQueuedPromptNow(projectDir, task.id, id);
+      },
+      [api, projectDir, task.id],
+    );
+
+    const handleInterruptResponse = useCallback(
+      (interruptId?: string) => {
+        interruptResponse(task.id, interruptId);
+        if (!interruptId) {
+          // Only update task state if we're interrupting the entire task, not a specific agent
+          updateOptimisticTaskState(task.id, DefaultTaskState.Interrupted);
+        }
+      },
+      [interruptResponse, task.id, updateOptimisticTaskState],
+    );
 
     const handleHandoff = useCallback(
       async (focus?: string) => {
@@ -568,6 +643,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
             task={task}
             modelsData={aiderModelsData}
             mode={currentMode}
+            activeAgentProfile={activeAgentProfile}
             onModelsChange={handleModelChange}
             runCommand={runCommand}
             onToggleSidebar={() => setShowSidebar(!showSidebar)}
@@ -583,12 +659,13 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 onAddTodo={handleAddTodo}
                 onUpdateTodo={handleUpdateTodo}
                 onDeleteTodo={handleDeleteTodo}
+                onHandoffTodo={handleHandoff}
                 onClearAllTodos={handleClearAllTodos}
               />
             )}
             <div className="overflow-hidden flex-grow relative">
-              {displayedMessages.length === 0 && !loading && !messagesPending && task.state !== DefaultTaskState.InProgress ? (
-                <WelcomeMessage onModeChange={handleModeChange} />
+              {displayedMessages.length === 0 && !loading && !messagesPending && !inProgress ? (
+                <WelcomeMessage onModeChange={handleModeChange} mode={currentMode} projectDir={projectDir} taskId={task.id} />
               ) : (
                 <>
                   {settings.virtualizedRendering ? (
@@ -605,7 +682,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       redoLastUserPrompt={handleRedoLastUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
                       onMarkAsDone={handleMarkAsDone}
-                      onProceed={handleProceed}
+                      onRunPrompt={handleRunPrompt}
                       onArchiveTask={handleArchiveTask}
                       onUnarchiveTask={handleUnarchiveTask}
                       onDeleteTask={handleDeleteTask}
@@ -625,11 +702,13 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       redoLastUserPrompt={handleRedoLastUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
                       onMarkAsDone={handleMarkAsDone}
-                      onProceed={handleProceed}
+                      onRunPrompt={handleRunPrompt}
                       onArchiveTask={handleArchiveTask}
                       onUnarchiveTask={handleUnarchiveTask}
                       onDeleteTask={handleDeleteTask}
                       onInterrupt={handleInterruptResponse}
+                      onForkFromMessage={handleForkFromMessage}
+                      onRemoveUpToMessage={handleRemoveUpToMessage}
                     />
                   )}
                 </>
@@ -674,12 +753,13 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 </div>
               )}
               <PromptField
+                key={task.id}
                 ref={promptFieldRef}
                 baseDir={projectDir}
                 taskId={task.id}
                 task={task}
                 inputHistory={inputHistory}
-                processing={task.state === DefaultTaskState.InProgress}
+                processing={inProgress}
                 mode={currentMode}
                 onModeChanged={handleModeChange}
                 runPrompt={runPrompt}
@@ -694,6 +774,9 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 addFiles={handleAddFiles}
                 question={question}
                 answerQuestion={handleAnswerQuestion}
+                queuedPrompts={queuedPrompts}
+                removeQueuedPrompt={handleRemoveQueuedPrompt}
+                sendQueuedPromptNow={handleSendQueuedPromptNow}
                 interruptResponse={handleInterruptResponse}
                 runCommand={runCommand}
                 runTests={runTests}
@@ -720,20 +803,18 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               width: isFilesSidebarCollapsed ? FILES_COLLAPSED_WIDTH : sidebarWidth,
             }}
           >
-            <StyledTooltip id="files-sidebar-tooltip" />
-
             {/* Expand/Collapse Button */}
-            <button
-              data-tooltip-id="files-sidebar-tooltip"
-              data-tooltip-content={isFilesSidebarCollapsed ? t('common.expand') : t('common.collapse')}
-              className={clsx(
-                'absolute top-[50%] translate-y-[-50%] z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5',
-                isFilesSidebarCollapsed ? 'left-1' : 'transition-opacity opacity-0 group-hover:opacity-100 left-3',
-              )}
-              onClick={handleToggleFilesSidebarCollapse}
-            >
-              <RiMenuUnfold4Line className={clsx('w-4 h-4 text-text-primary transition-transform duration-300', !isFilesSidebarCollapsed && 'rotate-180')} />
-            </button>
+            <Tooltip content={isFilesSidebarCollapsed ? t('common.expand') : t('common.collapse')}>
+              <button
+                className={clsx(
+                  'absolute top-[50%] translate-y-[-50%] z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5',
+                  isFilesSidebarCollapsed ? 'left-1' : 'transition-opacity opacity-0 group-hover:opacity-100 left-3',
+                )}
+                onClick={handleToggleFilesSidebarCollapse}
+              >
+                <RiMenuUnfold4Line className={clsx('w-4 h-4 text-text-primary transition-transform duration-300', !isFilesSidebarCollapsed && 'rotate-180')} />
+              </button>
+            </Tooltip>
 
             {/* Resizable wrapper for expanded state */}
             {!isFilesSidebarCollapsed && (

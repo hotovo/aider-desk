@@ -13,13 +13,15 @@ import { useDebounce } from '@reactuses/core';
 
 import { TaskSidebarMultiSelectMenu } from './TaskSidebarMultiSelectMenu';
 import { TaskItem } from './TaskItem';
+import { TaskSectionHeader } from './TaskSectionHeader';
 
 import { getSortedVisibleTasks } from '@/utils/task-utils';
+import { groupTasksByDate } from '@/utils/date-utils';
 import { Input } from '@/components/common/Input';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { IconButton } from '@/components/common/IconButton';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 export const COLLAPSED_WIDTH = 44;
 export const EXPANDED_WIDTH = 256;
@@ -35,6 +37,7 @@ type Props = {
   onToggleCollapse: () => void;
   updateTask?: (taskId: string, updates: Partial<TaskData>) => Promise<void>;
   deleteTask?: (taskId: string) => Promise<void>;
+  onCopyAsMarkdown?: (taskId: string) => void;
   onExportToMarkdown?: (taskId: string) => void;
   onExportToImage?: (taskId: string) => void;
   onDuplicateTask?: (taskId: string) => void;
@@ -53,6 +56,7 @@ const TaskSidebarComponent = ({
   onToggleCollapse,
   updateTask,
   deleteTask,
+  onCopyAsMarkdown,
   onExportToMarkdown,
   onExportToImage,
   onDuplicateTask,
@@ -382,7 +386,6 @@ const TaskSidebarComponent = ({
             : clsx('flex flex-col h-full border-r border-border-dark-light bg-bg-primary-light-strong', className)
         }
       >
-        <StyledTooltip id="task-sidebar-tooltip" />
         <div className="bg-bg-primary-light border-b border-border-dark-light">
           <div className="flex items-center justify-between p-2 h-10">
             <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors" onClick={isMobile && onClose ? onClose : onToggleCollapse}>
@@ -403,14 +406,11 @@ const TaskSidebarComponent = ({
                       <h3 className="text-sm font-semibold uppercase h-5">{t('taskSidebar.title')}</h3>
                       <div className="flex items-center gap-1">
                         <span className="text-2xs text-text-muted mr-2">{t('taskSidebar.selectedCount', { count: selectedTasks.size })}</span>
-                        <button
-                          data-tooltip-id="task-sidebar-tooltip"
-                          data-tooltip-content={t('taskSidebar.closeMultiselect')}
-                          className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
-                          onClick={handleMultiselectClose}
-                        >
-                          <HiXMark className="w-5 h-5 text-text-primary" />
-                        </button>
+                        <Tooltip content={t('taskSidebar.closeMultiselect')}>
+                          <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors" onClick={handleMultiselectClose}>
+                            <HiXMark className="w-5 h-5 text-text-primary" />
+                          </button>
+                        </Tooltip>
                         <TaskSidebarMultiSelectMenu
                           hasArchived={Array.from(selectedTasks).some((taskId) => tasks.find((task) => task.id === taskId)?.archived)}
                           onDelete={() => setBulkDeleteConfirm(true)}
@@ -430,7 +430,6 @@ const TaskSidebarComponent = ({
                         <IconButton
                           onClick={() => setShowArchived(!showArchived)}
                           tooltip={showArchived ? t('taskSidebar.hideArchived') : t('taskSidebar.showArchived')}
-                          tooltipId="task-sidebar-tooltip"
                           className="p-1.5 hover:bg-bg-tertiary rounded-md group"
                           icon={
                             showArchived ? (
@@ -440,23 +439,25 @@ const TaskSidebarComponent = ({
                             )
                           }
                         />
-                        <button
-                          data-tooltip-id="task-sidebar-tooltip"
-                          data-tooltip-content={t('taskSidebar.search')}
-                          className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
-                          onClick={handleSearchToggle}
-                        >
-                          <MdOutlineSearch className="w-5 h-5 text-text-primary" />
-                        </button>
-                        {createNewTask && (
+                        <Tooltip content={t('taskSidebar.search')}>
                           <button
-                            data-tooltip-id="task-sidebar-tooltip"
-                            data-tooltip-content={t('taskSidebar.createTask')}
                             className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
-                            onClick={handleCreateTask}
+                            onClick={handleSearchToggle}
+                            data-testid="search-toggle-button"
                           >
-                            <HiPlus className="w-5 h-5 text-text-primary" />
+                            <MdOutlineSearch className="w-5 h-5 text-text-primary" />
                           </button>
+                        </Tooltip>
+                        {createNewTask && (
+                          <Tooltip content={t('taskSidebar.createTask')}>
+                            <button
+                              className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
+                              onClick={handleCreateTask}
+                              data-testid="create-task-button"
+                            >
+                              <HiPlus className="w-5 h-5 text-text-primary" />
+                            </button>
+                          </Tooltip>
                         )}
                       </div>
                     </>
@@ -511,41 +512,68 @@ const TaskSidebarComponent = ({
                   </div>
                 ) : (
                   <div>
-                    {deferredTasks
-                      .filter((task) => !task.parentId || !deferredTasks.some((t) => t.id === task.parentId))
-                      .map((task) => (
-                        <TaskItem
-                          key={task.id}
-                          task={task}
-                          tasks={tasks}
-                          level={0}
-                          selectedTasks={selectedTasks}
-                          deleteConfirmTaskId={deleteConfirmTaskId}
-                          showArchived={showArchived}
-                          searchQuery={debouncedSearchQuery}
-                          isMultiselectMode={isMultiselectMode}
-                          setIsMultiselectMode={setIsMultiselectMode}
-                          activeTaskId={optimisticActiveTaskId}
-                          onTaskClick={handleTaskClick}
-                          createNewTask={createNewTask}
-                          editingTaskId={editingTaskId}
-                          onEditClick={handleEditClick}
-                          onEditConfirm={handleEditConfirm}
-                          onEditCancel={handleEditCancel}
-                          onDeleteClick={handleDeleteClick}
-                          onArchiveTask={handleArchiveTask}
-                          onUnarchiveTask={handleUnarchiveTask}
-                          onTogglePin={handleTogglePin}
-                          onChangeState={handleChangeState}
-                          onExportToMarkdown={onExportToMarkdown}
-                          onExportToImage={onExportToImage}
-                          onDuplicateTask={onDuplicateTask}
-                          updateTask={updateTask}
-                          deleteTask={deleteTask}
-                          handleConfirmDelete={handleConfirmDelete}
-                          handleCancelDelete={handleCancelDelete}
-                        />
-                      ))}
+                    {(() => {
+                      const topLevelTasks = deferredTasks.filter((task) => !task.parentId || !deferredTasks.some((t) => t.id === task.parentId));
+                      const pinnedTasks = topLevelTasks.filter((task) => task.pinned);
+                      const nonPinnedTasks = topLevelTasks.filter((task) => !task.pinned);
+                      const groupedTasks = groupTasksByDate(nonPinnedTasks);
+                      const taskItemCommonProps = {
+                        tasks,
+                        level: 0,
+                        selectedTasks,
+                        deleteConfirmTaskId,
+                        showArchived,
+                        searchQuery: debouncedSearchQuery,
+                        isMultiselectMode,
+                        setIsMultiselectMode,
+                        activeTaskId: optimisticActiveTaskId,
+                        onTaskClick: handleTaskClick,
+                        createNewTask,
+                        editingTaskId,
+                        onEditClick: handleEditClick,
+                        onEditConfirm: handleEditConfirm,
+                        onEditCancel: handleEditCancel,
+                        onDeleteClick: handleDeleteClick,
+                        onArchiveTask: handleArchiveTask,
+                        onUnarchiveTask: handleUnarchiveTask,
+                        onTogglePin: handleTogglePin,
+                        onChangeState: handleChangeState,
+                        onCopyAsMarkdown,
+                        onExportToMarkdown,
+                        onExportToImage,
+                        onDuplicateTask,
+                        updateTask,
+                        deleteTask,
+                        handleConfirmDelete,
+                        handleCancelDelete,
+                      };
+
+                      return (
+                        <>
+                          {pinnedTasks.map((task) => (
+                            <TaskItem key={task.id} task={task} {...taskItemCommonProps} />
+                          ))}
+                          {Array.from(groupedTasks.entries()).map(([dateGroup, groupTasks]) => (
+                            <div key={dateGroup}>
+                              <TaskSectionHeader
+                                title={
+                                  dateGroup === 'today'
+                                    ? t('taskSidebar.today')
+                                    : dateGroup === 'yesterday'
+                                      ? t('taskSidebar.yesterday')
+                                      : dateGroup === 'unknown'
+                                        ? t('taskSidebar.noDate')
+                                        : dateGroup
+                                }
+                              />
+                              {groupTasks.map((task) => (
+                                <TaskItem key={task.id} task={task} {...taskItemCommonProps} />
+                              ))}
+                            </div>
+                          ))}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </motion.div>
@@ -562,14 +590,11 @@ const TaskSidebarComponent = ({
                 className="h-full flex items-start justify-center py-1"
               >
                 {createNewTask && (
-                  <button
-                    data-tooltip-id="task-sidebar-tooltip"
-                    data-tooltip-content={t('taskSidebar.createTask')}
-                    className="p-2 rounded-md hover:bg-bg-tertiary transition-colors"
-                    onClick={handleCreateTask}
-                  >
-                    <HiPlus className="w-5 h-5 text-text-primary" />
-                  </button>
+                  <Tooltip content={t('taskSidebar.createTask')}>
+                    <button className="p-2 rounded-md hover:bg-bg-tertiary transition-colors" onClick={handleCreateTask}>
+                      <HiPlus className="w-5 h-5 text-text-primary" />
+                    </button>
+                  </Tooltip>
                 )}
               </motion.div>
             )}
@@ -582,7 +607,7 @@ const TaskSidebarComponent = ({
             title={t('taskSidebar.deleteSelected')}
             onConfirm={handleBulkDelete}
             onCancel={() => setBulkDeleteConfirm(false)}
-            confirmButtonClass="bg-error hover:bg-error/90"
+            confirmButtonColor="danger"
           >
             <div className="text-sm text-text-primary">{t('taskSidebar.deleteSelectedConfirm', { count: selectedTasks.size })}</div>
           </ConfirmDialog>

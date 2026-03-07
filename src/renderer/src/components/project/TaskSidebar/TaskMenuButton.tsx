@@ -6,7 +6,7 @@ import { FaEllipsisVertical } from 'react-icons/fa6';
 import { IoLogoMarkdown } from 'react-icons/io';
 import { RiFlag2Line } from 'react-icons/ri';
 import { MdImage, MdPushPin, MdChevronRight } from 'react-icons/md';
-import { BiDuplicate, BiArchive, BiArchiveIn } from 'react-icons/bi';
+import { BiDuplicate, BiArchive, BiArchiveIn, BiCopy } from 'react-icons/bi';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 
@@ -17,6 +17,7 @@ type Props = {
   task: TaskData;
   onEdit: () => void;
   onDelete?: () => void;
+  onCopyAsMarkdown?: () => void;
   onExportToMarkdown?: () => void;
   onExportToImage?: () => void;
   onDuplicateTask?: () => void;
@@ -32,6 +33,7 @@ export const TaskMenuButton = memo(
     task,
     onEdit,
     onDelete,
+    onCopyAsMarkdown,
     onExportToMarkdown,
     onExportToImage,
     onDuplicateTask,
@@ -81,6 +83,12 @@ export const TaskMenuButton = memo(
     const handleDeleteClick = (e: MouseEvent) => {
       e.stopPropagation();
       onDelete?.();
+      setIsMenuOpen(false);
+    };
+
+    const handleCopyAsMarkdownClick = (e: MouseEvent) => {
+      e.stopPropagation();
+      onCopyAsMarkdown?.();
       setIsMenuOpen(false);
     };
 
@@ -166,6 +174,15 @@ export const TaskMenuButton = memo(
                 >
                   <MdPushPin className={clsx('w-4 h-4', isPinned && 'rotate-45')} />
                   <span className="whitespace-nowrap">{isPinned ? t('taskSidebar.unpinTask') : t('taskSidebar.pinTask')}</span>
+                </li>
+              )}
+              {onCopyAsMarkdown && (
+                <li
+                  className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                  onClick={handleCopyAsMarkdownClick}
+                >
+                  <BiCopy className="w-4 h-4" />
+                  <span className="whitespace-nowrap">{t('taskSidebar.copyAsMarkdown')}</span>
                 </li>
               )}
               {onExportToMarkdown && (

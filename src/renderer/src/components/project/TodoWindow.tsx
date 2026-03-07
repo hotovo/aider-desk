@@ -17,10 +17,11 @@ type Props = {
   onAddTodo?: (name: string) => void;
   onUpdateTodo?: (name: string, updates: Partial<TodoItem>) => void;
   onDeleteTodo?: (name: string) => void;
+  onHandoffTodo?: (name: string) => void;
   onClearAllTodos: () => void;
 };
 
-export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onClearAllTodos }: Props) => {
+export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onHandoffTodo, onClearAllTodos }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddingTodo, setIsAddingTodo] = useState(false);
@@ -140,9 +141,16 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
 
                 {/* Todo List */}
                 {todos.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-0.5">
                     {todos.map((todo, index) => (
-                      <TodoListItem key={`${todo.name}-${index}`} item={todo} onToggle={onToggleTodo} onUpdate={onUpdateTodo} onDelete={onDeleteTodo} />
+                      <TodoListItem
+                        key={`${todo.name}-${index}`}
+                        item={todo}
+                        onToggle={onToggleTodo}
+                        onUpdate={onUpdateTodo}
+                        onDelete={onDeleteTodo}
+                        onHandoff={onHandoffTodo}
+                      />
                     ))}
                   </div>
                 ) : (

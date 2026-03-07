@@ -1,9 +1,10 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskData } from '@common/types';
 
 import { TaskSidebar } from '../TaskSidebar';
 
+import { render } from '@/__tests__/render';
 import { useTask } from '@/contexts/TaskContext';
 import { useTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
 import { createMockTaskContext } from '@/__tests__/mocks/contexts';

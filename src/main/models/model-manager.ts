@@ -13,15 +13,21 @@ import {
   UsageReportData,
   VoiceSession,
 } from '@common/types';
+import { extractProviderModel } from '@common/utils';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
+import { anthropicCompatibleProviderStrategy } from './providers/anthropic-compatible';
 import { azureProviderStrategy } from './providers/azure';
 import { bedrockProviderStrategy } from './providers/bedrock';
 import { cerebrasProviderStrategy } from './providers/cerebras';
+import { claudeAgentSdkProviderStrategy } from './providers/claude-agent-sdk';
 import { deepseekProviderStrategy } from './providers/deepseek';
 import { geminiProviderStrategy } from './providers/gemini';
+import { geminiCliProviderStrategy } from './providers/gemini-cli';
 import { gpustackProviderStrategy } from './providers/gpustack';
 import { groqProviderStrategy } from './providers/groq';
+import { alibabaPlanProviderStrategy } from './providers/alibaba-plan';
+import { kimiPlanProviderStrategy } from './providers/kimi-plan';
 import { litellmProviderStrategy } from './providers/litellm';
 import { lmStudioProviderStrategy } from './providers/lm-studio';
 import { minimaxProviderStrategy } from './providers/minimax';
@@ -36,7 +42,7 @@ import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { JSONValue, LanguageModelUsage, ToolSet } from 'ai';
+import type { JSONValue, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
@@ -81,13 +87,18 @@ export class ModelManager {
   // Provider registry for strategy pattern
   private providerRegistry: LlmProviderRegistry = {
     anthropic: anthropicProviderStrategy,
+    'anthropic-compatible': anthropicCompatibleProviderStrategy,
     azure: azureProviderStrategy,
     bedrock: bedrockProviderStrategy,
     cerebras: cerebrasProviderStrategy,
+    'claude-agent-sdk': claudeAgentSdkProviderStrategy,
     deepseek: deepseekProviderStrategy,
     gemini: geminiProviderStrategy,
+    'gemini-cli': geminiCliProviderStrategy,
     gpustack: gpustackProviderStrategy,
     groq: groqProviderStrategy,
+    'alibaba-plan': alibabaPlanProviderStrategy,
+    'kimi-plan': kimiPlanProviderStrategy,
     litellm: litellmProviderStrategy,
     lmstudio: lmStudioProviderStrategy,
     minimax: minimaxProviderStrategy,
@@ -117,7 +128,7 @@ export class ModelManager {
 
       await this.loadModelsInfo();
       await this.loadModelOverrides();
-      await this.loadProviderModels(this.store.getProviders());
+      await this.loadProviderModels(this.store.getProviders().filter((p) => !p.disabled));
 
       logger.info('ModelInfoManager initialized successfully.', {
         modelCount: Object.keys(this.modelsInfo).length,
@@ -234,10 +245,23 @@ export class ModelManager {
     const removedProviders = oldProviders.filter((p) => !newProviders.find((np) => np.id === p.id));
     for (const removedProvider of removedProviders) {
       delete this.providerErrors[removedProvider.id];
+      // Clear models for removed providers
+      delete this.providerModels[removedProvider.id];
+    }
+
+    // Clear models for providers that became disabled
+    const disabledProviders = oldProviders.filter((old) => {
+      const newProfile = newProviders.find((np) => np.id === old.id);
+      return newProfile && newProfile.disabled && !old.disabled;
+    });
+    for (const disabledProvider of disabledProviders) {
+      delete this.providerErrors[disabledProvider.id];
+      delete this.providerModels[disabledProvider.id];
+      logger.info(`Cleared models for disabled provider: ${disabledProvider.id}`);
     }
 
     const changedProviderProfiles = this.getChangedProviders(oldProviders, newProviders);
-    await this.loadProviderModels(changedProviderProfiles);
+    await this.loadProviderModels(changedProviderProfiles.filter((p) => !p.disabled));
 
     return changedProviderProfiles.length > 0 || removedProviders.length > 0;
   }
@@ -403,8 +427,8 @@ export class ModelManager {
         this.providerModels = {};
         this.providerErrors = {};
       }
-      // Load models from all providers
-      await this.loadProviderModels(this.store.getProviders());
+      // Load models from all enabled providers
+      await this.loadProviderModels(this.store.getProviders().filter((p) => !p.disabled));
     }
 
     return {
@@ -536,8 +560,7 @@ export class ModelManager {
 
   getAiderModelMapping(modelName: string, projectDir: string): AiderModelMapping {
     const providers = this.store.getProviders();
-    const [providerId, ...modelIdParts] = modelName.split('/');
-    const modelId = modelIdParts.join('/');
+    const [providerId, modelId] = extractProviderModel(modelName);
     if (!providerId || !modelId) {
       logger.error('Invalid provider/model format:', modelName);
       return {
@@ -570,7 +593,7 @@ export class ModelManager {
     return strategy.getAiderMapping(provider, modelId, this.store.getSettings(), projectDir);
   }
 
-  getModel(providerId: string, modelId: string, useModelInfoFallback = false): Model | undefined {
+  getModelSettings(providerId: string, modelId: string, useModelInfoFallback = false): Model | undefined {
     let model: Model | undefined;
     const providerModels = this.providerModels[providerId];
     if (providerModels) {
@@ -591,7 +614,15 @@ export class ModelManager {
     return model;
   }
 
-  createLlm(provider: ProviderProfile, model: string | Model, settings: SettingsData, projectDir: string): LanguageModelV2 {
+  createLlm(
+    provider: ProviderProfile,
+    model: string | Model,
+    settings: SettingsData,
+    projectDir: string,
+    toolSet?: ToolSet,
+    systemPrompt?: string,
+    providerMetadata?: unknown,
+  ): LanguageModelV2 | Promise<LanguageModelV2> {
     const strategy = this.providerRegistry[provider.provider.name];
     if (!strategy) {
       throw new Error(`Unsupported LLM provider: ${provider.provider.name}`);
@@ -600,7 +631,7 @@ export class ModelManager {
     // Resolve Model object if string is provided
     let modelObj: Model | undefined;
     if (typeof model === 'string') {
-      modelObj = this.getModel(provider.id, model);
+      modelObj = this.getModelSettings(provider.id, model);
       if (!modelObj) {
         // Fallback to creating a minimal Model object if not found
         modelObj = {
@@ -616,7 +647,7 @@ export class ModelManager {
       throw new Error(`Model not found: ${model}`);
     }
 
-    return strategy.createLlm(provider, modelObj, settings, projectDir);
+    return strategy.createLlm(provider, modelObj, settings, projectDir, toolSet, systemPrompt, providerMetadata);
   }
 
   getUsageReport(task: Task, provider: ProviderProfile, model: string | Model, usage: LanguageModelUsage, providerMetadata?: unknown): UsageReportData {
@@ -628,7 +659,7 @@ export class ModelManager {
     // Resolve Model object
     let modelObj: Model | undefined;
     if (typeof model === 'string') {
-      modelObj = this.getModel(provider.id, model, true);
+      modelObj = this.getModelSettings(provider.id, model, true);
     } else {
       modelObj = model;
     }
@@ -740,7 +771,7 @@ export class ModelManager {
     }
 
     // Resolve Model object
-    const modelObj = this.getModel(provider.id, modelId);
+    const modelObj = this.getModelSettings(provider.id, modelId);
     if (!modelObj) {
       logger.warn(`Model ${modelId} not found in provider ${llmProvider.name}`);
       return {};
@@ -759,5 +790,44 @@ export class ModelManager {
     }
 
     return await strategy.createVoiceSession(provider, this.store.getSettings());
+  }
+
+  /**
+   * Normalizes messages for provider-specific requirements
+   */
+  normalizeMessages(provider: ProviderProfile, model: string | Model, messages: ModelMessage[]): ModelMessage[] {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy?.normalizeMessages) {
+      return messages;
+    }
+
+    // Resolve Model object
+    let modelObj: Model | undefined;
+    if (typeof model === 'string') {
+      modelObj = this.getModelSettings(provider.id, model);
+    } else {
+      modelObj = model;
+    }
+
+    if (!modelObj) {
+      logger.warn(`Model not found for normalization: ${model}`);
+      return messages;
+    }
+
+    return strategy.normalizeMessages(provider.provider, modelObj, messages);
+  }
+
+  /**
+   * Determines if an error is retryable for the given provider and model
+   * Defaults to true (retryable) if the provider doesn't implement isRetryable
+   */
+  isRetryable(provider: ProviderProfile, _modelId: string, error: unknown): boolean {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy?.isRetryable) {
+      // Default to retryable if provider doesn't implement this method
+      return true;
+    }
+
+    return strategy.isRetryable(error);
   }
 }

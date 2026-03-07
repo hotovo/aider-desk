@@ -10,10 +10,13 @@ import { IconButton } from '@/components/common/IconButton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import {
   AnthropicIcon,
+  AnthropicCompatibleIcon,
   AzureIcon,
   BedrockIcon,
   CerebrasIcon,
+  ClaudeAgentSdkIcon,
   DeepseekIcon,
+  GeminiCliIcon,
   GeminiIcon,
   GpustackIcon,
   GroqIcon,
@@ -31,17 +34,24 @@ import {
   ZaiPlanIcon,
 } from '@/icons';
 import { useResponsive } from '@/hooks/useResponsive';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { AlibabaPlanIcon } from '@/icons/AlibabaPlanIcon';
+import { KimiPlanIcon } from '@/icons/KimiPlanIcon';
 
 const PROVIDER_ICON_MAP: Record<LlmProviderName, ComponentType<{ width?: number; height?: number; className?: string }>> = {
   anthropic: AnthropicIcon,
+  'anthropic-compatible': AnthropicCompatibleIcon,
   azure: AzureIcon,
   bedrock: BedrockIcon,
   cerebras: CerebrasIcon,
+  'claude-agent-sdk': ClaudeAgentSdkIcon,
   deepseek: DeepseekIcon,
+  'gemini-cli': GeminiCliIcon,
   gemini: GeminiIcon,
   gpustack: GpustackIcon,
   groq: GroqIcon,
+  'alibaba-plan': AlibabaPlanIcon,
+  'kimi-plan': KimiPlanIcon,
   litellm: LitellmIcon,
   lmstudio: LmStudioIcon,
   minimax: MinimaxIcon,
@@ -116,8 +126,9 @@ export const ProviderProfileCard = ({ provider, error, isSelected, onToggleSelec
             {IconComponent && <IconComponent width={24} height={24} />}
             {error && (
               <div className="absolute -bottom-3 -right-3 bg-bg-secondary rounded-full p-0.5">
-                <StyledTooltip id={`provider-error-tooltip-${provider.id}`} content={error} />
-                <FaExclamationCircle className="w-5 h-5 text-text-error" data-tooltip-id={`provider-error-tooltip-${provider.id}`} />
+                <Tooltip content={error}>
+                  <FaExclamationCircle className="w-5 h-5 text-text-error" />
+                </Tooltip>
               </div>
             )}
           </div>
@@ -125,10 +136,9 @@ export const ProviderProfileCard = ({ provider, error, isSelected, onToggleSelec
             <div className="font-medium text-sm truncate flex items-center gap-3">
               {name}
               {provider.provider.voiceEnabled && (
-                <>
-                  <StyledTooltip id={`provider-voice-tooltip-${provider.id}`} content={t('modelLibrary.voiceEnabled')} />
-                  <FiMic className="w-4 h-4 text-text-secondary" data-tooltip-id={`provider-voice-tooltip-${provider.id}`} />
-                </>
+                <Tooltip content={t('modelLibrary.voiceEnabled')}>
+                  <FiMic className="w-4 h-4 text-text-secondary" />
+                </Tooltip>
               )}
             </div>
             <div className="text-xs text-text-secondary truncate">{provider.id}</div>

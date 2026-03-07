@@ -9,7 +9,7 @@ import {
 } from '@codemirror/autocomplete';
 import { EditorView, keymap } from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
-import { Mode, PromptBehavior, QuestionData, SuggestionMode, TaskData } from '@common/types';
+import { AIDER_MODES, Mode, PromptBehavior, QueuedPromptData, QuestionData, SuggestionMode, TaskData } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Annotation, Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -17,7 +17,8 @@ import { useDebounce } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
-import { MdPlaylistRemove, MdSave, MdStop, MdMic, MdMicOff } from 'react-icons/md';
+import { FaInfoCircle } from 'react-icons/fa';
+import { MdPlaylistRemove, MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { VscTerminal } from 'react-icons/vsc';
 import { clsx } from 'clsx';
 
@@ -28,10 +29,10 @@ import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
-import { useCustomCommands } from '@/hooks/useCustomCommands';
+import { useCommands } from '@/hooks/useCommands';
 import { useApi } from '@/contexts/ApiContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { AudioAnalyzer } from '@/components/PromptField/AudioAnalyzer';
 import { AutoApprove } from '@/components/PromptField/AutoApprove';
@@ -69,9 +70,10 @@ const COMMANDS = [
   '/handoff',
   '/init',
   '/clear-logs',
+  '/resolve-conflicts',
 ];
 
-const ANSWERS = ['y', 'n', 'a', 'd'];
+const ANSWERS = ['y', 'n', 'a', 'd', 'maybe']; // Added 'maybe' (Branch B)
 
 const HISTORY_MENU_CHUNK_SIZE = 20;
 const PLACEHOLDER_COUNT = 20;
@@ -117,6 +119,9 @@ type Props = {
   scrapeWeb: (url: string, filePath?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
+  queuedPrompts?: QueuedPromptData[];
+  removeQueuedPrompt?: (id: string) => void;
+  sendQueuedPromptNow?: (id: string) => void;
   interruptResponse: () => void;
   runCommand: (command: string) => void;
   runTests: (testCmd?: string) => void;
@@ -155,6 +160,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       scrapeWeb,
       question,
       answerQuestion,
+      queuedPrompts = [],
+      removeQueuedPrompt,
+      sendQueuedPromptNow,
       interruptResponse,
       runCommand,
       runTests,
@@ -198,7 +206,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       args?: string;
     } | null>(null);
     const editorRef = useRef<ReactCodeMirrorRef>(null);
-    const customCommands = useCustomCommands(baseDir);
+    const [customCommands, extensionCommands] = useCommands(baseDir);
     const api = useApi();
     const { projectSettings, saveProjectSettings } = useProjectSettings();
 
@@ -260,6 +268,25 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       const { state } = context;
       const text = state.doc.toString();
 
+      // Check if we're at a command argument position with options (before early return)
+      if (text.startsWith('/') && text.includes(' ')) {
+        const [command, ...args] = text.split(' ');
+        const allCommands = [...customCommands, ...extensionCommands];
+        const cmd = allCommands.find((c) => `/${c.name}` === command);
+        const argIndex = args.length - 1;
+        if (cmd?.arguments?.[argIndex]?.options) {
+          const currentArg = args[argIndex];
+          return {
+            from: state.doc.length - currentArg.length,
+            options: cmd.arguments[argIndex].options.map((opt) => ({
+              label: opt,
+              type: 'constant',
+            })),
+            validFor: /^\S*$/,
+          };
+        }
+      }
+
       if (!word || (word.from === word.to && !context.explicit)) {
         return null;
       }
@@ -294,8 +321,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             };
           }
         } else {
-          // Add custom commands to the list
-          const customCmds = customCommands.map((cmd) => `/${cmd.name}`);
+          // Add custom and extension commands to the list
+          const allCommands = [...customCommands, ...extensionCommands];
+          const customCmds = allCommands.map((cmd) => `/${cmd.name}`);
           return {
             from: 0,
             options: [...COMMANDS, ...customCmds].map((cmd) => ({
@@ -409,7 +437,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             break;
           case '/model':
             prepareForNextPrompt();
-            if (mode === 'agent') {
+            if (!AIDER_MODES.includes(mode)) {
               openAgentModelSelector?.(args);
             } else {
               openModelSelector?.(args);
@@ -468,7 +496,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             break;
           }
           case '/init': {
-            if (mode !== 'agent') {
+            if (AIDER_MODES.includes(mode)) {
               showErrorNotification(t('promptField.agentModeOnly'));
               return;
             }
@@ -479,6 +507,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/clear-logs': {
             prepareForNextPrompt();
             clearLogMessages();
+            break;
+          }
+          case '/resolve-conflicts': {
+            prepareForNextPrompt();
+            void api.resolveConflictsWithAgent(baseDir, taskId);
             break;
           }
           default: {
@@ -618,11 +651,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       stopRecording();
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
-          // Check if it's a custom command
+          // Check if it's a custom or extension command
           const [cmd, ...args] = text.slice(1).split(' ');
-          const customCommand = customCommands.find((command) => command.name === cmd);
+          const allCommands = [...customCommands, ...extensionCommands];
+          const command = allCommands.find((command) => command.name === cmd);
 
-          if (customCommand) {
+          if (command) {
             api.runCustomCommand(baseDir, taskId, cmd, args, mode);
             prepareForNextPrompt();
             setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
@@ -660,14 +694,15 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
 
     const getAutocompleteDetailLabel = (item: string): [string | null, boolean] => {
       if (item.startsWith('/')) {
-        // Check if it's a custom command
+        // Check if it's a custom or extension command
         const commandName = item.slice(1);
-        const customCommand = customCommands.find((cmd) => cmd.name === commandName);
-        if (customCommand) {
-          return [customCommand.description, false];
+        const allCommands = [...customCommands, ...extensionCommands];
+        const command = allCommands.find((cmd) => cmd.name === commandName);
+        if (command) {
+          return [command.description, false];
         }
 
-        if (item === '/init' && mode !== 'agent') {
+        if (item === '/init' && !!AIDER_MODES.includes(mode)) {
           return [t('commands.agentModeOnly'), true];
         }
 
@@ -709,9 +744,28 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         run: toggleVoice,
       },
       {
-        key: 'Enter',
+        key: 'Shift-Enter',
         preventDefault: true,
         run: (view) => {
+          // On desktop, Shift+Enter inserts a new line
+          const cursorPos = view.state.selection.main.head;
+          view.dispatch({
+            changes: { from: cursorPos, insert: '\n' },
+            selection: { anchor: cursorPos + 1 },
+          });
+          return true;
+        },
+      },
+      {
+        key: 'Enter',
+        run: (view) => {
+          // On mobile, Enter inserts a new line (default behavior)
+          // On desktop, Enter submits the prompt
+          if (isMobile) {
+            return false; // Allow default behavior (new line)
+          }
+
+          // Desktop behavior: submit or handle special cases
           if (question && selectedAnswer) {
             const answers = question.answers?.map((answer) => answer.shortkey.toLowerCase()) || ANSWERS;
             if (answers.includes(selectedAnswer.toLowerCase())) {
@@ -732,7 +786,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 anchor: newText.length,
               },
             });
-          } else if (!processing || question) {
+          } else {
             handleSubmit();
           }
           return true;
@@ -868,6 +922,31 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
 
     return (
       <div className="w-full relative">
+        {queuedPrompts && queuedPrompts.length > 0 && (
+          <div className="mb-2 p-3 bg-bg-primary-light from-bg-primary to-bg-primary-light rounded-md border border-border-default-dark text-sm max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded">
+            <div className="text-text-primary text-xs mb-2">{t('promptField.queueTitle')}</div>
+            {queuedPrompts.map((queuedPrompt) => (
+              <div key={queuedPrompt.id} className="flex items-center gap-2 mb-2 last:mb-0 p-2 bg-bg-secondary rounded border border-border-default-dark">
+                <div className="flex-1 truncate text-text-muted-light text-xs">{queuedPrompt.text}</div>
+                <Tooltip content={t('promptField.removeQueuedPrompt')}>
+                  <button onClick={() => removeQueuedPrompt?.(queuedPrompt.id)} className="text-text-muted hover:text-text-primary transition-colors">
+                    <MdPlaylistRemove size={16} />
+                  </button>
+                </Tooltip>
+
+                <Tooltip content={t('promptField.sendQueuedPromptNow')}>
+                  <button
+                    onClick={() => sendQueuedPromptNow?.(queuedPrompt.id)}
+                    className="text-text-muted hover:text-text-primary transition-colors"
+                    title={t('promptField.sendQueuedPromptNow')}
+                  >
+                    <BiSend size={16} />
+                  </button>
+                </Tooltip>
+              </div>
+            ))}
+          </div>
+        )}
         {question && (
           <div className="mb-2 p-3 bg-gradient-to-b from-bg-primary to-bg-primary-light rounded-md border border-border-default-dark text-sm">
             <div className="text-text-primary text-sm mb-2 whitespace-pre-wrap">{question.text}</div>
@@ -961,8 +1040,16 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     const items = event.clipboardData?.items;
                     if (items) {
                       for (let i = 0; i < items.length; i++) {
-                        if (items[i].type.indexOf('image') !== -1) {
-                          api.pasteImage(baseDir, taskId);
+                        const item = items[i];
+                        if (item.type.indexOf('image') !== -1) {
+                          const file = item.getAsFile();
+                          if (file) {
+                            file.arrayBuffer().then((buffer) => {
+                              api.pasteImage(baseDir, taskId, buffer);
+                            });
+                          } else {
+                            api.pasteImage(baseDir, taskId);
+                          }
                           break;
                         }
                       }
@@ -1000,23 +1087,20 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 Prec.high(keymapExtension),
               ]}
             />
-            <StyledTooltip id="prompt-field-tooltip" />
-            {processing ? (
-              <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-2 text-text-muted-light">
-                <button
-                  onClick={interruptResponse}
-                  className="hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-colors duration-200"
-                  data-tooltip-id="prompt-field-tooltip"
-                  data-tooltip-content={`${t('promptField.stopResponse')} (Ctrl+C)`}
-                >
-                  <MdStop className="w-4 h-4" />
-                </button>
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <div className="absolute right-2 top-1/2 -translate-y-[12px] flex items-center space-x-1 text-text-muted-light">
-                {isRecording && mediaStream && <AudioAnalyzer stream={mediaStream} />}
-                {voiceAvailable && (
+            <div className="absolute right-3 top-1/2 -translate-y-[12px] flex items-center space-x-1 text-text-muted-light">
+              {processing && (
+                <Tooltip content={`${t('promptField.stopResponse')} (Ctrl+C)`}>
+                  <button
+                    onClick={() => interruptResponse()}
+                    className="hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-colors duration-200 ml-1"
+                  >
+                    <MdStop className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+              )}
+              {isRecording && mediaStream && <AudioAnalyzer stream={mediaStream} />}
+              {voiceAvailable && (
+                <Tooltip content={`${isRecording ? t('promptField.stopRecording') : t('promptField.startRecording')} (Alt+V)`}>
                   <button
                     onClick={isRecording ? stopRecording : startRecording}
                     disabled={disabled || isProcessing}
@@ -1024,8 +1108,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                       'text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200',
                       isRecording ? 'text-accent-primary animate-pulse' : '',
                     )}
-                    data-tooltip-id="prompt-field-tooltip"
-                    data-tooltip-content={`${isRecording ? t('promptField.stopRecording') : t('promptField.startRecording')} (Alt+V)`}
                   >
                     {isProcessing ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -1035,37 +1117,40 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                       <MdMic className="w-4 h-4" />
                     )}
                   </button>
-                )}
-                {text.trim() && !isRecording && (
-                  <>
-                    <button
-                      onClick={handleSavePrompt}
-                      disabled={!text.trim() || disabled}
-                      className={clsx('text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
-                      data-tooltip-id="prompt-field-tooltip"
-                      data-tooltip-content={t('promptField.savePrompt')}
-                    >
-                      <MdSave className="w-4 h-4" />
-                    </button>
+                </Tooltip>
+              )}
+              {text.trim() && !isRecording && (
+                <>
+                  {!processing && (
+                    <Tooltip content={t('promptField.savePrompt')}>
+                      <button
+                        onClick={handleSavePrompt}
+                        disabled={disabled}
+                        className={clsx('text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
+                      >
+                        <MdSave className="w-4 h-4" />
+                      </button>
+                    </Tooltip>
+                  )}
+                  <Tooltip content={isProcessing ? t('promptField.queueMessage') : t('promptField.sendMessage')}>
                     <button
                       onClick={handleSubmit}
-                      disabled={!text.trim() || disabled}
+                      disabled={disabled}
                       className={clsx('hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200')}
-                      data-tooltip-id="prompt-field-tooltip"
-                      data-tooltip-content={t('promptField.sendMessage')}
                     >
-                      <BiSend className="w-4 h-4" />
+                      {isProcessing && !question ? <MdOutlineScheduleSend className="w-4 h-4" /> : <BiSend className="w-4 h-4" />}
                     </button>
-                  </>
-                )}
-              </div>
-            )}
+                  </Tooltip>
+                </>
+              )}
+              {processing && <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />}
+            </div>
           </div>
-          <div className={clsx('relative w-full flex gap-1.5 flex-wrap', isMobile ? 'items-start' : 'items-center')}>
-            <div className={clsx('flex gap-1.5', isMobile && mode === 'agent' ? 'flex-col items-start' : 'items-center')}>
-              <ModeSelector mode={mode} onModeChange={onModeChanged} />
+          <div className={clsx('relative w-full flex flex-wrap', isMobile ? 'items-start gap-0.5' : 'items-center')}>
+            <div className={clsx('flex gap-1.5', isMobile && !AIDER_MODES.includes(mode) ? 'flex-col items-start' : 'items-center')}>
+              <ModeSelector baseDir={baseDir} mode={mode} onModeChange={onModeChanged} />
               <div className="flex gap-2">
-                {mode === 'agent' && <AgentSelector projectDir={baseDir} task={task} isActive={isActive} showSettingsPage={showSettingsPage} />}
+                {!AIDER_MODES.includes(mode) && <AgentSelector projectDir={baseDir} task={task} isActive={isActive} showSettingsPage={showSettingsPage} />}
                 <AutoApprove
                   enabled={!!task?.autoApprove}
                   locked={projectSettings?.autoApproveLocked ?? false}
@@ -1077,28 +1162,48 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             </div>
 
             <div className="flex-grow" />
-            {toggleTerminal && (
-              <Button
-                variant="text"
-                onClick={toggleTerminal}
-                className={`hover:!bg-bg-secondary-light !border-border-light hover:!text-text-primary ${
-                  terminalVisible ? '!text-text-primary !bg-bg-secondary-light' : '!text-text-secondary'
-                }`}
-                size="xs"
-              >
+            {isMobile && (
+              <div className="absolute top-0 right-0 z-10 flex items-center gap-1">
+                {toggleTerminal && (
+                  <Button variant="text" color="tertiary" onClick={toggleTerminal} className={terminalVisible ? 'bg-bg-secondary-light' : ''} size="xs">
+                    <VscTerminal className="w-4 h-4" />
+                    <span className="hidden sm:inline ml-1">Terminal</span>
+                  </Button>
+                )}
+                <Button variant="text" color="tertiary" onClick={() => clearMessages()} size="xs">
+                  <MdPlaylistRemove className="w-4 h-4" />
+                  <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
+                </Button>
+                {showTaskInfo && (
+                  <Tooltip content={t('promptField.taskInfo')}>
+                    <Button variant="text" onClick={showTaskInfo} className="py-1.5" size="xs" color="tertiary">
+                      <FaInfoCircle className="w-3.5 h-3.5" />
+                    </Button>
+                  </Tooltip>
+                )}
+              </div>
+            )}
+            {!isMobile && toggleTerminal && (
+              <Button variant="text" color="tertiary" onClick={toggleTerminal} className={terminalVisible ? 'bg-bg-secondary-light' : ''} size="xs">
                 <VscTerminal className="w-4 h-4 mr-1" />
-                Terminal
+                <span className="hidden sm:inline">Terminal</span>
               </Button>
             )}
-            <Button
-              variant="text"
-              onClick={() => clearMessages()}
-              className="hover:!bg-bg-secondary-light !border-border-light !text-text-secondary hover:!text-text-primary"
-              size="xs"
-            >
-              <MdPlaylistRemove className="w-4 h-4" />
-              <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
-            </Button>
+            {!isMobile && (
+              <Button variant="text" color="tertiary" onClick={() => clearMessages()} size="xs">
+                <MdPlaylistRemove className="w-4 h-4" />
+                <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
+              </Button>
+            )}
+            {!isMobile && showTaskInfo && (
+              <Tooltip content={t('promptField.taskInfo')}>
+                <div>
+                  <Button variant="text" onClick={showTaskInfo} className="py-1.5" size="xs" color="tertiary">
+                    <FaInfoCircle className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </Tooltip>
+            )}
           </div>
         </div>
         {historyMenuVisible && historyItems.length > 0 && (

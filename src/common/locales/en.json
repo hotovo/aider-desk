@@ -15,6 +15,8 @@
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
+    "previous": "Previous",
+    "of": "of",
     "finish": "Finish",
     "loading": "Loading...",
     "startingUp": "Starting up...",
@@ -28,6 +30,8 @@
     "info": "Info",
     "yes": "Yes",
     "no": "No",
+    "refresh": "Refresh",
+    "retry": "Retry",
     "open": "Open",
     "openProject": "Open Project",
     "lock": "Lock",
@@ -42,7 +46,8 @@
     "noFiles": "No files",
     "clickToRefresh": "Click to refresh",
     "closeTasks": "Close Tasks",
-    "toggleTasks": "Toggle Tasks"
+    "toggleTasks": "Toggle Tasks",
+    "submit": "Submit"
   },
   "search": {
     "placeholder": "Search...",
@@ -249,6 +254,12 @@
       "invalidTemperature": "Temperature must be between 0 and 2",
       "duplicateId": "Provider ID already exists"
     },
+    "claudeAgentSdkAuthRequired": "This provider requires Claude Code CLI installation and authentication. Install from https://claude.com/product/claude-code and run `claude login` to authenticate.",
+    "claudeAgentSdkAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
+    "geminiCliAuthRequired": "This provider requires Gemini CLI installation and authentication. Install from https://geminicli.com and run `gemini` to authenticate.",
+    "geminiCliAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
+    "projectId": "Project ID",
+    "projectIdPlaceholder": "Optional. Required for organization or enterprise accounts.",
     "overrides": {
       "title": "Provider Overrides",
       "resetToDefaults": "Clear overrides",
@@ -273,7 +284,9 @@
     "baseUrlPlaceholder": "e.g. http://localhost:11434/api"
   },
   "anthropic": {
-    "apiKey": "API Key"
+    "apiKey": "API Key",
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "e.g. https://api.anthropic.com"
   },
   "minimax": {
     "apiKey": "API Key"
@@ -290,6 +303,12 @@
   "groq": {
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. moonshotai/kimi-k2-instruct"
+  },
+  "kimiPlan": {
+    "apiKey": "API Key"
+  },
+  "alibabaPlan": {
+    "apiKey": "API Key"
   },
   "deepseek": {
     "apiKey": "API Key"
@@ -370,11 +389,16 @@
   },
   "providers": {
     "anthropic": "Anthropic",
+    "anthropic-compatible": "Anthropic Compatible",
+    "alibaba-plan": "Alibaba Coding Plan",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
+    "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "gemini-cli": "Gemini CLI",
     "groq": "Groq",
+    "kimi-plan": "Kimi Coding Plan",
     "gpustack": "GPUStack",
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
@@ -403,8 +427,65 @@
       "memory": "Memory",
       "voice": "Voice",
       "hotkeys": "Hotkeys",
+      "extensions": "Extensions",
       "server": "Server",
       "about": "About"
+    },
+    "extensions": {
+      "loading": "Loading extensions...",
+      "tabs": {
+        "installed": "Installed",
+        "available": "Available"
+      },
+      "installed": {
+        "empty": "No extensions installed",
+        "emptyHint": "Browse the Available tab to discover and install extensions"
+      },
+      "available": {
+        "empty": "All available extensions are already installed",
+        "extensionsCount": "extensions",
+        "installedCount": "installed",
+        "installedExtensions": "installed extensions"
+      },
+      "search": {
+        "placeholder": "Search extensions..."
+      },
+      "capabilities": {
+        "all": "All"
+      },
+      "repositories": {
+        "title": "Repositories",
+        "placeholder": "Enter repository URL...",
+        "add": "Add",
+        "remove": "Remove repository",
+        "default": "Default repository"
+      },
+      "by": "by",
+      "enabled": "Enabled",
+      "active": "Active",
+      "projectSpecific": "Project",
+      "hasDependencies": "Has dependencies",
+      "install": "Install",
+      "installing": "Installing...",
+      "uninstall": "Uninstall",
+      "success": {
+        "install": "Successfully installed {{name}}",
+        "uninstall": "Successfully uninstalled {{name}}",
+        "addRepository": "Repository added successfully",
+        "removeRepository": "Repository removed successfully"
+      },
+      "errors": {
+        "loadInstalled": "Failed to load installed extensions",
+        "loadAvailable": "Failed to load available extensions",
+        "install": "Failed to install extension",
+        "uninstall": "Failed to uninstall extension",
+        "repositoryExists": "This repository is already added",
+        "cannotRemoveDefault": "Cannot remove the default repository"
+      },
+      "previousContext": "Previous context",
+      "nextContext": "Next context",
+      "expandReadme": "Expand README",
+      "collapseReadme": "Collapse README"
     },
     "hotkeys": {
       "projectHotkeys": "Project",
@@ -476,6 +557,13 @@
       "autoGenerateTaskNameTooltip": "When enabled, the model generates a concise task name from your prompt. When disabled, the first 5 words of your prompt will be used as the task name.",
       "showTaskStateActions": "Show Task State Actions",
       "showTaskStateActionsTooltip": "When enabled, task state actions are displayed at the bottom of messages. Disable to hide these actions.",
+      "contextManagement": "Context Management",
+      "contextCompactingThreshold": "Auto-compact threshold",
+      "contextCompactingThresholdTooltip": "When token usage exceeds this threshold, the conversation will be automatically managed according to the selected compaction type. Set to 0 to disable.",
+      "contextCompactionType": "Compaction type",
+      "contextCompactionTypeCompact": "Compact",
+      "contextCompactionTypeHandoff": "Handoff",
+      "contextCompactionTypeTooltip": "Choose how to manage conversation context when the token threshold is exceeded: Compact summarizes the conversation within the task, while Handoff creates a new task with a handoff.",
       "worktree": "Worktree",
       "worktreeSymlinkFoldersLabel": "Symlink Folders",
       "worktreeSymlinkFoldersTooltip": "These folders will be symlinked from the project root to the task worktree. Useful for large dependencies like node_modules.",
@@ -584,7 +672,12 @@
       "copyProfile": "Copy",
       "cutProfile": "Cut",
       "deleteProfile": "Delete",
-      "pasteProfile": "Paste Agent"
+      "pasteProfile": "Paste Agent",
+      "resetProfileToDefaults": "Reset to Defaults",
+      "resetProfileTitle": "Reset '{{name}}' to Defaults?",
+      "resetProfileConfirm": "This will restore '{{name}}' to its original default settings. Any custom modifications will be lost.",
+      "restoreProfile": "Restore",
+      "restoreProfileTooltip": "Restore this default profile"
     },
     "aider": {
       "options": "Options",
@@ -719,6 +812,9 @@
       "display": "Display Options",
       "markdownRendering": "Markdown rendering",
       "diffViewMode": "Diff view mode",
+      "viewMode": "Messages view mode",
+      "viewModeFull": "Full",
+      "viewModeCompact": "Compact",
       "virtualizedRendering": "Use virtualized rendering (experimental)",
       "virtualizedRenderingTooltip": "Experimental feature that can improve performance when you have many messages in your conversation history by only rendering visible messages."
     },
@@ -773,6 +869,7 @@
     "delete": "Delete",
     "redo": "Redo",
     "edit": "Edit",
+    "forkFromHere": "Fork from here",
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
     "group": "Group",
@@ -794,12 +891,15 @@
     "archive": "Archive",
     "unarchive": "Unarchive",
     "confirmDelete": "Confirm Delete",
-    "remove": "Remove message"
+    "remove": "Remove message",
+    "deleteUpToHere": "Delete up to here"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
     "frozenMessage": "Aider process seems to be frozen. Would you like to restart the task?",
-    "removeMessageFailed": "Failed to remove message - please try again"
+    "removeMessageFailed": "Failed to remove message - please try again",
+    "forkTaskFailed": "Failed to fork task - please try again",
+    "removeMessagesUpToFailed": "Failed to remove messages - please try again"
   },
   "dialogs": {
     "confirm": "Confirm",
@@ -819,14 +919,16 @@
     "ask": "Ask",
     "architect": "Architect",
     "context": "Context",
-    "agent": "Agent"
+    "agent": "Agent",
+    "bmad": "BMAD"
   },
   "modeTooltip": {
     "code": "Direct code generation and editing with Aider AI assistant",
     "agent": "Autonomous AI agent with advanced reasoning and tool usage capabilities",
     "ask": "Ask questions about your codebase without making changes",
     "architect": "High-level project planning and architecture design",
-    "context": "Search and explore your codebase context"
+    "context": "Search and explore your codebase context",
+    "bmad": "Guided workflows for planning, spec'ing, and implementing features"
   },
   "addFileDialog": {
     "title": "Add context files",
@@ -853,6 +955,12 @@
   },
   "contextFiles": {
     "title": "Context Files",
+    "updatedFiles": "Updated Files",
+    "updated": "Updated",
+    "viewChanges": "View changes",
+    "viewAllFiles": "View all files",
+    "viewSingleFile": "View single file",
+    "allFiles": "All files",
     "add": "Add context files",
     "addFileTooltip": "Add file (use Ctrl/Cmd to add as Read-only)",
     "addFileTooltip.ctrl": "Add file (use Ctrl to add as Read-only)",
@@ -868,12 +976,44 @@
     "agentRule": "Agent rule file",
     "projectFiles": "Project Files",
     "rules": "Rule Files",
+    "diffViewer": {
+      "file": "File"
+    },
     "search": "Search files",
     "searchPlaceholder": "Search files...",
     "refresh": "Refresh",
     "useGit": "Use Git",
     "useGitEnabled": "Git enabled - Click to use filesystem",
-    "useGitDisabled": "Filesystem enabled - Click to use Git"
+    "useGitDisabled": "Filesystem enabled - Click to use Git",
+    "revertFile": "Revert changes",
+    "confirmRevertTitle": "Revert file changes?",
+    "confirmRevertMessage": "This will discard all changes to this file. This action cannot be undone.",
+    "revert": "Revert",
+    "expandWidth": "Expand to full width",
+    "collapseWidth": "Collapse width",
+    "commitSection": "Commit Changes",
+    "commitMessage": "Commit message",
+    "commitMessagePlaceholder": "Enter commit message...",
+    "commitMessagePlaceholderAmend": "Keep empty to use previous commit message, or enter a new one",
+    "generateMessage": "Generate Message",
+    "amend": "Amend",
+    "amendTooltip": "Amend the last commit instead of creating a new one",
+    "commit": "Commit",
+    "generatingMessage": "Generating...",
+    "committing": "Committing...",
+    "commitError": "Commit Error",
+    "empty": {
+      "title": "No Context Files",
+      "aiderMode": {
+        "description": "Add files here that you want to read or modify. Aider can only access files that are in the context.",
+        "hint": "Tip: Add related files (imports, types) for better understanding."
+      },
+      "agentMode": {
+        "description": "The agent can access any file in your project using tools. Adding files here is optional but can speed up tasks by providing immediate context.",
+        "hint": "Tip: Add files here when using Aider tools or when you want file contents included in the prompt.",
+        "includeContextFiles": "When 'Include Context Files' is enabled in agent settings, file contents are embedded directly in the prompt for immediate access."
+      }
+    }
   },
   "modelSelector": {
     "mainModel": "Main model",
@@ -902,6 +1042,7 @@
     "outputCostPerMillion": "Output Cost / 1M Tokens"
   },
   "mcp": {
+    "initializingServers": "Initializing MCP servers...",
     "serverToolStatus": "{{enabledCount}} of {{count}} tools enabled",
     "toolsCount_one": "{{count}} tool",
     "toolsCount_other": "{{count}} tools",
@@ -921,7 +1062,8 @@
     "cancelTodo": "Cancel",
     "noTodos": "No todo items",
     "confirmDelete": "Are you sure you want to delete this todo item?",
-    "clearAllTodos": "Clear all todo items"
+    "clearAllTodos": "Clear all todo items",
+    "handoffTodo": "Handoff to new task"
   },
   "tool": {
     "noDescription": "No description",
@@ -1048,19 +1190,18 @@
       },
       "glob": {
         "title": "Find files matching pattern:",
+        "findingFiles": "Finding files...",
         "foundFiles": "Found {{count}} files",
-        "noMatches": "No matches found.",
-        "for": "for",
-        "contextLines": "({{count}} lines of context)",
-        "matchesCount": "({{count}} matches)",
-        "lineLabel": "Line {{lineNumber}}:",
-        "contextLabel": "Context:"
+        "noMatches": "No files found",
+        "matching": "matching"
       },
       "grep": {
         "title": "Search files matching",
+        "findingMatches": "Finding...",
+        "in": "in",
         "for": "for",
         "foundMatches": "Found {{count}} matches",
-        "noMatches": "No matches found.",
+        "noMatches": "No matches found",
         "contextLines": "({{count}} lines of context)",
         "matchesCount": "({{count}} matches)",
         "lineLabel": "Line {{lineNumber}}:",
@@ -1071,7 +1212,8 @@
         "exitCode": "Exit Code",
         "stdout": "Stdout",
         "stderr": "Stderr",
-        "commandFailed": "Command failed"
+        "commandFailed": "Command failed",
+        "timeout": "Timeout"
       },
       "semanticSearch": {
         "title": "Semantic search:",
@@ -1123,7 +1265,8 @@
       "groupCompleted": "{{name}}: Subagent finished the task.",
       "running": "Subagent is working...",
       "completed": "Subagent finished the task.",
-      "prompt": "Prompt"
+      "prompt": "Prompt",
+      "error": "Error running the subagent"
     },
     "errors": {
       "noSuchTool": "Attempted to use unknown tool: {{toolName}}",
@@ -1137,7 +1280,11 @@
     "sideBySide": "Side by Side",
     "unified": "Unified",
     "compact": "Compact",
-    "noChanges": "No changes have been made. Content is identical."
+    "noChanges": "No changes have been made. Content is identical.",
+    "lineComment": {
+      "placeholder": "Describe the changes you want to make to this code...",
+      "taskName": "Update {{filename}}"
+    }
   },
   "promptField": {
     "startRecording": "Start listening",
@@ -1171,6 +1318,11 @@
       "19": "Implement pagination logic in ProductList's fetchProducts..."
     },
     "questionPlaceholder": "...or suggest something else",
+    "queueTitle": "Queued Prompts",
+    "queuedPrompt": "Queued",
+    "queueMessage": "Queue message (Enter)",
+    "removeQueuedPrompt": "Remove",
+    "sendQueuedPromptNow": "Send immediately",
     "answers": {
       "yes": "(Y)es",
       "no": "(N)o",
@@ -1182,7 +1334,8 @@
     "sendMessage": "Send message (Enter)",
     "clearChat": "Clear chat",
     "agentModeOnly": "Available in Agent mode only",
-    "handoffError": "Handoff failed: {{error}}"
+    "handoffError": "Handoff failed: {{error}}",
+    "taskInfo": "Show task information"
   },
   "agentProfiles": {
     "title": "Agents",
@@ -1226,6 +1379,7 @@
     "low": "Low",
     "medium": "Medium",
     "high": "High",
+    "xhigh": "XHigh",
     "max": "Max"
   },
   "commands": {
@@ -1249,6 +1403,7 @@
     "model": "Open the model selector",
     "read-only": "Add files to the chat that are for reference only, or turn added files to read-only",
     "redo": "Redoes the last user prompt.",
+    "resolve-conflicts": "Resolve merge conflicts using AI",
     "reasoning-effort": "Set the reasoning effort level (values: minimal/low/medium/high depending on model)",
     "reset": "Drop all files and clear the chat history",
     "run": "Run a shell command and optionally add the output to the chat",
@@ -1345,13 +1500,18 @@
     "taskNamePlaceholder": "Enter task name...",
     "untitled": "[Untitled]",
     "exportAsMarkdown": "Export as markdown",
+    "copyAsMarkdown": "Copy as markdown",
+    "copiedAsMarkdown": "Copied as Markdown",
     "exportAsImage": "Export as image",
     "taskIdCopied": "Task ID {{taskId}} copied to clipboard",
-    "duplicateTask": "Duplicate Task",
+    "duplicateTask": "Duplicate task",
     "search": "Search tasks",
     "searchPlaceholder": "Search tasks...",
-    "archiveTask": "Archive Task",
-    "unarchiveTask": "Unarchive Task",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "noDate": "No date",
+    "archiveTask": "Archive task",
+    "unarchiveTask": "Unarchive task",
     "showArchived": "Show archived",
     "hideArchived": "Hide archived",
     "archived": "Archived",
@@ -1365,7 +1525,7 @@
     "archiveSelectedConfirm": "Are you sure you want to archive {{count}} selected tasks?",
     "unarchiveSelectedConfirm": "Are you sure you want to unarchive {{count}} selected tasks?",
     "generatingName": "Generating name...",
-    "changeState": "Change State",
+    "changeState": "Change state",
     "createSubtask": "Create subtask",
     "deleteConfirmWithSubtasks": "This task has {{count}} subtask(s). Delete anyway?"
   },
@@ -1443,14 +1603,14 @@
     "title": "AiderDesk",
     "subtitle": "Your AI-powered coding assistant",
     "features": {
-      "title": "What you can do:",
+      "title": "What you can do",
       "aiCoding": "Generate and modify code with AI assistance",
       "contextManagement": "Add files to context for better results",
       "multiModel": "Choose from multiple AI models and providers",
       "commands": "Execute commands and run tests"
     },
     "tips": {
-      "title": "Getting started:",
+      "title": "Getting started",
       "addFiles": "Add files to context using the sidebar or /add command",
       "askQuestion": "Type your request in the prompt field below",
       "useCommands": "Use / commands for quick actions",
@@ -1465,7 +1625,186 @@
       "code": {
         "title": "Code Mode",
         "description": "Use for direct code changes and specific tasks. Important: Add files to context to ensure the AI works on the right files."
+      },
+      "bmad": {
+        "title": "BMAD Mode",
+        "description": "Guided workflows for planning, spec'ing, and implementing features. Best for structured development processes."
       }
-    }
+    },
+    "selectMode": "Select"
+  },
+  "bmad": {
+    "welcome": {
+      "title": "Welcome to BMAD Mode",
+      "subtitle": "Guided workflows for planning, spec'ing, and implementing features"
+    },
+    "workflows": {
+      "phaseProgress": "{{completed}}/{{total}} completed",
+      "installedVersion": "BMAD Library installed (v{{version}})",
+      "comingSoon": "Workflow list coming in Story 2.4",
+      "loading": "Loading workflows...",
+      "errorLoading": "Failed to load workflows: {{error}}",
+      "noWorkflows": "No workflows available",
+      "execute": "Execute",
+      "executing": "Executing...",
+      "workflowCompleted": "Workflow completed successfully",
+      "workflowError": "Workflow execution failed",
+      "retryExecution": "Retry",
+      "research": {
+        "name": "Research",
+        "description": "Conduct comprehensive research across multiple domains using current web data and verified sources"
+      },
+      "product-brief": {
+        "name": "Create Product Brief",
+        "description": "Define product vision and target users"
+      },
+      "prd": {
+        "name": "Create PRD",
+        "description": "Create comprehensive requirements document"
+      },
+      "architecture": {
+        "name": "Architecture",
+        "description": "Design technical architecture and system structure"
+      },
+      "ux-design": {
+        "name": "UX Design",
+        "description": "Create UX design documentation for product interface"
+      },
+      "quick-spec": {
+        "name": "Quick Spec",
+        "description": "Create focused specifications for well-defined features"
+      },
+      "quick-dev": {
+        "name": "Quick Dev",
+        "description": "Rapid spec-to-implementation for small features"
+      },
+      "epics-stories": {
+        "name": "Epics/Stories",
+        "description": "Break down requirements into implementation-ready epics and stories"
+      },
+      "implementation": {
+        "name": "Implementation",
+        "description": "Guided development for implementing stories and features"
+      }
+    },
+    "phase": {
+      "analysis": "Analysis",
+      "planning": "Planning",
+      "solutioning": "Solutioning",
+      "implementation": "Implementation",
+      "quick-flow": "Quick Flow"
+    },
+    "resume": {
+      "sectionTitle": "Resume Workflows",
+      "button": "Resume",
+      "stepIndicator": "Step {{current}} of {{total}}",
+      "lastModified": "Modified {{time}}",
+      "resuming": "Resuming...",
+      "unavailable": "Resume unavailable - workflow file corrupted",
+      "noSteps": "No progress recorded",
+      "corrupted": "Corrupted",
+      "corruptedDescription": "Artifact frontmatter is unreadable. Restart from beginning to recover.",
+      "restartFromBeginning": "Restart from Beginning",
+      "restarting": "Restarting..."
+    },
+    "errors": {
+      "npmInstallFailed": "NPM installation failed",
+      "workflowNotFound": "Workflow not found",
+      "artifactMissing": "Required artifact is missing"
+    },
+    "hierarchy": {
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "expandAll": "Expand All",
+      "collapseAll": "Collapse All",
+      "workflowProgress": "Workflow Progress",
+      "subtasksCompleted": "{{completed}} of {{total}} subtasks completed",
+      "noSubtasks": "No subtasks"
+    },
+    "progress": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "notStarted": "Not Started",
+      "percentage": "{{percentage}}% complete"
+    },
+    "install": {
+      "button": "Install BMAD",
+      "installing": "Installing...",
+      "success": "BMAD installed successfully",
+      "error": "BMAD installation failed",
+      "autoInstallNote": "Click the button above to automatically install BMAD for the current project.",
+      "manualInstallTitle": "Manual Installation",
+      "manualInstallNote": "For advanced customization, you can also install BMAD manually by running this command in your terminal.",
+      "terminalPrompt": "Install BMAD to access guided workflows for planning, spec'ing, and implementing features.",
+      "commandLabel": "Command that will be executed:",
+      "openTerminal": "Open Terminal & Install",
+      "opening": "Opening Terminal...",
+      "terminalError": "Failed to open terminal",
+      "autoCheckNote": "This page will automatically detect when BMAD installation is complete.",
+      "benefits": [
+        "Structured workflows from brainstorming to implementation",
+        "Automatic context preparation (50-80% cost savings)",
+        "No context-switching between tools",
+        "Smart next-step recommendations"
+      ]
+    },
+    "tabs": {
+      "fullWorkflow": "Full Workflow",
+      "quickFlow": "Quick Flow"
+    },
+    "pathInfo": {
+      "fullWorkflow": {
+        "title": "Full Workflow",
+        "description": "Use for new projects, complex features, or when requirements need exploration. Guides you through analysis, planning, solutioning, and implementation phases.",
+        "whenToUse": "When to use:",
+        "useCases": {
+          "newProject": "New project from scratch",
+          "complexFeature": "Complex feature development",
+          "unclearRequirements": "Unclear or evolving requirements",
+          "teamCollaboration": "Team collaboration needed"
+        }
+      },
+      "quickFlow": {
+        "title": "Quick Flow",
+        "description": "Skip planning phases for small, well-understood work. Create a quick spec and go directly to implementation.",
+        "whenToUse": "When to use:",
+        "useCases": {
+          "bugFixes": "Bug fixes",
+          "smallFeatures": "Small feature additions",
+          "refactoring": "Refactoring tasks",
+          "wellDefined": "Well-defined changes"
+        }
+      }
+    },
+    "artifact": {
+      "openFile": "Open file",
+      "notCreated": "Not created yet"
+    },
+    "taskActions": {
+      "loading": "Loading BMAD workflows...",
+      "error": "Failed to load BMAD status",
+      "resumeSection": "Resume Workflows",
+      "workflowsSection": "Follow-up workflows",
+      "noWorkflows": "No workflows available",
+      "execute": "Execute",
+      "entryPoint": "Entry point - start your project here",
+      "recommendedAfter": "Recommended after completing",
+      "currentWorkflow": "Current Workflow",
+      "changeWorkflow": "Change Workflow",
+      "outputArtifacts": "Output Artifacts"
+    },
+    "reset": {
+      "bannerTitle": "Reset Workflow Progress",
+      "bannerDescription": "This will permanently delete all files in the _bmad-output folder. If you have a completed workflow or want to preserve your progress, backup the files from _bmad-output/ to docs/ or another location first.",
+      "button": "Reset",
+      "resetting": "Resetting...",
+      "confirmTitle": "Reset Workflow Progress?",
+      "confirmDescription": "This action will permanently delete all generated artifacts and workflow progress in the _bmad-output folder. This cannot be undone.",
+      "confirmButton": "Reset All Progress",
+      "success": "Workflow progress has been reset",
+      "error": "Failed to reset workflow progress"
+    },
+    "showModelSelector": "Change model",
+    "hideModelSelector": "Hide model selector"
   }
 }

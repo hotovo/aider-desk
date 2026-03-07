@@ -3,9 +3,11 @@ import path from 'path';
 
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
-import { Mode, ResponseCompletedData, ContextFile, TaskData, QuestionData } from '@common/types';
+import { Mode, ResponseCompletedData, ContextFile, TaskData, QuestionData, ContextMessage } from '@common/types';
 
 import { HookContext, HookContextImpl } from './hook-context';
+
+import type { FinishReason } from 'ai';
 
 import { Task } from '@/task/task';
 import { Project } from '@/project/project';
@@ -14,28 +16,90 @@ import logger from '@/logger';
 import { ResponseMessage } from '@/messages';
 
 export interface HookEventMap {
-  onTaskCreated: { task: TaskData };
-  onTaskInitialized: { task: TaskData };
-  onTaskClosed: { task: TaskData };
-  onPromptSubmitted: { prompt: string; mode: Mode };
-  onPromptStarted: { prompt: string | null; mode: Mode };
-  onPromptFinished: { responses: ResponseCompletedData[] };
-  onAgentStarted: { prompt: string | null };
-  onAgentFinished: { resultMessages: unknown[] };
-  onAgentStepFinished: { stepResult: unknown };
-  onToolCalled: { toolName: string; args: Record<string, unknown> | undefined };
-  onToolFinished: { toolName: string; args: Record<string, unknown> | undefined; result: unknown };
-  onFileAdded: { file: ContextFile };
-  onFileDropped: { filePath: string };
-  onCommandExecuted: { command: string };
-  onAiderPromptStarted: { prompt: string; mode: Mode };
-  onAiderPromptFinished: { responses: ResponseCompletedData[] };
-  onQuestionAsked: { question: QuestionData };
-  onQuestionAnswered: { question: QuestionData; answer: string; userInput?: string };
-  onHandleApproval: { key: string; text: string; subject?: string };
-  onSubagentStarted: { subagentId: string; prompt: string };
-  onSubagentFinished: { subagentId: string; resultMessages: unknown[] };
-  onResponseMessageProcessed: { message: ResponseMessage };
+  onTaskCreated: {
+    task: TaskData;
+  };
+  onTaskInitialized: {
+    task: TaskData;
+  };
+  onTaskClosed: {
+    task: TaskData;
+  };
+  onPromptSubmitted: {
+    prompt: string;
+    mode: Mode;
+  };
+  onPromptStarted: {
+    prompt: string | null;
+    mode: Mode;
+  };
+  onPromptFinished: {
+    responses: ResponseCompletedData[];
+  };
+  onAgentStarted: {
+    prompt: string | null;
+    contextMessages: ContextMessage[];
+    contextFiles: ContextFile[];
+  };
+  onAgentFinished: {
+    contextMessages: ContextMessage[];
+    resultMessages: ContextMessage[];
+    aborted: boolean;
+  };
+  onAgentStepFinished: {
+    stepResult: unknown;
+    finishReason: FinishReason;
+    responseMessages: ContextMessage[];
+  };
+  onToolCalled: {
+    toolName: string;
+    args: Record<string, unknown> | undefined;
+  };
+  onToolFinished: {
+    toolName: string;
+    args: Record<string, unknown> | undefined;
+    result: unknown;
+  };
+  onFileAdded: {
+    file: ContextFile;
+  };
+  onFileDropped: {
+    filePath: string;
+  };
+  onCommandExecuted: {
+    command: string;
+  };
+  onAiderPromptStarted: {
+    prompt: string;
+    mode: Mode;
+  };
+  onAiderPromptFinished: {
+    responses: ResponseCompletedData[];
+  };
+  onQuestionAsked: {
+    question: QuestionData;
+  };
+  onQuestionAnswered: {
+    question: QuestionData;
+    answer: string;
+    userInput?: string;
+  };
+  onHandleApproval: {
+    key: string;
+    text: string;
+    subject?: string;
+  };
+  onSubagentStarted: {
+    subagentId: string;
+    prompt: string;
+  };
+  onSubagentFinished: {
+    subagentId: string;
+    resultMessages: ContextMessage[];
+  };
+  onResponseMessageProcessed: {
+    message: ResponseMessage;
+  };
 }
 
 export type HookFunctions = {
@@ -238,6 +302,11 @@ export class HookManager {
             } else {
               currentEvent = { ...currentEvent, ...result };
             }
+          }
+
+          if (result && hookName === 'onToolFinished') {
+            hookResult = result;
+            currentEvent = { ...currentEvent, result };
           }
         } catch (error) {
           logger.error(`Error executing hook ${hookName}:`, error);

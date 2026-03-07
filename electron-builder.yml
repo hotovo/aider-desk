@@ -13,6 +13,7 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
   - '!.aider-desk/*'
   - '!llms.txt'
+  - '!packages/*'
 extraResources:
   - from: ./resources/connector
     to: connector

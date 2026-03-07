@@ -1,7 +1,18 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { CustomCommand, ProjectSettings, SettingsData, TaskData, CreateTaskParams } from '@common/types';
+import {
+  AgentProfile,
+  BmadStatus,
+  CreateTaskParams,
+  DefaultTaskState,
+  InstallResult,
+  ModeDefinition,
+  ProjectSettings,
+  SettingsData,
+  TaskData,
+  WorkflowExecutionResult,
+} from '@common/types';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -20,11 +31,14 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
+import { ExtensionManager } from '@/extensions/extension-manager';
 import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { determineMainModel, determineWeakModel } from '@/utils';
+import { BmadManager } from '@/bmad/bmad-manager';
 
 export class Project {
   private readonly customCommandManager: CustomCommandManager;
+  private readonly bmadManager: BmadManager;
   private readonly tasksLoadingPromise: Promise<void> | null = null;
   private readonly tasks = new Map<string, Task>();
 
@@ -44,10 +58,10 @@ export class Project {
     private readonly memoryManager: MemoryManager,
     private readonly hookManager: HookManager,
     private readonly promptsManager: PromptsManager,
+    private readonly extensionManager: ExtensionManager,
   ) {
-    this.customCommandManager = new CustomCommandManager(this);
-    // initialize global task
-    this.prepareTask(INTERNAL_TASK_ID);
+    this.customCommandManager = new CustomCommandManager(this, this.eventManager, this.extensionManager);
+    this.bmadManager = new BmadManager(this.baseDir);
     this.tasksLoadingPromise = this.loadTasks();
   }
 
@@ -55,12 +69,23 @@ export class Project {
     await this.customCommandManager.start();
     await this.promptsManager.watchProject(this.baseDir);
     await this.agentProfileManager.initializeForProject(this.baseDir);
+    await this.extensionManager.reloadProjectExtensions(this);
     await this.sendInputHistoryUpdatedEvent();
 
+    await this.extensionManager.dispatchEvent('onProjectStarted', { baseDir: this.baseDir }, this);
     this.eventManager.sendProjectStarted(this.baseDir);
   }
 
+  private async prepareInternalTask() {
+    const task = await this.prepareTask(INTERNAL_TASK_ID);
+    await task.resetContext();
+  }
+
   public async createNewTask(params?: CreateTaskParams) {
+    logger.info('Creating new task', {
+      baseDir: this.baseDir,
+      params,
+    });
     const normalizedParams = {
       ...params,
       parentId: params?.parentId || null,
@@ -86,7 +111,9 @@ export class Project {
         reasoningEffort: sourceTask.task.reasoningEffort,
         thinkingTokens: sourceTask.task.thinkingTokens,
         currentMode: sourceTask.task.currentMode,
-        contextCompactingThreshold: sourceTask.task.contextCompactingThreshold,
+        agentProfileId: parentTask?.task.agentProfileId,
+        provider: parentTask?.task.provider,
+        model: parentTask?.task.model,
         weakModelLocked: sourceTask.task.weakModelLocked,
         ...(parentTask
           ? {
@@ -107,15 +134,26 @@ export class Project {
     }
 
     const projectSettings = this.getProjectSettings();
-    const task = this.prepareTask(undefined, {
+    const taskSettings = this.store.getSettings().taskSettings;
+    const taskData: Partial<TaskData> = {
+      contextCompactingThreshold: taskSettings.contextCompactingThreshold,
+      autoApprove: projectSettings.autoApproveLocked ? true : initialTaskData.autoApprove,
       ...initialTaskData,
-      autoApprove: projectSettings.autoApproveLocked ? true : initialTaskData?.autoApprove,
-    });
+    };
+
+    // Allow extensions to modify initial task data before task is created
+    const extResult = await this.extensionManager.dispatchEvent('onTaskCreated', { task: taskData as TaskData }, this);
+    if (extResult.task) {
+      // Apply modifications from extension
+      Object.assign(taskData, extResult.task);
+    }
+
+    const task = await this.prepareTask(undefined, taskData);
     if (params?.sendEvent !== false) {
       this.eventManager.sendTaskCreated(task.task, params?.activate);
     }
 
-    const internalTask = this.getTask(INTERNAL_TASK_ID);
+    const internalTask = this.getInternalTask();
     if (internalTask) {
       // adding files from internal task that keeps track of files to new task
       const contextFiles = await internalTask.getContextFiles();
@@ -125,7 +163,7 @@ export class Project {
     return task.task;
   }
 
-  private prepareTask(taskId: string = uuidv4(), initialTaskData?: Partial<TaskData>) {
+  private async prepareTask(taskId: string = uuidv4(), initialTaskData?: Partial<TaskData>) {
     const task = new Task(
       this,
       taskId,
@@ -141,16 +179,26 @@ export class Project {
       this.memoryManager,
       this.hookManager,
       this.promptsManager,
+      this.extensionManager,
       initialTaskData,
     );
     this.tasks.set(taskId, task);
 
     void task.hookManager.trigger('onTaskCreated', { task: task.task }, task, this);
 
+    // Allow extensions to modify task data after preparation
+    const extResult = await this.extensionManager.dispatchEvent('onTaskPrepared', { task: task.task }, this, task);
+    if (extResult.task) {
+      // Apply modifications from extension
+      Object.assign(task.task, extResult.task);
+    }
+
     return task;
   }
 
   private async loadTasks() {
+    await this.prepareInternalTask();
+
     // Migrate sessions to tasks before starting
     await migrateSessionsToTasks(this);
 
@@ -174,11 +222,10 @@ export class Project {
       logger.info(`Loading ${taskDirs.length} tasks from directory`, {
         baseDir: this.baseDir,
         tasksDir,
-        taskIds: taskDirs,
       });
 
       for (const taskId of taskDirs) {
-        this.prepareTask(taskId);
+        await this.prepareTask(taskId);
       }
 
       logger.info('Successfully loaded tasks', {
@@ -317,12 +364,16 @@ export class Project {
     this.eventManager.sendInputHistoryUpdated(this.baseDir, INTERNAL_TASK_ID, history);
   }
 
-  public getCustomCommands() {
-    return this.customCommandManager.getAllCommands();
+  public getCustomModes(): ModeDefinition[] {
+    return this.extensionManager.getModes(this).map((registered) => registered.mode);
   }
 
-  public sendCustomCommandsUpdated(commands: CustomCommand[]) {
-    this.eventManager.sendCustomCommandsUpdated(this.baseDir, INTERNAL_TASK_ID, commands);
+  public getCustomCommandManager(): CustomCommandManager {
+    return this.customCommandManager;
+  }
+
+  public getAgentProfiles(): AgentProfile[] {
+    return this.agentProfileManager.getProjectProfiles(this.baseDir);
   }
 
   private async deleteTaskInternal(taskId: string): Promise<void> {
@@ -379,10 +430,31 @@ export class Project {
       throw new Error(`Task with id ${taskId} not found`);
     }
 
-    const newTask = this.prepareTask(undefined, sourceTask.task);
+    const newTask = await this.prepareTask(undefined, {
+      ...sourceTask.task,
+      state: sourceTask.task.state === DefaultTaskState.InProgress ? DefaultTaskState.Todo : sourceTask.task.state,
+    });
+    await newTask.init();
     await newTask.duplicateFrom(sourceTask);
     this.eventManager.sendTaskCreated(newTask.task);
+
+    return newTask.task;
+  }
+
+  public async forkTask(taskId: string, messageId: string): Promise<TaskData> {
+    const sourceTask = this.tasks.get(taskId);
+    if (!sourceTask) {
+      throw new Error(`Task with id ${taskId} not found`);
+    }
+
+    const newTask = await this.prepareTask(undefined, {
+      ...sourceTask.task,
+      parentId: sourceTask.task.parentId || sourceTask.task.id,
+      state: sourceTask.task.state === DefaultTaskState.InProgress ? DefaultTaskState.Todo : sourceTask.task.state,
+    });
     await newTask.init();
+    await newTask.forkFrom(sourceTask, messageId);
+    this.eventManager.sendTaskCreated(newTask.task, true);
 
     return newTask.task;
   }
@@ -414,11 +486,42 @@ export class Project {
     });
   }
 
+  async getBmadStatus(): Promise<BmadStatus> {
+    return await this.bmadManager.getBmadStatus();
+  }
+
+  async installBmad(): Promise<InstallResult> {
+    const result = await this.bmadManager.install();
+
+    // Emit events for browser clients
+    const status = await this.bmadManager.getBmadStatus();
+    this.eventManager.sendBmadStatusChanged(status);
+
+    return result;
+  }
+
+  async executeBmadWorkflow(workflowId: string, task: Task): Promise<WorkflowExecutionResult> {
+    return await this.bmadManager.executeWorkflow(workflowId, task);
+  }
+
+  async resetBmadWorkflow(): Promise<{ success: boolean; message?: string }> {
+    const result = await this.bmadManager.resetWorkflow();
+
+    // Emit status change event for browser clients
+    const status = await this.bmadManager.getBmadStatus();
+    this.eventManager.sendBmadStatusChanged(status);
+
+    return result;
+  }
+
   async close() {
+    await this.extensionManager.dispatchEvent('onProjectStopped', { baseDir: this.baseDir }, this);
+
     this.customCommandManager.dispose();
     this.agentProfileManager.removeProject(this.baseDir);
     await this.hookManager.stopWatchingProject(this.baseDir);
     await this.promptsManager.unwatchProject(this.baseDir);
+    this.extensionManager.stopProjectWatcher(this.baseDir);
     await Promise.all(Array.from(this.tasks.values()).map((task) => task.close()));
     await this.worktreeManager.close(this.baseDir);
 
@@ -433,5 +536,62 @@ export class Project {
         logger.warn('Failed to remove watch-files lock file', { lockFilePath, error });
       }
     }
+  }
+
+  async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, contextSize: number = 5): Promise<void> {
+    this.eventManager.sendLog({
+      baseDir: this.baseDir,
+      taskId: INTERNAL_TASK_ID,
+      level: 'loading',
+      message: 'Creating task for inline code request...',
+    });
+
+    const filePath = path.isAbsolute(filename) ? filename : path.join(this.baseDir, filename);
+    const fileExtension = path.extname(filename).slice(1) || '';
+
+    let contextLines: { lineNumber: number; content: string }[] = [];
+    try {
+      const fileContent = await fs.readFile(filePath, 'utf-8');
+      const lines = fileContent.split('\n');
+      const startLine = Math.max(0, lineNumber - contextSize - 1);
+      const endLine = Math.min(lines.length, lineNumber + contextSize);
+
+      contextLines = lines.slice(startLine, endLine).map((content, index) => ({
+        lineNumber: startLine + index + 1,
+        content,
+      }));
+    } catch (error) {
+      logger.warn('Failed to read file for context extraction', {
+        filePath,
+        error,
+      });
+    }
+
+    const internalTask = this.getInternalTask();
+    const prompt = await this.promptsManager.getCodeInlineRequestPrompt(internalTask!, {
+      filename,
+      lineNumber,
+      fileExtension,
+      contextLines,
+      userComment,
+    });
+
+    const newTaskData = await this.createNewTask({
+      name: `${filename}:${lineNumber}`,
+      sendEvent: false,
+      autoApprove: true,
+      activate: true,
+    });
+
+    const newTask = this.getTask(newTaskData.id);
+    if (!newTask) {
+      throw new Error('Failed to get newly created task');
+    }
+
+    await newTask.init();
+    await newTask.savePromptOnly(prompt, false);
+    await newTask.resumeTask();
+
+    this.eventManager.sendTaskCreated(newTask.task, true);
   }
 }

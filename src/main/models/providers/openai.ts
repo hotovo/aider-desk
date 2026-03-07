@@ -174,7 +174,7 @@ export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): S
   const mappedReasoningEffort =
     reasoningEffort === undefined || reasoningEffort === ReasoningEffort.None
       ? undefined
-      : (reasoningEffort.toLowerCase() as 'minimal' | 'low' | 'medium' | 'high');
+      : (reasoningEffort.toLowerCase() as 'minimal' | 'low' | 'medium' | 'high' | 'xhigh');
 
   if (mappedReasoningEffort) {
     logger.debug('Using reasoning effort:', { mappedReasoningEffort });

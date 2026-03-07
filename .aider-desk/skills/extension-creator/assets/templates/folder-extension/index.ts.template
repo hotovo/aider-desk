@@ -1,0 +1,44 @@
+/**
+ * {EXTENSION_NAME} Extension
+ *
+ * {DESCRIPTION}
+ */
+
+import type { Extension, ExtensionContext, AgentStartedEvent, CommandDefinition } from '@aiderdesk/extensions';
+
+import { loadConfig, saveConfig } from './config';
+import type { {EXTENSION_NAME}Config } from './config';
+
+const DEFAULT_CONFIG: {EXTENSION_NAME}Config = {
+  // Add default config values
+};
+
+class {CLASS_NAME} implements Extension {
+  private config: {EXTENSION_NAME}Config = DEFAULT_CONFIG;
+
+  async onLoad(context: ExtensionContext): Promise<void> {
+    context.log('{EXTENSION_NAME} Extension loaded', 'info');
+    this.config = await loadConfig();
+  }
+
+  getCommands(_context: ExtensionContext): CommandDefinition[] {
+    return [
+      // Add commands here
+    ];
+  }
+
+  async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext): Promise<void | Partial<AgentStartedEvent>> {
+    // Handle event
+    return undefined;
+  }
+}
+
+export const metadata = {
+  name: '{EXTENSION_NAME}',
+  version: '1.0.0',
+  description: '{DESCRIPTION}',
+  author: '{AUTHOR}',
+  capabilities: ['events', 'commands'],
+};
+
+export default {CLASS_NAME};

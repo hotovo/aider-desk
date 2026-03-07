@@ -20,18 +20,20 @@ import logger from '@/logger';
 import { type CacheControl } from '@/models';
 import { Task } from '@/task';
 import { getSubagentId } from '@/agent/tools/subagents';
+import { ExtensionManager } from '@/extensions';
 
 /**
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
  */
-export const optimizeMessages = (
+export const optimizeMessages = async (
   messages: ModelMessage[],
   cacheControl?: CacheControl,
   task: Task | null = null,
   profile: AgentProfile | null = null,
   projectProfiles: AgentProfile[] = [],
   userRequestMessageIndex: number = -1,
-) => {
+  extensionManager?: ExtensionManager,
+): Promise<ModelMessage[]> => {
   if (messages.length === 0) {
     return [];
   }
@@ -39,7 +41,7 @@ export const optimizeMessages = (
   let optimizedMessages = cloneDeep(messages);
 
   if (task && profile) {
-    optimizedMessages = addImportantReminders(task, profile, projectProfiles, userRequestMessageIndex, optimizedMessages);
+    optimizedMessages = await addImportantReminders(task, profile, projectProfiles, userRequestMessageIndex, optimizedMessages, extensionManager);
   }
   optimizedMessages = convertImageToolResults(optimizedMessages);
   optimizedMessages = removeDuplicateToolCalls(optimizedMessages);
@@ -83,13 +85,14 @@ export const optimizeMessages = (
   return optimizedMessages;
 };
 
-const addImportantReminders = (
+const addImportantReminders = async (
   task: Task,
   profile: AgentProfile,
   projectProfiles: AgentProfile[],
   userRequestMessageIndex: number,
   messages: ModelMessage[],
-): ModelMessage[] => {
+  extensionManager?: ExtensionManager,
+): Promise<ModelMessage[]> => {
   if (userRequestMessageIndex === -1) {
     return messages;
   }
@@ -139,15 +142,32 @@ const addImportantReminders = (
     }
   }
 
-  if (reminders.length === 0) {
+  let remindersContent = reminders.map((reminder) => `<Reminder>\n${reminder}\n</Reminder>`).join('\n ');
+  // Dispatch event to extensions to allow modification of reminders
+  if (extensionManager) {
+    const extensionResult = await extensionManager.dispatchEvent(
+      'onImportantReminders',
+      {
+        profile,
+        remindersContent,
+      },
+      task.project,
+      task,
+    );
+    remindersContent = extensionResult.remindersContent ?? remindersContent;
+  }
+
+  if (!remindersContent.trim()) {
     return messages;
   }
 
-  const importantReminders = `\n\n<ThisIsImportant>\n${reminders.map((reminder) => `<Reminder>\n${reminder}\n</Reminder>`).join('\n ')}\n</ThisIsImportant>`;
+  if (remindersContent.trim()) {
+    remindersContent = `\n\n<ThisIsImportant>\n${remindersContent}\n</ThisIsImportant>`;
+  }
 
   const updatedFirstUserMessage = {
     ...userRequestMessage,
-    content: `${userRequestMessage.content}${importantReminders}`,
+    content: `${userRequestMessage.content}${remindersContent}`,
   } satisfies UserModelMessage;
 
   const newMessages = [...messages];

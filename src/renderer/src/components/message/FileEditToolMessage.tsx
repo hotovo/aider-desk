@@ -8,15 +8,18 @@ import { ToolMessage } from '@/types/message';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export const FileEditToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
   const expandableRef = useRef<ExpandableMessageBlockRef>(null);
 
@@ -28,8 +31,8 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false }: Prop
   const content = message.content && JSON.parse(message.content);
   const language = getLanguageFromPath(filePath);
 
-  const isDenied = content && content.startsWith('File edit to');
-  const shouldCloseOnError = content && !content.startsWith('Successfully');
+  const isDenied = typeof content === 'string' && content.startsWith('File edit to');
+  const shouldCloseOnError = typeof content === 'string' && content && !content.startsWith('Successfully');
 
   useLayoutEffect(() => {
     if (shouldCloseOnError && expandableRef.current) {
@@ -44,24 +47,24 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false }: Prop
       </div>
       <div className="text-xs text-text-primary flex flex-wrap gap-1">
         <span>{t('toolMessage.power.fileEdit.title')}</span>
-        <span data-tooltip-id="global-tooltip-md" data-tooltip-content={filePath} data-tooltip-delay-show={500}>
-          <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
-        </span>
+        <Tooltip content={filePath}>
+          <span>
+            <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
+          </span>
+        </Tooltip>
       </div>
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
-        (content.startsWith('Successfully') ? (
+        (typeof content === 'string' && content.startsWith('Successfully') ? (
           <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`file-edit-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`file-edit-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiCloseCircleFill className="w-3 h-3 text-warning" />
+          </Tooltip>
         ) : (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`file-edit-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`file-edit-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiErrorWarningFill className="w-3 h-3 text-error" />
+          </Tooltip>
         ))}
     </div>
   );
@@ -114,6 +117,9 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false }: Prop
       usageReport={message.usageReport}
       onRemove={onRemove}
       initialExpanded={true}
+      onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
     />
   );
 };

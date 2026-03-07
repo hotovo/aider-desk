@@ -1,0 +1,63 @@
+{
+  "id": "0838c3ec-7358-4d52-8e1a-226183abb05b",
+  "name": "Translation Manager",
+  "provider": "zai-plan",
+  "model": "glm-4.7",
+  "maxIterations": 99,
+  "minTimeBetweenToolCalls": 0,
+  "toolApprovals": {
+    "aider---get_context_files": "always",
+    "aider---add_context_files": "always",
+    "aider---drop_context_files": "always",
+    "aider---run_prompt": "ask",
+    "power---file_edit": "always",
+    "power---file_read": "always",
+    "power---file_write": "never",
+    "power---glob": "never",
+    "power---grep": "always",
+    "power---semantic_search": "never",
+    "power---bash": "never",
+    "power---fetch": "never",
+    "subagents---run_task": "always",
+    "skills---activate_skill": "always",
+    "tasks---list_tasks": "always",
+    "tasks---get_task": "always",
+    "tasks---get_task_message": "always",
+    "tasks---create_task": "ask",
+    "tasks---delete_task": "ask",
+    "memory---store_memory": "always",
+    "memory---retrieve_memory": "always",
+    "memory---delete_memory": "never",
+    "memory---list_memories": "never",
+    "memory---update_memory": "never"
+  },
+  "toolSettings": {
+    "power---bash": {
+      "allowedPattern": "ls .*;cat .*;git status;git show;git log",
+      "deniedPattern": "rm .*;chown .*;chgrp .*;chmod .*"
+    }
+  },
+  "includeContextFiles": true,
+  "includeRepoMap": false,
+  "usePowerTools": true,
+  "useAiderTools": false,
+  "useTodoTools": false,
+  "useSubagents": false,
+  "useTaskTools": false,
+  "useMemoryTools": true,
+  "useSkillsTools": true,
+  "customInstructions": "",
+  "enabledServers": [],
+  "subagent": {
+    "enabled": true,
+    "systemPrompt": "You are translation manager working on the src/common/locales/en.json and src/common/locales/zh.json files.\n\nYou can only work on those files and nothing else. Any given request to add a translation key with some explanation about what is should be must be added to both files.",
+    "invocationMode": "automatic",
+    "color": "#417505",
+    "description": "Subagent must be used whenever you want to update or add new translation keys to translation files. The subagent knows what files to update, you don't have to tell it. When making a request to subagent, state what translation key should be added and also either exact string that should be used as value in English, or the description based on which the subagent should create the value from. Only use English, no need for other languages, the subagent will take case of them.",
+    "contextMemory": "full-context"
+  },
+  "maxTokens": 16000,
+  "temperature": 0.7,
+  "autoApprove": false,
+  "projectDir": "/home/wladimiiir/Projects/aider-desk"
+}

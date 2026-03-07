@@ -16,6 +16,7 @@ import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   task: TaskData;
@@ -39,6 +40,7 @@ type Props = {
   onUnarchiveTask: (taskId: string) => Promise<void>;
   onTogglePin: (taskId: string) => Promise<void>;
   onChangeState: (taskId: string, newState: string) => Promise<void>;
+  onCopyAsMarkdown?: (taskId: string) => void;
   onExportToMarkdown?: (taskId: string) => void;
   onExportToImage?: (taskId: string) => void;
   onDuplicateTask?: (taskId: string) => void;
@@ -71,6 +73,7 @@ export const TaskItem = memo(
     onUnarchiveTask,
     onTogglePin,
     onChangeState,
+    onCopyAsMarkdown,
     onExportToMarkdown,
     onExportToImage,
     onDuplicateTask,
@@ -227,20 +230,21 @@ export const TaskItem = memo(
           {!isMultiselectMode && (
             <div className="flex items-center">
               {level === 0 && (
-                <button
-                  data-tooltip-id="task-sidebar-tooltip"
-                  data-tooltip-content={t('taskSidebar.createSubtask')}
-                  data-testid={`create-subtask-${task.id}`}
-                  className="p-1.5 rounded-md hover:bg-bg-tertiary text-text-muted hover:text-text-primary hidden group-hover:flex"
-                  onClick={handleCreateSubtask}
-                >
-                  <HiPlus className="w-4 h-4" />
-                </button>
+                <Tooltip content={t('taskSidebar.createSubtask')}>
+                  <button
+                    data-testid={`create-subtask-${task.id}`}
+                    className="p-1.5 rounded-md hover:bg-bg-tertiary text-text-muted hover:text-text-primary hidden group-hover:flex"
+                    onClick={handleCreateSubtask}
+                  >
+                    <HiPlus className="w-4 h-4" />
+                  </button>
+                </Tooltip>
               )}
               <TaskMenuButton
                 task={task}
                 onEdit={handleOnEdit}
                 onDelete={task.createdAt ? () => onDeleteClick(task.id) : undefined}
+                onCopyAsMarkdown={onCopyAsMarkdown && task.createdAt ? () => onCopyAsMarkdown(task.id) : undefined}
                 onExportToMarkdown={onExportToMarkdown && task.createdAt ? () => onExportToMarkdown(task.id) : undefined}
                 onExportToImage={onExportToImage && task.createdAt ? () => onExportToImage(task.id) : undefined}
                 onDuplicateTask={onDuplicateTask && task.createdAt ? () => onDuplicateTask(task.id) : undefined}
@@ -324,6 +328,7 @@ export const TaskItem = memo(
                   onUnarchiveTask={onUnarchiveTask}
                   onTogglePin={onTogglePin}
                   onChangeState={onChangeState}
+                  onCopyAsMarkdown={onCopyAsMarkdown}
                   onExportToMarkdown={onExportToMarkdown}
                   onExportToImage={onExportToImage}
                   onDuplicateTask={onDuplicateTask}

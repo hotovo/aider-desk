@@ -2,7 +2,9 @@ import path, { join } from 'path';
 import fs, { mkdir, rm, lstat, symlink } from 'fs/promises';
 import { existsSync } from 'fs';
 
-import { ConflictResolutionFileContext, MergeState, RebaseState, Worktree, WorktreeAheadCommits, WorktreeUncommittedFiles } from '@common/types';
+import { ConflictResolutionFileContext, MergeState, RebaseState, UpdatedFile, Worktree, WorktreeAheadCommits, WorktreeUncommittedFiles } from '@common/types';
+// @ts-expect-error istextorbinary library does not provide TypeScript definitions
+import { isBinary } from 'istextorbinary';
 
 import { execWithShellPath, withLock } from '@/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
@@ -337,6 +339,9 @@ export class WorktreeManager {
 
       return worktrees;
     } catch (error) {
+      if (error instanceof Error && error.message.includes('not a git repository')) {
+        return [];
+      }
       throw new Error(`Failed to list worktrees: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -990,9 +995,10 @@ export class WorktreeManager {
     }
   }
 
-  async getLastCommits(worktreePath: string, count: number = 20): Promise<RawCommitData[]> {
+  async getLastCommits(worktreePath: string, count: number = 20, includeStats: boolean = true): Promise<RawCommitData[]> {
     try {
-      const { stdout } = await execWithShellPath(`git log -${count} --pretty=format:'%H|%s|%ai|%an' --shortstat`, { cwd: worktreePath });
+      const statFlag = includeStats ? ' --shortstat' : '';
+      const { stdout } = await execWithShellPath(`git log -${count} --pretty=format:'%H|%s|%ai|%an'${statFlag}`, { cwd: worktreePath });
 
       const commits: RawCommitData[] = [];
       const lines = stdout.split('\n');
@@ -1018,7 +1024,7 @@ export class WorktreeManager {
           author: author || 'Unknown',
         };
 
-        if (i + 1 < lines.length && lines[i + 1].trim()) {
+        if (includeStats && i + 1 < lines.length && lines[i + 1].trim()) {
           const statsLine = lines[i + 1].trim();
           const statsMatch = statsLine.match(/(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?/);
 
@@ -1123,7 +1129,7 @@ export class WorktreeManager {
    * Stash uncommitted changes with a unique identifier
    * Returns the stash identifier or null if no changes to stash
    */
-  async stashUncommittedChanges(stashId: string, path: string, message: string): Promise<string | null> {
+  async stashUncommittedChanges(stashId: string, path: string, message: string, symlinkFolders: string[] = []): Promise<string | null> {
     try {
       const hasChanges = await this.hasUncommittedChanges(path);
       if (!hasChanges) {
@@ -1131,7 +1137,37 @@ export class WorktreeManager {
       }
 
       const fullMessage = `${stashId}: ${message}`;
-      await execWithShellPath(`git stash push -u -m "${fullMessage}"`, {
+
+      // Find which symlink folders have untracked files
+      const foldersToExclude: string[] = [];
+
+      if (symlinkFolders.length > 0) {
+        // Get untracked files to check which symlink folders have content
+        const { stdout: untrackedFiles } = await execWithShellPath('git ls-files --others --exclude-standard -z', { cwd: path });
+        const untrackedFilesList = untrackedFiles.split('\0').filter((file) => file.trim() !== '');
+
+        for (const folder of symlinkFolders) {
+          // Check if folder has untracked files
+          const hasUntrackedInFolder = untrackedFilesList.some((file) => {
+            const normalizedFile = file.replace(/\\/g, '/');
+            return normalizedFile.startsWith(`${folder}/`) || normalizedFile === folder;
+          });
+
+          if (hasUntrackedInFolder) {
+            foldersToExclude.push(folder);
+            logger.debug(`Excluding folder ${folder} from stash (has untracked files)`);
+          }
+        }
+      }
+
+      // Build stash command with exclude patterns for folders with untracked files
+      let command = `git stash push -u -m "${fullMessage}"`;
+      if (foldersToExclude.length > 0) {
+        const excludePatterns = foldersToExclude.map((folder) => `':(exclude)${folder}'`).join(' ');
+        command += ` -- . ${excludePatterns}`;
+      }
+
+      await execWithShellPath(command, {
         cwd: path,
       });
       logger.info(`Stashed changes with ID: ${stashId}`);
@@ -1205,6 +1241,7 @@ export class WorktreeManager {
     squash: boolean,
     commitMessage?: string,
     targetBranch?: string,
+    symlinkFolders: string[] = [],
   ): Promise<MergeState> {
     return await withLock(`git-merge-worktree-${worktreePath}`, async () => {
       const timestamp = Date.now();
@@ -1232,10 +1269,10 @@ export class WorktreeManager {
         });
 
         // 2. Stash uncommitted changes in worktree
-        await this.stashUncommittedChanges(worktreeStashId, worktreePath, 'Worktree uncommitted changes before merge');
+        await this.stashUncommittedChanges(worktreeStashId, worktreePath, 'Worktree uncommitted changes before merge', symlinkFolders);
 
         // 3. Stash uncommitted changes in main branch if any
-        const mainStashResult = await this.stashUncommittedChanges(mainStashId, projectPath, 'Main branch uncommitted changes before merge');
+        const mainStashResult = await this.stashUncommittedChanges(mainStashId, projectPath, 'Main branch uncommitted changes before merge', []);
         if (mainStashResult) {
           mainOriginalStashId = mainStashResult;
         }
@@ -1390,11 +1427,11 @@ export class WorktreeManager {
   }
 
   async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles> {
-    const { stdout } = await execWithShellPath('git status --porcelain=v1', {
+    const { stdout } = await execWithShellPath('git status --porcelain=v1 -z', {
       cwd: worktreePath,
     });
     const files = stdout
-      .split('\n')
+      .split('\0')
       .map((l) => l.trim())
       .filter((l) => l.length > 0);
 
@@ -1402,6 +1439,145 @@ export class WorktreeManager {
       count: files.length,
       files: Array.from(new Set(files)),
     };
+  }
+
+  /**
+   * Get updated files with line diff stats from git
+   * Uses `git diff --numstat -z HEAD` to get additions and deletions per file
+   * Format: "additions\0deletions\0filepath\0"
+   * The -z flag uses NUL-separated output to handle filenames with special characters correctly
+   * Also fetches the full git diff for each file
+   */
+  async getUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]> {
+    try {
+      const { stdout } = await execWithShellPath('git diff --numstat -z HEAD', {
+        cwd: worktreePath,
+      });
+
+      const entries = stdout.split('\0').filter((entry) => entry.trim() !== '');
+      const files: UpdatedFile[] = [];
+
+      for (const entry of entries) {
+        // Parse NUL-separated format: additions\tdeletions\tfilename
+        const parts = entry.split('\t');
+        if (parts.length >= 3) {
+          const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
+          const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
+          const filePath = parts.slice(2).join('\t'); // Handle paths with tabs
+
+          // Skip empty file paths
+          if (!filePath) {
+            continue;
+          }
+
+          const absoluteFilePath = join(worktreePath, filePath);
+
+          // Check if file is binary and skip diff generation
+          let diff = '';
+          try {
+            // Check if file exists (it may have been deleted)
+            const fileExists = await fs
+              .access(absoluteFilePath)
+              .then(() => true)
+              .catch(() => false);
+
+            if (fileExists) {
+              const fileContentBuffer = await fs.readFile(absoluteFilePath);
+              if (isBinary(filePath, fileContentBuffer)) {
+                // Binary file - skip diff
+                files.push({ path: filePath, additions, deletions, diff });
+                continue;
+              }
+            }
+
+            // Escape file path for git command - use quotes and -- separator
+            const escapedPath = filePath.replace(/"/g, '\\"');
+            const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 HEAD -- "${escapedPath}"`, {
+              cwd: worktreePath,
+              maxBuffer: 10 * 1024 * 1024, // 10 MB
+            });
+            diff = diffOutput;
+          } catch (diffError) {
+            // If diff fetch fails (e.g., file not readable, git error), continue with empty diff
+            logger.warn(`Failed to get diff for file ${filePath}:`, diffError);
+            diff = '';
+          }
+
+          files.push({ path: filePath, additions, deletions, diff });
+        }
+      }
+
+      return files;
+    } catch (error) {
+      // If git diff fails (e.g., no HEAD commit), return empty array
+      logger.warn('Failed to get updated files:', error);
+      return [];
+    }
+  }
+
+  async restoreFile(worktreePath: string, filePath: string): Promise<void> {
+    try {
+      logger.info(`Restoring file: ${filePath}`, { worktreePath });
+
+      const escapedPath = filePath.replace(/"/g, '\\"');
+      await execWithShellPath(`git restore -- "${escapedPath}"`, {
+        cwd: worktreePath,
+      });
+
+      logger.info(`Successfully restored file: ${filePath}`);
+    } catch (error) {
+      logger.error(`Failed to restore file ${filePath}:`, error);
+      throw error;
+    }
+  }
+
+  async getUncommittedDiff(worktreePath: string): Promise<string | null> {
+    try {
+      const { stdout } = await execWithShellPath('git diff HEAD', { cwd: worktreePath });
+      return stdout || null;
+    } catch (error) {
+      logger.error('Failed to get uncommitted diff:', error);
+      return null;
+    }
+  }
+
+  async commitChanges(worktreePath: string, message: string, amend: boolean): Promise<void> {
+    try {
+      logger.info(`Committing changes${amend ? ' (amend)' : ''}`, { worktreePath });
+
+      // Get the list of updated files (unstaged changes that are shown in the UI)
+      const updatedFiles = await this.getUpdatedFiles(worktreePath);
+
+      if (updatedFiles.length === 0 && !amend) {
+        logger.info('No updated files to commit');
+        return;
+      }
+
+      // Stage all updated files before committing
+      if (updatedFiles.length > 0) {
+        for (const file of updatedFiles) {
+          const escapedPath = file.path.replace(/"/g, '\\"');
+          await execWithShellPath(`git add -- "${escapedPath}"`, {
+            cwd: worktreePath,
+          });
+        }
+        logger.info(`Staged ${updatedFiles.length} file(s) for commit`);
+      }
+
+      // Escape the commit message for shell
+      const escapedMessage = message.replace(/"/g, '\\"');
+      const amendFlag = amend ? ' --amend' : '';
+      // If amending and message is empty, use --no-edit to keep previous message
+      const commitCommand = amend && !message.trim() ? 'git commit --amend --no-edit' : `git commit${amendFlag} -m "${escapedMessage}"`;
+      await execWithShellPath(commitCommand, {
+        cwd: worktreePath,
+      });
+
+      logger.info(`Successfully committed changes${amend ? ' (amended)' : ''}`);
+    } catch (error) {
+      logger.debug('Failed to commit changes:', error);
+      throw error;
+    }
   }
 
   async getRebaseState(worktreePath: string): Promise<RebaseState> {
@@ -1541,7 +1717,13 @@ export class WorktreeManager {
    * Apply uncommitted changes from worktree to main branch without merging commits
    * This transfers work-in-progress changes while keeping them uncommitted in both branches
    */
-  async applyUncommittedChangesToMain(projectPath: string, taskId: string, worktreePath: string, targetBranch?: string): Promise<void> {
+  async applyUncommittedChangesToMain(
+    projectPath: string,
+    taskId: string,
+    worktreePath: string,
+    targetBranch?: string,
+    symlinkFolders: string[] = [],
+  ): Promise<void> {
     return await withLock(`git-apply-uncommitted-${worktreePath}`, async () => {
       const timestamp = Date.now();
       const worktreeStashId = `worktree-${taskId.length > 24 ? taskId.substring(24) : taskId}-uncommitted-${timestamp}`;
@@ -1557,7 +1739,7 @@ export class WorktreeManager {
         }
 
         // 2. Stash uncommitted changes from worktree
-        const stashResult = await this.stashUncommittedChanges(worktreeStashId, worktreePath, 'Uncommitted changes to apply to main');
+        const stashResult = await this.stashUncommittedChanges(worktreeStashId, worktreePath, 'Uncommitted changes to apply to main', symlinkFolders);
         if (!stashResult) {
           logger.info('No changes were stashed');
           return;
@@ -1604,7 +1786,7 @@ export class WorktreeManager {
    * Revert a merge operation using the stored MergeState
    * Restores the main branch to its pre-merge state while preserving uncommitted changes
    */
-  async revertMerge(projectPath: string, taskId: string, worktreePath: string, mergeState: MergeState): Promise<void> {
+  async revertMerge(projectPath: string, taskId: string, worktreePath: string, mergeState: MergeState, symlinkFolders: string[] = []): Promise<void> {
     return await withLock(`git-revert-merge-${worktreePath}`, async () => {
       const timestamp = Date.now();
       const currentWorktreeStashId = `worktree-${taskId.length > 24 ? taskId.substring(24) : taskId}-revert-${timestamp}`;
@@ -1617,11 +1799,16 @@ export class WorktreeManager {
         logger.info('Starting merge revert operation', { mergeState });
 
         // 1. Stash current uncommitted changes in worktree
-        worktreeRevertStashId = await this.stashUncommittedChanges(currentWorktreeStashId, worktreePath, 'Current uncommitted changes before revert');
+        worktreeRevertStashId = await this.stashUncommittedChanges(
+          currentWorktreeStashId,
+          worktreePath,
+          'Current uncommitted changes before revert',
+          symlinkFolders,
+        );
 
         // 2. Stash current uncommitted changes in main repo to clean the working directory
         // This is crucial to avoid conflicts with untracked files when applying the original stash
-        mainRevertStashId = await this.stashUncommittedChanges(currentMainStashId, projectPath, 'Current uncommitted changes before revert');
+        mainRevertStashId = await this.stashUncommittedChanges(currentMainStashId, projectPath, 'Current uncommitted changes before revert', []);
 
         // 3. Switch to the branch we merged into, then reset it to previous state
         const targetBranch = mergeState.targetBranch || (await this.getProjectMainBranch(projectPath));

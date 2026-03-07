@@ -137,7 +137,7 @@ const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model)
   const mappedReasoningEffort =
     reasoningEffort === undefined || reasoningEffort === ReasoningEffort.None
       ? undefined
-      : (reasoningEffort.toLowerCase() as 'minimal' | 'low' | 'medium' | 'high');
+      : (reasoningEffort.toLowerCase() as 'minimal' | 'low' | 'medium' | 'high' | 'xhigh');
 
   if (mappedReasoningEffort) {
     logger.debug('Using reasoning effort for OpenAI Compatible:', {

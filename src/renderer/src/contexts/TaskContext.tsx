@@ -52,7 +52,7 @@ export interface TaskContextType {
   setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
   answerQuestion: (taskId: string, answer: string) => void;
-  interruptResponse: (taskId: string) => void;
+  interruptResponse: (taskId: string, interruptId?: string) => void;
   updateTaskAgentProfile: (taskId: string, agentProfileId: string, provider: string, model: string) => void;
   refreshAllFiles: (taskId: string, useGit?: boolean) => Promise<void>;
 }

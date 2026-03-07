@@ -1,5 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
   - name: Ask a question
     url: https://github.com/hotovo/aider-desk/discussions/new?category=q-a
     about: Ask a question about the project using GitHub Discussions.
+  - name: Chat on Discord
+    url: https://discord.com/invite/dyM3G9nTe4
+    about: Join our Discord community for discussions and questions.

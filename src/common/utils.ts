@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 
-import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { EXTENSION_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { OS, UsageReportData } from './types';
 
@@ -98,15 +98,49 @@ export const compareBaseDirs = (baseDir1: string, baseDir2: string, os?: OS): bo
   return normalizeBaseDir(baseDir1, os) === normalizeBaseDir(baseDir2, os);
 };
 
+/**
+ * Extracts the inner error message from Electron IPC errors.
+ * Electron wraps errors with format: "Error invoking remote method 'METHOD_NAME': InnerError"
+ * This function extracts just the "InnerError" part.
+ *
+ * @param error - The error object or string
+ * @returns The extracted error message without Electron's wrapper
+ */
+export const extractIpcErrorMessage = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : String(error);
+
+  // Check for Electron IPC error format: "Error invoking remote method 'METHOD_NAME': ..."
+  const ipcErrorPrefix = "Error invoking remote method '";
+  const ipcErrorIndex = message.indexOf(ipcErrorPrefix);
+
+  if (ipcErrorIndex !== -1) {
+    // Find the colon after the method name
+    const colonIndex = message.indexOf(': ', ipcErrorIndex);
+    if (colonIndex !== -1) {
+      // Return everything after the colon and space
+      return message.substring(colonIndex + 2).trim();
+    }
+  }
+
+  // If no IPC error format found, return the original message
+  return message;
+};
+
 export const fileExists = async (fileName: string): Promise<boolean> => {
   return (await fs.stat(fileName).catch(() => null)) !== null;
 };
 
 export const extractServerNameToolName = (toolCallName: string): [string, string] => {
   const [serverName, ...toolNameParts] = toolCallName.split(TOOL_GROUP_NAME_SEPARATOR);
-  const toolName = toolNameParts.join(TOOL_GROUP_NAME_SEPARATOR);
+  let toolName = toolNameParts.join(TOOL_GROUP_NAME_SEPARATOR);
+  let effectiveServerName = serverName;
 
-  return [serverName, toolName];
+  if (!toolName) {
+    toolName = serverName;
+    effectiveServerName = EXTENSION_TOOL_GROUP_NAME;
+  }
+
+  return [effectiveServerName.startsWith('mcp__local__') ? effectiveServerName.slice('mcp__local__'.length) : effectiveServerName, toolName];
 };
 
 export const isMessageEmpty = (content: unknown): boolean => {
@@ -145,6 +179,7 @@ const extToLang: Record<string, string> = {
   htm: 'markup',
   xml: 'markup',
   svg: 'markup',
+  astro: 'markup',
   css: 'css',
   scss: 'scss',
   sass: 'sass',
@@ -252,7 +287,7 @@ const extToLang: Record<string, string> = {
 
 export const getLanguageFromPath = (path: string | undefined): string => {
   const extension = path?.split('.').pop()?.toLowerCase();
-  return extToLang[extension || ''] || extension || 'text';
+  return extToLang[extension || ''] || 'text';
 };
 
 export const isURL = (url: string): boolean => {
@@ -262,4 +297,9 @@ export const isURL = (url: string): boolean => {
   } catch {
     return false;
   }
+};
+
+export const extractProviderModel = (modelId: string): [string, string] => {
+  const [providerId, ...modelParts] = modelId.split('/');
+  return [providerId, modelParts.join('/')];
 };

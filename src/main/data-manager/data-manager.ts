@@ -24,8 +24,6 @@ export class DataManager {
 
   public init() {
     try {
-      // SQL statement to create the 'messages' table if it doesn't already exist.
-      // This table stores information about messages, including their content, token usage, and cost.
       logger.info('Initializing database...');
       const initSql = `
         CREATE TABLE IF NOT EXISTS messages
@@ -42,9 +40,17 @@ export class DataManager {
           cost                 REAL,
           message_content_json TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS extension_state
+        (
+          extension_id TEXT NOT NULL,
+          key          TEXT NOT NULL,
+          value        TEXT NOT NULL,
+          updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (extension_id, key)
+        );
       `;
 
-      // Execute the SQL statement to ensure the table is ready for use.
       this.db.exec(initSql);
       logger.info('Database initialized successfully');
     } catch (error) {
@@ -135,6 +141,33 @@ export class DataManager {
     } catch (error) {
       logger.error('Failed to query usage data:', error);
       return [];
+    }
+  }
+
+  public getExtensionState(extensionId: string, key: string): unknown {
+    try {
+      const sql = 'SELECT value FROM extension_state WHERE extension_id = ? AND key = ?';
+      const row = this.db.prepare(sql).get(extensionId, key) as { value: string } | undefined;
+      return row ? JSON.parse(row.value) : undefined;
+    } catch (error) {
+      logger.error(`Failed to get extension state for ${extensionId}/${key}:`, error);
+      return undefined;
+    }
+  }
+
+  public setExtensionState(extensionId: string, key: string, value: unknown): void {
+    try {
+      const sql = `
+        INSERT INTO extension_state (extension_id, key, value, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(extension_id, key) DO UPDATE SET
+          value = excluded.value,
+          updated_at = CURRENT_TIMESTAMP
+      `;
+      this.db.prepare(sql).run(extensionId, key, JSON.stringify(value));
+    } catch (error) {
+      logger.error(`Failed to set extension state for ${extensionId}/${key}:`, error);
+      throw error;
     }
   }
 }

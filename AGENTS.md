@@ -26,7 +26,7 @@ This file provides guidance to AiderDesk when working with code in this reposito
 - `npm run test:coverage` - Generate coverage reports
 - `npm run test:ui` - Open interactive test UI
 
-**Note for Agents**: When running 'npm run test...' scripts via `power---bash`, always append `-- --no-color` to the command (e.g., `npm run test:node -- --no-color`) to ensure clean, parseable output without ANSI escape codes.
+**Note for Agents**: When running 'npm run test' script via `power---bash`, always append `-- --no-color` to the command (e.g., `npm run test:node -- --no-color`) to ensure clean, parseable output without ANSI escape codes. Other scripts can be run without this.
 
 ### Building
 - `npm run build` - Full build (includes type checking and MCP server build)
@@ -65,6 +65,15 @@ AiderDesk is an Electron-based desktop application that provides a GUI wrapper f
 - Secure bridge between main and renderer processes
 - API definitions and IPC event listeners
 - Type-safe communication layer
+
+**src/common/api.ts** - Common API definitions
+- TypeScript interface for ApplicationAPI
+- Enumerations and types shared between main and renderer
+- Implementing classes are in **src/preload/index.ts** for main process and **src/renderer/api/browser-api.ts** for browser clients
+
+**src/main/server/rest-api/** - REST API endpoints for server functionality
+- Defined using Express.js and Zod for schema validation
+- Handle requests from browser-api.ts and external clients
 
 **src/common/** - Shared code between processes
 - TypeScript type definitions

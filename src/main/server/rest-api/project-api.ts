@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { CreateTaskParams, ProjectSettingsSchema, TaskDataSchema } from '@common/types';
+import { CreateTaskParams, ProjectSettingsSchema, TaskDataSchema, ModeDefinition } from '@common/types';
 
 import { BaseApi } from './base-api';
 
@@ -39,6 +39,18 @@ const AnswerQuestionSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
   answer: z.string().min(1, 'Answer is required'),
+});
+
+const RemoveQueuedPromptSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  promptId: z.string().min(1, 'Prompt id is required'),
+});
+
+const SendQueuedPromptNowSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  promptId: z.string().min(1, 'Prompt id is required'),
 });
 
 const UpdateMainModelSchema = z.object({
@@ -118,11 +130,6 @@ const GetFilePathSuggestionsSchema = z.object({
   directoriesOnly: z.boolean().optional(),
 });
 
-const PasteImageSchema = z.object({
-  projectDir: z.string().min(1, 'Project directory is required'),
-  taskId: z.string().min(1, 'Task id is required'),
-});
-
 const ApplyEditsSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
@@ -133,6 +140,12 @@ const ApplyEditsSchema = z.object({
       updated: z.string(),
     }),
   ),
+});
+
+const PasteImageSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  base64ImageData: z.string().optional(),
 });
 
 const RunCommandSchema = z.object({
@@ -177,6 +190,12 @@ const DuplicateTaskSchema = z.object({
   taskId: z.string().min(1, 'Task id is required'),
 });
 
+const ForkTaskSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  messageId: z.string().min(1, 'Message id is required'),
+});
+
 const GetTaskContextDataSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   id: z.string().min(1, 'Task id is required'),
@@ -185,6 +204,7 @@ const GetTaskContextDataSchema = z.object({
 const ExportSessionToMarkdownSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
+  copyOnly: z.boolean().optional().default(false),
 });
 
 const RemoveLastMessageSchema = z.object({
@@ -193,6 +213,12 @@ const RemoveLastMessageSchema = z.object({
 });
 
 const RemoveMessageSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  messageId: z.string().min(1, 'Message id is required'),
+});
+
+const RemoveMessagesUpToSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
   messageId: z.string().min(1, 'Message id is required'),
@@ -209,6 +235,13 @@ const HandoffConversationSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
   focus: z.string().optional(),
+});
+
+const RunCodeInlineRequestSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  filename: z.string().min(1, 'Filename is required'),
+  lineNumber: z.number().int().min(1, 'Line number is required'),
+  userComment: z.string().min(1, 'User comment is required'),
 });
 
 const ScrapeWebSchema = z.object({
@@ -235,6 +268,24 @@ const ApplyUncommittedChangesSchema = z.object({
 const RevertLastMergeSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
+});
+
+const RestoreFileSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  filePath: z.string().min(1, 'File path is required'),
+});
+
+const GenerateCommitMessageSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+});
+
+const CommitChangesSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  message: z.string().min(1, 'Commit message is required'),
+  amend: z.boolean(),
 });
 
 const ListBranchesSchema = z.object({
@@ -382,8 +433,15 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId } = parsed;
-        await this.eventsHandler.pasteImage(projectDir, taskId);
+        const { projectDir, taskId, base64ImageData } = parsed;
+
+        let imageBuffer: Buffer | undefined;
+        if (base64ImageData) {
+          const base64String = base64ImageData.split(',')[1] || base64ImageData;
+          imageBuffer = Buffer.from(base64String, 'base64');
+        }
+
+        await this.eventsHandler.pasteImage(projectDir, taskId, imageBuffer);
         res.status(200).json({ message: 'Image pasted' });
       }),
     );
@@ -524,6 +582,21 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
+    // Fork task from message
+    router.post(
+      '/project/tasks/fork',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ForkTaskSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, messageId } = parsed;
+        const forkedTask = await this.eventsHandler.forkTask(projectDir, taskId, messageId);
+        res.status(200).json(forkedTask);
+      }),
+    );
+
     // Reset task
     router.post(
       '/project/tasks/reset',
@@ -563,7 +636,7 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId } = parsed;
+        const { projectDir, taskId, copyOnly } = parsed;
         const markdownContent = await this.eventsHandler.generateTaskMarkdown(projectDir, taskId);
 
         if (!markdownContent) {
@@ -571,10 +644,14 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const filename = `session-${new Date().toISOString().replace(/:/g, '-').substring(0, 19)}.md`;
-        res.setHeader('Content-Type', 'text/markdown');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.status(200).send(markdownContent);
+        if (copyOnly) {
+          res.status(200).json({ markdown: markdownContent });
+        } else {
+          const filename = `session-${new Date().toISOString().replace(/:/g, '-').substring(0, 19)}.md`;
+          res.setHeader('Content-Type', 'text/markdown');
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          res.status(200).send(markdownContent);
+        }
       }),
     );
 
@@ -608,6 +685,21 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
+    // Remove messages up to specified message ID
+    router.delete(
+      '/project/remove-messages-up-to',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RemoveMessagesUpToSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, messageId } = parsed;
+        await this.eventsHandler.removeMessagesUpTo(projectDir, taskId, messageId);
+        res.status(200).json({ message: 'Messages removed' });
+      }),
+    );
+
     // Compact conversation
     router.post(
       '/project/compact-conversation',
@@ -635,6 +727,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, focus } = parsed;
         await this.eventsHandler.handoffConversation(projectDir, taskId, focus);
         res.status(200).json({ message: 'Conversation handed off' });
+      }),
+    );
+
+    // Run code inline request
+    router.post(
+      '/project/run-code-inline-request',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RunCodeInlineRequestSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, filename, lineNumber, userComment } = parsed;
+        await this.eventsHandler.runCodeInlineRequest(projectDir, filename, lineNumber, userComment);
+        res.status(200).json({ message: 'Code inline request initiated' });
       }),
     );
 
@@ -695,6 +802,51 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId } = parsed;
         await this.eventsHandler.revertLastMerge(projectDir, taskId);
         res.status(200).json({ message: 'Last merge reverted' });
+      }),
+    );
+
+    // Restore file
+    router.post(
+      '/project/worktree/restore-file',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RestoreFileSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, filePath } = parsed;
+        await this.eventsHandler.restoreFile(projectDir, taskId, filePath);
+        res.status(200).json({ message: 'File restored' });
+      }),
+    );
+
+    // Generate commit message
+    router.post(
+      '/project/worktree/generate-commit-message',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GenerateCommitMessageSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        const message = await this.eventsHandler.generateCommitMessage(projectDir, taskId);
+        res.status(200).json({ message });
+      }),
+    );
+
+    // Commit changes
+    router.post(
+      '/project/worktree/commit-changes',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(CommitChangesSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, message, amend } = parsed;
+        await this.eventsHandler.commitChanges(projectDir, taskId, message, amend);
+        res.status(200).json({ message: 'Changes committed' });
       }),
     );
 
@@ -783,7 +935,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId } = parsed;
-        await this.eventsHandler.resolveWorktreeConflictsWithAgent(projectDir, taskId);
+        await this.eventsHandler.resolveConflictsWithAgent(projectDir, taskId);
         res.status(200).json({ message: 'Conflicts resolved' });
       }),
     );
@@ -878,6 +1030,21 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
+    // Get custom modes
+    router.get(
+      '/project/custom-modes',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GetProjectSettingsSchema, req.query, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir } = parsed;
+        const customModes = await this.eventsHandler.getCustomModes(projectDir);
+        res.status(200).json(customModes satisfies ModeDefinition[]);
+      }),
+    );
+
     // Interrupt project
     router.post(
       '/project/interrupt',
@@ -888,7 +1055,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId } = parsed;
-        this.eventsHandler.interruptResponse(projectDir, taskId);
+        await this.eventsHandler.interruptResponse(projectDir, taskId);
         res.status(200).json({ message: 'Interrupt signal sent' });
       }),
     );
@@ -918,8 +1085,38 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId, answer } = parsed;
-        this.eventsHandler.answerQuestion(projectDir, taskId, answer);
+        await this.eventsHandler.answerQuestion(projectDir, taskId, answer);
         res.status(200).json({ message: 'Answer submitted' });
+      }),
+    );
+
+    // Remove queued prompt
+    router.post(
+      '/project/remove-queued-prompt',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RemoveQueuedPromptSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, promptId } = parsed;
+        this.eventsHandler.removeQueuedPrompt(projectDir, taskId, promptId);
+        res.status(200).json({ message: 'Queued prompt removed' });
+      }),
+    );
+
+    // Send queued prompt immediately
+    router.post(
+      '/project/send-queued-prompt-now',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(SendQueuedPromptNowSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, promptId } = parsed;
+        await this.eventsHandler.sendQueuedPromptNow(projectDir, taskId, promptId);
+        res.status(200).json({ message: 'Queued prompt sent' });
       }),
     );
 

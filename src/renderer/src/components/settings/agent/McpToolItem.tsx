@@ -34,7 +34,7 @@ export const McpToolItem = ({ tool, serverName, toolApprovals, onApprovalChange 
   return (
     <div className="flex items-center">
       <div className="flex-1 text-xs ml-2 mr-2">{tool.name}</div>
-      <InfoIcon className="mr-4" tooltip={tool.description?.trim() || t('tool.noDescription')} tooltipId="global-tooltip-md" />
+      <InfoIcon className="mr-4" tooltip={tool.description?.trim() || t('tool.noDescription')} />
       {/* Conditionally render the approval select only if onApprovalChange is provided */}
       {onApprovalChange && toolApprovals && (
         <div>

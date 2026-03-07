@@ -46,7 +46,7 @@ export const AgentProfileItem = ({ profile, isSelected, onClick, onCopy, onCut, 
       <div
         onClick={() => onClick(profile.id)}
         className={clsx(
-          'px-2 py-1.5 rounded-sm text-sm transition-colors cursor-pointer flex items-center justify-between',
+          'px-2 py-1 rounded-sm text-sm transition-colors cursor-pointer flex items-center justify-between',
           isSelected
             ? 'bg-bg-secondary-light text-text-primary'
             : isCut

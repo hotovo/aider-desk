@@ -6,15 +6,18 @@ import { MdAssignmentAdd } from 'react-icons/md';
 import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
+  onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Props) => {
+export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const prompt = message.args.prompt as string;
@@ -58,15 +61,13 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Pr
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
         (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`create-task-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`create-task-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiErrorWarningFill className="w-3 h-3 text-error" />
+          </Tooltip>
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`create-task-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`create-task-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiCloseCircleFill className="w-3 h-3 text-warning" />
+          </Tooltip>
         ) : (
           <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
         ))}
@@ -158,5 +159,15 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false }: Pr
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} />;
+  return (
+    <ExpandableMessageBlock
+      title={title}
+      content={renderContent()}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
+    />
+  );
 };
