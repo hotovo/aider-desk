@@ -644,6 +644,8 @@
         "descriptionPlaceholder": "Describe this subagent's purpose, capabilities, and specialization and when this subagent should be invoked",
         "systemPrompt": "System Prompt",
         "systemPromptPlaceholder": "Your subagent's system prompt goes here. This can be multiple paragraphs and should clearly define the subagent's role, capabilities, and approach to solving problems.",
+        "includeRules": "Include project rules",
+        "includeRulesInformation": "When enabled, the subagent will include project rules (AGENTS.md, .aider-desk/rules/*.md) at the start of its system prompt. This is useful when the subagent needs to follow specific project guidelines.",
         "invocationMode": "Invocation",
         "invocationModeOnDemand": "On demand",
         "invocationModeOnDemandInformation": "Subagent is only used when explicitly requested by the user.",
