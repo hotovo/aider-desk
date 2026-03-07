@@ -883,7 +883,9 @@ export class Agent {
       // Use rules-block template to wrap rules in <Knowledge><Rules> tags
       const wrappedRules = await this.promptsManager.getRulesBlock(task, profile);
       if (systemPrompt && wrappedRules) {
-        systemPrompt = `${wrappedRules}\n\n${systemPrompt}`;
+        systemPrompt = `${wrappedRules}
+
+${systemPrompt}`;
       } else if (!systemPrompt) {
         systemPrompt = wrappedRules || '';
       }
@@ -1731,7 +1733,9 @@ export class Agent {
         // Use rules-block template to wrap rules in <Knowledge><Rules> tags
         const wrappedRules = await this.promptsManager.getRulesBlock(task, profile);
         if (customSystemPrompt && wrappedRules) {
-          systemPrompt = `${wrappedRules}\n\n${customSystemPrompt}`;
+          systemPrompt = `${wrappedRules}
+
+${customSystemPrompt}`;
         } else if (!customSystemPrompt) {
           systemPrompt = wrappedRules || '';
         }
