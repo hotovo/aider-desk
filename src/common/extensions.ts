@@ -6,24 +6,29 @@ import {
   ConnectorMessage,
   ContextFile,
   ContextMessage,
+  ContextMemoryMode,
   CreateTaskParams,
   CustomCommand,
+  InvocationMode,
   Mode,
   ModeDefinition,
   Model,
   ProjectSettings,
   PromptContext,
+  ProviderProfile,
   QuestionData,
   QueuedPromptData,
   ResponseChunkData,
   ResponseCompletedData,
+  SettingsData,
   TaskData,
   TodoItem,
+  ToolApprovalState,
   UpdatedFile,
   UsageReportData,
-  SettingsData,
-  ProviderProfile,
 } from '@common/types';
+
+export { ContextMemoryMode, InvocationMode, ToolApprovalState };
 
 export type AgentStepResult = unknown;
 export type { ModeDefinition };

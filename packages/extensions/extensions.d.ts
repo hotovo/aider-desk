@@ -285,7 +285,7 @@ export interface ContextFile {
 	readOnly?: boolean;
 	source?: "global-rule" | "project-rule" | "agent-rule";
 }
-declare enum ContextMemoryMode {
+export declare enum ContextMemoryMode {
 	Off = "off",
 	FullContext = "full-context",
 	LastMessage = "last-message"
@@ -391,7 +391,7 @@ declare const ProjectSettingsSchema: z.ZodObject<{
 	autoApproveLocked: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strip>;
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
-declare enum ToolApprovalState {
+export declare enum ToolApprovalState {
 	Always = "always",
 	Never = "never",
 	Ask = "ask"
@@ -417,7 +417,7 @@ export interface PromptBehavior {
 	};
 	useVimBindings: boolean;
 }
-declare enum InvocationMode {
+export declare enum InvocationMode {
 	OnDemand = "on-demand",
 	Automatic = "automatic"
 }
