@@ -675,7 +675,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           if (abortSignal && childProcess) {
             if (abortSignal.aborted) {
               // Signal already aborted, call handler synchronously
-              await abortListener();
+              abortListener();
             } else {
               abortSignal.addEventListener('abort', abortListener);
             }
