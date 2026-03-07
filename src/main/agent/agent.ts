@@ -873,12 +873,25 @@ export class Agent {
     // Get the base system prompt (project rules)
     const baseSystemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
 
-    // Merge base prompt with custom systemPrompt if provided
-    if (systemPrompt && baseSystemPrompt) {
-      systemPrompt = `${baseSystemPrompt}\n\n${systemPrompt}`;
+    // Check if this is a subagent with includeRules enabled
+    const isSubagent = profile.isSubagent;
+    const includeRules = isSubagent && profile.subagent.includeRules;
+
+    if (includeRules) {
+      // When includeRules is true: prepend ONLY rules content to custom systemPrompt
+      // (not the entire base system prompt template)
+      // Use rules-block template to wrap rules in <Knowledge><Rules> tags
+      const wrappedRules = await this.promptsManager.getRulesBlock(task, profile);
+      if (systemPrompt && wrappedRules) {
+        systemPrompt = `${wrappedRules}\n\n${systemPrompt}`;
+      } else if (!systemPrompt) {
+        systemPrompt = wrappedRules || '';
+      }
     } else if (!systemPrompt) {
+      // No custom systemPrompt provided, use base system prompt (main agent default)
       systemPrompt = baseSystemPrompt;
     }
+    // When includeRules is false and systemPrompt is provided, use it as-is (no merging)
 
     const toolSet = await this.getAvailableTools(
       task,
@@ -1700,8 +1713,40 @@ export class Agent {
       }
 
       const messages = await this.prepareMessages(task, profile, await task.getContextMessages(), await task.getContextFiles());
+<<<<<<< HEAD
       const toolSet = await this.getAvailableTools(task, 'agent', profile, provider, profile.model);
       const systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
+=======
+      const toolSet = await this.getAvailableTools(task, profile, provider);
+
+      // Get the base system prompt (project rules)
+      const baseSystemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
+
+      // Check if this is a subagent with includeRules enabled
+      const isSubagent = profile.isSubagent;
+      const includeRules = isSubagent && profile.subagent.includeRules;
+
+      // Get custom systemPrompt from subagent profile (if this is a subagent)
+      const customSystemPrompt = isSubagent ? profile.subagent.systemPrompt : undefined;
+
+      let systemPrompt: string | undefined;
+      if (includeRules) {
+        // When includeRules is true: prepend ONLY rules content to custom systemPrompt
+        // Use rules-block template to wrap rules in <Knowledge><Rules> tags
+        const wrappedRules = await this.promptsManager.getRulesBlock(task, profile);
+        if (customSystemPrompt && wrappedRules) {
+          systemPrompt = `${wrappedRules}\n\n${customSystemPrompt}`;
+        } else if (!customSystemPrompt) {
+          systemPrompt = wrappedRules || '';
+        }
+      } else if (customSystemPrompt) {
+        // When includeRules is false and custom systemPrompt provided, use it as-is
+        systemPrompt = customSystemPrompt;
+      } else {
+        // No custom systemPrompt provided, use base system prompt
+        systemPrompt = baseSystemPrompt;
+      }
+>>>>>>> ce12d694 (feat: add includeRules option for subagents)
 
       const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
 
@@ -1730,7 +1775,7 @@ export class Agent {
         role: 'system',
         content: toolDefinitionsString,
       });
-      optimizedMessages.unshift({ role: 'system', content: systemPrompt });
+      optimizedMessages.unshift({ role: 'system', content: systemPrompt || '' });
 
       const chatMessages = optimizedMessages.map((msg) => ({
         role: msg.role === 'tool' ? 'user' : msg.role, // Map 'tool' role to user message as gpt-tokenizer does not support tool messages

@@ -840,6 +840,8 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
   describe('systemPrompt merging', () => {
     // Variables for systemPrompt merging tests
     let mockPromptsManagerGetSystemPrompt: ReturnType<typeof vi.fn>;
+    let mockPromptsManagerGetRulesContent: ReturnType<typeof vi.fn>;
+    let mockPromptsManagerGetRulesBlock: ReturnType<typeof vi.fn>;
     let mockModelManagerCreateLlm: ReturnType<typeof vi.fn>;
     let mockProvider: any;
     let mockTaskWithRun: any;
@@ -849,10 +851,14 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
 
       // Create mock for getSystemPrompt
       mockPromptsManagerGetSystemPrompt = vi.fn();
+      mockPromptsManagerGetRulesContent = vi.fn();
+      mockPromptsManagerGetRulesBlock = vi.fn();
 
       // Update the mockPromptsManager with the getSystemPrompt mock
       mockPromptsManager = {
         getSystemPrompt: mockPromptsManagerGetSystemPrompt,
+        getRulesContent: mockPromptsManagerGetRulesContent,
+        getRulesBlock: mockPromptsManagerGetRulesBlock,
       };
 
       // Add missing methods to agentProfileManager mock
@@ -883,7 +889,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
         doWrite: vi.fn(),
       });
       mockModelManager.createLlm = mockModelManagerCreateLlm;
-      mockModelManager.normalizeMessages = vi.fn().mockImplementation((provider, model, messages) => messages);
+      mockModelManager.normalizeMessages = vi.fn().mockImplementation((_provider, _model, messages) => messages);
 
       // Mock fs.readdir to return empty array to avoid skills loading issues
       mockFsReadFile.mockResolvedValue(Buffer.from('file content'));
@@ -955,40 +961,6 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       expect(mockPromptsManagerGetSystemPrompt).toHaveBeenCalled();
     });
 
-    it('should merge custom systemPrompt with base prompt (both appear in result)', async () => {
-      // Arrange
-      const basePrompt = 'BASE_PROMPT_FROM_RULES';
-      const customPrompt = 'CUSTOM_PROMPT';
-
-      mockPromptsManagerGetSystemPrompt.mockResolvedValue(basePrompt);
-
-      const profile = createMockAgentProfile({
-        provider: 'anthropic',
-      });
-
-      // Act
-      await agent.runAgent(
-        mockTaskWithRun,
-        profile,
-        'test prompt',
-        undefined,
-        [],
-        [],
-        customPrompt, // custom systemPrompt parameter
-      );
-
-      // Assert - verify the systemPrompt passed to createLlm contains both
-      expect(mockModelManagerCreateLlm).toHaveBeenCalled();
-      const callArgs = mockModelManagerCreateLlm.mock.calls[0];
-      const systemPromptPassedToModel = callArgs[5]; // systemPrompt is the 6th argument
-
-      // Should contain base prompt first, then custom prompt
-      expect(systemPromptPassedToModel).toContain(basePrompt);
-      expect(systemPromptPassedToModel).toContain(customPrompt);
-      // Verify order: base first, then custom (separated by newlines)
-      expect(systemPromptPassedToModel.indexOf(basePrompt)).toBeLessThan(systemPromptPassedToModel.indexOf(customPrompt));
-    });
-
     it('should use base prompt when no custom systemPrompt is provided', async () => {
       // Arrange
       const basePrompt = 'BASE_PROMPT_FROM_RULES_ONLY';
@@ -1030,15 +1002,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       });
 
       // Act
-      await agent.runAgent(
-        mockTaskWithRun,
-        profile,
-        'test prompt',
-        undefined,
-        [],
-        [],
-        customPrompt,
-      );
+      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, [], [], customPrompt);
 
       // Assert
       expect(mockModelManagerCreateLlm).toHaveBeenCalled();
@@ -1047,6 +1011,210 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
 
       // Should just be the custom prompt when base is empty
       expect(systemPromptPassedToModel).toBe(customPrompt);
+    });
+  });
+
+  describe('includeRules toggle behavior for subagents', () => {
+    // Variables for includeRules tests
+    let mockPromptsManagerGetSystemPrompt: ReturnType<typeof vi.fn>;
+    let mockPromptsManagerGetRulesContent: ReturnType<typeof vi.fn>;
+    let mockPromptsManagerGetRulesBlock: ReturnType<typeof vi.fn>;
+    let mockModelManagerCreateLlm: ReturnType<typeof vi.fn>;
+    let mockProvider: any;
+    let mockTaskWithRun: any;
+
+    beforeEach(async () => {
+      vi.clearAllMocks();
+
+      // Create mocks for getSystemPrompt and getRulesContent
+      mockPromptsManagerGetSystemPrompt = vi.fn();
+      mockPromptsManagerGetRulesContent = vi.fn();
+      mockPromptsManagerGetRulesBlock = vi.fn();
+
+      mockPromptsManager = {
+        getSystemPrompt: mockPromptsManagerGetSystemPrompt,
+        getRulesContent: mockPromptsManagerGetRulesContent,
+        getRulesBlock: mockPromptsManagerGetRulesBlock,
+      };
+
+      // Add missing methods to agentProfileManager mock
+      mockAgentProfileManager = {
+        getProjectProfiles: vi.fn().mockReturnValue([]),
+        getProfile: vi.fn(),
+      };
+
+      // Re-create agent with updated mocks
+      agent = new AgentClass(
+        mockStore as any,
+        mockAgentProfileManager as any,
+        mockMcpManager as any,
+        mockModelManager as any,
+        mockTelemetryManager as any,
+        mockMemoryManager as any,
+        mockPromptsManager as any,
+      );
+
+      // Spy on the private method for testing
+      originalGetContextFilesMessages = agent['getContextFilesMessages'];
+      agent['getContextFilesMessages'] = vi.fn();
+
+      // Create mock for createLlm to capture what systemPrompt is passed
+      mockModelManagerCreateLlm = vi.fn().mockReturnValue({
+        modelId: 'test-model',
+        doStream: vi.fn(),
+        doWrite: vi.fn(),
+      });
+      mockModelManager.createLlm = mockModelManagerCreateLlm;
+      mockModelManager.normalizeMessages = vi.fn().mockImplementation((_provider, _model, messages) => messages);
+
+      // Mock fs.readdir to return empty array to avoid skills loading issues
+      mockFsReadFile.mockResolvedValue(Buffer.from('file content'));
+      vi.mocked(fs.readdir).mockResolvedValue([]);
+      vi.mocked(fs.stat).mockRejectedValue(new Error('not found'));
+
+      // Setup provider mock
+      mockProvider = {
+        id: 'anthropic',
+        provider: {
+          name: 'Anthropic',
+          languageModel: vi.fn().mockReturnValue({}),
+        },
+      };
+
+      // Update store mock to return our provider
+      mockStore.getProviders = vi.fn(() => [mockProvider]);
+      mockStore.getSettings = vi.fn(() => ({}));
+
+      // Create a task mock with all required methods
+      mockTaskWithRun = {
+        ...mockTask,
+        getContextMessages: vi.fn().mockResolvedValue([]),
+        getContextFiles: vi.fn().mockResolvedValue([]),
+        addContextMessage: vi.fn(),
+        addLogMessage: vi.fn(),
+        hookManager: {
+          trigger: vi.fn().mockResolvedValue({ blocked: false, event: { prompt: 'test prompt' } }),
+        },
+        getProjectDir: vi.fn().mockReturnValue('/test/project'),
+        getTaskDir: vi.fn().mockReturnValue('/test/project'),
+        task: {
+          ...mockTask.task,
+          autoApprove: false,
+        },
+      };
+    });
+
+    afterEach(() => {
+      // Restore original method
+      if (originalGetContextFilesMessages) {
+        agent['getContextFilesMessages'] = originalGetContextFilesMessages;
+      }
+    });
+
+    it('should use custom systemPrompt as-is when includeRules is false (default)', async () => {
+      // Arrange
+      const customSystemPrompt = 'This is the custom subagent system prompt.';
+
+      mockPromptsManagerGetSystemPrompt.mockResolvedValue('base prompt');
+      mockPromptsManagerGetRulesContent.mockResolvedValue('rules content');
+
+      const profile = createMockAgentProfile({
+        provider: 'anthropic',
+        isSubagent: true,
+        subagent: {
+          enabled: true,
+          systemPrompt: customSystemPrompt,
+          includeRules: false, // explicitly set to false
+          invocationMode: 'automatic' as any,
+          contextMemory: 'lastMessage' as any,
+          color: '#3368a8',
+          description: 'Test subagent',
+        },
+      });
+
+      // Act
+      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, [], [], customSystemPrompt);
+
+      // Assert
+      expect(mockModelManagerCreateLlm).toHaveBeenCalled();
+      const callArgs = mockModelManagerCreateLlm.mock.calls[0];
+      const systemPromptPassedToModel = callArgs[5];
+
+      // Should use ONLY the custom systemPrompt (no rules, no base prompt)
+      expect(systemPromptPassedToModel).toBe(customSystemPrompt);
+      // getRulesContent should NOT be called when includeRules is false
+      expect(mockPromptsManagerGetRulesContent).not.toHaveBeenCalled();
+    });
+
+    it('should prepend rules content to custom systemPrompt when includeRules is true', async () => {
+      // Arrange
+      const rulesContent = 'RULES_CONTENT_HERE';
+      const customSystemPrompt = 'CUSTOM_SYSTEM_PROMPT_HERE';
+      const wrappedRules = `<Knowledge>\n  <Rules>\n${rulesContent}\n  </Rules>\n</Knowledge>`;
+
+      mockPromptsManagerGetSystemPrompt.mockResolvedValue('base prompt');
+      mockPromptsManagerGetRulesBlock.mockResolvedValue(wrappedRules);
+
+      const profile = createMockAgentProfile({
+        provider: 'anthropic',
+        isSubagent: true,
+        subagent: {
+          enabled: true,
+          systemPrompt: customSystemPrompt,
+          includeRules: true,
+          invocationMode: 'automatic' as any,
+          contextMemory: 'lastMessage' as any,
+          color: '#3368a8',
+          description: 'Test subagent',
+        },
+      });
+
+      // Act
+      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, [], [], customSystemPrompt);
+
+      // Assert
+      expect(mockModelManagerCreateLlm).toHaveBeenCalled();
+      const callArgs = mockModelManagerCreateLlm.mock.calls[0];
+      const systemPromptPassedToModel = callArgs[5];
+
+      // Should have wrapped rules in <Knowledge><Rules> tags + '\n\n' + customSystemPrompt
+      const expected = `${wrappedRules}\n\n${customSystemPrompt}`;
+      expect(systemPromptPassedToModel).toBe(expected);
+    });
+
+    it('should behave same as false when includeRules is undefined', async () => {
+      // Arrange
+      const customSystemPrompt = 'This is the custom subagent system prompt.';
+
+      mockPromptsManagerGetSystemPrompt.mockResolvedValue('base prompt');
+      mockPromptsManagerGetRulesContent.mockResolvedValue('rules content');
+
+      const profile = createMockAgentProfile({
+        provider: 'anthropic',
+        isSubagent: true,
+        subagent: {
+          enabled: true,
+          systemPrompt: customSystemPrompt,
+          includeRules: false,
+          invocationMode: 'automatic' as any,
+          contextMemory: 'lastMessage' as any,
+          color: '#3368a8',
+          description: 'Test subagent',
+        },
+      });
+
+      // Act
+      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, [], [], customSystemPrompt);
+
+      // Assert
+      expect(mockModelManagerCreateLlm).toHaveBeenCalled();
+      const callArgs = mockModelManagerCreateLlm.mock.calls[0];
+      const systemPromptPassedToModel = callArgs[5];
+
+      // Should use ONLY the custom systemPrompt (same as when includeRules is false)
+      expect(systemPromptPassedToModel).toBe(customSystemPrompt);
+      // getRulesContent should NOT be called when includeRules is undefined
+      expect(mockPromptsManagerGetRulesContent).not.toHaveBeenCalled();
     });
   });
 });

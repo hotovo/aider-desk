@@ -424,6 +424,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     color: '#3368a8',
     description: '',
     contextMemory: ContextMemoryMode.Off,
+    includeRules: false,
   },
   ruleFiles: [],
 };
