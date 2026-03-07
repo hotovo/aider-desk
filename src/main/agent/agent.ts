@@ -1713,11 +1713,7 @@ export class Agent {
       }
 
       const messages = await this.prepareMessages(task, profile, await task.getContextMessages(), await task.getContextFiles());
-<<<<<<< HEAD
       const toolSet = await this.getAvailableTools(task, 'agent', profile, provider, profile.model);
-      const systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
-=======
-      const toolSet = await this.getAvailableTools(task, profile, provider);
 
       // Get the base system prompt (project rules)
       const baseSystemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
@@ -1746,7 +1742,6 @@ export class Agent {
         // No custom systemPrompt provided, use base system prompt
         systemPrompt = baseSystemPrompt;
       }
->>>>>>> ce12d694 (feat: add includeRules option for subagents)
 
       const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
 

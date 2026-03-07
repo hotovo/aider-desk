@@ -68,6 +68,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
   let mockTelemetryManager: any;
   let mockMemoryManager: any;
   let mockPromptsManager: any;
+  let mockExtensionManager: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -114,9 +115,10 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
     };
     mockMemoryManager = {};
     mockPromptsManager = {};
-    const mockExtensionManager = {
+    mockExtensionManager = {
       isInitialized: vi.fn(() => false),
       createExtensionToolset: vi.fn(() => ({})),
+      dispatchEvent: vi.fn().mockImplementation((_eventName, data) => data),
     };
 
     agent = new AgentClass(
@@ -876,6 +878,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
         mockTelemetryManager as any,
         mockMemoryManager as any,
         mockPromptsManager as any,
+        mockExtensionManager as any,
       );
 
       // Spy on the private method for testing
@@ -952,6 +955,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
         profile,
         'test prompt',
         undefined,
+        { id: 'test-context-id' },
         [],
         [],
         customPrompt, // custom systemPrompt parameter
@@ -977,6 +981,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
         profile,
         'test prompt',
         undefined,
+        { id: 'test-context-id' },
         [],
         [],
         undefined, // no custom systemPrompt
@@ -1002,7 +1007,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       });
 
       // Act
-      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, [], [], customPrompt);
+      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, { id: 'test-context-id' }, [], [], customPrompt);
 
       // Assert
       expect(mockModelManagerCreateLlm).toHaveBeenCalled();
@@ -1052,6 +1057,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
         mockTelemetryManager as any,
         mockMemoryManager as any,
         mockPromptsManager as any,
+        mockExtensionManager as any,
       );
 
       // Spy on the private method for testing
@@ -1133,7 +1139,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       });
 
       // Act
-      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, [], [], customSystemPrompt);
+      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, { id: 'test-context-id' }, [], [], customSystemPrompt);
 
       // Assert
       expect(mockModelManagerCreateLlm).toHaveBeenCalled();
@@ -1170,7 +1176,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       });
 
       // Act
-      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, [], [], customSystemPrompt);
+      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, { id: 'test-context-id' }, [], [], customSystemPrompt);
 
       // Assert
       expect(mockModelManagerCreateLlm).toHaveBeenCalled();
@@ -1204,7 +1210,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       });
 
       // Act
-      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, [], [], customSystemPrompt);
+      await agent.runAgent(mockTaskWithRun, profile, 'test prompt', undefined, { id: 'test-context-id' }, [], [], customSystemPrompt);
 
       // Assert
       expect(mockModelManagerCreateLlm).toHaveBeenCalled();

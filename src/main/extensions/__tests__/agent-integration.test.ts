@@ -138,6 +138,7 @@ const createMockProfile = (): AgentProfile => ({
     invocationMode: 'on-demand' as InvocationMode,
     color: '#000',
     description: '',
+    includeRules: false,
   },
 });
 
