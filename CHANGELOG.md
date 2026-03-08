@@ -16,6 +16,7 @@
 - removed unnecessary Close tooltip on overlay pages to avoid issue with tooltip getting stuck open
 - updated files not also show locally commited files when in worktree mode
 - code inline requests from the Updated files page now utilize the current task and mode
+- preserving activate skill tool messages when compacting the conversation
 
 ## [0.55.0]
 

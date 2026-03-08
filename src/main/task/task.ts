@@ -11,6 +11,7 @@ import {
   ContextAssistantMessage,
   ContextFile,
   ContextMessage,
+  ToolCallPart,
   DefaultTaskState,
   EditFormat,
   FileEdit,
@@ -42,12 +43,14 @@ import {
   WorkflowExecutionOptions,
   WorkflowExecutionResult,
 } from '@common/types';
-import { extractProviderModel, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import { extractProviderModel, extractTextContent, extractServerNameToolName, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
+import { SKILLS_TOOL_ACTIVATE_SKILL } from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 
+import type { ToolContent } from '@common/types';
 import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 
@@ -2457,6 +2460,56 @@ export class Task {
     });
   }
 
+  private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextMessage[] {
+    const skillMessages: ContextMessage[] = [];
+
+    for (const message of contextMessages) {
+      if (message.role === 'assistant' && Array.isArray(message.content)) {
+        // Collect skill activation tool calls from this message
+        const skillToolCalls: ToolCallPart[] = [];
+        for (const part of message.content) {
+          if (part.type === 'tool-call') {
+            const [, toolName] = extractServerNameToolName(part.toolName);
+            if (toolName === SKILLS_TOOL_ACTIVATE_SKILL) {
+              skillToolCalls.push(part);
+            }
+          }
+        }
+
+        // If we found skill activation tool calls, create filtered messages
+        for (const toolCall of skillToolCalls) {
+          // Find corresponding tool-result message
+          const originalToolMsg = contextMessages.find(
+            (m) => m.role === 'tool' && Array.isArray(m.content) && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === toolCall.toolCallId),
+          );
+          if (originalToolMsg) {
+            // Create a filtered tool message that only contains the skill activation tool-result
+            const toolResultPart = (originalToolMsg.content as ToolContent).find((p) => p.type === 'tool-result' && p.toolCallId === toolCall.toolCallId);
+            if (toolResultPart) {
+              // Create a filtered assistant message that only contains the skill activation tool-call
+              const filteredAssistantMsg: ContextMessage = {
+                id: message.id,
+                role: message.role,
+                content: [toolCall],
+                promptContext: message.promptContext,
+              };
+
+              const filteredToolMsg: ContextMessage = {
+                id: originalToolMsg.id,
+                role: 'tool',
+                content: [toolResultPart],
+                promptContext: originalToolMsg.promptContext,
+              };
+              skillMessages.push(filteredAssistantMsg, filteredToolMsg);
+            }
+          }
+        }
+      }
+    }
+
+    return skillMessages;
+  }
+
   public async compactConversation(
     mode: Mode,
     customInstructions?: string,
@@ -2481,6 +2534,9 @@ export class Task {
       this.addLogMessage('warning', 'No conversation to compact.');
       return;
     }
+
+    // Find skill activation messages before generating summary
+    const skillMessages = this.findSkillActivationMessages(contextMessages);
 
     this.addLogMessage('loading', loadingMessage);
 
@@ -2531,7 +2587,9 @@ export class Task {
           const summaryMessage = agentMessages[agentMessages.length - 1];
           summaryMessage.content = extractSummary(extractTextContent(summaryMessage.content));
 
-          this.contextManager.setContextMessages([userMessage, summaryMessage]);
+          const finalMessages: ContextMessage[] = [userMessage, ...skillMessages, summaryMessage];
+
+          this.contextManager.setContextMessages(finalMessages);
 
           await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
         }
@@ -2558,8 +2616,11 @@ export class Task {
           }
         }
 
+        // Create final messages array with skill activations inserted between user message and rest
+        const finalMessages: ContextMessage[] = [userMessage, ...skillMessages, ...newMessages.slice(1)];
+
         // Set all messages at once
-        this.contextManager.setContextMessages(newMessages);
+        this.contextManager.setContextMessages(finalMessages);
 
         await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
       }
