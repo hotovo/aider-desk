@@ -2,7 +2,16 @@ import path, { join } from 'path';
 import fs, { mkdir, rm, lstat, symlink } from 'fs/promises';
 import { existsSync } from 'fs';
 
-import { ConflictResolutionFileContext, MergeState, RebaseState, UpdatedFile, Worktree, WorktreeAheadCommits, WorktreeUncommittedFiles } from '@common/types';
+import {
+  ConflictResolutionFileContext,
+  MergeState,
+  RebaseState,
+  UpdatedFile,
+  WorkingMode,
+  Worktree,
+  WorktreeAheadCommits,
+  WorktreeUncommittedFiles,
+} from '@common/types';
 // @ts-expect-error istextorbinary library does not provide TypeScript definitions
 import { isBinary } from 'istextorbinary';
 
@@ -1447,10 +1456,45 @@ export class WorktreeManager {
    * Format: "additions\0deletions\0filepath\0"
    * The -z flag uses NUL-separated output to handle filenames with special characters correctly
    * Also fetches the full git diff for each file
+   * In worktree mode, shows files differing from main branch with commit info
    */
-  async getUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]> {
+  async getUpdatedFiles(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string): Promise<UpdatedFile[]> {
     try {
-      const { stdout } = await execWithShellPath('git diff --numstat -z HEAD', {
+      // Build commit map for worktree mode
+      const commitMap = new Map<string, { hash: string; message: string }>();
+      let diffCommand = 'git diff --numstat -z HEAD';
+
+      if (workingMode === 'worktree' && mainBranch) {
+        // In worktree mode, get all files that differ from main branch
+        diffCommand = `git diff --numstat -z ${mainBranch}..HEAD`;
+
+        // Get commit information for files in the range
+        try {
+          const { stdout: logOutput } = await execWithShellPath(`git log --pretty=format:'%H|%s' --name-only ${mainBranch}..HEAD`, { cwd: worktreePath });
+
+          // Parse log output to build file -> commit mapping
+          let currentCommit: { hash: string; message: string } | null = null;
+          for (const line of logOutput.split('\n')) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) {
+              continue;
+            }
+
+            // Check if this is a commit header (hash|message format)
+            if (trimmedLine.includes('|')) {
+              const [hash, message] = trimmedLine.split('|');
+              currentCommit = { hash, message };
+            } else if (currentCommit) {
+              // This is a file path
+              commitMap.set(trimmedLine, currentCommit);
+            }
+          }
+        } catch (logError) {
+          logger.warn('Failed to get commit information:', logError);
+        }
+      }
+
+      const { stdout } = await execWithShellPath(diffCommand, {
         cwd: worktreePath,
       });
 
@@ -1485,14 +1529,27 @@ export class WorktreeManager {
               const fileContentBuffer = await fs.readFile(absoluteFilePath);
               if (isBinary(filePath, fileContentBuffer)) {
                 // Binary file - skip diff
-                files.push({ path: filePath, additions, deletions, diff });
+                const commitInfo = commitMap.get(filePath);
+                files.push({
+                  path: filePath,
+                  additions,
+                  deletions,
+                  diff,
+                  commitHash: commitInfo?.hash,
+                  commitMessage: commitInfo?.message,
+                });
                 continue;
               }
             }
 
             // Escape file path for git command - use quotes and -- separator
             const escapedPath = filePath.replace(/"/g, '\\"');
-            const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 HEAD -- "${escapedPath}"`, {
+            const gitDiffCmd =
+              workingMode === 'worktree' && mainBranch
+                ? `git diff --unified=3 ${mainBranch}..HEAD -- "${escapedPath}"`
+                : `git diff --unified=3 HEAD -- "${escapedPath}"`;
+
+            const { stdout: diffOutput } = await execWithShellPath(gitDiffCmd, {
               cwd: worktreePath,
               maxBuffer: 10 * 1024 * 1024, // 10 MB
             });
@@ -1503,7 +1560,15 @@ export class WorktreeManager {
             diff = '';
           }
 
-          files.push({ path: filePath, additions, deletions, diff });
+          const commitInfo = commitMap.get(filePath);
+          files.push({
+            path: filePath,
+            additions,
+            deletions,
+            diff,
+            commitHash: commitInfo?.hash,
+            commitMessage: commitInfo?.message,
+          });
         }
       }
 

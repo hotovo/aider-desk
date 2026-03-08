@@ -199,6 +199,8 @@ export interface UpdatedFile {
   additions: number;
   deletions: number;
   diff?: string;
+  commitHash?: string;
+  commitMessage?: string;
 }
 
 export interface UpdatedFilesUpdatedData {
@@ -793,6 +795,8 @@ export interface CreateTaskParams {
   sendEvent?: boolean;
   provider?: string;
   model?: string;
+  mode?: Mode;
+  addInitialContextFiles?: boolean;
 }
 
 export interface TaskCreatedData {

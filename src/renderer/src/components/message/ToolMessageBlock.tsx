@@ -193,7 +193,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
 
   const title = (
     <div className="w-full text-left">
-      <div className="flex items-center justify-between gap-2 select-none w-full px-1 py-0.5">
+      <div className="flex items-center justify-between gap-2 select-none w-full">
         <div className="flex items-center gap-2">
           <div className={`text-text-muted ${isExecuting ? 'animate-pulse' : ''}`}>
             <RiToolsFill className="w-4 h-4" />

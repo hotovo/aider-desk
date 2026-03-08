@@ -261,13 +261,15 @@ export class EventsHandler {
     await task.handoffConversation(mode, focus);
   }
 
-  async runCodeInlineRequest(baseDir: string, filename: string, lineNumber: number, userComment: string): Promise<void> {
-    const project = this.projectManager.getProject(baseDir);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-
-    await project.runCodeInlineRequest(filename, lineNumber, userComment);
+  async runCodeInlineRequest(
+    baseDir: string,
+    taskId: string,
+    filename: string,
+    lineNumber: number,
+    userComment: string,
+    createNewTask?: boolean,
+  ): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.runCodeInlineRequest(filename, lineNumber, userComment, createNewTask);
   }
 
   async loadInputHistory(baseDir: string): Promise<string[]> {

@@ -1283,7 +1283,8 @@
     "noChanges": "No changes have been made. Content is identical.",
     "lineComment": {
       "placeholder": "Describe the changes you want to make to this code...",
-      "taskName": "Update {{filename}}"
+      "taskName": "Update {{filename}}",
+      "createNewTask": "Create new task"
     }
   },
   "promptField": {

@@ -1259,7 +1259,8 @@
     "noChanges": "没有进行任何更改。内容相同。",
     "lineComment": {
       "placeholder": "描述您想要对此代码进行的更改...",
-      "taskName": "更新 {{filename}}"
+      "taskName": "更新 {{filename}}",
+      "createNewTask": "创建新任务"
     }
   },
   "promptField": {

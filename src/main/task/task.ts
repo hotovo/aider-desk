@@ -1928,7 +1928,8 @@ export class Task {
   }
 
   public async getUpdatedFiles(): Promise<UpdatedFile[]> {
-    return await this.worktreeManager.getUpdatedFiles(this.getTaskDir());
+    const mainBranch = this.task.worktree ? await this.worktreeManager.getProjectMainBranch(this.project.baseDir) : undefined;
+    return await this.worktreeManager.getUpdatedFiles(this.getTaskDir(), this.task.workingMode, mainBranch);
   }
 
   public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]> {
@@ -3897,5 +3898,81 @@ ${error.stderr}`,
 
   public async generateText(profile: AgentProfile, systemPrompt: string, prompt: string): Promise<string | undefined> {
     return this.agent.generateText(profile, systemPrompt, prompt, this.getProjectDir());
+  }
+
+  async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, createNewTask?: boolean, contextSize: number = 5): Promise<void> {
+    const filePath = path.isAbsolute(filename) ? filename : path.join(this.getTaskDir(), filename);
+    const fileExtension = path.extname(filename).slice(1) || '';
+
+    let contextLines: { lineNumber: number; content: string }[] = [];
+    try {
+      const fileContent = await fs.readFile(filePath, 'utf-8');
+      const lines = fileContent.split('\n');
+      const startLine = Math.max(0, lineNumber - contextSize - 1);
+      const endLine = Math.min(lines.length, lineNumber + contextSize);
+
+      contextLines = lines.slice(startLine, endLine).map((content, index) => ({
+        lineNumber: startLine + index + 1,
+        content,
+      }));
+    } catch (error) {
+      logger.warn('Failed to read file for context extraction', {
+        filePath,
+        error,
+      });
+    }
+
+    const prompt = await this.promptsManager.getCodeInlineRequestPrompt(this, {
+      filename,
+      lineNumber,
+      fileExtension,
+      contextLines,
+      userComment,
+    });
+    const mode = this.getCurrentMode();
+
+    if (!createNewTask) {
+      if (AIDER_MODES.includes(mode)) {
+        await this.addFiles({
+          path: filename,
+        });
+      }
+
+      void this.runPrompt(prompt, mode, false);
+      return;
+    }
+
+    this.eventManager.sendLog({
+      baseDir: this.project.baseDir,
+      taskId: INTERNAL_TASK_ID,
+      level: 'loading',
+      message: 'Creating task for inline code request...',
+    });
+
+    const newTaskData = await this.project.createNewTask({
+      name: `${filename}:${lineNumber}`,
+      sendEvent: false,
+      autoApprove: true,
+      activate: true,
+      mode,
+      parentId: this.task.parentId || this.taskId,
+      addInitialContextFiles: false,
+    });
+
+    const newTask = this.project.getTask(newTaskData.id);
+    if (!newTask) {
+      throw new Error('Failed to get newly created task');
+    }
+
+    await newTask.init();
+    if (AIDER_MODES.includes(mode)) {
+      await newTask.addFiles({
+        path: filename,
+      });
+    }
+
+    this.eventManager.sendTaskCreated(newTask.task, true);
+
+    void newTask.runPrompt(prompt, mode, false);
   }
 }

@@ -133,7 +133,8 @@ const api: ApplicationAPI = {
   removeMessagesUpTo: (baseDir, taskId, messageId) => ipcRenderer.invoke('remove-messages-up-to', baseDir, taskId, messageId),
   compactConversation: (baseDir, taskId, mode, customInstructions) => ipcRenderer.invoke('compact-conversation', baseDir, taskId, mode, customInstructions),
   handoffConversation: (baseDir, taskId, focus) => ipcRenderer.invoke('handoff-conversation', baseDir, taskId, focus),
-  runCodeInlineRequest: (baseDir, filename, lineNumber, userComment) => ipcRenderer.send('run-code-inline-request', baseDir, filename, lineNumber, userComment),
+  runCodeInlineRequest: (baseDir, taskId, filename, lineNumber, userComment, createNewTask) =>
+    ipcRenderer.send('run-code-inline-request', baseDir, taskId, filename, lineNumber, userComment, createNewTask),
   setZoomLevel: (level) => ipcRenderer.invoke('set-zoom-level', level),
   getVersions: (forceRefresh = false) => ipcRenderer.invoke('get-versions', forceRefresh),
   downloadLatestAiderDesk: () => ipcRenderer.invoke('download-latest-aiderdesk'),
