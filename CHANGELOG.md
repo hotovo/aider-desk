@@ -17,6 +17,7 @@
 - updated files not also show locally commited files when in worktree mode
 - code inline requests from the Updated files page now utilize the current task and mode
 - preserving activate skill tool messages when compacting the conversation
+- increased timeouts for LLM processing in Agent mode
 
 ## [0.55.0]
 

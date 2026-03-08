@@ -1,6 +1,16 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+// eslint-disable-next-line import/order
+import { Agent as UndiciAgent, setGlobalDispatcher } from 'undici';
+setGlobalDispatcher(
+  new UndiciAgent({
+    headersTimeout: 30 * 60 * 1000, // 30 minutes
+    bodyTimeout: 30 * 60 * 1000, // 30 minutes
+    connectTimeout: 30 * 1000, // 30 seconds
+  }),
+);
+
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
