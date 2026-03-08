@@ -19,6 +19,7 @@
 - preserving activate skill tool messages when compacting the conversation
 - increased timeouts for LLM processing in Agent mode
 - exposed allTools argument to Extension tool execute function
+- preserving prompt field text when switching between projects
 
 ## [0.55.0]
 

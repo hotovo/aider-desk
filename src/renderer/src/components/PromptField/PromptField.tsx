@@ -237,6 +237,24 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     );
 
     useEffect(() => {
+      if (text) {
+        // we need to set the text when the component mounts and the text is not empty (e.g. Activity use case)
+        requestAnimationFrame(() => {
+          const view = editorRef.current?.view;
+          view?.dispatch({
+            changes: {
+              from: 0,
+              to: view.state.doc.toString().length,
+              insert: text,
+            },
+            annotations: [External.of(true)],
+          });
+        });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
       if (voiceError) {
         showErrorNotification(voiceError, false);
       }
@@ -601,6 +619,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     }, [isActive, disabled]);
 
     useEffect(() => {
+      console.log('text', text);
       const commandMatch = COMMANDS.find((cmd) => {
         if (text === cmd) {
           return true;
