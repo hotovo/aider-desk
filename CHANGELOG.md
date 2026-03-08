@@ -18,6 +18,7 @@
 - code inline requests from the Updated files page now utilize the current task and mode
 - preserving activate skill tool messages when compacting the conversation
 - increased timeouts for LLM processing in Agent mode
+- exposed allTools argument to Extension tool execute function
 
 ## [0.55.0]
 

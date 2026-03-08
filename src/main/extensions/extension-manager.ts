@@ -6,7 +6,7 @@ import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
 import { AvailableExtension, ToolApprovalState } from '@common/types';
-import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
+import { AIDER_DESK_EXTENSIONS_REPO_URL, Tool } from '@common/extensions';
 
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
@@ -663,10 +663,11 @@ export class ExtensionManager {
    * @param task - The current Task instance
    * @param mode - The current mode
    * @param profile - The agent profile with tool approval settings
+   * @param allTools - The complete set of available tools
    * @param abortSignal - Optional AbortSignal for cancellation support
    * @returns A ToolSet containing all approved extension tools
    */
-  createExtensionToolset(task: Task, mode: string, profile: AgentProfile, abortSignal?: AbortSignal): ToolSet {
+  createExtensionToolset(task: Task, mode: string, profile: AgentProfile, allTools: ToolSet, abortSignal?: AbortSignal): ToolSet {
     const toolSet: ToolSet = {};
     const registeredTools = this.getTools(task, mode, profile);
 
@@ -684,8 +685,28 @@ export class ExtensionManager {
         description: tool.description,
         inputSchema: tool.inputSchema,
         execute: async (input: Record<string, unknown>, options: ToolCallOptions) => {
+          const allToolsInternal = Object.entries(allTools).reduce(
+            (acc, [toolId, tool]) => {
+              acc[toolId] = {
+                execute: async (input: Record<string, unknown>) => {
+                  if (tool.execute) {
+                    return await tool.execute(input, {
+                      toolCallId: '',
+                      abortSignal: abortSignal || options.abortSignal,
+                      messages: [],
+                    });
+                  } else {
+                    return 'Tool does not have an execute function';
+                  }
+                },
+              };
+              return acc;
+            },
+            {} as Record<string, Tool>,
+          );
+
           try {
-            return await tool.execute(input, abortSignal || options.abortSignal, context);
+            return await tool.execute(input, abortSignal || options.abortSignal, context, allToolsInternal);
           } catch (error) {
             // Error isolation - log and return error message
             const errorMsg = error instanceof Error ? error.message : String(error);

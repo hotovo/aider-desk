@@ -343,6 +343,8 @@ export interface UpdatedFile {
 	additions: number;
 	deletions: number;
 	diff?: string;
+	commitHash?: string;
+	commitMessage?: string;
 }
 export interface CommandsData {
 	baseDir: string;
@@ -695,6 +697,8 @@ export interface CreateTaskParams {
 	sendEvent?: boolean;
 	provider?: string;
 	model?: string;
+	mode?: Mode;
+	addInitialContextFiles?: boolean;
 }
 export interface TodoItem {
 	name: string;
@@ -775,6 +779,14 @@ export interface ToolResult {
 	isError?: boolean;
 }
 /**
+ * Definition of a tool that is part of the tool set. This tool can be executed internally by extension, but it won't be propagated to UI.
+ *
+ * @execute - Optional execute function. If not provided, the tool has other unsupported means of execution.
+ */
+export interface Tool {
+	execute?: (input: Record<string, unknown>) => Promise<unknown>;
+}
+/**
  * Definition of a tool that can be registered by an extension
  *
  * @example
@@ -800,7 +812,7 @@ export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType<Record<str
 	/** Zod schema for parameter validation */
 	inputSchema: TSchema;
 	/** Execute function with type-safe args */
-	execute: (input: z.infer<TSchema>, signal: AbortSignal | undefined, context: ExtensionContext) => Promise<unknown>;
+	execute: (input: z.infer<TSchema>, signal: AbortSignal | undefined, context: ExtensionContext, allTools: Record<string, Tool>) => Promise<unknown>;
 }
 /** UI element types */
 export type UIElementType = "action-button" | "status-indicator" | "badge";

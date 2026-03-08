@@ -47,7 +47,7 @@ describe('ToolDefinition', () => {
       },
     };
 
-    const result = (await tool.execute({ message: 'hello', repeat: 3 }, new AbortController().signal, {} as ExtensionContext)) as {
+    const result = (await tool.execute({ message: 'hello', repeat: 3 }, new AbortController().signal, {} as ExtensionContext, {})) as {
       content: Array<{ type: 'text'; text: string }>;
     };
     expect(result.content[0]).toEqual({ type: 'text', text: 'hello hello hello' });

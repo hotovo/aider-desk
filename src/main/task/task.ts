@@ -2266,8 +2266,8 @@ export class Task {
     saveToDb = true,
     finished = !!response,
   ) {
-    if (!id && !finished) {
-      logger.debug('No tool id provided for new tool message, skipping...');
+    if (!id) {
+      logger.debug('No tool id provided tool message, skipping...');
       return;
     }
 

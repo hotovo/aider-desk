@@ -166,7 +166,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       expect(toolset).toBeDefined();
       expect(Object.keys(toolset)).toHaveLength(0);
@@ -186,7 +186,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       expect(toolset).toBeDefined();
       expect(Object.keys(toolset)).toContain('my-custom-tool');
@@ -207,7 +207,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       // Execute the tool
       const toolKey = 'test-tool';
@@ -237,7 +237,7 @@ describe('Extension Tool Integration with Agent', () => {
       const abortController = new AbortController();
       const abortSignal = abortController.signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
@@ -266,7 +266,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
@@ -297,7 +297,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
@@ -325,7 +325,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
@@ -354,7 +354,7 @@ describe('Extension Tool Integration with Agent', () => {
       const abortSignal = new AbortController().signal;
 
       const startTime = Date.now();
-      manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
       const creationTime = Date.now() - startTime;
 
       // Toolset creation should be fast (< 100ms)
@@ -377,7 +377,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       expect(Object.keys(toolset)).toContain('my-tool');
     });
@@ -397,7 +397,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       expect(Object.keys(toolset)).toContain('tool-one');
       expect(Object.keys(toolset)).toContain('tool-two');
@@ -422,7 +422,7 @@ describe('Extension Tool Integration with Agent', () => {
       };
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       expect(Object.keys(toolset)).not.toContain('never-approved-tool');
     });
@@ -443,7 +443,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       expect(toolset['test-tool']!.description).toBe('A custom tool description');
     });
@@ -466,7 +466,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
 
       expect(toolset['test-tool']!.inputSchema).toBe(schema);
     });
