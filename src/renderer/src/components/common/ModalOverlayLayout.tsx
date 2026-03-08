@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 import { IoMdClose } from 'react-icons/io';
 import { useHotkeys } from 'react-hotkeys-hook';
 
@@ -13,8 +12,6 @@ type Props = {
 };
 
 export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = false }: Props) => {
-  const { t } = useTranslation();
-
   useHotkeys(
     'escape',
     (e) => {
@@ -22,7 +19,11 @@ export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = f
       e.stopPropagation();
       onClose?.();
     },
-    { enabled: !!onClose && closeOnEscape, enableOnFormTags: true, enableOnContentEditable: true },
+    {
+      enabled: !!onClose && closeOnEscape,
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+    },
   );
 
   return (
@@ -33,9 +34,9 @@ export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = f
         </div>
         {onClose && (
           <IconButton
+            data-testid="close-modal"
             icon={<IoMdClose className="h-5 w-5 text-text-secondary" />}
             onClick={onClose}
-            tooltip={t('common.close')}
             className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiary-emphasis transition-colors duration-200"
           />
         )}

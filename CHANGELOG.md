@@ -13,6 +13,7 @@
 - refined welcome message layout
 - added connection timeout during startup and support for AIDER_DESK_NO_UPDATES environment variable
 - added onPromptTemplate event to manage system prompts in Extension
+- removed unnecessary Close tooltip on overlay pages to avoid issue with tooltip getting stuck open
 
 ## [0.55.0]
 

@@ -15,12 +15,13 @@ interface IconButtonProps {
   onClick?: () => void;
   icon: ReactNode;
   tooltip?: string;
+  'data-testid'?: string;
 }
 
 // Mock IconButton as it might use tooltips or other things
 vi.mock('../IconButton', () => ({
-  IconButton: ({ onClick, icon, tooltip }: IconButtonProps) => (
-    <button onClick={onClick} title={tooltip}>
+  IconButton: ({ onClick, icon, tooltip, 'data-testid': dataTestId }: IconButtonProps) => (
+    <button onClick={onClick} title={tooltip} data-testid={dataTestId}>
       {icon}
     </button>
   ),
@@ -48,7 +49,7 @@ describe('ModalOverlayLayout', () => {
       </ModalOverlayLayout>,
     );
 
-    fireEvent.click(screen.getByTitle('common.close'));
+    fireEvent.click(screen.getByTestId('close-modal'));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -59,6 +60,6 @@ describe('ModalOverlayLayout', () => {
       </ModalOverlayLayout>,
     );
 
-    expect(screen.queryByTitle('common.close')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('close-modal')).not.toBeInTheDocument();
   });
 });
