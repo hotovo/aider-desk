@@ -151,6 +151,15 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["onLoad", "onUnload", "onProjectStarted", "onProjectStopped", "getTools", "onToolFinished"]
+    },
+    {
+      "id": "plannotator",
+      "name": "Plannotator",
+      "description": "Plan-based development workflow with visual review",
+      "folder": "plannotator",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onAgentStarted", "onToolCalled", "onToolApproval"]
     }
   ]
 }

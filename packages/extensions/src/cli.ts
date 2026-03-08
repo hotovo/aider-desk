@@ -180,6 +180,42 @@ async function loadExtensions(): Promise<ExamplesConfig> {
   }
 }
 
+function getCloneUrl(webUrl: string): string | null {
+  try {
+    const url = new URL(webUrl);
+    if (url.hostname !== 'github.com') {
+      return null;
+    }
+
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    if (pathParts.length < 2) {
+      return null;
+    }
+
+    const owner = pathParts[0];
+    const repo = pathParts[1];
+    return `https://github.com/${owner}/${repo}.git`;
+  } catch {
+    return null;
+  }
+}
+
+function getExtensionsPath(repoUrl: string): string | null {
+  try {
+    const url = new URL(repoUrl);
+    const pathParts = url.pathname.split('/').filter(Boolean);
+
+    if (pathParts.length > 4 && pathParts[2] === 'tree') {
+      const extensionPath = pathParts.slice(4).join('/');
+      return extensionPath;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function getInstallDirectory(options: { global?: boolean; directory?: string }): string {
   if (options.directory) {
     return options.directory;
@@ -266,23 +302,30 @@ async function installExtensionById(extId: string, extensions: Extension[], targ
           await installDependencies(targetPath);
         }
       } else {
-        // Clone from GitHub
+        // Clone from GitHub using sparse checkout
         spinner.text = `Downloading ${ext.name} from GitHub...`;
 
         const tempDir = join(process.cwd(), `.temp-ext-${Date.now()}`);
+        const extensionPath = `packages/extensions/extensions/${ext.folder}`;
 
         try {
-          // Clone repo temporarily
-          await runCommand('git', ['clone', '--depth', '1', GITHUB_REPO, tempDir]);
+          // Clone with sparse checkout (fetches minimal metadata only)
+          spinner.text = 'Cloning repository with sparse checkout...';
+          await runCommand('git', ['clone', '--depth', '1', '--sparse', GITHUB_REPO, tempDir]);
 
-          // Copy extension folder
-          const sourceDir = join(tempDir, 'packages', 'extensions', 'extensions', ext.folder);
+          // Set sparse-checkout to the target subdirectory
+          spinner.text = 'Configuring sparse checkout path...';
+          await runCommand('git', ['-C', tempDir, 'sparse-checkout', 'set', extensionPath]);
+
+          // Copy extension folder from sparse checkout
+          const sourceDir = join(tempDir, extensionPath);
           const targetPath = join(targetDir, ext.folder);
 
           if (!existsSync(sourceDir)) {
-            throw new Error('Extension folder not found in repository');
+            throw new Error(`Extension folder not found in repository: ${extensionPath}`);
           }
 
+          spinner.text = 'Copying extension files...';
           cpSync(sourceDir, targetPath, { recursive: true });
           spinner.succeed(chalk.green(`✓ Installed ${ext.name} from GitHub`));
 
@@ -336,32 +379,48 @@ async function installFromUrl(url: string, targetDir: string): Promise<void> {
 
       spinner.succeed(chalk.green(`✓ Installed ${fileName} to ${targetDir}`));
     } else {
-      // Assume it's a GitHub folder - we need to clone or download
+      // Assume it's a GitHub folder - use sparse checkout for efficiency
       spinner.text = 'Downloading extension folder...';
 
-      // For GitHub URLs, we'll use git clone temporarily
       if (url.includes('github.com')) {
+        const cloneUrl = getCloneUrl(url);
+        const extensionsPath = getExtensionsPath(url);
+
+        if (!cloneUrl) {
+          throw new Error('Invalid GitHub URL - could not extract repository URL');
+        }
+
+        if (!extensionsPath) {
+          throw new Error('Invalid GitHub URL - could not extract extension path from URL');
+        }
+
+        const extName = urlPath.split('/').pop() || 'extension';
         const tempDir = join(process.cwd(), `.temp-ext-${Date.now()}`);
 
         try {
-          // Clone repo temporarily
-          await runCommand('git', ['clone', '--depth', '1', url, tempDir]);
+          // Clone with sparse checkout (fetches minimal metadata only)
+          spinner.text = 'Cloning repository with sparse checkout...';
+          await runCommand('git', ['clone', '--depth', '1', '--sparse', cloneUrl, tempDir]);
 
-          // Copy extension folder
-          const extName = urlPath.split('/').pop() || 'extension';
-          const sourceDir = join(tempDir, extName);
+          // Set sparse-checkout to the target subdirectory
+          spinner.text = 'Configuring sparse checkout path...';
+          await runCommand('git', ['-C', tempDir, 'sparse-checkout', 'set', extensionsPath]);
+
+          // Copy extension folder from sparse checkout
+          const sourceDir = join(tempDir, extensionsPath);
           const targetPath = join(targetDir, extName);
 
-          if (existsSync(sourceDir)) {
-            cpSync(sourceDir, targetPath, { recursive: true });
-            spinner.succeed(chalk.green(`✓ Installed ${extName} to ${targetDir}`));
+          if (!existsSync(sourceDir)) {
+            throw new Error(`Extension folder not found in repository: ${extensionsPath}`);
+          }
 
-            // Install dependencies if package.json exists
-            if (existsSync(join(targetPath, 'package.json'))) {
-              await installDependencies(targetPath);
-            }
-          } else {
-            throw new Error('Extension folder not found in repository');
+          spinner.text = 'Copying extension files...';
+          cpSync(sourceDir, targetPath, { recursive: true });
+          spinner.succeed(chalk.green(`✓ Installed ${extName} to ${targetDir}`));
+
+          // Install dependencies if package.json exists
+          if (existsSync(join(targetPath, 'package.json'))) {
+            await installDependencies(targetPath);
           }
         } finally {
           // Cleanup temp directory
