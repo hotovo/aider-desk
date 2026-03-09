@@ -619,7 +619,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     }, [isActive, disabled]);
 
     useEffect(() => {
-      console.log('text', text);
       const commandMatch = COMMANDS.find((cmd) => {
         if (text === cmd) {
           return true;
