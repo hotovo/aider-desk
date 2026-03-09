@@ -6,7 +6,7 @@ import { HiChevronDown, HiChevronRight, HiOutlineTrash, HiPlus, HiX } from 'reac
 import { MdOutlineDifference, MdOutlinePublic, MdOutlineRefresh, MdOutlineSearch, MdUndo } from 'react-icons/md';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { TbPencilOff } from 'react-icons/tb';
-import { RiRobot2Line } from 'react-icons/ri';
+import { RiRobot2Line, RiMenuUnfold4Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { FaGitSquare } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
@@ -104,6 +104,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   mode: Mode;
+  onToggleFilesSidebarCollapse?: () => void;
 };
 
 type EmptyContextInfoProps = {
@@ -137,7 +138,17 @@ const EmptyContextInfo = ({ mode }: EmptyContextInfoProps) => {
 
 type SectionType = 'updated' | 'project' | 'context' | 'rules';
 
-export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFileDialog, tokensInfo, refreshAllFiles, mode }: Props) => {
+export const ContextFiles = ({
+  baseDir,
+  taskId,
+  allFiles,
+  contextFiles,
+  showFileDialog,
+  tokensInfo,
+  refreshAllFiles,
+  mode,
+  onToggleFilesSidebarCollapse,
+}: Props) => {
   const { t } = useTranslation();
   const os = useOS();
   const api = useApi();
@@ -618,6 +629,7 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
     _isLast?: boolean,
     searchField?: React.ReactNode,
     emptyContent?: React.ReactNode,
+    alwaysVisibleActions?: React.ReactNode,
   ) => {
     const isOpen = activeSection === section;
     const treeId = `tree-${section}`;
@@ -659,11 +671,10 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
             !isOpen && <span className="text-2xs text-text-tertiary mr-2 bg-bg-secondary-light px-1.5 rounded-full">{count}</span>
           )}
 
-          {isOpen && (
-            <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-              {actions}
-            </div>
-          )}
+          <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+            {isOpen && actions}
+            {alwaysVisibleActions}
+          </div>
         </div>
 
         {/* Search Field */}
@@ -749,6 +760,13 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
         false,
         undefined,
         <EmptyContextInfo mode={mode} />,
+        onToggleFilesSidebarCollapse ? (
+          <Tooltip content={t('common.collapse')}>
+            <button onClick={onToggleFilesSidebarCollapse} className="p-1.5 hover:bg-bg-tertiary rounded-md transition-colors">
+              <RiMenuUnfold4Line className="w-4 h-4 rotate-180" />
+            </button>
+          </Tooltip>
+        ) : undefined,
       )}
 
       {/* Updated Files Section */}

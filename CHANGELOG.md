@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- moved Files sidebar collapse/expand button to top-right of Context Files section header
+
 ## [0.56.0]
 
 - initializing aider when repo map is included in Agent profile

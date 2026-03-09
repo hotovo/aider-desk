@@ -803,18 +803,14 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               width: isFilesSidebarCollapsed ? FILES_COLLAPSED_WIDTH : sidebarWidth,
             }}
           >
-            {/* Expand/Collapse Button */}
-            <Tooltip content={isFilesSidebarCollapsed ? t('common.expand') : t('common.collapse')}>
-              <button
-                className={clsx(
-                  'absolute top-[50%] translate-y-[-50%] z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5',
-                  isFilesSidebarCollapsed ? 'left-1' : 'transition-opacity opacity-0 group-hover:opacity-100 left-3',
-                )}
-                onClick={handleToggleFilesSidebarCollapse}
-              >
-                <RiMenuUnfold4Line className={clsx('w-4 h-4 text-text-primary transition-transform duration-300', !isFilesSidebarCollapsed && 'rotate-180')} />
-              </button>
-            </Tooltip>
+            {/* Expand/Collapse Button for collapsed state */}
+            {isFilesSidebarCollapsed && (
+              <Tooltip content={t('common.expand')}>
+                <button className="absolute top-2 z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5 left-1" onClick={handleToggleFilesSidebarCollapse}>
+                  <RiMenuUnfold4Line className="w-4 h-4 text-text-primary" />
+                </button>
+              </Tooltip>
+            )}
 
             {/* Resizable wrapper for expanded state */}
             {!isFilesSidebarCollapsed && (
@@ -845,6 +841,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                     task={task}
                     updateTask={updateTask}
                     refreshAllFiles={handleRefreshAllFiles}
+                    onToggleFilesSidebarCollapse={handleToggleFilesSidebarCollapse}
                   />
                 </div>
               </ResizableBox>
