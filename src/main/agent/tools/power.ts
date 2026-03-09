@@ -32,7 +32,7 @@ import { Task } from '@/task';
 import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
-import { getShellCommandArgs } from '@/utils/shell';
+import { getShellCommandArgs, getShellPath } from '@/utils/shell';
 
 /**
  * File lock map to prevent race conditions when multiple edits target the same file.
@@ -643,7 +643,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           const { shell: shellExec, args: shellArgs } = getShellCommandArgs(command);
           const childProcess = spawn(shellExec, shellArgs, {
             cwd: absoluteCwd,
-            env: process.env,
+            env: { ...process.env, PATH: getShellPath() },
             stdio: ['ignore', 'pipe', 'pipe'], // Explicitly pipe stdout and stderr to capture output from piped commands
           });
 
