@@ -2711,7 +2711,8 @@ File: src/common/locales/en.json
     "noChanges": "No changes have been made. Content is identical.",
     "lineComment": {
       "placeholder": "Describe the changes you want to make to this code...",
-      "taskName": "Update {{filename}}"
+      "taskName": "Update {{filename}}",
+      "createNewTask": "Create new task"
     }
   },
   "promptField": {
@@ -4501,7 +4502,8 @@ File: src/common/locales/zh.json
     "noChanges": "没有进行任何更改。内容相同。",
     "lineComment": {
       "placeholder": "描述您想要对此代码进行的更改...",
-      "taskName": "更新 {{filename}}"
+      "taskName": "更新 {{filename}}",
+      "createNewTask": "创建新任务"
     }
   },
   "promptField": {
@@ -5393,6 +5395,8 @@ export interface UpdatedFile {
   additions: number;
   deletions: number;
   diff?: string;
+  commitHash?: string;
+  commitMessage?: string;
 }
 ⋮----
 export interface UpdatedFilesUpdatedData {
@@ -5907,6 +5911,8 @@ export interface CreateTaskParams {
   sendEvent?: boolean;
   provider?: string;
   model?: string;
+  mode?: Mode;
+  addInitialContextFiles?: boolean;
 }
 ⋮----
 export interface TaskCreatedData {
@@ -6710,7 +6716,7 @@ export interface ApplicationAPI {
   removeMessagesUpTo: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
   compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
   handoffConversation: (baseDir: string, taskId: string, focus?: string) => Promise<void>;
-  runCodeInlineRequest: (baseDir: string, filename: string, lineNumber: number, userComment: string) => void;
+  runCodeInlineRequest: (baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string, createNewTask?: boolean) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
   getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
@@ -6954,6 +6960,15 @@ export interface ToolResult {
 /** Mark result as error */
 ⋮----
 /**
+ * Definition of a tool that is part of the tool set. This tool can be executed internally by extension, but it won't be propagated to UI.
+ *
+ * @execute - Optional execute function. If not provided, the tool has other unsupported means of execution.
+ */
+export interface Tool {
+  execute?: (input: Record<string, unknown>) => Promise<unknown>;
+}
+⋮----
+/**
  * Definition of a tool that can be registered by an extension
  *
  * @example
@@ -6979,7 +6994,7 @@ export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType<Record<str
   /** Zod schema for parameter validation */
   inputSchema: TSchema;
   /** Execute function with type-safe args */
-  execute: (input: z.infer<TSchema>, signal: AbortSignal | undefined, context: ExtensionContext) => Promise<unknown>;
+  execute: (input: z.infer<TSchema>, signal: AbortSignal | undefined, context: ExtensionContext, allTools: Record<string, Tool>) => Promise<unknown>;
 }
 ⋮----
 /** Tool identifier in kebab-case (e.g., 'run-linter') */
@@ -9154,6 +9169,13 @@ File: src/main/agent/agent.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
+⋮----
+// eslint-disable-next-line import/order
+import { Agent as UndiciAgent, setGlobalDispatcher } from 'undici';
+⋮----
+headersTimeout: 30 * 60 * 1000, // 30 minutes
+bodyTimeout: 30 * 60 * 1000, // 30 minutes
+connectTimeout: 30 * 1000, // 30 seconds
 ⋮----
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -13309,7 +13331,7 @@ import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
 import { AvailableExtension, ToolApprovalState } from '@common/types';
-import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
+import { AIDER_DESK_EXTENSIONS_REPO_URL, Tool } from '@common/extensions';
 ⋮----
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
@@ -13525,10 +13547,11 @@ getTools(task: Task, mode: string, profile: AgentProfile): RegisteredTool[]
    * @param task - The current Task instance
    * @param mode - The current mode
    * @param profile - The agent profile with tool approval settings
+   * @param allTools - The complete set of available tools
    * @param abortSignal - Optional AbortSignal for cancellation support
    * @returns A ToolSet containing all approved extension tools
    */
-createExtensionToolset(task: Task, mode: string, profile: AgentProfile, abortSignal?: AbortSignal): ToolSet
+createExtensionToolset(task: Task, mode: string, profile: AgentProfile, allTools: ToolSet, abortSignal?: AbortSignal): ToolSet
 ⋮----
 // Skip if tool is marked as Never approved
 ⋮----
@@ -16313,8 +16336,6 @@ async close()
 // Remove watch-files lock file if it exists
 ⋮----
 // Ignore error if file doesn't exist
-⋮----
-async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, contextSize: number = 5): Promise<void>
 
 ================
 File: src/main/prompts/helpers/conditional.ts
@@ -17993,6 +18014,7 @@ import {
   ContextAssistantMessage,
   ContextFile,
   ContextMessage,
+  ToolCallPart,
   DefaultTaskState,
   EditFormat,
   FileEdit,
@@ -18024,12 +18046,14 @@ import {
   WorkflowExecutionOptions,
   WorkflowExecutionResult,
 } from '@common/types';
-import { extractProviderModel, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import { extractProviderModel, extractTextContent, extractServerNameToolName, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
+import { SKILLS_TOOL_ACTIVATE_SKILL } from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 ⋮----
+import type { ToolContent } from '@common/types';
 import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 ⋮----
@@ -18506,6 +18530,18 @@ private async shouldStartAider(): Promise<boolean>
 ⋮----
 private async reloadConnectorMessages()
 ⋮----
+private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextMessage[]
+⋮----
+// Collect skill activation tool calls from this message
+⋮----
+// If we found skill activation tool calls, create filtered messages
+⋮----
+// Find corresponding tool-result message
+⋮----
+// Create a filtered tool message that only contains the skill activation tool-result
+⋮----
+// Create a filtered assistant message that only contains the skill activation tool-call
+⋮----
 public async compactConversation(
     mode: Mode,
     customInstructions?: string,
@@ -18519,6 +18555,8 @@ public async compactConversation(
 ⋮----
 // Get profile if not provided
 ⋮----
+// Find skill activation messages before generating summary
+⋮----
 const extractSummary = (content: string): string =>
 ⋮----
 // Agent mode logic
@@ -18526,6 +18564,8 @@ const extractSummary = (content: string): string =>
 // Clear existing context and add the summary
 ⋮----
 // Collect all new messages before setting the context
+⋮----
+// Create final messages array with skill activations inserted between user message and rest
 ⋮----
 // Set all messages at once
 ⋮----
@@ -18769,6 +18809,8 @@ public getProject(): Project
 public isInitialized()
 ⋮----
 public async generateText(profile: AgentProfile, systemPrompt: string, prompt: string): Promise<string | undefined>
+⋮----
+async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, createNewTask?: boolean, contextSize: number = 5): Promise<void>
 
 ================
 File: src/main/telemetry/index.ts
@@ -19561,7 +19603,16 @@ import path, { join } from 'path';
 import fs, { mkdir, rm, lstat, symlink } from 'fs/promises';
 import { existsSync } from 'fs';
 ⋮----
-import { ConflictResolutionFileContext, MergeState, RebaseState, UpdatedFile, Worktree, WorktreeAheadCommits, WorktreeUncommittedFiles } from '@common/types';
+import {
+  ConflictResolutionFileContext,
+  MergeState,
+  RebaseState,
+  UpdatedFile,
+  WorkingMode,
+  Worktree,
+  WorktreeAheadCommits,
+  WorktreeUncommittedFiles,
+} from '@common/types';
 // @ts-expect-error istextorbinary library does not provide TypeScript definitions
 import { isBinary } from 'istextorbinary';
 ⋮----
@@ -19929,8 +19980,21 @@ async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFile
    * Format: "additions\0deletions\0filepath\0"
    * The -z flag uses NUL-separated output to handle filenames with special characters correctly
    * Also fetches the full git diff for each file
+   * In worktree mode, shows files differing from main branch with commit info
    */
-async getUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]>
+async getUpdatedFiles(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string): Promise<UpdatedFile[]>
+⋮----
+// Build commit map for worktree mode
+⋮----
+// In worktree mode, get all files that differ from main branch
+⋮----
+// Get commit information for files in the range
+⋮----
+// Parse log output to build file -> commit mapping
+⋮----
+// Check if this is a commit header (hash|message format)
+⋮----
+// This is a file path
 ⋮----
 // Parse NUL-separated format: additions\tdeletions\tfilename
 ⋮----
@@ -20198,7 +20262,14 @@ async compactConversation(baseDir: string, taskId: string, mode: Mode, customIns
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
-async runCodeInlineRequest(baseDir: string, filename: string, lineNumber: number, userComment: string): Promise<void>
+async runCodeInlineRequest(
+    baseDir: string,
+    taskId: string,
+    filename: string,
+    lineNumber: number,
+    userComment: string,
+    createNewTask?: boolean,
+): Promise<void>
 ⋮----
 async loadInputHistory(baseDir: string): Promise<string[]>
 ⋮----
@@ -21366,7 +21437,7 @@ compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructi
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
-runCodeInlineRequest(baseDir: string, filename: string, lineNumber: number, userComment: string): void
+runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string, createNewTask?: boolean): void
 ⋮----
 setZoomLevel(level: number): Promise<void>
 ⋮----
@@ -22080,10 +22151,11 @@ import { useState, useRef, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { Button } from '@/components/common/Button';
+import { Checkbox } from '@/components/common/Checkbox';
 import { useClickOutside } from '@/hooks/useClickOutside';
 ⋮----
 type Props = {
-  onSubmit: (comment: string) => void;
+  onSubmit: (comment: string, createNewTask: boolean) => void;
   onCancel: () => void;
   position: { top: number; left: number };
 };
@@ -22091,6 +22163,8 @@ type Props = {
 const handleSubmit = () =>
 ⋮----
 const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) =>
+⋮----
+<Checkbox label=
 
 ================
 File: src/renderer/src/components/common/DiffViewer/DiffViewer.scss
@@ -22834,7 +22908,6 @@ const renderDiagram = async () =>
 File: src/renderer/src/components/common/ModalOverlayLayout.tsx
 ================
 import { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 import { IoMdClose } from 'react-icons/io';
 import { useHotkeys } from 'react-hotkeys-hook';
 ⋮----
@@ -22846,6 +22919,8 @@ type Props = {
   onClose?: () => void;
   closeOnEscape?: boolean;
 };
+⋮----
+export const ModalOverlayLayout = (
 
 ================
 File: src/renderer/src/components/common/MultiSelect.tsx
@@ -23336,6 +23411,8 @@ const toggleFolder = () =>
 const renderChevron = () =>
 ⋮----
 const renderTitle = () =>
+⋮----
+const renderFile = () =>
 ⋮----
 // Show line stats for updated files with click handler
 ⋮----
@@ -28189,6 +28266,10 @@ type Props = {
   showTaskInfo?: () => void;
   handoffConversation?: (focus?: string) => Promise<void>;
 };
+⋮----
+// we need to set the text when the component mounts and the text is not empty (e.g. Activity use case)
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
 // When recording stops, we reset after a short delay or immediately?
 // We want to keep the text.
