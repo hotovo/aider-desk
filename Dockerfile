@@ -81,6 +81,7 @@ COPY package*.json ./
 
 # Copy production dependencies from builder (includes rebuilt native modules)
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
 
 # Copy built server, renderer and resources from builder (includes downloaded binaries)
 COPY --from=builder /app/out/server ./out/server
