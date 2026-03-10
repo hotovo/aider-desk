@@ -308,7 +308,11 @@
     "apiKey": "API Key"
   },
   "alibabaPlan": {
-    "apiKey": "API Key"
+    "apiKey": "API Key",
+    "thinkingEnabled": "Thinking Enabled",
+    "thinkingEnabledTooltip": "Enable thinking mode for enhanced reasoning capabilities",
+    "thinkingBudget": "Thinking Budget",
+    "thinkingBudgetTooltip": "Maximum number of tokens for thinking (0-81920)"
   },
   "deepseek": {
     "apiKey": "API Key"

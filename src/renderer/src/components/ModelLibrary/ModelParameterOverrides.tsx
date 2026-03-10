@@ -12,6 +12,7 @@ import { AzureModelOverrides } from './providers/AzureModelOverrides';
 import { OpenAiCompatibleModelOverrides } from './providers/OpenAiCompatibleModelOverrides';
 import { DefaultModelOverrides } from './providers/DefaultModelOverrides';
 import { ZaiPlanModelOverrides } from './providers/ZaiPlanModelOverrides';
+import { AlibabaPlanModelOverrides } from './providers/AlibabaPlanModelOverrides';
 
 import { Button } from '@/components/common/Button';
 import { Accordion } from '@/components/common/Accordion';
@@ -43,6 +44,7 @@ const PROVIDER_OVERRIDES_MAP: Partial<Record<LlmProviderName, ComponentType<Prov
   ollama: DefaultModelOverrides,
   synthetic: DefaultModelOverrides,
   'zai-plan': ZaiPlanModelOverrides,
+  'alibaba-plan': AlibabaPlanModelOverrides,
 };
 
 type Props = {

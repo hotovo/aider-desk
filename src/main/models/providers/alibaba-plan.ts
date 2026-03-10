@@ -1,8 +1,8 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { isAlibabaPlanProvider, AlibabaPlanProvider } from '@common/agent';
+import { isAlibabaPlanProvider, AlibabaPlanProvider, LlmProvider } from '@common/agent';
 import { createAlibaba } from '@ai-sdk/alibaba';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -99,10 +99,31 @@ const createAlibabaPlanLlm = (profile: ProviderProfile, model: Model, settings: 
   return alibabaPlanProvider(model.id);
 };
 
+const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+  if (isAlibabaPlanProvider(llmProvider)) {
+    const providerOverrides = model.providerOverrides as Partial<AlibabaPlanProvider> | undefined;
+
+    const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
+    const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget ?? 8192;
+
+    logger.info(`Alibaba Plan provider options: thinkingEnabled=${thinkingEnabled}, thinkingBudget=${thinkingBudget}`);
+
+    return {
+      alibaba: {
+        enableThinking: thinkingEnabled,
+        ...(thinkingEnabled && { thinkingBudget }),
+      },
+    };
+  }
+
+  return undefined;
+};
+
 export const alibabaPlanProviderStrategy: LlmProviderStrategy = {
   createLlm: createAlibabaPlanLlm,
   getUsageReport: getDefaultUsageReport,
   loadModels: loadAlibabaPlanModels,
   hasEnvVars: hasAlibabaPlanEnvVars,
   getAiderMapping: getAlibabaPlanAiderMapping,
+  getProviderOptions: getAlibabaPlanProviderOptions,
 };

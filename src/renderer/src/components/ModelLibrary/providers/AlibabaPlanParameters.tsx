@@ -2,6 +2,8 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlibabaPlanProvider } from '@common/agent';
 
+import { AlibabaPlanThinkingSettings } from './AlibabaPlanThinkingSettings';
+
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
@@ -41,6 +43,7 @@ export const AlibabaPlanParameters = ({ provider, onChange }: Props) => {
             : t('settings.agent.envVarPlaceholder', { envVar: 'ALIBABA_PLAN_API_KEY' })
         }
       />
+      <AlibabaPlanThinkingSettings provider={provider} onChange={onChange} />
     </div>
   );
 };

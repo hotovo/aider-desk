@@ -156,6 +156,8 @@ export const isKimiPlanProvider = (provider: LlmProviderBase): provider is KimiP
 export interface AlibabaPlanProvider extends LlmProviderBase {
   name: 'alibaba-plan';
   apiKey: string;
+  thinkingEnabled?: boolean;
+  thinkingBudget?: number;
 }
 export const isAlibabaPlanProvider = (provider: LlmProviderBase): provider is AlibabaPlanProvider => provider.name === 'alibaba-plan';
 
@@ -668,6 +670,8 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
       provider = {
         name: 'alibaba-plan',
         apiKey: '',
+        thinkingEnabled: true,
+        thinkingBudget: 8192,
       } satisfies AlibabaPlanProvider;
       break;
     case 'gpustack':

@@ -5,6 +5,7 @@
 - moved Files sidebar collapse/expand button to top-right of Context Files section header
 - added extension UI components system
 - updated underlying library used for Alibaba Coding Plan for better stability
+- added thinking enabled and budget settings for Alibaba Coding Plan provider
 
 ## [0.56.0]
 

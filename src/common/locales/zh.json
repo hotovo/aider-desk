@@ -348,7 +348,11 @@
     "apiKey": "API 密钥"
   },
   "alibabaPlan": {
-    "apiKey": "API 密钥"
+    "apiKey": "API 密钥",
+    "thinkingEnabled": "启用思考",
+    "thinkingEnabledTooltip": "启用思考模式以增强推理能力",
+    "thinkingBudget": "思考预算",
+    "thinkingBudgetTooltip": "思考的最大令牌数 (0-81920)"
   },
   "deepseek": {
     "apiKey": "API 密钥"
