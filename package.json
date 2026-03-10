@@ -46,6 +46,7 @@
     "validate": "npm-run-all --parallel lint typecheck test"
   },
   "dependencies": {
+    "@ai-sdk/alibaba": "^0.0.3",
     "@ai-sdk/amazon-bedrock": "^3.0.87",
     "@ai-sdk/anthropic": "^2.0.70",
     "@ai-sdk/azure": "^2.0.100",

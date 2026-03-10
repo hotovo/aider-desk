@@ -1,6 +1,6 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isAlibabaPlanProvider, AlibabaPlanProvider } from '@common/agent';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createAlibaba } from '@ai-sdk/alibaba';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 
@@ -91,8 +91,7 @@ const createAlibabaPlanLlm = (profile: ProviderProfile, model: Model, settings: 
     throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (ALIBABA_PLAN_API_KEY).`);
   }
 
-  const alibabaPlanProvider = createOpenAICompatible({
-    name: 'alibaba-plan',
+  const alibabaPlanProvider = createAlibaba({
     apiKey,
     baseURL: ALIBABA_PLAN_BASE_URL,
     headers: profile.headers,
