@@ -357,7 +357,7 @@
     "apiKey": "API Key",
     "mcp": {
       "title": "MCP Servers",
-      "infoTooltip": "Add Z.AI Coding Plan MCP servers to enable additional capabilities for the agent.",
+      "infoTooltip": "Add Z.ai Coding Plan MCP servers to enable additional capabilities for the agent.",
       "vision": {
         "name": "Vision",
         "description": "Image and video analysis using GLM-4.6V model"
@@ -411,7 +411,7 @@
     "requesty": "Requesty",
     "synthetic": "Synthetic",
     "vertex-ai": "Vertex AI",
-    "zai-plan": "Z.AI Coding Plan",
+    "zai-plan": "Z.ai Coding Plan",
     "azure": "Azure"
   },
   "select": {

@@ -373,7 +373,7 @@ export class Project {
   }
 
   public getAgentProfiles(): AgentProfile[] {
-    return this.agentProfileManager.getProjectProfiles(this.baseDir);
+    return this.agentProfileManager.getProjectProfiles(this);
   }
 
   private async deleteTaskInternal(taskId: string): Promise<void> {

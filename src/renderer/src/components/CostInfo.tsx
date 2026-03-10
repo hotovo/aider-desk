@@ -6,6 +6,8 @@ import { MdOutlineRefresh, MdSettingsBackupRestore } from 'react-icons/md';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 type Props = {
   tokensInfo?: TokensInfoData | null;
@@ -24,6 +26,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
   const [isExpanded, setIsExpanded] = useState(false);
   const [refreshingAnimation, setRefreshingAnimation] = useState(false);
   const REFRESH_ANIMATION_DURATION = 2000;
+  const { componentProps } = useExtensions(task);
 
   const renderLabelValue = (label: string, value: ReactNode) => (
     <div className="flex justify-between h-[20px]">
@@ -115,6 +118,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
         </div>
 
         <TokenUsageBar tokensInfo={tokensInfo} maxInputTokens={maxInputTokens} mode={mode} task={task} updateTask={updateTask} />
+        <ExtensionComponentWrapper componentProps={componentProps} placement="task-usage-info-bottom" direction="vertical" />
       </div>
     </div>
   );

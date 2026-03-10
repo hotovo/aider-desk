@@ -27,6 +27,7 @@ import {
   UpdatedFile,
   UsageReportData,
 } from '@common/types';
+import { ApplicationAPI } from '@common/api';
 
 export { ContextMemoryMode, InvocationMode, ToolApprovalState };
 
@@ -110,57 +111,49 @@ export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType<Record<str
   execute: (input: z.infer<TSchema>, signal: AbortSignal | undefined, context: ExtensionContext, allTools: Record<string, Tool>) => Promise<unknown>;
 }
 
-/** UI element types */
-export type UIElementType = 'action-button' | 'status-indicator' | 'badge';
-
-/** Placement locations for UI elements */
-export enum UIPlacement {
-  /** Task sidebar area */
-  TaskSidebar = 'task-sidebar',
-  /** Chat toolbar area */
-  ChatToolbar = 'chat-toolbar',
-  /** Message action buttons */
-  MessageActions = 'message-actions',
-  /** Global toolbar */
-  GlobalToolbar = 'global-toolbar',
-}
+/** Placement locations for extension UI components */
+export type UIComponentPlacement = 'task-status-bar-left' | 'task-status-bar-right' | 'task-usage-info-bottom';
 
 /**
- * Definition of a UI element that can be registered by an extension
+ * Definition of a React UI component that can be registered by an extension.
+ * The component is defined as a JSX string and rendered using react-jsx-parser.
+ *
+ * Available props for the component:
+ * - React: React object with hooks (useState, useEffect, useCallback, useMemo, useRef, etc.)
+ * - task: Current TaskData
+ * - projectDir: Project directory path
+ * - api: ApplicationAPI reference
+ * - mode: Current mode string
  *
  * @example
  * ```typescript
- * const myButton: UIElementDefinition = {
- *   id: 'generate-jira-ticket',
- *   type: 'action-button',
- *   label: 'Create JIRA Ticket',
- *   icon: 'FiExternalLink',
- *   description: 'Create a JIRA ticket from this task',
- *   placement: UIPlacement.TaskSidebar,
- *   context: 'task',
- *   onClick: 'handleJiraClick',
+ * const myStatusComponent: UIComponentDefinition = {
+ *   id: 'my-status-indicator',
+ *   placement: UIComponentPlacement.TaskStatusBar,
+ *   jsx: `
+ *     <div className="flex items-center gap-2 text-xs text-text-secondary">
+ *       <span>Task: {task.name}</span>
+ *       <span>Mode: {mode}</span>
+ *     </div>
+ *   `,
  * };
  * ```
  */
-export interface UIElementDefinition {
-  /** Unique element identifier in kebab-case */
+export interface UIComponentDefinition {
+  /** Unique component identifier*/
   id: string;
-  /** Element type (button, status indicator, etc.) */
-  type: UIElementType;
-  /** Display text for button or label */
-  label: string;
-  /** Optional icon name from react-icons library */
-  icon?: string;
-  /** Optional tooltip or help text */
-  description?: string;
-  /** Where in UI to render this element */
-  placement: UIPlacement;
-  /** Context type (task, project, global) */
-  context?: 'task' | 'project' | 'global';
-  /** Handler ID to call in extension when clicked */
-  onClick: string;
-  /** Optional: Conditional visibility check */
-  enabled?: (context: unknown) => boolean;
+  /** Where in UI to render this component */
+  placement: UIComponentPlacement;
+  /** JSX component as string to be parsed by react-jsx-parser */
+  jsx: string;
+}
+
+export interface UIComponentProps {
+  projectDir: string;
+  task: TaskData;
+  api: ApplicationAPI;
+  agentProfile: AgentProfile | null;
+  mode: Mode;
 }
 
 /**
@@ -611,6 +604,13 @@ export interface ExtensionContext {
    * @returns Promise that resolves when settings are saved
    */
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
+
+  /**
+   * Trigger a refresh of extension UI components in the renderer
+   * Use this when extension internal state changes and UI components need to re-render
+   * @param id - Unique identifier for the extension component
+   */
+  triggerUIRefresh(id: string): void;
 }
 
 /**
@@ -704,6 +704,24 @@ export interface Extension {
    * @returns The updated agent profile
    */
   onAgentProfileUpdated?(context: ExtensionContext, agentId: string, updatedProfile: AgentProfile): Promise<AgentProfile>;
+
+  // UI Component registration
+
+  /**
+   * Return array of React UI components this extension provides
+   * Components are defined as JSX strings and rendered using react-jsx-parser
+   * Called when extension is loaded and when components need to be refreshed
+   */
+  getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
+
+  /**
+   * Return data for a specific UI component
+   * Called when the component is mounted or when UI refresh is triggered
+   * @param componentId - The ID of the component to get data for
+   * @param context - Extension context
+   * @returns Data to be passed to the component as `data` binding
+   */
+  getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
 
   // Task Events
 
@@ -934,12 +952,4 @@ export interface Extension {
    * @returns void or partial event to modify responses
    */
   onAiderPromptFinished?(event: AiderPromptFinishedEvent, context: ExtensionContext): Promise<void | Partial<AiderPromptFinishedEvent>>;
-}
-
-/**
- * Constructor type for extension classes
- */
-export interface ExtensionConstructor {
-  new (): Extension;
-  metadata?: ExtensionMetadata;
 }

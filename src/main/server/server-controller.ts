@@ -118,7 +118,7 @@ export class ServerController {
     new VoiceApi(this.eventsHandler).registerRoutes(apiRouter);
     new TerminalApi(this.eventsHandler).registerRoutes(apiRouter);
     new BmadApi(this.eventsHandler).registerRoutes(apiRouter);
-    new ExtensionsApi(this.eventsHandler.getExtensionManager()).registerRoutes(apiRouter);
+    new ExtensionsApi(this.eventsHandler).registerRoutes(apiRouter);
 
     // Mount the API router globally under /api
     this.app.use('/api', apiRouter);

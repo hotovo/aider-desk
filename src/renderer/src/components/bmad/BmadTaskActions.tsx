@@ -13,9 +13,7 @@ import { SuggestedWorkflowCard } from '@/components/bmad/SuggestedWorkflowCard';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
-import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
-import { useAgents } from '@/contexts/AgentsContext';
-import { resolveAgentProfile } from '@/utils/agents';
+import { useActiveAgentProfile } from '@/utils/agents';
 
 type Props = {
   projectDir: string;
@@ -32,12 +30,8 @@ export const BmadTaskActions = ({ projectDir, taskId, task, onRunPrompt }: Props
   const workflowButtonRef = useRef<HTMLDivElement>(null);
 
   const { models, providers } = useModelProviders();
-  const { projectSettings } = useProjectSettings();
-  const { getProfiles } = useAgents();
 
-  const activeAgentProfile = useMemo(() => {
-    return resolveAgentProfile(task || undefined, projectSettings?.agentProfileId, getProfiles(projectDir));
-  }, [task, projectSettings?.agentProfileId, getProfiles, projectDir]);
+  const activeAgentProfile = useActiveAgentProfile(task || undefined, projectDir);
 
   const defaultModelId = useMemo(() => {
     const effectiveProvider = task?.provider || activeAgentProfile?.provider;

@@ -232,4 +232,49 @@ describe('ExtensionContextImpl', () => {
       expect(logger.error).toHaveBeenCalled();
     });
   });
+
+  describe('triggerUIRefresh', () => {
+    it('should call eventManager.sendExtensionUIRefresh', () => {
+      const mockEventManager = {
+        sendExtensionUIRefresh: vi.fn(),
+      };
+
+      const mockProject = {
+        baseDir: '/test/project',
+      };
+
+      const contextWithEventManager = new ExtensionContextImpl(extensionId, undefined, undefined, mockProject as any, undefined, mockEventManager as any);
+
+      contextWithEventManager.triggerUIRefresh();
+
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith('/test/project', 'test-extension', undefined);
+    });
+
+    it('should call eventManager.sendExtensionUIRefresh with componentId', () => {
+      const mockEventManager = {
+        sendExtensionUIRefresh: vi.fn(),
+      };
+
+      const mockProject = {
+        baseDir: '/test/project',
+      };
+
+      const contextWithEventManager = new ExtensionContextImpl(extensionId, undefined, undefined, mockProject as any, undefined, mockEventManager as any);
+
+      contextWithEventManager.triggerUIRefresh('status-bar');
+
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith('/test/project', 'test-extension', 'status-bar');
+    });
+
+    it('should log warning if eventManager is not available', () => {
+      const contextWithoutEventManager = new ExtensionContextImpl(extensionId);
+
+      // Should not throw error
+      expect(() => {
+        contextWithoutEventManager.triggerUIRefresh();
+      }).not.toThrow();
+
+      expect(logger.warn).toHaveBeenCalled();
+    });
+  });
 });

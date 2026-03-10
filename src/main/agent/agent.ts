@@ -755,7 +755,7 @@ export class Agent {
       : null;
 
     const settings = this.store.getSettings();
-    const projectProfiles = this.agentProfileManager.getProjectProfiles(task.getProjectDir());
+    const projectProfiles = this.agentProfileManager.getProjectProfiles(task.project);
     let resultMessages: ContextMessage[] = userRequestMessage ? [userRequestMessage] : [];
 
     const providers = this.store.getProviders();
@@ -1713,7 +1713,7 @@ export class Agent {
         cacheControl,
         task,
         profile,
-        this.agentProfileManager.getProjectProfiles(task.getProjectDir()),
+        this.agentProfileManager.getProjectProfiles(task.project),
         userRequestMessageIndex,
       );
 

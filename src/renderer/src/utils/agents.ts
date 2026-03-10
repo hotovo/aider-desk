@@ -1,4 +1,8 @@
 import { AgentProfile, TaskData } from '@common/types';
+import { useMemo } from 'react';
+
+import { useAgents } from '@/contexts/AgentsContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 
 /**
  * Resolves the active agent profile for a task following the correct hierarchy:
@@ -34,4 +38,17 @@ export const resolveAgentProfile = (task: TaskData | undefined, projectAgentProf
   }
 
   return profile;
+};
+
+/**
+ * Hook to resolve the active agent profile for a task.
+ * Uses useProjectSettings and useAgents internally to get the necessary data.
+ */
+export const useActiveAgentProfile = (task: TaskData | undefined, projectDir: string): AgentProfile | null => {
+  const { projectSettings } = useProjectSettings();
+  const { getProfiles } = useAgents();
+
+  return useMemo(() => {
+    return resolveAgentProfile(task, projectSettings?.agentProfileId, getProfiles(projectDir));
+  }, [task, projectSettings?.agentProfileId, getProfiles, projectDir]);
 };

@@ -22,7 +22,7 @@ describe('ExtensionRegistry', () => {
   it('should register and retrieve an extension', () => {
     registry.register(mockExtension, mockMetadata, '/path/to/ext.ts');
 
-    const extension = registry.getExtension('test-ext');
+    const extension = registry.getExtension('/path/to/ext.ts');
     expect(extension).toBeDefined();
     expect(extension?.instance).toBe(mockExtension);
     expect(extension?.metadata).toEqual(mockMetadata);
@@ -33,11 +33,11 @@ describe('ExtensionRegistry', () => {
   it('should set initialized status for an extension', () => {
     registry.register(mockExtension, mockMetadata, '/path/to/ext.ts');
 
-    registry.setInitialized('test-ext', true);
-    expect(registry.getExtension('test-ext')?.initialized).toBe(true);
+    registry.setInitialized('/path/to/ext.ts', true);
+    expect(registry.getExtension('/path/to/ext.ts')?.initialized).toBe(true);
 
-    registry.setInitialized('test-ext', false);
-    expect(registry.getExtension('test-ext')?.initialized).toBe(false);
+    registry.setInitialized('/path/to/ext.ts', false);
+    expect(registry.getExtension('/path/to/ext.ts')?.initialized).toBe(false);
   });
 
   it('should not throw when setting initialized for unknown extension', () => {
@@ -68,11 +68,11 @@ describe('ExtensionRegistry', () => {
 
   it('should unregister an extension', () => {
     registry.register(mockExtension, mockMetadata, '/path/to/ext.ts');
-    expect(registry.getExtension('test-ext')).toBeDefined();
+    expect(registry.getExtension('/path/to/ext.ts')).toBeDefined();
 
-    const result = registry.unregister('test-ext');
+    const result = registry.unregister('/path/to/ext.ts');
     expect(result).toBe(true);
-    expect(registry.getExtension('test-ext')).toBeUndefined();
+    expect(registry.getExtension('/path/to/ext.ts')).toBeUndefined();
   });
 
   it('should return false when unregistering unknown extension', () => {

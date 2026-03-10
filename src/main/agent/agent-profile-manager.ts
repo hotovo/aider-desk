@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import type { AgentProfile } from '@common/types';
 
+import { Project } from '@/project';
 import { ExtensionManager, ExtensionsChangeListener } from '@/extensions/extension-manager';
 import { AIDER_DESK_AGENTS_DIR, AIDER_DESK_RULES_DIR } from '@/constants';
 import logger from '@/logger';
@@ -644,8 +645,8 @@ export class AgentProfileManager {
     return [...extensionAgents, ...fileBasedProfiles.filter((profile) => !extensionAgents.some((extAgent) => extAgent.id === profile.id))];
   }
 
-  public getProjectProfiles(projectDir: string, includeGlobal = true, includeExtension = true): AgentProfile[] {
-    const projectProfiles = Array.from(this.profiles.values()).filter((ctx) => ctx.agentProfile.projectDir === projectDir);
+  public getProjectProfiles(project: Project, includeGlobal = true, includeExtension = true): AgentProfile[] {
+    const projectProfiles = Array.from(this.profiles.values()).filter((ctx) => ctx.agentProfile.projectDir === project.baseDir);
     const profiles = this.getOrderedProfiles(projectProfiles);
 
     if (includeGlobal) {
@@ -653,7 +654,7 @@ export class AgentProfileManager {
     }
 
     if (includeExtension) {
-      const extensionAgents = this.extensionManager.getAgents(projectDir).map((registered) => registered.agent);
+      const extensionAgents = this.extensionManager.getAgents(project).map((registered) => registered.agent);
       // Extension agents come first for override capability
       return [...extensionAgents, ...profiles.filter((profile) => !extensionAgents.some((extAgent) => extAgent.id === profile.id))];
     }

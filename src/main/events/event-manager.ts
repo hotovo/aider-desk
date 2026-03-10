@@ -35,6 +35,7 @@ import {
   QueuedPromptsUpdatedData,
   BmadStatus,
   CommandsData,
+  ExtensionUIRefreshData,
 } from '@common/types';
 
 import type { BrowserWindow } from 'electron';
@@ -416,5 +417,12 @@ export class EventManager {
   sendBmadStatusChanged(status: BmadStatus): void {
     this.sendToMainWindow('bmad-status-changed', status);
     this.broadcastToEventConnectors('bmad-status-changed', status);
+  }
+
+  // Extension UI events
+  sendExtensionUIRefresh(baseDir: string, extensionId: string, componentId?: string): void {
+    const data: ExtensionUIRefreshData = { baseDir, extensionId, componentId };
+    this.sendToMainWindow('extension-ui-refresh', data);
+    this.broadcastToEventConnectors('extension-ui-refresh', data);
   }
 }

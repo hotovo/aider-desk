@@ -19,7 +19,7 @@ import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
 import { useTask } from '@/contexts/TaskContext';
-import { resolveAgentProfile } from '@/utils/agents';
+import { useActiveAgentProfile } from '@/utils/agents';
 
 type Props = {
   projectDir: string;
@@ -42,9 +42,7 @@ export const AgentSelector = memo(
 
     const profiles = useMemo(() => getProfiles(projectDir), [getProfiles, projectDir]);
 
-    const activeTaskProfile = useMemo(() => {
-      return resolveAgentProfile(task, projectSettings?.agentProfileId, profiles);
-    }, [task, projectSettings?.agentProfileId, profiles]);
+    const activeTaskProfile = useActiveAgentProfile(task, projectDir);
     const activeGlobalProfile = useMemo(() => {
       return profiles.find((p) => p.id === (task.agentProfileId || projectSettings?.agentProfileId));
     }, [profiles, projectSettings?.agentProfileId, task.agentProfileId]);

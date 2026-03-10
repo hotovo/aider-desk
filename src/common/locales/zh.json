@@ -296,7 +296,7 @@
     "apiKey": "API 密钥",
     "mcp": {
       "title": "MCP 服务器",
-      "infoTooltip": "添加 Z.AI Coding Plan MCP 服务器以为智能体启用更多功能。",
+      "infoTooltip": "添加 Z.ai Coding Plan MCP 服务器以为智能体启用更多功能。",
       "vision": {
         "name": "视觉",
         "description": "使用 GLM-4.6V 模型进行图像和视频分析"
@@ -408,7 +408,7 @@
     "requesty": "Requesty",
     "synthetic": "Synthetic",
     "vertex-ai": "Vertex AI",
-    "zai-plan": "Z.AI Coding Plan",
+    "zai-plan": "Z.ai Coding Plan",
     "azure": "Azure"
   },
   "select": {

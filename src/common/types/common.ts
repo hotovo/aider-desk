@@ -930,7 +930,7 @@ export interface NotificationData {
   body: string;
 }
 
-export interface LoadedExtension {
+export interface InstalledExtension {
   id: string;
   metadata: {
     name: string;
@@ -958,4 +958,17 @@ export interface AvailableExtension {
   repositoryUrl: string;
   hasDependencies?: boolean;
   readmeContent?: string;
+}
+
+export interface ExtensionUIComponent {
+  extensionId: string;
+  componentId: string;
+  placement: string;
+  jsx: string;
+}
+
+export interface ExtensionUIRefreshData {
+  baseDir: string;
+  extensionId: string;
+  componentId?: string;
 }

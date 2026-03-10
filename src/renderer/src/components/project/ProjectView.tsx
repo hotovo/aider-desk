@@ -20,6 +20,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
 import { showInfoNotification } from '@/utils/notifications';
+import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 
 type Props = {
   projectDir: string;
@@ -481,58 +482,60 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
 
   return (
     <TaskProvider baseDir={projectDir} tasks={tasks}>
-      <div className="h-full w-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative">
-        {starting && <LoadingOverlay message={t('common.startingUp')} />}
+      <ExtensionsProvider projectDir={projectDir}>
+        <div className="h-full w-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative">
+          {starting && <LoadingOverlay message={t('common.startingUp')} />}
 
-        {(isTaskSidebarOpen || !isMobile) && (
-          <TaskSidebar
-            loading={tasksLoading}
-            tasks={optimisticTasks}
-            activeTaskId={activeTaskId}
-            onTaskSelect={handleTaskSelect}
-            createNewTask={createNewTask}
-            className="h-full"
-            isCollapsed={!!isTaskBarCollapsed}
-            onToggleCollapse={handleToggleCollapse}
-            updateTask={handleUpdateTask}
-            deleteTask={handleDeleteTask}
-            onCopyAsMarkdown={handleCopyTaskAsMarkdown}
-            onExportToMarkdown={handleExportTaskToMarkdown}
-            onExportToImage={handleExportTaskToImage}
-            onDuplicateTask={handleDuplicateTask}
-            isMobile={isMobile}
-            onClose={hideTaskSidebar}
-          />
-        )}
-
-        <div
-          className={clsx('absolute top-0 h-full transition-all duration-300 ease-in-out', isMobile ? 'left-0 right-0' : 'right-0')}
-          style={{
-            left: isMobile ? 0 : isTaskBarCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
-          }}
-        >
-          {isActiveTaskSwitching && <LoadingOverlay message={t('common.loadingTask')} animateOpacity />}
-          {activeTask && (
-            <Activity mode={isProjectActive ? 'visible' : 'hidden'}>
-              <TaskView
-                ref={taskViewRef}
-                projectDir={projectDir}
-                task={activeTask}
-                updateTask={handleUpdateTask}
-                updateOptimisticTaskState={handleUpdateOptimisticTaskState}
-                inputHistory={inputHistory}
-                isActive={activeTaskId === activeTask.id}
-                shouldFocusPrompt={shouldFocusNewTask}
-                showSettingsPage={showSettingsPage}
-                onArchiveTask={handleArchiveActiveTask}
-                onUnarchiveTask={handleUnarchiveActiveTask}
-                onDeleteTask={handleDeleteActiveTask}
-                onToggleTaskSidebar={isMobile ? toggleTaskSidebar : undefined}
-              />
-            </Activity>
+          {(isTaskSidebarOpen || !isMobile) && (
+            <TaskSidebar
+              loading={tasksLoading}
+              tasks={optimisticTasks}
+              activeTaskId={activeTaskId}
+              onTaskSelect={handleTaskSelect}
+              createNewTask={createNewTask}
+              className="h-full"
+              isCollapsed={!!isTaskBarCollapsed}
+              onToggleCollapse={handleToggleCollapse}
+              updateTask={handleUpdateTask}
+              deleteTask={handleDeleteTask}
+              onCopyAsMarkdown={handleCopyTaskAsMarkdown}
+              onExportToMarkdown={handleExportTaskToMarkdown}
+              onExportToImage={handleExportTaskToImage}
+              onDuplicateTask={handleDuplicateTask}
+              isMobile={isMobile}
+              onClose={hideTaskSidebar}
+            />
           )}
+
+          <div
+            className={clsx('absolute top-0 h-full transition-all duration-300 ease-in-out', isMobile ? 'left-0 right-0' : 'right-0')}
+            style={{
+              left: isMobile ? 0 : isTaskBarCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
+            }}
+          >
+            {isActiveTaskSwitching && <LoadingOverlay message={t('common.loadingTask')} animateOpacity />}
+            {activeTask && (
+              <Activity mode={isProjectActive ? 'visible' : 'hidden'}>
+                <TaskView
+                  ref={taskViewRef}
+                  projectDir={projectDir}
+                  task={activeTask}
+                  updateTask={handleUpdateTask}
+                  updateOptimisticTaskState={handleUpdateOptimisticTaskState}
+                  inputHistory={inputHistory}
+                  isActive={activeTaskId === activeTask.id}
+                  shouldFocusPrompt={shouldFocusNewTask}
+                  showSettingsPage={showSettingsPage}
+                  onArchiveTask={handleArchiveActiveTask}
+                  onUnarchiveTask={handleUnarchiveActiveTask}
+                  onDeleteTask={handleDeleteActiveTask}
+                  onToggleTaskSidebar={isMobile ? toggleTaskSidebar : undefined}
+                />
+              </Activity>
+            )}
+          </div>
         </div>
-      </div>
+      </ExtensionsProvider>
     </TaskProvider>
   );
 };

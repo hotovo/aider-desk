@@ -1,4 +1,4 @@
-import { AvailableExtension, LoadedExtension, ProjectData, SettingsData } from '@common/types';
+import { AvailableExtension, InstalledExtension, ProjectData, SettingsData } from '@common/types';
 import { Activity, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
@@ -32,7 +32,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   const api = useApi();
 
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Available);
-  const [installedExtensions, setInstalledExtensions] = useState<LoadedExtension[]>([]);
+  const [installedExtensions, setInstalledExtensions] = useState<InstalledExtension[]>([]);
   const [availableExtensions, setAvailableExtensions] = useState<AvailableExtension[]>([]);
   const [loadingInstalled, setLoadingInstalled] = useState(false);
   const [loadingAvailable, setLoadingAvailable] = useState(false);
