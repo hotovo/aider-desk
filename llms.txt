@@ -8632,6 +8632,7 @@ import { Task } from '@/task';
 import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
+import { getShellCommandArgs, getShellPath } from '@/utils/shell';
 ⋮----
 /**
  * File lock map to prevent race conditions when multiple edits target the same file.
@@ -19439,6 +19440,14 @@ export const findExecutableInPath = (executable: string, checkOnly = false): str
 ⋮----
 // Not found in this directory
 ⋮----
+/**
+ * Get shell and arguments to execute a command using the user's default shell.
+ * This respects the $SHELL environment variable instead of always using /bin/sh.
+ * @param command The command string to execute
+ * @returns Object with shell path and args array (e.g. ['-c', command])
+ */
+export const getShellCommandArgs = (command: string):
+⋮----
 // Wrapper for execAsync that includes enhanced PATH
 export const execWithShellPath = async (
   command: string,
@@ -23299,7 +23308,7 @@ import { HiChevronDown, HiChevronRight, HiOutlineTrash, HiPlus, HiX } from 'reac
 import { MdOutlineDifference, MdOutlinePublic, MdOutlineRefresh, MdOutlineSearch, MdUndo } from 'react-icons/md';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { TbPencilOff } from 'react-icons/tb';
-import { RiRobot2Line } from 'react-icons/ri';
+import { RiRobot2Line, RiMenuUnfold4Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { FaGitSquare } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
@@ -23341,6 +23350,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   mode: Mode;
+  onToggleFilesSidebarCollapse?: () => void;
 };
 ⋮----
 type EmptyContextInfoProps = {
@@ -27243,6 +27253,7 @@ type Props = {
   task: TaskData;
   updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  onToggleFilesSidebarCollapse?: () => void;
 };
 ⋮----
 export const FilesContextInfoContent = ({
@@ -27261,9 +27272,8 @@ export const FilesContextInfoContent = ({
   task,
   updateTask,
   refreshAllFiles,
+  onToggleFilesSidebarCollapse,
 }: Props) =>
-⋮----
-refreshRepoMap=
 
 ================
 File: src/renderer/src/components/project/MobileSidebar.tsx
@@ -27711,9 +27721,7 @@ setEditingMessageIndex(null); // Clear editing state
 ⋮----
 
 ⋮----
-{/* Expand/Collapse Button */}
-⋮----
-className=
+{/* Expand/Collapse Button for collapsed state */}
 ⋮----
 {/* Resizable wrapper for expanded state */}
 ⋮----
@@ -27850,8 +27858,6 @@ type Props = {
 };
 ⋮----
 const handleModeClick = (mode: Mode) =>
-⋮----
-className=
 ⋮----
 <div className=
 
@@ -34728,7 +34734,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.56.0-dev",
+  "version": "0.57.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -34774,17 +34780,17 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test"
   },
   "dependencies": {
-    "@aiderdesk/extensions": "workspace:*",
-    "@ai-sdk/amazon-bedrock": "^3.0.85",
-    "@ai-sdk/anthropic": "^2.0.68",
-    "@ai-sdk/azure": "^2.0.98",
-    "@ai-sdk/cerebras": "^1.0.38",
-    "@ai-sdk/deepseek": "^1.0.34",
-    "@ai-sdk/google": "^2.0.57",
-    "@ai-sdk/google-vertex": "^3.0.112",
-    "@ai-sdk/groq": "^2.0.35",
-    "@ai-sdk/openai": "^2.0.96",
+    "@ai-sdk/amazon-bedrock": "^3.0.87",
+    "@ai-sdk/anthropic": "^2.0.70",
+    "@ai-sdk/azure": "^2.0.100",
+    "@ai-sdk/cerebras": "^1.0.39",
+    "@ai-sdk/deepseek": "^1.0.35",
+    "@ai-sdk/google": "^2.0.60",
+    "@ai-sdk/google-vertex": "^3.0.116",
+    "@ai-sdk/groq": "^2.0.36",
+    "@ai-sdk/openai": "^2.0.98",
     "@ai-sdk/provider": "^2.0.1",
+    "@aiderdesk/extensions": "workspace:*",
     "@aws-crypto/sha256-js": "^5.0.0",
     "@aws-sdk/client-bedrock": "^3.887.0",
     "@aws-sdk/credential-provider-node": "^3.772.0",
@@ -34828,7 +34834,7 @@ File: package.json
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "ai": "^5.0.145",
+    "ai": "^5.0.150",
     "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "^1.5.1",
     "apache-arrow": "18.1.0",
