@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
+import { ChildProcess } from 'node:child_process';
 
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
@@ -34,17 +35,6 @@ import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellPath } from '@/utils/shell';
-
-const killProcessTree = (pid: number, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): Promise<void> => {
-  return new Promise((resolve) => {
-    treeKill(pid, signal, (err) => {
-      if (err) {
-        logger.error('Failed to kill process tree:', err);
-      }
-      resolve();
-    });
-  });
-};
 
 /**
  * File lock map to prevent race conditions when multiple edits target the same file.
@@ -195,7 +185,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
 
       return withFileLock(absolutePath, async () => {
         try {
-          const fileContent = await fs.readFile(absolutePath, { encoding: 'utf8', signal: abortSignal });
+          const fileContent = await fs.readFile(absolutePath, {
+            encoding: 'utf8',
+            signal: abortSignal,
+          });
           let modifiedContent: string;
 
           if (isRegex) {
@@ -222,7 +215,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             return `Warning: Given 'searchTerm' was not found in the file. Content remains the same. ${improveInfo}`;
           }
 
-          await fs.writeFile(absolutePath, modifiedContent, { encoding: 'utf8', signal: abortSignal });
+          await fs.writeFile(absolutePath, modifiedContent, {
+            encoding: 'utf8',
+            signal: abortSignal,
+          });
           return `Successfully edited '${filePath}'.`;
         } catch (error) {
           if (isAbortError(error)) {
@@ -511,7 +507,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // Simpler for line-by-line test
 
         for (const absoluteFilePath of filteredFiles) {
-          const fileContent = await fs.readFile(absoluteFilePath, { encoding: 'utf8', signal: abortSignal });
+          const fileContent = await fs.readFile(absoluteFilePath, {
+            encoding: 'utf8',
+            signal: abortSignal,
+          });
           const lines = fileContent.split('\n');
           const relativeFilePath = path.relative(task.getTaskDir(), absoluteFilePath);
 
@@ -619,9 +618,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         let exitCode = 0;
         let timeoutHandle: NodeJS.Timeout | null = null;
         let isResolved = false;
-
-        // Forward declaration of abortListener - will be assigned after childProcess is created
-        let abortListener: (() => void | Promise<void>) | null = null;
+        let childProcess: ChildProcess | null = null;
+        let abortListener: (() => void) | null = null;
 
         const cleanup = () => {
           if (timeoutHandle) {
@@ -644,55 +642,45 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           resolve({ stdout, stderr, exitCode });
         };
 
+        abortListener = () => {
+          if (isResolved) {
+            return;
+          }
+
+          if (childProcess?.pid) {
+            treeKill(childProcess.pid, 'SIGTERM');
+          }
+
+          // Use the standard resolution method with proper type
+          stderr = 'Operation was cancelled by user.';
+          exitCode = 130; // Standard cancel exit code (128 + SIGINT=2)
+          resolveWithResult();
+        };
+
+        // Listen for abort signal
+        abortSignal?.addEventListener('abort', abortListener);
+
         try {
           const { shell: shellExec, args: shellArgs } = getShellCommandArgs(command);
-          const childProcess = spawn(shellExec, shellArgs, {
+          childProcess = spawn(shellExec, shellArgs, {
             cwd: absoluteCwd,
-            shell: true,
             env: { ...process.env, TERM: 'dumb', DEBIAN_FRONTEND: 'noninteractive', PATH: getShellPath() },
             stdio: ['ignore', 'pipe', 'pipe'], // Explicitly pipe stdout and stderr to capture output from piped commands
+            signal: abortSignal,
           });
 
-          // Define abort listener that kills process tree on abort
-          abortListener = async () => {
+          // Set timeout
+          timeoutHandle = setTimeout(() => {
             if (isResolved) {
               return;
             }
-            isResolved = true;
 
-            // Kill the process tree on abort
-            if (childProcess.pid) {
-              await killProcessTree(childProcess.pid, 'SIGTERM');
+            if (childProcess?.pid) {
+              treeKill(childProcess.pid, 'SIGTERM');
             }
-
-            cleanup(); // Cleanup AFTER kill
-
-            // Use the standard resolution method with proper type
-            stderr = 'Operation was cancelled by user.';
-            exitCode = 130; // Standard cancel exit code (128 + SIGINT=2)
+            stderr = `Error: Command timed out after ${timeout}ms. Consider increasing the timeout parameter.`;
+            exitCode = 124;
             resolveWithResult();
-          };
-
-          // Add abort listener only if abortSignal and childProcess exist
-          if (abortSignal && childProcess) {
-            if (abortSignal.aborted) {
-              // Signal already aborted, call handler synchronously
-              abortListener();
-            } else {
-              abortSignal.addEventListener('abort', abortListener);
-            }
-          }
-
-          // Set timeout
-          timeoutHandle = setTimeout(async () => {
-            if (!isResolved) {
-              if (childProcess.pid) {
-                await killProcessTree(childProcess.pid, 'SIGTERM');
-              }
-              stderr = `Error: Command timed out after ${timeout}ms. Consider increasing the timeout parameter.`;
-              exitCode = 124;
-              resolveWithResult();
-            }
           }, timeout);
 
           childProcess.stdout?.on('data', (data: Buffer) => {
