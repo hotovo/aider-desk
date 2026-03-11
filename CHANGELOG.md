@@ -12,6 +12,7 @@
 - improved process killing reliability in bash tool
 - added openUrl functionality to Extension context to open URLs in a new window, external or in a modal overlay
 - improved extensions management for the project level
+- added programatic tool calls extension
 
 ## [0.56.0]
 

@@ -52,22 +52,27 @@ For comprehensive documentation on creating and using extensions, see the [Exten
 
 | Extension | Description | Extension Functions |
 |-----------|-------------|---------------------|
-| **[theme.ts](./extensions/theme.ts)** | Adds `/theme` command to switch AiderDesk themes | `onLoad`, `getCommands` |
-| **[sound-notification.ts](./extensions/sound-notification.ts)** | Plays a "Jobs Done" sound when a prompt finishes | `onLoad`, `onPromptFinished` |
-| **[protected-paths.ts](./extensions/protected-paths.ts)** | Blocks file operations on protected paths (`.env`, `.git/`, `node_modules/`) | `onLoad`, `onToolCalled` |
-| **[plan-mode.ts](./extensions/plan-mode.ts)** | Adds a Plan mode that enforces planning before coding | `onLoad`, `getModes`, `onAgentStarted` |
-| **[pirate.ts](./extensions/pirate.ts)** | Adds a Pirate agent that speaks like a swashbuckling sea dog | `onLoad`, `getAgents`, `onAgentProfileUpdated` |
-| **[permission-gate.ts](./extensions/permission-gate.ts)** | Prompts for confirmation before running dangerous bash commands (`rm -rf`, `sudo`, `chmod/chown 777`) | `onLoad`, `onToolCalled` |
-| **[generate-tests.ts](./extensions/generate-tests.ts)** | Adds `/generate-tests` command to generate unit tests for files | `onLoad`, `getCommands` |
-| **[sandbox/](./extensions/sandbox/)** | OS-level sandboxing for bash commands using `@anthropic-ai/sandbox-runtime` | `onLoad`, `onUnload`, `onTaskInitialized`, `onTaskClosed`, `onToolCalled` |
-| **[rtk/](./extensions/rtk/)** | Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90% | `onLoad`, `getCommands`, `onToolCalled` |
-| **[chunkhound-search/](./extensions/chunkhound-search/)** | Provides `chunkhound-search` tool using ChunkHound for semantic code search | `onLoad`, `onUnload`, `onProjectOpen`, `onToolFinished`, `getTools` |
 | **[chunkhound-on-semantic-search-tool/](./extensions/chunkhound-on-semantic-search-tool/)** | Overrides `power---semantic_search` to use ChunkHound for better semantic understanding | `onLoad`, `onUnload`, `onProjectOpen`, `onToolCalled`, `onToolFinished` |
-| **[wakatime.ts](./extensions/wakatime.ts)** | Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli | `onLoad`, `onPromptStarted`, `onPromptFinished`, `onToolFinished`, `onFilesAdded` |
-| **[redact-secrets/](./extensions/redact-secrets/)** | Redacts secret values from `.env*` files in file read results | `onLoad`, `onProjectOpen`, `onToolFinished` |
+| **[chunkhound-search/](./extensions/chunkhound-search/)** | Provides `chunkhound-search` tool using ChunkHound for semantic code search | `onLoad`, `onUnload`, `onProjectOpen`, `onToolFinished`, `getTools` |
+| **[context-autocompletion-words/](./extensions/context-autocompletion-words/)** | Automatically extracts symbols from context files and adds them to autocompletion | `onLoad`, `onFilesAdded`, `onFilesDropped` |
 | **[external-rules.ts](./extensions/external-rules.ts)** | Includes rule files from Cursor, Claude Code, and Roo Code configurations | `onLoad`, `onRuleFilesRetrieved` |
+| **[generate-tests.ts](./extensions/generate-tests.ts)** | Adds `/generate-tests` command to generate unit tests for files | `onLoad`, `getCommands` |
 | **[lsp/](./extensions/lsp/)** | LSP integration for automatic error detection after file edits and code intelligence tools (find references) | `onLoad`, `onUnload`, `getTools`, `onProjectStarted`, `onProjectStopped`, `onToolFinished` |
+| **[permission-gate.ts](./extensions/permission-gate.ts)** | Prompts for confirmation before running dangerous bash commands (`rm -rf`, `sudo`, `chmod/chown 777`) | `onLoad`, `onToolCalled` |
+| **[pirate.ts](./extensions/pirate.ts)** | Adds a Pirate agent that speaks like a swashbuckling sea dog | `onLoad`, `getAgents`, `onAgentProfileUpdated` |
+| **[plan-mode.ts](./extensions/plan-mode.ts)** | Adds a Plan mode that enforces planning before coding | `onLoad`, `getModes`, `onAgentStarted` |
+| **[plannotator/](./extensions/plannotator/)** | Plan-based development workflow with planning mode and plan review utilizing plannotator.ai | `onLoad`, `getModes`, `getCommands`, `getTools`, `onAgentStarted`, `onToolCalled`, `onToolApproval` |
+| **[programmatic-tool-calls/](./extensions/programmatic-tool-calls/)** | Execute JavaScript code in a sandbox with access to all tools as async functions | `getTools` |
+| **[protected-paths.ts](./extensions/protected-paths.ts)** | Blocks file operations on protected paths (`.env`, `.git/`, `node_modules/`) | `onLoad`, `onToolCalled` |
+| **[providers-quota-extension/](./extensions/providers-quota-extension/)** | Displays API quota information for Synthetic and Z.AI providers in the task status bar | `onLoad` |
+| **[redact-secrets/](./extensions/redact-secrets/)** | Redacts secret values from `.env*` files in file read results | `onLoad`, `onProjectOpen`, `onToolFinished` |
+| **[rtk/](./extensions/rtk/)** | Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90% | `onLoad`, `getCommands`, `onToolCalled` |
+| **[sandbox/](./extensions/sandbox/)** | OS-level sandboxing for bash commands using `@anthropic-ai/sandbox-runtime` | `onLoad`, `onUnload`, `onTaskInitialized`, `onTaskClosed`, `onToolCalled` |
+| **[sound-notification.ts](./extensions/sound-notification.ts)** | Plays a "Jobs Done" sound when a prompt finishes | `onLoad`, `onPromptFinished` |
+| **[theme.ts](./extensions/theme.ts)** | Adds `/theme` command to switch AiderDesk themes | `onLoad`, `getCommands` |
+| **[tree-sitter-repo-map/](./extensions/tree-sitter-repo-map/)** | Enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking | `onLoad`, `onAgentStarted`, `getCommands` |
 | **[ultrathink.ts](./extensions/ultrathink.ts)** | Detects prompts like "ultrathink" / "think hard" and increases OpenAI/OpenAI-compatible reasoning effort (`xhigh` for `-max` models, otherwise `high`) | `onLoad`, `onAgentStarted` |
+| **[wakatime.ts](./extensions/wakatime.ts)** | Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli | `onLoad`, `onPromptStarted`, `onPromptFinished`, `onToolFinished`, `onFilesAdded` |
 
 ## Quick Start
 

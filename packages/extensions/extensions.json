@@ -160,6 +160,15 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["onLoad", "onAgentStarted", "onToolCalled", "onToolApproval"]
+    },
+    {
+      "id": "programmatic-tool-calls",
+      "name": "Programmatic Tool Calls",
+      "description": "Execute JavaScript code in a sandbox with access to all tools as async functions",
+      "folder": "programmatic-tool-calls",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["getTools"]
     }
   ]
 }
