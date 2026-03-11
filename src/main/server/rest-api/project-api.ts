@@ -107,7 +107,7 @@ const LoadInputHistorySchema = z.object({
 const RedoLastUserPromptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
-  mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']),
+  mode: z.string().min(1, 'Mode is required'),
   updatedPrompt: z.string().optional(),
 });
 
@@ -227,7 +227,7 @@ const RemoveMessagesUpToSchema = z.object({
 const CompactConversationSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
-  mode: z.enum(['agent', 'code', 'ask', 'architect', 'context']),
+  mode: z.string().min(1, 'Mode is required'),
   customInstructions: z.string().optional(),
 });
 

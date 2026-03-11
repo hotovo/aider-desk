@@ -14,7 +14,7 @@ const RunCustomCommandSchema = z.object({
   taskId: z.string().min(1, 'Task id is required'),
   commandName: z.string().min(1, 'Command name is required'),
   args: z.array(z.string()),
-  mode: z.enum(['code', 'ask', 'architect', 'context', 'agent']),
+  mode: z.string().min(1, 'Mode is required'),
 });
 
 export class CommandsApi extends BaseApi {

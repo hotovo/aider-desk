@@ -6,6 +6,7 @@
 - added extension UI components system
 - updated underlying library used for Alibaba Coding Plan for better stability
 - added thinking enabled and budget settings for Alibaba Coding Plan provider
+- correctly allowing custom mode names in the relevant Rest API endpoints
 
 ## [0.56.0]
 
