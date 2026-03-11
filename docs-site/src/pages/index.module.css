@@ -287,14 +287,14 @@
 /* Buttons */
 .primaryButton {
   border: 2px solid var(--ifm-color-primary);
-  background: rgba(255,255,255,0.9);
+  background: var(--ifm-color-primary);
+  color: white;
   box-shadow: 0 8px 20px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1) inset;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-weight: 700;
   padding: 1rem 2.5rem;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
   letter-spacing: 0.01em;
 }
 
@@ -323,8 +323,9 @@
 
 .primaryButton:hover {
   transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.15) inset;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
   text-decoration: none;
+  filter: brightness(1.1);
 }
 
 .secondaryButton {
@@ -1263,6 +1264,17 @@ html {
   box-shadow:
     0 12px 30px rgba(0,0,0,0.4),
     0 0 0 1px rgba(160,174,192,0.15) inset;
+}
+
+[data-theme='dark'] .primaryButton {
+  background: rgba(255,255,255,0.9);
+  color: var(--ifm-color-primary-dark);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+[data-theme='dark'] .primaryButton:hover {
+  box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+  filter: brightness(1);
 }
 
 [data-theme='dark'] .communitySection .sectionSubtitle {
