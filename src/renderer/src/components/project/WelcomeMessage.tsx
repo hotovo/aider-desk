@@ -2,7 +2,6 @@ import { RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { FiCode, FiFile, FiLayers, FiTerminal, FiArrowRight } from 'react-icons/fi';
 import { CgTerminal } from 'react-icons/cg';
-import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 // @ts-expect-error TypeScript is not aware of asset import
@@ -17,26 +16,6 @@ type Props = {
   mode?: Mode;
   projectDir?: string;
   taskId?: string;
-};
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
-  },
 };
 
 export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props) => {
@@ -88,14 +67,14 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
 
   return (
     <div className="absolute inset-0 text-text-muted-light overflow-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary py-4 px-4">
-      <motion.div className="text-center max-w-2xl w-full mx-auto" variants={containerVariants} initial="hidden" animate="visible">
-        <motion.div variants={itemVariants} className="mb-8">
+      <div className="text-center max-w-3xl w-full mx-auto">
+        <div className="mb-8">
           <img src={icon} alt="AiderDesk" className="h-14 w-14 mx-auto" />
           <h1 className="text-2xl font-bold text-text-primary mb-2">{t('welcomeMessage.title')}</h1>
           <p className="text-sm text-text-secondary">{t('welcomeMessage.subtitle')}</p>
-        </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants} className="mb-8">
+        <div className="mb-8">
           <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">{t('welcomeMessage.features.title')}</h2>
           <div className="flex flex-wrap justify-center gap-3">
             {features.map(({ icon: Icon, key }) => (
@@ -108,9 +87,9 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants} className="mb-8">
+        <div className="mb-8">
           <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">{t('welcomeMessage.modes.title')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {modes.map(({ icon: Icon, key, value, iconBg, iconColor, borderHover }) => (
@@ -118,7 +97,7 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
                 key={key}
                 onClick={() => handleModeClick(value)}
                 className={clsx(
-                  'group relative overflow-hidden rounded-xl border border-border-dark-light bg-bg-primary-light-strong p-4 cursor-pointer transition-all duration-300 hover:scale-105',
+                  'group relative overflow-hidden rounded-xl border border-border-dark-light bg-bg-primary-light-strong p-4 cursor-pointer transition-all duration-300 hover:scale-105 flex flex-col',
                   borderHover,
                   'hover:bg-bg-secondary',
                 )}
@@ -129,17 +108,17 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
                   </div>
                 </div>
                 <h3 className="text-sm font-semibold text-text-primary mb-1.5">{t(`welcomeMessage.modes.${key}.title`)}</h3>
-                <p className="text-2xs text-text-secondary leading-relaxed mb-3">{t(`welcomeMessage.modes.${key}.description`)}</p>
-                <div className="flex items-center justify-center gap-1 text-2xs text-text-tertiary group-hover:text-text-secondary transition-colors">
+                <p className="text-2xs text-text-secondary leading-relaxed flex-1">{t(`welcomeMessage.modes.${key}.description`)}</p>
+                <div className="flex items-center justify-center gap-1 text-2xs text-text-primary group-hover:text-text-secondary transition-colors mt-3">
                   <span>{t('welcomeMessage.selectMode')}</span>
                   <FiArrowRight className="w-3 h-3 transform group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants}>
+        <div>
           <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">{t('welcomeMessage.tips.title')}</h2>
           <div className="inline-flex flex-col items-start gap-2 text-xs bg-bg-secondary rounded-lg p-4 border border-border-dark-light">
             {tips.map((tip) => (
@@ -149,8 +128,8 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
               </div>
             ))}
           </div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 };
