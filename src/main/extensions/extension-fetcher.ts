@@ -87,15 +87,26 @@ export class ExtensionFetcher {
         throw new Error(`Invalid repository URL: ${repoUrl}`);
       }
 
-      logger.debug(`[ExtensionFetcher] Cloning repository to ${tempDir}`);
-      await execWithShellPath(`git clone --depth 1 "${cloneUrl}" "${tempDir}"`, {
-        cwd: os.tmpdir(),
-      });
+      const extensionSubPath = this.getExtensionSubPath(repoUrl);
+
+      if (extensionSubPath) {
+        logger.info(`[ExtensionFetcher] Sparse cloning repository to ${tempDir}, path: ${extensionSubPath}`);
+        await execWithShellPath(`git clone --depth 1 --sparse "${cloneUrl}" "${tempDir}"`, {
+          cwd: os.tmpdir(),
+        });
+        await execWithShellPath(`git -C "${tempDir}" sparse-checkout set "${extensionSubPath}"`, {
+          cwd: tempDir,
+        });
+      } else {
+        logger.info(`[ExtensionFetcher] Cloning repository to ${tempDir}`);
+        await execWithShellPath(`git clone --depth 1 "${cloneUrl}" "${tempDir}"`, {
+          cwd: os.tmpdir(),
+        });
+      }
 
       const extensionsPath = this.getExtensionsPath(repoUrl, tempDir);
-      const extensions = await this.scanForExtensions(extensionsPath, repoUrl);
 
-      return extensions;
+      return await this.scanForExtensions(extensionsPath, repoUrl);
     } finally {
       try {
         await fs.rm(tempDir, { recursive: true, force: true });
@@ -120,6 +131,21 @@ export class ExtensionFetcher {
       const owner = pathParts[0];
       const repo = pathParts[1];
       return `https://github.com/${owner}/${repo}.git`;
+    } catch {
+      return null;
+    }
+  }
+
+  private getExtensionSubPath(repoUrl: string): string | null {
+    try {
+      const url = new URL(repoUrl);
+      const pathParts = url.pathname.split('/').filter(Boolean);
+
+      if (pathParts.length > 4 && pathParts[2] === 'tree') {
+        return pathParts.slice(4).join('/');
+      }
+
+      return null;
     } catch {
       return null;
     }
