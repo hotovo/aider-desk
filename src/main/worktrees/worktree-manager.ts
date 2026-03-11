@@ -18,6 +18,7 @@ import { isBinary } from 'istextorbinary';
 import { execWithShellPath, withLock } from '@/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import logger from '@/logger';
+import { isFileNotFoundError } from '@/utils/errors';
 
 export class GitError extends Error {
   name = 'GitError';
@@ -1583,11 +1584,44 @@ export class WorktreeManager {
   async restoreFile(worktreePath: string, filePath: string): Promise<void> {
     try {
       logger.info(`Restoring file: ${filePath}`, { worktreePath });
-
       const escapedPath = filePath.replace(/"/g, '\\"');
-      await execWithShellPath(`git restore -- "${escapedPath}"`, {
-        cwd: worktreePath,
-      });
+
+      // Check if file is tracked in git
+      let isTracked = false;
+      try {
+        await execWithShellPath(`git ls-files --error-unmatch -- "${escapedPath}"`, { cwd: worktreePath });
+        isTracked = true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isUntrackedFileError = errorMessage.includes('did not match');
+
+        if (isUntrackedFileError) {
+          isTracked = false;
+        } else {
+          throw error;
+        }
+      }
+
+      if (isTracked) {
+        // Tracked file - restore from HEAD
+        await execWithShellPath(`git restore -- "${escapedPath}"`, {
+          cwd: worktreePath,
+        });
+      } else {
+        const absolutePath = join(worktreePath, filePath);
+        try {
+          const stats = await lstat(absolutePath);
+          if (stats.isDirectory()) {
+            await rm(absolutePath, { recursive: true, force: true });
+          } else {
+            await fs.unlink(absolutePath);
+          }
+        } catch (error) {
+          if (!isFileNotFoundError(error)) {
+            throw error;
+          }
+        }
+      }
 
       logger.info(`Successfully restored file: ${filePath}`);
     } catch (error) {
