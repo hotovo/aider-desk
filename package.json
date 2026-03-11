@@ -49,6 +49,7 @@
     "@ai-sdk/alibaba": "^0.0.3",
     "@ai-sdk/amazon-bedrock": "^3.0.87",
     "@ai-sdk/anthropic": "^2.0.70",
+    "@augmentcode/auggie-sdk": "^0.1.15",
     "@ai-sdk/azure": "^2.0.100",
     "@ai-sdk/cerebras": "^1.0.39",
     "@ai-sdk/deepseek": "^1.0.35",

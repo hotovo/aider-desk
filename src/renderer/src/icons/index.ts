@@ -1,5 +1,6 @@
 export { AnthropicIcon } from './AnthropicIcon';
 export { AnthropicCompatibleIcon } from './AnthropicCompatibleIcon';
+export { AuggieIcon } from './AuggieIcon';
 export { AzureIcon } from './AzureIcon';
 export { BedrockIcon } from './BedrockIcon';
 export { CerebrasIcon } from './CerebrasIcon';

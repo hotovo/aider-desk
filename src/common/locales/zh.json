@@ -255,6 +255,8 @@
     },
     "claudeAgentSdkAuthRequired": "此提供商需要安装和认证 Claude Code CLI。请从 https://claude.com/product/claude-code 安装并运行 `claude login` 进行认证。",
     "claudeAgentSdkAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "auggieAuthRequired": "此提供商需要安装和认证 Auggie CLI。请从 https://www.npmjs.com/package/@augmentcode/auggie-sdk 安装并运行 `auggie login` 进行认证。",
+    "auggieAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
     "geminiCliAuthRequired": "此提供商需要安装和认证 Gemini CLI。请从 https://geminicli.com 安装并运行 `gemini` 进行认证。",
     "geminiCliAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
     "projectId": "项目 ID",
@@ -325,6 +327,11 @@
     "baseUrl": "基础 URL",
     "baseUrlPlaceholder": "例如 https://api.anthropic.com"
   },
+  "auggie": {
+    "apiKey": "API 令牌",
+    "apiUrl": "API URL",
+    "apiUrlPlaceholder": "https://api.augmentcode.com"
+  },
   "minimax": {
     "apiKey": "API 密钥"
   },
@@ -391,6 +398,7 @@
   "providers": {
     "anthropic": "Anthropic",
     "anthropic-compatible": "Anthropic 兼容",
+    "auggie": "Augie SDK",
     "alibaba-plan": "阿里云编码计划",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",

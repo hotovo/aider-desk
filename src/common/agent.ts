@@ -36,6 +36,7 @@ import {
 export type LlmProviderName =
   | 'anthropic'
   | 'anthropic-compatible'
+  | 'auggie'
   | 'azure'
   | 'bedrock'
   | 'cerebras'
@@ -82,6 +83,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'alibaba-plan',
   'anthropic',
   'anthropic-compatible',
+  'auggie',
   'azure',
   'bedrock',
   'cerebras',
@@ -146,6 +148,13 @@ export interface AnthropicCompatibleProvider extends LlmProviderBase {
   baseUrl?: string;
 }
 export const isAnthropicCompatibleProvider = (provider: LlmProviderBase): provider is AnthropicCompatibleProvider => provider.name === 'anthropic-compatible';
+
+export interface AuggieProvider extends LlmProviderBase {
+  name: 'auggie';
+  apiKey: string;
+  apiUrl?: string;
+}
+export const isAuggieProvider = (provider: LlmProviderBase): provider is AuggieProvider => provider.name === 'auggie';
 
 export interface KimiPlanProvider extends LlmProviderBase {
   name: 'kimi-plan';
@@ -315,6 +324,7 @@ export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
   | AnthropicCompatibleProvider
+  | AuggieProvider
   | AzureProvider
   | GeminiProvider
   | GeminiCliProvider
@@ -627,6 +637,13 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         apiKey: '',
         baseUrl: '',
       } satisfies AnthropicCompatibleProvider;
+      break;
+    case 'auggie':
+      provider = {
+        name: 'auggie',
+        apiKey: '',
+        apiUrl: '',
+      } satisfies AuggieProvider;
       break;
     case 'gemini':
       provider = {

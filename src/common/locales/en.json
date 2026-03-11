@@ -256,6 +256,8 @@
     },
     "claudeAgentSdkAuthRequired": "This provider requires Claude Code CLI installation and authentication. Install from https://claude.com/product/claude-code and run `claude login` to authenticate.",
     "claudeAgentSdkAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
+    "auggieAuthRequired": "This provider requires Auggie CLI installation and authentication. Install from https://www.npmjs.com/package/@augmentcode/auggie-sdk and run `auggie login` to authenticate.",
+    "auggieAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
     "geminiCliAuthRequired": "This provider requires Gemini CLI installation and authentication. Install from https://geminicli.com and run `gemini` to authenticate.",
     "geminiCliAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
     "projectId": "Project ID",
@@ -287,6 +289,12 @@
     "apiKey": "API Key",
     "baseUrl": "Base URL",
     "baseUrlPlaceholder": "e.g. https://api.anthropic.com"
+  },
+  "auggie": {
+    "apiKey": "API Token",
+    "apiKeyPlaceholder": "your-api-key (optional)",
+    "apiUrl": "API URL",
+    "apiUrlPlaceholder": "https://your-tenant.api.augmentcode.com (optional)"
   },
   "minimax": {
     "apiKey": "API Key"
@@ -394,6 +402,7 @@
   "providers": {
     "anthropic": "Anthropic",
     "anthropic-compatible": "Anthropic Compatible",
+    "auggie": "Auggie SDK",
     "alibaba-plan": "Alibaba Coding Plan",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",

@@ -10,6 +10,7 @@ import { DisableStreaming } from './DisableStreaming';
 import {
   AnthropicParameters,
   AnthropicCompatibleParameters,
+  AuggieParameters,
   AzureParameters,
   BedrockParameters,
   ClaudeAgentSdkParameters,
@@ -47,6 +48,7 @@ type ProviderParametersProps<T extends LlmProvider> = {
 const PROVIDER_PARAMETERS_MAP: Record<LlmProviderName, ComponentType<ProviderParametersProps>> = {
   anthropic: AnthropicParameters,
   'anthropic-compatible': AnthropicCompatibleParameters,
+  auggie: AuggieParameters,
   azure: AzureParameters,
   bedrock: BedrockParameters,
   'claude-agent-sdk': ClaudeAgentSdkParameters,

@@ -7,8 +7,10 @@ import { ProviderCard } from './ProviderCard';
 
 import { IconButton } from '@/components/common/IconButton';
 import {
-  AnthropicIcon,
+  AlibabaPlanIcon,
   AnthropicCompatibleIcon,
+  AnthropicIcon,
+  AuggieIcon,
   AzureIcon,
   BedrockIcon,
   CerebrasIcon,
@@ -18,6 +20,7 @@ import {
   GeminiIcon,
   GpustackIcon,
   GroqIcon,
+  KimiPlanIcon,
   LitellmIcon,
   LmStudioIcon,
   MinimaxIcon,
@@ -30,13 +33,13 @@ import {
   SyntheticIcon,
   VertexAiIcon,
   ZaiPlanIcon,
-  AlibabaPlanIcon,
-  KimiPlanIcon,
 } from '@/icons';
 
 const PROVIDER_ICON_MAP: Record<LlmProviderName, ComponentType<{ width?: number; height?: number; className?: string }>> = {
+  'alibaba-plan': AlibabaPlanIcon,
   anthropic: AnthropicIcon,
   'anthropic-compatible': AnthropicCompatibleIcon,
+  auggie: AuggieIcon,
   azure: AzureIcon,
   bedrock: BedrockIcon,
   cerebras: CerebrasIcon,
@@ -46,7 +49,6 @@ const PROVIDER_ICON_MAP: Record<LlmProviderName, ComponentType<{ width?: number;
   gemini: GeminiIcon,
   gpustack: GpustackIcon,
   groq: GroqIcon,
-  'alibaba-plan': AlibabaPlanIcon,
   'kimi-plan': KimiPlanIcon,
   litellm: LitellmIcon,
   lmstudio: LmStudioIcon,

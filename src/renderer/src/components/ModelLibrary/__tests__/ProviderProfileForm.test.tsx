@@ -31,10 +31,10 @@ vi.mock('@/hooks/useEffectiveEnvironmentVariable', () => ({
 
 // Mock providers as they might have many dependencies
 vi.mock('@/components/ModelLibrary/providers', () => ({
-  OpenAiParameters: () => <div data-testid="openai-params">OpenAI Parameters</div>,
   AlibabaPlanParameters: () => <div>Alibaba Plan Parameters</div>,
   AnthropicParameters: () => <div>Anthropic Parameters</div>,
   AnthropicCompatibleParameters: () => <div>Anthropic Compatible Parameters</div>,
+  AuggieParameters: () => <div>Auggie Parameters</div>,
   AzureParameters: () => <div>Azure Parameters</div>,
   BedrockParameters: () => <div>Bedrock Parameters</div>,
   ClaudeAgentSdkParameters: () => <div>Claude Agent SDK Parameters</div>,
@@ -48,6 +48,7 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   LmStudioParameters: () => <div>LmStudio Parameters</div>,
   MinimaxParameters: () => <div>Minimax Parameters</div>,
   OllamaParameters: () => <div>Ollama Parameters</div>,
+  OpenAiParameters: () => <div data-testid="openai-params">OpenAI Parameters</div>,
   OpenAiCompatibleParameters: () => <div>OpenAI Compatible Parameters</div>,
   OpenRouterParameters: () => <div>OpenRouter Parameters</div>,
   RequestyParameters: () => <div>Requesty Parameters</div>,

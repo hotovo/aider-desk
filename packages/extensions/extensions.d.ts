@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export type LlmProviderName = "anthropic" | "anthropic-compatible" | "azure" | "bedrock" | "cerebras" | "claude-agent-sdk" | "deepseek" | "gemini" | "gemini-cli" | "gpustack" | "groq" | "alibaba-plan" | "kimi-plan" | "litellm" | "lmstudio" | "minimax" | "ollama" | "openai" | "openai-compatible" | "opencode" | "openrouter" | "requesty" | "synthetic" | "vertex-ai" | "zai-plan";
+export type LlmProviderName = "anthropic" | "anthropic-compatible" | "auggie" | "azure" | "bedrock" | "cerebras" | "claude-agent-sdk" | "deepseek" | "gemini" | "gemini-cli" | "gpustack" | "groq" | "alibaba-plan" | "kimi-plan" | "litellm" | "lmstudio" | "minimax" | "ollama" | "openai" | "openai-compatible" | "opencode" | "openrouter" | "requesty" | "synthetic" | "vertex-ai" | "zai-plan";
 export interface LlmProviderBase {
 	name: LlmProviderName;
 	disableStreaming?: boolean;
@@ -44,6 +44,11 @@ export interface AnthropicCompatibleProvider extends LlmProviderBase {
 	name: "anthropic-compatible";
 	apiKey: string;
 	baseUrl?: string;
+}
+export interface AuggieProvider extends LlmProviderBase {
+	name: "auggie";
+	apiKey: string;
+	apiUrl?: string;
 }
 export interface KimiPlanProvider extends LlmProviderBase {
 	name: "kimi-plan";
@@ -162,7 +167,7 @@ export interface SyntheticProvider extends LlmProviderBase {
 	name: "synthetic";
 	apiKey: string;
 }
-export type LlmProvider = OpenAiProvider | AnthropicProvider | AnthropicCompatibleProvider | AzureProvider | GeminiProvider | GeminiCliProvider | VertexAiProvider | LmStudioProvider | BedrockProvider | ClaudeAgentSdkProvider | DeepseekProvider | GroqProvider | GpustackProvider | CerebrasProvider | AlibabaPlanProvider | KimiPlanProvider | OpenAiCompatibleProvider | LitellmProvider | OllamaProvider | OpenCodeProvider | OpenRouterProvider | RequestyProvider | SyntheticProvider | ZaiPlanProvider | MinimaxProvider;
+export type LlmProvider = OpenAiProvider | AnthropicProvider | AnthropicCompatibleProvider | AuggieProvider | AzureProvider | GeminiProvider | GeminiCliProvider | VertexAiProvider | LmStudioProvider | BedrockProvider | ClaudeAgentSdkProvider | DeepseekProvider | GroqProvider | GpustackProvider | CerebrasProvider | AlibabaPlanProvider | KimiPlanProvider | OpenAiCompatibleProvider | LitellmProvider | OllamaProvider | OpenCodeProvider | OpenRouterProvider | RequestyProvider | SyntheticProvider | ZaiPlanProvider | MinimaxProvider;
 export type JSONValue = null | string | number | boolean | JSONObject | JSONArray;
 export type JSONObject = {
 	[key: string]: JSONValue;

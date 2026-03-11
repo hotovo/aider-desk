@@ -14,6 +14,7 @@
 - improved extensions management for the project level
 - added programatic tool calls extension
 - properly fetching uncommited files to updated files when using worktree mode
+- added support for Auggie SDK provider
 
 ## [0.56.0]
 
