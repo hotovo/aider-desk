@@ -13,6 +13,7 @@
 - added openUrl functionality to Extension context to open URLs in a new window, external or in a modal overlay
 - improved extensions management for the project level
 - added programatic tool calls extension
+- properly fetching uncommited files to updated files when using worktree mode
 
 ## [0.56.0]
 

@@ -1466,11 +1466,12 @@ export class WorktreeManager {
       let diffCommand = 'git diff --numstat -z HEAD';
 
       if (workingMode === 'worktree' && mainBranch) {
-        // In worktree mode, get all files that differ from main branch
-        diffCommand = `git diff --numstat -z ${mainBranch}..HEAD`;
+        // In worktree mode, get all files that differ from main branch (including uncommitted)
+        diffCommand = `git diff --numstat -z ${mainBranch}`;
 
         // Get commit information for files in the range
         try {
+          logger.debug('Getting commit information for worktree', { worktreePath, mainBranch });
           const { stdout: logOutput } = await execWithShellPath(`git log --pretty=format:'%H|%s' --name-only ${mainBranch}..HEAD`, { cwd: worktreePath });
 
           // Parse log output to build file -> commit mapping
@@ -1547,7 +1548,7 @@ export class WorktreeManager {
             const escapedPath = filePath.replace(/"/g, '\\"');
             const gitDiffCmd =
               workingMode === 'worktree' && mainBranch
-                ? `git diff --unified=3 ${mainBranch}..HEAD -- "${escapedPath}"`
+                ? `git diff --unified=3 ${mainBranch} -- "${escapedPath}"`
                 : `git diff --unified=3 HEAD -- "${escapedPath}"`;
 
             const { stdout: diffOutput } = await execWithShellPath(gitDiffCmd, {
