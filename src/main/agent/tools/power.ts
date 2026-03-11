@@ -33,6 +33,7 @@ import { Task } from '@/task';
 import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
+import { getShellCommandArgs, getShellPath } from '@/utils/shell';
 
 const killProcessTree = (pid: number, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): Promise<void> => {
   return new Promise((resolve) => {
@@ -644,10 +645,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         };
 
         try {
-          const childProcess = spawn(command, {
+          const { shell: shellExec, args: shellArgs } = getShellCommandArgs(command);
+          const childProcess = spawn(shellExec, shellArgs, {
             cwd: absoluteCwd,
             shell: true,
-            env: { ...process.env, TERM: 'dumb', DEBIAN_FRONTEND: 'noninteractive' },
+            env: { ...process.env, TERM: 'dumb', DEBIAN_FRONTEND: 'noninteractive', PATH: getShellPath() },
             stdio: ['ignore', 'pipe', 'pipe'], // Explicitly pipe stdout and stderr to capture output from piped commands
           });
 

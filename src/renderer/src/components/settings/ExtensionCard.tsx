@@ -4,14 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { FaCheck, FaChevronDown, FaDownload } from 'react-icons/fa';
 import { clsx } from 'clsx';
 
-import type { AvailableExtension, LoadedExtension } from '@common/types';
+import type { AvailableExtension, InstalledExtension } from '@common/types';
 
 import { Button } from '@/components/common/Button';
 import { Checkbox } from '@/components/common/Checkbox';
 import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
 
 type Props = {
-  extension: LoadedExtension | AvailableExtension;
+  extension: InstalledExtension | AvailableExtension;
   isDisabled?: boolean;
   isUninstalling?: boolean;
   isInstalling?: boolean;
@@ -21,7 +21,7 @@ type Props = {
 };
 
 // Helper to normalize extension data
-const getExtensionData = (extension: LoadedExtension | AvailableExtension) => {
+const getExtensionData = (extension: InstalledExtension | AvailableExtension) => {
   const isLoadedExtension = 'metadata' in extension;
   return {
     name: isLoadedExtension ? extension.metadata.name : extension.name,

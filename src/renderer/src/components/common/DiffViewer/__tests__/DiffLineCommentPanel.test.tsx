@@ -8,6 +8,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         'diffViewer.lineComment.placeholder': 'Describe the changes you want to make to this code...',
+        'diffViewer.lineComment.createNewTask': 'Create new task',
         'common.cancel': 'Cancel',
         'common.submit': 'Submit',
       };
@@ -72,7 +73,7 @@ describe('DiffLineCommentPanel', () => {
 
     await waitFor(() => {
       expect(defaultProps.onSubmit).toHaveBeenCalledTimes(1);
-      expect(defaultProps.onSubmit).toHaveBeenCalledWith('Add error handling here');
+      expect(defaultProps.onSubmit).toHaveBeenCalledWith('Add error handling here', false);
     });
   });
 
@@ -93,7 +94,7 @@ describe('DiffLineCommentPanel', () => {
     fireEvent.keyDown(textarea, { key: 'Enter' });
 
     await waitFor(() => {
-      expect(defaultProps.onSubmit).toHaveBeenCalledWith('Quick submit');
+      expect(defaultProps.onSubmit).toHaveBeenCalledWith('Quick submit', false);
     });
   });
 
@@ -105,5 +106,53 @@ describe('DiffLineCommentPanel', () => {
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true });
 
     expect(defaultProps.onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('renders Create new task checkbox unchecked by default', () => {
+    render(<DiffLineCommentPanel {...defaultProps} />);
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('toggles checkbox when clicked', () => {
+    render(<DiffLineCommentPanel {...defaultProps} />);
+
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+
+    expect(checkbox).toBeChecked();
+  });
+
+  it('calls onSubmit with createNewTask=true when checkbox is checked', async () => {
+    render(<DiffLineCommentPanel {...defaultProps} />);
+
+    const textarea = screen.getByPlaceholderText('Describe the changes you want to make to this code...');
+    const checkbox = screen.getByRole('checkbox');
+
+    fireEvent.change(textarea, { target: { value: 'Create new task test' } });
+    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByText('Submit'));
+
+    await waitFor(() => {
+      expect(defaultProps.onSubmit).toHaveBeenCalledWith('Create new task test', true);
+    });
+  });
+
+  it('calls onSubmit with createNewTask=false when checkbox is unchecked', async () => {
+    render(<DiffLineCommentPanel {...defaultProps} />);
+
+    const textarea = screen.getByPlaceholderText('Describe the changes you want to make to this code...');
+    const checkbox = screen.getByRole('checkbox');
+
+    fireEvent.change(textarea, { target: { value: 'Use current task test' } });
+    fireEvent.click(checkbox);
+    fireEvent.click(checkbox);
+
+    fireEvent.click(screen.getByText('Submit'));
+
+    await waitFor(() => {
+      expect(defaultProps.onSubmit).toHaveBeenCalledWith('Use current task test', false);
+    });
   });
 });

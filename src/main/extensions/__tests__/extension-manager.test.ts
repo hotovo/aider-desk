@@ -12,6 +12,7 @@ import type { EventManager } from '@/events';
 import type { FSWatcher } from 'chokidar';
 
 import { TelemetryManager } from '@/telemetry';
+import logger from '@/logger';
 
 // Import fs to get the mocked module
 
@@ -298,29 +299,6 @@ describe('ExtensionManager', () => {
     });
   });
 
-  describe('getExtension', () => {
-    it('should return specific extension by name', () => {
-      const mockExtension = {
-        instance: {},
-        metadata: { name: 'ext1', version: '1.0.0' },
-        filePath: '/path/ext1.ts',
-      };
-      (mockRegistry as Record<string, unknown>).getExtension = vi.fn().mockReturnValue(mockExtension);
-
-      const extension = manager.getExtension('ext1');
-
-      expect(extension).toEqual(mockExtension);
-    });
-
-    it('should return undefined for unknown extension', () => {
-      (mockRegistry as Record<string, unknown>).getExtension = vi.fn().mockReturnValue(undefined);
-
-      const extension = manager.getExtension('unknown');
-
-      expect(extension).toBeUndefined();
-    });
-  });
-
   describe('isInitialized', () => {
     it('should return false before initialization', () => {
       expect(manager.isInitialized()).toBe(false);
@@ -455,7 +433,7 @@ describe('ExtensionManager', () => {
       await manager.unloadExtension('/path/test-ext.ts');
 
       expect(onUnloadMock).toHaveBeenCalled();
-      expect((mockRegistry as ExtensionRegistry).unregister).toHaveBeenCalledWith('test-ext');
+      expect((mockRegistry as ExtensionRegistry).unregister).toHaveBeenCalledWith('/path/test-ext.ts');
     });
 
     it('should do nothing if extension not found', async () => {
@@ -481,7 +459,7 @@ describe('ExtensionManager', () => {
 
       await manager.unloadExtension('/path/test-ext.ts');
 
-      expect((mockRegistry as ExtensionRegistry).unregister).toHaveBeenCalledWith('test-ext');
+      expect((mockRegistry as ExtensionRegistry).unregister).toHaveBeenCalledWith('/path/test-ext.ts');
     });
 
     it('should skip unload for uninitialized extensions', async () => {
@@ -499,7 +477,7 @@ describe('ExtensionManager', () => {
       await manager.unloadExtension('/path/test-ext.ts');
 
       expect(onUnloadMock).not.toHaveBeenCalled();
-      expect((mockRegistry as ExtensionRegistry).unregister).toHaveBeenCalledWith('test-ext');
+      expect((mockRegistry as ExtensionRegistry).unregister).toHaveBeenCalledWith('/path/test-ext.ts');
     });
   });
 
@@ -1140,6 +1118,214 @@ describe('ExtensionManager', () => {
       await manager.dispatchEvent('onPromptStarted', event, mockProject as any, mockTask as any);
 
       expect(event.prompt).toBe(originalPrompt); // Original should not be modified
+    });
+  });
+
+  describe('getUIComponents', () => {
+    it('should collect UI components from extensions', () => {
+      const getUIComponents = vi.fn().mockReturnValue([
+        {
+          id: 'component-1',
+          placement: 'status-bar',
+          alignment: 'left',
+          jsx: '<div>Component 1</div>',
+        },
+        {
+          id: 'component-2',
+          placement: 'status-bar',
+          alignment: 'right',
+          jsx: '<div>Component 2</div>',
+        },
+      ]);
+
+      const ext1 = {
+        instance: { getUIComponents },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getUIComponents();
+
+      expect(getUIComponents).toHaveBeenCalledWith(expect.any(Object));
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        extensionName: 'ext1',
+        component: {
+          id: 'component-1',
+          placement: 'status-bar',
+          alignment: 'left',
+          jsx: '<div>Component 1</div>',
+        },
+      });
+      expect(result[1]).toEqual({
+        extensionName: 'ext1',
+        component: {
+          id: 'component-2',
+          placement: 'status-bar',
+          alignment: 'right',
+          jsx: '<div>Component 2</div>',
+        },
+      });
+    });
+
+    it('should validate component definitions', () => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      const getUIComponents = vi.fn().mockReturnValue([
+        {
+          id: 'valid-component',
+          placement: 'status-bar',
+          alignment: 'left',
+          jsx: '<div>Valid</div>',
+        },
+        {
+          // Missing id - invalid
+          placement: 'status-bar',
+          alignment: 'right',
+          jsx: '<div>Invalid</div>',
+        },
+      ]);
+
+      const ext1 = {
+        instance: { getUIComponents },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getUIComponents();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].component.id).toBe('valid-component');
+      expect(loggerSpy).toHaveBeenCalled();
+
+      loggerSpy.mockRestore();
+    });
+
+    it('should return all components regardless of placement', () => {
+      const getUIComponents = vi.fn().mockReturnValue([
+        {
+          id: 'status-bar-component',
+          placement: 'status-bar',
+          alignment: 'left',
+          jsx: '<div>Status Bar</div>',
+        },
+        {
+          id: 'sidebar-component',
+          placement: 'sidebar',
+          alignment: 'left',
+          jsx: '<div>Sidebar</div>',
+        },
+      ]);
+
+      const ext1 = {
+        instance: { getUIComponents },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getUIComponents();
+
+      // Implementation returns all components, not filtered by placement
+      expect(result).toHaveLength(2);
+    });
+
+    it('should handle extensions without getUIComponents method', () => {
+      const ext1 = {
+        instance: {}, // No getUIComponents method
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getUIComponents();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle errors from extension getUIComponents', () => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      const getUIComponents = vi.fn().mockImplementation(() => {
+        throw new Error('Extension error');
+      });
+
+      const ext1 = {
+        instance: { getUIComponents },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      const ext2 = {
+        instance: {
+          getUIComponents: vi.fn().mockReturnValue([
+            {
+              id: 'valid-component',
+              placement: 'status-bar',
+              alignment: 'left',
+              jsx: '<div>Valid</div>',
+            },
+          ]),
+        },
+        metadata: { name: 'ext2', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext2.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1, ext2]);
+
+      const result = manager.getUIComponents();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].component.id).toBe('valid-component');
+      expect(loggerSpy).toHaveBeenCalled();
+
+      loggerSpy.mockRestore();
+    });
+
+    it('should skip uninitialized extensions via filterEnabledExtensions', () => {
+      const getUIComponents = vi.fn().mockReturnValue([
+        {
+          id: 'component-1',
+          placement: 'status-bar',
+          alignment: 'left',
+          jsx: '<div>Component</div>',
+        },
+      ]);
+
+      const ext1 = {
+        instance: { getUIComponents },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: false, // Not initialized
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getUIComponents();
+
+      // filterEnabledExtensions will skip uninitialized extensions before calling getUIComponents
+      expect(getUIComponents).not.toHaveBeenCalled();
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array if no extensions', () => {
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
+
+      const result = manager.getUIComponents();
+
+      expect(result).toEqual([]);
     });
   });
 });

@@ -9,6 +9,7 @@ import {
   EditFormat,
   EnvironmentVariable,
   FileEdit,
+  InstalledExtension,
   McpServerConfig,
   McpTool,
   MemoryEntry,
@@ -33,7 +34,7 @@ import {
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 
-import type { ModeDefinition, BmadStatus, InstallResult } from '@common/types';
+import type { ModeDefinition, BmadStatus, InstallResult, ExtensionUIComponent } from '@common/types';
 import type { BrowserWindow } from 'electron';
 
 import { McpManager, AgentProfileManager } from '@/agent';
@@ -46,7 +47,7 @@ import { TelemetryManager } from '@/telemetry';
 import { VersionsManager } from '@/versions';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal/terminal-manager';
-import { ExtensionManager } from '@/extensions';
+import { ExtensionManager, LoadedExtension } from '@/extensions';
 import logger from '@/logger';
 import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
@@ -70,10 +71,6 @@ export class EventsHandler {
     private readonly memoryManager: MemoryManager,
     private readonly extensionManager: ExtensionManager,
   ) {}
-
-  getExtensionManager(): ExtensionManager {
-    return this.extensionManager;
-  }
 
   loadSettings(): SettingsData {
     return this.store.getSettings();
@@ -261,13 +258,15 @@ export class EventsHandler {
     await task.handoffConversation(mode, focus);
   }
 
-  async runCodeInlineRequest(baseDir: string, filename: string, lineNumber: number, userComment: string): Promise<void> {
-    const project = this.projectManager.getProject(baseDir);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-
-    await project.runCodeInlineRequest(filename, lineNumber, userComment);
+  async runCodeInlineRequest(
+    baseDir: string,
+    taskId: string,
+    filename: string,
+    lineNumber: number,
+    userComment: string,
+    createNewTask?: boolean,
+  ): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.runCodeInlineRequest(filename, lineNumber, userComment, createNewTask);
   }
 
   async loadInputHistory(baseDir: string): Promise<string[]> {
@@ -1069,5 +1068,46 @@ export class EventsHandler {
       throw new Error('Project not found');
     }
     return await project.resetBmadWorkflow();
+  }
+
+  getInstalledExtensions(projectDir?: string): InstalledExtension[] {
+    const extensions = this.extensionManager.getExtensions(projectDir);
+    return extensions.map((ext: LoadedExtension) => ({
+      id: ext.id,
+      metadata: ext.metadata,
+      filePath: ext.filePath,
+      initialized: ext.initialized,
+      projectDir: ext.projectDir,
+      readmeContent: ext.readmeContent,
+    }));
+  }
+
+  async getAvailableExtensions(repositories: string[], forceRefresh?: boolean) {
+    return await this.extensionManager.getAvailableExtensions(repositories, forceRefresh);
+  }
+
+  async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string) {
+    return await this.extensionManager.installExtension(extensionId, repositoryUrl, projectDir);
+  }
+
+  async uninstallExtension(extensionId: string, projectDir?: string) {
+    return await this.extensionManager.uninstallExtension(extensionId, projectDir);
+  }
+
+  getUIComponents(projectDir?: string, placement?: string): ExtensionUIComponent[] {
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    const components = this.extensionManager.getUIComponents(project);
+    const filtered = placement ? components.filter((c) => c.component.placement === placement) : components;
+    return filtered.map((c) => ({
+      extensionId: c.extensionName,
+      componentId: c.component.id,
+      placement: c.component.placement,
+      jsx: c.component.jsx,
+    }));
+  }
+
+  async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string): Promise<unknown> {
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    return await this.extensionManager.getUIExtensionData(extensionId, componentId, project);
   }
 }

@@ -296,7 +296,7 @@
     "apiKey": "API 密钥",
     "mcp": {
       "title": "MCP 服务器",
-      "infoTooltip": "添加 Z.AI Coding Plan MCP 服务器以为智能体启用更多功能。",
+      "infoTooltip": "添加 Z.ai Coding Plan MCP 服务器以为智能体启用更多功能。",
       "vision": {
         "name": "视觉",
         "description": "使用 GLM-4.6V 模型进行图像和视频分析"
@@ -348,7 +348,11 @@
     "apiKey": "API 密钥"
   },
   "alibabaPlan": {
-    "apiKey": "API 密钥"
+    "apiKey": "API 密钥",
+    "thinkingEnabled": "启用思考",
+    "thinkingEnabledTooltip": "启用思考模式以增强推理能力",
+    "thinkingBudget": "思考预算",
+    "thinkingBudgetTooltip": "思考的最大令牌数 (0-81920)"
   },
   "deepseek": {
     "apiKey": "API 密钥"
@@ -408,7 +412,7 @@
     "requesty": "Requesty",
     "synthetic": "Synthetic",
     "vertex-ai": "Vertex AI",
-    "zai-plan": "Z.AI Coding Plan",
+    "zai-plan": "Z.ai Coding Plan",
     "azure": "Azure"
   },
   "select": {
@@ -1259,7 +1263,8 @@
     "noChanges": "没有进行任何更改。内容相同。",
     "lineComment": {
       "placeholder": "描述您想要对此代码进行的更改...",
-      "taskName": "更新 {{filename}}"
+      "taskName": "更新 {{filename}}",
+      "createNewTask": "创建新任务"
     }
   },
   "promptField": {

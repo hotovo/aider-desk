@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AvailableExtension, LoadedExtension, SettingsData } from '@common/types';
+import { AvailableExtension, InstalledExtension, SettingsData } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 
 import { ExtensionsSettings } from '../ExtensionsSettings';
@@ -22,7 +22,7 @@ const createMockAvailableExtension = (overrides: Partial<AvailableExtension> = {
   ...overrides,
 });
 
-const createMockLoadedExtension = (overrides: Partial<LoadedExtension> = {}): LoadedExtension => ({
+const createMockLoadedExtension = (overrides: Partial<InstalledExtension> = {}): InstalledExtension => ({
   id: 'test-extension',
   metadata: {
     name: 'Test Extension',

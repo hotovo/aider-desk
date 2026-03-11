@@ -199,6 +199,8 @@ export interface UpdatedFile {
   additions: number;
   deletions: number;
   diff?: string;
+  commitHash?: string;
+  commitMessage?: string;
 }
 
 export interface UpdatedFilesUpdatedData {
@@ -793,6 +795,8 @@ export interface CreateTaskParams {
   sendEvent?: boolean;
   provider?: string;
   model?: string;
+  mode?: Mode;
+  addInitialContextFiles?: boolean;
 }
 
 export interface TaskCreatedData {
@@ -926,7 +930,7 @@ export interface NotificationData {
   body: string;
 }
 
-export interface LoadedExtension {
+export interface InstalledExtension {
   id: string;
   metadata: {
     name: string;
@@ -954,4 +958,17 @@ export interface AvailableExtension {
   repositoryUrl: string;
   hasDependencies?: boolean;
   readmeContent?: string;
+}
+
+export interface ExtensionUIComponent {
+  extensionId: string;
+  componentId: string;
+  placement: string;
+  jsx: string;
+}
+
+export interface ExtensionUIRefreshData {
+  baseDir: string;
+  extensionId: string;
+  componentId?: string;
 }

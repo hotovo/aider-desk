@@ -13,7 +13,7 @@ import logger from '@/logger';
 
 export class ExtensionContextImpl implements ExtensionContext {
   constructor(
-    private readonly extensionId: string,
+    private readonly extensionName: string,
     private readonly store?: Store,
     private readonly modelManager?: ModelManager,
     private readonly project?: Project,
@@ -23,7 +23,7 @@ export class ExtensionContextImpl implements ExtensionContext {
 
   log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void {
     const logFn = logger[type];
-    logFn(`[Extension:${this.extensionId}] ${message}`);
+    logFn(`[Extension:${this.extensionName}] ${message}`);
   }
 
   getProjectDir(): string {
@@ -86,5 +86,14 @@ export class ExtensionContextImpl implements ExtensionContext {
       this.log(`Failed to update settings: ${error}`, 'error');
       throw error;
     }
+  }
+
+  triggerUIRefresh(componentId?: string): void {
+    if (!this.eventManager) {
+      this.log('EventManager not available, cannot trigger UI refresh', 'warn');
+      return;
+    }
+    const baseDir = this.project?.baseDir ?? '';
+    this.eventManager.sendExtensionUIRefresh(baseDir, this.extensionName, componentId);
   }
 }

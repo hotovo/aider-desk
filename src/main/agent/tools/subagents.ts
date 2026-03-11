@@ -23,7 +23,7 @@ export const createSubagentsToolset = async (
   contextMessages: ContextMessage[] = [],
   currentMessages: ContextMessage[] = [],
 ): Promise<ToolSet> => {
-  const allProfiles = agentProfileManager.getProjectProfiles(task.getProjectDir());
+  const allProfiles = agentProfileManager.getProjectProfiles(task.project);
   const enabledSubagents = allProfiles.filter((agentProfile) => isSubagentEnabled(agentProfile, mainAgentProfile.id));
 
   const generateSubagentsRunTaskDescription = (): string => {

@@ -116,7 +116,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   }, [resetLineState]);
 
   const handleCommentSubmit = useCallback(
-    async (comment: string) => {
+    async (comment: string, createNewTask: boolean) => {
       if (!activeLineInfo || isSubmitting) {
         return;
       }
@@ -124,7 +124,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
       setIsSubmitting(true);
 
       try {
-        api.runCodeInlineRequest(baseDir, activeLineInfo.filePath, activeLineInfo.lineInfo.lineNumber, comment);
+        api.runCodeInlineRequest(baseDir, taskId, activeLineInfo.filePath, activeLineInfo.lineInfo.lineNumber, comment, createNewTask);
 
         resetLineState();
         onClose();
@@ -135,7 +135,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
         setIsSubmitting(false);
       }
     },
-    [api, baseDir, activeLineInfo, isSubmitting, resetLineState, onClose],
+    [api, baseDir, activeLineInfo, isSubmitting, resetLineState, onClose, taskId],
   );
 
   const handleRevertClick = useCallback(() => {
@@ -286,6 +286,12 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
               <>
                 {currentFile.additions > 0 && <span className="text-3xs sm:text-xs font-medium text-success shrink-0">+{currentFile.additions}</span>}
                 {currentFile.deletions > 0 && <span className="text-3xs sm:text-xs font-medium text-error shrink-0">-{currentFile.deletions}</span>}
+                {currentFile.commitHash && (
+                  <span className="text-3xs text-text-secondary shrink-0 flex items-center gap-1" title={currentFile.commitMessage}>
+                    <MdOutlineCommit className="h-3 w-3" />
+                    {currentFile.commitHash.substring(0, 7)}
+                  </span>
+                )}
               </>
             )}
           </div>
@@ -338,12 +344,14 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
                 isFullWidth ? 'bg-bg-tertiary text-text-primary' : 'hover:bg-bg-tertiary text-text-secondary',
               )}
             />
-            <IconButton
-              icon={<MdUndo className="h-5 w-5" />}
-              onClick={handleRevertClick}
-              tooltip={t('contextFiles.revertFile')}
-              className="p-1.5 rounded-md transition-colors hover:bg-bg-tertiary text-text-secondary"
-            />
+            {!isAllFilesView && !currentFile.commitHash && (
+              <IconButton
+                icon={<MdUndo className="h-5 w-5" />}
+                onClick={handleRevertClick}
+                tooltip={t('contextFiles.revertFile')}
+                className="p-1.5 rounded-md transition-colors hover:bg-bg-tertiary text-text-secondary"
+              />
+            )}
           </div>
         </div>
       </div>
@@ -369,6 +377,12 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
                     </span>
                     {file.additions > 0 && <span className="text-xs font-medium text-success shrink-0">+{file.additions}</span>}
                     {file.deletions > 0 && <span className="text-xs font-medium text-error shrink-0">-{file.deletions}</span>}
+                    {file.commitHash && (
+                      <span className="text-xs text-text-secondary shrink-0 flex items-center gap-1" title={file.commitMessage}>
+                        <MdOutlineCommit className="h-3 w-3" />
+                        {file.commitHash.substring(0, 7)}
+                      </span>
+                    )}
                   </button>
                   <AnimatePresence initial={false}>
                     {isExpanded && (

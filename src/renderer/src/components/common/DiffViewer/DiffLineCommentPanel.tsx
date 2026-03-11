@@ -2,10 +2,11 @@ import { useState, useRef, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/common/Button';
+import { Checkbox } from '@/components/common/Checkbox';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 type Props = {
-  onSubmit: (comment: string) => void;
+  onSubmit: (comment: string, createNewTask: boolean) => void;
   onCancel: () => void;
   position: { top: number; left: number };
 };
@@ -13,6 +14,7 @@ type Props = {
 export const DiffLineCommentPanel = ({ onSubmit, onCancel, position }: Props) => {
   const { t } = useTranslation();
   const [comment, setComment] = useState('');
+  const [createNewTask, setCreateNewTask] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -20,7 +22,7 @@ export const DiffLineCommentPanel = ({ onSubmit, onCancel, position }: Props) =>
 
   const handleSubmit = () => {
     if (comment.trim()) {
-      onSubmit(comment.trim());
+      onSubmit(comment.trim(), createNewTask);
     }
   };
 
@@ -50,13 +52,16 @@ export const DiffLineCommentPanel = ({ onSubmit, onCancel, position }: Props) =>
         autoFocus
       />
 
-      <div className="flex justify-end gap-2 mt-2">
-        <Button onClick={onCancel} variant="text" color="tertiary" size="xs">
-          {t('common.cancel')}
-        </Button>
-        <Button onClick={handleSubmit} disabled={!comment.trim()} size="xs">
-          {t('common.submit')}
-        </Button>
+      <div className="flex items-center justify-between mt-2">
+        <Checkbox label={t('diffViewer.lineComment.createNewTask')} checked={createNewTask} onChange={setCreateNewTask} size="xs" />
+        <div className="flex gap-2">
+          <Button onClick={onCancel} variant="text" color="tertiary" size="xs">
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={handleSubmit} disabled={!comment.trim()} size="xs">
+            {t('common.submit')}
+          </Button>
+        </div>
       </div>
     </div>
   );

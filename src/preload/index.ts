@@ -4,6 +4,7 @@ import {
   CommandOutputData,
   CommandsData,
   ContextFilesUpdatedData,
+  ExtensionUIRefreshData,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -109,6 +110,21 @@ const api: ApplicationAPI = {
   installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) =>
     ipcRenderer.invoke('install-extension', extensionId, repositoryUrl, projectDir),
   uninstallExtension: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('uninstall-extension', extensionId, projectDir),
+  getExtensionUIComponents: (projectDir?: string, placement?: string) => ipcRenderer.invoke('get-extension-ui-components', projectDir, placement),
+  getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string) =>
+    ipcRenderer.invoke('get-extension-ui-data', extensionId, componentId, projectDir),
+  onExtensionUIRefresh: (baseDir: string, callback: (data: ExtensionUIRefreshData) => void) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ExtensionUIRefreshData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
+        return;
+      }
+      callback(data);
+    };
+    ipcRenderer.on('extension-ui-refresh', listener);
+    return () => {
+      ipcRenderer.removeListener('extension-ui-refresh', listener);
+    };
+  },
 
   createNewTask: (baseDir, params?: CreateTaskParams) => ipcRenderer.invoke('create-new-task', baseDir, params),
   updateTask: (baseDir, id, updates) => ipcRenderer.invoke('update-task', baseDir, id, updates),
@@ -133,7 +149,8 @@ const api: ApplicationAPI = {
   removeMessagesUpTo: (baseDir, taskId, messageId) => ipcRenderer.invoke('remove-messages-up-to', baseDir, taskId, messageId),
   compactConversation: (baseDir, taskId, mode, customInstructions) => ipcRenderer.invoke('compact-conversation', baseDir, taskId, mode, customInstructions),
   handoffConversation: (baseDir, taskId, focus) => ipcRenderer.invoke('handoff-conversation', baseDir, taskId, focus),
-  runCodeInlineRequest: (baseDir, filename, lineNumber, userComment) => ipcRenderer.send('run-code-inline-request', baseDir, filename, lineNumber, userComment),
+  runCodeInlineRequest: (baseDir, taskId, filename, lineNumber, userComment, createNewTask) =>
+    ipcRenderer.send('run-code-inline-request', baseDir, taskId, filename, lineNumber, userComment, createNewTask),
   setZoomLevel: (level) => ipcRenderer.invoke('set-zoom-level', level),
   getVersions: (forceRefresh = false) => ipcRenderer.invoke('get-versions', forceRefresh),
   downloadLatestAiderDesk: () => ipcRenderer.invoke('download-latest-aiderdesk'),

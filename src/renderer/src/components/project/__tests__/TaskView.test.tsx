@@ -60,6 +60,18 @@ vi.mock('@/hooks/useResponsive', () => ({
   useResponsive: vi.fn(),
 }));
 
+vi.mock('@/contexts/ExtensionsContext', () => ({
+  useExtensions: vi.fn(() => ({
+    componentProps: {
+      projectDir: '/test/project',
+      task: null,
+      api: {},
+      agentProfile: null,
+      mode: 'code',
+    },
+  })),
+}));
+
 // Mock hooks
 vi.mock('../useSidebarWidth', () => ({
   useSidebarWidth: () => ({ width: 300, setWidth: vi.fn() }),

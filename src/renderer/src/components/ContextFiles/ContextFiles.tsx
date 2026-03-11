@@ -6,7 +6,7 @@ import { HiChevronDown, HiChevronRight, HiOutlineTrash, HiPlus, HiX } from 'reac
 import { MdOutlineDifference, MdOutlinePublic, MdOutlineRefresh, MdOutlineSearch, MdUndo } from 'react-icons/md';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { TbPencilOff } from 'react-icons/tb';
-import { RiRobot2Line } from 'react-icons/ri';
+import { RiRobot2Line, RiMenuUnfold4Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { FaGitSquare } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
@@ -104,6 +104,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   mode: Mode;
+  onToggleFilesSidebarCollapse?: () => void;
 };
 
 type EmptyContextInfoProps = {
@@ -137,7 +138,17 @@ const EmptyContextInfo = ({ mode }: EmptyContextInfoProps) => {
 
 type SectionType = 'updated' | 'project' | 'context' | 'rules';
 
-export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFileDialog, tokensInfo, refreshAllFiles, mode }: Props) => {
+export const ContextFiles = ({
+  baseDir,
+  taskId,
+  allFiles,
+  contextFiles,
+  showFileDialog,
+  tokensInfo,
+  refreshAllFiles,
+  mode,
+  onToggleFilesSidebarCollapse,
+}: Props) => {
   const { t } = useTranslation();
   const os = useOS();
   const api = useApi();
@@ -217,7 +228,7 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
 
   const handleFileDiffClick = useCallback(
     (file: UpdatedFile) => {
-      const index = sortedUpdatedFiles.findIndex((f) => f.path === file.path);
+      const index = sortedUpdatedFiles.findIndex((f) => normalizePath(f.path) === normalizePath(file.path));
       if (index !== -1) {
         setDiffModalFileIndex(index);
         setDiffModalOpen(true);
@@ -481,7 +492,7 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
     // Actions logic
     const showAdd = type === 'project' && !isContextFile && !isRuleFile;
     const showRemove = (type === 'context' || (type === 'project' && isContextFile)) && !isRuleFile;
-    const showRevert = type === 'updated' && updatedFile && !treeItem.isFolder;
+    const showRevert = type === 'updated' && updatedFile && !treeItem.isFolder && !updatedFile.commitHash;
 
     const fileTokenTooltip = getFileTokenTooltip(treeItem);
 
@@ -517,28 +528,28 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
         type === 'updated' && !treeItem.isFolder && 'cursor-pointer hover:text-text-tertiary',
       );
 
+      const renderFile = () => {
+        // Show line stats for updated files with click handler
+        if (updatedFile && !treeItem.isFolder) {
+          return (
+            <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:text-text-tertiary" onClick={() => handleFileDiffClick(updatedFile)}>
+              <span className={className}>{title}</span>
+              <span className="text-4xs text-text-muted-dark flex-shrink-0 flex items-center gap-0.5 mt-0.5">
+                {updatedFile.additions > 0 && <span className="text-success">+{updatedFile.additions}</span>}
+                {updatedFile.deletions > 0 && <span className="text-error">-{updatedFile.deletions}</span>}
+              </span>
+            </div>
+          );
+        }
+
+        return <span className={className}>{title}</span>;
+      };
+
       if (fileTokenTooltip) {
-        return (
-          <Tooltip content={fileTokenTooltip}>
-            <span className={className}>{title}</span>
-          </Tooltip>
-        );
+        return <Tooltip content={fileTokenTooltip}>{renderFile()}</Tooltip>;
+      } else {
+        return renderFile();
       }
-
-      // Show line stats for updated files with click handler
-      if (updatedFile && !treeItem.isFolder) {
-        return (
-          <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:text-text-tertiary" onClick={() => handleFileDiffClick(updatedFile)}>
-            <span className={className}>{title}</span>
-            <span className="text-4xs text-text-muted-dark flex-shrink-0 flex items-center gap-0.5 mt-0.5">
-              {updatedFile.additions > 0 && <span className="text-success">+{updatedFile.additions}</span>}
-              {updatedFile.deletions > 0 && <span className="text-error">-{updatedFile.deletions}</span>}
-            </span>
-          </div>
-        );
-      }
-
-      return <span className={className}>{title}</span>;
     };
 
     return (
@@ -569,19 +580,16 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
                 )}
               </>
             )}
-
             {treeItem.file?.readOnly && !isRuleFile && (
               <Tooltip content={t('contextFiles.readOnly')}>
                 <TbPencilOff className="w-4 h-4 text-text-muted-light" />
               </Tooltip>
             )}
-
             {showRemove && (
               <button onClick={dropFile(treeItem)} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-error-dark">
                 <HiX className="w-4 h-4" />
               </button>
             )}
-
             {showAdd && (
               <Tooltip content={os === OS.MacOS ? t('contextFiles.addFileTooltip.cmd') : t('contextFiles.addFileTooltip.ctrl')}>
                 <button onClick={addFile(treeItem)} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary">
@@ -589,7 +597,6 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
                 </button>
               </Tooltip>
             )}
-
             {showRevert && (
               <Tooltip content={t('contextFiles.revertFile')}>
                 <button
@@ -622,6 +629,7 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
     _isLast?: boolean,
     searchField?: React.ReactNode,
     emptyContent?: React.ReactNode,
+    alwaysVisibleActions?: React.ReactNode,
   ) => {
     const isOpen = activeSection === section;
     const treeId = `tree-${section}`;
@@ -663,11 +671,10 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
             !isOpen && <span className="text-2xs text-text-tertiary mr-2 bg-bg-secondary-light px-1.5 rounded-full">{count}</span>
           )}
 
-          {isOpen && (
-            <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-              {actions}
-            </div>
-          )}
+          <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+            {isOpen && actions}
+            {alwaysVisibleActions}
+          </div>
         </div>
 
         {/* Search Field */}
@@ -753,6 +760,13 @@ export const ContextFiles = ({ baseDir, taskId, allFiles, contextFiles, showFile
         false,
         undefined,
         <EmptyContextInfo mode={mode} />,
+        onToggleFilesSidebarCollapse ? (
+          <Tooltip content={t('common.collapse')}>
+            <button onClick={onToggleFilesSidebarCollapse} className="p-1.5 hover:bg-bg-tertiary rounded-md transition-colors">
+              <RiMenuUnfold4Line className="w-4 h-4 rotate-180" />
+            </button>
+          </Tooltip>
+        ) : undefined,
       )}
 
       {/* Updated Files Section */}

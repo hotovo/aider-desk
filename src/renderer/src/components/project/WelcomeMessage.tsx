@@ -114,16 +114,14 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
           <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">{t('welcomeMessage.modes.title')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {modes.map(({ icon: Icon, key, value, iconBg, iconColor, borderHover }) => (
-              <motion.div
+              <div
                 key={key}
                 onClick={() => handleModeClick(value)}
                 className={clsx(
-                  'group relative overflow-hidden rounded-xl border border-border-dark-light bg-bg-primary-light-strong p-4 cursor-pointer transition-all duration-300',
+                  'group relative overflow-hidden rounded-xl border border-border-dark-light bg-bg-primary-light-strong p-4 cursor-pointer transition-all duration-300 hover:scale-105',
                   borderHover,
                   'hover:bg-bg-secondary',
                 )}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <div className={clsx('p-2 rounded-lg transition-colors duration-300', iconBg, iconColor)}>
@@ -136,7 +134,7 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
                   <span>{t('welcomeMessage.selectMode')}</span>
                   <FiArrowRight className="w-3 h-3 transform group-hover:translate-x-0.5 transition-transform" />
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </motion.div>

@@ -59,6 +59,7 @@ const createMockDeps = () => ({
   registry: new ExtensionRegistry(),
   eventManager: {
     sendSettingsUpdated: vi.fn(),
+    sendExtensionUIRefresh: vi.fn(),
   } as any,
 });
 
@@ -82,8 +83,8 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      await (manager as any).initializeExtension(registry.getExtension('test-extension')!);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
 
       expect(extension.onLoad).toHaveBeenCalledTimes(1);
       expect(extension.onLoad).toHaveBeenCalledWith(expect.any(ExtensionContextImpl));
@@ -100,8 +101,8 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      await (manager as any).initializeExtension(registry.getExtension('test-extension')!);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
 
       expect(capturedContext).not.toBeNull();
       expect(capturedContext).toBeInstanceOf(ExtensionContextImpl);
@@ -112,11 +113,11 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      const result = await (manager as any).initializeExtension(registry.getExtension('test-extension')!);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      const result = await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
 
       expect(result).toBe(true);
-      expect(registry.getExtension('test-extension')?.initialized).toBe(true);
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(true);
     });
 
     it('should mark extension as initialized after successful onLoad', async () => {
@@ -124,14 +125,14 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      const loaded = registry.getExtension('test-extension')!;
+      await registry.register(extension, metadata, '/test/extension.ts');
+      const loaded = registry.getExtension('/test/extension.ts')!;
 
       expect(loaded.initialized).toBe(false);
 
       await (manager as any).initializeExtension(loaded);
 
-      expect(registry.getExtension('test-extension')?.initialized).toBe(true);
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(true);
     });
 
     it('should catch and log errors in onLoad', async () => {
@@ -145,9 +146,9 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
+      await registry.register(extension, metadata, '/test/extension.ts');
 
-      await expect((manager as any).initializeExtension(registry.getExtension('test-extension')!)).rejects.toThrow('onLoad failed');
+      await expect((manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!)).rejects.toThrow('onLoad failed');
 
       expect(logger.default.error).toHaveBeenCalledWith(expect.stringContaining("Failed to call onLoad for extension 'test-extension'"), error);
     });
@@ -161,11 +162,11 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
+      await registry.register(extension, metadata, '/test/extension.ts');
 
-      await expect((manager as any).initializeExtension(registry.getExtension('test-extension')!)).rejects.toThrow();
+      await expect((manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!)).rejects.toThrow();
 
-      expect(registry.getExtension('test-extension')?.initialized).toBe(false);
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(false);
     });
   });
 
@@ -176,8 +177,8 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      registry.setInitialized('test-extension', true);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      registry.setInitialized('/test/extension.ts', true);
 
       (manager as any).initialized = true;
       await manager.dispose();
@@ -191,7 +192,7 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
+      await registry.register(extension, metadata, '/test/extension.ts');
 
       (manager as any).initialized = true;
       await manager.dispose();
@@ -204,8 +205,8 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      registry.setInitialized('test-extension', true);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      registry.setInitialized('/test/extension.ts', true);
 
       (manager as any).initialized = true;
       await manager.dispose();
@@ -222,8 +223,8 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      registry.setInitialized('test-extension', true);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      registry.setInitialized('/test/extension.ts', true);
 
       (manager as any).initialized = true;
       await manager.dispose();
@@ -241,8 +242,8 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      registry.setInitialized('test-extension', true);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      registry.setInitialized('/test/extension.ts', true);
 
       (manager as any).initialized = true;
       await manager.dispose();
@@ -260,10 +261,10 @@ describe('Extension Lifecycle', () => {
       };
 
       const registry = (manager as any).registry as ExtensionRegistry;
-      registry.register(extension1, { name: 'ext1', version: '1.0.0', description: '', author: '' }, '/test/ext1.ts');
-      registry.register(extension2, { name: 'ext2', version: '1.0.0', description: '', author: '' }, '/test/ext2.ts');
-      registry.setInitialized('ext1', true);
-      registry.setInitialized('ext2', true);
+      await registry.register(extension1, { name: 'ext1', version: '1.0.0', description: '', author: '' }, '/test/ext1.ts');
+      await registry.register(extension2, { name: 'ext2', version: '1.0.0', description: '', author: '' }, '/test/ext2.ts');
+      registry.setInitialized('/test/ext1.ts', true);
+      registry.setInitialized('/test/ext2.ts', true);
 
       (manager as any).initialized = true;
       await manager.dispose();
@@ -284,8 +285,8 @@ describe('Extension Lifecycle', () => {
       const successExtension = createMockExtension();
 
       const registry = (manager as any).registry as ExtensionRegistry;
-      registry.register(failingExtension, { name: 'failing', version: '1.0.0', description: '', author: '' }, '/test/failing.ts');
-      registry.register(successExtension, { name: 'success', version: '1.0.0', description: '', author: '' }, '/test/success.ts');
+      await registry.register(failingExtension, { name: 'failing', version: '1.0.0', description: '', author: '' }, '/test/failing.ts');
+      await registry.register(successExtension, { name: 'success', version: '1.0.0', description: '', author: '' }, '/test/success.ts');
 
       (manager as any).initialized = true;
       await manager.dispose();
@@ -303,11 +304,11 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
+      await registry.register(extension, metadata, '/test/extension.ts');
 
-      await expect((manager as any).initializeExtension(registry.getExtension('test-extension')!)).rejects.toThrow();
+      await expect((manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!)).rejects.toThrow();
 
-      registry.setInitialized('test-extension', true);
+      registry.setInitialized('/test/extension.ts', true);
       (manager as any).initialized = true;
       await expect(manager.dispose()).resolves.not.toThrow();
     });
@@ -319,8 +320,8 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      registry.setInitialized('test-extension', true);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      registry.setInitialized('/test/extension.ts', true);
 
       (manager as any).initialized = true;
       await manager.unloadExtension('/test/extension.ts');
@@ -333,14 +334,14 @@ describe('Extension Lifecycle', () => {
       const metadata = createMockMetadata();
       const registry = (manager as any).registry as ExtensionRegistry;
 
-      registry.register(extension, metadata, '/test/extension.ts');
-      registry.setInitialized('test-extension', true);
+      await registry.register(extension, metadata, '/test/extension.ts');
+      registry.setInitialized('/test/extension.ts', true);
 
-      expect(registry.getExtension('test-extension')).toBeDefined();
+      expect(registry.getExtension('/test/extension.ts')).toBeDefined();
 
       await manager.unloadExtension('/test/extension.ts');
 
-      expect(registry.getExtension('test-extension')).toBeUndefined();
+      expect(registry.getExtension('/test/extension.ts')).toBeUndefined();
     });
 
     it('should handle unloading non-existent extension gracefully', async () => {
@@ -349,22 +350,22 @@ describe('Extension Lifecycle', () => {
   });
 
   describe('Initialization State Tracking', () => {
-    it('should track initialization state via registry', () => {
+    it('should track initialization state via registry', async () => {
       const registry = new ExtensionRegistry();
       const extension = createMockExtension();
       const metadata = createMockMetadata();
 
-      registry.register(extension, metadata, '/test/extension.ts');
+      await registry.register(extension, metadata, '/test/extension.ts');
 
-      expect(registry.getExtension('test-extension')?.initialized).toBe(false);
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(false);
 
-      registry.setInitialized('test-extension', true);
+      registry.setInitialized('/test/extension.ts', true);
 
-      expect(registry.getExtension('test-extension')?.initialized).toBe(true);
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(true);
 
-      registry.setInitialized('test-extension', false);
+      registry.setInitialized('/test/extension.ts', false);
 
-      expect(registry.getExtension('test-extension')?.initialized).toBe(false);
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(false);
     });
 
     it('should handle setInitialized for non-existent extension', () => {

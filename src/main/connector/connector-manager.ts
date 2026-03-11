@@ -79,7 +79,6 @@ export class ConnectorManager {
 
   private processMessage = (socket: Socket, message: Message) => {
     try {
-      logger.info('Received message from client', { action: message.action });
       logger.debug('Message:', {
         message: JSON.stringify(message).slice(0, 1000),
       });

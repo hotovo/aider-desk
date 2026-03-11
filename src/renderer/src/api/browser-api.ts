@@ -9,6 +9,7 @@ import {
   CommandsData,
   EditFormat,
   EnvironmentVariable,
+  ExtensionUIRefreshData,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -54,8 +55,9 @@ import {
   QueuedPromptsUpdatedData,
   WorkflowExecutionOptions,
   WorkflowExecutionResult,
-  LoadedExtension,
+  InstalledExtension,
   AvailableExtension,
+  ExtensionUIComponent,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -100,6 +102,7 @@ type EventDataMap = {
   'terminal-data': TerminalData;
   'terminal-exit': TerminalExitData;
   'bmad-status-changed': BmadStatus;
+  'extension-ui-refresh': ExtensionUIRefreshData;
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -170,6 +173,7 @@ export class BrowserApi implements ApplicationAPI {
       'terminal-exit': new Map(),
       'bmad-status-changed': new Map(),
       'queued-prompts-updated': new Map(),
+      'extension-ui-refresh': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -627,12 +631,14 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  runCodeInlineRequest(baseDir: string, filename: string, lineNumber: number, userComment: string): void {
+  runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string, createNewTask?: boolean): void {
     this.post('/project/run-code-inline-request', {
       projectDir: baseDir,
+      taskId,
       filename,
       lineNumber,
       userComment,
+      createNewTask,
     });
   }
 
@@ -1111,7 +1117,7 @@ export class BrowserApi implements ApplicationAPI {
     return this.addListener('bmad-status-changed', callback, baseDir);
   }
 
-  getInstalledExtensions(projectDir?: string): Promise<LoadedExtension[]> {
+  getInstalledExtensions(projectDir?: string): Promise<InstalledExtension[]> {
     return this.get('/extensions', { projectDir });
   }
 
@@ -1135,5 +1141,30 @@ export class BrowserApi implements ApplicationAPI {
       extensionId,
       projectDir,
     });
+  }
+
+  getExtensionUIComponents(projectDir?: string, placement?: string): Promise<ExtensionUIComponent[]> {
+    return this.get('/extensions/ui-components', {
+      projectDir,
+      placement,
+    });
+  }
+
+  getUIExtensionData(extensionId: string, componentId: string, projectDir?: string): Promise<unknown> {
+    return this.get('/extensions/ui-data', {
+      extensionId,
+      componentId,
+      projectDir,
+    });
+  }
+
+  onExtensionUIRefresh(baseDir: string, callback: (data: ExtensionUIRefreshData) => void): () => void {
+    return this.addListener(
+      'extension-ui-refresh',
+      (data) => {
+        callback(data);
+      },
+      baseDir,
+    );
   }
 }

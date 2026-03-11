@@ -18,22 +18,22 @@ export interface LoadedExtension {
 export class ExtensionRegistry {
   private extensions = new Map<string, LoadedExtension>();
 
-  private deriveExtensionId(filePath: string): string {
+  private deriveExtensionId(filePath: string, projectDir?: string): string {
     const parsedPath = path.parse(filePath);
     const filename = parsedPath.name;
+    const projectName = projectDir ? path.basename(projectDir) : '';
 
     // If the file is index.ts or index.js, use the parent folder name
     if (filename === 'index') {
-      const parentDir = path.basename(parsedPath.dir);
-      return parentDir;
+      return path.basename(parsedPath.dir) + (projectName ? `-${projectName}` : '');
     }
 
     // Otherwise, use the filename without extension
-    return filename;
+    return filename + (projectName ? `-${projectName}` : '');
   }
 
   async register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
-    const id = this.deriveExtensionId(filePath);
+    const id = this.deriveExtensionId(filePath, projectDir);
     logger.info(`[Extensions] Registering extension: ${metadata.name} (id: ${id})`);
 
     // Try to load README.md for folder-based extensions
@@ -52,16 +52,24 @@ export class ExtensionRegistry {
       }
     }
 
-    this.extensions.set(metadata.name, { id, instance: extension, metadata, filePath, initialized: false, projectDir, readmeContent });
+    this.extensions.set(filePath, {
+      id,
+      instance: extension,
+      metadata,
+      filePath,
+      initialized: false,
+      projectDir,
+      readmeContent,
+    });
   }
 
-  setInitialized(name: string, initialized: boolean): void {
-    const extension = this.extensions.get(name);
+  setInitialized(filePath: string, initialized: boolean): void {
+    const extension = this.extensions.get(filePath);
     if (extension) {
-      logger.info(`[Extensions] Set initialized: ${name} to ${initialized}`);
+      logger.info(`[Extensions] Set initialized: ${filePath} to ${initialized}`);
       extension.initialized = initialized;
     } else {
-      logger.warn(`[Extensions] Failed to set initialized: ${name} to ${initialized}, extension not found`);
+      logger.warn(`[Extensions] Failed to set initialized: ${filePath} to ${initialized}, extension not found`);
     }
   }
 
@@ -72,13 +80,13 @@ export class ExtensionRegistry {
     return Array.from(this.extensions.values());
   }
 
-  getExtension(name: string): LoadedExtension | undefined {
-    return this.extensions.get(name);
+  getExtension(filePath: string): LoadedExtension | undefined {
+    return this.extensions.get(filePath);
   }
 
-  unregister(name: string): boolean {
-    logger.info(`[Extensions] Unregistering extension: ${name}`);
-    return this.extensions.delete(name);
+  unregister(filePath: string): boolean {
+    logger.info(`[Extensions] Unregistering extension: ${filePath}`);
+    return this.extensions.delete(filePath);
   }
 
   clear() {

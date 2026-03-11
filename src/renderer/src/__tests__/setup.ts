@@ -8,6 +8,24 @@ vi.mock('focus-trap-react', () => ({
   FocusTrap: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// Mock i18next
+vi.mock('i18next', () => ({
+  default: {
+    t: (key: string, options?: Record<string, unknown>) => {
+      if (options?.extensionName && options?.componentId) {
+        return `Extension UI Error: ${options.extensionName}/${options.componentId}`;
+      }
+      return key;
+    },
+  },
+  t: (key: string, options?: Record<string, unknown>) => {
+    if (options?.extensionName && options?.componentId) {
+      return `Extension UI Error: ${options.extensionName}/${options.componentId}`;
+    }
+    return key;
+  },
+}));
+
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

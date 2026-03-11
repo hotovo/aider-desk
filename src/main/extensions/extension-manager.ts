@@ -6,7 +6,7 @@ import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
 import { AvailableExtension, ToolApprovalState } from '@common/types';
-import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
+import { AIDER_DESK_EXTENSIONS_REPO_URL, Tool, UIComponentDefinition } from '@common/extensions';
 
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
@@ -87,6 +87,11 @@ export interface RegisteredAgent {
 export interface RegisteredMode {
   extensionName: string;
   mode: ModeDefinition;
+}
+
+export interface RegisteredUIComponent {
+  extensionName: string;
+  component: UIComponentDefinition;
 }
 
 /**
@@ -222,22 +227,23 @@ export class ExtensionManager {
   }
 
   private async initializeExtension(loaded: LoadedExtension, project?: Project): Promise<boolean> {
-    const { instance, metadata } = loaded;
+    const { filePath, instance, metadata } = loaded;
 
     if (!instance.onLoad) {
       logger.debug(`[Extensions] Extension '${metadata.name}' has no onLoad method, skipping initialization`);
-      this.registry.setInitialized(metadata.name, true);
+      this.registry.setInitialized(filePath, true);
       return true;
     }
 
     try {
       const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, project, undefined, this.eventManager);
       await instance.onLoad(context);
-      this.registry.setInitialized(metadata.name, true);
-      logger.info(`[Extensions] Initialized extension: ${metadata.name} v${metadata.version}`);
+      this.registry.setInitialized(filePath, true);
+      this.eventManager.sendExtensionUIRefresh(project?.baseDir ?? '', loaded.id);
+      logger.info(`[Extensions] Initialized extension: ${metadata.name} v${metadata.version}${project ? ` for project ${project.baseDir}}` : ''}`);
       return true;
     } catch (error) {
-      logger.error(`[Extensions] Failed to call onLoad for extension '${metadata.name}':`, error);
+      logger.error(`[Extensions] Failed to call onLoad for extension '${metadata.name}${project ? ` for project ${project.baseDir}}` : ''}':`, error);
       throw error;
     }
   }
@@ -250,16 +256,16 @@ export class ExtensionManager {
     try {
       const result = await this.loader.loadExtension(filePath);
       if (!result) {
-        logger.error(`[Extensions] Failed to load extension from ${filePath}`);
+        logger.error(`[Extensions] Failed to load extension from ${filePath}${project ? ` for project ${project.baseDir}` : ''}`);
         return false;
       }
 
       const { extension, metadata } = result;
       await this.registry.register(extension, metadata, filePath, project?.baseDir);
 
-      const loaded = this.registry.getExtension(metadata.name);
+      const loaded = this.registry.getExtension(filePath);
       if (!loaded) {
-        logger.error(`[Extensions] Failed to retrieve registered extension: ${metadata.name}`);
+        logger.error(`[Extensions] Failed to retrieve registered extension: ${metadata.name}${project ? ` for project ${project.baseDir}` : ''}`);
         return false;
       }
 
@@ -268,7 +274,7 @@ export class ExtensionManager {
         return false;
       }
 
-      logger.info(`[Extensions] Loaded and initialized extension: ${metadata.name} v${metadata.version}`);
+      logger.info(`[Extensions] Loaded and initialized extension: ${metadata.name} v${metadata.version}${project ? ` for project ${project.baseDir}` : ''}`);
       return true;
     } catch (error) {
       logger.error(`[Extensions] Failed to load/initialize extension from ${filePath}:`, error);
@@ -314,10 +320,6 @@ export class ExtensionManager {
 
   getExtensions(projectDir?: string): LoadedExtension[] {
     return this.registry.getExtensions(projectDir);
-  }
-
-  getExtension(name: string): LoadedExtension | undefined {
-    return this.registry.getExtension(name);
   }
 
   isInitialized(): boolean {
@@ -386,8 +388,8 @@ export class ExtensionManager {
       }
     }
 
-    this.registry.unregister(metadata.name);
-    logger.info(`[Extensions] Unloaded extension: ${metadata.name}`);
+    this.registry.unregister(filePath);
+    logger.info(`[Extensions] Unloaded extension: ${filePath}`);
   }
 
   private findExtensionByPath(filePath: string): LoadedExtension | undefined {
@@ -663,10 +665,11 @@ export class ExtensionManager {
    * @param task - The current Task instance
    * @param mode - The current mode
    * @param profile - The agent profile with tool approval settings
+   * @param allTools - The complete set of available tools
    * @param abortSignal - Optional AbortSignal for cancellation support
    * @returns A ToolSet containing all approved extension tools
    */
-  createExtensionToolset(task: Task, mode: string, profile: AgentProfile, abortSignal?: AbortSignal): ToolSet {
+  createExtensionToolset(task: Task, mode: string, profile: AgentProfile, allTools: ToolSet, abortSignal?: AbortSignal): ToolSet {
     const toolSet: ToolSet = {};
     const registeredTools = this.getTools(task, mode, profile);
 
@@ -684,8 +687,28 @@ export class ExtensionManager {
         description: tool.description,
         inputSchema: tool.inputSchema,
         execute: async (input: Record<string, unknown>, options: ToolCallOptions) => {
+          const allToolsInternal = Object.entries(allTools).reduce(
+            (acc, [toolId, tool]) => {
+              acc[toolId] = {
+                execute: async (input: Record<string, unknown>) => {
+                  if (tool.execute) {
+                    return await tool.execute(input, {
+                      toolCallId: '',
+                      abortSignal: abortSignal || options.abortSignal,
+                      messages: [],
+                    });
+                  } else {
+                    return 'Tool does not have an execute function';
+                  }
+                },
+              };
+              return acc;
+            },
+            {} as Record<string, Tool>,
+          );
+
           try {
-            return await tool.execute(input, abortSignal || options.abortSignal, context);
+            return await tool.execute(input, abortSignal || options.abortSignal, context, allToolsInternal);
           } catch (error) {
             // Error isolation - log and return error message
             const errorMsg = error instanceof Error ? error.message : String(error);
@@ -779,9 +802,9 @@ export class ExtensionManager {
     return collectedCommands;
   }
 
-  getAgents(projectDir?: string): RegisteredAgent[] {
+  getAgents(project?: Project): RegisteredAgent[] {
     const collectedAgents: RegisteredAgent[] = [];
-    const allExtensions = this.registry.getExtensions(projectDir);
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
     const extensions = this.filterEnabledExtensions(allExtensions);
 
     for (const loaded of extensions) {
@@ -792,7 +815,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, undefined, undefined, this.eventManager);
+        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, project, undefined, this.eventManager);
         const agents = instance.getAgents(context);
 
         if (!Array.isArray(agents)) {
@@ -820,8 +843,8 @@ export class ExtensionManager {
     return collectedAgents;
   }
 
-  getAgentById(agentId: string, projectDir?: string): RegisteredAgent | undefined {
-    const agents = this.getAgents(projectDir);
+  getAgentById(agentId: string, project?: Project): RegisteredAgent | undefined {
+    const agents = this.getAgents(project);
     return agents.find((a) => a.agent.id === agentId);
   }
 
@@ -884,6 +907,105 @@ export class ExtensionManager {
 
     if (mode.icon !== undefined && typeof mode.icon !== 'string') {
       errors.push('Mode icon must be a string if provided');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
+
+  getUIComponents(project?: Project): RegisteredUIComponent[] {
+    const collectedComponents: RegisteredUIComponent[] = [];
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      // Skip uninitialized extensions
+      if (!loaded.initialized) {
+        continue;
+      }
+
+      const { instance, metadata } = loaded;
+
+      if (!instance.getUIComponents) {
+        continue;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, project, undefined, this.eventManager);
+        const components = instance.getUIComponents(context);
+
+        if (!Array.isArray(components)) {
+          logger.error(`[Extensions] Extension '${metadata.name}' getUIComponents() did not return an array`);
+          continue;
+        }
+
+        for (const component of components) {
+          const validation = this.validateUIComponentDefinition(component);
+
+          if (!validation.isValid) {
+            logger.error(`[Extensions] Invalid UI component '${component.id}' from extension '${metadata.name}': ${validation.errors.join(', ')}`);
+            continue;
+          }
+
+          collectedComponents.push({ extensionName: metadata.name, component });
+        }
+      } catch (error) {
+        logger.error(`[Extensions] Failed to get UI components from extension '${metadata.name}':`, error);
+      }
+    }
+
+    return collectedComponents;
+  }
+
+  async getUIExtensionData(extensionId: string, componentId: string, project?: Project): Promise<unknown> {
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      if (!loaded.initialized) {
+        continue;
+      }
+
+      const { instance, metadata } = loaded;
+
+      if (metadata.name !== extensionId) {
+        continue;
+      }
+
+      if (!instance.getUIExtensionData) {
+        continue;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, project, undefined, this.eventManager);
+        return await instance.getUIExtensionData(componentId, context);
+      } catch (error) {
+        logger.error(`[Extensions] Failed to get UI extension data from '${metadata.name}' for component '${componentId}':`, error);
+        return undefined;
+      }
+    }
+
+    return undefined;
+  }
+
+  validateUIComponentDefinition(component: UIComponentDefinition): {
+    isValid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+
+    if (!component.id || typeof component.id !== 'string') {
+      errors.push('UI component must have a valid id');
+    }
+
+    if (!component.placement || typeof component.placement !== 'string') {
+      errors.push('UI component must have a valid placement');
+    }
+
+    if (!component.jsx || typeof component.jsx !== 'string') {
+      errors.push('UI component must have valid jsx content');
     }
 
     return {
@@ -1123,7 +1245,7 @@ export class ExtensionManager {
 
   /**
    * Uninstall an extension
-   * @param extensionId - Extension identifier (name)
+   * @param extensionId - Extension identifier (filePath)
    * @param projectDir - Optional project directory for project-level uninstall
    * @returns true if uninstallation succeeded
    */
@@ -1156,7 +1278,7 @@ export class ExtensionManager {
         logger.info(`[Extensions] Removed file: ${extension.filePath}`);
       }
 
-      this.registry.unregister(extensionId);
+      this.registry.unregister(extension.filePath);
 
       logger.info(`[Extensions] Successfully uninstalled ${extensionId}`);
       this.telemetryManager.captureExtensionUninstalled(extensionId, extension.projectDir ? 'project' : 'global');

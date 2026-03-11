@@ -15,8 +15,9 @@ RUN apt-get update && \
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files and workspace packages
 COPY package*.json ./
+COPY packages ./packages
 
 # Install dependencies
 RUN npm ci --ignore-scripts
@@ -26,6 +27,9 @@ COPY . .
 
 # Run patch-package for any patches
 RUN npx patch-package
+
+# Build extensions
+RUN npm run build:extensions
 
 # TEMPORARY: Remove postinstall script before moving to monorepo
 # TODO: Remove this after migrating to monorepo structure
@@ -77,6 +81,7 @@ COPY package*.json ./
 
 # Copy production dependencies from builder (includes rebuilt native modules)
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages ./packages
 
 # Copy built server, renderer and resources from builder (includes downloaded binaries)
 COPY --from=builder /app/out/server ./out/server

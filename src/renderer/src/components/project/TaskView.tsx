@@ -17,9 +17,11 @@ import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+import { useApi } from '@/contexts/ApiContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { TaskBar, TaskBarRef } from '@/components/project/TaskBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
 import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
@@ -27,12 +29,11 @@ import { MobileSidebar } from '@/components/project/MobileSidebar';
 import { FilesContextInfoContent } from '@/components/project/FilesContextInfoContent';
 import { WelcomeMessage } from '@/components/project/WelcomeMessage';
 import 'react-resizable/css/styles.css';
-import { useApi } from '@/contexts/ApiContext';
-import { resolveAgentProfile } from '@/utils/agents';
+import { useExtensions } from '@/contexts/ExtensionsContext';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useActiveAgentProfile } from '@/utils/agents';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { useTask } from '@/contexts/TaskContext';
-import { useAgents } from '@/contexts/AgentsContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useTaskMessages, useTaskState } from '@/stores/taskStore';
@@ -91,7 +92,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const api = useApi();
     const { models } = useModelProviders();
     const { loadTask, clearSession, resetTask, setMessages, setTodoItems, setAiderModelsData, answerQuestion, interruptResponse, refreshAllFiles } = useTask();
-    const { getProfiles } = useAgents();
 
     const taskState = useTaskState(task.id);
     const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData, queuedPrompts } = taskState;
@@ -118,9 +118,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const projectTopBarRef = useRef<TaskBarRef>(null);
     const messagesRef = useRef<MessagesRef | VirtualizedMessagesRef>(null);
     const terminalViewRef = useRef<TerminalViewRef | null>(null);
-    const activeAgentProfile = useMemo(() => {
-      return resolveAgentProfile(task, projectSettings?.agentProfileId, getProfiles(projectDir));
-    }, [task, projectSettings?.agentProfileId, getProfiles, projectDir]);
+    const activeAgentProfile = useActiveAgentProfile(task, projectDir);
+    const { componentProps } = useExtensions(task);
 
     useEffect(() => {
       if (isActive && !taskState.loaded && !taskState.loading) {
@@ -793,6 +792,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 showTaskInfo={handleShowTaskInfo}
                 handoffConversation={handleHandoff}
               />
+              <div className="flex gap-2 justify-between flex-wrap">
+                <ExtensionComponentWrapper componentProps={componentProps} placement="task-status-bar-left" />
+                <ExtensionComponentWrapper componentProps={componentProps} placement="task-status-bar-right" />
+              </div>
             </div>
           </div>
         </div>
@@ -803,18 +806,14 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               width: isFilesSidebarCollapsed ? FILES_COLLAPSED_WIDTH : sidebarWidth,
             }}
           >
-            {/* Expand/Collapse Button */}
-            <Tooltip content={isFilesSidebarCollapsed ? t('common.expand') : t('common.collapse')}>
-              <button
-                className={clsx(
-                  'absolute top-[50%] translate-y-[-50%] z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5',
-                  isFilesSidebarCollapsed ? 'left-1' : 'transition-opacity opacity-0 group-hover:opacity-100 left-3',
-                )}
-                onClick={handleToggleFilesSidebarCollapse}
-              >
-                <RiMenuUnfold4Line className={clsx('w-4 h-4 text-text-primary transition-transform duration-300', !isFilesSidebarCollapsed && 'rotate-180')} />
-              </button>
-            </Tooltip>
+            {/* Expand/Collapse Button for collapsed state */}
+            {isFilesSidebarCollapsed && (
+              <Tooltip content={t('common.expand')}>
+                <button className="absolute top-2 z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5 left-1" onClick={handleToggleFilesSidebarCollapse}>
+                  <RiMenuUnfold4Line className="w-4 h-4 text-text-primary" />
+                </button>
+              </Tooltip>
+            )}
 
             {/* Resizable wrapper for expanded state */}
             {!isFilesSidebarCollapsed && (
@@ -845,6 +844,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                     task={task}
                     updateTask={updateTask}
                     refreshAllFiles={handleRefreshAllFiles}
+                    onToggleFilesSidebarCollapse={handleToggleFilesSidebarCollapse}
                   />
                 </div>
               </ResizableBox>

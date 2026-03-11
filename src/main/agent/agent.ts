@@ -1,6 +1,16 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+// eslint-disable-next-line import/order
+import { Agent as UndiciAgent, setGlobalDispatcher } from 'undici';
+setGlobalDispatcher(
+  new UndiciAgent({
+    headersTimeout: 30 * 60 * 1000, // 30 minutes
+    bodyTimeout: 30 * 60 * 1000, // 30 minutes
+    connectTimeout: 30 * 1000, // 30 seconds
+  }),
+);
+
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
@@ -452,7 +462,7 @@ export class Agent {
 
     // Add extension tools
     if (this.extensionManager.isInitialized() && profile.useExtensionTools !== false) {
-      const extensionTools = this.extensionManager.createExtensionToolset(task, mode, profile, abortSignal);
+      const extensionTools = this.extensionManager.createExtensionToolset(task, mode, profile, toolSet, abortSignal);
       Object.assign(toolSet, extensionTools);
     }
 
@@ -745,7 +755,7 @@ export class Agent {
       : null;
 
     const settings = this.store.getSettings();
-    const projectProfiles = this.agentProfileManager.getProjectProfiles(task.getProjectDir());
+    const projectProfiles = this.agentProfileManager.getProjectProfiles(task.project);
     let resultMessages: ContextMessage[] = userRequestMessage ? [userRequestMessage] : [];
 
     const providers = this.store.getProviders();
@@ -1703,7 +1713,7 @@ export class Agent {
         cacheControl,
         task,
         profile,
-        this.agentProfileManager.getProjectProfiles(task.getProjectDir()),
+        this.agentProfileManager.getProjectProfiles(task.project),
         userRequestMessageIndex,
       );
 
