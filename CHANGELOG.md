@@ -7,6 +7,9 @@
 - updated underlying library used for Alibaba Coding Plan for better stability
 - added thinking enabled and budget settings for Alibaba Coding Plan provider
 - correctly allowing custom mode names in the relevant Rest API endpoints
+- suppress mermaid rendering errors
+- allow reverting untracked (new) files in updated files sidebar
+- improved process killing reliability in bash tool
 
 ## [0.56.0]
 
