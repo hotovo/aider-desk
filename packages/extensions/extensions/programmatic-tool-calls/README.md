@@ -6,6 +6,8 @@ Execute JavaScript code in a secure sandbox with access to all available tools a
 
 This extension implements the [programmatic tool calling](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/programmatic-tool-calling) pattern, allowing Claude to write code that invokes tools directly rather than requiring multiple round-trips.
 
+For more details on advanced tool use patterns, see [Claude Advanced Tool Use](https://github.com/shanraisshan/claude-code-best-practice/blob/main/reports/claude-advanced-tool-use.md).
+
 ## Benefits
 
 - **Reduced latency**: Batch multiple tool calls in a single execution
@@ -67,4 +69,22 @@ This extension uses [@nyariv/sandboxjs v0.8.33](https://www.npmjs.com/package/@n
 
 ## Installation
 
-The extension is automatically available when installed. No additional configuration required.
+### Via CLI (Recommended)
+
+Install globally (available in all projects):
+```bash
+npx @aiderdesk/extensions install programmatic-tool-calls --global
+```
+
+Install for current project:
+```bash
+npx @aiderdesk/extensions install programmatic-tool-calls
+```
+
+### Manual Installation
+
+1. Download the extension folder
+2. Copy to one of these locations:
+   - **Global**: `~/.aider-desk/extensions/`
+   - **Project**: `<project-folder>/.aider-desk/extensions/`
+3. Run `npm install` in the extension folder to install dependencies
