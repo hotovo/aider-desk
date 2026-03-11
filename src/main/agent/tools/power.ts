@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
 
+import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
@@ -33,6 +34,17 @@ import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellPath } from '@/utils/shell';
+
+const killProcessTree = (pid: number, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): Promise<void> => {
+  return new Promise((resolve) => {
+    treeKill(pid, signal, (err) => {
+      if (err) {
+        logger.error('Failed to kill process tree:', err);
+      }
+      resolve();
+    });
+  });
+};
 
 /**
  * File lock map to prevent race conditions when multiple edits target the same file.
@@ -547,7 +559,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
   const bashTool = tool({
     description: POWER_TOOL_DESCRIPTIONS[TOOL_BASH],
     inputSchema: z.object({
-      command: z.string().describe('The shell command to execute (e.g., ls -la, npm install).'),
+      command: z.string().min(1).describe('The shell command to execute (e.g., ls -la, npm install).'),
       cwd: z.string().optional().describe('The working directory for the command (relative to <WorkingDirectory>). Default: <WorkingDirectory>.'),
       timeout: z.number().int().min(0).optional().default(120000).describe('Timeout for the command execution in milliseconds. Default: 120000 ms.'),
     }),
@@ -608,10 +620,17 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         let timeoutHandle: NodeJS.Timeout | null = null;
         let isResolved = false;
 
+        // Forward declaration of abortListener - will be assigned after childProcess is created
+        let abortListener: (() => void | Promise<void>) | null = null;
+
         const cleanup = () => {
           if (timeoutHandle) {
             clearTimeout(timeoutHandle);
             timeoutHandle = null;
+          }
+          // Remove abort listener to prevent memory leaks
+          if (abortListener) {
+            abortSignal?.removeEventListener('abort', abortListener);
           }
         };
 
@@ -625,32 +644,51 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           resolve({ stdout, stderr, exitCode });
         };
 
-        const abortListener = () => {
-          if (isResolved) {
-            return;
-          }
-          isResolved = true;
-          cleanup();
-
-          const cancelledMessage = 'Operation was cancelled by user.';
-          resolve(cancelledMessage);
-        };
-
-        // Listen for abort signal
-        abortSignal?.addEventListener('abort', abortListener);
-
         try {
           const { shell: shellExec, args: shellArgs } = getShellCommandArgs(command);
           const childProcess = spawn(shellExec, shellArgs, {
             cwd: absoluteCwd,
-            env: { ...process.env, PATH: getShellPath() },
+            shell: true,
+            env: { ...process.env, TERM: 'dumb', DEBIAN_FRONTEND: 'noninteractive', PATH: getShellPath() },
             stdio: ['ignore', 'pipe', 'pipe'], // Explicitly pipe stdout and stderr to capture output from piped commands
           });
 
+          // Define abort listener that kills process tree on abort
+          abortListener = async () => {
+            if (isResolved) {
+              return;
+            }
+            isResolved = true;
+
+            // Kill the process tree on abort
+            if (childProcess.pid) {
+              await killProcessTree(childProcess.pid, 'SIGTERM');
+            }
+
+            cleanup(); // Cleanup AFTER kill
+
+            // Use the standard resolution method with proper type
+            stderr = 'Operation was cancelled by user.';
+            exitCode = 130; // Standard cancel exit code (128 + SIGINT=2)
+            resolveWithResult();
+          };
+
+          // Add abort listener only if abortSignal and childProcess exist
+          if (abortSignal && childProcess) {
+            if (abortSignal.aborted) {
+              // Signal already aborted, call handler synchronously
+              abortListener();
+            } else {
+              abortSignal.addEventListener('abort', abortListener);
+            }
+          }
+
           // Set timeout
-          timeoutHandle = setTimeout(() => {
+          timeoutHandle = setTimeout(async () => {
             if (!isResolved) {
-              childProcess.kill('SIGTERM');
+              if (childProcess.pid) {
+                await killProcessTree(childProcess.pid, 'SIGTERM');
+              }
               stderr = `Error: Command timed out after ${timeout}ms. Consider increasing the timeout parameter.`;
               exitCode = 124;
               resolveWithResult();
