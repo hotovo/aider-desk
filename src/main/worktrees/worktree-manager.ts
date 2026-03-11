@@ -1528,7 +1528,7 @@ export class WorktreeManager {
         isTracked = true;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        const isUntrackedFileError = errorMessage.includes('did not match') || errorMessage.includes('did not match any file');
+        const isUntrackedFileError = errorMessage.includes('did not match');
 
         if (isUntrackedFileError) {
           isTracked = false;
