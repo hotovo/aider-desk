@@ -27,6 +27,7 @@ import {
   InstalledExtension,
   AvailableExtension,
   ExtensionUIComponent,
+  OpenDialogResult,
 } from '@common/types';
 
 /**
@@ -66,7 +67,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
 
     // Dialog operations
     isOpenDialogSupported: vi.fn((): boolean => true),
-    showOpenDialog: vi.fn((): Promise<Electron.OpenDialogReturnValue> => Promise.resolve({ canceled: false, filePaths: [] })),
+    showOpenDialog: vi.fn((): Promise<OpenDialogResult> => Promise.resolve({ canceled: false, filePaths: [] })),
     getPathForFile: vi.fn((): string => '/mock/path'),
 
     // Open projects operations

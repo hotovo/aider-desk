@@ -6,6 +6,7 @@ import {
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
+  ContextMenuParams,
   CommandsData,
   EditFormat,
   EnvironmentVariable,
@@ -21,6 +22,8 @@ import {
   Model,
   ModelsData,
   NotificationData,
+  OpenDialogOptions,
+  OpenDialogResult,
   OS,
   ProjectData,
   ProjectSettings,
@@ -352,7 +355,7 @@ export class BrowserApi implements ApplicationAPI {
   isOpenDialogSupported(): boolean {
     return false;
   }
-  showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue> {
+  showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult> {
     void options;
     throw new UnsupportedError('showOpenDialog not supported yet.');
   }
@@ -816,7 +819,7 @@ export class BrowserApi implements ApplicationAPI {
   addTerminalExitListener(baseDir: string, callback: (data: TerminalExitData) => void): () => void {
     return this.addListener('terminal-exit', callback, baseDir);
   }
-  addContextMenuListener(callback: (params: Electron.ContextMenuParams) => void): () => void {
+  addContextMenuListener(callback: (params: ContextMenuParams) => void): () => void {
     void callback;
     return () => {};
   }

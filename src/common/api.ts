@@ -8,6 +8,7 @@ import {
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
+  ContextMenuParams,
   CreateTaskParams,
   CommandsData,
   EditFormat,
@@ -25,6 +26,8 @@ import {
   Model,
   ModelsData,
   NotificationData,
+  OpenDialogOptions,
+  OpenDialogResult,
   OS,
   ProjectData,
   ProjectSettings,
@@ -60,6 +63,7 @@ import {
   AvailableExtension,
   ExtensionUIComponent,
   ExtensionUIRefreshData,
+  ModalOverlayUrlData,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -86,7 +90,7 @@ export interface ApplicationAPI {
   sendQueuedPromptNow: (baseDir: string, taskId: string, promptId: string) => void;
   loadInputHistory: (baseDir: string) => Promise<string[]>;
   isOpenDialogSupported: () => boolean;
-  showOpenDialog: (options: Electron.OpenDialogSyncOptions) => Promise<Electron.OpenDialogReturnValue>;
+  showOpenDialog: (options: OpenDialogOptions) => Promise<OpenDialogResult>;
   getPathForFile: (file: File) => string;
   getOpenProjects: () => Promise<ProjectData[]>;
   addOpenProject: (baseDir: string) => Promise<ProjectData[]>;
@@ -204,7 +208,7 @@ export interface ApplicationAPI {
   addWorktreeIntegrationStatusUpdatedListener: (baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
-  addContextMenuListener: (callback: (params: Electron.ContextMenuParams) => void) => () => void;
+  addContextMenuListener: (callback: (params: ContextMenuParams) => void) => () => void;
   addOpenSettingsListener: (callback: (pageId: string) => void) => () => void;
 
   // Task lifecycle event listeners

@@ -52,6 +52,8 @@ export interface KimiPlanProvider extends LlmProviderBase {
 export interface AlibabaPlanProvider extends LlmProviderBase {
 	name: "alibaba-plan";
 	apiKey: string;
+	thinkingEnabled?: boolean;
+	thinkingBudget?: number;
 }
 declare enum GeminiVoiceModel {
 	GeminiLive25FlashNativeAudio = "gemini-2.5-flash-native-audio-preview-12-2025"
@@ -815,7 +817,7 @@ export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType<Record<str
 	execute: (input: z.infer<TSchema>, signal: AbortSignal | undefined, context: ExtensionContext, allTools: Record<string, Tool>) => Promise<unknown>;
 }
 /** Placement locations for extension UI components */
-export type UIComponentPlacement = "task-status-bar-left" | "task-status-bar-right";
+export type UIComponentPlacement = "task-status-bar-left" | "task-status-bar-right" | "task-usage-info-bottom";
 /**
  * Definition of a React UI component that can be registered by an extension.
  * The component is defined as a JSX string and rendered using react-jsx-parser.
@@ -848,6 +850,12 @@ export interface UIComponentDefinition {
 	placement: UIComponentPlacement;
 	/** JSX component as string to be parsed by react-jsx-parser */
 	jsx: string;
+}
+export interface UIComponentProps {
+	projectDir: string;
+	task: TaskData;
+	agentProfile: AgentProfile | null;
+	mode: Mode;
 }
 /**
  * Definition of a command that can be registered by an extension
@@ -1218,6 +1226,14 @@ export interface ExtensionContext {
 	 * @param id - Unique identifier for the extension component
 	 */
 	triggerUIRefresh(id: string): void;
+	/**
+	 * Open a URL either in external browser, a new window, or a modal overlay
+	 * @param url - URL to open
+	 * @param target - Where to open: 'external' (system browser), 'window' (new Electron window), or 'modal-overlay' (iframe in modal)
+	 *                   In Node/Docker environments, 'window' falls back to 'external'
+	 * @returns Promise that resolves when URL is opened
+	 */
+	openUrl(url: string, target?: "external" | "window" | "modal-overlay"): Promise<void>;
 }
 /**
  * Main extension interface that all extensions must implement

@@ -2,8 +2,6 @@ import { createContext, ReactNode, useContext, useMemo } from 'react';
 import { UIComponentProps } from '@common/extensions';
 import { TaskData } from '@common/types';
 
-import { useApi } from './ApiContext';
-
 import { useActiveAgentProfile } from '@/utils/agents';
 
 type ExtensionsContextValue = {
@@ -37,7 +35,6 @@ type ExtensionsHookResult = {
 
 export const useExtensions = (task: TaskData): ExtensionsHookResult => {
   const { projectDir } = useExtensionsContext();
-  const api = useApi();
   const agentProfile = useActiveAgentProfile(task, projectDir);
   const mode = task.currentMode || 'agent';
 
@@ -45,11 +42,10 @@ export const useExtensions = (task: TaskData): ExtensionsHookResult => {
     () => ({
       projectDir,
       task,
-      api,
       agentProfile,
       mode,
     }),
-    [projectDir, task, api, agentProfile, mode],
+    [projectDir, task, agentProfile, mode],
   );
 
   return { componentProps };

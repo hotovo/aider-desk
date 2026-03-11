@@ -5,8 +5,8 @@ import {
   CommandsData,
   ConnectorMessage,
   ContextFile,
-  ContextMessage,
   ContextMemoryMode,
+  ContextMessage,
   CreateTaskParams,
   CustomCommand,
   InvocationMode,
@@ -27,7 +27,6 @@ import {
   UpdatedFile,
   UsageReportData,
 } from '@common/types';
-import { ApplicationAPI } from '@common/api';
 
 export { ContextMemoryMode, InvocationMode, ToolApprovalState };
 
@@ -151,7 +150,6 @@ export interface UIComponentDefinition {
 export interface UIComponentProps {
   projectDir: string;
   task: TaskData;
-  api: ApplicationAPI;
   agentProfile: AgentProfile | null;
   mode: Mode;
 }

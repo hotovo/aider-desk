@@ -15,6 +15,8 @@ import {
   MemoryEntry,
   Mode,
   Model,
+  OpenDialogOptions,
+  OpenDialogResult,
   OS,
   ProjectData,
   ProjectSettings,
@@ -849,7 +851,7 @@ export class EventsHandler {
     this.projectManager.modelsUpdated();
   }
 
-  async showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue> {
+  async showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult> {
     if (!this.mainWindow) {
       return {
         canceled: true,

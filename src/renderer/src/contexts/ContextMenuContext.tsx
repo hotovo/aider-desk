@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ContextMenuParams } from '@common/types';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useApi } from '@/contexts/ApiContext';
@@ -89,7 +90,7 @@ export const useContextMenu = () => {
   }
 
   useEffect(() => {
-    const handleContextMenu = (params: Electron.ContextMenuParams) => {
+    const handleContextMenu = (params: ContextMenuParams) => {
       const { x, y, selectionText, isEditable } = params;
 
       // Capture the target element when context menu is triggered

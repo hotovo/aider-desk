@@ -25,29 +25,38 @@ import type { CommandDefinition, Extension, ExtensionContext, ToolCalledEvent } 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REWRITE_SCRIPT_PATH = join(__dirname, 'rtk-rewrite.sh');
 
+const getBinaryLookupCommand = (): string => (process.platform === 'win32' ? 'where' : 'which');
+
+const getRewriteScriptExecution = (): { file: string; args: string[] } =>
+  process.platform === 'win32'
+    ? { file: 'bash', args: [REWRITE_SCRIPT_PATH] }
+    : { file: REWRITE_SCRIPT_PATH, args: [] };
+
 let rtkAvailable: boolean | null = null;
 let jqAvailable: boolean | null = null;
 let scriptExists: boolean | null = null;
 let rewriteEnabled = true;
 
 const checkDependencies = (context: ExtensionContext): boolean => {
+  const lookupCommand = getBinaryLookupCommand();
+
   if (rtkAvailable === null) {
     try {
-      execFileSync('which', ['rtk'], { stdio: 'ignore' });
+      execFileSync(lookupCommand, ['rtk'], { stdio: 'ignore' });
       rtkAvailable = true;
     } catch {
       rtkAvailable = false;
-      context.log('RTK not found in PATH. Install with: brew install rtk', 'warn');
+      context.log('RTK not found in PATH. Install it and ensure it is available on PATH.', 'warn');
     }
   }
 
   if (jqAvailable === null) {
     try {
-      execFileSync('which', ['jq'], { stdio: 'ignore' });
+      execFileSync(lookupCommand, ['jq'], { stdio: 'ignore' });
       jqAvailable = true;
     } catch {
       jqAvailable = false;
-      context.log('jq not found in PATH. Install with: brew install jq', 'warn');
+      context.log('jq not found in PATH. Install it and ensure it is available on PATH.', 'warn');
     }
   }
 
@@ -70,8 +79,9 @@ const rewriteCommand = (command: string, context: ExtensionContext): string | nu
     const input = JSON.stringify({
       tool_input: { command },
     });
+    const execArgs = getRewriteScriptExecution();
 
-    const result = execFileSync(REWRITE_SCRIPT_PATH, [], {
+    const result = execFileSync(execArgs.file, execArgs.args, {
       input,
       encoding: 'utf-8',
       maxBuffer: 1024 * 1024,

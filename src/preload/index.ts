@@ -4,6 +4,7 @@ import {
   CommandOutputData,
   CommandsData,
   ContextFilesUpdatedData,
+  ContextMenuParams,
   ExtensionUIRefreshData,
   FileEdit,
   InputHistoryData,
@@ -11,6 +12,7 @@ import {
   McpServerConfig,
   MessageRemovedData,
   ModelsData,
+  OpenDialogOptions,
   OS,
   ProjectSettings,
   ProjectStartedData,
@@ -65,7 +67,7 @@ const api: ApplicationAPI = {
   sendQueuedPromptNow: (baseDir, taskId, promptId) => ipcRenderer.send('send-queued-prompt-now', baseDir, taskId, promptId),
   loadInputHistory: (baseDir) => ipcRenderer.invoke('load-input-history', baseDir),
   isOpenDialogSupported: () => true,
-  showOpenDialog: (options: Electron.OpenDialogSyncOptions) => ipcRenderer.invoke('show-open-dialog', options),
+  showOpenDialog: (options: OpenDialogOptions) => ipcRenderer.invoke('show-open-dialog', options),
   getPathForFile: (file) => webUtils.getPathForFile(file),
   getOpenProjects: () => ipcRenderer.invoke('get-open-projects'),
   addOpenProject: (baseDir) => ipcRenderer.invoke('add-open-project', baseDir),
@@ -601,7 +603,7 @@ const api: ApplicationAPI = {
   },
 
   addContextMenuListener: (callback) => {
-    const listener = (_: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(params);
+    const listener = (_: Electron.IpcRendererEvent, params: ContextMenuParams) => callback(params);
     ipcRenderer.on('context-menu', listener);
     return () => {
       ipcRenderer.removeListener('context-menu', listener);

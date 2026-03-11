@@ -972,3 +972,26 @@ export interface ExtensionUIRefreshData {
   extensionId: string;
   componentId?: string;
 }
+
+export type OpenDialogProperty = 'openFile' | 'openDirectory' | 'multiSelections';
+
+export interface OpenDialogOptions {
+  properties: OpenDialogProperty[];
+  defaultPath?: string;
+}
+
+export interface OpenDialogResult {
+  canceled: boolean;
+  filePaths: string[];
+}
+
+export interface ContextMenuParams {
+  x: number;
+  y: number;
+  selectionText?: string;
+  isEditable: boolean;
+}
+
+export interface ModalOverlayUrlData {
+  url: string;
+}

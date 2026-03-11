@@ -4,6 +4,7 @@ import {
   McpServerConfig,
   Mode,
   Model,
+  OpenDialogOptions,
   ProjectSettings,
   ProviderProfile,
   SettingsData,
@@ -76,7 +77,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.resetTask(baseDir, taskId);
   });
 
-  ipcMain.handle('show-open-dialog', async (_, options: Electron.OpenDialogSyncOptions) => {
+  ipcMain.handle('show-open-dialog', async (_, options: OpenDialogOptions) => {
     return await eventsHandler.showOpenDialog(options);
   });
 
