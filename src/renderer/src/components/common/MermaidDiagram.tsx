@@ -6,6 +6,7 @@ mermaid.initialize({
   startOnLoad: false,
   theme: 'neutral',
   securityLevel: 'loose',
+  suppressErrorRendering: true,
 });
 
 type Props = {
