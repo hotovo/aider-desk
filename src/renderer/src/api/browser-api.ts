@@ -61,6 +61,7 @@ import {
   InstalledExtension,
   AvailableExtension,
   ExtensionUIComponent,
+  ModalOverlayUrlData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -106,6 +107,7 @@ type EventDataMap = {
   'terminal-exit': TerminalExitData;
   'bmad-status-changed': BmadStatus;
   'extension-ui-refresh': ExtensionUIRefreshData;
+  'modal-overlay-url': ModalOverlayUrlData;
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -177,6 +179,7 @@ export class BrowserApi implements ApplicationAPI {
       'bmad-status-changed': new Map(),
       'queued-prompts-updated': new Map(),
       'extension-ui-refresh': new Map(),
+      'modal-overlay-url': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -1169,5 +1172,13 @@ export class BrowserApi implements ApplicationAPI {
       },
       baseDir,
     );
+  }
+
+  onModalOverlayUrl(callback: (data: ModalOverlayUrlData) => void): () => void {
+    return this.addListener('modal-overlay-url', callback);
+  }
+
+  isWebViewSupported(): boolean {
+    return false;
   }
 }

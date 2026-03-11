@@ -609,6 +609,15 @@ export interface ExtensionContext {
    * @param id - Unique identifier for the extension component
    */
   triggerUIRefresh(id: string): void;
+
+  /**
+   * Open a URL either in external browser, a new window, or a modal overlay
+   * @param url - URL to open
+   * @param target - Where to open: 'external' (system browser), 'window' (new Electron window), or 'modal-overlay' (iframe in modal)
+   *                   In Node/Docker environments, 'window' falls back to 'external'
+   * @returns Promise that resolves when URL is opened
+   */
+  openUrl(url: string, target?: 'external' | 'window' | 'modal-overlay'): Promise<void>;
 }
 
 /**

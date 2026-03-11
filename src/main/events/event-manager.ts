@@ -36,6 +36,7 @@ import {
   BmadStatus,
   CommandsData,
   ExtensionUIRefreshData,
+  ModalOverlayUrlData,
 } from '@common/types';
 
 import type { BrowserWindow } from 'electron';
@@ -424,5 +425,12 @@ export class EventManager {
     const data: ExtensionUIRefreshData = { baseDir, extensionId, componentId };
     this.sendToMainWindow('extension-ui-refresh', data);
     this.broadcastToEventConnectors('extension-ui-refresh', data);
+  }
+
+  // Modal overlay URL events
+  sendModalOverlayUrl(url: string): void {
+    const data: ModalOverlayUrlData = { url };
+    this.sendToMainWindow('modal-overlay-url', data);
+    this.broadcastToEventConnectors('modal-overlay-url', data);
   }
 }

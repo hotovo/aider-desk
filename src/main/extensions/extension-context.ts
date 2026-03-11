@@ -10,6 +10,7 @@ import type { Store } from '@/store';
 import type { Task } from '@/task';
 
 import logger from '@/logger';
+import { openUrl as openUrlUtil } from '@/utils/open-url';
 
 export class ExtensionContextImpl implements ExtensionContext {
   constructor(
@@ -95,5 +96,23 @@ export class ExtensionContextImpl implements ExtensionContext {
     }
     const baseDir = this.project?.baseDir ?? '';
     this.eventManager.sendExtensionUIRefresh(baseDir, this.extensionName, componentId);
+  }
+
+  async openUrl(url: string, target: 'external' | 'window' | 'modal-overlay' = 'window'): Promise<void> {
+    this.log(`Opening URL: ${url} (target: ${target})`);
+    try {
+      if (target === 'modal-overlay') {
+        if (!this.eventManager) {
+          this.log('EventManager not available, cannot open URL in modal overlay', 'warn');
+          return;
+        }
+        this.eventManager.sendModalOverlayUrl(url);
+      } else {
+        await openUrlUtil(url, target);
+      }
+    } catch (error) {
+      this.log(`Failed to open URL: ${error}`, 'error');
+      throw error;
+    }
   }
 }

@@ -39,6 +39,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     // Directory and logging operations
     isOpenLogsDirectorySupported: vi.fn((): boolean => true),
     openLogsDirectory: vi.fn((): Promise<boolean> => Promise.resolve(true)),
+    isWebViewSupported: vi.fn((): boolean => true),
 
     // Settings operations
     loadSettings: vi.fn((): Promise<SettingsData> => Promise.resolve({} as SettingsData)),
@@ -280,6 +281,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     removeQueuedPrompt: vi.fn((): void => undefined),
     sendQueuedPromptNow: vi.fn((): Promise<void> => Promise.resolve()),
     addQueuedPromptsUpdatedListener: vi.fn(() => vi.fn()),
+    onModalOverlayUrl: vi.fn(() => vi.fn()),
   };
 
   return vi.mocked<ApplicationAPI>({ ...defaultMock, ...overrides });

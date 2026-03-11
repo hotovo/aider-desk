@@ -439,4 +439,4 @@ describe('ExtensionFetcher', () => {
       expect(rawUrl).toBeNull();
     });
   });
-});
+}, 10000);

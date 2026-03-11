@@ -6,6 +6,7 @@ import {
   ContextFilesUpdatedData,
   ContextMenuParams,
   ExtensionUIRefreshData,
+  ModalOverlayUrlData,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -127,6 +128,16 @@ const api: ApplicationAPI = {
       ipcRenderer.removeListener('extension-ui-refresh', listener);
     };
   },
+  onModalOverlayUrl: (callback: (data: ModalOverlayUrlData) => void) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ModalOverlayUrlData) => {
+      callback(data);
+    };
+    ipcRenderer.on('modal-overlay-url', listener);
+    return () => {
+      ipcRenderer.removeListener('modal-overlay-url', listener);
+    };
+  },
+  isWebViewSupported: () => true,
 
   createNewTask: (baseDir, params?: CreateTaskParams) => ipcRenderer.invoke('create-new-task', baseDir, params),
   updateTask: (baseDir, id, updates) => ipcRenderer.invoke('update-task', baseDir, id, updates),
