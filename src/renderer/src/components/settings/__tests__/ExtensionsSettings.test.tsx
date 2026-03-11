@@ -254,7 +254,7 @@ describe('ExtensionsSettings', () => {
       // Wait for reload
       await waitFor(() => {
         expect(mockApi.getInstalledExtensions).toHaveBeenCalledTimes(2);
-        expect(mockApi.getAvailableExtensions).toHaveBeenCalledTimes(2);
+        expect(mockApi.getAvailableExtensions).toHaveBeenCalledTimes(1);
       });
 
       // Verify the custom repository accordion is still expanded after re-render
@@ -325,7 +325,7 @@ describe('ExtensionsSettings', () => {
 
       // Wait for uninstall to complete
       await waitFor(() => {
-        expect(mockApi.uninstallExtension).toHaveBeenCalledWith('Test Extension', undefined);
+        expect(mockApi.uninstallExtension).toHaveBeenCalledWith('/mock/path/to/extension.js', undefined);
       });
 
       // Wait for reload
@@ -400,7 +400,7 @@ describe('ExtensionsSettings', () => {
 
       // Wait for reload
       await waitFor(() => {
-        expect(mockApi.getAvailableExtensions).toHaveBeenCalledTimes(2);
+        expect(mockApi.getAvailableExtensions).toHaveBeenCalledTimes(1);
       });
 
       // Verify both repositories are still expanded
@@ -586,7 +586,7 @@ describe('ExtensionsSettings', () => {
       fireEvent.click(uninstallButtons[0]);
 
       await waitFor(() => {
-        expect(mockApi.uninstallExtension).toHaveBeenCalledWith(extension.metadata.name, undefined);
+        expect(mockApi.uninstallExtension).toHaveBeenCalledWith(extension.filePath, undefined);
       });
     });
 

@@ -108,9 +108,13 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
 
   useEffect(() => {
     void loadInstalledExtensions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectDir]);
+
+  useEffect(() => {
     void loadAvailableExtensions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectDir, settings.extensions?.repositories]);
+  }, [settings.extensions?.repositories]);
 
   const handleToggleDisabled = (extensionName: string, isCurrentlyDisabled: boolean) => {
     const disabledExtensions = settings.extensions?.disabled || [];
@@ -126,12 +130,12 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     });
   };
 
-  const handleUninstall = async (extensionName: string) => {
-    setUninstallingExtensions((prev) => new Set(prev).add(extensionName));
+  const handleUninstall = async (extensionFilePath: string) => {
+    setUninstallingExtensions((prev) => new Set(prev).add(extensionFilePath));
     try {
-      const success = await api.uninstallExtension(extensionName, projectDir);
+      const success = await api.uninstallExtension(extensionFilePath, projectDir);
       if (success) {
-        showSuccessNotification(t('settings.extensions.success.uninstall', { name: extensionName }));
+        showSuccessNotification(t('settings.extensions.success.uninstall', { name: extensionFilePath }));
         await loadInstalledExtensions();
         await loadAvailableExtensions();
       } else {
@@ -142,7 +146,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     } finally {
       setUninstallingExtensions((prev) => {
         const next = new Set(prev);
-        next.delete(extensionName);
+        next.delete(extensionFilePath);
         return next;
       });
     }
@@ -155,7 +159,6 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       if (success) {
         showSuccessNotification(t('settings.extensions.success.install', { name: extension.name }));
         await loadInstalledExtensions();
-        await loadAvailableExtensions();
       } else {
         showErrorNotification(t('settings.extensions.errors.install'));
       }
@@ -243,15 +246,15 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
 
   const filteredInstalledExtensions = installedExtensions.filter((ext) => {
     // Filter by context: in Global context, hide project-level extensions
-    // In project context, show both global extensions and extensions for that specific project
+    // In project context, show only extensions for that specific project
     if (profileContext === 'global') {
       // In global context, only show global extensions (no projectDir)
       if (ext.projectDir) {
         return false;
       }
     } else {
-      // In project context, show extensions for this project OR global extensions
-      if (ext.projectDir && ext.projectDir !== profileContext) {
+      // In project context, only show extensions for this specific project
+      if (ext.projectDir !== profileContext) {
         return false;
       }
     }
@@ -299,7 +302,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       <div className="space-y-2">
         {filteredInstalledExtensions.map((extension) => (
           <ExtensionCard
-            key={extension.metadata.name}
+            key={extension.filePath}
             extension={extension}
             isDisabled={disabledExtensions.includes(extension.metadata.name)}
             isUninstalling={uninstallingExtensions.has(extension.metadata.name)}
@@ -355,8 +358,8 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
         if (profileContext === 'global') {
           return !inst.projectDir;
         }
-        // In project context, consider extensions for this project or global extensions
-        return !inst.projectDir || inst.projectDir === profileContext;
+        // In project context, only consider extensions for this specific project
+        return inst.projectDir === profileContext;
       });
 
       // If installed, render with installed extension (LoadedExtension)
@@ -399,7 +402,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
           if (profileContext === 'global') {
             return !inst.projectDir;
           }
-          return !inst.projectDir || inst.projectDir === profileContext;
+          return inst.projectDir === profileContext;
         }),
       ).length;
       const isDefault = repositoryUrl === AIDER_DESK_EXTENSIONS_REPO_URL;
@@ -485,7 +488,9 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             )}
           >
             {t('settings.extensions.tabs.installed')}
-            {installedExtensions.length > 0 && <span className="ml-2 text-2xs px-1.5 py-0.5 rounded-full bg-bg-tertiary">{installedExtensions.length}</span>}
+            {filteredInstalledExtensions.length > 0 && (
+              <span className="ml-2 text-2xs px-1.5 py-0.5 rounded-full bg-bg-tertiary">{filteredInstalledExtensions.length}</span>
+            )}
           </button>
         </div>
         <div className="flex items-center justify-between w-[200px]">

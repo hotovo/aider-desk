@@ -11,6 +11,7 @@
 - allow reverting untracked (new) files in updated files sidebar
 - improved process killing reliability in bash tool
 - added openUrl functionality to Extension context to open URLs in a new window, external or in a modal overlay
+- improved extensions management for the project level
 
 ## [0.56.0]
 

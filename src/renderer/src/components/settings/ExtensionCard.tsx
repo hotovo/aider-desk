@@ -10,20 +10,11 @@ import { Button } from '@/components/common/Button';
 import { Checkbox } from '@/components/common/Checkbox';
 import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
 
-type Props = {
-  extension: InstalledExtension | AvailableExtension;
-  isDisabled?: boolean;
-  isUninstalling?: boolean;
-  isInstalling?: boolean;
-  onToggle?: (extensionName: string, isDisabled: boolean) => void;
-  onUninstall?: (extensionName: string) => void;
-  onInstall?: (extension: AvailableExtension) => void;
-};
-
 // Helper to normalize extension data
 const getExtensionData = (extension: InstalledExtension | AvailableExtension) => {
   const isLoadedExtension = 'metadata' in extension;
   return {
+    filePath: isLoadedExtension ? extension.filePath : null,
     name: isLoadedExtension ? extension.metadata.name : extension.name,
     version: isLoadedExtension ? extension.metadata.version : extension.version,
     description: isLoadedExtension ? extension.metadata.description : extension.description,
@@ -32,6 +23,16 @@ const getExtensionData = (extension: InstalledExtension | AvailableExtension) =>
     hasDependencies: isLoadedExtension ? false : extension.hasDependencies,
     readmeContent: extension.readmeContent,
   };
+};
+
+type Props = {
+  extension: InstalledExtension | AvailableExtension;
+  isDisabled?: boolean;
+  isUninstalling?: boolean;
+  isInstalling?: boolean;
+  onToggle?: (extensionName: string, isDisabled: boolean) => void;
+  onUninstall?: (exensionFilePath: string) => void;
+  onInstall?: (extension: AvailableExtension) => void;
 };
 
 export const ExtensionCard = ({ extension, isDisabled = false, isUninstalling = false, isInstalling = false, onToggle, onUninstall, onInstall }: Props) => {
@@ -53,8 +54,8 @@ export const ExtensionCard = ({ extension, isDisabled = false, isUninstalling = 
   };
 
   const handleUninstall = () => {
-    if (onUninstall) {
-      onUninstall(data.name);
+    if (onUninstall && data.filePath) {
+      onUninstall(data.filePath);
     }
   };
 

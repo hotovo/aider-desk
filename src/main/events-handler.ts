@@ -42,7 +42,7 @@ import type { BrowserWindow } from 'electron';
 import { McpManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ModelManager } from '@/models';
-import { ProjectManager } from '@/project';
+import { Project, ProjectManager } from '@/project';
 import { CloudflareTunnelManager } from '@/server';
 import { Store } from '@/store';
 import { TelemetryManager } from '@/telemetry';
@@ -1089,7 +1089,15 @@ export class EventsHandler {
   }
 
   async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string) {
-    return await this.extensionManager.installExtension(extensionId, repositoryUrl, projectDir);
+    let project: Project | undefined = undefined;
+    if (projectDir) {
+      project = this.projectManager.getProject(projectDir);
+      if (!project) {
+        throw new Error('Project not found');
+      }
+    }
+
+    return await this.extensionManager.installExtension(extensionId, repositoryUrl, project);
   }
 
   async uninstallExtension(extensionId: string, projectDir?: string) {

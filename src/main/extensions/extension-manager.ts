@@ -1099,12 +1099,13 @@ export class ExtensionManager {
    * Install an extension from a repository
    * @param extensionId - Extension identifier
    * @param repositoryUrl - Repository URL where the extension is located
-   * @param projectDir - Optional project directory for project-level install
+   * @param project - Optional project for project-level install
    * @returns true if installation succeeded
    */
-  async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean> {
+  async installExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean> {
+    const projectDir = project?.baseDir;
     try {
-      logger.info(`[Extensions] Installing extension '${extensionId}' from ${repositoryUrl}`);
+      logger.info(`[Extensions] Installing extension '${extensionId}' from ${repositoryUrl} into ${projectDir ?? 'global'}`);
 
       const targetDir = projectDir ? path.join(projectDir, AIDER_DESK_EXTENSIONS_DIR) : AIDER_DESK_GLOBAL_EXTENSIONS_DIR;
 
@@ -1172,7 +1173,7 @@ export class ExtensionManager {
         }
       }
 
-      await this.loadExtensionsForDir(targetDir);
+      await this.loadExtensionsForDir(targetDir, project);
 
       logger.info(`[Extensions] Successfully installed ${extension.name}`);
       this.telemetryManager.captureExtensionInstalled(extension.name, projectDir ? 'project' : 'global');

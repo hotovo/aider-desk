@@ -18,22 +18,21 @@ export interface LoadedExtension {
 export class ExtensionRegistry {
   private extensions = new Map<string, LoadedExtension>();
 
-  private deriveExtensionId(filePath: string, projectDir?: string): string {
+  private deriveExtensionId(filePath: string): string {
     const parsedPath = path.parse(filePath);
     const filename = parsedPath.name;
-    const projectName = projectDir ? path.basename(projectDir) : '';
 
     // If the file is index.ts or index.js, use the parent folder name
     if (filename === 'index') {
-      return path.basename(parsedPath.dir) + (projectName ? `-${projectName}` : '');
+      return path.basename(parsedPath.dir);
     }
 
     // Otherwise, use the filename without extension
-    return filename + (projectName ? `-${projectName}` : '');
+    return filename;
   }
 
   async register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
-    const id = this.deriveExtensionId(filePath, projectDir);
+    const id = this.deriveExtensionId(filePath);
     logger.info(`[Extensions] Registering extension: ${metadata.name} (id: ${id})`);
 
     // Try to load README.md for folder-based extensions
