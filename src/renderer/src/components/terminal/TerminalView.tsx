@@ -38,7 +38,6 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
 
   useImperativeHandle(ref, () => ({
     resize: () => {
-      // Resize all terminal instances
       Object.values(terminalRefs.current).forEach((terminalRef) => {
         terminalRef?.resize();
       });
@@ -64,7 +63,8 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
 
       // If we're closing the active tab, activate the previous one
       if (activeTabId === tabId && newTabs.length > 0) {
-        setActiveTabId(newTabs[newTabs.length - 1].id);
+        const newActiveId = newTabs[newTabs.length - 1].id;
+        setActiveTabId(newActiveId);
       } else if (newTabs.length === 0) {
         const id = uuidv4();
         newTabs.push({
@@ -72,7 +72,6 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
           id: id,
         });
         setActiveTabId(id);
-        // If we're closing the last tab, minimize the terminal
         onVisibilityChange(false);
       }
 
@@ -82,14 +81,46 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
 
   // Focus the active terminal when it changes
   useEffect(() => {
-    const activeRef = terminalRefs.current[activeTabId];
-    if (activeRef) {
-      // Small delay to ensure terminal is rendered
-      setTimeout(() => {
+    const MAX_RETRY_ATTEMPTS = 10;
+    const RETRY_DELAY_MS = 50;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+
+    const attemptFocus = () => {
+      const activeRef = terminalRefs.current[activeTabId];
+
+      if (!activeRef) {
+        return;
+      }
+
+      if (activeRef.isReady()) {
         activeRef.focus();
-      }, 100);
+      } else if (retryCount < MAX_RETRY_ATTEMPTS) {
+        retryCount++;
+        timeoutId = setTimeout(attemptFocus, RETRY_DELAY_MS);
+      }
+    };
+
+    const activeRef = terminalRefs.current[activeTabId];
+    if (!activeRef) {
+      return;
     }
-  }, [activeTabId]);
+
+    const isReadyBefore = activeRef.isReady();
+
+    if (isReadyBefore) {
+      activeRef.focus();
+    } else {
+      attemptFocus();
+    }
+
+    return () => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
+  }, [activeTabId, visible, tabs]);
 
   // Resize terminals on window resize
   useEffect(() => {
@@ -154,14 +185,15 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
       {/* Terminal content */}
       <div className="flex-grow relative">
         {tabs.map((tab) => (
-          <div key={tab.id} className={clsx('absolute inset-0')}>
+          <div key={tab.id} className={clsx('absolute inset-0', activeTabId !== tab.id && 'invisible')}>
             <TerminalComponent
               ref={(ref) => {
                 terminalRefs.current[tab.id] = ref;
               }}
               baseDir={baseDir}
               taskId={taskId}
-              visible={activeTabId === tab.id && visible}
+              visible={visible}
+              isActive={activeTabId === tab.id}
             />
           </div>
         ))}

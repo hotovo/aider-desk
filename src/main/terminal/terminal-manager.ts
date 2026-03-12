@@ -164,6 +164,12 @@ export class TerminalManager {
       return false;
     }
 
+    logger.info('Closing terminal:', {
+      terminalId,
+      baseDir: terminal.baseDir,
+      taskId: terminal.taskId,
+    });
+
     try {
       terminal.ptyProcess.kill();
       this.terminals.delete(terminalId);
