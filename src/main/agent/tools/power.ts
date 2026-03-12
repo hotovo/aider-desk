@@ -199,9 +199,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             const sanitizedReplacementText = sanitize(replacementText);
 
             if (replaceAll) {
-              modifiedContent = fileContent.replaceAll(sanitizedSearchTerm, sanitizedReplacementText);
+              // Use replacer function to avoid special replacement patterns ($&, $`, '$', $$)
+              modifiedContent = fileContent.replaceAll(sanitizedSearchTerm, () => sanitizedReplacementText);
             } else {
-              modifiedContent = fileContent.replace(sanitizedSearchTerm, sanitizedReplacementText);
+              modifiedContent = fileContent.replace(sanitizedSearchTerm, () => sanitizedReplacementText);
             }
           }
 

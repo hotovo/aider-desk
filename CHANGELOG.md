@@ -16,6 +16,7 @@
 - properly fetching uncommited files to updated files when using worktree mode
 - added support for Auggie SDK provider
 - added missing horizontal scrollbar to markdown tables when they overflow the container
+- updated file edit tool to correctly replace text containing $ characters
 
 ## [0.56.0]
 
