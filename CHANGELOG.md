@@ -19,6 +19,7 @@
 - updated file edit tool to correctly replace text containing $ characters
 - improved connection handling for Aider connector
 - avoiding duplicated skill activations on compact
+- added support for mode, auto-approve, worktree mode in create task tool
 
 ## [0.56.0]
 

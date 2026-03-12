@@ -215,16 +215,25 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     name: nameProperty,
     agentProfileId: z.string().optional().describe('Optional agent profile ID to use for the task. Use only when explicitly requested by the user.'),
     modelId: z.string().optional().describe('Optional model ID to use for the task. Use only when explicitly requested by the user.'),
-    execute: z
+    mode: z.string().optional().default('agent').describe('Optional mode to use for the task. Use only when explicitly requested by the user.'),
+    autoApprove: z
       .boolean()
       .optional()
       .default(false)
-      .describe('If true, the task will be created and executed with the initial prompt. If false, only the task is created without executing.'),
-    executeInBackground: z
+      .describe(
+        'If true, the task will be created with auto-approve enabled. Set autoApprove to true when no planning is needed, just execution of the task with all the work.',
+      ),
+    worktree: z
       .boolean()
       .optional()
       .default(false)
-      .describe('If true, the task will be created and executed in the background. Only applicable if execute is true.'),
+      .describe('If true, the task will be created in worktree mode. Use only when explicitly requested by the user.'),
+    executeAndWait: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe('If true, the task will be created and executed immediately and the tool will wait for it to complete before returning.'),
+    executeInBackground: z.boolean().optional().default(false).describe('If true, the task will be created and executed in the background.'),
   });
 
   const CreateTaskWithParentInputSchema = CreateTaskInputSchema.extend({
@@ -241,16 +250,16 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_CREATE_TASK],
     inputSchema: isSubtask ? CreateTaskInputSchema : CreateTaskWithParentInputSchema,
     execute: async (input, { toolCallId }) => {
-      const { prompt, name, agentProfileId, modelId, execute: shouldExecute, executeInBackground } = input;
+      const { prompt, name, agentProfileId, modelId, mode = 'agent', autoApprove, worktree, executeAndWait, executeInBackground } = input;
       const parentTaskId: string | null | undefined = 'parentTaskId' in input ? (input.parentTaskId as string | null) : undefined;
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_CREATE_TASK, input, undefined, undefined, promptContext);
 
       const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_CREATE_TASK}`;
       const questionKey = toolName;
       const questionText = 'Approve creating a new task?';
-      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${agentProfileId || 'default'}\nModel: ${modelId || 'default'}\nExecute: ${shouldExecute}${
-        parentTaskId !== undefined ? `\nParent Task ID: ${parentTaskId || 'none (top-level task)'}` : ''
-      }`;
+      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${agentProfileId || 'default'}\nModel: ${modelId || 'default'}${
+        executeAndWait ? '\nExecute and wait: true' : executeInBackground ? '\nExecute in background: true' : ''
+      }${parentTaskId !== undefined ? `\nParent Task ID: ${parentTaskId || 'none (top-level task)'}` : ''}`;
 
       const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
@@ -262,6 +271,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         const newTask = await task.getProject().createNewTask({
           parentId: parentTaskId || null,
           name: name || '',
+          autoApprove,
         });
         const updates: Partial<TaskData> = {};
 
@@ -277,6 +287,10 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           updates.mainModel = modelId;
         }
 
+        if (worktree) {
+          updates.workingMode = 'worktree';
+        }
+
         // createNewTask returns TaskData, not Task instance
         // We need to get the actual Task instance to call methods on it
         const taskInstance = task.getProject().getTask(newTask.id);
@@ -287,8 +301,8 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         await taskInstance.init();
         await taskInstance.saveTask(updates);
 
-        if (shouldExecute) {
-          const run = taskInstance.runPrompt(prompt, 'agent', false);
+        if (executeAndWait || executeInBackground) {
+          const run = taskInstance.runPrompt(prompt, mode, false);
           if (!executeInBackground) {
             await run;
           }
@@ -301,8 +315,8 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         return {
           id: newTask.id,
           name: newTask.name,
-          result: shouldExecute ? 'Task created and executed successfully' : 'Task created successfully',
-          ...(shouldExecute &&
+          result: executeAndWait ? 'Task has been created and executed successfully' : 'Task created successfully',
+          ...(executeAndWait &&
             contextMessages.length > 0 && {
               lastMessage: contextMessages[contextMessages.length - 1],
             }),
