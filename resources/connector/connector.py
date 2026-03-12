@@ -891,10 +891,14 @@ class Connector:
     """Handle connection event."""
     # Guard against duplicate initialization (can happen if event fires and we also call explicitly)
     if self._initialized:
+      sys.stdout.write("DEBUG: on_connect called but already initialized, skipping\n")
+      sys.stdout.flush()
       return
 
     self._initialized = True
-    self.coder.io.tool_output("---- AIDER CONNECTOR CONNECTED TO AIDER DESK ----")
+    sys.stdout.write("---- AIDER CONNECTOR CONNECTED TO AIDER DESK ----")
+    sys.stdout.write(f"DEBUG: Sending init message to {self.server_url}\n")
+    sys.stdout.flush()
 
     await self.send_action({
       "action": "init",
@@ -915,6 +919,8 @@ class Connector:
       "contextFiles": self.get_context_files(),
       "inputHistoryFile": self.coder.io.input_history_file
     })
+    sys.stdout.write("DEBUG: Init message sent successfully\n")
+    sys.stdout.flush()
     await self.send_current_models()
 
   def _tokenize_files_sync(self, root, rel_fnames, addable_rel_fnames, encoding, abs_read_only_fnames):
@@ -962,7 +968,17 @@ class Connector:
         # Reset initialized flag before each connection attempt
         # This ensures on_connect runs properly after reconnection
         self._initialized = False
+
+        # Add a small delay before the first connection attempt to give
+        # the server time to be fully ready. This helps avoid the
+        # "One or more namespaces failed to connect" error.
+        if attempt == 0:
+          await asyncio.sleep(0.1)
+
+        # Connect with explicit timeout. The default is 5 seconds which can
+        # be too short if the server is still initializing.
         await self.sio.connect(self.server_url)
+
         # Explicitly call on_connect after successful connection
         # This ensures init message is sent even if the event handler doesn't fire
         # (which can happen on reconnection after namespace errors)
@@ -977,6 +993,11 @@ class Connector:
         delay = min(base_delay * (2 ** attempt), max_delay)
         sys.stderr.write(f"Connection refused by the server: {e}. Retrying in {delay:.1f}s... (attempt {attempt + 1}/{max_retries})\n")
         sys.stderr.flush()
+
+        # Disconnect any partial connection before retrying
+        if self.sio.connected:
+          await self.sio.disconnect()
+
         await asyncio.sleep(delay)
 
   async def wait(self):

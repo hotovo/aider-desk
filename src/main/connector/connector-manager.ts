@@ -50,16 +50,30 @@ export class ConnectorManager {
       maxHttpBufferSize: 1e8, // Increase payload size to 100 MB
     });
 
+    // Log when Socket.IO server is ready to accept connections
+    // The 'connection' event fires after the namespace handshake is complete
+    this.io.engine.on('connection_error', (err) => {
+      logger.warn('Socket.IO engine connection error', { error: err.message });
+    });
+
     this.io.on('connection', (socket) => {
-      logger.info('Socket.IO client connected');
+      logger.info('Socket.IO client connected', {
+        socketId: socket.id,
+        handshake: {
+          time: socket.handshake.time,
+          address: socket.handshake.address,
+        },
+      });
 
       socket.on('message', (message) => this.processMessage(socket, message));
       socket.on('log', (message) => this.processLogMessage(socket, message));
 
-      socket.on('disconnect', () => {
+      socket.on('disconnect', (reason) => {
         const connector = this.findConnectorBySocket(socket);
         logger.info('Socket.IO client disconnected', {
           baseDir: connector?.baseDir,
+          reason,
+          socketId: socket.id,
         });
         this.eventManager.unsubscribe(socket);
         if (connector) {
