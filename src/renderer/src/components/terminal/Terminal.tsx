@@ -269,7 +269,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
         fitAddonRef.current = null;
       }
     };
-  }, [taskId, visible]);
+  }, [taskId, visible, fitAddon]);
 
   // Create terminal process
   useLayoutEffect(() => {
@@ -324,13 +324,24 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
     }
 
     const ghostty = ghosttyTerminal;
-    ghostty.onData((data) => {
-      void api.writeToTerminal(terminalId, data);
-    });
 
-    ghostty.onResize(({ cols, rows }) => {
+    const onDataHandler = (data: string) => {
+      void api.writeToTerminal(terminalId, data);
+    };
+
+    const onResizeHandler = ({ cols, rows }: { cols: number; rows: number }) => {
       void api.resizeTerminal(terminalId, cols, rows);
-    });
+    };
+
+    // onData and onResize return IDisposable objects that must be disposed to cleanup
+    const dataDisposable = ghostty.onData(onDataHandler);
+    const resizeDisposable = ghostty.onResize(onResizeHandler);
+
+    // Cleanup: dispose the event handlers to prevent memory leaks
+    return () => {
+      dataDisposable.dispose();
+      resizeDisposable.dispose();
+    };
   }, [terminalId, api, ghosttyTerminal]);
 
   // Handle terminal data (incoming data from backend)
