@@ -12,6 +12,7 @@ import {
   ContextFile,
   ContextMessage,
   ToolCallPart,
+  ToolResultPart,
   DefaultTaskState,
   EditFormat,
   FileEdit,
@@ -2461,50 +2462,66 @@ export class Task {
   }
 
   private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextMessage[] {
-    const skillMessages: ContextMessage[] = [];
+    // Collect all skill activations with their skill names
+    // We'll deduplicate by keeping only the most recent activation per skill
+    const skillActivations: Map<string, { toolCall: ToolCallPart; assistantMsg: ContextMessage; toolMsg: ContextMessage; toolResultPart: ToolResultPart }> =
+      new Map();
 
     for (const message of contextMessages) {
       if (message.role === 'assistant' && Array.isArray(message.content)) {
         // Collect skill activation tool calls from this message
-        const skillToolCalls: ToolCallPart[] = [];
         for (const part of message.content) {
           if (part.type === 'tool-call') {
             const [, toolName] = extractServerNameToolName(part.toolName);
             if (toolName === SKILLS_TOOL_ACTIVATE_SKILL) {
-              skillToolCalls.push(part);
-            }
-          }
-        }
+              // Extract skill name from the tool call input
+              const skillName = (part.input as { skill: string })?.skill;
+              if (!skillName) {
+                continue;
+              }
 
-        // If we found skill activation tool calls, create filtered messages
-        for (const toolCall of skillToolCalls) {
-          // Find corresponding tool-result message
-          const originalToolMsg = contextMessages.find(
-            (m) => m.role === 'tool' && Array.isArray(m.content) && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === toolCall.toolCallId),
-          );
-          if (originalToolMsg) {
-            // Create a filtered tool message that only contains the skill activation tool-result
-            const toolResultPart = (originalToolMsg.content as ToolContent).find((p) => p.type === 'tool-result' && p.toolCallId === toolCall.toolCallId);
-            if (toolResultPart) {
-              // Create a filtered assistant message that only contains the skill activation tool-call
-              const filteredAssistantMsg: ContextMessage = {
-                id: message.id,
-                role: message.role,
-                content: [toolCall],
-                promptContext: message.promptContext,
-              };
-
-              const filteredToolMsg: ContextMessage = {
-                id: originalToolMsg.id,
-                role: 'tool',
-                content: [toolResultPart],
-                promptContext: originalToolMsg.promptContext,
-              };
-              skillMessages.push(filteredAssistantMsg, filteredToolMsg);
+              // Find corresponding tool-result message
+              const originalToolMsg = contextMessages.find(
+                (m) => m.role === 'tool' && Array.isArray(m.content) && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === part.toolCallId),
+              );
+              if (originalToolMsg) {
+                // Find the tool result part
+                const toolResultPart = (originalToolMsg.content as ToolContent).find((p) => p.type === 'tool-result' && p.toolCallId === part.toolCallId);
+                if (toolResultPart) {
+                  // Store the activation, overwriting any previous one for the same skill
+                  // This keeps the most recent activation for each skill
+                  skillActivations.set(skillName, {
+                    toolCall: part,
+                    assistantMsg: message,
+                    toolMsg: originalToolMsg,
+                    toolResultPart,
+                  });
+                }
+              }
             }
           }
         }
       }
+    }
+
+    // Convert the deduplicated activations to the expected message format
+    const skillMessages: ContextMessage[] = [];
+    for (const { toolCall, assistantMsg, toolMsg, toolResultPart } of skillActivations.values()) {
+      // Create a filtered assistant message that only contains the skill activation tool-call
+      const filteredAssistantMsg: ContextMessage = {
+        id: assistantMsg.id,
+        role: assistantMsg.role as 'assistant',
+        content: [toolCall],
+        promptContext: assistantMsg.promptContext,
+      };
+
+      const filteredToolMsg: ContextMessage = {
+        id: toolMsg.id,
+        role: 'tool',
+        content: [toolResultPart],
+        promptContext: toolMsg.promptContext,
+      };
+      skillMessages.push(filteredAssistantMsg, filteredToolMsg);
     }
 
     return skillMessages;
