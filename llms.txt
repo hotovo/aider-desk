@@ -1137,6 +1137,13 @@ max_delay = 5.0   # Maximum delay in seconds
 # Reset initialized flag before each connection attempt
 # This ensures on_connect runs properly after reconnection
 ⋮----
+# Add a small delay before the first connection attempt to give
+# the server time to be fully ready. This helps avoid the
+# "One or more namespaces failed to connect" error.
+⋮----
+# Connect with explicit timeout. The default is 5 seconds which can
+# be too short if the server is still initializing.
+⋮----
 # Explicitly call on_connect after successful connection
 # This ensures init message is sent even if the event handler doesn't fire
 # (which can happen on reconnection after namespace errors)
@@ -1147,6 +1154,8 @@ return  # Connection successful
 ⋮----
 # Calculate delay with exponential backoff
 delay = min(base_delay * (2 ** attempt), max_delay)
+⋮----
+# Disconnect any partial connection before retrying
 ⋮----
 async def wait(self)
 ⋮----
@@ -8804,6 +8813,8 @@ const sanitize = (str: string) =>
 ⋮----
 // Remove escaped newlines, quotes, tabs, etc. only when they have double backslashes
 ⋮----
+// Use replacer function to avoid special replacement patterns ($&, $`, '$', $$)
+⋮----
 absolute: false, // Keep paths relative to cwd for easier processing
 ⋮----
 // Convert to absolute paths for filtering, then back to relative
@@ -12872,6 +12883,9 @@ public init(httpServer: HttpServer): void
 ⋮----
 pingTimeout: 600_000, // 10 minutes
 maxHttpBufferSize: 1e8, // Increase payload size to 100 MB
+⋮----
+// Log when Socket.IO server is ready to accept connections
+// The 'connection' event fires after the namespace handshake is complete
 ⋮----
 public async close()
 ⋮----
@@ -18217,6 +18231,7 @@ import {
   ContextFile,
   ContextMessage,
   ToolCallPart,
+  ToolResultPart,
   DefaultTaskState,
   EditFormat,
   FileEdit,
@@ -18734,13 +18749,21 @@ private async reloadConnectorMessages()
 ⋮----
 private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextMessage[]
 ⋮----
+// Collect all skill activations with their skill names
+// We'll deduplicate by keeping only the most recent activation per skill
+⋮----
 // Collect skill activation tool calls from this message
 ⋮----
-// If we found skill activation tool calls, create filtered messages
+// Extract skill name from the tool call input
 ⋮----
 // Find corresponding tool-result message
 ⋮----
-// Create a filtered tool message that only contains the skill activation tool-result
+// Find the tool result part
+⋮----
+// Store the activation, overwriting any previous one for the same skill
+// This keeps the most recent activation for each skill
+⋮----
+// Convert the deduplicated activations to the expected message format
 ⋮----
 // Create a filtered assistant message that only contains the skill activation tool-call
 ⋮----
@@ -25265,19 +25288,21 @@ import { AssistantGroupMessage, GroupMessage, isResponseMessage, isToolMessage, 
 ⋮----
 // Basic styling for preformatted blocks (e.g., indented code)
 ⋮----
-// Table styling
+// Table styling - wrapped in scrollable container for wide tables
 ⋮----
 // First check if the content matches the thinking/answer format
 const thinkingAnswerContent = parseThinkingAnswerFormat(content, baseDir, allFiles, renderMarkdown, renderThinking);
 if (thinkingAnswerContent)
 ⋮----
-const processCodeBlock = () =>
+if (currentText.trimEnd())
+⋮----
+if (renderMarkdown)
+⋮----
+if (codeContent.length > 0)
 ⋮----
 // Check if the line is just a filepath
 ⋮----
 // Check if line ends with a filepath
-⋮----
-const findFileInNextLine = (currentLine: number):
 ⋮----
 // Check if the next line is just a filepath
 ⋮----
