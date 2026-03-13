@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -45,12 +45,14 @@ describe('BmadInstallPrompt', () => {
   const mockInstallBmad = vi.fn();
   const mockRefresh = vi.fn();
 
-  const renderComponent = () => {
-    return render(
-      <TooltipProvider>
-        <BmadInstallPrompt refreshState={mockRefresh} projectDir="/test/project" />
-      </TooltipProvider>,
-    );
+  const renderComponent = async () => {
+    return act(async () => {
+      render(
+        <TooltipProvider>
+          <BmadInstallPrompt refreshState={mockRefresh} projectDir="/test/project" />
+        </TooltipProvider>,
+      );
+    });
   };
 
   beforeEach(() => {
@@ -68,16 +70,16 @@ describe('BmadInstallPrompt', () => {
     });
   });
 
-  it('renders install button and welcome content', () => {
-    renderComponent();
+  it('renders install button and welcome content', async () => {
+    await renderComponent();
 
     expect(screen.getByText('bmad.welcome.title')).toBeInTheDocument();
     expect(screen.getByText('bmad.welcome.subtitle')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /bmad.install.button/ })).toBeInTheDocument();
   });
 
-  it('renders benefits list', () => {
-    renderComponent();
+  it('renders benefits list', async () => {
+    await renderComponent();
 
     expect(screen.getByText(/Structured workflows/)).toBeInTheDocument();
     expect(screen.getByText(/Automatic context preparation/)).toBeInTheDocument();
@@ -90,10 +92,12 @@ describe('BmadInstallPrompt', () => {
       message: 'BMAD installed successfully',
     });
 
-    renderComponent();
+    await renderComponent();
 
     const button = screen.getByRole('button', { name: /bmad.install.button/ });
-    fireEvent.click(button);
+    await act(async () => {
+      fireEvent.click(button);
+    });
 
     await waitFor(() => {
       expect(mockInstallBmad).toHaveBeenCalled();
@@ -109,15 +113,27 @@ describe('BmadInstallPrompt', () => {
   });
 
   it('shows loading state during installation', async () => {
-    mockInstallBmad.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ success: true }), 100)));
+    let resolveInstall: (value: { success: boolean }) => void;
+    mockInstallBmad.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveInstall = resolve;
+        }),
+    );
 
-    renderComponent();
+    await renderComponent();
 
     const button = screen.getByRole('button', { name: /bmad.install.button/ });
-    fireEvent.click(button);
+    await act(async () => {
+      fireEvent.click(button);
+    });
 
     expect(screen.getByText('bmad.install.installing')).toBeInTheDocument();
     expect(button).toBeDisabled();
+
+    await act(async () => {
+      resolveInstall!({ success: true });
+    });
   });
 
   it('shows error toast on failed installation', async () => {
@@ -126,10 +142,12 @@ describe('BmadInstallPrompt', () => {
       message: 'Installation failed',
     });
 
-    renderComponent();
+    await renderComponent();
 
     const button = screen.getByRole('button');
-    await fireEvent.click(button);
+    await act(async () => {
+      fireEvent.click(button);
+    });
 
     await waitFor(
       () => {
@@ -142,10 +160,12 @@ describe('BmadInstallPrompt', () => {
   it('shows error toast when installation throws', async () => {
     mockInstallBmad.mockRejectedValue(new Error('Network error'));
 
-    renderComponent();
+    await renderComponent();
 
     const button = screen.getByRole('button');
-    await fireEvent.click(button);
+    await act(async () => {
+      fireEvent.click(button);
+    });
 
     await waitFor(
       () => {
@@ -155,8 +175,8 @@ describe('BmadInstallPrompt', () => {
     );
   });
 
-  it('renders manual install section with copiable command', () => {
-    renderComponent();
+  it('renders manual install section with copiable command', async () => {
+    await renderComponent();
 
     expect(screen.getByText('npx -y bmad-method install')).toBeInTheDocument();
     expect(screen.getByText('bmad.install.commandLabel')).toBeInTheDocument();
@@ -164,8 +184,8 @@ describe('BmadInstallPrompt', () => {
     expect(screen.getByText('bmad.install.manualInstallNote')).toBeInTheDocument();
   });
 
-  it('renders auto install note', () => {
-    renderComponent();
+  it('renders auto install note', async () => {
+    await renderComponent();
 
     expect(screen.getByText('bmad.install.autoInstallNote')).toBeInTheDocument();
   });

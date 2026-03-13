@@ -78,6 +78,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
     }, [processedMessages]);
 
     // Create virtualizer for dynamic sized items
+    // eslint-disable-next-line react-hooks/incompatible-library
     const virtualizer = useVirtualizer({
       count: processedMessages.length,
       getScrollElement: () => messagesContainerRef.current,

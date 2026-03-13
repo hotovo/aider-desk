@@ -118,11 +118,14 @@ describe('TaskSidebar', () => {
     render(<TaskSidebar loading={false} tasks={mockTasks} activeTaskId="task-1" onTaskSelect={vi.fn()} isCollapsed={false} onToggleCollapse={vi.fn()} />);
 
     fireEvent.click(screen.getByTestId('search-toggle-button'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('taskSidebar.searchPlaceholder')).toBeInTheDocument();
+    });
+
     fireEvent.change(screen.getByPlaceholderText('taskSidebar.searchPlaceholder'), {
       target: { value: 'Task 1' },
     });
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
 
     await waitFor(() => {
       expect(screen.getByText('Task 1')).toBeInTheDocument();

@@ -1,11 +1,35 @@
+/* eslint-disable no-console */
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { ApplicationAPI } from '@common/api';
 
 import { OpenProjectDialog } from '../OpenProjectDialog';
 
 import { render } from '@/__tests__/render';
 import { useApi } from '@/contexts/ApiContext';
+
+// Suppress HotkeysProvider warnings
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+beforeAll(() => {
+  console.error = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].includes('HotkeysProvider')) {
+      return;
+    }
+    originalConsoleError(...args);
+  };
+  console.warn = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].includes('HotkeysProvider')) {
+      return;
+    }
+    originalConsoleWarn(...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
+});
 
 // Mock contexts
 vi.mock('@/contexts/ApiContext', () => ({

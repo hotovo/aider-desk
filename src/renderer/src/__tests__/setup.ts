@@ -3,6 +3,18 @@ import { vi } from 'vitest';
 
 import { globalMockApi } from './mocks/api';
 
+// Suppress specific console warnings during tests
+// eslint-disable-next-line no-console
+const originalConsoleWarn = console.warn;
+// eslint-disable-next-line no-console
+console.warn = (...args: unknown[]) => {
+  const warning = args[0];
+  if (typeof warning === 'string' && warning.includes('HotkeysProvider')) {
+    return;
+  }
+  originalConsoleWarn(...args);
+};
+
 // Mock focus-trap-react
 vi.mock('focus-trap-react', () => ({
   FocusTrap: ({ children }: { children: React.ReactNode }) => children,
