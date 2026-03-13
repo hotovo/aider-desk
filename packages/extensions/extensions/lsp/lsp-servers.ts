@@ -4,6 +4,42 @@ import { existsSync, readFileSync } from 'fs';
 
 import { ExtensionContext } from '@aiderdesk/extensions';
 
+interface SafeSpawnOptions {
+  cwd: string;
+  env?: NodeJS.ProcessEnv;
+}
+
+const safeSpawn = (
+  command: string,
+  args: string[],
+  serverName: string,
+  context: ExtensionContext,
+  options: SafeSpawnOptions,
+): Promise<ChildProcessWithoutNullStreams> => {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(command, args, {
+      cwd: options.cwd,
+      env: options.env ?? process.env,
+    });
+
+    let resolved = false;
+
+    proc.on('error', (error) => {
+      context.log(`Failed to start ${serverName} LSP server: ${error.message}`, 'error');
+      if (!resolved) {
+        reject(error);
+      }
+    });
+
+    setImmediate(() => {
+      if (proc.pid !== undefined) {
+        resolved = true;
+        resolve(proc);
+      }
+    });
+  });
+};
+
 export interface LspServerHandle {
   process: ChildProcessWithoutNullStreams;
   initializationOptions?: Record<string, unknown>;
@@ -91,12 +127,7 @@ export const TypescriptServer: LspServerInfo = {
 
     context.log(`Starting TypeScript LSP server: ${command} ${args.join(' ')}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'TypeScript', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -125,12 +156,7 @@ export const PythonServer: LspServerInfo = {
 
     context.log(`Starting Python LSP server: ${command} ${args.join(' ')}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Python', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -159,12 +185,7 @@ export const VueServer: LspServerInfo = {
 
     context.log(`Starting Vue LSP server: ${command} ${args.join(' ')}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Vue', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -192,12 +213,7 @@ export const RustServer: LspServerInfo = {
 
     context.log(`Starting Rust LSP server: ${command}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Rust', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -211,7 +227,7 @@ export const GoServer: LspServerInfo = {
   extensions: GO_EXTENSIONS,
   async spawn(rootDir: string, context: ExtensionContext): Promise<LspServerHandle | undefined> {
     if (!hasFile(rootDir, 'go.mod')) {
-      context.log('go.mod not found, skipping Go LSP', 'debug');
+      context.log(`go.mod not found in ${rootDir}, skipping Go LSP`, 'info');
       return undefined;
     }
 
@@ -220,12 +236,7 @@ export const GoServer: LspServerInfo = {
 
     context.log(`Starting Go LSP server: ${command} ${args.join(' ')}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Go', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -255,12 +266,7 @@ export const JavaServer: LspServerInfo = {
 
     context.log(`Starting Java LSP server: ${command}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Java', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -278,12 +284,7 @@ export const LuaServer: LspServerInfo = {
 
     context.log(`Starting Lua LSP server: ${command}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Lua', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -312,12 +313,7 @@ export const SvelteServer: LspServerInfo = {
 
     context.log(`Starting Svelte LSP server: ${command} ${args.join(' ')}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Svelte', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -346,12 +342,7 @@ export const AstroServer: LspServerInfo = {
 
     context.log(`Starting Astro LSP server: ${command} ${args.join(' ')}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Astro', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -381,12 +372,7 @@ export const CSharpServer: LspServerInfo = {
 
     context.log(`Starting C# LSP server: ${command} ${args.join(' ')}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'C#', context, { cwd: rootDir });
 
     return {
       process: proc,
@@ -409,12 +395,7 @@ export const DenoServer: LspServerInfo = {
 
     context.log(`Starting Deno LSP server: ${command} ${args.join(' ')}`, 'info');
 
-    const proc = spawn(command, args, {
-      cwd: rootDir,
-      env: {
-        ...process.env,
-      },
-    });
+    const proc = await safeSpawn(command, args, 'Deno', context, { cwd: rootDir });
 
     return {
       process: proc,

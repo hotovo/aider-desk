@@ -28,6 +28,7 @@ export class LspManager {
     const cacheKey = `${projectDir}:${serverInfo.id}`;
 
     if (this.brokenServers.has(cacheKey)) {
+      this.context.log(`LSP server ${serverInfo.id} is broken, skipping`, 'debug');
       return null;
     }
 
