@@ -37,6 +37,8 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { AudioAnalyzer } from '@/components/PromptField/AudioAnalyzer';
 import { AutoApprove } from '@/components/PromptField/AutoApprove';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 const External = Annotation.define<boolean>();
 
@@ -209,6 +211,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     const [customCommands, extensionCommands] = useCommands(baseDir);
     const api = useApi();
     const { projectSettings, saveProjectSettings } = useProjectSettings();
+    const { componentProps } = useExtensions();
 
     const {
       isRecording,
@@ -1187,8 +1190,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 />
               </div>
             </div>
+            <ExtensionComponentWrapper componentProps={componentProps} placement="task-input-toolbar-left" />
 
             <div className="flex-grow" />
+            <ExtensionComponentWrapper componentProps={componentProps} placement="task-input-toolbar-right" />
             {isMobile && (
               <div className="absolute top-0 right-0 z-10 flex items-center gap-1">
                 {toggleTerminal && (
@@ -1204,7 +1209,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 {showTaskInfo && (
                   <Tooltip content={t('promptField.taskInfo')}>
                     <Button variant="text" onClick={showTaskInfo} className="py-1.5" size="xs" color="tertiary">
-                      <FaInfoCircle className="w-3.5 h-3.5" />
+                      <FaInfoCircle className="w-3.5 h-3.5 text-text-tertiary" />
                     </Button>
                   </Tooltip>
                 )}
@@ -1226,7 +1231,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               <Tooltip content={t('promptField.taskInfo')}>
                 <div>
                   <Button variant="text" onClick={showTaskInfo} className="py-1.5" size="xs" color="tertiary">
-                    <FaInfoCircle className="w-3.5 h-3.5" />
+                    <FaInfoCircle className="w-3.5 h-3.5 text-text-tertiary" />
                   </Button>
                 </div>
               </Tooltip>

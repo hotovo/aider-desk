@@ -60,7 +60,7 @@ export const SubagentToolMessage = ({ message, onRemove, compact = false, onRemo
   }
 
   return (
-    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
+    <div className="border border-border-dark-light rounded-md group p-3 bg-bg-secondary">
       {renderHeader()}
 
       <div className="text-xs text-text-tertiary">

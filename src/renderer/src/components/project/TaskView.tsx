@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSidebarWidth } from './useSidebarWidth';
 
 import { Tooltip } from '@/components/ui/Tooltip';
-import { isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
+import { isLoadingMessage, isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -33,12 +33,13 @@ import { useExtensions } from '@/contexts/ExtensionsContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useActiveAgentProfile } from '@/utils/agents';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
-import { useTask } from '@/contexts/TaskContext';
+import { useTask } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useTaskMessages, useTaskState } from '@/stores/taskStore';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
+import { TaskStateActions } from '@/components/message/TaskStateActions';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -113,13 +114,14 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const { renderSearchInput } = useSearchText(searchContainer, 'absolute top-1 left-1', isActive);
 
     const inProgress = task.state === DefaultTaskState.InProgress;
+    const isLastLoadingMessage = displayedMessages.length > 0 && isLoadingMessage(displayedMessages[displayedMessages.length - 1]);
 
     const promptFieldRef = useRef<PromptFieldRef>(null);
     const projectTopBarRef = useRef<TaskBarRef>(null);
     const messagesRef = useRef<MessagesRef | VirtualizedMessagesRef>(null);
     const terminalViewRef = useRef<TerminalViewRef | null>(null);
     const activeAgentProfile = useActiveAgentProfile(task, projectDir);
-    const { componentProps } = useExtensions(task);
+    const { componentProps } = useExtensions();
 
     useEffect(() => {
       if (isActive && !taskState.loaded && !taskState.loading) {
@@ -391,18 +393,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [api, currentMode, projectDir, task.id],
     );
 
-    const handleArchiveTask = useCallback(() => {
-      onArchiveTask?.();
-    }, [onArchiveTask]);
-
-    const handleUnarchiveTask = useCallback(() => {
-      onUnarchiveTask?.();
-    }, [onUnarchiveTask]);
-
-    const handleDeleteTask = useCallback(() => {
-      onDeleteTask?.();
-    }, [onDeleteTask]);
-
     const handleForkFromMessage = useCallback(
       async (message: Message) => {
         try {
@@ -662,6 +652,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 onClearAllTodos={handleClearAllTodos}
               />
             )}
+            <ExtensionComponentWrapper componentProps={componentProps} placement="task-messages-top" />
             <div className="overflow-hidden flex-grow relative">
               {displayedMessages.length === 0 && !loading && !messagesPending && !inProgress ? (
                 <WelcomeMessage onModeChange={handleModeChange} mode={currentMode} projectDir={projectDir} taskId={task.id} />
@@ -677,15 +668,11 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={settings.renderMarkdown}
                       removeMessage={handleRemoveMessage}
-                      resumeTask={handleResumeTask}
                       redoLastUserPrompt={handleRedoLastUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
-                      onMarkAsDone={handleMarkAsDone}
-                      onRunPrompt={handleRunPrompt}
-                      onArchiveTask={handleArchiveTask}
-                      onUnarchiveTask={handleUnarchiveTask}
-                      onDeleteTask={handleDeleteTask}
                       onInterrupt={handleInterruptResponse}
+                      onForkFromMessage={handleForkFromMessage}
+                      onRemoveUpToMessage={handleRemoveUpToMessage}
                     />
                   ) : (
                     <Messages
@@ -697,14 +684,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={settings.renderMarkdown}
                       removeMessage={handleRemoveMessage}
-                      resumeTask={handleResumeTask}
                       redoLastUserPrompt={handleRedoLastUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
-                      onMarkAsDone={handleMarkAsDone}
-                      onRunPrompt={handleRunPrompt}
-                      onArchiveTask={handleArchiveTask}
-                      onUnarchiveTask={handleUnarchiveTask}
-                      onDeleteTask={handleDeleteTask}
                       onInterrupt={handleInterruptResponse}
                       onForkFromMessage={handleForkFromMessage}
                       onRemoveUpToMessage={handleRemoveUpToMessage}
@@ -713,6 +694,23 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 </>
               )}
             </div>
+            <ExtensionComponentWrapper componentProps={componentProps} placement="task-messages-bottom" />
+            {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
+              <TaskStateActions
+                state={task.state}
+                mode={task.currentMode}
+                isArchived={task.archived}
+                task={task}
+                projectDir={projectDir}
+                taskId={task.id}
+                onResumeTask={handleResumeTask}
+                onMarkAsDone={handleMarkAsDone}
+                onRunPrompt={handleRunPrompt}
+                onArchiveTask={onArchiveTask}
+                onUnarchiveTask={onUnarchiveTask}
+                onDeleteTask={onDeleteTask}
+              />
+            )}
             <ResizableBox
               className="flex flex-col flex-shrink-0"
               height={terminalVisible ? (isMobile ? 150 : 200) : 0}
@@ -751,6 +749,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   </Button>
                 </div>
               )}
+              <ExtensionComponentWrapper componentProps={componentProps} placement="task-input-above" />
               <PromptField
                 key={task.id}
                 ref={promptFieldRef}

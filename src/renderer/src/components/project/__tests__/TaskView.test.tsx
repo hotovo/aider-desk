@@ -9,7 +9,7 @@ import { render } from '@/__tests__/render';
 import { useApi } from '@/contexts/ApiContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
-import { useTask } from '@/contexts/TaskContext';
+import { useTask } from '@/contexts/TasksContext';
 import { useTaskState, useTaskMessages } from '@/stores/taskStore';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { useAgents } from '@/contexts/AgentsContext';
@@ -39,7 +39,7 @@ vi.mock('@/contexts/ProjectSettingsContext', () => ({
   useProjectSettings: vi.fn(),
 }));
 
-vi.mock('@/contexts/TaskContext', () => ({
+vi.mock('@/contexts/TasksContext', () => ({
   useTask: vi.fn(),
 }));
 

@@ -72,6 +72,17 @@ vi.mock('@/components/common/StyledTooltip', () => ({
   StyledTooltip: () => <div data-testid="styled-tooltip" />,
 }));
 
+// Mock useExtensions hook
+vi.mock('@/contexts/ExtensionsContext', () => ({
+  useExtensions: vi.fn(() => ({
+    componentProps: {
+      projectDir: '/test/project',
+      task: null,
+      agentProfile: null,
+    },
+  })),
+}));
+
 describe('Home', () => {
   let mockApi: ReturnType<typeof createMockApi>;
 

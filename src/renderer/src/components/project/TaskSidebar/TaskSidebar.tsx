@@ -15,6 +15,8 @@ import { TaskSidebarMultiSelectMenu } from './TaskSidebarMultiSelectMenu';
 import { TaskItem } from './TaskItem';
 import { TaskSectionHeader } from './TaskSectionHeader';
 
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useExtensions } from '@/contexts/ExtensionsContext';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { groupTasksByDate } from '@/utils/date-utils';
 import { Input } from '@/components/common/Input';
@@ -64,6 +66,7 @@ const TaskSidebarComponent = ({
   onClose,
 }: Props) => {
   const { t } = useTranslation();
+  const { componentProps } = useExtensions();
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState<boolean>(false);
@@ -488,6 +491,8 @@ const TaskSidebarComponent = ({
               </div>
             </div>
           </Activity>
+
+          <ExtensionComponentWrapper componentProps={componentProps} placement="tasks-sidebar-header" />
         </div>
 
         <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-bg-primary-light-strong scrollbar-thumb-border-default bg-bg-primary-light-strong py-0.5">
@@ -600,6 +605,8 @@ const TaskSidebarComponent = ({
             )}
           </AnimatePresence>
         </div>
+
+        <ExtensionComponentWrapper componentProps={componentProps} placement="tasks-sidebar-bottom" />
 
         {/* Bulk Delete Confirmation */}
         {bulkDeleteConfirm && (

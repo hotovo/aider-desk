@@ -169,6 +169,14 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["getTools"]
+    },
+    {
+      "id": "ui-placement-demo",
+      "name": "UI Placement Demo",
+      "description": "Demonstrates all available UI component placement locations in AiderDesk",
+      "file": "ui-placement-demo.ts",
+      "type": "single",
+      "capabilities": ["onLoad", "ui-components"]
     }
   ]
 }

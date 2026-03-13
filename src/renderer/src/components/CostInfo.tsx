@@ -26,7 +26,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
   const [isExpanded, setIsExpanded] = useState(false);
   const [refreshingAnimation, setRefreshingAnimation] = useState(false);
   const REFRESH_ANIMATION_DURATION = 2000;
-  const { componentProps } = useExtensions(task);
+  const { componentProps } = useExtensions();
 
   const renderLabelValue = (label: string, value: ReactNode) => (
     <div className="flex justify-between h-[20px]">

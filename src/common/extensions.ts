@@ -111,7 +111,25 @@ export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType<Record<str
 }
 
 /** Placement locations for extension UI components */
-export type UIComponentPlacement = 'task-status-bar-left' | 'task-status-bar-right' | 'task-usage-info-bottom';
+export type UIComponentPlacement =
+  | 'task-status-bar-left'
+  | 'task-status-bar-right'
+  | 'task-usage-info-bottom'
+  | 'task-messages-top'
+  | 'task-messages-bottom'
+  | 'header-left'
+  | 'header-right'
+  | 'task-input-above'
+  | 'task-input-toolbar-left'
+  | 'task-input-toolbar-right'
+  | 'tasks-sidebar-header'
+  | 'tasks-sidebar-bottom'
+  | 'task-message-above'
+  | 'task-message-below'
+  | 'task-message-bar'
+  | 'task-top-bar-left'
+  | 'task-top-bar-right'
+  | 'task-state-actions';
 
 /**
  * Definition of a React UI component that can be registered by an extension.
@@ -148,10 +166,9 @@ export interface UIComponentDefinition {
 }
 
 export interface UIComponentProps {
-  projectDir: string;
-  task: TaskData;
-  agentProfile: AgentProfile | null;
-  mode: Mode;
+  projectDir?: string;
+  task?: TaskData;
+  agentProfile?: AgentProfile;
 }
 
 /**

@@ -77,7 +77,7 @@ export const ThinkingAnswerBlock = ({ thinking, answer, baseDir = '', allFiles =
             className={clsx(
               'text-xs text-text-primary bg-bg-secondary',
               !renderMarkdown && 'whitespace-pre-wrap break-words',
-              parsedThinking ? 'p-3 pl-1 pb-0' : 'p-0',
+              parsedThinking ? 'p-3 pl-1 pb-2' : 'p-0',
             )}
           >
             {parsedAnswer}

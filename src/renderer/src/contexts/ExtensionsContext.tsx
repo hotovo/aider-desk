@@ -1,22 +1,28 @@
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 import { UIComponentProps } from '@common/extensions';
-import { TaskData } from '@common/types';
-
-import { useActiveAgentProfile } from '@/utils/agents';
+import { AgentProfile, TaskData } from '@common/types';
 
 type ExtensionsContextValue = {
-  projectDir: string;
+  projectDir?: string;
+  task?: TaskData;
+  agentProfile?: AgentProfile;
 };
 
 const ExtensionsContext = createContext<ExtensionsContextValue | undefined>(undefined);
 
-type Props = {
-  projectDir: string;
+type Props = ExtensionsContextValue & {
   children: ReactNode;
 };
 
-export const ExtensionsProvider = ({ projectDir, children }: Props) => {
-  const value = useMemo(() => ({ projectDir }), [projectDir]);
+export const ExtensionsProvider = ({ projectDir, task, agentProfile, children }: Props) => {
+  const value = useMemo(
+    () => ({
+      projectDir,
+      task,
+      agentProfile,
+    }),
+    [agentProfile, projectDir, task],
+  );
 
   return <ExtensionsContext.Provider value={value}>{children}</ExtensionsContext.Provider>;
 };
@@ -33,19 +39,16 @@ type ExtensionsHookResult = {
   componentProps: UIComponentProps;
 };
 
-export const useExtensions = (task: TaskData): ExtensionsHookResult => {
-  const { projectDir } = useExtensionsContext();
-  const agentProfile = useActiveAgentProfile(task, projectDir);
-  const mode = task.currentMode || 'agent';
+export const useExtensions = (): ExtensionsHookResult => {
+  const { projectDir, task, agentProfile } = useExtensionsContext();
 
   const componentProps = useMemo<UIComponentProps>(
     () => ({
       projectDir,
       task,
       agentProfile,
-      mode,
     }),
-    [projectDir, task, agentProfile, mode],
+    [projectDir, task, agentProfile],
   );
 
   return { componentProps };

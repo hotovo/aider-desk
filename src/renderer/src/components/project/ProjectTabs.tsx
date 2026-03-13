@@ -15,6 +15,8 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 type Props = {
   openProjects: ProjectData[];
@@ -42,6 +44,7 @@ export const ProjectTabs = ({
   const [showRightScrollButton, setShowRightScrollButton] = useState(false);
   const [dragging, setDragging] = useState(false);
   const { isMobile } = useResponsive();
+  const { componentProps } = useExtensions();
 
   const checkScrollButtonsVisibility = () => {
     const container = tabsContainerRef.current;
@@ -151,6 +154,7 @@ export const ProjectTabs = ({
         >
           <MdAdd className="h-5 w-5" />
         </button>
+        <ExtensionComponentWrapper componentProps={componentProps} placement="header-left" />
       </div>
     );
   }
@@ -205,6 +209,7 @@ export const ProjectTabs = ({
         >
           <MdAdd className="h-5 w-5" />
         </button>
+        <ExtensionComponentWrapper componentProps={componentProps} placement="header-left" />
       </TabList>
     </TabGroup>
   );

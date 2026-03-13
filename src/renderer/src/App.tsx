@@ -19,6 +19,7 @@ import { ApiProvider, useApi } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
+import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 
 const ICON_CONTEXT_DEFAULT_VALUE: IconContext = {};
 
@@ -120,10 +121,12 @@ const App = () => {
                 <SettingsProvider>
                   <AgentsProvider>
                     <ContextMenuProvider>
-                      <ThemeAndFontManager />
-                      <AnimatedRoutes />
-                      <ToastContainer />
-                      <ModalOverlayUrlHandler />
+                      <ExtensionsProvider>
+                        <ThemeAndFontManager />
+                        <AnimatedRoutes />
+                        <ToastContainer />
+                        <ModalOverlayUrlHandler />
+                      </ExtensionsProvider>
                     </ContextMenuProvider>
                   </AgentsProvider>
                 </SettingsProvider>

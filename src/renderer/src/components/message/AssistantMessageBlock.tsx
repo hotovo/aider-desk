@@ -63,7 +63,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
         'rounded-md max-w-full text-xs bg-bg-secondary text-text-primary',
         'relative flex flex-col group',
         !renderMarkdown && 'break-words whitespace-pre-wrap',
-        'p-3 mb-2 border border-border-dark-light',
+        'p-3 border border-border-dark-light',
       )}
     >
       {/* Response content */}
@@ -78,7 +78,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
 
       {/* Tool messages - using MessageBlock with hideMessageBar to avoid duplicate MessageBars */}
       {toolMessages.length > 0 && (
-        <div className={clsx(hasContent && 'mt-3 ml-6')}>
+        <div className={clsx(hasContent && 'mt-1 ml-6 space-y-1')}>
           {toolMessages.map((toolMessage) => (
             <MessageBlock
               key={toolMessage.id}

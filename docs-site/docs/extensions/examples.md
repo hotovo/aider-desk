@@ -23,6 +23,7 @@ This page provides an overview of all available extension examples in the AiderD
 | [chunkhound-on-semantic-search-tool](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/chunkhound-on-semantic-search-tool/) | Overrides `power---semantic_search` to use ChunkHound | `onLoad`, `onUnload`, `onProjectOpen`, `onToolCalled`, `onToolFinished` | Folder |
 | [tree-sitter-repo-map](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/tree-sitter-repo-map/) | Enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking | `onLoad`, `onAgentStarted`, `getCommands` | Folder |
 | [programmatic-tool-calls](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/programmatic-tool-calls/) | Execute JavaScript code in a sandbox with access to all tools as async functions | `getTools` | Folder |
+| [ui-placement-demo.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/ui-placement-demo.ts) | Demonstrates all available UI component placement locations | `onLoad`, `ui-components` | Single file |
 
 ---
 

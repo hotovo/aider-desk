@@ -32,7 +32,7 @@ export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdow
         baseClasses,
         'relative flex flex-col group',
         !renderMarkdown && 'break-words whitespace-pre-wrap',
-        !compact && 'p-3 mb-2 border border-border-dark-light',
+        !compact && 'p-3 border border-border-dark-light',
       )}
     >
       <div className="flex items-start gap-2">

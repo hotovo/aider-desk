@@ -12,9 +12,10 @@ type Props = {
   placement: string;
   className?: string;
   direction?: 'horizontal' | 'vertical';
+  additionalProps?: Record<string, unknown>;
 };
 
-export const ExtensionComponentWrapper = ({ componentProps, placement, className, direction = 'horizontal' }: Props) => {
+export const ExtensionComponentWrapper = ({ componentProps, placement, className, direction = 'horizontal', additionalProps }: Props) => {
   const [components, setComponents] = useState<ExtensionUIComponent[]>([]);
   const [componentData, setComponentData] = useState<Record<string, unknown>>({});
   const [refreshKey, setRefreshKey] = useState(0);
@@ -51,9 +52,12 @@ export const ExtensionComponentWrapper = ({ componentProps, placement, className
     if (components.length > 0) {
       void loadData();
     }
-  }, [api, componentProps, componentProps.projectDir, components, refreshKey]);
+  }, [api, componentProps.projectDir, components, refreshKey]);
 
   useEffect(() => {
+    if (!componentProps.projectDir) {
+      return undefined;
+    }
     return api.onExtensionUIRefresh(componentProps.projectDir, ({ componentId }) => {
       if (componentId && !components.some((c) => c.componentId === componentId)) {
         return;
@@ -71,6 +75,7 @@ export const ExtensionComponentWrapper = ({ componentProps, placement, className
       useRef,
     },
     ...componentProps,
+    ...additionalProps,
     data: componentData[`${comp.extensionId}-${comp.componentId}`],
   });
 

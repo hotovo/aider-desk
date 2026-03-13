@@ -12,8 +12,7 @@ type Props = {
 
 export const CommandOutputMessageBlock = ({ message, compact = false }: Props) => {
   const { t } = useTranslation();
-  const baseClasses =
-    'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-primary-light border border-border-dark-light text-text-primary';
+  const baseClasses = 'rounded-md p-3 max-w-full break-words whitespace-pre-wrap text-xs bg-bg-primary-light border border-border-dark-light text-text-primary';
 
   const renderLabel = () => (
     <div className="flex items-center space-x-2">

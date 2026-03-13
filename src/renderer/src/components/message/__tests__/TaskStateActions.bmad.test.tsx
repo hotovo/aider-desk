@@ -50,6 +50,22 @@ vi.mock('@/contexts/SettingsContext', () => ({
   }),
 }));
 
+// Mock useExtensions hook
+vi.mock('@/contexts/ExtensionsContext', () => ({
+  useExtensions: vi.fn(() => ({
+    componentProps: {
+      projectDir: '/test/project',
+      task: null,
+      agentProfile: null,
+    },
+  })),
+}));
+
+// Mock ExtensionComponentWrapper to avoid API context requirement
+vi.mock('@/components/extensions/ExtensionComponentWrapper', () => ({
+  ExtensionComponentWrapper: () => null,
+}));
+
 // Mock Button component
 vi.mock('@/components/common/Button', () => ({
   Button: ({ children, onClick }: { children: React.ReactNode; onClick: () => void }) => <button onClick={onClick}>{children}</button>,

@@ -31,6 +31,22 @@ vi.mock('@/stores/taskStore', () => ({
   },
 }));
 
+// Mock useExtensions hook
+vi.mock('@/contexts/ExtensionsContext', () => ({
+  useExtensions: vi.fn(() => ({
+    componentProps: {
+      projectDir: '/test/project',
+      task: null,
+      agentProfile: null,
+    },
+  })),
+}));
+
+// Mock ExtensionComponentWrapper to avoid API context requirement
+vi.mock('@/components/extensions/ExtensionComponentWrapper', () => ({
+  ExtensionComponentWrapper: () => null,
+}));
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};

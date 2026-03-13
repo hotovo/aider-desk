@@ -57,9 +57,9 @@ export interface TaskContextType {
   refreshAllFiles: (taskId: string, useGit?: boolean) => Promise<void>;
 }
 
-const TaskContext = createContext<TaskContextType | null>(null);
+const TasksContext = createContext<TaskContextType | null>(null);
 
-export const TaskProvider: React.FC<{ baseDir: string; tasks: TaskData[]; children: ReactNode }> = ({ baseDir, tasks, children }) => {
+export const TasksProvider: React.FC<{ baseDir: string; tasks: TaskData[]; children: ReactNode }> = ({ baseDir, tasks, children }) => {
   const setTodoItems = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setTodoItems, shallow);
   const setAiderModelsData = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setAiderModelsData, shallow);
   const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
@@ -77,17 +77,17 @@ export const TaskProvider: React.FC<{ baseDir: string; tasks: TaskData[]; childr
   );
 
   return (
-    <TaskContext.Provider value={contextValue}>
+    <TasksContext.Provider value={contextValue}>
       {tasks.map((task) => (
         <TaskEventSubscriber key={task.id} baseDir={baseDir} taskId={task.id} state={task.state} />
       ))}
       {children}
-    </TaskContext.Provider>
+    </TasksContext.Provider>
   );
 };
 
 export const useTask = (): TaskContextType => {
-  const context = useContext(TaskContext);
+  const context = useContext(TasksContext);
   if (context === null) {
     throw new Error('useTask must be used within a TaskProvider');
   }

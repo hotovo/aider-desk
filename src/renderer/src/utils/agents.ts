@@ -10,7 +10,11 @@ import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
  * 2. Project-level agent profile ID (fallback)
  * 3. Creates temporary profile if task has provider/model
  */
-export const resolveAgentProfile = (task: TaskData | undefined, projectAgentProfileId: string | undefined, profiles: AgentProfile[]): AgentProfile | null => {
+export const resolveAgentProfile = (
+  task: TaskData | undefined | null,
+  projectAgentProfileId: string | undefined,
+  profiles: AgentProfile[],
+): AgentProfile | null => {
   // Check task-level agent profile first
   let agentProfileId = task?.agentProfileId;
 
@@ -44,11 +48,15 @@ export const resolveAgentProfile = (task: TaskData | undefined, projectAgentProf
  * Hook to resolve the active agent profile for a task.
  * Uses useProjectSettings and useAgents internally to get the necessary data.
  */
-export const useActiveAgentProfile = (task: TaskData | undefined, projectDir: string): AgentProfile | null => {
+export const useActiveAgentProfile = (task: TaskData | undefined | null, projectDir?: string): AgentProfile | null => {
   const { projectSettings } = useProjectSettings();
   const { getProfiles } = useAgents();
 
   return useMemo(() => {
+    if (!projectDir) {
+      return null;
+    }
+
     return resolveAgentProfile(task, projectSettings?.agentProfileId, getProfiles(projectDir));
   }, [task, projectSettings?.agentProfileId, getProfiles, projectDir]);
 };

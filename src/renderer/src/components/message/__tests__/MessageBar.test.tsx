@@ -36,6 +36,22 @@ vi.mock('../UsageInfo', () => ({
   ),
 }));
 
+// Mock useExtensions hook
+vi.mock('@/contexts/ExtensionsContext', () => ({
+  useExtensions: vi.fn(() => ({
+    componentProps: {
+      projectDir: '/test/project',
+      task: null,
+      agentProfile: null,
+    },
+  })),
+}));
+
+// Mock ExtensionComponentWrapper to avoid API context requirement
+vi.mock('@/components/extensions/ExtensionComponentWrapper', () => ({
+  ExtensionComponentWrapper: () => null,
+}));
+
 describe('MessageBar', () => {
   const mockUsageReport: UsageReportData = {
     model: 'gpt-4',

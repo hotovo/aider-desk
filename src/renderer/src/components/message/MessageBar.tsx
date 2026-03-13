@@ -12,6 +12,9 @@ import { CopyMessageButton } from './CopyMessageButton';
 import { UsageInfo } from './UsageInfo';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { Message } from '@/types/message';
 
 type MenuPosition = {
   top?: number;
@@ -24,6 +27,7 @@ type Props = {
   className?: string;
   content?: string;
   usageReport?: UsageReportData;
+  message?: Message;
   remove?: () => void;
   redo?: () => void;
   edit?: () => void;
@@ -31,8 +35,9 @@ type Props = {
   onRemoveUpTo?: () => void;
 };
 
-export const MessageBar = ({ className, content, usageReport, remove, redo, edit, onFork, onRemoveUpTo }: Props) => {
+export const MessageBar = ({ className, content, usageReport, message, remove, redo, edit, onFork, onRemoveUpTo }: Props) => {
   const { t } = useTranslation();
+  const { componentProps } = useExtensions();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -89,6 +94,7 @@ export const MessageBar = ({ className, content, usageReport, remove, redo, edit
 
   return (
     <div className={twMerge('mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative', className)}>
+      <ExtensionComponentWrapper componentProps={componentProps} placement="task-message-bar" additionalProps={message ? { message } : undefined} />
       {usageReport && <UsageInfo usageReport={usageReport} className="mt-[4px]" />}
       {content && <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />}
       {(remove || redo || edit || onFork || onRemoveUpTo) && (

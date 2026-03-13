@@ -13,7 +13,7 @@ import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { TaskView, TaskViewRef } from '@/components/project/TaskView';
 import { useApi } from '@/contexts/ApiContext';
-import { TaskProvider } from '@/contexts/TaskContext';
+import { TasksProvider } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -21,6 +21,7 @@ import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
 import { showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { useActiveAgentProfile } from '@/utils/agents';
 
 type Props = {
   projectDir: string;
@@ -50,6 +51,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const taskViewRef = useRef<TaskViewRef>(null);
   const creatingTaskRef = useRef(false);
   const activeTask = activeTaskId ? optimisticTasks.find((task) => task.id === activeTaskId) : null;
+  const agentProfile = useActiveAgentProfile(activeTask, projectDir) || undefined;
   const [isActiveTaskSwitching, startActiveTaskTransition] = useTransition();
 
   const focusActiveTaskPrompt = useCallback(() => {
@@ -481,8 +483,8 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   }
 
   return (
-    <TaskProvider baseDir={projectDir} tasks={tasks}>
-      <ExtensionsProvider projectDir={projectDir}>
+    <TasksProvider baseDir={projectDir} tasks={tasks}>
+      <ExtensionsProvider projectDir={projectDir} agentProfile={agentProfile}>
         <div className="h-full w-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative">
           {starting && <LoadingOverlay message={t('common.startingUp')} />}
 
@@ -516,26 +518,28 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
             {isActiveTaskSwitching && <LoadingOverlay message={t('common.loadingTask')} animateOpacity />}
             {activeTask && (
               <Activity mode={isProjectActive ? 'visible' : 'hidden'}>
-                <TaskView
-                  ref={taskViewRef}
-                  projectDir={projectDir}
-                  task={activeTask}
-                  updateTask={handleUpdateTask}
-                  updateOptimisticTaskState={handleUpdateOptimisticTaskState}
-                  inputHistory={inputHistory}
-                  isActive={activeTaskId === activeTask.id}
-                  shouldFocusPrompt={shouldFocusNewTask}
-                  showSettingsPage={showSettingsPage}
-                  onArchiveTask={handleArchiveActiveTask}
-                  onUnarchiveTask={handleUnarchiveActiveTask}
-                  onDeleteTask={handleDeleteActiveTask}
-                  onToggleTaskSidebar={isMobile ? toggleTaskSidebar : undefined}
-                />
+                <ExtensionsProvider projectDir={projectDir} task={activeTask} agentProfile={agentProfile}>
+                  <TaskView
+                    ref={taskViewRef}
+                    projectDir={projectDir}
+                    task={activeTask}
+                    updateTask={handleUpdateTask}
+                    updateOptimisticTaskState={handleUpdateOptimisticTaskState}
+                    inputHistory={inputHistory}
+                    isActive={activeTaskId === activeTask.id}
+                    shouldFocusPrompt={shouldFocusNewTask}
+                    showSettingsPage={showSettingsPage}
+                    onArchiveTask={handleArchiveActiveTask}
+                    onUnarchiveTask={handleUnarchiveActiveTask}
+                    onDeleteTask={handleDeleteActiveTask}
+                    onToggleTaskSidebar={isMobile ? toggleTaskSidebar : undefined}
+                  />
+                </ExtensionsProvider>
               </Activity>
             )}
           </div>
         </div>
       </ExtensionsProvider>
-    </TaskProvider>
+    </TasksProvider>
   );
 };

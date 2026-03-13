@@ -5,7 +5,7 @@ import { TaskData } from '@common/types';
 import { TaskSidebar } from '../TaskSidebar';
 
 import { render } from '@/__tests__/render';
-import { useTask } from '@/contexts/TaskContext';
+import { useTask } from '@/contexts/TasksContext';
 import { useTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
 import { createMockTaskContext } from '@/__tests__/mocks/contexts';
 
@@ -17,8 +17,24 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock useTask context
-vi.mock('@/contexts/TaskContext', () => ({
+vi.mock('@/contexts/TasksContext', () => ({
   useTask: vi.fn(),
+}));
+
+// Mock useExtensions hook
+vi.mock('@/contexts/ExtensionsContext', () => ({
+  useExtensions: vi.fn(() => ({
+    componentProps: {
+      projectDir: '/test/project',
+      task: null,
+      agentProfile: null,
+    },
+  })),
+}));
+
+// Mock ExtensionComponentWrapper to avoid API context requirement
+vi.mock('@/components/extensions/ExtensionComponentWrapper', () => ({
+  ExtensionComponentWrapper: () => null,
 }));
 
 // Mock useTaskState from taskStore
