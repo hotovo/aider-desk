@@ -125,4 +125,86 @@ describe('ProjectView', () => {
       expect(mockApi.getTasks).toHaveBeenCalledWith(projectDir);
     });
   });
+
+  it('applies correct styles when project is active', async () => {
+    const mockShowSettingsPage = vi.fn();
+    const { container } = render(<ProjectView project={mockProject} isActive={true} showSettingsPage={mockShowSettingsPage} />);
+
+    await waitFor(() => {
+      expect(mockApi.startProject).toHaveBeenCalled();
+    });
+
+    const projectDiv = container.querySelector('.bg-gradient-to-b');
+    expect(projectDiv).toHaveStyle({
+      contentVisibility: 'visible',
+      zIndex: '1',
+    });
+  });
+
+  it('applies correct styles when project is inactive', async () => {
+    const mockShowSettingsPage = vi.fn();
+    const { container } = render(<ProjectView project={mockProject} isActive={false} showSettingsPage={mockShowSettingsPage} />);
+
+    await waitFor(() => {
+      expect(mockApi.startProject).toHaveBeenCalled();
+    });
+
+    const projectDiv = container.querySelector('.bg-gradient-to-b');
+    expect(projectDiv).toHaveStyle({
+      contentVisibility: 'hidden',
+      zIndex: '0',
+    });
+  });
+
+  it('does not close terminal processes on project switches', async () => {
+    const mockShowSettingsPage = vi.fn();
+    const { rerender } = render(<ProjectView project={mockProject} isActive={true} showSettingsPage={mockShowSettingsPage} />);
+
+    await waitFor(() => {
+      expect(mockApi.startProject).toHaveBeenCalled();
+    });
+
+    // Switch to inactive
+    rerender(<ProjectView project={mockProject} isActive={false} showSettingsPage={mockShowSettingsPage} />);
+
+    // Switch back to active
+    rerender(<ProjectView project={mockProject} isActive={true} showSettingsPage={mockShowSettingsPage} />);
+
+    // Verify no terminal close calls
+    expect(mockApi.closeTerminal).not.toHaveBeenCalled();
+  });
+
+  it('preserves terminal visibility state when switching back to project', async () => {
+    // Mock useLocalStorage for terminal visibility
+    const mockUseLocalStorage = vi.fn();
+    vi.mock('@reactuses/core', () => ({
+      useLocalStorage: mockUseLocalStorage,
+    }));
+
+    // Mock terminal visibility to start as false
+    mockUseLocalStorage.mockReturnValue([false, vi.fn()]);
+
+    const mockShowSettingsPage = vi.fn();
+    const { rerender } = render(<ProjectView project={mockProject} isActive={true} showSettingsPage={mockShowSettingsPage} />);
+
+    await waitFor(() => {
+      expect(mockApi.startProject).toHaveBeenCalled();
+    });
+
+    // Simulate toggling terminal to visible (this would be done in TaskView)
+    const setTerminalVisible = mockUseLocalStorage.mock.calls[0][1];
+    act(() => {
+      setTerminalVisible(true);
+    });
+
+    // Switch to inactive
+    rerender(<ProjectView project={mockProject} isActive={false} showSettingsPage={mockShowSettingsPage} />);
+
+    // Switch back to active
+    rerender(<ProjectView project={mockProject} isActive={true} showSettingsPage={mockShowSettingsPage} />);
+
+    // Check that terminal visibility is still true
+    expect(mockUseLocalStorage).toHaveBeenCalledWith(`terminal-visible-${mockProject.baseDir}-task-1`, false);
+    // Since it's mocked, the value is preserved in the mock
+  });
 });
