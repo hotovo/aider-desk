@@ -52,10 +52,12 @@ const CHIP_STYLES = `
 
 // JSX template for each placement chip
 const createChipJsx = (placement: string): string => `
-  <div className="${CHIP_STYLES}">
-    <span className="opacity-60">📍</span>
-    <span>${placement}</span>
-  </div>
+  (props) => (
+    <div className="${CHIP_STYLES}">
+      <span className="opacity-60">📍</span>
+      <span>${placement}</span>
+    </div>
+  )
 `;
 
 export default class UIPlacementDemoExtension implements Extension {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import JsxParser from 'react-jsx-parser';
+import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
 import { UIComponentProps } from '@common/extensions';
 import { twMerge } from 'tailwind-merge';
@@ -66,7 +66,7 @@ export const ExtensionComponentWrapper = ({ componentProps, placement, className
     });
   }, [api, componentProps.projectDir, components]);
 
-  const getBindings = (comp: ExtensionUIComponent) => ({
+  const getComponentData = (comp: ExtensionUIComponent) => ({
     React: {
       useState,
       useEffect,
@@ -87,18 +87,9 @@ export const ExtensionComponentWrapper = ({ componentProps, placement, className
     const data = componentData[`${comp.extensionId}-${comp.componentId}`];
     return (
       <ExtensionUIErrorBoundary key={`${comp.extensionId}-${comp.componentId}`} extensionId={comp.extensionId} componentId={comp.componentId}>
-        <JsxParser
-          key={JSON.stringify(data)}
-          bindings={getBindings(comp)}
-          jsx={comp.jsx}
-          components={{}}
-          renderInWrapper={false}
-          showWarnings={false}
-          onError={(error: unknown) => {
-            // eslint-disable-next-line no-console
-            console.error(`[Extension UI Parse Error] ${comp.extensionId}/${comp.componentId}:`, error);
-          }}
-        />
+        <StringToReactComponent key={JSON.stringify(data)} data={getComponentData(comp)}>
+          {comp.jsx}
+        </StringToReactComponent>
       </ExtensionUIErrorBoundary>
     );
   };

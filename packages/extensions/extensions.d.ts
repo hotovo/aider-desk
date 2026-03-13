@@ -825,7 +825,7 @@ export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType<Record<str
 export type UIComponentPlacement = "task-status-bar-left" | "task-status-bar-right" | "task-usage-info-bottom" | "task-messages-top" | "task-messages-bottom" | "header-left" | "header-right" | "task-input-above" | "task-input-toolbar-left" | "task-input-toolbar-right" | "tasks-sidebar-header" | "tasks-sidebar-bottom" | "task-message-above" | "task-message-below" | "task-message-bar" | "task-top-bar-left" | "task-top-bar-right" | "task-state-actions";
 /**
  * Definition of a React UI component that can be registered by an extension.
- * The component is defined as a JSX string and rendered using react-jsx-parser.
+ * The component is defined as a JSX string and rendered using string-to-react-component.
  *
  * Available props for the component:
  * - React: React object with hooks (useState, useEffect, useCallback, useMemo, useRef, etc.)
@@ -853,7 +853,7 @@ export interface UIComponentDefinition {
 	id: string;
 	/** Where in UI to render this component */
 	placement: UIComponentPlacement;
-	/** JSX component as string to be parsed by react-jsx-parser */
+	/** JSX/TSX component as string to be parsed by string-to-react-component */
 	jsx: string;
 }
 export interface UIComponentProps {
@@ -1316,7 +1316,7 @@ export interface Extension {
 	onAgentProfileUpdated?(context: ExtensionContext, agentId: string, updatedProfile: AgentProfile): Promise<AgentProfile>;
 	/**
 	 * Return array of React UI components this extension provides
-	 * Components are defined as JSX strings and rendered using react-jsx-parser
+	 * Components are defined as JSX/TSX strings and rendered using string-to-react-component
 	 * Called when extension is loaded and when components need to be refreshed
 	 */
 	getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
