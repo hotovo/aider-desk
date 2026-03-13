@@ -25,6 +25,7 @@ export const createMockAgentProfile = (overrides: Partial<AgentProfile> = {}): A
       invocationMode: InvocationMode.Automatic,
       color: 'blue',
       description: '',
+      includeRules: false,
     },
     isSubagent: false,
   } as AgentProfile;

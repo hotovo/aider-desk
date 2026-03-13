@@ -102,4 +102,5 @@ export type PromptTemplateName =
   | 'conflict-resolution-system'
   | 'update-task-state'
   | 'handoff'
-  | 'code-inline-request';
+  | 'code-inline-request'
+  | 'rules-block';

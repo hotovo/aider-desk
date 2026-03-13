@@ -123,6 +123,7 @@ export class PromptsManager {
       'update-task-state',
       'handoff',
       'code-inline-request',
+      'rules-block',
     ];
   }
 
@@ -382,7 +383,7 @@ export class PromptsManager {
     return await this.render('system-prompt', data, projectDir, task);
   };
 
-  private getRulesContent = async (task: Task, agentProfile?: AgentProfile) => {
+  public getRulesContent = async (task: Task, agentProfile?: AgentProfile) => {
     const ruleFiles = await task.getRuleFilesAsContextFiles(agentProfile);
 
     const ruleFilesContent = await Promise.all(
@@ -409,6 +410,14 @@ export class PromptsManager {
     );
 
     return ruleFilesContent.filter(Boolean).join('\n');
+  };
+
+  public getRulesBlock = async (task: Task, agentProfile?: AgentProfile): Promise<string> => {
+    const rulesFiles = await this.getRulesContent(task, agentProfile);
+    if (!rulesFiles) {
+      return '';
+    }
+    return this.render('rules-block', { rulesFiles }, task.getProjectDir());
   };
 
   public getInitProjectPrompt = async (task: Task) => {

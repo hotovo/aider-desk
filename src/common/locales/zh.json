@@ -654,6 +654,8 @@
         "descriptionPlaceholder": "描述此子代理的目的、能力和专长...",
         "systemPrompt": "系统提示",
         "systemPromptPlaceholder": "输入此配置用作子代理时的自定义系统提示指令...",
+        "includeRules": "包含项目规则",
+        "includeRulesInformation": "启用后，子代理将在其系统提示开头包含项目规则（AGENTS.md、.aider-desk/rules/*.md）。当子代理需要遵循特定项目指南时，此选项非常有用。",
         "invocationMode": "调用方式",
         "invocationModeOnDemand": "按需",
         "invocationModeOnDemandInformation": "子代理仅在父代理明确请求时才使用。",

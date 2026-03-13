@@ -370,6 +370,7 @@ export interface SubagentConfig {
   invocationMode: InvocationMode;
   color: string;
   description: string;
+  includeRules: boolean;
 }
 
 export interface BashToolSettings {
