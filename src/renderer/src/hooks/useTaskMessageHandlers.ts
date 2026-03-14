@@ -2,8 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
-import type { UserMessageData, MessageRemovedData } from '@common/types';
-import type { UserMessage } from '@/types/message';
+import type { UserMessageData, MessageRemovedData, UserMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';

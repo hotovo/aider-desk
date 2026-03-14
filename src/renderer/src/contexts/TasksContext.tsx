@@ -1,10 +1,9 @@
 import React, { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
 import { usePrevious } from '@reactuses/core';
-import { DefaultTaskState, TaskData, TodoItem, ModelsData } from '@common/types';
+import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Message } from '@common/types';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
-import { isLoadingMessage, Message } from '@/types/message';
 import { useTaskStore } from '@/stores/taskStore';
 import { useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
 import { useTaskToolHandlers } from '@/hooks/useTaskToolHandlers';

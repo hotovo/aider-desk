@@ -3,8 +3,8 @@ import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill, RiCloseCircleFill
 import { getLanguageFromPath } from '@common/utils';
 import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
+import { ToolMessage } from '@common/types';
 
-import { ToolMessage } from '@/types/message';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';

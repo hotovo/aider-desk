@@ -130,5 +130,27 @@ export class ExtensionsApi extends BaseApi {
         res.status(200).json(data);
       }),
     );
+
+    // Execute extension UI action
+    router.post(
+      '/extensions/ui-action',
+      this.handleRequest(async (req, res) => {
+        const { extensionId, componentId, action, args, projectDir } = req.body as {
+          extensionId?: string;
+          componentId?: string;
+          action?: string;
+          args?: unknown[];
+          projectDir?: string;
+        };
+
+        if (!extensionId || !componentId || !action) {
+          res.status(400).json({ message: 'extensionId, componentId, and action are required' });
+          return;
+        }
+
+        const result = await this.eventsHandler.executeUIExtensionAction(extensionId, componentId, action, args ?? [], projectDir);
+        res.status(200).json(result);
+      }),
+    );
   }
 }

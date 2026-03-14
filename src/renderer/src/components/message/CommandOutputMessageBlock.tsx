@@ -1,9 +1,8 @@
 import { BiTerminal } from 'react-icons/bi';
 import { useTranslation } from 'react-i18next';
+import { CommandOutputMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
-
-import { CommandOutputMessage } from '@/types/message';
 
 type Props = {
   message: CommandOutputMessage;

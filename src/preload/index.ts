@@ -117,6 +117,8 @@ const api: ApplicationAPI = {
   getExtensionUIComponents: (projectDir?: string, placement?: string) => ipcRenderer.invoke('get-extension-ui-components', projectDir, placement),
   getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string) =>
     ipcRenderer.invoke('get-extension-ui-data', extensionId, componentId, projectDir),
+  executeUIExtensionAction: (extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string) =>
+    ipcRenderer.invoke('execute-extension-ui-action', extensionId, componentId, action, args, projectDir),
   onExtensionUIRefresh: (baseDir: string, callback: (data: ExtensionUIRefreshData) => void) => {
     const listener = (_: Electron.IpcRendererEvent, data: ExtensionUIRefreshData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {

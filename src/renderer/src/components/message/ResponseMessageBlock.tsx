@@ -1,10 +1,10 @@
 import { clsx } from 'clsx';
 import { RiRobot2Line } from 'react-icons/ri';
+import { ResponseMessage } from '@common/types';
 
 import { MessageBar } from './MessageBar';
 
 import { useParsedContent } from '@/hooks/useParsedContent';
-import { ResponseMessage } from '@/types/message';
 
 type Props = {
   baseDir: string;

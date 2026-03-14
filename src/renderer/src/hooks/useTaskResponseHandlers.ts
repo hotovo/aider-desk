@@ -3,8 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
-import type { ResponseChunkData, ResponseCompletedData } from '@common/types';
-import type { Message, ReflectedMessage, ResponseMessage } from '@/types/message';
+import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';

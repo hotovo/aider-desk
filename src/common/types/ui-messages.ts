@@ -1,4 +1,5 @@
-import { Group, PromptContext, TaskData, TokensInfoData, UsageReportData } from '@common/types';
+import { TaskData, TokensInfoData } from './common';
+import { PromptContext, UsageReportData, Group } from './context';
 
 export interface Message {
   id: string;
@@ -77,7 +78,6 @@ export const isReflectedMessage = (message: Message): message is ReflectedMessag
 export const isCommandOutputMessage = (message: Message): message is CommandOutputMessage => {
   return message.type === 'command-output';
 };
-
 export const isTokensInfoMessage = (message: Message): message is TokensInfoMessage => {
   return message.type === 'tokens-info';
 };

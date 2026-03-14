@@ -3,8 +3,8 @@ import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 import { v4 as uuidv4 } from 'uuid';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
+import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 
-import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@/types/message';
 import { useTaskStore } from '@/stores/taskStore';
 import { useApi } from '@/contexts/ApiContext';
 

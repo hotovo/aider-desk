@@ -1,7 +1,7 @@
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { DefaultTaskState, MessageViewMode, TaskData } from '@common/types';
+import { DefaultTaskState, MessageViewMode, TaskData, isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import { clsx } from 'clsx';
 
@@ -9,14 +9,12 @@ import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 
-import { isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 export type VirtualizedMessagesRef = {
@@ -60,7 +58,6 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
   ) => {
     const { t } = useTranslation();
     const { settings } = useSettings();
-    const { componentProps } = useExtensions();
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const isCompactMode = settings?.messageViewMode === MessageViewMode.Compact;
 
@@ -178,7 +175,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <ExtensionComponentWrapper componentProps={componentProps} placement="task-message-above" />
+                  <ExtensionComponentWrapper placement="task-message-above" />
                   {isGroupMessage(message) ? (
                     <GroupMessageBlock
                       baseDir={baseDir}
@@ -217,7 +214,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                       onInterrupt={onInterrupt}
                     />
                   )}
-                  <ExtensionComponentWrapper componentProps={componentProps} placement="task-message-below" />
+                  <ExtensionComponentWrapper placement="task-message-below" />
                 </div>
               );
             })}

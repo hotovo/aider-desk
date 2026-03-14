@@ -2,10 +2,9 @@ import { useLayoutEffect, useRef } from 'react';
 import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill, RiCloseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
-import { FileWriteMode } from '@common/types';
+import { FileWriteMode, ToolMessage } from '@common/types';
 import { getLanguageFromPath } from '@common/utils';
 
-import { ToolMessage } from '@/types/message';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';

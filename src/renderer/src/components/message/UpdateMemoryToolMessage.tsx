@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 'react-icons/fa';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 
-import { ToolMessage } from '@/types/message';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
 

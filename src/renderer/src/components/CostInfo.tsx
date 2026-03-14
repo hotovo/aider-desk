@@ -1,4 +1,4 @@
-import { Mode, TokensInfoData, TaskData } from '@common/types';
+import { Mode, TaskData, TokensInfoData } from '@common/types';
 import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoChevronDown, IoChevronUp, IoClose } from 'react-icons/io5';
@@ -6,7 +6,6 @@ import { MdOutlineRefresh, MdSettingsBackupRestore } from 'react-icons/md';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 type Props = {
@@ -26,7 +25,6 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
   const [isExpanded, setIsExpanded] = useState(false);
   const [refreshingAnimation, setRefreshingAnimation] = useState(false);
   const REFRESH_ANIMATION_DURATION = 2000;
-  const { componentProps } = useExtensions();
 
   const renderLabelValue = (label: string, value: ReactNode) => (
     <div className="flex justify-between h-[20px]">
@@ -118,7 +116,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
         </div>
 
         <TokenUsageBar tokensInfo={tokensInfo} maxInputTokens={maxInputTokens} mode={mode} task={task} updateTask={updateTask} />
-        <ExtensionComponentWrapper componentProps={componentProps} placement="task-usage-info-bottom" direction="vertical" />
+        <ExtensionComponentWrapper placement="task-usage-info-bottom" direction="vertical" />
       </div>
     </div>
   );

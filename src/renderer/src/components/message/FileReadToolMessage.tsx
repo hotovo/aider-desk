@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { RiFileTextLine, RiCheckboxCircleFill, RiErrorWarningFill, RiCloseCircleFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 
-import { ToolMessage } from '@/types/message';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';

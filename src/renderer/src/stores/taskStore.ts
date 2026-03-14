@@ -1,9 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
-import { ContextFile, ModelsData, QueuedPromptData, QuestionData, TodoItem, TokensInfoData } from '@common/types';
+import { ContextFile, ModelsData, QueuedPromptData, QuestionData, TodoItem, TokensInfoData, Message } from '@common/types';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
-
-import { Message } from '@/types/message';
 
 export interface TaskState {
   loading: boolean;

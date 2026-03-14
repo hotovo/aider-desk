@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BmadStatus, WorkflowMetadata, TaskData } from '@common/types';
+import { BmadStatus, WorkflowMetadata, TaskData, isResponseMessage, Message } from '@common/types';
 
-import { isResponseMessage, Message } from '@/types/message';
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskMessages } from '@/stores/taskStore';
 import { generateSuggestions } from '@/utils/bmad-suggestions';

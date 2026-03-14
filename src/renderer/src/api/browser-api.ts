@@ -954,7 +954,7 @@ export class BrowserApi implements ApplicationAPI {
   }
 
   async readFile(baseDir: string, filePath: string): Promise<string> {
-    const response = await this.post<{ content: string }>('/project/read-file', {
+    const response = await this.post<{ projectDir: string; filePath: string }, { content: string }>('/project/read-file', {
       projectDir: baseDir,
       filePath,
     });
@@ -1168,6 +1168,16 @@ export class BrowserApi implements ApplicationAPI {
     return this.get('/extensions/ui-data', {
       extensionId,
       componentId,
+      projectDir,
+    });
+  }
+
+  executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string): Promise<unknown> {
+    return this.post('/extensions/ui-action', {
+      extensionId,
+      componentId,
+      action,
+      args,
       projectDir,
     });
   }

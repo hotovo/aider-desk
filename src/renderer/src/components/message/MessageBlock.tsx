@@ -32,6 +32,19 @@ import {
   TASKS_TOOL_SEARCH_TASK,
   TASKS_TOOL_SEARCH_PARENT_TASK,
 } from '@common/tools';
+import {
+  isCommandOutputMessage,
+  isLoadingMessage,
+  isLogMessage,
+  isReflectedMessage,
+  isResponseMessage,
+  isTaskInfoMessage,
+  isToolMessage,
+  isUserMessage,
+  LogMessage,
+  Message,
+  ToolMessage,
+} from '@common/types';
 
 import { CommandOutputMessageBlock } from './CommandOutputMessageBlock';
 import { LoadingMessageBlock } from './LoadingMessageBlock';
@@ -64,20 +77,6 @@ import { UpdateMemoryToolMessage } from './UpdateMemoryToolMessage';
 import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
 import { TaskInfoMessage } from './TaskInfoMessage';
 import { areMessagesEqual } from './utils';
-
-import {
-  isCommandOutputMessage,
-  isLoadingMessage,
-  isLogMessage,
-  isReflectedMessage,
-  isResponseMessage,
-  isTaskInfoMessage,
-  isToolMessage,
-  isUserMessage,
-  LogMessage,
-  Message,
-  ToolMessage,
-} from '@/types/message';
 
 type Props = {
   baseDir: string;

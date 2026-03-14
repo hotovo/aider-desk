@@ -1126,11 +1126,17 @@ export class EventsHandler {
       componentId: c.component.id,
       placement: c.component.placement,
       jsx: c.component.jsx,
+      loadData: c.component.loadData,
     }));
   }
 
   async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string): Promise<unknown> {
     const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
     return await this.extensionManager.getUIExtensionData(extensionId, componentId, project);
+  }
+
+  async executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string): Promise<unknown> {
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    return await this.extensionManager.executeUIExtensionAction(extensionId, componentId, action, args, project);
   }
 }

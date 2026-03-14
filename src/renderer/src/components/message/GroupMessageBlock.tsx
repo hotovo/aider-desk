@@ -2,14 +2,23 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useMemo, useState, MouseEvent } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { LocalizedString, UsageReportData } from '@common/types';
+import {
+  LocalizedString,
+  UsageReportData,
+  GroupMessage,
+  isResponseMessage,
+  isToolMessage,
+  isUserMessage,
+  Message,
+  ResponseMessage,
+  ToolMessage,
+} from '@common/types';
 
 import { MessageBlock } from './MessageBlock';
 import { MessageBar } from './MessageBar';
 import { areMessagesEqual } from './utils';
 
 import { Accordion } from '@/components/common/Accordion';
-import { GroupMessage, isResponseMessage, isToolMessage, isUserMessage, Message, ResponseMessage, ToolMessage } from '@/types/message';
 import { Button } from '@/components/common/Button';
 
 type Props = {

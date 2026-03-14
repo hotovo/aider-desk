@@ -1,4 +1,19 @@
-import { AIDER_MODES, DefaultTaskState, Mode, Model, ModelsData, TaskData, TodoItem } from '@common/types';
+import {
+  AIDER_MODES,
+  DefaultTaskState,
+  isLoadingMessage,
+  isLogMessage,
+  isTaskInfoMessage,
+  isUserMessage,
+  Message,
+  Mode,
+  Model,
+  ModelsData,
+  TaskData,
+  TaskInfoMessage,
+  TodoItem,
+  UserMessage,
+} from '@common/types';
 import { forwardRef, startTransition, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useOptimistic, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
@@ -12,7 +27,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSidebarWidth } from './useSidebarWidth';
 
 import { Tooltip } from '@/components/ui/Tooltip';
-import { isLoadingMessage, isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -29,7 +43,6 @@ import { MobileSidebar } from '@/components/project/MobileSidebar';
 import { FilesContextInfoContent } from '@/components/project/FilesContextInfoContent';
 import { WelcomeMessage } from '@/components/project/WelcomeMessage';
 import 'react-resizable/css/styles.css';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useActiveAgentProfile } from '@/utils/agents';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
@@ -121,7 +134,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const messagesRef = useRef<MessagesRef | VirtualizedMessagesRef>(null);
     const terminalViewRef = useRef<TerminalViewRef | null>(null);
     const activeAgentProfile = useActiveAgentProfile(task, projectDir);
-    const { componentProps } = useExtensions();
 
     useEffect(() => {
       if (isActive && !taskState.loaded && !taskState.loading) {
@@ -652,7 +664,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 onClearAllTodos={handleClearAllTodos}
               />
             )}
-            <ExtensionComponentWrapper componentProps={componentProps} placement="task-messages-top" />
+            <ExtensionComponentWrapper placement="task-messages-top" />
             <div className="overflow-hidden flex-grow relative">
               {displayedMessages.length === 0 && !loading && !messagesPending && !inProgress ? (
                 <WelcomeMessage onModeChange={handleModeChange} mode={currentMode} projectDir={projectDir} taskId={task.id} />
@@ -694,7 +706,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 </>
               )}
             </div>
-            <ExtensionComponentWrapper componentProps={componentProps} placement="task-messages-bottom" />
+            <ExtensionComponentWrapper placement="task-messages-bottom" />
             {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
               <TaskStateActions
                 state={task.state}
@@ -749,7 +761,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   </Button>
                 </div>
               )}
-              <ExtensionComponentWrapper componentProps={componentProps} placement="task-input-above" />
+              <ExtensionComponentWrapper placement="task-input-above" />
               <PromptField
                 key={task.id}
                 ref={promptFieldRef}
@@ -792,8 +804,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 handoffConversation={handleHandoff}
               />
               <div className="flex gap-2 justify-between flex-wrap">
-                <ExtensionComponentWrapper componentProps={componentProps} placement="task-status-bar-left" />
-                <ExtensionComponentWrapper componentProps={componentProps} placement="task-status-bar-right" />
+                <ExtensionComponentWrapper placement="task-status-bar-left" />
+                <ExtensionComponentWrapper placement="task-status-bar-right" />
               </div>
             </div>
           </div>

@@ -3,12 +3,11 @@ import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
 import { clsx } from 'clsx';
+import { ToolMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 import { parseToolContent } from './utils';
-
-import { ToolMessage } from '@/types/message';
 
 type Props = {
   message: ToolMessage;

@@ -291,6 +291,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.getUIExtensionData(extensionId, componentId, projectDir);
   });
 
+  ipcMain.handle('execute-extension-ui-action', async (_, extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string) => {
+    return await eventsHandler.executeUIExtensionAction(extensionId, componentId, action, args, projectDir);
+  });
+
   ipcMain.handle('export-task-to-markdown', async (_, baseDir: string, taskId: string, copyOnly: boolean = false) => {
     return await eventsHandler.exportTaskToMarkdown(baseDir, taskId, copyOnly);
   });

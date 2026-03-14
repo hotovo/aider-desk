@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { RiLinkM, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { highlightWithLowlight } from '@/utils/highlighter';

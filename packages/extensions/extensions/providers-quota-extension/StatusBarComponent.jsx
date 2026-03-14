@@ -1,6 +1,4 @@
-(props) => {
-  const { agentProfile, data } = props;
-  
+({ agentProfile, data }) => {
   return agentProfile?.provider === 'synthetic' && data?.synthetic ? (
     data.synthetic.error ? (
       <span className="pt-1">Quota unavailable</span>

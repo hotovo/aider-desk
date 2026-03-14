@@ -18,11 +18,11 @@ import {
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
 } from '@common/tools';
+import { ToolMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { parseToolContent } from './utils';
 
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {

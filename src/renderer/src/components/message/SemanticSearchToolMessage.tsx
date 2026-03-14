@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { FaSearchengin } from 'react-icons/fa6';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Group } from '@common/types';
+import { Group, AssistantGroupMessage, GroupMessage, isResponseMessage, isToolMessage, Message, ResponseMessage, ToolMessage } from '@common/types';
 
 import { CustomCommandBashBlock } from './CustomCommandBashBlock';
 import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
@@ -10,7 +10,6 @@ import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { MermaidDiagram } from '@/components/common/MermaidDiagram';
 import { CodeInline } from '@/components/common/CodeInline';
-import { AssistantGroupMessage, GroupMessage, isResponseMessage, isToolMessage, Message, ResponseMessage, ToolMessage } from '@/types/message';
 
 const ALL_FENCES = [
   ['````', '````'],

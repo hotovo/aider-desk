@@ -138,6 +138,7 @@ export interface ApplicationAPI {
   uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
   getExtensionUIComponents: (projectDir?: string, placement?: string) => Promise<ExtensionUIComponent[]>;
   getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string) => Promise<unknown>;
+  executeUIExtensionAction: (extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string) => Promise<unknown>;
   onExtensionUIRefresh: (baseDir: string, callback: (data: ExtensionUIRefreshData) => void) => () => void;
   onModalOverlayUrl: (callback: (data: ModalOverlayUrlData) => void) => () => void;
   isWebViewSupported: () => boolean;

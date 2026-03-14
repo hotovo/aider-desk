@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
-import { UIComponentProps } from '@common/extensions';
 import { twMerge } from 'tailwind-merge';
 
 import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
+import { useExtensions } from '@/contexts/ExtensionsContext';
 
 type Props = {
-  componentProps: UIComponentProps;
   placement: string;
   className?: string;
   direction?: 'horizontal' | 'vertical';
   additionalProps?: Record<string, unknown>;
 };
 
-export const ExtensionComponentWrapper = ({ componentProps, placement, className, direction = 'horizontal', additionalProps }: Props) => {
+export const ExtensionComponentWrapper = ({ placement, className, direction = 'horizontal', additionalProps }: Props) => {
+  const { componentProps } = useExtensions();
   const [components, setComponents] = useState<ExtensionUIComponent[]>([]);
   const [componentData, setComponentData] = useState<Record<string, unknown>>({});
   const [refreshKey, setRefreshKey] = useState(0);
@@ -39,6 +39,9 @@ export const ExtensionComponentWrapper = ({ componentProps, placement, className
     const loadData = async () => {
       const newData: Record<string, unknown> = {};
       for (const comp of components) {
+        if (!comp.loadData) {
+          continue;
+        }
         try {
           newData[`${comp.extensionId}-${comp.componentId}`] = await api.getUIExtensionData(comp.extensionId, comp.componentId, componentProps.projectDir);
         } catch (error) {
@@ -66,18 +69,28 @@ export const ExtensionComponentWrapper = ({ componentProps, placement, className
     });
   }, [api, componentProps.projectDir, components]);
 
-  const getComponentData = (comp: ExtensionUIComponent) => ({
-    React: {
-      useState,
-      useEffect,
-      useMemo,
-      useCallback,
-      useRef,
+  const getComponentData = useCallback(
+    (comp: ExtensionUIComponent) => {
+      const executeExtensionAction = async (action: string, ...args: unknown[]) => {
+        return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, componentProps.projectDir);
+      };
+
+      return {
+        React: {
+          useState,
+          useEffect,
+          useMemo,
+          useCallback,
+          useRef,
+        },
+        ...componentProps,
+        ...additionalProps,
+        executeExtensionAction,
+        data: componentData[`${comp.extensionId}-${comp.componentId}`],
+      };
     },
-    ...componentProps,
-    ...additionalProps,
-    data: componentData[`${comp.extensionId}-${comp.componentId}`],
-  });
+    [api, componentProps, additionalProps, componentData],
+  );
 
   if (components.length === 0) {
     return <div />;
@@ -85,6 +98,7 @@ export const ExtensionComponentWrapper = ({ componentProps, placement, className
 
   const renderComponent = (comp: ExtensionUIComponent) => {
     const data = componentData[`${comp.extensionId}-${comp.componentId}`];
+
     return (
       <ExtensionUIErrorBoundary key={`${comp.extensionId}-${comp.componentId}`} extensionId={comp.extensionId} componentId={comp.componentId}>
         <StringToReactComponent key={JSON.stringify(data)} data={getComponentData(comp)}>

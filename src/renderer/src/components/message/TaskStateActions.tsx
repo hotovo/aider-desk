@@ -8,7 +8,6 @@ import { ExtensionComponentWrapper } from '../extensions/ExtensionComponentWrapp
 
 import { BmadTaskActions } from '@/components/bmad/BmadTaskActions';
 import { Button } from '@/components/common/Button';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 
 type Props = {
   projectDir: string;
@@ -40,7 +39,6 @@ export const TaskStateActions = ({
   onDeleteTask,
 }: Props) => {
   const { t } = useTranslation();
-  const { componentProps } = useExtensions();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteClick = () => {
@@ -74,7 +72,7 @@ export const TaskStateActions = ({
         <div className="flex items-center gap-2">
           {icon}
           <div className="flex-1 text-text-secondary">{text}</div>
-          <ExtensionComponentWrapper componentProps={componentProps} placement="task-state-actions" direction="horizontal" />
+          <ExtensionComponentWrapper placement="task-state-actions" direction="horizontal" />
           {actions}
         </div>
       </div>

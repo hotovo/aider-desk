@@ -855,11 +855,41 @@ export interface UIComponentDefinition {
 	placement: UIComponentPlacement;
 	/** JSX/TSX component as string to be parsed by string-to-react-component */
 	jsx: string;
+  /** Optional flag to indicate if the component should load data from the extension to be passed as a prop (default: false) */
+	loadData?: boolean;
+}
+/**
+ * Marker interface for UI components provided by AiderDesk
+ * Actual component implementation is provided by renderer at runtime
+ */
+export interface UIComponent {
+	// Marker interface - renderer provides actual React components
+}
+/**
+ * Common UI components available to extension JSX components
+ */
+export interface UIComponents {
+	Button: UIComponent;
+	Checkbox: UIComponent;
+	Input: UIComponent;
+	Select: UIComponent;
+	TextArea: UIComponent;
+	IconButton: UIComponent;
+	RadioButton: UIComponent;
+	MultiSelect: UIComponent;
+	Slider: UIComponent;
+	DatePicker: UIComponent;
+	Chip: UIComponent;
+	ModelSelector: UIComponent;
 }
 export interface UIComponentProps {
 	projectDir?: string;
 	task?: TaskData;
 	agentProfile?: AgentProfile;
+	models: Model[];
+	providers: ProviderProfile[];
+	ui: UIComponents;
+	executeExtensionAction: (action: string, ...args: unknown[]) => Promise<unknown>;
 }
 /**
  * Definition of a command that can be registered by an extension
@@ -1328,6 +1358,15 @@ export interface Extension {
 	 * @returns Data to be passed to the component as `data` binding
 	 */
 	getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
+	/**
+	 * Handle an action triggered from a UI component via executeExtensionAction
+	 * @param componentId - The ID of the component that triggered the action
+	 * @param action - The action identifier
+	 * @param args - Additional arguments passed from the component
+	 * @param context - Extension context
+	 * @returns Result of the action execution
+	 */
+	executeUIExtensionAction?(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown>;
 	/**
 	 * Called when a new task is created
 	 * @returns void or partial event to modify task data

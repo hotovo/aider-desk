@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { FaExclamationTriangle } from 'react-icons/fa';
+import { ToolMessage } from '@common/types';
 
-import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
 import { Tooltip } from '@/components/ui/Tooltip';

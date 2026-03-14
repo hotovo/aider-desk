@@ -1,11 +1,11 @@
 import { FaInfoCircle, FaExclamationTriangle, FaExclamationCircle } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import { LogMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { MessageActions } from './MessageActions';
 
-import { LogMessage } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 
 type Props = {

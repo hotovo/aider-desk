@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { FaFolderOpen } from 'react-icons/fa';
 import { MdAssignment, MdClose } from 'react-icons/md';
+import { TaskInfoMessage as TaskInfoMessageType } from '@common/types';
 
-import { TaskInfoMessage as TaskInfoMessageType } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
 import { IconButton } from '@/components/common/IconButton';

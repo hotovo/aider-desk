@@ -1,6 +1,6 @@
 import { screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TaskData, ModelsData } from '@common/types';
+import { TaskData, ModelsData, Message } from '@common/types';
 import { toast } from 'react-toastify';
 
 import { TaskView } from '../TaskView';
@@ -16,7 +16,6 @@ import { useAgents } from '@/contexts/AgentsContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { createMockApi } from '@/__tests__/mocks/api';
 import { createMockTaskContext, createMockModelProviderContext, createMockAgentsContext, createMockResponsive } from '@/__tests__/mocks/contexts';
-import { Message } from '@/types/message';
 
 // Mock react-toastify for error notifications
 vi.mock('react-toastify', () => ({

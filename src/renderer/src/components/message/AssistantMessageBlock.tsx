@@ -1,14 +1,13 @@
 import { memo, useRef } from 'react';
 import { clsx } from 'clsx';
 import { RiRobot2Line } from 'react-icons/ri';
-import { UsageReportData } from '@common/types';
+import { UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@common/types';
 
 import { MessageBar } from './MessageBar';
 import { MessageBlock } from './MessageBlock';
 import { areMessagesEqual } from './utils';
 
 import { useParsedContent } from '@/hooks/useParsedContent';
-import { AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@/types/message';
 
 type Props = {
   baseDir: string;

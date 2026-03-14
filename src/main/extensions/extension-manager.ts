@@ -990,6 +990,37 @@ export class ExtensionManager {
     return undefined;
   }
 
+  async executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], project?: Project): Promise<unknown> {
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      if (!loaded.initialized) {
+        continue;
+      }
+
+      const { instance, metadata } = loaded;
+
+      if (metadata.name !== extensionId) {
+        continue;
+      }
+
+      if (!instance.executeUIExtensionAction) {
+        continue;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, project, undefined, this.eventManager);
+        return await instance.executeUIExtensionAction(componentId, action, args, context);
+      } catch (error) {
+        logger.error(`[Extensions] Failed to execute UI extension action '${action}' from '${metadata.name}' for component '${componentId}':`, error);
+        return undefined;
+      }
+    }
+
+    return undefined;
+  }
+
   validateUIComponentDefinition(component: UIComponentDefinition): {
     isValid: boolean;
     errors: string[];

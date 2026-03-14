@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { UsageReportData } from '@common/types';
+import { UsageReportData, Message } from '@common/types';
 import { MdCallSplit, MdDeleteForever, MdDeleteSweep, MdEdit, MdRedo } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
@@ -12,9 +12,7 @@ import { CopyMessageButton } from './CopyMessageButton';
 import { UsageInfo } from './UsageInfo';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
-import { Message } from '@/types/message';
 
 type MenuPosition = {
   top?: number;
@@ -37,7 +35,6 @@ type Props = {
 
 export const MessageBar = ({ className, content, usageReport, message, remove, redo, edit, onFork, onRemoveUpTo }: Props) => {
   const { t } = useTranslation();
-  const { componentProps } = useExtensions();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -94,7 +91,7 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
 
   return (
     <div className={twMerge('mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative', className)}>
-      <ExtensionComponentWrapper componentProps={componentProps} placement="task-message-bar" additionalProps={message ? { message } : undefined} />
+      <ExtensionComponentWrapper placement="task-message-bar" additionalProps={message ? { message } : undefined} />
       {usageReport && <UsageInfo usageReport={usageReport} className="mt-[4px]" />}
       {content && <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />}
       {(remove || redo || edit || onFork || onRemoveUpTo) && (

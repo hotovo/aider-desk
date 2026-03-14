@@ -37,7 +37,6 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { AudioAnalyzer } from '@/components/PromptField/AudioAnalyzer';
 import { AutoApprove } from '@/components/PromptField/AutoApprove';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 const External = Annotation.define<boolean>();
@@ -211,7 +210,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     const [customCommands, extensionCommands] = useCommands(baseDir);
     const api = useApi();
     const { projectSettings, saveProjectSettings } = useProjectSettings();
-    const { componentProps } = useExtensions();
 
     const {
       isRecording,
@@ -1190,10 +1188,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 />
               </div>
             </div>
-            <ExtensionComponentWrapper componentProps={componentProps} placement="task-input-toolbar-left" />
+            <ExtensionComponentWrapper placement="task-input-toolbar-left" />
 
             <div className="flex-grow" />
-            <ExtensionComponentWrapper componentProps={componentProps} placement="task-input-toolbar-right" />
+            <ExtensionComponentWrapper placement="task-input-toolbar-right" />
             {isMobile && (
               <div className="absolute top-0 right-0 z-10 flex items-center gap-1">
                 {toggleTerminal && (

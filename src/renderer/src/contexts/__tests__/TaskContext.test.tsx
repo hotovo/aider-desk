@@ -3,8 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-
-import { Message, ToolMessage } from '@/types/message';
+import { Message, ToolMessage } from '@common/types';
 
 describe('TaskContext - Message Removal Logic', () => {
   describe('Message filtering after removal event', () => {

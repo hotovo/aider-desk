@@ -2,19 +2,17 @@ import { forwardRef, memo, ReactNode, useEffect, useImperativeHandle, useMemo, u
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { DefaultTaskState, MessageViewMode, TaskData } from '@common/types';
+import { DefaultTaskState, isAssistantGroupMessage, isGroupMessage, isUserMessage, Message, MessageViewMode, TaskData } from '@common/types';
 
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 
-import { isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 export type MessagesRef = {
@@ -58,7 +56,6 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
   ) => {
     const { settings } = useSettings();
     const { t } = useTranslation();
-    const { componentProps } = useExtensions();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const isCompactMode = settings?.messageViewMode === MessageViewMode.Compact;
@@ -180,9 +177,9 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
 
             return (
               <div key={message.id}>
-                <ExtensionComponentWrapper componentProps={componentProps} placement="task-message-above" additionalProps={{ message }} />
+                <ExtensionComponentWrapper placement="task-message-above" additionalProps={{ messages, message }} />
                 {messageBlock}
-                <ExtensionComponentWrapper componentProps={componentProps} placement="task-message-below" additionalProps={{ message }} />
+                <ExtensionComponentWrapper placement="task-message-below" additionalProps={{ messages, message }} />
               </div>
             );
           })}

@@ -1,11 +1,11 @@
 import { FaRegUser } from 'react-icons/fa';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
+import { UserMessage } from '@common/types';
 
 import { MessageBar } from './MessageBar';
 
 import { useParsedContent } from '@/hooks/useParsedContent';
-import { UserMessage } from '@/types/message';
 
 type Props = {
   baseDir: string;

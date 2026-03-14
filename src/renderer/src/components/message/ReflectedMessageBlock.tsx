@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import { Message } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
 
 import { useParsedContent } from '@/hooks/useParsedContent';
-import { Message } from '@/types/message';
 
 type Props = {
   baseDir: string;

@@ -234,6 +234,7 @@ export default class ProvidersQuotaExtension implements Extension {
       id: STATUS_BAR_COMPONENT_ID,
       placement: 'task-usage-info-bottom',
       jsx: jsxTemplate,
+      loadData: true,
     };
 
     return [STATUS_BAR_COMPONENT];

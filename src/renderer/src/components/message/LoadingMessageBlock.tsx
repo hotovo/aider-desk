@@ -1,4 +1,5 @@
-import { LoadingMessage } from '@/types/message';
+import { LoadingMessage } from '@common/types';
+
 import { useTypingAnimation } from '@/hooks/useTypingAnimation';
 import { MessageActions } from '@/components/message/MessageActions';
 

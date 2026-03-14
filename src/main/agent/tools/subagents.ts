@@ -119,7 +119,7 @@ export const createSubagentsToolset = async (
           }, []);
         };
 
-        logger.info('Subagent context messages:', {
+        logger.debug('Subagent context messages:', {
           messages: contextMessages.length,
           currentMessages: currentMessages.length,
         });
