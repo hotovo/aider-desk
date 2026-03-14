@@ -33,7 +33,7 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
     };
 
     void loadComponents();
-  }, [api, componentProps.projectDir, refreshKey, placement]);
+  }, [api, componentProps.projectDir, placement]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -43,7 +43,12 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
           continue;
         }
         try {
-          newData[`${comp.extensionId}-${comp.componentId}`] = await api.getUIExtensionData(comp.extensionId, comp.componentId, componentProps.projectDir);
+          newData[`${comp.extensionId}-${comp.componentId}`] = await api.getUIExtensionData(
+            comp.extensionId,
+            comp.componentId,
+            componentProps.projectDir,
+            componentProps.task?.id,
+          );
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error(`Failed to load extension UI data for ${comp.extensionId}/${comp.componentId}:`, error);
@@ -55,7 +60,7 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
     if (components.length > 0) {
       void loadData();
     }
-  }, [api, componentProps.projectDir, components, refreshKey]);
+  }, [api, componentProps.projectDir, componentProps.task?.id, components, refreshKey]);
 
   useEffect(() => {
     if (!componentProps.projectDir) {
@@ -72,7 +77,7 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
   const getComponentData = useCallback(
     (comp: ExtensionUIComponent) => {
       const executeExtensionAction = async (action: string, ...args: unknown[]) => {
-        return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, componentProps.projectDir);
+        return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, componentProps.projectDir, componentProps.task?.id);
       };
 
       return {
@@ -97,13 +102,9 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
   }
 
   const renderComponent = (comp: ExtensionUIComponent) => {
-    const data = componentData[`${comp.extensionId}-${comp.componentId}`];
-
     return (
       <ExtensionUIErrorBoundary key={`${comp.extensionId}-${comp.componentId}`} extensionId={comp.extensionId} componentId={comp.componentId}>
-        <StringToReactComponent key={JSON.stringify(data)} data={getComponentData(comp)}>
-          {comp.jsx}
-        </StringToReactComponent>
+        <StringToReactComponent data={getComponentData(comp)}>{comp.jsx}</StringToReactComponent>
       </ExtensionUIErrorBoundary>
     );
   };

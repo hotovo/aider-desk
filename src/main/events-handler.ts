@@ -1130,13 +1130,35 @@ export class EventsHandler {
     }));
   }
 
-  async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string): Promise<unknown> {
+  async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown> {
+    logger.info('Getting UI extension data:', {
+      extensionId,
+      componentId,
+      projectDir,
+      taskId,
+    });
     const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
-    return await this.extensionManager.getUIExtensionData(extensionId, componentId, project);
+    const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;
+    return await this.extensionManager.getUIExtensionData(extensionId, componentId, project, task);
   }
 
-  async executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string): Promise<unknown> {
+  async executeUIExtensionAction(
+    extensionId: string,
+    componentId: string,
+    action: string,
+    args: unknown[],
+    projectDir?: string,
+    taskId?: string,
+  ): Promise<unknown> {
+    logger.info('Executing UI extension action:', {
+      extensionId,
+      componentId,
+      action,
+      projectDir,
+      taskId,
+    });
     const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
-    return await this.extensionManager.executeUIExtensionAction(extensionId, componentId, action, args, project);
+    const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;
+    return await this.extensionManager.executeUIExtensionAction(extensionId, componentId, action, args, project, task);
   }
 }

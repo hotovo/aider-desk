@@ -17,9 +17,9 @@ export class ExtensionContextImpl implements ExtensionContext {
     private readonly extensionName: string,
     private readonly store?: Store,
     private readonly modelManager?: ModelManager,
-    private readonly project?: Project,
-    private readonly taskInstance?: Task,
     private readonly eventManager?: EventManager,
+    private readonly project?: Project,
+    private readonly task?: Task,
   ) {}
 
   log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void {
@@ -32,7 +32,7 @@ export class ExtensionContextImpl implements ExtensionContext {
   }
 
   getTaskContext(): TaskContext | null {
-    return this.taskInstance ? new TaskContextImpl(this.taskInstance) : null;
+    return this.task ? new TaskContextImpl(this.task) : null;
   }
 
   getProjectContext(): ProjectContext {
@@ -95,6 +95,7 @@ export class ExtensionContextImpl implements ExtensionContext {
       return;
     }
     const baseDir = this.project?.baseDir ?? '';
+    this.log(`Triggering UI refresh for component: ${componentId}`, 'info');
     this.eventManager.sendExtensionUIRefresh(baseDir, this.extensionName, componentId);
   }
 

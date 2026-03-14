@@ -287,13 +287,16 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getUIComponents(projectDir, placement);
   });
 
-  ipcMain.handle('get-extension-ui-data', async (_, extensionId: string, componentId: string, projectDir?: string) => {
-    return await eventsHandler.getUIExtensionData(extensionId, componentId, projectDir);
+  ipcMain.handle('get-extension-ui-data', async (_, extensionId: string, componentId: string, projectDir?: string, taskId?: string) => {
+    return await eventsHandler.getUIExtensionData(extensionId, componentId, projectDir, taskId);
   });
 
-  ipcMain.handle('execute-extension-ui-action', async (_, extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string) => {
-    return await eventsHandler.executeUIExtensionAction(extensionId, componentId, action, args, projectDir);
-  });
+  ipcMain.handle(
+    'execute-extension-ui-action',
+    async (_, extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string) => {
+      return await eventsHandler.executeUIExtensionAction(extensionId, componentId, action, args, projectDir, taskId);
+    },
+  );
 
   ipcMain.handle('export-task-to-markdown', async (_, baseDir: string, taskId: string, copyOnly: boolean = false) => {
     return await eventsHandler.exportTaskToMarkdown(baseDir, taskId, copyOnly);

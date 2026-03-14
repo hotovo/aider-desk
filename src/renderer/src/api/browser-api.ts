@@ -1164,21 +1164,23 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  getUIExtensionData(extensionId: string, componentId: string, projectDir?: string): Promise<unknown> {
+  getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown> {
     return this.get('/extensions/ui-data', {
       extensionId,
       componentId,
       projectDir,
+      taskId,
     });
   }
 
-  executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string): Promise<unknown> {
+  executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string): Promise<unknown> {
     return this.post('/extensions/ui-action', {
       extensionId,
       componentId,
       action,
       args,
       projectDir,
+      taskId,
     });
   }
 

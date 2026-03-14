@@ -5,13 +5,14 @@ import {
   CommandsData,
   ContextFilesUpdatedData,
   ContextMenuParams,
+  CreateTaskParams,
   ExtensionUIRefreshData,
-  ModalOverlayUrlData,
   FileEdit,
   InputHistoryData,
   LogData,
   McpServerConfig,
   MessageRemovedData,
+  ModalOverlayUrlData,
   ModelsData,
   OpenDialogOptions,
   OS,
@@ -19,23 +20,22 @@ import {
   ProjectStartedData,
   ProviderModelsData,
   ProvidersUpdatedData,
-  QueuedPromptsUpdatedData,
   QuestionAnsweredData,
   QuestionData,
+  QueuedPromptsUpdatedData,
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  TaskCreatedData,
   TaskData,
-  CreateTaskParams,
   TerminalData,
   TerminalExitData,
   TokensInfoData,
   ToolData,
+  UpdatedFilesUpdatedData,
   UserMessageData,
   VersionsInfo,
   WorktreeIntegrationStatusUpdatedData,
-  TaskCreatedData,
-  UpdatedFilesUpdatedData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -115,10 +115,10 @@ const api: ApplicationAPI = {
     ipcRenderer.invoke('install-extension', extensionId, repositoryUrl, projectDir),
   uninstallExtension: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('uninstall-extension', extensionId, projectDir),
   getExtensionUIComponents: (projectDir?: string, placement?: string) => ipcRenderer.invoke('get-extension-ui-components', projectDir, placement),
-  getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string) =>
-    ipcRenderer.invoke('get-extension-ui-data', extensionId, componentId, projectDir),
-  executeUIExtensionAction: (extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string) =>
-    ipcRenderer.invoke('execute-extension-ui-action', extensionId, componentId, action, args, projectDir),
+  getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) =>
+    ipcRenderer.invoke('get-extension-ui-data', extensionId, componentId, projectDir, taskId),
+  executeUIExtensionAction: (extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string) =>
+    ipcRenderer.invoke('execute-extension-ui-action', extensionId, componentId, action, args, projectDir, taskId),
   onExtensionUIRefresh: (baseDir: string, callback: (data: ExtensionUIRefreshData) => void) => {
     const listener = (_: Electron.IpcRendererEvent, data: ExtensionUIRefreshData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
@@ -150,10 +150,7 @@ const api: ApplicationAPI = {
   getTasks: (baseDir) => ipcRenderer.invoke('get-tasks', baseDir),
   loadTask: (baseDir, taskId) => ipcRenderer.invoke('load-task', baseDir, taskId),
 
-  exportTaskToMarkdown: async (baseDir, taskId, copyOnly) => {
-    const result = await ipcRenderer.invoke('export-task-to-markdown', baseDir, taskId, copyOnly);
-    return result;
-  },
+  exportTaskToMarkdown: async (baseDir, taskId, copyOnly) => ipcRenderer.invoke('export-task-to-markdown', baseDir, taskId, copyOnly),
   getRecentProjects: () => ipcRenderer.invoke('get-recent-projects'),
   addRecentProject: (baseDir) => ipcRenderer.invoke('add-recent-project', baseDir),
   removeRecentProject: (baseDir) => ipcRenderer.invoke('remove-recent-project', baseDir),

@@ -59,7 +59,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should create context with project', () => {
       const mockProject = createMockProject();
-      const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, mockProject);
+      const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, mockProject);
       expect(contextWithProject.getProjectDir()).toBe('/project/path');
     });
   });
@@ -103,7 +103,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should return project path when set', () => {
       const mockProject = createMockProject();
-      const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, mockProject);
+      const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, mockProject);
       expect(contextWithProject.getProjectDir()).toBe('/project/path');
     });
   });
@@ -243,7 +243,7 @@ describe('ExtensionContextImpl', () => {
         baseDir: '/test/project',
       };
 
-      const contextWithEventManager = new ExtensionContextImpl(extensionId, undefined, undefined, mockProject as any, undefined, mockEventManager as any);
+      const contextWithEventManager = new ExtensionContextImpl(extensionId, undefined, undefined, mockEventManager as any, mockProject as any, undefined);
 
       contextWithEventManager.triggerUIRefresh();
 
@@ -259,7 +259,7 @@ describe('ExtensionContextImpl', () => {
         baseDir: '/test/project',
       };
 
-      const contextWithEventManager = new ExtensionContextImpl(extensionId, undefined, undefined, mockProject as any, undefined, mockEventManager as any);
+      const contextWithEventManager = new ExtensionContextImpl(extensionId, undefined, undefined, mockEventManager as any, mockProject as any, undefined);
 
       contextWithEventManager.triggerUIRefresh('status-bar');
 

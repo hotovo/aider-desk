@@ -115,10 +115,11 @@ export class ExtensionsApi extends BaseApi {
     router.get(
       '/extensions/ui-data',
       this.handleRequest(async (req, res) => {
-        const { extensionId, componentId, projectDir } = req.query as {
+        const { extensionId, componentId, projectDir, taskId } = req.query as {
           extensionId?: string;
           componentId?: string;
           projectDir?: string;
+          taskId?: string;
         };
 
         if (!extensionId || !componentId) {
@@ -126,7 +127,7 @@ export class ExtensionsApi extends BaseApi {
           return;
         }
 
-        const data = await this.eventsHandler.getUIExtensionData(extensionId, componentId, projectDir);
+        const data = await this.eventsHandler.getUIExtensionData(extensionId, componentId, projectDir, taskId);
         res.status(200).json(data);
       }),
     );
@@ -135,12 +136,13 @@ export class ExtensionsApi extends BaseApi {
     router.post(
       '/extensions/ui-action',
       this.handleRequest(async (req, res) => {
-        const { extensionId, componentId, action, args, projectDir } = req.body as {
+        const { extensionId, componentId, action, args, projectDir, taskId } = req.body as {
           extensionId?: string;
           componentId?: string;
           action?: string;
           args?: unknown[];
           projectDir?: string;
+          taskId?: string;
         };
 
         if (!extensionId || !componentId || !action) {
@@ -148,7 +150,7 @@ export class ExtensionsApi extends BaseApi {
           return;
         }
 
-        const result = await this.eventsHandler.executeUIExtensionAction(extensionId, componentId, action, args ?? [], projectDir);
+        const result = await this.eventsHandler.executeUIExtensionAction(extensionId, componentId, action, args ?? [], projectDir, taskId);
         res.status(200).json(result);
       }),
     );

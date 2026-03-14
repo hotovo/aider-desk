@@ -72,6 +72,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
     const mockExecuteUIExtensionAction = vi.fn().mockResolvedValue({ success: true });
 
     const mockExtension = {
+      id: 'test-extension',
       instance: {
         executeUIExtensionAction: mockExecuteUIExtensionAction,
       },
@@ -105,6 +106,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
 
   it('should return undefined when extension is not found', async () => {
     const mockExtension = {
+      id: 'different-extension',
       instance: {
         executeUIExtensionAction: vi.fn(),
       },
@@ -127,6 +129,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
 
   it('should return undefined when extension does not have executeUIExtensionAction method', async () => {
     const mockExtension = {
+      id: 'test-extension',
       instance: {
         // Missing executeUIExtensionAction method
       },
@@ -151,6 +154,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
     const mockExecuteUIExtensionAction = vi.fn();
 
     const mockExtension = {
+      id: 'test-extension',
       instance: {
         executeUIExtensionAction: mockExecuteUIExtensionAction,
       },
@@ -176,6 +180,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
     const mockExecuteUIExtensionAction = vi.fn().mockRejectedValue(new Error('Extension action failed'));
 
     const mockExtension = {
+      id: 'test-extension',
       instance: {
         executeUIExtensionAction: mockExecuteUIExtensionAction,
       },
@@ -206,6 +211,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
     const mockExecuteUIExtensionAction = vi.fn();
 
     const mockExtension = {
+      id: 'test-extension',
       instance: {
         executeUIExtensionAction: mockExecuteUIExtensionAction,
       },
@@ -238,6 +244,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
     const mockExecuteUIExtensionAction = vi.fn().mockResolvedValue(expectedData);
 
     const mockExtension = {
+      id: 'test-extension',
       instance: {
         executeUIExtensionAction: mockExecuteUIExtensionAction,
       },
@@ -262,6 +269,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
     const mockExecuteUIExtensionAction = vi.fn().mockResolvedValue({ result: 'ok' });
 
     const mockExtension = {
+      id: 'test-extension',
       instance: {
         executeUIExtensionAction: mockExecuteUIExtensionAction,
       },
@@ -287,6 +295,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
     const mockExecuteUIExtensionAction = vi.fn().mockResolvedValue({});
 
     const mockExtension = {
+      id: 'test-extension',
       instance: {
         executeUIExtensionAction: mockExecuteUIExtensionAction,
       },

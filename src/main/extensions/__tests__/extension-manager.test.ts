@@ -1139,6 +1139,7 @@ describe('ExtensionManager', () => {
       ]);
 
       const ext1 = {
+        id: 'ext1',
         instance: { getUIComponents },
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
@@ -1190,6 +1191,7 @@ describe('ExtensionManager', () => {
       ]);
 
       const ext1 = {
+        id: 'ext1',
         instance: { getUIComponents },
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
@@ -1224,6 +1226,7 @@ describe('ExtensionManager', () => {
       ]);
 
       const ext1 = {
+        id: 'ext1',
         instance: { getUIComponents },
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
@@ -1240,6 +1243,7 @@ describe('ExtensionManager', () => {
 
     it('should handle extensions without getUIComponents method', () => {
       const ext1 = {
+        id: 'ext1',
         instance: {}, // No getUIComponents method
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
@@ -1261,6 +1265,7 @@ describe('ExtensionManager', () => {
       });
 
       const ext1 = {
+        id: 'ext1',
         instance: { getUIComponents },
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
@@ -1268,6 +1273,7 @@ describe('ExtensionManager', () => {
       };
 
       const ext2 = {
+        id: 'ext2',
         instance: {
           getUIComponents: vi.fn().mockReturnValue([
             {
@@ -1305,6 +1311,7 @@ describe('ExtensionManager', () => {
       ]);
 
       const ext1 = {
+        id: 'ext1',
         instance: { getUIComponents },
         metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
         filePath: '/path/ext1.ts',
