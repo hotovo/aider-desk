@@ -1,5 +1,5 @@
 import { AIDER_MODES, Mode, TaskData, TokensInfoData } from '@common/types';
-import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import debounce from 'lodash/debounce';
 import { clsx } from 'clsx';
@@ -38,7 +38,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
   }, [task.contextCompactingThreshold]);
 
   const handleTokenBarClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
+    (e: ReactMouseEvent<HTMLDivElement>) => {
       if (!tokenBarRef.current || AIDER_MODES.includes(mode)) {
         return;
       }
@@ -46,7 +46,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
       const rect = tokenBarRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100);
-      const roundedPercentage = Math.round(percentage);
+      const roundedPercentage = Math.round(percentage / 5) * 5;
 
       setLocalThreshold(roundedPercentage);
       debouncedOnContextCompactingThreshold(roundedPercentage);
@@ -54,18 +54,18 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
     [mode, debouncedOnContextCompactingThreshold],
   );
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
+  const updateThreshold = useCallback(
+    (clientX: number) => {
       if (!tokenBarRef.current) {
         return;
       }
 
       const rect = tokenBarRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
+      const x = clientX - rect.left;
       const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100);
 
       if (isDragging && !AIDER_MODES.includes(mode)) {
-        const roundedPercentage = Math.round(percentage);
+        const roundedPercentage = Math.round(percentage / 5) * 5;
         setLocalThreshold(roundedPercentage);
         debouncedOnContextCompactingThreshold(roundedPercentage);
       }
@@ -79,12 +79,26 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
     [isDragging, mode, localThreshold, debouncedOnContextCompactingThreshold],
   );
 
+  const handleMouseMove = useCallback(
+    (e: ReactMouseEvent<HTMLDivElement>) => {
+      updateThreshold(e.clientX);
+    },
+    [updateThreshold],
+  );
+
+  const handleDocumentMouseMove = useCallback(
+    (e: MouseEvent) => {
+      updateThreshold(e.clientX);
+    },
+    [updateThreshold],
+  );
+
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
   }, []);
 
   const handleMouseDown = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
+    (e: ReactMouseEvent<HTMLDivElement>) => {
       if (!AIDER_MODES.includes(mode)) {
         e.preventDefault();
         setIsDragging(true);
@@ -108,12 +122,14 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mousemove', handleDocumentMouseMove);
       return () => {
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handleDocumentMouseMove);
       };
     }
     return undefined;
-  }, [isDragging, handleMouseUp]);
+  }, [isDragging, handleMouseUp, handleDocumentMouseMove]);
 
   const thresholdTokens = maxInputTokens > 0 ? Math.round((localThreshold / 100) * maxInputTokens) : 0;
 
