@@ -570,7 +570,7 @@ src/
         ModelProviderContext.tsx
         ProjectSettingsContext.tsx
         SettingsContext.tsx
-        TaskContext.tsx
+        TasksContext.tsx
       fonts/
         Enriqueta.ttf
         FunnelDisplay.ttf
@@ -2594,6 +2594,10 @@ File: src/common/locales/en.json
       "parentTaskId": "Parent Task ID",
       "execute": "Execute",
       "executeInBackground": "Execute in background",
+      "mode": "Mode",
+      "autoApprove": "Auto Approve",
+      "worktree": "Worktree",
+      "executeAndWait": "Execute and Wait",
       "yes": "Yes",
       "no": "No",
       "taskId": "Task ID",
@@ -4397,6 +4401,10 @@ File: src/common/locales/zh.json
       "parentTaskId": "父任务ID",
       "execute": "执行",
       "executeInBackground": "在后台执行",
+      "mode": "模式",
+      "autoApprove": "自动批准",
+      "worktree": "工作树",
+      "executeAndWait": "执行并等待",
       "yes": "是",
       "no": "否",
       "taskId": "任务ID",
@@ -7109,11 +7117,29 @@ export interface ToolDefinition<TSchema extends z.ZodType = z.ZodType<Record<str
 /** Execute function with type-safe args */
 ⋮----
 /** Placement locations for extension UI components */
-export type UIComponentPlacement = 'task-status-bar-left' | 'task-status-bar-right' | 'task-usage-info-bottom';
+export type UIComponentPlacement =
+  | 'task-status-bar-left'
+  | 'task-status-bar-right'
+  | 'task-usage-info-bottom'
+  | 'task-messages-top'
+  | 'task-messages-bottom'
+  | 'header-left'
+  | 'header-right'
+  | 'task-input-above'
+  | 'task-input-toolbar-left'
+  | 'task-input-toolbar-right'
+  | 'tasks-sidebar-header'
+  | 'tasks-sidebar-bottom'
+  | 'task-message-above'
+  | 'task-message-below'
+  | 'task-message-bar'
+  | 'task-top-bar-left'
+  | 'task-top-bar-right'
+  | 'task-state-actions';
 ⋮----
 /**
  * Definition of a React UI component that can be registered by an extension.
- * The component is defined as a JSX string and rendered using react-jsx-parser.
+ * The component is defined as a JSX string and rendered using string-to-react-component.
  *
  * Available props for the component:
  * - React: React object with hooks (useState, useEffect, useCallback, useMemo, useRef, etc.)
@@ -7141,7 +7167,7 @@ export interface UIComponentDefinition {
   id: string;
   /** Where in UI to render this component */
   placement: UIComponentPlacement;
-  /** JSX component as string to be parsed by react-jsx-parser */
+  /** JSX/TSX component as string to be parsed by string-to-react-component */
   jsx: string;
 }
 ⋮----
@@ -7149,13 +7175,12 @@ export interface UIComponentDefinition {
 ⋮----
 /** Where in UI to render this component */
 ⋮----
-/** JSX component as string to be parsed by react-jsx-parser */
+/** JSX/TSX component as string to be parsed by string-to-react-component */
 ⋮----
 export interface UIComponentProps {
-  projectDir: string;
-  task: TaskData;
-  agentProfile: AgentProfile | null;
-  mode: Mode;
+  projectDir?: string;
+  task?: TaskData;
+  agentProfile?: AgentProfile;
 }
 ⋮----
 /**
@@ -7900,7 +7925,7 @@ export interface Extension {
 
   /**
    * Return array of React UI components this extension provides
-   * Components are defined as JSX strings and rendered using react-jsx-parser
+   * Components are defined as JSX/TSX strings and rendered using string-to-react-component
    * Called when extension is loaded and when components need to be refreshed
    */
   getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
@@ -8209,7 +8234,7 @@ onAgentProfileUpdated?(context: ExtensionContext, agentId: string, updatedProfil
 ⋮----
 /**
    * Return array of React UI components this extension provides
-   * Components are defined as JSX strings and rendered using react-jsx-parser
+   * Components are defined as JSX/TSX strings and rendered using string-to-react-component
    * Called when extension is loaded and when components need to be refreshed
    */
 getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
@@ -21923,7 +21948,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
-import { useTask } from '@/contexts/TaskContext';
+import { useTask } from '@/contexts/TasksContext';
 import { useActiveAgentProfile } from '@/utils/agents';
 ⋮----
 type Props = {
@@ -22885,8 +22910,8 @@ const handleRevertChanges = () =>
 ================
 File: src/renderer/src/components/common/CodeInline.tsx
 ================
-import { clsx } from 'clsx';
 import { ReactNode } from 'react';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 type Props = {
   className?: string;
@@ -23539,6 +23564,7 @@ type Props<T> = {
 // Convert Column<T> to ColumnDef<T> for @tanstack/react-table
 ⋮----
 // Create table instance
+// eslint-disable-next-line react-hooks/incompatible-library
 ⋮----
 // Parent ref for virtualizer
 ⋮----
@@ -23822,7 +23848,7 @@ title=
 File: src/renderer/src/components/extensions/ExtensionComponentWrapper.tsx
 ================
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import JsxParser from 'react-jsx-parser';
+import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
 import { UIComponentProps } from '@common/extensions';
 import { twMerge } from 'tailwind-merge';
@@ -23835,6 +23861,7 @@ type Props = {
   placement: string;
   className?: string;
   direction?: 'horizontal' | 'vertical';
+  additionalProps?: Record<string, unknown>;
 };
 ⋮----
 const loadComponents = async () =>
@@ -23845,13 +23872,9 @@ const loadData = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const getBindings = (comp: ExtensionUIComponent) => (
+const getComponentData = (comp: ExtensionUIComponent) => (
 ⋮----
 const renderComponent = (comp: ExtensionUIComponent) =>
-⋮----
-onError=
-⋮----
-// eslint-disable-next-line no-console
 ⋮----
 <div className=
 
@@ -24616,6 +24639,9 @@ import { CopyMessageButton } from './CopyMessageButton';
 import { UsageInfo } from './UsageInfo';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { Message } from '@/types/message';
 ⋮----
 type MenuPosition = {
   top?: number;
@@ -24628,6 +24654,7 @@ type Props = {
   className?: string;
   content?: string;
   usageReport?: UsageReportData;
+  message?: Message;
   remove?: () => void;
   redo?: () => void;
   edit?: () => void;
@@ -24770,23 +24797,24 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
 ================
 File: src/renderer/src/components/message/Messages.tsx
 ================
-import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, memo, ReactNode, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { DefaultTaskState, MessageViewMode, TaskData } from '@common/types';
-import { TaskStateActions } from 'src/renderer/src/components/message/TaskStateActions';
 ⋮----
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 ⋮----
-import { isAssistantGroupMessage, isGroupMessage, isLoadingMessage, isUserMessage, Message } from '@/types/message';
+import { isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 export type MessagesRef = {
   exportToImage: () => void;
@@ -24802,14 +24830,8 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
-  resumeTask: () => void;
   redoLastUserPrompt: () => void;
   editLastUserMessage: (content: string) => void;
-  onMarkAsDone: () => void;
-  onRunPrompt?: (prompt: string) => void;
-  onArchiveTask?: () => void;
-  onUnarchiveTask?: () => void;
-  onDeleteTask?: () => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -24822,6 +24844,8 @@ type Props = {
 const exportToImage = async () =>
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+onFork=
 ⋮----
 aria-label=
 
@@ -25061,8 +25085,11 @@ import { useTranslation } from 'react-i18next';
 import { ReactNode, useState } from 'react';
 import { DefaultTaskState, Mode, TaskData } from '@common/types';
 ⋮----
+import { ExtensionComponentWrapper } from '../extensions/ExtensionComponentWrapper';
+⋮----
 import { BmadTaskActions } from '@/components/bmad/BmadTaskActions';
 import { Button } from '@/components/common/Button';
+import { useExtensions } from '@/contexts/ExtensionsContext';
 ⋮----
 type Props = {
   projectDir: string;
@@ -25449,14 +25476,15 @@ import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 ⋮----
-import { TaskStateActions } from '@/components/message/TaskStateActions';
-import { isAssistantGroupMessage, isGroupMessage, isLoadingMessage, isUserMessage, Message } from '@/types/message';
+import { isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
@@ -25472,16 +25500,11 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
-  resumeTask: () => void;
   redoLastUserPrompt: () => void;
   editLastUserMessage: (content: string) => void;
-  onMarkAsDone: () => void;
-  onRunPrompt?: (prompt: string) => void;
-  onArchiveTask?: () => void;
-  onUnarchiveTask?: () => void;
-  onDeleteTask?: () => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
+  onRemoveUpToMessage?: (message: Message) => void;
 };
 ⋮----
 // Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
@@ -25489,6 +25512,7 @@ type Props = {
 // Get all user message IDs
 ⋮----
 // Create virtualizer for dynamic sized items
+// eslint-disable-next-line react-hooks/incompatible-library
 ⋮----
 estimateSize: () => 44, // Initial estimate, will be measured
 ⋮----
@@ -26480,6 +26504,8 @@ export const useArrayField = (
   onChange: (updated: OpenRouterProvider) => void,
 ) =>
 ⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
 const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleBlur = () =>
@@ -27416,6 +27442,8 @@ import { TaskSidebarMultiSelectMenu } from './TaskSidebarMultiSelectMenu';
 import { TaskItem } from './TaskItem';
 import { TaskSectionHeader } from './TaskSectionHeader';
 ⋮----
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useExtensions } from '@/contexts/ExtensionsContext';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { groupTasksByDate } from '@/utils/date-utils';
 import { Input } from '@/components/common/Input';
@@ -27830,6 +27858,8 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 type Props = {
   openProjects: ProjectData[];
@@ -27885,7 +27915,7 @@ import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { TaskView, TaskViewRef } from '@/components/project/TaskView';
 import { useApi } from '@/contexts/ApiContext';
-import { TaskProvider } from '@/contexts/TaskContext';
+import { TasksProvider } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -27893,6 +27923,7 @@ import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
 import { showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { useActiveAgentProfile } from '@/utils/agents';
 ⋮----
 type Props = {
   projectDir: string;
@@ -27959,6 +27990,7 @@ const initProject = async () =>
 File: src/renderer/src/components/project/TaskBar.tsx
 ================
 import { AgentProfile, AIDER_MODES, EditFormat, Mode, Model, ModelsData, RawModelInfo, TaskData } from '@common/types';
+import { UIComponentProps } from '@common/extensions';
 import React, { ReactNode, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
@@ -27981,6 +28013,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 export type TaskBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -28059,7 +28092,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSidebarWidth } from './useSidebarWidth';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
-import { isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
+import { isLoadingMessage, isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -28080,12 +28113,13 @@ import { useExtensions } from '@/contexts/ExtensionsContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useActiveAgentProfile } from '@/utils/agents';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
-import { useTask } from '@/contexts/TaskContext';
+import { useTask } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useTaskMessages, useTaskState } from '@/stores/taskStore';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
+import { TaskStateActions } from '@/components/message/TaskStateActions';
 ⋮----
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -28147,6 +28181,8 @@ setEditingMessageIndex(null); // Clear editing state
 <div className=
 ⋮----
 
+⋮----
+height=
 ⋮----
 {/* Expand/Collapse Button for collapsed state */}
 ⋮----
@@ -28647,6 +28683,8 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { AudioAnalyzer } from '@/components/PromptField/AudioAnalyzer';
 import { AutoApprove } from '@/components/PromptField/AutoApprove';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 const ANSWERS = ['y', 'n', 'a', 'd', 'maybe']; // Added 'maybe' (Branch B)
 ⋮----
@@ -30494,6 +30532,7 @@ className=
 ⋮----
 placeholder=
 ⋮----
+{/* eslint-disable-next-line react-hooks/refs */}
 
 ================
 File: src/renderer/src/components/CostInfo.tsx
@@ -30720,16 +30759,15 @@ File: src/renderer/src/contexts/ExtensionsContext.tsx
 ================
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 import { UIComponentProps } from '@common/extensions';
-import { TaskData } from '@common/types';
-⋮----
-import { useActiveAgentProfile } from '@/utils/agents';
+import { AgentProfile, TaskData } from '@common/types';
 ⋮----
 type ExtensionsContextValue = {
-  projectDir: string;
+  projectDir?: string;
+  task?: TaskData;
+  agentProfile?: AgentProfile;
 };
 ⋮----
-type Props = {
-  projectDir: string;
+type Props = ExtensionsContextValue & {
   children: ReactNode;
 };
 ⋮----
@@ -30739,7 +30777,7 @@ type ExtensionsHookResult = {
   componentProps: UIComponentProps;
 };
 ⋮----
-export const useExtensions = (task: TaskData): ExtensionsHookResult =>
+export const useExtensions = (): ExtensionsHookResult =>
 
 ================
 File: src/renderer/src/contexts/ModelProviderContext.tsx
@@ -30833,7 +30871,7 @@ const saveSettings = async (updated: SettingsData) =>
 export const useSettings = () =>
 
 ================
-File: src/renderer/src/contexts/TaskContext.tsx
+File: src/renderer/src/contexts/TasksContext.tsx
 ================
 import React, { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
 import { usePrevious } from '@reactuses/core';
@@ -32153,6 +32191,8 @@ import { ProjectTabs } from '@/components/project/ProjectTabs';
 import { ProjectView } from '@/components/project/ProjectView';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { useVersions } from '@/hooks/useVersions';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/contexts/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
@@ -34379,7 +34419,11 @@ import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
  * 2. Project-level agent profile ID (fallback)
  * 3. Creates temporary profile if task has provider/model
  */
-export const resolveAgentProfile = (task: TaskData | undefined, projectAgentProfileId: string | undefined, profiles: AgentProfile[]): AgentProfile | null =>
+export const resolveAgentProfile = (
+  task: TaskData | undefined | null,
+  projectAgentProfileId: string | undefined,
+  profiles: AgentProfile[],
+): AgentProfile | null =>
 ⋮----
 // Check task-level agent profile first
 ⋮----
@@ -34391,7 +34435,7 @@ export const resolveAgentProfile = (task: TaskData | undefined, projectAgentProf
  * Hook to resolve the active agent profile for a task.
  * Uses useProjectSettings and useAgents internally to get the necessary data.
  */
-export const useActiveAgentProfile = (task: TaskData | undefined, projectDir: string): AgentProfile | null =>
+export const useActiveAgentProfile = (task: TaskData | undefined | null, projectDir?: string): AgentProfile | null =>
 
 ================
 File: src/renderer/src/utils/bmad-suggestions.ts
@@ -34873,6 +34917,7 @@ import { ApiProvider, useApi } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
+import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 ⋮----
 const ModalOverlayUrlHandler = () =>
 ⋮----
@@ -34979,7 +35024,7 @@ File: src/renderer/index.html
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:; frame-src http: https:;"
+      content="default-src 'self'; script-src 'self' blob: https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:; frame-src http: https:;"
     />
     <link rel="stylesheet" href="/src/fonts.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -35280,7 +35325,6 @@ File: package.json
     "@ai-sdk/alibaba": "^0.0.3",
     "@ai-sdk/amazon-bedrock": "^3.0.87",
     "@ai-sdk/anthropic": "^2.0.70",
-    "@augmentcode/auggie-sdk": "^0.1.15",
     "@ai-sdk/azure": "^2.0.100",
     "@ai-sdk/cerebras": "^1.0.39",
     "@ai-sdk/deepseek": "^1.0.35",
@@ -35290,11 +35334,13 @@ File: package.json
     "@ai-sdk/openai": "^2.0.98",
     "@ai-sdk/provider": "^2.0.1",
     "@aiderdesk/extensions": "workspace:*",
+    "@augmentcode/auggie-sdk": "^0.1.15",
     "@aws-crypto/sha256-js": "^5.0.0",
     "@aws-sdk/client-bedrock": "^3.887.0",
     "@aws-sdk/credential-provider-node": "^3.772.0",
     "@aws-sdk/credential-providers": "^3.782.0",
     "@aws-sdk/types": "^3.540.0",
+    "@babel/standalone": "^7.26.9",
     "@codemirror/autocomplete": "^6.18.7",
     "@dmitryrechkin/json-schema-to-zod": "^1.0.1",
     "@dnd-kit/core": "^6.3.1",
@@ -35333,7 +35379,7 @@ File: package.json
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "ai": "^5.0.150",
+    "ai": "^5.0.153",
     "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "^1.5.1",
     "apache-arrow": "18.1.0",
@@ -35387,7 +35433,6 @@ File: package.json
     "react-hotkeys-hook": "^4.6.2",
     "react-i18next": "^15.4.1",
     "react-icons": "^5.5.0",
-    "react-jsx-parser": "^2.4.1",
     "react-markdown": "^10.1.0",
     "react-resizable": "^3.0.5",
     "react-router-dom": "^7.0.1",
@@ -35403,6 +35448,7 @@ File: package.json
     "slugify": "^1.6.6",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "string-to-react-component": "^4.0.1",
     "tailwind-merge": "^3.3.1",
     "textarea-caret": "^3.1.0",
     "tmp": "^0.2.3",
