@@ -145,14 +145,8 @@ export const PythonServer: LspServerInfo = {
   languageId: 'python',
   extensions: PYTHON_EXTENSIONS,
   async spawn(rootDir: string, context: ExtensionContext): Promise<LspServerHandle | undefined> {
-    const binary = findBinary('pyright-langserver', rootDir) || findBinary('pyright', rootDir);
-    let command = 'npx';
-    let args = ['pyright-langserver', '--stdio'];
-
-    if (binary) {
-      command = binary;
-      args = ['--stdio'];
-    }
+    const command = findBinary('pyright-langserver', rootDir) || findBinary('pyright', rootDir);
+    const args = ['--stdio'];
 
     context.log(`Starting Python LSP server: ${command} ${args.join(' ')}`, 'info');
 
