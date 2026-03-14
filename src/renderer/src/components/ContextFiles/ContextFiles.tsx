@@ -16,6 +16,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
+import { FilePreviewModal } from './FilePreviewModal';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Input } from '@/components/common/Input';
@@ -173,6 +174,7 @@ export const ContextFiles = ({
   const [isRefreshingUpdated, setIsRefreshingUpdated] = useState(false);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [diffModalFileIndex, setDiffModalFileIndex] = useState(0);
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
 
   const sortedUpdatedFiles = useMemo(() => {
     return [...updatedFiles].sort((a, b) => a.path.localeCompare(b.path));
@@ -236,6 +238,10 @@ export const ContextFiles = ({
     },
     [sortedUpdatedFiles],
   );
+
+  const handleFilePreviewClick = useCallback((filePath: string) => {
+    setPreviewFilePath(filePath);
+  }, []);
 
   const [fileToRevert, setFileToRevert] = useState<string | null>(null);
   const [isRevertingFile, setIsRevertingFile] = useState(false);
@@ -539,6 +545,24 @@ export const ContextFiles = ({
                 {updatedFile.deletions > 0 && <span className="text-error">-{updatedFile.deletions}</span>}
               </span>
             </div>
+          );
+        }
+
+        // Add click handler for project files to open preview
+        if (type === 'project' && !treeItem.isFolder && filePath) {
+          return (
+            <span className={twMerge(className, 'cursor-pointer hover:text-text-tertiary')} onClick={() => handleFilePreviewClick(filePath)}>
+              {title}
+            </span>
+          );
+        }
+
+        // Add click handler for folders to toggle expand/collapse
+        if (treeItem.isFolder) {
+          return (
+            <span className={twMerge(className, 'cursor-pointer')} onClick={toggleFolder}>
+              {title}
+            </span>
           );
         }
 
@@ -899,6 +923,9 @@ export const ContextFiles = ({
           <p className="text-xs text-text-muted font-mono">{fileToRevert}</p>
         </ConfirmDialog>
       )}
+
+      {/* File Preview Modal */}
+      {previewFilePath && <FilePreviewModal filePath={previewFilePath} baseDir={baseDir} onClose={() => setPreviewFilePath(null)} />}
     </div>
   );
 };

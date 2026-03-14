@@ -35,6 +35,8 @@ import {
   WorkflowExecutionResult,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
+// @ts-expect-error istextorbinary is not typed properly
+import { isBinary } from 'istextorbinary';
 
 import type { ModeDefinition, BmadStatus, InstallResult, ExtensionUIComponent } from '@common/types';
 import type { BrowserWindow } from 'electron';
@@ -548,6 +550,17 @@ export class EventsHandler {
     }
 
     await task.restoreFile(filePath);
+  }
+
+  async readFile(baseDir: string, filePath: string): Promise<string> {
+    const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(baseDir, filePath);
+    const fileContentBuffer = await fs.readFile(absolutePath);
+
+    if (isBinary(filePath, fileContentBuffer)) {
+      throw new Error('Cannot read binary file');
+    }
+
+    return fileContentBuffer.toString('utf-8');
   }
 
   async generateCommitMessage(baseDir: string, taskId: string): Promise<string> {

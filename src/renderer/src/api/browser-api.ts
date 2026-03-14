@@ -953,6 +953,14 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  async readFile(baseDir: string, filePath: string): Promise<string> {
+    const response = await this.post<{ content: string }>('/project/read-file', {
+      projectDir: baseDir,
+      filePath,
+    });
+    return response.content;
+  }
+
   listBranches(baseDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
     return this.get('/project/worktree/branches', {
       projectDir: baseDir,

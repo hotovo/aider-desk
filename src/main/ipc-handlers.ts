@@ -413,6 +413,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.restoreFile(baseDir, taskId, filePath);
   });
 
+  ipcMain.handle('read-file', async (_, baseDir: string, filePath: string) => {
+    return await eventsHandler.readFile(baseDir, filePath);
+  });
+
   ipcMain.handle('generate-commit-message', async (_, baseDir: string, taskId: string) => {
     return await eventsHandler.generateCommitMessage(baseDir, taskId);
   });

@@ -966,6 +966,10 @@
   "fileChip": {
     "removeFileTooltip": "Remove file"
   },
+  "filePreview": {
+    "title": "File Viewer",
+    "errorLoading": "Failed to load file"
+  },
   "contextFiles": {
     "title": "Context Files",
     "updatedFiles": "Updated Files",

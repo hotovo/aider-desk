@@ -922,6 +922,10 @@
   "fileChip": {
     "removeFileTooltip": "移除文件"
   },
+  "filePreview": {
+    "title": "文件查看器",
+    "errorLoading": "加载文件失败"
+  },
   "contextFiles": {
     "title": "上下文文件",
     "updatedFiles": "已更新文件",

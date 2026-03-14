@@ -22,6 +22,8 @@
 - added mode, auto-approve, worktree mode and 'as subtask' input params to create task tool
 - fixed auto-compact threshold slider to correctly track mouse when dragging fast outside the component
 - made auto-compact threshold slider snap to steps of 5 for easier selection
+- added file preview modal for viewing project files in Context Files sidebar
+- added ability to expand/collapse folders by clicking on folder name in Project Files
 
 ## [0.56.0]
 

@@ -278,6 +278,11 @@ const RestoreFileSchema = z.object({
   filePath: z.string().min(1, 'File path is required'),
 });
 
+const ReadFileSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  filePath: z.string().min(1, 'File path is required'),
+});
+
 const GenerateCommitMessageSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
@@ -819,6 +824,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, filePath } = parsed;
         await this.eventsHandler.restoreFile(projectDir, taskId, filePath);
         res.status(200).json({ message: 'File restored' });
+      }),
+    );
+
+    // Read file
+    router.post(
+      '/project/read-file',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ReadFileSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, filePath } = parsed;
+        const content = await this.eventsHandler.readFile(projectDir, filePath);
+        res.status(200).json({ content });
       }),
     );
 
