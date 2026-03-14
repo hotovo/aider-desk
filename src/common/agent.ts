@@ -352,19 +352,19 @@ export const DEFAULT_MODEL_TEMPERATURE = 0.0;
 
 export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> = {
   'alibaba-plan': 'qwen3-coder-plus',
-  anthropic: 'claude-sonnet-4-5-20250929',
+  anthropic: 'claude-sonnet-4-6',
   cerebras: 'qwen-3-235b-a22b-instruct-2507',
   'claude-agent-sdk': 'sonnet',
   deepseek: 'deepseek-chat',
-  gemini: 'gemini-3-pro',
+  gemini: 'gemini-pro-latest',
   'gemini-cli': 'gemini-2.5-flash',
   groq: 'moonshotai/kimi-k2-instruct-0905',
-  openai: 'gpt-5.2',
-  openrouter: 'anthropic/claude-sonnet-4.5',
-  opencode: 'claude-sonnet-4-5',
-  requesty: 'anthropic/claude-sonnet-4-5',
-  synthetic: 'anthropic/claude-sonnet-4.5',
-  'zai-plan': 'glm-4.7',
+  openai: 'gpt-5.4',
+  openrouter: 'anthropic/claude-sonnet-4.6',
+  opencode: 'claude-sonnet-4-6',
+  requesty: 'anthropic/claude-sonnet-4-6',
+  synthetic: 'anthropic/claude-sonnet-4.6',
+  'zai-plan': 'glm-5',
   minimax: 'MiniMax-M2',
 };
 
