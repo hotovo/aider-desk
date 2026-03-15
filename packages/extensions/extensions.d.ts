@@ -855,16 +855,14 @@ export interface UIComponentDefinition {
 	placement: UIComponentPlacement;
 	/** JSX/TSX component as string to be parsed by string-to-react-component */
 	jsx: string;
-  /** Optional flag to indicate if the component should load data from the extension to be passed as a prop (default: false) */
+	/** Optional flag to indicate if the component should load data from the extension to be passed as a prop (default: false) */
 	loadData?: boolean;
 }
 /**
- * Marker interface for UI components provided by AiderDesk
+ * Marker type for UI components provided by AiderDesk
  * Actual component implementation is provided by renderer at runtime
  */
-export interface UIComponent {
-	// Marker interface - renderer provides actual React components
-}
+export type UIComponent = object;
 /**
  * Common UI components available to extension JSX components
  */
@@ -889,7 +887,6 @@ export interface UIComponentProps {
 	models: Model[];
 	providers: ProviderProfile[];
 	ui: UIComponents;
-	executeExtensionAction: (action: string, ...args: unknown[]) => Promise<unknown>;
 }
 /**
  * Definition of a command that can be registered by an extension
