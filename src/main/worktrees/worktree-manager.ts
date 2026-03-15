@@ -1558,7 +1558,9 @@ export class WorktreeManager {
             diff = diffOutput;
           } catch (diffError) {
             // If diff fetch fails (e.g., file not readable, git error), continue with empty diff
-            logger.warn(`Failed to get diff for file ${filePath}:`, diffError);
+            logger.warn(`Failed to get diff for file ${filePath}:`, {
+              error: diffError instanceof Error ? diffError.message : String(diffError),
+            });
             diff = '';
           }
 
