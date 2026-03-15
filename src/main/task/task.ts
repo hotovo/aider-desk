@@ -133,6 +133,7 @@ export class Task {
   private resolutionAbortControllers: Record<string, AbortController> = {};
   private tokensInfo: TokensInfoData;
   private queuedPrompts: QueuedPromptData[] = [];
+  private isCompacting = false;
 
   private readonly taskDataPath: string;
   private readonly contextManager: ContextManager;
@@ -604,7 +605,7 @@ export class Task {
   }
 
   private isPromptRunning() {
-    return !!this.currentPromptContext || this.agent.isRunning();
+    return !!this.currentPromptContext || this.agent.isRunning() || this.isCompacting;
   }
 
   public async runPrompt(
@@ -2559,10 +2560,16 @@ export class Task {
       return;
     }
 
+    const currentTaskState = this.task.state;
+    await this.saveTask({
+      state: DefaultTaskState.InProgress,
+    });
+
     // Find skill activation messages before generating summary
     const skillMessages = this.findSkillActivationMessages(contextMessages);
 
     this.addLogMessage('loading', loadingMessage);
+    this.isCompacting = true;
 
     const extractSummary = (content: string): string => {
       const lines = content.split('\n');
@@ -2665,6 +2672,13 @@ export class Task {
       } else if (AIDER_MODES.includes(mode)) {
         this.promptFinished();
       }
+    } finally {
+      this.isCompacting = false;
+      await this.saveTask({
+        state: currentTaskState,
+      });
+
+      await this.runNextQueuedPrompt();
     }
   }
 

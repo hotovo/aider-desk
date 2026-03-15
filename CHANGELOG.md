@@ -25,6 +25,7 @@
 - added file preview modal for viewing project files in Context Files sidebar
 - added ability to expand/collapse folders by clicking on folder name in Project Files
 - correctly processing queued prompts in case the prompt has been added during the task state determination
+- properly handling the queued prompts while compacting
 
 ## [0.56.0]
 
