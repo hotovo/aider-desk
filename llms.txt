@@ -65,6 +65,7 @@ src/
       common.ts
       context.ts
       index.ts
+      ui-messages.ts
     agent.ts
     api.ts
     bmad-workflows.ts
@@ -341,6 +342,7 @@ src/
           MermaidDiagram.tsx
           ModalOverlayLayout.tsx
           ModalOverlayUrlViewer.tsx
+          ModelSelectorWrapper.tsx
           MultiSelect.tsx
           RadioButton.tsx
           Section.tsx
@@ -357,6 +359,7 @@ src/
         ContextFiles/
           ContextFiles.css
           ContextFiles.tsx
+          FilePreviewModal.tsx
           index.ts
           UpdatedFilesDiffModal.tsx
         extensions/
@@ -679,8 +682,6 @@ src/
         theme-ocean.scss
         theme-serenity.scss
         themes.scss
-      types/
-        message.ts
       utils/
         agents.ts
         bmad-suggestions.ts
@@ -2413,6 +2414,10 @@ File: src/common/locales/en.json
   },
   "fileChip": {
     "removeFileTooltip": "Remove file"
+  },
+  "filePreview": {
+    "title": "File Viewer",
+    "errorLoading": "Failed to load file"
   },
   "contextFiles": {
     "title": "Context Files",
@@ -4201,6 +4206,10 @@ File: src/common/locales/zh.json
   },
   "fileChip": {
     "removeFileTooltip": "移除文件"
+  },
+  "filePreview": {
+    "title": "文件查看器",
+    "errorLoading": "加载文件失败"
   },
   "contextFiles": {
     "title": "上下文文件",
@@ -6124,6 +6133,7 @@ export interface ExtensionUIComponent {
   componentId: string;
   placement: string;
   jsx: string;
+  loadData?: boolean;
 }
 ⋮----
 export interface ExtensionUIRefreshData {
@@ -6308,6 +6318,107 @@ export enum ContextMemoryMode {
 File: src/common/types/index.ts
 ================
 
+
+================
+File: src/common/types/ui-messages.ts
+================
+import { TaskData, TokensInfoData } from './common';
+import { PromptContext, UsageReportData, Group } from './context';
+⋮----
+export interface Message {
+  id: string;
+  type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool' | 'group' | 'task-info' | 'assistant-group';
+  content: string;
+  promptContext?: PromptContext;
+  children?: Message[];
+}
+⋮----
+export interface UserMessage extends Message {
+  type: 'user';
+  isOptimistic?: boolean;
+}
+⋮----
+export interface ResponseMessage extends Message {
+  type: 'response';
+  usageReport?: UsageReportData;
+}
+⋮----
+export interface ReflectedMessage extends Message {
+  type: 'reflected-message';
+  responseMessageId: string;
+}
+⋮----
+export interface LogMessage extends Message {
+  type: 'log';
+  level: 'info' | 'warning' | 'error';
+  actionIds?: string[];
+}
+⋮----
+export interface LoadingMessage extends Message {
+  type: 'loading';
+  actionIds?: string[];
+}
+⋮----
+export interface CommandOutputMessage extends Message {
+  type: 'command-output';
+  command: string;
+}
+⋮----
+export interface TokensInfoMessage extends Message {
+  type: 'tokens-info';
+  info: TokensInfoData;
+}
+⋮----
+export interface ToolMessage extends Message {
+  type: 'tool';
+  serverName: string;
+  toolName: string;
+  args: Record<string, unknown>;
+  content: string; // Empty while executing, contains result when complete
+  usageReport?: UsageReportData;
+  finished?: boolean;
+}
+⋮----
+content: string; // Empty while executing, contains result when complete
+⋮----
+export const isUserMessage = (message: Message): message is UserMessage =>
+⋮----
+export const isResponseMessage = (message: Message): message is ResponseMessage =>
+⋮----
+export const isLogMessage = (message: Message): message is LogMessage =>
+⋮----
+export const isLoadingMessage = (message: Message): message is LoadingMessage =>
+⋮----
+export const isReflectedMessage = (message: Message): message is ReflectedMessage =>
+⋮----
+export const isCommandOutputMessage = (message: Message): message is CommandOutputMessage =>
+export const isTokensInfoMessage = (message: Message): message is TokensInfoMessage =>
+⋮----
+export const isToolMessage = (message: Message): message is ToolMessage =>
+⋮----
+export interface GroupMessage extends Message {
+  type: 'group';
+  group: Group;
+  children: Message[];
+}
+⋮----
+export const isGroupMessage = (message: Message): message is GroupMessage =>
+⋮----
+export interface TaskInfoMessage extends Message {
+  type: 'task-info';
+  task: TaskData;
+  messageCount: number;
+}
+⋮----
+export const isTaskInfoMessage = (message: Message): message is TaskInfoMessage =>
+⋮----
+export interface AssistantGroupMessage extends Message {
+  type: 'assistant-group';
+  responseMessage: ResponseMessage;
+  toolMessages: ToolMessage[];
+}
+⋮----
+export const isAssistantGroupMessage = (message: Message): message is AssistantGroupMessage =>
 
 ================
 File: src/common/agent.ts
@@ -6775,6 +6886,7 @@ export interface ApplicationAPI {
   getAllFiles: (baseDir: string, taskId: string, useGit?: boolean) => Promise<string[]>;
   getUpdatedFiles: (baseDir: string, taskId: string) => Promise<UpdatedFile[]>;
   restoreFile: (baseDir: string, taskId: string, filePath: string) => Promise<void>;
+  readFile: (baseDir: string, filePath: string) => Promise<string>;
   generateCommitMessage: (baseDir: string, taskId: string) => Promise<string>;
   commitChanges: (baseDir: string, taskId: string, message: string, amend: boolean) => Promise<void>;
   addFile: (baseDir: string, taskId: string, filePath: string, readOnly?: boolean) => void;
@@ -6803,7 +6915,15 @@ export interface ApplicationAPI {
   installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
   uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
   getExtensionUIComponents: (projectDir?: string, placement?: string) => Promise<ExtensionUIComponent[]>;
-  getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string) => Promise<unknown>;
+  getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => Promise<unknown>;
+  executeUIExtensionAction: (
+    extensionId: string,
+    componentId: string,
+    action: string,
+    args: unknown[],
+    projectDir?: string,
+    taskId?: string,
+  ) => Promise<unknown>;
   onExtensionUIRefresh: (baseDir: string, callback: (data: ExtensionUIRefreshData) => void) => () => void;
   onModalOverlayUrl: (callback: (data: ModalOverlayUrlData) => void) => () => void;
   isWebViewSupported: () => boolean;
@@ -7169,6 +7289,8 @@ export interface UIComponentDefinition {
   placement: UIComponentPlacement;
   /** JSX/TSX component as string to be parsed by string-to-react-component */
   jsx: string;
+  /** Optional flag to indicate if the component should load data from the extension to be passed as a prop (default: false) */
+  loadData?: boolean;
 }
 ⋮----
 /** Unique component identifier*/
@@ -7177,10 +7299,39 @@ export interface UIComponentDefinition {
 ⋮----
 /** JSX/TSX component as string to be parsed by string-to-react-component */
 ⋮----
+/** Optional flag to indicate if the component should load data from the extension to be passed as a prop (default: false) */
+⋮----
+/**
+ * Marker type for UI components provided by AiderDesk
+ * Actual component implementation is provided by renderer at runtime
+ */
+export type UIComponent = object;
+⋮----
+/**
+ * Common UI components available to extension JSX components
+ */
+export interface UIComponents {
+  Button: UIComponent;
+  Checkbox: UIComponent;
+  Input: UIComponent;
+  Select: UIComponent;
+  TextArea: UIComponent;
+  IconButton: UIComponent;
+  RadioButton: UIComponent;
+  MultiSelect: UIComponent;
+  Slider: UIComponent;
+  DatePicker: UIComponent;
+  Chip: UIComponent;
+  ModelSelector: UIComponent;
+}
+⋮----
 export interface UIComponentProps {
   projectDir?: string;
   task?: TaskData;
   agentProfile?: AgentProfile;
+  models: Model[];
+  providers: ProviderProfile[];
+  ui: UIComponents;
 }
 ⋮----
 /**
@@ -7939,6 +8090,16 @@ export interface Extension {
    */
   getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
 
+  /**
+   * Handle an action triggered from a UI component via executeExtensionAction
+   * @param componentId - The ID of the component that triggered the action
+   * @param action - The action identifier
+   * @param args - Additional arguments passed from the component
+   * @param context - Extension context
+   * @returns Result of the action execution
+   */
+  executeUIExtensionAction?(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown>;
+
   // Task Events
 
   /**
@@ -8247,6 +8408,16 @@ getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
    * @returns Data to be passed to the component as `data` binding
    */
 getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
+⋮----
+/**
+   * Handle an action triggered from a UI component via executeExtensionAction
+   * @param componentId - The ID of the component that triggered the action
+   * @param action - The action identifier
+   * @param args - Additional arguments passed from the component
+   * @param context - Extension context
+   * @returns Result of the action execution
+   */
+executeUIExtensionAction?(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown>;
 ⋮----
 // Task Events
 ⋮----
@@ -13765,7 +13936,9 @@ getUIComponents(project?: Project): RegisteredUIComponent[]
 ⋮----
 // Skip uninitialized extensions
 ⋮----
-async getUIExtensionData(extensionId: string, componentId: string, project?: Project): Promise<unknown>
+async getUIExtensionData(extensionId: string, componentId: string, project?: Project, task?: Task): Promise<unknown>
+⋮----
+async executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], project?: Project, task?: Task): Promise<unknown>
 ⋮----
 validateUIComponentDefinition(component: UIComponentDefinition):
 ⋮----
@@ -17010,6 +17183,8 @@ registerRoutes(router: Router): void
 // Get extension UI components
 ⋮----
 // Get extension UI component data
+⋮----
+// Execute extension UI action
 
 ================
 File: src/main/server/rest-api/index.ts
@@ -17134,6 +17309,8 @@ registerRoutes(router: Router): void
 // Revert last merge
 ⋮----
 // Restore file
+⋮----
+// Read file
 ⋮----
 // Generate commit message
 ⋮----
@@ -20473,6 +20650,8 @@ import {
   WorkflowExecutionResult,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
+// @ts-expect-error istextorbinary is not typed properly
+import { isBinary } from 'istextorbinary';
 ⋮----
 import type { ModeDefinition, BmadStatus, InstallResult, ExtensionUIComponent } from '@common/types';
 import type { BrowserWindow } from 'electron';
@@ -20631,6 +20810,8 @@ async revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
+async readFile(baseDir: string, filePath: string): Promise<string>
+⋮----
 async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
 ⋮----
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
@@ -20781,7 +20962,16 @@ async uninstallExtension(extensionId: string, projectDir?: string)
 ⋮----
 getUIComponents(projectDir?: string, placement?: string): ExtensionUIComponent[]
 ⋮----
-async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string): Promise<unknown>
+async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown>
+⋮----
+async executeUIExtensionAction(
+    extensionId: string,
+    componentId: string,
+    action: string,
+    args: unknown[],
+    projectDir?: string,
+    taskId?: string,
+): Promise<unknown>
 
 ================
 File: src/main/index.ts
@@ -21394,13 +21584,14 @@ import {
   CommandsData,
   ContextFilesUpdatedData,
   ContextMenuParams,
+  CreateTaskParams,
   ExtensionUIRefreshData,
-  ModalOverlayUrlData,
   FileEdit,
   InputHistoryData,
   LogData,
   McpServerConfig,
   MessageRemovedData,
+  ModalOverlayUrlData,
   ModelsData,
   OpenDialogOptions,
   OS,
@@ -21408,23 +21599,22 @@ import {
   ProjectStartedData,
   ProviderModelsData,
   ProvidersUpdatedData,
-  QueuedPromptsUpdatedData,
   QuestionAnsweredData,
   QuestionData,
+  QueuedPromptsUpdatedData,
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  TaskCreatedData,
   TaskData,
-  CreateTaskParams,
   TerminalData,
   TerminalExitData,
   TokensInfoData,
   ToolData,
+  UpdatedFilesUpdatedData,
   UserMessageData,
   VersionsInfo,
   WorktreeIntegrationStatusUpdatedData,
-  TaskCreatedData,
-  UpdatedFilesUpdatedData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -21852,6 +22042,8 @@ revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
 restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
+async readFile(baseDir: string, filePath: string): Promise<string>
+⋮----
 listBranches(baseDir: string): Promise<Array<
 ⋮----
 getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus>
@@ -21917,7 +22109,9 @@ uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean>
 ⋮----
 getExtensionUIComponents(projectDir?: string, placement?: string): Promise<ExtensionUIComponent[]>
 ⋮----
-getUIExtensionData(extensionId: string, componentId: string, projectDir?: string): Promise<unknown>
+getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown>
+⋮----
+executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string): Promise<unknown>
 ⋮----
 onExtensionUIRefresh(baseDir: string, callback: (data: ExtensionUIRefreshData) => void): () => void
 ⋮----
@@ -22238,9 +22432,8 @@ const handleToggleModelSelector = () =>
 File: src/renderer/src/components/bmad/useBmadState.ts
 ================
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BmadStatus, WorkflowMetadata, TaskData } from '@common/types';
+import { BmadStatus, WorkflowMetadata, TaskData, isResponseMessage, Message } from '@common/types';
 ⋮----
-import { isResponseMessage, Message } from '@/types/message';
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskMessages } from '@/stores/taskStore';
 import { generateSuggestions } from '@/utils/bmad-suggestions';
@@ -23252,6 +23445,24 @@ type Props = {
 const handleClose = () =>
 
 ================
+File: src/renderer/src/components/common/ModelSelectorWrapper.tsx
+================
+import { forwardRef, useCallback, useMemo } from 'react';
+import { Model } from '@common/types';
+import { getProviderModelId } from '@common/agent';
+⋮----
+import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { useSettings } from '@/contexts/SettingsContext';
+⋮----
+type Props = {
+  className?: string;
+  selectedModelId?: string;
+  onChange: (model: Model) => void;
+  popupPlacement?: 'top' | 'bottom';
+};
+
+================
 File: src/renderer/src/components/common/MultiSelect.tsx
 ================
 import { useState, useRef, ReactNode } from 'react';
@@ -23639,6 +23850,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 ⋮----
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
+import { FilePreviewModal } from './FilePreviewModal';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Input } from '@/components/common/Input';
@@ -23732,6 +23944,14 @@ const dropFile = (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) =>
 ⋮----
 const addFile = (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) =>
 ⋮----
+const renderTreeItem = (
+    { item, title, children }: { item: TreeItem; title: React.ReactNode; children: React.ReactNode; context: unknown },
+    type: SectionType,
+    _treeData: Record<string, TreeItem>,
+    expandedItems: string[],
+    setExpandedItems: (items: string[]) => void,
+) =>
+⋮----
 // Get line stats for updated files section
 ⋮----
 // Actions logic
@@ -23746,6 +23966,12 @@ const renderTitle = () =>
 const renderFile = () =>
 ⋮----
 // Show line stats for updated files with click handler
+⋮----
+// Add click handler for project files to open preview
+⋮----
+<span className=
+⋮----
+// Add click handler for folders to toggle expand/collapse
 ⋮----
 
 ⋮----
@@ -23780,6 +24006,45 @@ onClick=
 {/* Rules Section */}
 ⋮----
 title=
+⋮----
+{/* File Preview Modal */}
+
+================
+File: src/renderer/src/components/ContextFiles/FilePreviewModal.tsx
+================
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import { HiOutlineExclamation } from 'react-icons/hi';
+import CodeMirror from '@uiw/react-codemirror';
+import { EditorView } from '@codemirror/view';
+import { githubDarkInit } from '@uiw/codemirror-theme-github';
+import { LanguageSupport } from '@codemirror/language';
+import { languages } from '@codemirror/language-data';
+import { clsx } from 'clsx';
+⋮----
+import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type Props = {
+  filePath: string;
+  baseDir: string;
+  onClose: () => void;
+};
+⋮----
+const getLanguageDescription = (filePath: string) =>
+⋮----
+const loadLanguage = async () =>
+⋮----
+const fetchFileContent = async () =>
+⋮----
+const renderLoading = () => (
+    <div className="flex items-center justify-center h-full">
+      <AiOutlineLoading3Quarters className="w-8 h-8 text-text-muted animate-spin" />
+    </div>
+  );
+⋮----
+<div className=
 
 ================
 File: src/renderer/src/components/ContextFiles/index.ts
@@ -23850,19 +24115,20 @@ File: src/renderer/src/components/extensions/ExtensionComponentWrapper.tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
-import { UIComponentProps } from '@common/extensions';
 import { twMerge } from 'tailwind-merge';
 ⋮----
 import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
+import { useExtensions } from '@/contexts/ExtensionsContext';
 ⋮----
 type Props = {
-  componentProps: UIComponentProps;
   placement: string;
   className?: string;
   direction?: 'horizontal' | 'vertical';
   additionalProps?: Record<string, unknown>;
 };
+⋮----
+export const ExtensionComponentWrapper = (
 ⋮----
 const loadComponents = async () =>
 ⋮----
@@ -23872,9 +24138,11 @@ const loadData = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const getComponentData = (comp: ExtensionUIComponent) => (
+const executeExtensionAction = async (action: string, ...args: unknown[]) =>
 ⋮----
 const renderComponent = (comp: ExtensionUIComponent) =>
+⋮----
+<StringToReactComponent data=
 ⋮----
 <div className=
 
@@ -23914,12 +24182,11 @@ import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
 import { clsx } from 'clsx';
+import { ToolMessage } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 import { parseToolContent } from './utils';
-⋮----
-import { ToolMessage } from '@/types/message';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -23938,14 +24205,13 @@ File: src/renderer/src/components/message/AssistantMessageBlock.tsx
 import { memo, useRef } from 'react';
 import { clsx } from 'clsx';
 import { RiRobot2Line } from 'react-icons/ri';
-import { UsageReportData } from '@common/types';
+import { UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@common/types';
 ⋮----
 import { MessageBar } from './MessageBar';
 import { MessageBlock } from './MessageBlock';
 import { areMessagesEqual } from './utils';
 ⋮----
 import { useParsedContent } from '@/hooks/useParsedContent';
-import { AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@/types/message';
 ⋮----
 type Props = {
   baseDir: string;
@@ -23978,8 +24244,8 @@ import { useTranslation } from 'react-i18next';
 import { RiTerminalLine, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24013,10 +24279,9 @@ File: src/renderer/src/components/message/CommandOutputMessageBlock.tsx
 ================
 import { BiTerminal } from 'react-icons/bi';
 import { useTranslation } from 'react-i18next';
+import { CommandOutputMessage } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
-⋮----
-import { CommandOutputMessage } from '@/types/message';
 ⋮----
 type Props = {
   message: CommandOutputMessage;
@@ -24046,11 +24311,11 @@ import {
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
 } from '@common/tools';
+import { ToolMessage } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 import { parseToolContent } from './utils';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 type Props = {
@@ -24106,8 +24371,8 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignmentAdd } from 'react-icons/md';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24146,8 +24411,8 @@ File: src/renderer/src/components/message/DeleteMemoryToolMessage.tsx
 import { useTranslation } from 'react-i18next';
 import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 'react-icons/fa';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
@@ -24169,8 +24434,8 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { LiaFolderMinusSolid } from 'react-icons/lia';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
@@ -24225,8 +24490,8 @@ File: src/renderer/src/components/message/FetchToolMessage.tsx
 import { useTranslation } from 'react-i18next';
 import { RiLinkM, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { highlightWithLowlight } from '@/utils/highlighter';
@@ -24254,8 +24519,8 @@ import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill, RiCloseCircleFill
 import { getLanguageFromPath } from '@common/utils';
 import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
@@ -24279,8 +24544,8 @@ import { useTranslation } from 'react-i18next';
 import { RiFileTextLine, RiCheckboxCircleFill, RiErrorWarningFill, RiCloseCircleFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -24306,10 +24571,9 @@ import { useLayoutEffect, useRef } from 'react';
 import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill, RiCloseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
-import { FileWriteMode } from '@common/types';
+import { FileWriteMode, ToolMessage } from '@common/types';
 import { getLanguageFromPath } from '@common/utils';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
@@ -24334,8 +24598,8 @@ File: src/renderer/src/components/message/GetTaskMessageToolMessage.tsx
 import { useTranslation } from 'react-i18next';
 import { RiMessage3Line, RiCheckboxCircleFill, RiErrorWarningFill, RiCloseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24358,9 +24622,8 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignment } from 'react-icons/md';
-import { ContextFile } from '@common/types';
+import { ContextFile, ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
@@ -24392,8 +24655,8 @@ import { useTranslation } from 'react-i18next';
 import { RiFolderLine, RiFileTextLine, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { LuFolderSearch } from 'react-icons/lu';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24414,8 +24677,8 @@ import { useTranslation } from 'react-i18next';
 import { RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { LuFileSearch } from 'react-icons/lu';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24436,14 +24699,23 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useMemo, useState, MouseEvent } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { LocalizedString, UsageReportData } from '@common/types';
+import {
+  LocalizedString,
+  UsageReportData,
+  GroupMessage,
+  isResponseMessage,
+  isToolMessage,
+  isUserMessage,
+  Message,
+  ResponseMessage,
+  ToolMessage,
+} from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
 import { MessageBar } from './MessageBar';
 import { areMessagesEqual } from './utils';
 ⋮----
 import { Accordion } from '@/components/common/Accordion';
-import { GroupMessage, isResponseMessage, isToolMessage, isUserMessage, Message, ResponseMessage, ToolMessage } from '@/types/message';
 import { Button } from '@/components/common/Button';
 ⋮----
 type Props = {
@@ -24497,8 +24769,8 @@ File: src/renderer/src/components/message/ListMemoriesToolMessage.tsx
 import { useTranslation } from 'react-i18next';
 import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 'react-icons/fa';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24525,8 +24797,8 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { LuClipboardList } from 'react-icons/lu';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24555,7 +24827,8 @@ const renderStatusIcon = () =>
 ================
 File: src/renderer/src/components/message/LoadingMessageBlock.tsx
 ================
-import { LoadingMessage } from '@/types/message';
+import { LoadingMessage } from '@common/types';
+⋮----
 import { useTypingAnimation } from '@/hooks/useTypingAnimation';
 import { MessageActions } from '@/components/message/MessageActions';
 ⋮----
@@ -24572,11 +24845,11 @@ File: src/renderer/src/components/message/LogMessageBlock.tsx
 import { FaInfoCircle, FaExclamationTriangle, FaExclamationCircle } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import { LogMessage } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 import { MessageActions } from './MessageActions';
 ⋮----
-import { LogMessage } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 ⋮----
 type Props = {
@@ -24628,7 +24901,7 @@ File: src/renderer/src/components/message/MessageBar.tsx
 import { useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { UsageReportData } from '@common/types';
+import { UsageReportData, Message } from '@common/types';
 import { MdCallSplit, MdDeleteForever, MdDeleteSweep, MdEdit, MdRedo } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
@@ -24639,9 +24912,7 @@ import { CopyMessageButton } from './CopyMessageButton';
 import { UsageInfo } from './UsageInfo';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
-import { Message } from '@/types/message';
 ⋮----
 type MenuPosition = {
   top?: number;
@@ -24713,6 +24984,19 @@ import {
   TASKS_TOOL_SEARCH_TASK,
   TASKS_TOOL_SEARCH_PARENT_TASK,
 } from '@common/tools';
+import {
+  isCommandOutputMessage,
+  isLoadingMessage,
+  isLogMessage,
+  isReflectedMessage,
+  isResponseMessage,
+  isTaskInfoMessage,
+  isToolMessage,
+  isUserMessage,
+  LogMessage,
+  Message,
+  ToolMessage,
+} from '@common/types';
 ⋮----
 import { CommandOutputMessageBlock } from './CommandOutputMessageBlock';
 import { LoadingMessageBlock } from './LoadingMessageBlock';
@@ -24745,20 +25029,6 @@ import { UpdateMemoryToolMessage } from './UpdateMemoryToolMessage';
 import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
 import { TaskInfoMessage } from './TaskInfoMessage';
 import { areMessagesEqual } from './utils';
-⋮----
-import {
-  isCommandOutputMessage,
-  isLoadingMessage,
-  isLogMessage,
-  isReflectedMessage,
-  isResponseMessage,
-  isTaskInfoMessage,
-  isToolMessage,
-  isUserMessage,
-  LogMessage,
-  Message,
-  ToolMessage,
-} from '@/types/message';
 ⋮----
 type Props = {
   baseDir: string;
@@ -24801,19 +25071,17 @@ import { forwardRef, memo, ReactNode, useEffect, useImperativeHandle, useMemo, u
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { DefaultTaskState, MessageViewMode, TaskData } from '@common/types';
+import { DefaultTaskState, isAssistantGroupMessage, isGroupMessage, isUserMessage, Message, MessageViewMode, TaskData } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 ⋮----
-import { isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 export type MessagesRef = {
@@ -24855,11 +25123,11 @@ File: src/renderer/src/components/message/ReflectedMessageBlock.tsx
 import { useState } from 'react';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import { Message } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 ⋮----
 import { useParsedContent } from '@/hooks/useParsedContent';
-import { Message } from '@/types/message';
 ⋮----
 type Props = {
   baseDir: string;
@@ -24873,11 +25141,11 @@ File: src/renderer/src/components/message/ResponseMessageBlock.tsx
 ================
 import { clsx } from 'clsx';
 import { RiRobot2Line } from 'react-icons/ri';
+import { ResponseMessage } from '@common/types';
 ⋮----
 import { MessageBar } from './MessageBar';
 ⋮----
 import { useParsedContent } from '@/hooks/useParsedContent';
-import { ResponseMessage } from '@/types/message';
 ⋮----
 type Props = {
   baseDir: string;
@@ -24901,8 +25169,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaTrash } from 'react-icons/fa';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { IconButton } from '@/components/common/IconButton';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24945,8 +25213,8 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineContentPasteSearch } from 'react-icons/md';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24967,8 +25235,8 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineContentPasteSearch } from 'react-icons/md';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -24989,8 +25257,8 @@ import { useTranslation } from 'react-i18next';
 import { RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { FaSearchengin } from 'react-icons/fa6';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -25010,8 +25278,8 @@ File: src/renderer/src/components/message/StoreMemoryToolMessage.tsx
 import { useTranslation } from 'react-i18next';
 import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 'react-icons/fa';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
@@ -25033,8 +25301,8 @@ import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { FaExclamationTriangle } from 'react-icons/fa';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -25055,8 +25323,8 @@ File: src/renderer/src/components/message/TaskInfoMessage.tsx
 import { useTranslation } from 'react-i18next';
 import { FaFolderOpen } from 'react-icons/fa';
 import { MdAssignment, MdClose } from 'react-icons/md';
+import { TaskInfoMessage as TaskInfoMessageType } from '@common/types';
 ⋮----
-import { TaskInfoMessage as TaskInfoMessageType } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
 import { IconButton } from '@/components/common/IconButton';
@@ -25089,7 +25357,6 @@ import { ExtensionComponentWrapper } from '../extensions/ExtensionComponentWrapp
 ⋮----
 import { BmadTaskActions } from '@/components/bmad/BmadTaskActions';
 import { Button } from '@/components/common/Button';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 ⋮----
 type Props = {
   projectDir: string;
@@ -25182,12 +25449,12 @@ import {
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
 } from '@common/tools';
+import { ToolMessage } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 import { parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 type Props = {
@@ -25227,8 +25494,8 @@ File: src/renderer/src/components/message/UpdateMemoryToolMessage.tsx
 import { useTranslation } from 'react-i18next';
 import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 'react-icons/fa';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 ⋮----
-import { ToolMessage } from '@/types/message';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
@@ -25265,11 +25532,11 @@ File: src/renderer/src/components/message/UserMessageBlock.tsx
 import { FaRegUser } from 'react-icons/fa';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
+import { UserMessage } from '@common/types';
 ⋮----
 import { MessageBar } from './MessageBar';
 ⋮----
 import { useParsedContent } from '@/hooks/useParsedContent';
-import { UserMessage } from '@/types/message';
 ⋮----
 type Props = {
   baseDir: string;
@@ -25297,7 +25564,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Group } from '@common/types';
+import { Group, AssistantGroupMessage, GroupMessage, isResponseMessage, isToolMessage, Message, ResponseMessage, ToolMessage } from '@common/types';
 ⋮----
 import { CustomCommandBashBlock } from './CustomCommandBashBlock';
 import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
@@ -25305,7 +25572,6 @@ import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { MermaidDiagram } from '@/components/common/MermaidDiagram';
 import { CodeInline } from '@/components/common/CodeInline';
-import { AssistantGroupMessage, GroupMessage, isResponseMessage, isToolMessage, Message, ResponseMessage, ToolMessage } from '@/types/message';
 ⋮----
 // Handle code blocks - check if it's a mermaid diagram or regular code
 ⋮----
@@ -25468,7 +25734,7 @@ File: src/renderer/src/components/message/VirtualizedMessages.tsx
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { DefaultTaskState, MessageViewMode, TaskData } from '@common/types';
+import { DefaultTaskState, MessageViewMode, TaskData, isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import { clsx } from 'clsx';
 ⋮----
@@ -25476,14 +25742,12 @@ import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 ⋮----
-import { isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 export type VirtualizedMessagesRef = {
@@ -27443,7 +27707,6 @@ import { TaskItem } from './TaskItem';
 import { TaskSectionHeader } from './TaskSectionHeader';
 ⋮----
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { groupTasksByDate } from '@/utils/date-utils';
 import { Input } from '@/components/common/Input';
@@ -27858,7 +28121,6 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 type Props = {
@@ -27990,16 +28252,15 @@ const initProject = async () =>
 File: src/renderer/src/components/project/TaskBar.tsx
 ================
 import { AgentProfile, AIDER_MODES, EditFormat, Mode, Model, ModelsData, RawModelInfo, TaskData } from '@common/types';
-import { UIComponentProps } from '@common/extensions';
 import React, { ReactNode, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
-import { RiRobot2Line, RiMenuUnfold4Line } from 'react-icons/ri';
+import { RiMenuUnfold4Line, RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { getProviderModelId, AVAILABLE_PROVIDERS } from '@common/agent';
+import { AVAILABLE_PROVIDERS, getProviderModelId } from '@common/agent';
 import { clsx } from 'clsx';
 import { extractProviderModel } from '@common/utils';
 ⋮----
@@ -28078,7 +28339,22 @@ onSquash=
 ================
 File: src/renderer/src/components/project/TaskView.tsx
 ================
-import { AIDER_MODES, DefaultTaskState, Mode, Model, ModelsData, TaskData, TodoItem } from '@common/types';
+import {
+  AIDER_MODES,
+  DefaultTaskState,
+  isLoadingMessage,
+  isLogMessage,
+  isTaskInfoMessage,
+  isUserMessage,
+  Message,
+  Mode,
+  Model,
+  ModelsData,
+  TaskData,
+  TaskInfoMessage,
+  TodoItem,
+  UserMessage,
+} from '@common/types';
 import { forwardRef, startTransition, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useOptimistic, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
@@ -28092,7 +28368,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { useSidebarWidth } from './useSidebarWidth';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
-import { isLoadingMessage, isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -28109,7 +28384,6 @@ import { MobileSidebar } from '@/components/project/MobileSidebar';
 import { FilesContextInfoContent } from '@/components/project/FilesContextInfoContent';
 import { WelcomeMessage } from '@/components/project/WelcomeMessage';
 ⋮----
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useActiveAgentProfile } from '@/utils/agents';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
@@ -28683,7 +28957,6 @@ import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { AudioAnalyzer } from '@/components/PromptField/AudioAnalyzer';
 import { AutoApprove } from '@/components/PromptField/AutoApprove';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 const ANSWERS = ['y', 'n', 'a', 'd', 'maybe']; // Added 'maybe' (Branch B)
@@ -30537,7 +30810,7 @@ placeholder=
 ================
 File: src/renderer/src/components/CostInfo.tsx
 ================
-import { Mode, TokensInfoData, TaskData } from '@common/types';
+import { Mode, TaskData, TokensInfoData } from '@common/types';
 import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoChevronDown, IoChevronUp, IoClose } from 'react-icons/io5';
@@ -30545,7 +30818,6 @@ import { MdOutlineRefresh, MdSettingsBackupRestore } from 'react-icons/md';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TokenUsageBar } from '@/components/TokenUsageBar';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 type Props = {
@@ -30631,7 +30903,7 @@ title=
 File: src/renderer/src/components/TokenUsageBar.tsx
 ================
 import { AIDER_MODES, Mode, TaskData, TokensInfoData } from '@common/types';
-import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import debounce from 'lodash/debounce';
 import { clsx } from 'clsx';
@@ -30758,13 +31030,29 @@ const handleContextMenu = (params: ContextMenuParams) =>
 File: src/renderer/src/contexts/ExtensionsContext.tsx
 ================
 import { createContext, ReactNode, useContext, useMemo } from 'react';
-import { UIComponentProps } from '@common/extensions';
-import { AgentProfile, TaskData } from '@common/types';
+import { UIComponentProps, UIComponents } from '@common/extensions';
+import { AgentProfile, TaskData, Message } from '@common/types';
+⋮----
+import { Button } from '@/components/common/Button';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Input } from '@/components/common/Input';
+import { Select } from '@/components/common/Select';
+import { TextArea } from '@/components/common/TextArea';
+import { IconButton } from '@/components/common/IconButton';
+import { RadioButton } from '@/components/common/RadioButton';
+import { MultiSelect } from '@/components/common/MultiSelect';
+import { Slider } from '@/components/common/Slider';
+import { DatePicker } from '@/components/common/DatePicker';
+import { Chip } from '@/components/common/Chip';
+import { ModelSelectorWrapper } from '@/components/common/ModelSelectorWrapper';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
 ⋮----
 type ExtensionsContextValue = {
   projectDir?: string;
   task?: TaskData;
   agentProfile?: AgentProfile;
+  messages?: Message[];
+  message?: Message;
 };
 ⋮----
 type Props = ExtensionsContextValue & {
@@ -30875,11 +31163,10 @@ File: src/renderer/src/contexts/TasksContext.tsx
 ================
 import React, { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
 import { usePrevious } from '@reactuses/core';
-import { DefaultTaskState, TaskData, TodoItem, ModelsData } from '@common/types';
+import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Message } from '@common/types';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import { isLoadingMessage, Message } from '@/types/message';
 import { useTaskStore } from '@/stores/taskStore';
 import { useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
 import { useTaskToolHandlers } from '@/hooks/useTaskToolHandlers';
@@ -31257,8 +31544,8 @@ import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 import { v4 as uuidv4 } from 'uuid';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
+import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 ⋮----
-import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@/types/message';
 import { useTaskStore } from '@/stores/taskStore';
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
@@ -31278,8 +31565,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import type { CommandOutputData } from '@common/types';
-import type { CommandOutputMessage, Message } from '@/types/message';
+import type { CommandOutputData, CommandOutputMessage, Message } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -31325,8 +31611,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import type { LogData } from '@common/types';
-import type { LogMessage, LoadingMessage, Message } from '@/types/message';
+import type { LogData, LogMessage, LoadingMessage, Message } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -31342,8 +31627,7 @@ import { useCallback, useEffect } from 'react';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import type { UserMessageData, MessageRemovedData } from '@common/types';
-import type { UserMessage } from '@/types/message';
+import type { UserMessageData, MessageRemovedData, UserMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -31358,8 +31642,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import type { ResponseChunkData, ResponseCompletedData } from '@common/types';
-import type { Message, ReflectedMessage, ResponseMessage } from '@/types/message';
+import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -31374,8 +31657,7 @@ import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import type { TodoItem, ToolData } from '@common/types';
-import type { ToolMessage } from '@/types/message';
+import type { TodoItem, ToolData, ToolMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -32191,7 +32473,6 @@ import { ProjectTabs } from '@/components/project/ProjectTabs';
 import { ProjectView } from '@/components/project/ProjectView';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { useVersions } from '@/hooks/useVersions';
-import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/contexts/ProjectSettingsContext';
@@ -32445,11 +32726,9 @@ export const useProjectProcessingState = (projectBaseDir: string)
 File: src/renderer/src/stores/taskStore.ts
 ================
 import { useShallow } from 'zustand/react/shallow';
-import { ContextFile, ModelsData, QueuedPromptData, QuestionData, TodoItem, TokensInfoData } from '@common/types';
+import { ContextFile, ModelsData, QueuedPromptData, QuestionData, TodoItem, TokensInfoData, Message } from '@common/types';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
-⋮----
-import { Message } from '@/types/message';
 ⋮----
 export interface TaskState {
   loading: boolean;
@@ -34304,107 +34583,6 @@ File: src/renderer/src/themes/themes.scss
 @use 'theme-botanical-garden-dark.scss';
 
 ================
-File: src/renderer/src/types/message.ts
-================
-import { Group, PromptContext, TaskData, TokensInfoData, UsageReportData } from '@common/types';
-⋮----
-export interface Message {
-  id: string;
-  type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool' | 'group' | 'task-info' | 'assistant-group';
-  content: string;
-  promptContext?: PromptContext;
-  children?: Message[];
-}
-⋮----
-export interface UserMessage extends Message {
-  type: 'user';
-  isOptimistic?: boolean;
-}
-⋮----
-export interface ResponseMessage extends Message {
-  type: 'response';
-  usageReport?: UsageReportData;
-}
-⋮----
-export interface ReflectedMessage extends Message {
-  type: 'reflected-message';
-  responseMessageId: string;
-}
-⋮----
-export interface LogMessage extends Message {
-  type: 'log';
-  level: 'info' | 'warning' | 'error';
-  actionIds?: string[];
-}
-⋮----
-export interface LoadingMessage extends Message {
-  type: 'loading';
-  actionIds?: string[];
-}
-⋮----
-export interface CommandOutputMessage extends Message {
-  type: 'command-output';
-  command: string;
-}
-⋮----
-export interface TokensInfoMessage extends Message {
-  type: 'tokens-info';
-  info: TokensInfoData;
-}
-⋮----
-export interface ToolMessage extends Message {
-  type: 'tool';
-  serverName: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  content: string; // Empty while executing, contains result when complete
-  usageReport?: UsageReportData;
-  finished?: boolean;
-}
-⋮----
-content: string; // Empty while executing, contains result when complete
-⋮----
-export const isUserMessage = (message: Message): message is UserMessage =>
-⋮----
-export const isResponseMessage = (message: Message): message is ResponseMessage =>
-⋮----
-export const isLogMessage = (message: Message): message is LogMessage =>
-⋮----
-export const isLoadingMessage = (message: Message): message is LoadingMessage =>
-⋮----
-export const isReflectedMessage = (message: Message): message is ReflectedMessage =>
-⋮----
-export const isCommandOutputMessage = (message: Message): message is CommandOutputMessage =>
-⋮----
-export const isTokensInfoMessage = (message: Message): message is TokensInfoMessage =>
-⋮----
-export const isToolMessage = (message: Message): message is ToolMessage =>
-⋮----
-export interface GroupMessage extends Message {
-  type: 'group';
-  group: Group;
-  children: Message[];
-}
-⋮----
-export const isGroupMessage = (message: Message): message is GroupMessage =>
-⋮----
-export interface TaskInfoMessage extends Message {
-  type: 'task-info';
-  task: TaskData;
-  messageCount: number;
-}
-⋮----
-export const isTaskInfoMessage = (message: Message): message is TaskInfoMessage =>
-⋮----
-export interface AssistantGroupMessage extends Message {
-  type: 'assistant-group';
-  responseMessage: ResponseMessage;
-  toolMessages: ToolMessage[];
-}
-⋮----
-export const isAssistantGroupMessage = (message: Message): message is AssistantGroupMessage =>
-
-================
 File: src/renderer/src/utils/agents.ts
 ================
 import { AgentProfile, TaskData } from '@common/types';
@@ -35342,6 +35520,8 @@ File: package.json
     "@aws-sdk/types": "^3.540.0",
     "@babel/standalone": "^7.26.9",
     "@codemirror/autocomplete": "^6.18.7",
+    "@codemirror/language": "^6.12.2",
+    "@codemirror/language-data": "^6.5.2",
     "@dmitryrechkin/json-schema-to-zod": "^1.0.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
