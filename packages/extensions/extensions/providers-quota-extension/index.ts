@@ -24,12 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load .env files from extension directory (in order of priority)
-const envFiles = [
-  '.env',
-  '.env.local',
-  `.env.${process.env.NODE_ENV || 'development'}`,
-  `.env.${process.env.NODE_ENV || 'development'}.local`,
-];
+const envFiles = ['.env', '.env.local', `.env.${process.env.NODE_ENV || 'development'}`, `.env.${process.env.NODE_ENV || 'development'}.local`];
 
 for (const file of envFiles) {
   const envPath = join(__dirname, file);
@@ -38,7 +33,7 @@ for (const file of envFiles) {
   }
 }
 
-import type { Extension, ExtensionContext, UIComponentDefinition } from '@aiderdesk/extensions';
+import type { Extension, ExtensionContext, UIComponentDefinition, PromptFinishedEvent } from '@aiderdesk/extensions';
 
 // Cache management
 const CACHE_DURATION = 60000; // 1 minute
@@ -91,7 +86,7 @@ interface ZaiApiResponse {
   success: boolean;
 }
 
-async function fetchSyntheticQuota(): Promise<SyntheticQuotaData | null> {
+const fetchSyntheticQuota = async (): Promise<SyntheticQuotaData | null> => {
   const apiKey = process.env.SYNTHETIC_API_KEY;
 
   if (!apiKey) {
@@ -99,16 +94,18 @@ async function fetchSyntheticQuota(): Promise<SyntheticQuotaData | null> {
   }
 
   try {
-    const response = await fetch('https://api.synthetic.new/v2/quotas', {
-      method: 'GET',
+    const response = await fetch("https://api.synthetic.new/v2/quotas", {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
     if (!response.ok) {
-      console.error(`[Providers Quota] Synthetic API request failed: ${response.status} ${response.statusText}`);
+      console.error(
+        `[Providers Quota] Synthetic API request failed: ${response.status} ${response.statusText}`,
+      );
       return null;
     }
 
@@ -127,12 +124,12 @@ async function fetchSyntheticQuota(): Promise<SyntheticQuotaData | null> {
 
     return null;
   } catch (error) {
-    console.error('[Providers Quota] Failed to fetch Synthetic quota:', error);
+    console.error("[Providers Quota] Failed to fetch Synthetic quota:", error);
     return null;
   }
-}
+};
 
-async function fetchZaiQuota(): Promise<ZaiQuotaData | null> {
+const fetchZaiQuota = async (): Promise<ZaiQuotaData | null> => {
   const apiKey = process.env.ZAI_API_KEY;
 
   if (!apiKey) {
@@ -140,25 +137,34 @@ async function fetchZaiQuota(): Promise<ZaiQuotaData | null> {
   }
 
   try {
-    const response = await fetch('https://api.z.ai/api/monitor/usage/quota/limit', {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      "https://api.z.ai/api/monitor/usage/quota/limit",
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
-      console.error(`[Providers Quota] Z.AI API request failed: ${response.status} ${response.statusText}`);
+      console.error(
+        `[Providers Quota] Z.AI API request failed: ${response.status} ${response.statusText}`,
+      );
       return null;
     }
 
-    const data: ZaiApiResponse = await response.json();
+    const data = await response.json() as ZaiApiResponse;
 
     if (data.success && data.data?.limits) {
       // unit 3 = hourly, unit 6 = weekly (based on API response)
-      const hourlyLimit = data.data.limits.find((l) => l.type === 'TOKENS_LIMIT' && l.unit === 3);
-      const weeklyLimit = data.data.limits.find((l) => l.type === 'TOKENS_LIMIT' && l.unit === 6);
+      const hourlyLimit = data.data.limits.find(
+        (l) => l.type === "TOKENS_LIMIT" && l.unit === 3,
+      );
+      const weeklyLimit = data.data.limits.find(
+        (l) => l.type === "TOKENS_LIMIT" && l.unit === 6,
+      );
 
       return {
         hourlyPercentage: hourlyLimit?.percentage ?? 0,
@@ -168,12 +174,12 @@ async function fetchZaiQuota(): Promise<ZaiQuotaData | null> {
 
     return null;
   } catch (error) {
-    console.error('[Providers Quota] Failed to fetch Z.AI quota:', error);
+    console.error("[Providers Quota] Failed to fetch Z.AI quota:", error);
     return null;
   }
-}
+};
 
-async function getSyntheticQuota(): Promise<SyntheticQuotaData | null> {
+const getSyntheticQuota = async function (): Promise<SyntheticQuotaData | null> {
   const now = Date.now();
 
   if (syntheticCache.data && now - syntheticCache.lastFetchTime < CACHE_DURATION) {
@@ -183,9 +189,9 @@ async function getSyntheticQuota(): Promise<SyntheticQuotaData | null> {
   syntheticCache.data = await fetchSyntheticQuota();
   syntheticCache.lastFetchTime = now;
   return syntheticCache.data;
-}
+};
 
-async function getZaiQuota(): Promise<ZaiQuotaData | null> {
+const getZaiQuota = async function (): Promise<ZaiQuotaData | null> {
   const now = Date.now();
 
   if (zaiCache.data && now - zaiCache.lastFetchTime < CACHE_DURATION) {
@@ -195,7 +201,7 @@ async function getZaiQuota(): Promise<ZaiQuotaData | null> {
   zaiCache.data = await fetchZaiQuota();
   zaiCache.lastFetchTime = now;
   return zaiCache.data;
-}
+};
 
 const STATUS_BAR_COMPONENT_ID = 'providers-quota-indicator';
 
@@ -205,7 +211,7 @@ export default class ProvidersQuotaExtension implements Extension {
     version: '1.1.0',
     description: 'Displays API quota information for Synthetic and Z.AI providers in the task status bar',
     author: 'AiderDesk',
-    capabilities: ['ui-components'],
+    capabilities: ['ui'],
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {
@@ -213,8 +219,12 @@ export default class ProvidersQuotaExtension implements Extension {
     const zaiKey = process.env.ZAI_API_KEY;
 
     const keys: string[] = [];
-    if (syntheticKey) keys.push('Synthetic');
-    if (zaiKey) keys.push('Z.AI');
+    if (syntheticKey) {
+      keys.push('Synthetic');
+    }
+    if (zaiKey) {
+      keys.push('Z.AI');
+    }
 
     if (keys.length > 0) {
       context.log(`Providers Quota Extension loaded (${keys.join(', ')})`, 'info');
@@ -223,8 +233,23 @@ export default class ProvidersQuotaExtension implements Extension {
     }
 
     // Pre-fetch quota data
-    if (syntheticKey) await getSyntheticQuota();
-    if (zaiKey) await getZaiQuota();
+    if (syntheticKey) {
+      await getSyntheticQuota();
+    }
+    if (zaiKey) {
+      await getZaiQuota();
+    }
+  }
+
+  async onPromptFinished(_event: PromptFinishedEvent, context: ExtensionContext): Promise<void> {
+    // Invalidate caches to ensure fresh data after prompt
+    syntheticCache.data = null;
+    syntheticCache.lastFetchTime = 0;
+    zaiCache.data = null;
+    zaiCache.lastFetchTime = 0;
+
+    // Trigger UI refresh
+    context.triggerUIDataRefresh(STATUS_BAR_COMPONENT_ID);
   }
 
   getUIComponents(_context: ExtensionContext): UIComponentDefinition[] {

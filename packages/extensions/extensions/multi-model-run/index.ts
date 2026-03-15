@@ -29,7 +29,7 @@ export default class MultiModelRunExtension implements Extension {
     version: '1.0.0',
     description: 'Run the same prompt across multiple models simultaneously',
     author: 'AiderDesk',
-    capabilities: ['ui-components'],
+    capabilities: ['ui'],
   };
 
   private modelSelectionsPerTask: Map<string, ModelSelection[]> = new Map();

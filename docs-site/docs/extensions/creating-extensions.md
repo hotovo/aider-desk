@@ -4,11 +4,7 @@ Extensions are TypeScript or JavaScript files that export a class implementing t
 
 ## TypeScript Support
 
-For the best development experience with autocompletion and type checking, you can either install the npm package or download the type definitions directly.
-
-### Option 1: Install via npm (Recommended)
-
-Install the `@aiderdesk/extensions` package to get type definitions:
+For the best development experience with autocompletion and type checking, install the `@aiderdesk/extensions` package:
 
 ```bash
 npm install @aiderdesk/extensions
@@ -25,28 +21,6 @@ export default class MyExtension implements Extension {
 }
 ```
 
-### Option 2: Download Type Definitions
-
-Alternatively, download the type definitions file:
-
-```bash
-# Download to your project
-curl -o extension-types.d.ts https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions.d.ts
-```
-
-Or download manually from: [extensions.d.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions.d.ts)
-
-Then reference it in your extension:
-
-```typescript
-import type { Extension, ExtensionContext, ToolDefinition } from './extension-types';
-import { z } from 'zod';
-
-export default class MyExtension implements Extension {
-  // Your implementation
-}
-```
-
 ## Single-File Extensions
 
 The simplest form is a single `.ts` or `.js` file in the extensions directory.
@@ -55,7 +29,7 @@ The simplest form is a single `.ts` or `.js` file in the extensions directory.
 
 ```typescript
 // my-extension.ts
-import type { Extension, ExtensionContext } from './extension-types';
+import type { Extension, ExtensionContext } from '@aiderdesk/extensions';
 
 export default class MyExtension implements Extension {
   // Optional: Define metadata
@@ -76,7 +50,7 @@ export default class MyExtension implements Extension {
 
 ```typescript
 // run-linter.ts
-import type { Extension, ExtensionContext, ToolDefinition } from './extension-types';
+import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/extensions';
 import { z } from 'zod';
 
 export default class RunLinterExtension implements Extension {
@@ -108,7 +82,7 @@ export default class RunLinterExtension implements Extension {
 
 ```typescript
 // generate-tests.ts
-import type { Extension, ExtensionContext, CommandDefinition } from './extension-types';
+import type { Extension, ExtensionContext, CommandDefinition } from '@aiderdesk/extensions';
 
 export default class GenerateTestsExtension implements Extension {
   getCommands(context: ExtensionContext): CommandDefinition[] {
@@ -143,7 +117,7 @@ export default class GenerateTestsExtension implements Extension {
 
 ```typescript
 // pirate.ts
-import type { Extension, ExtensionContext, AgentProfile } from './extension-types';
+import type { Extension, ExtensionContext, AgentProfile } from '@aiderdesk/extensions';
 
 export default class PirateExtension implements Extension {
   private agentProfile: AgentProfile | null = null;
@@ -206,11 +180,194 @@ Be helpful and competent, but maintain the pirate persona throughout all interac
 }
 ```
 
+### Extension with UI Components
+
+Extensions can render custom React components in various locations throughout the AiderDesk interface. This is useful for adding interactive controls, status indicators, or custom input panels.
+
+<img src="./images/ui-components-overview.png" alt="UI Components in AiderDesk" width="800" />
+
+#### Available Placements
+
+UI components can be placed in the following locations:
+
+| Placement | Location | Description |
+|-----------|----------|-------------|
+| `task-status-bar-left` | Task status bar | Left side of the task status bar |
+| `task-status-bar-right` | Task status bar | Right side of the task status bar |
+| `task-input-above` | Task input | Above the task input field |
+| `task-messages-top` | Task messages | Top of the messages area |
+| `task-messages-bottom` | Task messages | Bottom of the messages area |
+| `header-left` | Header bar | Left side of the header |
+| `header-right` | Header bar | Right side of the header |
+
+To see all available placements in action, check out the **ui-placement-demo** extension included with AiderDesk.
+
+<img src="./images/ui-placements-demo.png" alt="UI Placement Demo Extension" width="800" />
+
+#### Basic UI Component Extension
+
+```typescript
+// my-ui-extension.ts
+import type { Extension, ExtensionContext, UIComponentDefinition } from '@aiderdesk/extensions';
+
+export default class MyUIExtension implements Extension {
+  getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
+    return [
+      {
+        id: 'my-status-button',
+        placement: 'task-status-bar-right',
+        jsx: (props) => {
+          const { Button, Flex, Text } = props.ui;
+          return (
+            <Flex align="center" gap="xs">
+              <Button
+                variant="subtle"
+                size="compact-xs"
+                onClick={() => props.executeExtensionAction('my-action')}
+              >
+                <Text size="xs">My Action</Text>
+              </Button>
+            </Flex>
+          );
+        },
+      },
+    ];
+  }
+
+  async executeUIExtensionAction(
+    componentId: string,
+    action: string,
+    args: unknown[],
+    context: ExtensionContext
+  ): Promise<unknown> {
+    if (action === 'my-action') {
+      const taskContext = context.getTaskContext();
+      if (taskContext) {
+        await taskContext.addLogMessage('info', 'Button clicked!');
+      }
+      return { success: true };
+    }
+    return undefined;
+  }
+}
+```
+
+#### UI Components with Data Loading
+
+For components that need to fetch and display data, use `loadData: true` and implement `getUIExtensionData`:
+
+```typescript
+// multi-model-selector.ts
+import type { Extension, ExtensionContext, UIComponentDefinition } from '@aiderdesk/extensions';
+
+export default class MultiModelExtension implements Extension {
+  getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
+    return [
+      {
+        id: 'model-selector',
+        placement: 'task-status-bar-left',
+        loadData: true, // Enable data loading
+        jsx: (props) => {
+          const { Flex, Text, ModelSelector } = props.ui;
+          const { data, executeExtensionAction } = props;
+          
+          // data is populated by getUIExtensionData
+          const selectedModels = data?.selectedModels || [];
+          
+          return (
+            <Flex align="center" gap="xs">
+              <Text size="xs">Models:</Text>
+              <ModelSelector
+                value={selectedModels}
+                onChange={(models) => executeExtensionAction('select-models', models)}
+                multiple
+              />
+            </Flex>
+          );
+        },
+      },
+    ];
+  }
+
+  async getUIExtensionData(
+    componentId: string,
+    context: ExtensionContext
+  ): Promise<unknown> {
+    if (componentId === 'model-selector') {
+      // Return data for the component
+      return {
+        selectedModels: ['gpt-4', 'claude-3'],
+      };
+    }
+    return undefined;
+  }
+
+  async executeUIExtensionAction(
+    componentId: string,
+    action: string,
+    args: unknown[],
+    context: ExtensionContext
+  ): Promise<unknown> {
+    if (action === 'select-models') {
+      // Handle the action and refresh UI data
+      const models = args[0] as string[];
+      // ... store selection ...
+      
+      // Trigger UI refresh to reload data
+      context.triggerUIDataRefresh(componentId);
+      return { success: true };
+    }
+    return undefined;
+  }
+}
+```
+
+#### Available UI Components
+
+The following components are available via `props.ui`:
+
+| Component | Description |
+|-----------|-------------|
+| `Button` | Standard button with variants |
+| `IconButton` | Button with icon only |
+| `Checkbox` | Checkbox input |
+| `Input` | Text input field |
+| `Select` | Dropdown select |
+| `MultiSelect` | Multi-value select |
+| `TextArea` | Multi-line text input |
+| `RadioButton` | Radio button input |
+| `Slider` | Range slider |
+| `DatePicker` | Date picker |
+| `Chip` | Tag/chip component |
+| `ModelSelector` | AiderDesk model selector |
+| `Flex` | Flex container |
+| `Box` | Generic container |
+| `Text` | Text component |
+| `Badge` | Status badge |
+| `Tooltip` | Tooltip wrapper |
+
+#### Component Props
+
+The `jsx` function receives a `props` object with:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `React` | `React` | React library for hooks and createElement |
+| `task` | `TaskContext` | Current task context (if available) |
+| `projectDir` | `string` | Project directory path |
+| `api` | `ApplicationAPI` | AiderDesk API |
+| `mode` | `string` | Current chat mode |
+| `models` | `Model[]` | Available models |
+| `providers` | `Provider[]` | Available providers |
+| `ui` | `UIComponents` | UI component library |
+| `data` | `unknown` | Data from `getUIExtensionData` |
+| `executeExtensionAction` | `function` | Call extension action handler |
+
 ### Event Handler Extension
 
 ```typescript
 // protected-paths.ts
-import type { Extension, ExtensionContext, ToolCalledEvent } from './extension-types';
+import type { Extension, ExtensionContext, ToolCalledEvent } from '@aiderdesk/extensions';
 
 const PROTECTED_PATHS = ['.env', '.git/', 'node_modules/', 'credentials.json'];
 
@@ -272,7 +429,7 @@ my-complex-extension/
 ### index.ts
 
 ```typescript
-import type { Extension, ExtensionContext, ToolDefinition } from '../extension-types';
+import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/extensions';
 import { z } from 'zod';
 import axios from 'axios';
 

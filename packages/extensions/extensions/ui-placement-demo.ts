@@ -66,7 +66,7 @@ export default class UIPlacementDemoExtension implements Extension {
     version: '1.0.0',
     description: 'Demonstrates all available UI component placement locations in AiderDesk for extension development',
     author: 'AiderDesk',
-    capabilities: ['ui'],
+    capabilities: ['ui', 'example'],
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {

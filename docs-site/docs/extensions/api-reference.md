@@ -19,6 +19,11 @@ interface Extension {
   getModes?(context: ExtensionContext): ModeDefinition[];
   getAgents?(context: ExtensionContext): AgentProfile[];
 
+  // UI Components
+  getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
+  getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
+  executeUIExtensionAction?(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown>;
+
   // Agent Profile Updates
   onAgentProfileUpdated?(context: ExtensionContext, agentId: string, updatedProfile: AgentProfile): Promise<AgentProfile>;
 
@@ -51,6 +56,9 @@ interface ExtensionContext {
   // Settings access
   getSetting(key: string): Promise<unknown>;
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
+
+  // UI refresh
+  triggerUIDataRefresh(componentId?: string, taskId?: string): void;
 }
 ```
 
@@ -65,6 +73,7 @@ interface ExtensionContext {
 | `getModelConfigs()` | Get all available model configurations |
 | `getSetting(key)` | Get a setting value (supports dot-notation) |
 | `updateSettings(updates)` | Update multiple settings at once |
+| `triggerUIDataRefresh(componentId?, taskId?)` | Trigger UI component data refresh |
 
 ## TaskContext
 
@@ -270,7 +279,88 @@ const planMode: ModeDefinition = {
 };
 ```
 
+## UIComponentDefinition
 
+Define custom React components that render in AiderDesk's UI.
+
+```typescript
+interface UIComponentDefinition {
+  id: string;                      // Unique component identifier
+  placement: UIComponentPlacement; // Where to render the component
+  jsx: string;                     // JSX/TSX component as string
+  loadData?: boolean;              // Enable data loading via getUIExtensionData
+}
+```
+
+### Example
+
+```typescript
+const myComponent: UIComponentDefinition = {
+  id: 'my-status-indicator',
+  placement: 'task-status-bar-right',
+  jsx: (props) => {
+    const { Flex, Text, Badge } = props.ui;
+    return (
+      <Flex align="center" gap="xs">
+        <Badge color="green">Active</Badge>
+        <Text size="xs">{props.task?.name}</Text>
+      </Flex>
+    );
+  },
+};
+```
+
+## UIComponentPlacement
+
+Available placement locations for UI components.
+
+```typescript
+type UIComponentPlacement =
+  | 'task-status-bar-left'
+  | 'task-status-bar-right'
+  | 'task-usage-info-bottom'
+  | 'task-messages-top'
+  | 'task-messages-bottom'
+  | 'header-left'
+  | 'header-right'
+  | 'task-input-above'
+  | 'task-input-toolbar-left'
+  | 'task-input-toolbar-right'
+  | 'tasks-sidebar-header'
+  | 'tasks-sidebar-bottom'
+  | 'task-message-above'
+  | 'task-message-below'
+  | 'task-message-bar'
+  | 'task-top-bar-left'
+  | 'task-top-bar-right'
+  | 'task-state-actions';
+```
+
+## UIComponents
+
+UI components available in the `props.ui` object within your JSX.
+
+```typescript
+interface UIComponents {
+  Button: UIComponent;
+  Checkbox: UIComponent;
+  Input: UIComponent;
+  Select: UIComponent;
+  TextArea: UIComponent;
+  IconButton: UIComponent;
+  RadioButton: UIComponent;
+  MultiSelect: UIComponent;
+  Slider: UIComponent;
+  DatePicker: UIComponent;
+  Chip: UIComponent;
+  ModelSelector: UIComponent;
+  Flex: UIComponent;
+  Box: UIComponent;
+  Text: UIComponent;
+  Badge: UIComponent;
+  Tooltip: UIComponent;
+}
+```
 
 ## ExtensionMetadata
 

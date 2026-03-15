@@ -10,6 +10,7 @@ Extensions allow you to extend and customize AiderDesk's functionality. They can
 - **Commands** - Create slash commands like `/generate-tests` or `/deploy`
 - **Modes** - Define custom chat modes with specific behaviors
 - **Agent Profiles** - Create specialized agents with custom instructions and settings
+- **UI Components** - Render custom React components in various locations throughout the interface
 
 
 ### Hook into Events
