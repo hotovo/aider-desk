@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
 import { twMerge } from 'tailwind-merge';
@@ -6,6 +6,7 @@ import { twMerge } from 'tailwind-merge';
 import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
+import { useExtensionUIStore, useExtensionComponents } from '@/stores/extensionUIStore';
 
 type Props = {
   placement: string;
@@ -14,86 +15,65 @@ type Props = {
   additionalProps?: Record<string, unknown>;
 };
 
-export const ExtensionComponentWrapper = ({ placement, className, direction = 'horizontal', additionalProps }: Props) => {
+const ExtensionComponentWrapperInner = ({ placement, className, direction = 'horizontal', additionalProps }: Props) => {
   const { componentProps } = useExtensions();
-  const [components, setComponents] = useState<ExtensionUIComponent[]>([]);
-  const [componentData, setComponentData] = useState<Record<string, unknown>>({});
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [componentsReloadKey, setComponentsReloadKey] = useState(0);
   const api = useApi();
+  const store = useExtensionUIStore();
 
+  // Use cached components from store
+  const components = useExtensionComponents(componentProps.projectDir, placement);
+
+  // Load components on mount or when cache is empty
   useEffect(() => {
-    const loadComponents = async () => {
-      try {
-        const uiComponents = await api.getExtensionUIComponents(componentProps.projectDir, placement);
-        setComponents(uiComponents);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to load extension UI components:', error);
-      }
-    };
-
-    void loadComponents();
-  }, [api, componentProps.projectDir, placement, componentsReloadKey]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      const newData: Record<string, unknown> = {};
-      for (const comp of components) {
-        if (!comp.loadData) {
-          continue;
-        }
-        try {
-          newData[`${comp.extensionId}-${comp.componentId}`] = await api.getUIExtensionData(
-            comp.extensionId,
-            comp.componentId,
-            componentProps.projectDir,
-            componentProps.task?.id,
-          );
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error(`Failed to load extension UI data for ${comp.extensionId}/${comp.componentId}:`, error);
-        }
-      }
-      setComponentData(newData);
-    };
-
-    if (components.length > 0) {
-      void loadData();
+    if (components.length === 0) {
+      void store.loadComponents(api, componentProps.projectDir, placement);
     }
-  }, [api, componentProps.projectDir, componentProps.task?.id, components, refreshKey]);
+  }, [api, componentProps.projectDir, placement, components.length, store]);
 
+  // Load data for all components that need it
+  useEffect(() => {
+    if (components.length > 0) {
+      void store.loadAllComponentsData(api, components, componentProps.projectDir, componentProps.task?.id);
+    }
+  }, [api, componentProps.projectDir, componentProps.task?.id, components, store]);
+
+  // Handle refresh events
   useEffect(() => {
     return api.onExtensionUIRefresh((data) => {
       const currentProjectDir = componentProps.projectDir;
       const currentTaskId = componentProps.task?.id;
 
-      if (data.reloadComponents) {
-        if (data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
-          return;
-        }
-        if (data.extensionId !== undefined && !components.some((c) => c.extensionId === data.extensionId)) {
-          return;
-        }
-        setComponentsReloadKey((prev) => prev + 1);
-        return;
-      }
-
+      // Filter by project
       if (data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
         return;
       }
-      if (data.taskId !== undefined && data.taskId !== currentTaskId) {
-        return;
+
+      if (data.reloadComponents) {
+        // Handle component reload via store
+        store.handleRefreshEvent(api, data, currentProjectDir, currentTaskId);
+        void store.loadComponents(api, currentProjectDir, placement);
+      } else {
+        // Filter by task for data refresh
+        if (data.taskId !== undefined && data.taskId !== currentTaskId) {
+          return;
+        }
+
+        // Reload data for affected components (stale-while-revalidate)
+        const affectedComponents = components.filter((c) => {
+          if (data.extensionId !== undefined && data.extensionId !== c.extensionId) {
+            return false;
+          }
+          if (data.componentId !== undefined && data.componentId !== c.componentId) {
+            return false;
+          }
+          return c.loadData;
+        });
+        if (affectedComponents.length > 0) {
+          void store.loadAllComponentsData(api, affectedComponents, currentProjectDir, currentTaskId, true);
+        }
       }
-      if (data.extensionId !== undefined && !components.some((c) => c.extensionId === data.extensionId)) {
-        return;
-      }
-      if (data.componentId !== undefined && !components.some((c) => c.componentId === data.componentId)) {
-        return;
-      }
-      setRefreshKey((prev) => prev + 1);
     });
-  }, [api, componentProps.projectDir, componentProps.task?.id, components]);
+  }, [api, componentProps.projectDir, componentProps.task?.id, components, placement, store]);
 
   const getComponentData = useCallback(
     (comp: ExtensionUIComponent) => {
@@ -112,23 +92,26 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
         ...componentProps,
         ...additionalProps,
         executeExtensionAction,
-        data: componentData[`${comp.extensionId}-${comp.componentId}`],
+        data: store.getComponentData(comp.extensionId, comp.componentId, componentProps.projectDir, componentProps.task?.id),
       };
     },
-    [api, componentProps, additionalProps, componentData],
+    [api, componentProps, additionalProps, store],
+  );
+
+  const renderComponent = useCallback(
+    (comp: ExtensionUIComponent) => {
+      return (
+        <ExtensionUIErrorBoundary key={`${comp.extensionId}-${comp.componentId}`} extensionId={comp.extensionId} componentId={comp.componentId}>
+          <StringToReactComponent data={getComponentData(comp)}>{comp.jsx}</StringToReactComponent>
+        </ExtensionUIErrorBoundary>
+      );
+    },
+    [getComponentData],
   );
 
   if (components.length === 0) {
-    return <div />;
+    return null;
   }
-
-  const renderComponent = (comp: ExtensionUIComponent) => {
-    return (
-      <ExtensionUIErrorBoundary key={`${comp.extensionId}-${comp.componentId}`} extensionId={comp.extensionId} componentId={comp.componentId}>
-        <StringToReactComponent data={getComponentData(comp)}>{comp.jsx}</StringToReactComponent>
-      </ExtensionUIErrorBoundary>
-    );
-  };
 
   return (
     <div className={twMerge('flex items-center gap-2 flex-wrap', direction === 'horizontal' ? 'flex-row' : 'flex-col', className)}>
@@ -136,3 +119,5 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
     </div>
   );
 };
+
+export const ExtensionComponentWrapper = memo(ExtensionComponentWrapperInner);
