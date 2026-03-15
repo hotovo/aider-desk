@@ -363,7 +363,7 @@ export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> =
   openrouter: 'anthropic/claude-sonnet-4.6',
   opencode: 'claude-sonnet-4-6',
   requesty: 'anthropic/claude-sonnet-4-6',
-  synthetic: 'anthropic/claude-sonnet-4.6',
+  synthetic: 'hf:zai-org/GLM-4.7',
   'zai-plan': 'glm-5',
   minimax: 'MiniMax-M2',
 };
