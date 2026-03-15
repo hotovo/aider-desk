@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.57.0]
 
 - moved Files sidebar collapse/expand button to top-right of Context Files section header
 - added extension UI components system
