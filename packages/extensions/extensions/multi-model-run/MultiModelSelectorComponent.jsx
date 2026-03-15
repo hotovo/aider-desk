@@ -68,7 +68,7 @@
           />
           <Button
             variant="outline"
-            color="secondary"
+            color="tertiary"
             size="xs"
             onClick={handleAddModel}
           >

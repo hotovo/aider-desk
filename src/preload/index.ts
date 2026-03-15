@@ -119,11 +119,8 @@ const api: ApplicationAPI = {
     ipcRenderer.invoke('get-extension-ui-data', extensionId, componentId, projectDir, taskId),
   executeUIExtensionAction: (extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string) =>
     ipcRenderer.invoke('execute-extension-ui-action', extensionId, componentId, action, args, projectDir, taskId),
-  onExtensionUIRefresh: (baseDir: string, callback: (data: ExtensionUIRefreshData) => void) => {
+  onExtensionUIRefresh: (callback: (data: ExtensionUIRefreshData) => void) => {
     const listener = (_: Electron.IpcRendererEvent, data: ExtensionUIRefreshData) => {
-      if (!compareBaseDirs(data.baseDir, baseDir)) {
-        return;
-      }
       callback(data);
     };
     ipcRenderer.on('extension-ui-refresh', listener);

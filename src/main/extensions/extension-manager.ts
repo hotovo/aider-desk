@@ -70,26 +70,31 @@ export type { LoadedExtension } from './extension-registry';
 export type ExtensionsChangeListener = (extensions: LoadedExtension[]) => void;
 
 export interface RegisteredTool {
+  extensionId: string;
   extensionName: string;
   tool: ToolDefinition;
 }
 
 export interface RegisteredCommand {
+  extensionId: string;
   extensionName: string;
   command: CommandDefinition;
 }
 
 export interface RegisteredAgent {
+  extensionId: string;
   extensionName: string;
   agent: AgentProfile;
 }
 
 export interface RegisteredMode {
+  extensionId: string;
   extensionName: string;
   mode: ModeDefinition;
 }
 
 export interface RegisteredUIComponent {
+  extensionId: string;
   extensionName: string;
   component: UIComponentDefinition;
 }
@@ -236,10 +241,13 @@ export class ExtensionManager {
     }
 
     try {
-      const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+      const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
       await instance.onLoad(context);
       this.registry.setInitialized(filePath, true);
-      this.eventManager.sendExtensionUIRefresh(project?.baseDir ?? '', loaded.id);
+      this.eventManager.sendExtensionUIRefresh({
+        projectDir: project?.baseDir,
+        extensionId: loaded.id,
+      });
       logger.info(`[Extensions] Initialized extension: ${metadata.name} v${metadata.version}${project ? ` for project ${project.baseDir}}` : ''}`);
       return true;
     } catch (error) {
@@ -252,12 +260,12 @@ export class ExtensionManager {
    * Loads, registers, and initializes an extension from a file path.
    * Combines the common pattern of load → register → initialize.
    */
-  private async loadAndInitializeExtension(filePath: string, project?: Project): Promise<boolean> {
+  private async loadAndInitializeExtension(filePath: string, project?: Project): Promise<{ success: boolean; hasUIComponents: boolean }> {
     try {
       const result = await this.loader.loadExtension(filePath);
       if (!result) {
         logger.error(`[Extensions] Failed to load extension from ${filePath}${project ? ` for project ${project.baseDir}` : ''}`);
-        return false;
+        return { success: false, hasUIComponents: false };
       }
 
       const { extension, metadata } = result;
@@ -266,19 +274,19 @@ export class ExtensionManager {
       const loaded = this.registry.getExtension(filePath);
       if (!loaded) {
         logger.error(`[Extensions] Failed to retrieve registered extension: ${metadata.name}${project ? ` for project ${project.baseDir}` : ''}`);
-        return false;
+        return { success: false, hasUIComponents: false };
       }
 
       const success = await this.initializeExtension(loaded, project);
       if (!success) {
-        return false;
+        return { success: false, hasUIComponents: false };
       }
 
       logger.info(`[Extensions] Loaded and initialized extension: ${metadata.name} v${metadata.version}${project ? ` for project ${project.baseDir}` : ''}`);
-      return true;
+      return { success: true, hasUIComponents: loaded.instance.getUIComponents !== undefined };
     } catch (error) {
       logger.error(`[Extensions] Failed to load/initialize extension from ${filePath}:`, error);
-      return false;
+      return { success: false, hasUIComponents: false };
     }
   }
 
@@ -293,15 +301,20 @@ export class ExtensionManager {
    */
   private async loadExtensionsForDir(dir: string, project?: Project): Promise<void> {
     let initializedCount = 0;
+    let reloadComponents = false;
 
     const extensionPaths = await this.discoverExtensionsFromDir(dir);
     const loadedCount = extensionPaths.length;
 
     for (const filePath of extensionPaths) {
       try {
-        const success = await this.loadAndInitializeExtension(filePath, project);
+        const { success, hasUIComponents } = await this.loadAndInitializeExtension(filePath, project);
         if (success) {
           initializedCount++;
+
+          if (hasUIComponents) {
+            reloadComponents = true;
+          }
         }
       } catch (error) {
         const errorMsg = `Failed to load extension from ${filePath}: ${error instanceof Error ? error.message : String(error)}`;
@@ -313,6 +326,13 @@ export class ExtensionManager {
       logger.info(`[Extensions] Loaded ${initializedCount}/${loadedCount} extension(s) from ${dir}`);
     } else {
       logger.debug(`[Extensions] No extensions found in ${dir}`);
+    }
+
+    if (reloadComponents) {
+      this.eventManager.sendExtensionUIRefresh({
+        projectDir: project?.baseDir,
+        reloadComponents: true,
+      });
     }
 
     this.debouncedNotifyListeners();
@@ -632,7 +652,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, task.project, task);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, task.project, task);
         const tools = instance.getTools(context, mode, profile);
 
         if (!Array.isArray(tools)) {
@@ -648,7 +668,11 @@ export class ExtensionManager {
             continue;
           }
 
-          collectedTools.push({ extensionName: metadata.name, tool });
+          collectedTools.push({
+            extensionId: loaded.id,
+            extensionName: metadata.name,
+            tool,
+          });
         }
       } catch (error) {
         logger.error(`[Extensions] Failed to get tools from extension '${metadata.name}':`, error);
@@ -673,9 +697,9 @@ export class ExtensionManager {
     const toolSet: ToolSet = {};
     const registeredTools = this.getTools(task, mode, profile);
 
-    for (const { extensionName, tool } of registeredTools) {
+    for (const { extensionId, extensionName, tool } of registeredTools) {
       const toolId = tool.name;
-      const context = new ExtensionContextImpl(extensionName, this.store, this.modelManager, this.eventManager, task.project, task);
+      const context = new ExtensionContextImpl(extensionId, extensionName, this.store, this.modelManager, this.eventManager, task.project, task);
 
       // Skip if tool is marked as Never approved
       if (profile.toolApprovals?.[toolId] === ToolApprovalState.Never) {
@@ -776,7 +800,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
         const commands = instance.getCommands(context);
 
         if (!Array.isArray(commands)) {
@@ -792,7 +816,11 @@ export class ExtensionManager {
             continue;
           }
 
-          collectedCommands.push({ extensionName: metadata.name, command });
+          collectedCommands.push({
+            extensionId: loaded.id,
+            extensionName: metadata.name,
+            command,
+          });
         }
       } catch (error) {
         logger.error(`[Extensions] Failed to get commands from extension '${metadata.name}':`, error);
@@ -815,7 +843,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
         const agents = instance.getAgents(context);
 
         if (!Array.isArray(agents)) {
@@ -833,7 +861,11 @@ export class ExtensionManager {
             agent.projectDir = loaded.projectDir;
           }
 
-          collectedAgents.push({ extensionName: metadata.name, agent });
+          collectedAgents.push({
+            extensionId: loaded.id,
+            extensionName: metadata.name,
+            agent,
+          });
         }
       } catch (error) {
         logger.error(`[Extensions] Failed to get agents from extension '${metadata.name}':`, error);
@@ -861,7 +893,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
         const modes = instance.getModes(context);
 
         if (!Array.isArray(modes)) {
@@ -877,7 +909,11 @@ export class ExtensionManager {
             continue;
           }
 
-          collectedModes.push({ extensionName: metadata.name, mode });
+          collectedModes.push({
+            extensionId: loaded.id,
+            extensionName: metadata.name,
+            mode,
+          });
         }
       } catch (error) {
         logger.error(`[Extensions] Failed to get modes from extension '${metadata.name}':`, error);
@@ -933,7 +969,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
         const components = instance.getUIComponents(context);
 
         if (!Array.isArray(components)) {
@@ -949,7 +985,11 @@ export class ExtensionManager {
             continue;
           }
 
-          collectedComponents.push({ extensionName: id, component });
+          collectedComponents.push({
+            extensionId: id,
+            extensionName: metadata.name,
+            component,
+          });
         }
       } catch (error) {
         logger.error(`[Extensions] Failed to get UI components from extension '${metadata.name}':`, error);
@@ -981,7 +1021,7 @@ export class ExtensionManager {
 
       try {
         logger.info(`[Extensions] Getting UI extension data from '${id}' for component '${componentId}'`);
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, project, task);
+        const context = new ExtensionContextImpl(id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
         return await instance.getUIExtensionData(componentId, context);
       } catch (error) {
         logger.error(`[Extensions] Failed to get UI extension data from '${id}' for component '${componentId}':`, error);
@@ -1014,7 +1054,7 @@ export class ExtensionManager {
 
       try {
         logger.info(`[Extensions] Executing UI extension action '${action}' from '${id}' for component '${componentId}'`);
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, project, task);
+        const context = new ExtensionContextImpl(id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
         return await instance.executeUIExtensionAction(componentId, action, args, context);
       } catch (error) {
         logger.error(`[Extensions] Failed to execute UI extension action '${action}' from '${id}' for component '${componentId}':`, error);
@@ -1058,7 +1098,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, undefined, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, undefined, undefined);
         const agents = instance.getAgents(context);
 
         if (!Array.isArray(agents)) {
@@ -1102,10 +1142,10 @@ export class ExtensionManager {
       throw new Error(`Extension command '${commandName}' not found`);
     }
 
-    const { extensionName, command } = registered;
+    const { extensionId, extensionName, command } = registered;
 
     try {
-      const context = new ExtensionContextImpl(extensionName, this.store, this.modelManager, this.eventManager, project, task);
+      const context = new ExtensionContextImpl(extensionId, extensionName, this.store, this.modelManager, this.eventManager, project, task);
 
       logger.info(`[Extensions] Executing command '${commandName}' from extension '${extensionName}'`);
       await command.execute(args, context);
@@ -1372,7 +1412,7 @@ export class ExtensionManager {
 
       try {
         // Create ExtensionContext for this extension
-        const context = new ExtensionContextImpl(metadata.name, this.store, this.modelManager, this.eventManager, project, task);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
 
         // Call the extension handler
         // Using type assertion to handle dynamic dispatch across different event types

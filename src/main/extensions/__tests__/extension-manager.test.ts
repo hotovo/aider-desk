@@ -1153,6 +1153,7 @@ describe('ExtensionManager', () => {
       expect(getUIComponents).toHaveBeenCalledWith(expect.any(Object));
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
+        extensionId: 'ext1',
         extensionName: 'ext1',
         component: {
           id: 'component-1',
@@ -1162,6 +1163,7 @@ describe('ExtensionManager', () => {
         },
       });
       expect(result[1]).toEqual({
+        extensionId: 'ext1',
         extensionName: 'ext1',
         component: {
           id: 'component-2',

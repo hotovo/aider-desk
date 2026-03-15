@@ -175,11 +175,15 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
               );
             }
 
+            const additionalProps = {
+              // only pass message to extension if it is finished (optimization while streaming message)
+              message: 'finished' in message && !message.finished ? null : message,
+            };
             return (
               <div key={message.id}>
-                <ExtensionComponentWrapper placement="task-message-above" additionalProps={{ messages, message }} />
+                <ExtensionComponentWrapper placement="task-message-above" additionalProps={additionalProps} />
                 {messageBlock}
-                <ExtensionComponentWrapper placement="task-message-below" additionalProps={{ messages, message }} />
+                <ExtensionComponentWrapper placement="task-message-below" additionalProps={additionalProps} />
               </div>
             );
           })}

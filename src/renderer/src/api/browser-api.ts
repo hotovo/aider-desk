@@ -1184,14 +1184,8 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  onExtensionUIRefresh(baseDir: string, callback: (data: ExtensionUIRefreshData) => void): () => void {
-    return this.addListener(
-      'extension-ui-refresh',
-      (data) => {
-        callback(data);
-      },
-      baseDir,
-    );
+  onExtensionUIRefresh(callback: (data: ExtensionUIRefreshData) => void): () => void {
+    return this.addListener('extension-ui-refresh', callback);
   }
 
   onModalOverlayUrl(callback: (data: ModalOverlayUrlData) => void): () => void {

@@ -14,6 +14,7 @@ import { openUrl as openUrlUtil } from '@/utils/open-url';
 
 export class ExtensionContextImpl implements ExtensionContext {
   constructor(
+    private readonly extensionId: string,
     private readonly extensionName: string,
     private readonly store?: Store,
     private readonly modelManager?: ModelManager,
@@ -89,14 +90,31 @@ export class ExtensionContextImpl implements ExtensionContext {
     }
   }
 
-  triggerUIRefresh(componentId?: string): void {
+  triggerUIDataRefresh(componentId?: string, taskId?: string): void {
     if (!this.eventManager) {
-      this.log('EventManager not available, cannot trigger UI refresh', 'warn');
+      this.log('EventManager not available, cannot trigger UI data refresh', 'warn');
       return;
     }
-    const baseDir = this.project?.baseDir ?? '';
-    this.log(`Triggering UI refresh for component: ${componentId}`, 'info');
-    this.eventManager.sendExtensionUIRefresh(baseDir, this.extensionName, componentId);
+    this.log(`Triggering UI data refresh for component: ${componentId}, task: ${taskId}`, 'info');
+    this.eventManager.sendExtensionUIRefresh({
+      projectDir: this.project?.baseDir,
+      extensionId: this.extensionId,
+      componentId,
+      taskId,
+    });
+  }
+
+  triggerUIComponentsReload(): void {
+    if (!this.eventManager) {
+      this.log('EventManager not available, cannot trigger UI components reload', 'warn');
+      return;
+    }
+    this.log('Triggering UI components reload', 'info');
+    this.eventManager.sendExtensionUIRefresh({
+      projectDir: this.project?.baseDir,
+      extensionId: this.extensionId,
+      reloadComponents: true,
+    });
   }
 
   async openUrl(url: string, target: 'external' | 'window' | 'modal-overlay' = 'window'): Promise<void> {

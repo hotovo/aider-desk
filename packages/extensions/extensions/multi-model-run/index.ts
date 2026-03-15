@@ -7,16 +7,11 @@
  * for each additional model and runs the same prompt.
  */
 
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
-import type {
-  Extension,
-  ExtensionContext,
-  PromptStartedEvent,
-  UIComponentDefinition,
-} from "@aiderdesk/extensions";
+import type { Extension, ExtensionContext, PromptStartedEvent, UIComponentDefinition } from '@aiderdesk/extensions';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,33 +21,30 @@ interface ModelSelection {
   modelId: string;
 }
 
-const COMPONENT_ID = "multi-model-selector";
+const COMPONENT_ID = 'multi-model-selector';
 
 export default class MultiModelRunExtension implements Extension {
   static metadata = {
-    name: "Multi-Model Run",
-    version: "1.0.0",
-    description: "Run the same prompt across multiple models simultaneously",
-    author: "AiderDesk",
-    capabilities: ["ui-components"],
+    name: 'Multi-Model Run',
+    version: '1.0.0',
+    description: 'Run the same prompt across multiple models simultaneously',
+    author: 'AiderDesk',
+    capabilities: ['ui-components'],
   };
 
   private modelSelectionsPerTask: Map<string, ModelSelection[]> = new Map();
   private useWorktreesPerTask: Map<string, boolean> = new Map();
 
   async onLoad(context: ExtensionContext): Promise<void> {
-    context.log("Multi-Model Run Extension loaded", "info");
+    context.log('Multi-Model Run Extension loaded', 'info');
   }
 
   getUIComponents(_context: ExtensionContext): UIComponentDefinition[] {
-    const jsxTemplate = readFileSync(
-      join(__dirname, "./MultiModelSelectorComponent.jsx"),
-      "utf-8",
-    );
+    const jsxTemplate = readFileSync(join(__dirname, './MultiModelSelectorComponent.jsx'), 'utf-8');
 
     const COMPONENT: UIComponentDefinition = {
       id: COMPONENT_ID,
-      placement: "task-input-above",
+      placement: 'task-input-above',
       jsx: jsxTemplate,
       loadData: true,
     };
@@ -60,10 +52,7 @@ export default class MultiModelRunExtension implements Extension {
     return [COMPONENT];
   }
 
-  async getUIExtensionData(
-    componentId: string,
-    context: ExtensionContext,
-  ): Promise<unknown> {
+  async getUIExtensionData(componentId: string, context: ExtensionContext): Promise<unknown> {
     if (componentId !== COMPONENT_ID) {
       return undefined;
     }
@@ -84,80 +73,66 @@ export default class MultiModelRunExtension implements Extension {
     };
   }
 
-  async executeUIExtensionAction(
-    componentId: string,
-    action: string,
-    args: unknown[],
-    context: ExtensionContext,
-  ): Promise<unknown> {
+  async executeUIExtensionAction(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown> {
     if (componentId !== COMPONENT_ID) {
       return undefined;
     }
 
-    context.log(
-      `executeUIExtensionAction: ${action} with args: ${JSON.stringify(args)}`,
-      "info",
-    );
+    context.log(`executeUIExtensionAction: ${action} with args: ${JSON.stringify(args)}`, 'info');
 
     const taskContext = context.getTaskContext();
     const taskId = taskContext?.data?.id;
 
     if (!taskId) {
-      context.log("No active task context available", "error");
+      context.log('No active task context available', 'error');
       return undefined;
     }
 
     const taskAgentProfile = await taskContext?.getTaskAgentProfile();
 
     switch (action) {
-      case "add-model": {
-        context.log("Adding model", "info");
+      case 'add-model': {
+        context.log('Adding model', 'info');
         const currentSelections = this.modelSelectionsPerTask.get(taskId) ?? [];
         const newSelection: ModelSelection = {
           index: currentSelections.length,
-          modelId: taskAgentProfile
-            ? `${taskAgentProfile.provider}/${taskAgentProfile.model}`
-            : "anthropic/claude-sonnet-4-5",
+          modelId: taskAgentProfile ? `${taskAgentProfile.provider}/${taskAgentProfile.model}` : 'anthropic/claude-sonnet-4-5',
         };
         const updatedSelections = [...currentSelections, newSelection];
         this.modelSelectionsPerTask.set(taskId, updatedSelections);
-        context.triggerUIRefresh(COMPONENT_ID);
+        context.triggerUIDataRefresh(COMPONENT_ID);
         return { success: true, models: updatedSelections };
       }
 
-      case "remove-model": {
-        context.log("Removing model", "info");
+      case 'remove-model': {
+        context.log('Removing model', 'info');
         const index = args[0] as number;
         const currentSelections = this.modelSelectionsPerTask.get(taskId) ?? [];
-        const updatedSelections = currentSelections
-          .filter((_, i) => i !== index)
-          .map((s, i) => ({ ...s, index: i }));
+        const updatedSelections = currentSelections.filter((_, i) => i !== index).map((s, i) => ({ ...s, index: i }));
         this.modelSelectionsPerTask.set(taskId, updatedSelections);
-        context.triggerUIRefresh(COMPONENT_ID);
+        context.triggerUIDataRefresh(COMPONENT_ID);
         return { success: true, models: updatedSelections };
       }
 
-      case "update-model": {
-        context.log("Updating model", "info");
+      case 'update-model': {
+        context.log('Updating model', 'info');
         const index = args[0] as number;
         const modelId = args[1] as string;
         const currentSelections = this.modelSelectionsPerTask.get(taskId) ?? [];
         if (index < 0 || index >= currentSelections.length) {
-          return { success: false, error: "Invalid model index" };
+          return { success: false, error: 'Invalid model index' };
         }
-        const updatedSelections = currentSelections.map((s, i) =>
-          i === index ? { ...s, modelId } : s,
-        );
+        const updatedSelections = currentSelections.map((s, i) => (i === index ? { ...s, modelId } : s));
         this.modelSelectionsPerTask.set(taskId, updatedSelections);
-        context.triggerUIRefresh(COMPONENT_ID);
+        context.triggerUIDataRefresh(COMPONENT_ID);
         return { success: true, models: updatedSelections };
       }
 
-      case "set-use-worktrees": {
-        context.log("Setting use worktrees", "info");
+      case 'set-use-worktrees': {
+        context.log('Setting use worktrees', 'info');
         const useWorktrees = args[0] as boolean;
         this.useWorktreesPerTask.set(taskId, useWorktrees);
-        context.triggerUIRefresh(COMPONENT_ID);
+        context.triggerUIDataRefresh(COMPONENT_ID);
         return { success: true, useWorktrees };
       }
 
@@ -166,10 +141,7 @@ export default class MultiModelRunExtension implements Extension {
     }
   }
 
-  async onPromptStarted(
-    event: PromptStartedEvent,
-    context: ExtensionContext,
-  ): Promise<void> {
+  async onPromptStarted(event: PromptStartedEvent, context: ExtensionContext): Promise<void> {
     const taskContext = context.getTaskContext();
     const taskId = taskContext?.data?.id;
 
@@ -194,10 +166,10 @@ export default class MultiModelRunExtension implements Extension {
       const newTaskContext = projectContext.getTask(duplicatedTask.id);
       if (newTaskContext) {
         await newTaskContext.updateTask({
-          name: `${selection.modelId.split("/").slice(1).join("/")}: ${prompt.substring(0, 45)}${prompt.length > 45 ? "..." : ""}`,
+          name: `${selection.modelId.split('/').slice(1).join('/')}: ${prompt.substring(0, 45)}${prompt.length > 45 ? '...' : ''}`,
           model: selection.modelId,
           autoApprove: taskContext?.data?.autoApprove,
-          ...(useWorktrees ? { workingMode: "worktree" } : {}),
+          ...(useWorktrees ? { workingMode: 'worktree' } : {}),
         });
 
         void newTaskContext.runPrompt(prompt, mode);
@@ -206,6 +178,6 @@ export default class MultiModelRunExtension implements Extension {
 
     this.modelSelectionsPerTask.delete(taskId);
     this.useWorktreesPerTask.delete(taskId);
-    context.triggerUIRefresh(COMPONENT_ID);
+    context.triggerUIDataRefresh(COMPONENT_ID);
   }
 }

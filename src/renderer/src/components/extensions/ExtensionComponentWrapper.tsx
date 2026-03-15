@@ -19,6 +19,7 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
   const [components, setComponents] = useState<ExtensionUIComponent[]>([]);
   const [componentData, setComponentData] = useState<Record<string, unknown>>({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [componentsReloadKey, setComponentsReloadKey] = useState(0);
   const api = useApi();
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
     };
 
     void loadComponents();
-  }, [api, componentProps.projectDir, placement]);
+  }, [api, componentProps.projectDir, placement, componentsReloadKey]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -63,16 +64,36 @@ export const ExtensionComponentWrapper = ({ placement, className, direction = 'h
   }, [api, componentProps.projectDir, componentProps.task?.id, components, refreshKey]);
 
   useEffect(() => {
-    if (!componentProps.projectDir) {
-      return undefined;
-    }
-    return api.onExtensionUIRefresh(componentProps.projectDir, ({ componentId }) => {
-      if (componentId && !components.some((c) => c.componentId === componentId)) {
+    return api.onExtensionUIRefresh((data) => {
+      const currentProjectDir = componentProps.projectDir;
+      const currentTaskId = componentProps.task?.id;
+
+      if (data.reloadComponents) {
+        if (data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
+          return;
+        }
+        if (data.extensionId !== undefined && !components.some((c) => c.extensionId === data.extensionId)) {
+          return;
+        }
+        setComponentsReloadKey((prev) => prev + 1);
+        return;
+      }
+
+      if (data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
+        return;
+      }
+      if (data.taskId !== undefined && data.taskId !== currentTaskId) {
+        return;
+      }
+      if (data.extensionId !== undefined && !components.some((c) => c.extensionId === data.extensionId)) {
+        return;
+      }
+      if (data.componentId !== undefined && !components.some((c) => c.componentId === data.componentId)) {
         return;
       }
       setRefreshKey((prev) => prev + 1);
     });
-  }, [api, componentProps.projectDir, components]);
+  }, [api, componentProps.projectDir, componentProps.task?.id, components]);
 
   const getComponentData = useCallback(
     (comp: ExtensionUIComponent) => {

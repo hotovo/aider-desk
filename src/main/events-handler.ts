@@ -1122,7 +1122,7 @@ export class EventsHandler {
     const components = this.extensionManager.getUIComponents(project);
     const filtered = placement ? components.filter((c) => c.component.placement === placement) : components;
     return filtered.map((c) => ({
-      extensionId: c.extensionName,
+      extensionId: c.extensionId,
       componentId: c.component.id,
       placement: c.component.placement,
       jsx: c.component.jsx,

@@ -240,7 +240,7 @@ export default class ProvidersQuotaExtension implements Extension {
     return [STATUS_BAR_COMPONENT];
   }
 
-  async getUIExtensionData(componentId: string, _context: ExtensionContext): Promise<unknown> {
+  async getUIExtensionData(componentId: string): Promise<unknown> {
     if (componentId !== STATUS_BAR_COMPONENT_ID) {
       return undefined;
     }

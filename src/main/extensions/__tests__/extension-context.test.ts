@@ -46,10 +46,11 @@ const createMockModelManager = (models: Model[] = []): ModelManager => {
 describe('ExtensionContextImpl', () => {
   let context: ExtensionContextImpl;
   const extensionId = 'test-extension';
+  const extensionName = 'Test Extension';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    context = new ExtensionContextImpl(extensionId);
+    context = new ExtensionContextImpl(extensionId, extensionName);
   });
 
   describe('constructor', () => {
@@ -59,7 +60,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should create context with project', () => {
       const mockProject = createMockProject();
-      const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, mockProject);
+      const contextWithProject = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, mockProject);
       expect(contextWithProject.getProjectDir()).toBe('/project/path');
     });
   });
@@ -68,31 +69,31 @@ describe('ExtensionContextImpl', () => {
     it('should log info messages', () => {
       context.log('test message');
 
-      expect(logger.info).toHaveBeenCalledWith('[Extension:test-extension] test message');
+      expect(logger.info).toHaveBeenCalledWith('[Extension:Test Extension] test message');
     });
 
     it('should log error messages', () => {
       context.log('error message', 'error');
 
-      expect(logger.error).toHaveBeenCalledWith('[Extension:test-extension] error message');
+      expect(logger.error).toHaveBeenCalledWith('[Extension:Test Extension] error message');
     });
 
     it('should log warning messages', () => {
       context.log('warning message', 'warn');
 
-      expect(logger.warn).toHaveBeenCalledWith('[Extension:test-extension] warning message');
+      expect(logger.warn).toHaveBeenCalledWith('[Extension:Test Extension] warning message');
     });
 
     it('should log debug messages', () => {
       context.log('debug message', 'debug');
 
-      expect(logger.debug).toHaveBeenCalledWith('[Extension:test-extension] debug message');
+      expect(logger.debug).toHaveBeenCalledWith('[Extension:Test Extension] debug message');
     });
 
     it('should default to info log type', () => {
       context.log('default message');
 
-      expect(logger.info).toHaveBeenCalledWith('[Extension:test-extension] default message');
+      expect(logger.info).toHaveBeenCalledWith('[Extension:Test Extension] default message');
     });
   });
 
@@ -103,7 +104,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should return project path when set', () => {
       const mockProject = createMockProject();
-      const contextWithProject = new ExtensionContextImpl(extensionId, undefined, undefined, undefined, mockProject);
+      const contextWithProject = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, mockProject);
       expect(contextWithProject.getProjectDir()).toBe('/project/path');
     });
   });
@@ -111,7 +112,7 @@ describe('ExtensionContextImpl', () => {
   describe('getSetting', () => {
     it('should return setting value when Store is available', async () => {
       const mockStore = createMockStore({ language: 'zh', theme: 'light' });
-      const contextWithStore = new ExtensionContextImpl(extensionId, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
 
       const result = await contextWithStore.getSetting('language');
       expect(result).toBe('zh');
@@ -129,7 +130,7 @@ describe('ExtensionContextImpl', () => {
           confirmBeforeEdit: false,
         },
       });
-      const contextWithStore = new ExtensionContextImpl(extensionId, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
 
       const result = await contextWithStore.getSetting('aider.options');
       expect(result).toBe('--model gpt-4');
@@ -137,7 +138,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should return undefined for non-existent keys', async () => {
       const mockStore = createMockStore();
-      const contextWithStore = new ExtensionContextImpl(extensionId, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
 
       const result = await contextWithStore.getSetting('nonexistent.key');
       expect(result).toBeUndefined();
@@ -152,7 +153,7 @@ describe('ExtensionContextImpl', () => {
       vi.mocked(mockStore.getSettings).mockImplementation(() => {
         throw new Error('Store error');
       });
-      const contextWithStore = new ExtensionContextImpl(extensionId, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
 
       await expect(contextWithStore.getSetting('theme')).rejects.toThrow('Store error');
       expect(logger.error).toHaveBeenCalled();
@@ -162,7 +163,7 @@ describe('ExtensionContextImpl', () => {
   describe('updateSettings', () => {
     it('should call Store.saveSettings with updated settings', async () => {
       const mockStore = createMockStore({ language: 'en', theme: 'dark' });
-      const contextWithStore = new ExtensionContextImpl(extensionId, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
 
       await contextWithStore.updateSettings({ theme: 'light' });
 
@@ -171,7 +172,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should merge updates with existing settings', async () => {
       const mockStore = createMockStore({ language: 'en', theme: 'dark' });
-      const contextWithStore = new ExtensionContextImpl(extensionId, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
 
       await contextWithStore.updateSettings({ language: 'zh' });
 
@@ -187,7 +188,7 @@ describe('ExtensionContextImpl', () => {
       vi.mocked(mockStore.saveSettings).mockImplementation(() => {
         throw new Error('Save error');
       });
-      const contextWithStore = new ExtensionContextImpl(extensionId, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
 
       await expect(contextWithStore.updateSettings({ theme: 'light' })).rejects.toThrow('Save error');
       expect(logger.error).toHaveBeenCalled();
@@ -199,7 +200,7 @@ describe('ExtensionContextImpl', () => {
       const mockModels: Model[] = [{ id: 'model-1', providerId: 'provider-1' } as Model, { id: 'model-2', providerId: 'provider-2' } as Model];
       const mockModelManager = createMockModelManager(mockModels);
 
-      const contextWithModelManager = new ExtensionContextImpl(extensionId, undefined, mockModelManager);
+      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, undefined, mockModelManager);
 
       const result = await contextWithModelManager.getModelConfigs();
       expect(result).toEqual(mockModels);
@@ -213,7 +214,7 @@ describe('ExtensionContextImpl', () => {
     it('should return empty array when no models in ModelManager', async () => {
       const mockModelManager = createMockModelManager([]);
 
-      const contextWithModelManager = new ExtensionContextImpl(extensionId, undefined, mockModelManager);
+      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, undefined, mockModelManager);
 
       const result = await contextWithModelManager.getModelConfigs();
       expect(result).toEqual([]);
@@ -225,7 +226,7 @@ describe('ExtensionContextImpl', () => {
         throw new Error('Model manager error');
       });
 
-      const contextWithModelManager = new ExtensionContextImpl(extensionId, undefined, mockModelManager);
+      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, undefined, mockModelManager);
 
       const result = await contextWithModelManager.getModelConfigs();
       expect(result).toEqual([]);
@@ -233,8 +234,8 @@ describe('ExtensionContextImpl', () => {
     });
   });
 
-  describe('triggerUIRefresh', () => {
-    it('should call eventManager.sendExtensionUIRefresh', () => {
+  describe('triggerUIDataRefresh', () => {
+    it('should call eventManager.sendExtensionUIRefresh without parameters', () => {
       const mockEventManager = {
         sendExtensionUIRefresh: vi.fn(),
       };
@@ -243,11 +244,24 @@ describe('ExtensionContextImpl', () => {
         baseDir: '/test/project',
       };
 
-      const contextWithEventManager = new ExtensionContextImpl(extensionId, undefined, undefined, mockEventManager as any, mockProject as any, undefined);
+      const contextWithEventManager = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        undefined,
+        undefined,
+        mockEventManager as any,
+        mockProject as any,
+        undefined,
+      );
 
-      contextWithEventManager.triggerUIRefresh();
+      contextWithEventManager.triggerUIDataRefresh();
 
-      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith('/test/project', 'test-extension', undefined);
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith({
+        projectDir: '/test/project',
+        extensionId: 'test-extension',
+        componentId: undefined,
+        taskId: undefined,
+      });
     });
 
     it('should call eventManager.sendExtensionUIRefresh with componentId', () => {
@@ -259,19 +273,100 @@ describe('ExtensionContextImpl', () => {
         baseDir: '/test/project',
       };
 
-      const contextWithEventManager = new ExtensionContextImpl(extensionId, undefined, undefined, mockEventManager as any, mockProject as any, undefined);
+      const contextWithEventManager = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        undefined,
+        undefined,
+        mockEventManager as any,
+        mockProject as any,
+        undefined,
+      );
 
-      contextWithEventManager.triggerUIRefresh('status-bar');
+      contextWithEventManager.triggerUIDataRefresh('status-bar');
 
-      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith('/test/project', 'test-extension', 'status-bar');
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith({
+        projectDir: '/test/project',
+        extensionId: 'test-extension',
+        componentId: 'status-bar',
+        taskId: undefined,
+      });
+    });
+
+    it('should call eventManager.sendExtensionUIRefresh with componentId and taskId', () => {
+      const mockEventManager = {
+        sendExtensionUIRefresh: vi.fn(),
+      };
+
+      const mockProject = {
+        baseDir: '/test/project',
+      };
+
+      const contextWithEventManager = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        undefined,
+        undefined,
+        mockEventManager as any,
+        mockProject as any,
+        undefined,
+      );
+
+      contextWithEventManager.triggerUIDataRefresh('status-bar', 'task-123');
+
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith({
+        projectDir: '/test/project',
+        extensionId: 'test-extension',
+        componentId: 'status-bar',
+        taskId: 'task-123',
+      });
     });
 
     it('should log warning if eventManager is not available', () => {
-      const contextWithoutEventManager = new ExtensionContextImpl(extensionId);
+      const contextWithoutEventManager = new ExtensionContextImpl(extensionId, extensionName);
 
-      // Should not throw error
       expect(() => {
-        contextWithoutEventManager.triggerUIRefresh();
+        contextWithoutEventManager.triggerUIDataRefresh();
+      }).not.toThrow();
+
+      expect(logger.warn).toHaveBeenCalled();
+    });
+  });
+
+  describe('triggerUIComponentsReload', () => {
+    it('should call eventManager.sendExtensionUIRefresh with reloadComponents flag', () => {
+      const mockEventManager = {
+        sendExtensionUIRefresh: vi.fn(),
+      };
+
+      const mockProject = {
+        baseDir: '/test/project',
+      };
+
+      const contextWithEventManager = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        undefined,
+        undefined,
+        mockEventManager as any,
+        mockProject as any,
+        undefined,
+      );
+
+      contextWithEventManager.triggerUIComponentsReload();
+
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith({
+        projectDir: '/test/project',
+        extensionId: 'test-extension',
+        reloadComponents: true,
+      });
+    });
+
+    it('should log warning if eventManager is not available', () => {
+      const contextWithoutEventManager = new ExtensionContextImpl(extensionId, extensionName);
+
+      expect(() => {
+        contextWithoutEventManager.triggerUIComponentsReload();
       }).not.toThrow();
 
       expect(logger.warn).toHaveBeenCalled();

@@ -650,11 +650,18 @@ export interface ExtensionContext {
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
 
   /**
-   * Trigger a refresh of extension UI components in the renderer
-   * Use this when extension internal state changes and UI components need to re-render
-   * @param id - Unique identifier for the extension component
+   * Trigger a data refresh for UI components in the renderer
+   * Use this when extension internal state changes and UI components need to re-fetch their data
+   * @param componentId - Optional component ID to refresh only a specific component
+   * @param taskId - Optional task ID to refresh only components for a specific task
    */
-  triggerUIRefresh(id: string): void;
+  triggerUIDataRefresh(componentId?: string, taskId?: string): void;
+
+  /**
+   * Trigger a full reload of all UI component definitions for this extension
+   * Use this when the component structure or definitions have changed
+   */
+  triggerUIComponentsReload(): void;
 
   /**
    * Open a URL either in external browser, a new window, or a modal overlay

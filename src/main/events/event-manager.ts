@@ -421,8 +421,8 @@ export class EventManager {
   }
 
   // Extension UI events
-  sendExtensionUIRefresh(baseDir: string, extensionId: string, componentId?: string): void {
-    const data: ExtensionUIRefreshData = { baseDir, extensionId, componentId };
+  sendExtensionUIRefresh(options: { projectDir?: string; extensionId?: string; componentId?: string; taskId?: string; reloadComponents?: boolean }): void {
+    const data: ExtensionUIRefreshData = options;
     this.sendToMainWindow('extension-ui-refresh', data);
     this.broadcastToEventConnectors('extension-ui-refresh', data);
   }

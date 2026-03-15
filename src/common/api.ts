@@ -146,7 +146,7 @@ export interface ApplicationAPI {
     projectDir?: string,
     taskId?: string,
   ) => Promise<unknown>;
-  onExtensionUIRefresh: (baseDir: string, callback: (data: ExtensionUIRefreshData) => void) => () => void;
+  onExtensionUIRefresh: (callback: (data: ExtensionUIRefreshData) => void) => () => void;
   onModalOverlayUrl: (callback: (data: ModalOverlayUrlData) => void) => () => void;
   isWebViewSupported: () => boolean;
 

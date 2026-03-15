@@ -969,9 +969,11 @@ export interface ExtensionUIComponent {
 }
 
 export interface ExtensionUIRefreshData {
-  baseDir: string;
-  extensionId: string;
+  projectDir?: string;
+  extensionId?: string;
   componentId?: string;
+  taskId?: string;
+  reloadComponents?: boolean;
 }
 
 export type OpenDialogProperty = 'openFile' | 'openDirectory' | 'multiSelections';
