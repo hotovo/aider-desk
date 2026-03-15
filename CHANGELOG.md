@@ -24,6 +24,7 @@
 - made auto-compact threshold slider snap to steps of 5 for easier selection
 - added file preview modal for viewing project files in Context Files sidebar
 - added ability to expand/collapse folders by clicking on folder name in Project Files
+- correctly processing queued prompts in case the prompt has been added during the task state determination
 
 ## [0.56.0]
 

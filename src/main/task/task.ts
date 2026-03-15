@@ -890,12 +890,19 @@ export class Task {
 
       if (settings.taskSettings.smartTaskState) {
         state = await this.determineTaskState(agentMessages);
+
+        // check once again after determining task state which can task some time
+        if (waitForCurrentAgentToFinish) {
+          await this.runNextQueuedPrompt();
+        }
       }
 
-      await this.saveTask({
-        completedAt: new Date().toISOString(),
-        state: state || DefaultTaskState.ReadyForReview,
-      });
+      if (this.task.state === DefaultTaskState.InProgress) {
+        await this.saveTask({
+          completedAt: new Date().toISOString(),
+          state: state || DefaultTaskState.ReadyForReview,
+        });
+      }
     }
 
     if (sendNotification) {
