@@ -1,5 +1,5 @@
 /**
- * Plannotator Extension - Plan-based development workflow with visual review
+  * Plannotator Extension - Plan-based development workflow with visual review
  *
  * Features:
  * - Planning mode with tool restrictions (read-only + PLAN.md writes)
@@ -39,7 +39,8 @@ import type {
   TaskInitializedEvent,
   TaskClosedEvent,
   ImportantRemindersEvent,
-} from '@aiderdesk/extensions';
+  AgentProfile,
+} from "@aiderdesk/extensions";
 
 // Load review HTML at module initialization
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -129,7 +130,7 @@ After completing each step, include [DONE:n] in your response where n is the ste
 export default class PlannotatorExtension implements Extension {
   static metadata = {
     name: 'Plannotator Extension',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Plan-based development workflow with planning mode and plan review utilizing plannotator.ai',
     author: 'wladimiiir',
     capabilities: ['modes', 'tools', 'commands', 'workflow'],
@@ -204,7 +205,10 @@ export default class PlannotatorExtension implements Extension {
 
   // ── Tools ─────────────────────────────────────────────────────────────
 
-  getTools(): ToolDefinition[] {
+  getTools(context: ExtensionContext, mode: string, agentProfile: AgentProfile): ToolDefinition[] {
+    if (agentProfile.isSubagent) {
+      return [];
+    }
     return [
       {
         name: 'exit_plan_mode',
@@ -224,12 +228,7 @@ export default class PlannotatorExtension implements Extension {
             return 'Error: Not in planning phase. Use /plannotator to enter plannotator mode first.';
           }
 
-          const projectContext = context.getProjectContext();
-          if (!projectContext) {
-            return 'Error: No project context available.';
-          }
-
-          const planPath = join(projectContext.baseDir, taskState.planFile);
+          const planPath = join(taskContext.getTaskDir(), taskState.planFile);
           if (!existsSync(planPath)) {
             return `Error: ${taskState.planFile} does not exist. Write your plan first, then call exit_plan_mode again.`;
           }
@@ -263,9 +262,8 @@ export default class PlannotatorExtension implements Extension {
           });
 
           // Open browser
-          context.log(`Opening browser to ${server.url}`, 'info');
-          taskContext.addLogMessage('info', `Plan review opened in browser: ${server.url}`);
-          openBrowser(server.url);
+          context.log(`Opening modal-overlay with ${server.url}`, 'info');
+          void context.openUrl(server.url, 'modal-overlay');
 
           // Wait for user decision or abort signal
           const result = await new Promise<{ approved: boolean; feedback?: string } | 'aborted'>((resolve) => {
