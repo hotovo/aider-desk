@@ -266,6 +266,29 @@ export AIDER_DESK_AIDER_VERSION=git+https://github.com/user/aider.git@branch-nam
 
 This variable will be used during the initial setup and when AiderDesk checks for updates. For more detailed information, please refer to [our docs](https://aiderdesk.hotovo.com/docs/advanced/custom-aider-version).
 
+## Installation with Package Managers
+
+### Homebrew (MacOS)
+
+If you’re on a Mac and prefer using [Homebrew](https://brew.sh/) for managing applications, you can install AiderDesk directly:
+
+```bash
+brew update
+brew install hotovo-aider-desk
+```
+
+Then open the app from your Applications folder.
+
+Updates are handled from within the AiderDesk application itself. The `brew upgrade` command will not update your installation.
+
+Uninstall using standard `brew uninstall` tool. To completely remove the app, use:
+
+```bash
+brew uninstall hotovo-aider-desk
+# optionally also remove all user-data:
+# brew uninstall --zap hotovo-aider-desk
+```
+
 ## 👨‍💻 Development Setup
 
 If you want to run from source, you can follow these steps:
