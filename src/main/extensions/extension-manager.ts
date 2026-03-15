@@ -5,7 +5,7 @@ import os from 'os';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, ToolApprovalState } from '@common/types';
+import { AvailableExtension, SettingsData, ToolApprovalState } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, Tool, UIComponentDefinition } from '@common/extensions';
 
 import { ExtensionLoader } from './extension-loader';
@@ -173,6 +173,38 @@ export class ExtensionManager {
     const disabledExtensions = settings.extensions?.disabled || [];
 
     return extensions.filter((ext) => !disabledExtensions.includes(ext.metadata.name));
+  }
+
+  /**
+   * Handle settings changes. Detects when extensions with UI components
+   * are enabled/disabled and triggers UI refresh accordingly.
+   */
+  settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void {
+    const oldDisabled = oldSettings.extensions?.disabled || [];
+    const newDisabled = newSettings.extensions?.disabled || [];
+
+    // Early exit if no change
+    if (JSON.stringify(oldDisabled.sort()) === JSON.stringify(newDisabled.sort())) {
+      return;
+    }
+
+    // Find extensions that changed state
+    const newlyDisabled = oldDisabled.filter((name) => !newDisabled.includes(name));
+    const newlyEnabled = newDisabled.filter((name) => !oldDisabled.includes(name));
+    const changedExtensions = [...newlyDisabled, ...newlyEnabled];
+
+    if (changedExtensions.length === 0) {
+      return;
+    }
+
+    // Check if any changed extensions have UI components
+    const allExtensions = this.registry.getExtensions();
+    const hasUIComponentsChange = allExtensions.some((ext) => changedExtensions.includes(ext.metadata.name) && ext.instance.getUIComponents !== undefined);
+
+    if (hasUIComponentsChange) {
+      logger.info('[Extensions] Extensions with UI components changed, triggering UI refresh');
+      this.eventManager.sendExtensionUIRefresh({ reloadComponents: true });
+    }
   }
 
   addListener(listener: ExtensionsChangeListener): void {

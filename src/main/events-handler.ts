@@ -87,6 +87,7 @@ export class EventsHandler {
     void this.projectManager.settingsChanged(oldSettings, newSettings);
     this.telemetryManager.settingsChanged(oldSettings, newSettings);
     void this.memoryManager.settingsChanged(oldSettings, newSettings);
+    this.extensionManager.settingsChanged(oldSettings, newSettings);
     this.eventManager.sendSettingsUpdated(newSettings);
 
     return this.store.getSettings();
