@@ -662,6 +662,7 @@ src/
         Onboarding.tsx
         Settings.tsx
       stores/
+        extensionUIStore.ts
         projectStore.ts
         taskStore.ts
       themes/
@@ -6137,9 +6138,11 @@ export interface ExtensionUIComponent {
 }
 ⋮----
 export interface ExtensionUIRefreshData {
-  baseDir: string;
-  extensionId: string;
+  projectDir?: string;
+  extensionId?: string;
   componentId?: string;
+  taskId?: string;
+  reloadComponents?: boolean;
 }
 ⋮----
 export type OpenDialogProperty = 'openFile' | 'openDirectory' | 'multiSelections';
@@ -6924,7 +6927,7 @@ export interface ApplicationAPI {
     projectDir?: string,
     taskId?: string,
   ) => Promise<unknown>;
-  onExtensionUIRefresh: (baseDir: string, callback: (data: ExtensionUIRefreshData) => void) => () => void;
+  onExtensionUIRefresh: (callback: (data: ExtensionUIRefreshData) => void) => () => void;
   onModalOverlayUrl: (callback: (data: ModalOverlayUrlData) => void) => () => void;
   isWebViewSupported: () => boolean;
 
@@ -7903,11 +7906,18 @@ export interface ExtensionContext {
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
 
   /**
-   * Trigger a refresh of extension UI components in the renderer
-   * Use this when extension internal state changes and UI components need to re-render
-   * @param id - Unique identifier for the extension component
+   * Trigger a data refresh for UI components in the renderer
+   * Use this when extension internal state changes and UI components need to re-fetch their data
+   * @param componentId - Optional component ID to refresh only a specific component
+   * @param taskId - Optional task ID to refresh only components for a specific task
    */
-  triggerUIRefresh(id: string): void;
+  triggerUIDataRefresh(componentId?: string, taskId?: string): void;
+
+  /**
+   * Trigger a full reload of all UI component definitions for this extension
+   * Use this when the component structure or definitions have changed
+   */
+  triggerUIComponentsReload(): void;
 
   /**
    * Open a URL either in external browser, a new window, or a modal overlay
@@ -7965,11 +7975,18 @@ getSetting(key: string): Promise<unknown>;
 updateSettings(updates: Partial<SettingsData>): Promise<void>;
 ⋮----
 /**
-   * Trigger a refresh of extension UI components in the renderer
-   * Use this when extension internal state changes and UI components need to re-render
-   * @param id - Unique identifier for the extension component
+   * Trigger a data refresh for UI components in the renderer
+   * Use this when extension internal state changes and UI components need to re-fetch their data
+   * @param componentId - Optional component ID to refresh only a specific component
+   * @param taskId - Optional task ID to refresh only components for a specific task
    */
-triggerUIRefresh(id: string): void;
+triggerUIDataRefresh(componentId?: string, taskId?: string): void;
+⋮----
+/**
+   * Trigger a full reload of all UI component definitions for this extension
+   * Use this when the component structure or definitions have changed
+   */
+triggerUIComponentsReload(): void;
 ⋮----
 /**
    * Open a URL either in external browser, a new window, or a modal overlay
@@ -13499,7 +13516,7 @@ private broadcastToEventConnectors(eventType: string, data: unknown): void
 sendBmadStatusChanged(status: BmadStatus): void
 ⋮----
 // Extension UI events
-sendExtensionUIRefresh(baseDir: string, extensionId: string, componentId?: string): void
+sendExtensionUIRefresh(options:
 ⋮----
 // Modal overlay URL events
 sendModalOverlayUrl(url: string): void
@@ -13559,7 +13576,9 @@ async getSetting(key: string): Promise<unknown>
 ⋮----
 async updateSettings(updates: Partial<SettingsData>): Promise<void>
 ⋮----
-triggerUIRefresh(componentId?: string): void
+triggerUIDataRefresh(componentId?: string, taskId?: string): void
+⋮----
+triggerUIComponentsReload(): void
 ⋮----
 async openUrl(url: string, target: 'external' | 'window' | 'modal-overlay' = 'window'): Promise<void>
 
@@ -13690,7 +13709,7 @@ import os from 'os';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, ToolApprovalState } from '@common/types';
+import { AvailableExtension, SettingsData, ToolApprovalState } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, Tool, UIComponentDefinition } from '@common/extensions';
 ⋮----
 import { ExtensionLoader } from './extension-loader';
@@ -13753,26 +13772,31 @@ import { Task } from '@/task';
 export type ExtensionsChangeListener = (extensions: LoadedExtension[]) => void;
 ⋮----
 export interface RegisteredTool {
+  extensionId: string;
   extensionName: string;
   tool: ToolDefinition;
 }
 ⋮----
 export interface RegisteredCommand {
+  extensionId: string;
   extensionName: string;
   command: CommandDefinition;
 }
 ⋮----
 export interface RegisteredAgent {
+  extensionId: string;
   extensionName: string;
   agent: AgentProfile;
 }
 ⋮----
 export interface RegisteredMode {
+  extensionId: string;
   extensionName: string;
   mode: ModeDefinition;
 }
 ⋮----
 export interface RegisteredUIComponent {
+  extensionId: string;
   extensionName: string;
   component: UIComponentDefinition;
 }
@@ -13832,6 +13856,18 @@ constructor(
    */
 private filterEnabledExtensions(extensions: LoadedExtension[]): LoadedExtension[]
 ⋮----
+/**
+   * Handle settings changes. Detects when extensions with UI components
+   * are enabled/disabled and triggers UI refresh accordingly.
+   */
+settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void
+⋮----
+// Early exit if no change
+⋮----
+// Find extensions that changed state
+⋮----
+// Check if any changed extensions have UI components
+⋮----
 addListener(listener: ExtensionsChangeListener): void
 ⋮----
 removeListener(listener: ExtensionsChangeListener): void
@@ -13852,7 +13888,7 @@ private async initializeExtension(loaded: LoadedExtension, project?: Project): P
    * Loads, registers, and initializes an extension from a file path.
    * Combines the common pattern of load → register → initialize.
    */
-private async loadAndInitializeExtension(filePath: string, project?: Project): Promise<boolean>
+private async loadAndInitializeExtension(filePath: string, project?: Project): Promise<
 ⋮----
 /**
    * Unified method to load all extensions from a directory.
@@ -18667,6 +18703,8 @@ public async runPromptInAgent(
 ⋮----
 // Determine task state based on the last assistant message
 ⋮----
+// check once again after determining task state which can task some time
+⋮----
 public async executeBmadWorkflow(workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult>
 ⋮----
 // Create a new subtask. If the current task already has a parentId (is a subtask),
@@ -22113,7 +22151,7 @@ getUIExtensionData(extensionId: string, componentId: string, projectDir?: string
 ⋮----
 executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string): Promise<unknown>
 ⋮----
-onExtensionUIRefresh(baseDir: string, callback: (data: ExtensionUIRefreshData) => void): () => void
+onExtensionUIRefresh(callback: (data: ExtensionUIRefreshData) => void): () => void
 ⋮----
 onModalOverlayUrl(callback: (data: ModalOverlayUrlData) => void): () => void
 ⋮----
@@ -24112,7 +24150,7 @@ title=
 ================
 File: src/renderer/src/components/extensions/ExtensionComponentWrapper.tsx
 ================
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
 import { twMerge } from 'tailwind-merge';
@@ -24120,6 +24158,7 @@ import { twMerge } from 'tailwind-merge';
 import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
+import { useExtensionUIStore, useExtensionComponents } from '@/stores/extensionUIStore';
 ⋮----
 type Props = {
   placement: string;
@@ -24128,19 +24167,25 @@ type Props = {
   additionalProps?: Record<string, unknown>;
 };
 ⋮----
-export const ExtensionComponentWrapper = (
+const ExtensionComponentWrapperInner = (
 ⋮----
-const loadComponents = async () =>
+// Use cached components from store
 ⋮----
-// eslint-disable-next-line no-console
+// Load components on mount or when cache is empty
 ⋮----
-const loadData = async () =>
+// Load data for all components that need it
 ⋮----
-// eslint-disable-next-line no-console
+// Handle refresh events
+⋮----
+// Filter by project
+⋮----
+// Handle component reload via store
+⋮----
+// Filter by task for data refresh
+⋮----
+// Reload data for affected components (stale-while-revalidate)
 ⋮----
 const executeExtensionAction = async (action: string, ...args: unknown[]) =>
-⋮----
-const renderComponent = (comp: ExtensionUIComponent) =>
 ⋮----
 <StringToReactComponent data=
 ⋮----
@@ -25114,6 +25159,8 @@ const exportToImage = async () =>
 // eslint-disable-next-line no-console
 ⋮----
 onFork=
+⋮----
+// only pass message to extension if it is finished (optimization while streaming message)
 ⋮----
 aria-label=
 
@@ -32699,6 +32746,98 @@ e.stopPropagation();
 {/* Children */}
 ⋮----
 {/* Content */}
+
+================
+File: src/renderer/src/stores/extensionUIStore.ts
+================
+import { useShallow } from 'zustand/react/shallow';
+import { createWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
+import { ExtensionUIComponent, ExtensionUIRefreshData } from '@common/types';
+import { ApplicationAPI } from '@common/api';
+⋮----
+const getComponentsCacheKey = (projectDir?: string, placement?: string): string => `$
+⋮----
+const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): string
+⋮----
+interface ExtensionUIState {
+  componentsMap: Map<string, ExtensionUIComponent[]>;
+  dataMap: Map<string, unknown>;
+  loadingComponents: Set<string>;
+  loadingData: Set<string>;
+  initialized: boolean;
+}
+⋮----
+interface ExtensionUIActions {
+  loadComponents: (api: ApplicationAPI, projectDir?: string, placement?: string) => Promise<ExtensionUIComponent[]>;
+  loadComponentData: (
+    api: ApplicationAPI,
+    extensionId: string,
+    componentId: string,
+    projectDir?: string,
+    taskId?: string,
+    forceRefresh?: boolean,
+  ) => Promise<unknown>;
+  loadAllComponentsData: (
+    api: ApplicationAPI,
+    components: ExtensionUIComponent[],
+    projectDir?: string,
+    taskId?: string,
+    forceRefresh?: boolean,
+  ) => Promise<void>;
+  handleRefreshEvent: (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) => void;
+  invalidateComponents: (projectDir?: string, placement?: string) => void;
+  invalidateData: (extensionId?: string, componentId?: string, projectDir?: string, taskId?: string) => void;
+  getComponents: (projectDir?: string, placement?: string) => ExtensionUIComponent[];
+  getComponentData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => unknown;
+  isLoadingComponents: (projectDir?: string, placement?: string) => boolean;
+}
+⋮----
+type ExtensionUIStore = ExtensionUIState & ExtensionUIActions;
+⋮----
+// Return cached if available
+⋮----
+// Prevent duplicate requests
+⋮----
+// Wait for existing request - poll until loaded
+⋮----
+const checkLoaded = () =>
+⋮----
+// Mark as loading
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// Return cached if available and not forcing refresh
+⋮----
+// Prevent duplicate requests (only block if no cached data to show)
+⋮----
+// If we have cached data, return it immediately (stale-while-revalidate)
+⋮----
+// Otherwise wait for the pending request
+⋮----
+// Mark as loading
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// Return cached data on error if available
+⋮----
+// Only handle component reloads - data refresh is handled by forceRefresh in loadComponentData
+// We don't invalidate data cache to avoid flicker (stale-while-revalidate pattern)
+⋮----
+// Find all matching component cache keys to invalidate
+⋮----
+// Clear all
+⋮----
+// Clear all
+⋮----
+// If partial key, find all matching
+⋮----
+// Selector hooks for optimized re-renders
+export const useExtensionComponents = (projectDir?: string, placement?: string): ExtensionUIComponent[] =>
+⋮----
+export const useExtensionComponentData = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): unknown =>
+⋮----
+export const useIsLoadingComponents = (projectDir?: string, placement?: string): boolean =>
 
 ================
 File: src/renderer/src/stores/projectStore.ts
