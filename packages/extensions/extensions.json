@@ -177,6 +177,24 @@
       "file": "ui-placement-demo.ts",
       "type": "single",
       "capabilities": ["onLoad", "ui-components"]
+    },
+    {
+      "id": "multi-model-run",
+      "name": "Multi-Model Run",
+      "description": "Run the same prompt across multiple models simultaneously",
+      "folder": "multi-model-run",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["onLoad", "onPromptStarted", "ui-components"]
+    },
+    {
+      "id": "providers-quota-extension",
+      "name": "Providers Quota",
+      "description": "Displays API quota information for Synthetic and Z.AI providers in the task status bar",
+      "folder": "providers-quota-extension",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["onLoad", "onPromptFinished", "ui-components"]
     }
   ]
 }
