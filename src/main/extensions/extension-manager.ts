@@ -17,6 +17,7 @@ import type {
   AgentFinishedEvent,
   AgentStartedEvent,
   AgentStepFinishedEvent,
+  AgentStepStartedEvent,
   AiderPromptFinishedEvent,
   AiderPromptStartedEvent,
   CommandDefinition,
@@ -115,6 +116,7 @@ export type ExtensionEventMap = {
   onPromptTemplate: PromptTemplateEvent;
   onAgentStarted: AgentStartedEvent;
   onAgentFinished: AgentFinishedEvent;
+  onAgentStepStarted: AgentStepStartedEvent;
   onAgentStepFinished: AgentStepFinishedEvent;
   onOptimizeMessages: OptimizeMessagesEvent;
   onImportantReminders: ImportantRemindersEvent;

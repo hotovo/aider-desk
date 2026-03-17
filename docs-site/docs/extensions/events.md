@@ -35,7 +35,7 @@ async onTaskClosed(event: TaskClosedEvent, context: ExtensionContext) {
 Prevent an operation by setting `blocked: true`.
 
 ```typescript
-async onToolCalled(event: ToolCalledEvent, context: ExtensionContext) {
+async onToolApproval(event: ToolApprovalEvent, context: ExtensionContext) {
   if (event.toolName === 'dangerous_tool') {
     return { blocked: true };  // Prevents execution
   }
@@ -63,8 +63,9 @@ async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext) {
 | Category | Events | Purpose |
 |----------|--------|---------|
 | **Task** | Created, Prepared, Initialized, Closed, Updated | Task lifecycle |
-| **Project** | Opened, Closed | Project lifecycle |
-| **Agent** | Started, Finished, Step Finished | Agent execution |
+| **Project** | Started, Stopped | Project lifecycle |
+| **Agent** | Started, Step Started, Finished, Step Finished | Agent execution |
+| **Message Optimization** | Optimize, Important Reminders | Message optimization |
 | **Tool** | Approval, Called, Finished | Tool execution |
 | **File** | Added, Dropped, Rule Files Retrieved | File context management |
 | **Prompt** | Started, Finished | Prompt processing |
@@ -129,21 +130,21 @@ interface TaskUpdatedEvent {
 
 ## Project Events
 
-### ProjectOpenedEvent
-Called when a project is opened.
+### ProjectStartedEvent
+Called when a project is started.
 
 ```typescript
-interface ProjectOpenedEvent {
-  project: ProjectData;
+interface ProjectStartedEvent {
+  readonly baseDir: string;
 }
 ```
 
-### ProjectClosedEvent
-Called when a project is closed.
+### ProjectStoppedEvent
+Called when a project is stopped.
 
 ```typescript
-interface ProjectClosedEvent {
-  readonly project: ProjectData;
+interface ProjectStoppedEvent {
+  readonly baseDir: string;
 }
 ```
 
@@ -157,8 +158,8 @@ Called when prompt processing starts.
 ```typescript
 interface PromptStartedEvent {
   prompt: string;
-  readonly mode: Mode;
-  readonly promptContext: PromptContext;
+  mode: Mode;
+  promptContext: PromptContext;
   blocked?: boolean;
 }
 ```
@@ -221,16 +222,16 @@ async onPromptTemplate(event: PromptTemplateEvent, context: ExtensionContext) {
 ```typescript
 async onPromptTemplate(event: PromptTemplateEvent, context: ExtensionContext) {
   const projectDir = context.getProjectDir();
-  
+
   // Add project-specific context to init-project prompt
   if (event.name === 'init-project') {
     const customInstructions = `
-    
+
 ## Project-Specific Guidelines
 This project uses TypeScript with strict mode enabled.
 Always prefer type-safe implementations over any types.
     `;
-    
+
     return {
       prompt: event.prompt + customInstructions,
     };
@@ -248,13 +249,28 @@ Called when agent mode starts. Use to modify prompts, context, or block executio
 ```typescript
 interface AgentStartedEvent {
   readonly mode: Mode;
-  agentProfile: AgentProfile;
   prompt: string | null;
-  readonly promptContext?: PromptContext;
-  readonly systemPrompt: string | undefined;
+  agentProfile: AgentProfile;
+  providerProfile: ProviderProfile;
+  model: string;
+  promptContext?: PromptContext;
+  systemPrompt: string | undefined;
   contextMessages: ContextMessage[];
   contextFiles: ContextFile[];
   blocked?: boolean;
+}
+```
+
+### AgentStepStartedEvent
+Called before each agent step starts (before the LLM call). Use to modify messages that will be sent.
+
+```typescript
+interface AgentStepStartedEvent {
+  readonly mode: Mode;
+  readonly agentProfile: AgentProfile;
+  readonly currentResponseId: string;
+  readonly iterationCount: number;
+  messages: ContextMessage[];
 }
 ```
 
@@ -286,6 +302,30 @@ interface AgentStepFinishedEvent {
 
 ---
 
+## Message Optimization Events
+
+### OptimizeMessagesEvent
+Called when messages are being optimized. Use to modify or filter the optimized messages.
+
+```typescript
+interface OptimizeMessagesEvent {
+  readonly originalMessages: ContextMessage[];
+  optimizedMessages: ContextMessage[];
+}
+```
+
+### ImportantRemindersEvent
+Called when important reminders are being generated. Use to modify the reminders content.
+
+```typescript
+interface ImportantRemindersEvent {
+  readonly profile: AgentProfile;
+  remindersContent: string;
+}
+```
+
+---
+
 ## Tool Events
 
 ### ToolApprovalEvent
@@ -309,7 +349,6 @@ interface ToolCalledEvent {
   readonly abortSignal?: AbortSignal;
   input: Record<string, unknown> | undefined;
   output?: unknown;
-  blocked?: boolean;
 }
 ```
 
@@ -386,9 +425,9 @@ Called when handling user approval requests.
 
 ```typescript
 interface HandleApprovalEvent {
-  readonly key: string;
-  readonly text: string;
-  readonly subject?: string;
+  key: string;
+  text: string;
+  subject?: string;
   blocked?: boolean;
   allowed?: boolean;
 }
@@ -405,7 +444,7 @@ Called when a subagent starts. Use to modify or block subagent execution.
 interface SubagentStartedEvent {
   subagentProfile: AgentProfile;
   prompt: string;
-  readonly promptContext?: PromptContext;
+  promptContext?: PromptContext;
   contextMessages: ContextMessage[];
   contextFiles: ContextFile[];
   systemPrompt?: string;
@@ -432,7 +471,7 @@ Called when a question is asked to the user. Set `answer` to auto-answer.
 
 ```typescript
 interface QuestionAskedEvent {
-  readonly question: QuestionData;
+  question: QuestionData;
   answer?: string;
 }
 ```
@@ -457,7 +496,7 @@ Called when a slash command is executed.
 
 ```typescript
 interface CommandExecutedEvent {
-  readonly command: string;
+  command: string;
   blocked?: boolean;
 }
 ```
@@ -467,8 +506,8 @@ Called when a custom command is executed.
 
 ```typescript
 interface CustomCommandExecutedEvent {
-  readonly command: CustomCommand;
-  readonly mode: Mode;
+  command: CustomCommand;
+  mode: Mode;
   blocked?: boolean;
   prompt?: string;
 }
@@ -484,10 +523,10 @@ Called when Aider prompt starts (legacy event).
 ```typescript
 interface AiderPromptStartedEvent {
   prompt: string;
-  readonly mode: Mode;
-  readonly promptContext: PromptContext;
-  readonly messages: ConnectorMessage[];
-  readonly files: ContextFile[];
+  mode: Mode;
+  promptContext: PromptContext;
+  messages: ConnectorMessage[];
+  files: ContextFile[];
   blocked?: boolean;
   autoApprove?: boolean;
   denyCommands?: boolean;

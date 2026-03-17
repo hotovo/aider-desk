@@ -21,89 +21,89 @@ sequenceDiagram
     participant LLM
 
     User->>AiderDesk: Submit prompt
-    
+
     Note over AiderDesk,Extension: PHASE 1: Prompt Initialization
-    
+
     AiderDesk->>Extension: onPromptStarted
     Note right of Extension: Can modify prompt, mode<br/>Can block execution
-    
+
     Extension-->>AiderDesk: Modified or blocked
-    
+
     alt Blocked by extension
         AiderDesk-->>User: Prompt blocked
     else Not blocked
-        
+
         Note over AiderDesk,Extension: PHASE 2: Agent Execution
-        
+
         AiderDesk->>Extension: onAgentStarted
         Note right of Extension: Can modify prompt, files,<br/>system prompt, agent config<br/>Can block execution
-        
+
         Extension-->>AiderDesk: Modified or blocked
-        
+
         alt Blocked by extension
             AiderDesk-->>User: Agent blocked
         else Not blocked
-            
+
             Note over AiderDesk: Preparing messages for LLM
-            
+
             AiderDesk->>Extension: onOptimizeMessages
             Note right of Extension: Can modify optimizedMessages<br/>Cannot block
-            
+
             Extension-->>AiderDesk: Modified messages
-            
+
             Note over AiderDesk,LLM: LLM Processing Loop
-            
+
             loop For each LLM iteration
-                
+
                 LLM-->>AiderDesk: Response chunk
-                
+
                 AiderDesk->>Extension: onResponseChunk
                 Note right of Extension: Can modify chunk<br/>Cannot block
-                
+
                 Extension-->>AiderDesk: Modified chunk
-                
+
                 alt Tool call needed
                     AiderDesk->>Extension: onToolApproval
                     Note right of Extension: Can set allowed, blocked<br/>Can block tool execution
-                    
+
                     Extension-->>AiderDesk: Approval decision
-                    
+
                     alt Tool approved
                         AiderDesk->>Extension: onToolCalled
-                        Note right of Extension: Can modify input<br/>Can block execution
-                        
-                        Extension-->>AiderDesk: Modified input or blocked
-                        
+                        Note right of Extension: Can modify input
+
+                        Extension-->>AiderDesk: Modified input
+
                         alt Not blocked
                             AiderDesk->>AiderDesk: Execute tool
                             AiderDesk->>Extension: onToolFinished
-                            Note right of Extension: Can modify output<br/>Cannot block
-                            
+                            Note right of Extension: Can modify output
+
                             Extension-->>AiderDesk: Modified output
                         end
                     end
                 end
-                
+
                 LLM-->>AiderDesk: Step completed
-                
+
                 AiderDesk->>Extension: onAgentStepFinished
                 Note right of Extension: Can modify finishReason,<br/>responseMessages<br/>Cannot block
-                
+
                 Extension-->>AiderDesk: Modified step result
             end
-            
+
             Note over AiderDesk,Extension: PHASE 3: Completion
-            
+
             AiderDesk->>Extension: onAgentFinished
             Note right of Extension: Can modify resultMessages<br/>Cannot block
-            
+
             Extension-->>AiderDesk: Modified result messages
-            
+
             AiderDesk->>Extension: onPromptFinished
             Note right of Extension: Can modify responses<br/>Cannot block
-            
+
             Extension-->>AiderDesk: Final responses
-            
+
             AiderDesk-->>User: Display responses
         end
     end
@@ -117,7 +117,7 @@ sequenceDiagram
 
 - **Can modify**: `prompt`, `mode`, `promptContext`
 - **Can block**: ✅ Yes
-- **Use for**: 
+- **Use for**:
   - Filter inappropriate content
   - Add prefixes/suffixes to prompts
   - Validate prompts before processing
@@ -161,7 +161,7 @@ These events fire during each iteration of the LLM processing:
 **onToolCalled** - Before tool execution
 
 - **Can modify**: `input`
-- **Can block**: ✅ Yes
+- **Can block**: ❌ No (use `onToolApproval` instead)
 - **Use for**: Prevent dangerous tool calls, modify inputs
 
 **onToolFinished** - After tool execution
@@ -211,7 +211,7 @@ These events fire during each iteration of the LLM processing:
 | Event | When to Use | Can Block? |
 |-------|------------|------------|
 | `onToolApproval` | Control which tools require user approval, auto-approve safe tools | ✅ Yes (via `allowed`) |
-| `onToolCalled` | Modify tool inputs before execution, prevent specific tool calls | ✅ Yes |
+| `onToolCalled` | Modify tool inputs before execution, prevent specific tool calls | ❌ No |
 | `onToolFinished` | Modify tool outputs after execution, add metadata, format results | ❌ No |
 
 ### Want to Modify Responses?
@@ -253,7 +253,7 @@ Implement `onAgentStarted` to inject project-specific context:
 async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext): Promise<Partial<AgentStartedEvent>> {
   // Add project guidelines to system prompt
   const guidelines = await loadProjectGuidelines(context.getProjectDir());
-  
+
   return {
     systemPrompt: event.systemPrompt + '\n\n' + guidelines
   };
@@ -267,12 +267,12 @@ Implement `onPromptStarted` to block dangerous commands:
 ```typescript
 async onPromptStarted(event: PromptStartedEvent, context: ExtensionContext): Promise<Partial<PromptStartedEvent>> {
   const dangerousPatterns = ['rm -rf', 'DROP TABLE', 'format disk'];
-  
+
   if (dangerousPatterns.some(pattern => event.prompt.includes(pattern))) {
     context.log('Blocked dangerous prompt', 'warning');
     return { blocked: true };
   }
-  
+
   return {};
 }
 ```
@@ -284,12 +284,12 @@ Implement `onToolApproval` to auto-approve read-only tools:
 ```typescript
 async onToolApproval(event: ToolApprovalEvent, context: ExtensionContext): Promise<Partial<ToolApprovalEvent>> {
   const readOnlyTools = ['file_read', 'semantic_search', 'glob', 'grep'];
-  
+
   if (readOnlyTools.includes(event.toolName)) {
     context.log(`Auto-approving safe tool: ${event.toolName}`, 'info');
     return { allowed: true };
   }
-  
+
   return {};
 }
 ```
@@ -300,16 +300,16 @@ Implement `onFilesAdded` to prevent sensitive files from being added:
 
 ```typescript
 async onFilesAdded(event: FilesAddedEvent, context: ExtensionContext): Promise<Partial<FilesAddedEvent>> {
-  const filtered = event.files.filter(file => 
-    !file.path.includes('.env') && 
+  const filtered = event.files.filter(file =>
+    !file.path.includes('.env') &&
     !file.path.includes('secrets') &&
     !file.path.includes('credentials')
   );
-  
+
   if (filtered.length !== event.files.length) {
     context.log(`Filtered ${event.files.length - filtered.length} sensitive files`, 'info');
   }
-  
+
   return { files: filtered };
 }
 ```
@@ -324,10 +324,10 @@ async onToolFinished(event: ToolFinishedEvent, context: ExtensionContext): Promi
     // Add line numbers to file contents
     const lines = event.output.split('\n');
     const numbered = lines.map((line, i) => `${i + 1}|${line}`).join('\n');
-    
+
     return { output: numbered };
   }
-  
+
   return {};
 }
 ```
@@ -344,7 +344,7 @@ async onImportantReminders(event: ImportantRemindersEvent, context: ExtensionCon
 - Follow the existing code style in each file
 - Add unit tests for new functions
 `;
-  
+
   return {
     remindersContent: event.remindersContent + customReminders
   };
@@ -360,11 +360,11 @@ async onOptimizeMessages(event: OptimizeMessagesEvent, context: ExtensionContext
   // Keep only last 20 messages to reduce tokens
   const maxMessages = 20;
   const optimized = event.optimizedMessages.slice(-maxMessages);
-  
+
   if (optimized.length < event.optimizedMessages.length) {
     context.log(`Trimmed ${event.optimizedMessages.length - optimized.length} old messages`, 'info');
   }
-  
+
   return { optimizedMessages: optimized };
 }
 ```
@@ -376,7 +376,7 @@ Implement `onTaskCreated` to enforce naming conventions:
 ```typescript
 async onTaskCreated(event: TaskCreatedEvent, context: ExtensionContext): Promise<Partial<TaskCreatedEvent>> {
   const task = event.task;
-  
+
   // Auto-generate task name if missing
   if (!task.name || task.name.trim() === '') {
     const defaultName = `Task-${Date.now()}`;
@@ -384,7 +384,7 @@ async onTaskCreated(event: TaskCreatedEvent, context: ExtensionContext): Promise
       task: { ...task, name: defaultName }
     };
   }
-  
+
   return {};
 }
 ```
@@ -399,25 +399,25 @@ async onPromptTemplate(event: PromptTemplateEvent, context: ExtensionContext): P
   if (event.name === 'system-prompt') {
     const projectDir = context.getProjectDir();
     const customInstructions = `
-    
+
 ## Project-Specific Guidelines
 - This project uses TypeScript with strict mode
 - Always prefer type-safe implementations
 - Follow the existing code patterns
     `;
-    
+
     return {
       prompt: event.prompt + customInstructions
     };
   }
-  
+
   // Customize the init-project prompt
   if (event.name === 'init-project') {
     return {
       prompt: event.prompt.replace('[DEFAULT INSTRUCTIONS]', '[CUSTOM PROJECT INSTRUCTIONS]')
     };
   }
-  
+
   return {};
 }
 ```
@@ -476,7 +476,6 @@ These events allow you to prevent an action by returning `{ blocked: true }`:
 - ✅ `onPromptStarted` - Block prompt execution
 - ✅ `onAgentStarted` - Block agent execution
 - ✅ `onToolApproval` - Block tool (by not approving)
-- ✅ `onToolCalled` - Block tool execution
 - ✅ `onFilesAdded` - Block files from being added (return empty array)
 - ✅ `onFilesDropped` - Block files from being dropped (return empty array)
 - ✅ `onHandleApproval` - Block approval handling
@@ -520,20 +519,20 @@ if (task) {
   task.data                              // Task metadata
   await task.getContextFiles()           // Get context files
   await task.getContextMessages()        // Get message history
-  
+
   // Modify task
   await task.addFile(path, readOnly)     // Add file to context
   await task.dropFile(path)              // Remove file from context
   await task.updateTask({ name: '...' }) // Update task data
-  
+
   // Execute operations
   await task.runPrompt(prompt, mode)     // Run a prompt
   await task.runCommand(command)         // Execute command
   await task.interruptResponse()         // Stop current execution
-  
+
   // User interaction
-  await task.askQuestion('Continue?', { 
-    answers: [{ text: 'Yes', shortkey: 'y' }] 
+  await task.askQuestion('Continue?', {
+    answers: [{ text: 'Yes', shortkey: 'y' }]
   })
   task.addLogMessage('info', 'Processing...')
 }

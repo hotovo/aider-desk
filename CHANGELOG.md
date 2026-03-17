@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added onAgentStepStarted extension hook
+
 ## [0.57.0]
 
 - moved Files sidebar collapse/expand button to top-right of Context Files section header

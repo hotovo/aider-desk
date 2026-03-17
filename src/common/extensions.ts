@@ -326,6 +326,15 @@ export interface AgentFinishedEvent {
   resultMessages: ContextMessage[];
 }
 
+/** Event payload for agent step started events */
+export interface AgentStepStartedEvent {
+  readonly mode: Mode;
+  readonly agentProfile: AgentProfile;
+  readonly currentResponseId: string;
+  readonly iterationCount: number;
+  messages: ContextMessage[];
+}
+
 /** Event payload for agent step finished events */
 export interface AgentStepFinishedEvent {
   readonly mode: Mode;
@@ -876,6 +885,13 @@ export interface Extension {
   onAgentFinished?(event: AgentFinishedEvent, context: ExtensionContext): Promise<void | Partial<AgentFinishedEvent>>;
 
   /**
+   * Called before each agent step starts
+   * Modify event.messages to change the messages that will be sent to the LLM
+   * @returns void or partial event to modify messages
+   */
+  onAgentStepStarted?(event: AgentStepStartedEvent, context: ExtensionContext): Promise<void | Partial<AgentStepStartedEvent>>;
+
+  /**
    * Called after each agent step completes
    * @returns void or partial event
    */
@@ -906,7 +922,6 @@ export interface Extension {
 
   /**
    * Called when a tool is about to be executed
-   * Set event.blocked = true to prevent execution
    * @returns void or partial event to modify tool call
    */
   onToolCalled?(event: ToolCalledEvent, context: ExtensionContext): Promise<void | Partial<ToolCalledEvent>>;

@@ -1140,6 +1140,23 @@ export class Agent {
           hasReasoning = false;
         };
 
+        // Trigger onAgentStepStarted event
+        const extensionStepStartedResult = await this.extensionManager.dispatchEvent(
+          'onAgentStepStarted',
+          {
+            mode,
+            agentProfile: profile,
+            currentResponseId,
+            iterationCount,
+            messages: messages as ContextMessage[],
+          },
+          task.project,
+          task,
+        );
+        if (extensionStepStartedResult.messages) {
+          messages = extensionStepStartedResult.messages;
+        }
+
         const shouldContinue = await this.compactMessagesIfNeeded(
           task,
           profile,
