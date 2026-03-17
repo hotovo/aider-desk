@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added onAgentStepStarted extension hook
+- properly triggering onTaskUpdated on empty task updates
 
 ## [0.57.0]
 

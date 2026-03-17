@@ -289,11 +289,6 @@ export class Task {
       updates,
     });
     if (updates) {
-      logger.debug('Saving task data updates', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-        updates,
-      });
       for (const key of Object.keys(updates)) {
         this.task[key] = updates[key];
       }
@@ -314,8 +309,11 @@ export class Task {
       }
     }
 
-    await fs.mkdir(path.dirname(this.taskDataPath), { recursive: true });
-    await fs.writeFile(this.taskDataPath, JSON.stringify(this.task, null, 2), 'utf8');
+    if (this.task.createdAt) {
+      // only save if task is not new
+      await fs.mkdir(path.dirname(this.taskDataPath), { recursive: true });
+      await fs.writeFile(this.taskDataPath, JSON.stringify(this.task, null, 2), 'utf8');
+    }
 
     this.eventManager.sendTaskUpdated(this.task);
 
@@ -3292,13 +3290,7 @@ ${error.stderr}`,
       this.task.createdAt = new Date().toISOString();
     }
 
-    if (!this.task.createdAt) {
-      // if this task is new empty task update should not trigger save
-      this.eventManager.sendTaskUpdated(this.task);
-      return this.task;
-    }
-
-    return this.saveTask(updates);
+    return this.saveTask(updates, !!this.task.createdAt);
   }
 
   private async sendWorktreeIntegrationStatusUpdated() {
