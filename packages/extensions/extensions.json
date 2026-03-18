@@ -195,6 +195,15 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["onLoad", "onPromptFinished", "ui-components"]
+    },
+    {
+      "id": "tps-counter",
+      "name": "TPS Counter",
+      "description": "Displays tokens per second for agent responses with UI components in usage info and message bar",
+      "folder": "tps-counter",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["onLoad", "onUnload", "onResponseChunk", "onResponseCompleted", "getUIComponents", "getCommands", "ui-components"]
     }
   ]
 }

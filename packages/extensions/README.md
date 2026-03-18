@@ -71,6 +71,7 @@ For comprehensive documentation on creating and using extensions, see the [Exten
 | **[sound-notification.ts](./extensions/sound-notification.ts)** | Plays a "Jobs Done" sound when a prompt finishes | `notifications` |
 | **[theme.ts](./extensions/theme.ts)** | Adds `/theme` command to switch AiderDesk themes | `commands` |
 | **[tree-sitter-repo-map/](./extensions/tree-sitter-repo-map/)** | Enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking | `context`, `commands` |
+| **[tps-counter/](./extensions/tps-counter/)** | Displays tokens per second for agent responses with UI components in usage info and message bar | `metrics`, `ui` |
 | **[ultrathink.ts](./extensions/ultrathink.ts)** | Detects prompts like "ultrathink" / "think hard" and increases OpenAI/OpenAI-compatible reasoning effort (`xhigh` for `-max` models, otherwise `high`) | `optimization` |
 | **[wakatime.ts](./extensions/wakatime.ts)** | Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli | `tracking` |
 | **[ui-placement-demo.ts](./extensions/ui-placement-demo.ts)** | Demonstrates all available UI component placement locations for extension development | `ui`, `example` |

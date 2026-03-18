@@ -3,7 +3,7 @@
     data.synthetic.error ? (
       <span className="pt-1">Quota unavailable</span>
     ) : (
-      <div className="flex items-center gap-2 py-0.5 justify-between w-full pt-1">
+      <div className="flex items-center gap-2 pt-1 justify-between w-full">
         <span>Synthetic:</span>
         <div className="flex items-center gap-2">
           <span>{data.synthetic.used}/{data.synthetic.limit}</span>
@@ -12,7 +12,7 @@
       </div>
     )
   ) : agentProfile?.provider === 'zai-plan' && data?.zai ? (
-    <div className="flex items-center gap-2 py-0.5 justify-between w-full pt-1">
+    <div className="flex items-center gap-2 pt-1 justify-between w-full">
       <span>Z.ai:</span>
       <div className="flex items-center gap-2">
         <span>5 Hours: {data.zai.hourlyPercentage}%</span>
