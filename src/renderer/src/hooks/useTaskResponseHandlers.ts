@@ -94,7 +94,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
                 ? {
                     ...responseMessage,
                     content,
-                    processing: false,
+                    finished: true,
                     usageReport,
                     promptContext,
                   }
@@ -119,6 +119,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
               content,
               usageReport,
               promptContext,
+              finished: true,
             };
             messages.push(newResponseMessage);
 

@@ -17,6 +17,7 @@ export interface UserMessage extends Message {
 export interface ResponseMessage extends Message {
   type: 'response';
   usageReport?: UsageReportData;
+  finished?: boolean;
 }
 
 export interface ReflectedMessage extends Message {

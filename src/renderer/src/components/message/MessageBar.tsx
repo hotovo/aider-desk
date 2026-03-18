@@ -13,6 +13,7 @@ import { UsageInfo } from './UsageInfo';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { includeMessageProperty } from '@/components/message/utils';
 
 type MenuPosition = {
   top?: number;
@@ -25,7 +26,7 @@ type Props = {
   className?: string;
   content?: string;
   usageReport?: UsageReportData;
-  message?: Message;
+  message: Message;
   remove?: () => void;
   redo?: () => void;
   edit?: () => void;
@@ -39,6 +40,9 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
+  const additionalProps = {
+    message: message && includeMessageProperty(message) ? message : null,
+  };
 
   useClickOutside([menuRef, buttonRef], () => {
     setIsMenuOpen(false);
@@ -91,7 +95,7 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
 
   return (
     <div className={twMerge('mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative', className)}>
-      <ExtensionComponentWrapper placement="task-message-bar" additionalProps={message ? { message } : undefined} />
+      <ExtensionComponentWrapper placement="task-message-bar" additionalProps={additionalProps} />
       {usageReport && <UsageInfo usageReport={usageReport} className="mt-[4px]" />}
       {content && <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />}
       {(remove || redo || edit || onFork || onRemoveUpTo) && (

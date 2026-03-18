@@ -127,6 +127,7 @@ export const DeleteTaskToolMessage = ({ message, onRemove, compact = false, onFo
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={renderContent()}
       usageReport={message.usageReport}

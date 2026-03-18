@@ -114,7 +114,8 @@ const api: ApplicationAPI = {
   installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) =>
     ipcRenderer.invoke('install-extension', extensionId, repositoryUrl, projectDir),
   uninstallExtension: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('uninstall-extension', extensionId, projectDir),
-  getExtensionUIComponents: (projectDir?: string, placement?: string) => ipcRenderer.invoke('get-extension-ui-components', projectDir, placement),
+  getExtensionUIComponents: (placement?: string, projectDir?: string, taskId?: string) =>
+    ipcRenderer.invoke('get-extension-ui-components', placement, projectDir, taskId),
   getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) =>
     ipcRenderer.invoke('get-extension-ui-data', extensionId, componentId, projectDir, taskId),
   executeUIExtensionAction: (extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string) =>

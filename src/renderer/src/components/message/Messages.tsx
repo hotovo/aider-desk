@@ -9,7 +9,7 @@ import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 
 import { IconButton } from '@/components/common/IconButton';
-import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
+import { groupAssistantMessages, groupMessagesByPromptContext, includeMessageProperty } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -176,8 +176,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
             }
 
             const additionalProps = {
-              // only pass message to extension if it is finished (optimization while streaming message)
-              message: 'finished' in message && !message.finished ? null : message,
+              message: includeMessageProperty(message) ? message : null,
             };
             return (
               <div key={message.id}>

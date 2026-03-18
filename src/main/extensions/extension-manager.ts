@@ -985,7 +985,7 @@ export class ExtensionManager {
     };
   }
 
-  getUIComponents(project?: Project): RegisteredUIComponent[] {
+  getUIComponents(project?: Project, task?: Task): RegisteredUIComponent[] {
     const collectedComponents: RegisteredUIComponent[] = [];
     const allExtensions = this.registry.getExtensions(project?.baseDir);
     const extensions = this.filterEnabledExtensions(allExtensions);
@@ -1003,7 +1003,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
         const components = instance.getUIComponents(context);
 
         if (!Array.isArray(components)) {
@@ -1444,6 +1444,7 @@ export class ExtensionManager {
         continue;
       }
 
+      logger.debug(`[Extensions] Dispatching event '${String(eventName)}' to extension '${metadata.name}'`);
       try {
         // Create ExtensionContext for this extension
         const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);

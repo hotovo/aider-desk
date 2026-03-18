@@ -105,8 +105,8 @@ export class ExtensionsApi extends BaseApi {
     router.get(
       '/extensions/ui-components',
       this.handleRequest(async (req, res) => {
-        const { projectDir, placement } = req.query as { projectDir?: string; placement?: string };
-        const components = this.eventsHandler.getUIComponents(projectDir, placement);
+        const { projectDir, placement, taskId } = req.query as { projectDir?: string; placement?: string; taskId?: string };
+        const components = this.eventsHandler.getUIComponents(placement, projectDir, taskId);
         res.status(200).json(components);
       }),
     );

@@ -110,6 +110,7 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false, onFor
   return (
     <ExpandableMessageBlock
       ref={expandableRef}
+      message={message}
       title={title}
       content={renderContent()}
       usageReport={message.usageReport}

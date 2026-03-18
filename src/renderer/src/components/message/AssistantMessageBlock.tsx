@@ -93,7 +93,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
       )}
 
       {/* Single MessageBar for the entire group */}
-      <MessageBar content={allContent} usageReport={aggregatedUsage} remove={remove} onFork={onFork} onRemoveUpTo={onRemoveUpTo} />
+      <MessageBar message={message} content={allContent} usageReport={aggregatedUsage} remove={remove} onFork={onFork} onRemoveUpTo={onRemoveUpTo} />
     </div>
   );
 };

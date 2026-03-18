@@ -101,6 +101,7 @@ export const SearchTaskToolMessage = ({ message, onRemove, compact = false, onFo
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={renderContent()}
       usageReport={message.usageReport}

@@ -83,6 +83,7 @@ export const ActivateSkillToolMessage = ({ message, onRemove, compact = false, o
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={renderContent()}
       copyContent={copyContent}

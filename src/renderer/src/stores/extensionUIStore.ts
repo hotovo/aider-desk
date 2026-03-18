@@ -4,7 +4,8 @@ import { shallow } from 'zustand/vanilla/shallow';
 import { ExtensionUIComponent, ExtensionUIRefreshData } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 
-const getComponentsCacheKey = (projectDir?: string, placement?: string): string => `${projectDir || 'global'}:${placement || 'default'}`;
+const getComponentsCacheKey = (placement?: string, projectDir?: string, taskId?: string): string =>
+  `${placement || 'default'}:${projectDir || 'global'}:${taskId || ''}`;
 
 const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): string =>
   `${extensionId}:${componentId}:${projectDir || ''}:${taskId || ''}`;
@@ -18,7 +19,7 @@ interface ExtensionUIState {
 }
 
 interface ExtensionUIActions {
-  loadComponents: (api: ApplicationAPI, projectDir?: string, placement?: string) => Promise<ExtensionUIComponent[]>;
+  loadComponents: (api: ApplicationAPI, placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
   loadComponentData: (
     api: ApplicationAPI,
     extensionId: string,
@@ -35,11 +36,11 @@ interface ExtensionUIActions {
     forceRefresh?: boolean,
   ) => Promise<void>;
   handleRefreshEvent: (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) => void;
-  invalidateComponents: (projectDir?: string, placement?: string) => void;
+  invalidateComponents: (placement?: string, projectDir?: string, taskId?: string) => void;
   invalidateData: (extensionId?: string, componentId?: string, projectDir?: string, taskId?: string) => void;
-  getComponents: (projectDir?: string, placement?: string) => ExtensionUIComponent[];
+  getComponents: (placement?: string, projectDir?: string, taskId?: string) => ExtensionUIComponent[];
   getComponentData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => unknown;
-  isLoadingComponents: (projectDir?: string, placement?: string) => boolean;
+  isLoadingComponents: (placement?: string, projectDir?: string, taskId?: string) => boolean;
 }
 
 type ExtensionUIStore = ExtensionUIState & ExtensionUIActions;
@@ -52,8 +53,8 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
     loadingData: new Set(),
     initialized: false,
 
-    loadComponents: async (api, projectDir, placement) => {
-      const cacheKey = getComponentsCacheKey(projectDir, placement);
+    loadComponents: async (api, placement, projectDir, taskId) => {
+      const cacheKey = getComponentsCacheKey(placement, projectDir, taskId);
       const state = get();
 
       // Return cached if available
@@ -84,7 +85,7 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
       }));
 
       try {
-        const components = await api.getExtensionUIComponents(projectDir, placement);
+        const components = await api.getExtensionUIComponents(placement, projectDir, taskId);
 
         set((state) => {
           const newComponentsMap = new Map(state.componentsMap);
@@ -201,9 +202,13 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
       const state = get();
 
       // Find all matching component cache keys to invalidate
+      // Note: We invalidate keys even if they have empty arrays, because an extension
+      // might now return components after settings change (e.g., toggling a feature on)
       const keysToInvalidate: string[] = [];
       state.componentsMap.forEach((components, key) => {
-        if (data.extensionId !== undefined && !components.some((c) => c.extensionId === data.extensionId)) {
+        // Only filter by extensionId if the cache has components to check against
+        // Empty caches should still be invalidated since the extension may now return components
+        if (components.length > 0 && data.extensionId !== undefined && !components.some((c) => c.extensionId === data.extensionId)) {
           return;
         }
         keysToInvalidate.push(key);
@@ -218,14 +223,14 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
       }
     },
 
-    invalidateComponents: (projectDir, placement) => {
-      if (projectDir === undefined && placement === undefined) {
+    invalidateComponents: (placement, projectDir, taskId) => {
+      if (placement === undefined && projectDir === undefined && taskId === undefined) {
         // Clear all
         set({ componentsMap: new Map() });
         return;
       }
 
-      const cacheKey = getComponentsCacheKey(projectDir, placement);
+      const cacheKey = getComponentsCacheKey(placement, projectDir, taskId);
       set((state) => {
         const newComponentsMap = new Map(state.componentsMap);
         newComponentsMap.delete(cacheKey);
@@ -257,8 +262,8 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
       });
     },
 
-    getComponents: (projectDir, placement) => {
-      const cacheKey = getComponentsCacheKey(projectDir, placement);
+    getComponents: (placement, projectDir, taskId) => {
+      const cacheKey = getComponentsCacheKey(placement, projectDir, taskId);
       return get().componentsMap.get(cacheKey) || [];
     },
 
@@ -267,8 +272,8 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
       return get().dataMap.get(cacheKey);
     },
 
-    isLoadingComponents: (projectDir, placement) => {
-      const cacheKey = getComponentsCacheKey(projectDir, placement);
+    isLoadingComponents: (placement, projectDir, taskId) => {
+      const cacheKey = getComponentsCacheKey(placement, projectDir, taskId);
       return get().loadingComponents.has(cacheKey);
     },
   }),
@@ -276,8 +281,8 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
 );
 
 // Selector hooks for optimized re-renders
-export const useExtensionComponents = (projectDir?: string, placement?: string): ExtensionUIComponent[] => {
-  const cacheKey = getComponentsCacheKey(projectDir, placement);
+export const useExtensionComponents = (placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[] => {
+  const cacheKey = getComponentsCacheKey(placement, projectDir, taskId);
   return useExtensionUIStore(useShallow((state) => state.componentsMap.get(cacheKey) || []));
 };
 
@@ -286,7 +291,7 @@ export const useExtensionComponentData = (extensionId: string, componentId: stri
   return useExtensionUIStore((state) => state.dataMap.get(cacheKey));
 };
 
-export const useIsLoadingComponents = (projectDir?: string, placement?: string): boolean => {
-  const cacheKey = getComponentsCacheKey(projectDir, placement);
+export const useIsLoadingComponents = (placement?: string, projectDir?: string, taskId?: string): boolean => {
+  const cacheKey = getComponentsCacheKey(placement, projectDir, taskId);
   return useExtensionUIStore((state) => state.loadingComponents.has(cacheKey));
 };

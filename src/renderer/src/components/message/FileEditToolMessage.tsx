@@ -112,6 +112,7 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork
   return (
     <ExpandableMessageBlock
       ref={expandableRef}
+      message={message}
       title={title}
       content={renderContent()}
       usageReport={message.usageReport}

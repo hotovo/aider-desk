@@ -74,7 +74,9 @@ export const SubagentToolMessage = ({ message, onRemove, compact = false, onRemo
         </div>
       </div>
 
-      {!hideMessageBar && <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} onRemoveUpTo={onRemoveUpTo} />}
+      {!hideMessageBar && (
+        <MessageBar message={message} content={copyContent} usageReport={message.usageReport} remove={onRemove} onRemoveUpTo={onRemoveUpTo} />
+      )}
     </div>
   );
 };

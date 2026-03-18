@@ -283,8 +283,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.uninstallExtension(extensionId, projectDir);
   });
 
-  ipcMain.handle('get-extension-ui-components', (_, projectDir?: string, placement?: string) => {
-    return eventsHandler.getUIComponents(projectDir, placement);
+  ipcMain.handle('get-extension-ui-components', (_, placement?: string, projectDir?: string, taskId?: string) => {
+    return eventsHandler.getUIComponents(placement, projectDir, taskId);
   });
 
   ipcMain.handle('get-extension-ui-data', async (_, extensionId: string, componentId: string, projectDir?: string, taskId?: string) => {

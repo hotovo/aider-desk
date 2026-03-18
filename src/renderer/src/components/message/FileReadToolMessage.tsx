@@ -116,6 +116,7 @@ export const FileReadToolMessage = ({ message, onRemove, compact = false, onFork
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={renderContent()}
       usageReport={message.usageReport}

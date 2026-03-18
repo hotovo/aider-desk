@@ -2,7 +2,18 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Group, AssistantGroupMessage, GroupMessage, isResponseMessage, isToolMessage, Message, ResponseMessage, ToolMessage } from '@common/types';
+import {
+  Group,
+  AssistantGroupMessage,
+  GroupMessage,
+  isResponseMessage,
+  isToolMessage,
+  isGroupMessage,
+  isAssistantGroupMessage,
+  Message,
+  ResponseMessage,
+  ToolMessage,
+} from '@common/types';
 
 import { CustomCommandBashBlock } from './CustomCommandBashBlock';
 import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
@@ -448,6 +459,19 @@ export const parseToolContent = (rawContent: string): ToolContentResult => {
   }
 
   return result;
+};
+
+export const includeMessageProperty = (message: Message): boolean => {
+  if (isAssistantGroupMessage(message)) {
+    return message.responseMessage.finished === true;
+  }
+  if (isGroupMessage(message)) {
+    return message.group.finished === true;
+  }
+  if (isResponseMessage(message) || isToolMessage(message)) {
+    return message.finished === true;
+  }
+  return true;
 };
 
 /**

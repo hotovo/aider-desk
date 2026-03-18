@@ -136,7 +136,7 @@ export interface ApplicationAPI {
   getAvailableExtensions: (repositories: string[], forceRefresh?: boolean) => Promise<AvailableExtension[]>;
   installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
   uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
-  getExtensionUIComponents: (projectDir?: string, placement?: string) => Promise<ExtensionUIComponent[]>;
+  getExtensionUIComponents: (placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
   getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => Promise<unknown>;
   executeUIExtensionAction: (
     extensionId: string,

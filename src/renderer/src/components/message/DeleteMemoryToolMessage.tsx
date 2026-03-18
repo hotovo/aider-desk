@@ -99,6 +99,7 @@ export const DeleteMemoryToolMessage = ({ message, onRemove, compact = false, on
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={renderContent()}
       usageReport={message.usageReport}

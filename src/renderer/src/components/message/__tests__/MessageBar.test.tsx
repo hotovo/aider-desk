@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { UsageReportData } from '@common/types';
+import { UsageReportData, ResponseMessage } from '@common/types';
 
 import { MessageBar } from '../MessageBar';
 
@@ -52,6 +52,13 @@ vi.mock('@/components/extensions/ExtensionComponentWrapper', () => ({
   ExtensionComponentWrapper: () => null,
 }));
 
+const mockMessage: ResponseMessage = {
+  id: 'test-message-id',
+  type: 'response',
+  content: 'test content',
+  finished: true,
+};
+
 describe('MessageBar', () => {
   const mockUsageReport: UsageReportData = {
     model: 'gpt-4',
@@ -70,7 +77,7 @@ describe('MessageBar', () => {
   describe('Remove button with tooltip', () => {
     it('displays menu trigger when remove prop is provided', () => {
       const mockRemove = vi.fn();
-      const { container } = render(<MessageBar remove={mockRemove} content="test" />);
+      const { container } = render(<MessageBar message={mockMessage} remove={mockRemove} content="test" />);
 
       // Menu trigger should exist (div containing SVG icon)
       const allDivs = container.querySelectorAll('div');
@@ -85,7 +92,7 @@ describe('MessageBar', () => {
     });
 
     it('does not display menu trigger when remove prop is not provided', () => {
-      const { container } = render(<MessageBar content="test" />);
+      const { container } = render(<MessageBar message={mockMessage} content="test" />);
 
       // Menu trigger should not be visible without remove/redo/edit props
       const allDivs = container.querySelectorAll('div');
@@ -101,7 +108,7 @@ describe('MessageBar', () => {
 
     it('calls remove callback', () => {
       const mockRemove = vi.fn();
-      const { container } = render(<MessageBar remove={mockRemove} content="test" />);
+      const { container } = render(<MessageBar message={mockMessage} remove={mockRemove} content="test" />);
 
       // Find the menu trigger (div with SVG)
       const allDivs = container.querySelectorAll('div');
@@ -119,7 +126,7 @@ describe('MessageBar', () => {
 
   describe('No remove button on grouped messages', () => {
     it('does not show menu trigger when remove prop is undefined', () => {
-      const { container } = render(<MessageBar content="test" />);
+      const { container } = render(<MessageBar message={mockMessage} content="test" />);
 
       // Menu trigger should not be visible
       const allDivs = container.querySelectorAll('div');
@@ -134,7 +141,7 @@ describe('MessageBar', () => {
     });
 
     it('does not show menu trigger when remove prop is null', () => {
-      const { container } = render(<MessageBar content="test" remove={undefined} />);
+      const { container } = render(<MessageBar message={mockMessage} content="test" remove={undefined} />);
 
       // Menu trigger should not be visible
       const allDivs = container.querySelectorAll('div');
@@ -152,7 +159,7 @@ describe('MessageBar', () => {
   describe('Redo and Edit buttons', () => {
     it('displays menu trigger when redo prop is provided', () => {
       const mockRedo = vi.fn();
-      const { container } = render(<MessageBar redo={mockRedo} content="test" />);
+      const { container } = render(<MessageBar message={mockMessage} redo={mockRedo} content="test" />);
 
       // Menu trigger should exist
       const allDivs = container.querySelectorAll('div');
@@ -168,7 +175,7 @@ describe('MessageBar', () => {
 
     it('displays menu trigger when edit prop is provided', () => {
       const mockEdit = vi.fn();
-      const { container } = render(<MessageBar edit={mockEdit} content="test" />);
+      const { container } = render(<MessageBar message={mockMessage} edit={mockEdit} content="test" />);
 
       // Menu trigger should exist
       const allDivs = container.querySelectorAll('div');
@@ -186,7 +193,7 @@ describe('MessageBar', () => {
       const mockRemove = vi.fn();
       const mockRedo = vi.fn();
       const mockEdit = vi.fn();
-      const { container } = render(<MessageBar remove={mockRemove} redo={mockRedo} edit={mockEdit} content="test" />);
+      const { container } = render(<MessageBar message={mockMessage} remove={mockRemove} redo={mockRedo} edit={mockEdit} content="test" />);
 
       // Menu trigger should exist
       const allDivs = container.querySelectorAll('div');
@@ -203,7 +210,7 @@ describe('MessageBar', () => {
 
   describe('Usage Report', () => {
     it('displays usage info when usageReport prop is provided', () => {
-      render(<MessageBar usageReport={mockUsageReport} />);
+      render(<MessageBar message={mockMessage} usageReport={mockUsageReport} />);
 
       // UsageInfo component should be present
       const usageInfo = screen.getByTestId('usage-info');
@@ -214,7 +221,7 @@ describe('MessageBar', () => {
 
   describe('Copy button', () => {
     it('displays copy button when content prop is provided', () => {
-      render(<MessageBar content="test content" />);
+      render(<MessageBar message={mockMessage} content="test content" />);
 
       // CopyMessageButton should be present
       const copyButton = screen.queryByTestId('copy-button');
@@ -222,7 +229,7 @@ describe('MessageBar', () => {
     });
 
     it('does not display copy button when content prop is not provided', () => {
-      render(<MessageBar />);
+      render(<MessageBar message={mockMessage} />);
 
       // No copy button without content
       const copyButton = screen.queryByTestId('copy-button');
@@ -233,7 +240,7 @@ describe('MessageBar', () => {
   describe('Accessibility', () => {
     it('applies custom className', () => {
       const mockRemove = vi.fn();
-      const { container } = render(<MessageBar remove={mockRemove} className="custom-class" content="test" />);
+      const { container } = render(<MessageBar message={mockMessage} remove={mockRemove} className="custom-class" content="test" />);
 
       const messageBar = container.firstChild as HTMLElement;
       expect(messageBar).toHaveClass('custom-class');
@@ -242,7 +249,7 @@ describe('MessageBar', () => {
 
   describe('Component integration', () => {
     it('renders without crashing', () => {
-      const { container } = render(<MessageBar content="test" remove={vi.fn()} redo={vi.fn()} edit={vi.fn()} />);
+      const { container } = render(<MessageBar message={mockMessage} content="test" remove={vi.fn()} redo={vi.fn()} edit={vi.fn()} />);
       expect(container.firstChild).toBeInTheDocument();
     });
   });

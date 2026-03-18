@@ -216,6 +216,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={content}
       copyContent={copyContent}

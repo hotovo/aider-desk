@@ -173,7 +173,7 @@ const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, render
         )}
       </AnimatePresence>
       <div className="px-3 pb-3">
-        <MessageBar className="mt-0" usageReport={aggregatedUsage} />
+        <MessageBar className="mt-0" message={message} usageReport={aggregatedUsage} />
       </div>
     </div>
   );

@@ -1807,20 +1807,12 @@ export class Agent {
 
     let responseMessageIndex: number = 0;
 
-    const processToolResult = (toolResult: TypedToolResult<TOOLS>, isLast = true) => {
+    const processToolResult = (toolResult: TypedToolResult<TOOLS>) => {
       const [serverName, toolName] = extractServerNameToolName(toolResult.toolName);
       const toolPromptContext = extractPromptContextFromToolResult(toolResult.output) ?? promptContext;
 
       // Update the existing tool message with the result
-      task.addToolMessage(
-        toolResult.toolCallId,
-        serverName,
-        toolName,
-        toolResult.input,
-        JSON.stringify(toolResult.output),
-        isLast ? usageReport : undefined, // Only add usage report to the last tool message
-        toolPromptContext,
-      );
+      task.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.input, JSON.stringify(toolResult.output), undefined, toolPromptContext);
     };
 
     for (let i = 0; i < content.length; i++) {
@@ -1840,7 +1832,7 @@ export class Agent {
           action: 'response',
           content: reasoningText?.trim() ? `${THINKING_RESPONSE_STAR_TAG}${reasoningText.trim()}${ANSWER_RESPONSE_START_TAG}${text.trim()}` : text,
           finished: true,
-          usageReport: i === content.length - 1 && toolResults.length === 0 ? usageReport : undefined,
+          usageReport,
           promptContext,
         };
         await task.processResponseMessage(message);
@@ -1854,7 +1846,7 @@ export class Agent {
         const toolResult = toolResults.find((toolResult) => toolResult.toolCallId === part.toolCallId);
         if (toolResult) {
           toolResults = toolResults.filter((toolResult) => toolResult.toolCallId !== part.toolCallId);
-          processToolResult(toolResult, i === content.length - 1 && toolResults.length === 0);
+          processToolResult(toolResult);
         }
       }
     }
@@ -1862,7 +1854,7 @@ export class Agent {
     // Process successful tool results *after* sending text/reasoning and handling errors
     for (let i = 0; i < toolResults.length; i++) {
       const toolResult = toolResults[i];
-      processToolResult(toolResult, i === toolResults.length - 1);
+      processToolResult(toolResult);
     }
 
     if (!abortSignal?.aborted) {
@@ -1874,7 +1866,7 @@ export class Agent {
         messages.push({
           ...message,
           id: currentResponseId,
-          usageReport: toolResults?.length && responseMessageIndex === 0 ? undefined : usageReport,
+          usageReport,
           promptContext,
         });
       } else if (message.role === 'tool') {
@@ -1882,7 +1874,6 @@ export class Agent {
           ...message,
           // @ts-expect-error the id is there
           id: message.id || uuidv4(),
-          usageReport,
           promptContext,
         });
       }

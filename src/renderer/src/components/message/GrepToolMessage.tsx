@@ -164,6 +164,7 @@ export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, on
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={renderContent()}
       usageReport={message.usageReport}

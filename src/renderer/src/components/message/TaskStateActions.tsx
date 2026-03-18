@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { ReactNode, useState } from 'react';
 import { DefaultTaskState, Mode, TaskData } from '@common/types';
 
-import { ExtensionComponentWrapper } from '../extensions/ExtensionComponentWrapper';
+import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 
-import { BmadTaskActions } from '@/components/bmad/BmadTaskActions';
 import { Button } from '@/components/common/Button';
 
 type Props = {
@@ -25,10 +24,8 @@ type Props = {
 };
 
 export const TaskStateActions = ({
-  projectDir,
   taskId,
   state,
-  mode,
   isArchived,
   task,
   onResumeTask,
@@ -40,6 +37,19 @@ export const TaskStateActions = ({
 }: Props) => {
   const { t } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const { isEmpty: isEmptyTaskActions, renderComponents: renderTaskActionsComponents } = useExtensionComponentsWrapper({
+    placement: 'task-state-actions',
+    additionalProps: {
+      task,
+      taskId,
+      onRunPrompt,
+    },
+  });
+
+  if (!isEmptyTaskActions && state !== DefaultTaskState.Todo) {
+    return <div className="flex items-center gap-2 flex-wrap">{renderTaskActionsComponents()}</div>;
+  }
 
   const handleDeleteClick = () => {
     setIsDeleting(true);
@@ -72,17 +82,11 @@ export const TaskStateActions = ({
         <div className="flex items-center gap-2">
           {icon}
           <div className="flex-1 text-text-secondary">{text}</div>
-          <ExtensionComponentWrapper placement="task-state-actions" direction="horizontal" />
           {actions}
         </div>
       </div>
     );
   };
-
-  // BMAD mode rendering
-  if (mode === 'bmad' && state !== DefaultTaskState.Todo) {
-    return <BmadTaskActions projectDir={projectDir} taskId={taskId} task={task} onRunPrompt={onRunPrompt} />;
-  }
 
   if (state === DefaultTaskState.Todo) {
     return renderSection(

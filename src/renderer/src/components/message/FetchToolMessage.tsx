@@ -108,6 +108,7 @@ export const FetchToolMessage = ({ message, onRemove, compact = false, onFork, o
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={renderContent()}
       usageReport={message.usageReport}

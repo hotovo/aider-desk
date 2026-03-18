@@ -1157,10 +1157,11 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  getExtensionUIComponents(projectDir?: string, placement?: string): Promise<ExtensionUIComponent[]> {
+  getExtensionUIComponents(placement?: string, projectDir?: string, taskId?: string): Promise<ExtensionUIComponent[]> {
     return this.get('/extensions/ui-components', {
       projectDir,
       placement,
+      taskId,
     });
   }
 

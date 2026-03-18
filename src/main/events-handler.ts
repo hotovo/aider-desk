@@ -1118,9 +1118,10 @@ export class EventsHandler {
     return await this.extensionManager.uninstallExtension(extensionId, projectDir);
   }
 
-  getUIComponents(projectDir?: string, placement?: string): ExtensionUIComponent[] {
+  getUIComponents(placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[] {
     const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
-    const components = this.extensionManager.getUIComponents(project);
+    const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;
+    const components = this.extensionManager.getUIComponents(project, task);
     const filtered = placement ? components.filter((c) => c.component.placement === placement) : components;
     return filtered.map((c) => ({
       extensionId: c.extensionId,

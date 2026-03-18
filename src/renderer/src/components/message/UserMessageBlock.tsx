@@ -47,6 +47,7 @@ export const UserMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, c
         </div>
         {!compact && (
           <MessageBar
+            message={message}
             content={message.content}
             remove={onRemove}
             redo={onRedo}

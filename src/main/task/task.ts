@@ -1264,9 +1264,6 @@ export class Task {
         this.responseChunkMap.delete(message.id);
       }
 
-      logger.info(`Sending response completed to ${this.project.baseDir}`);
-      logger.debug(`Message data: ${JSON.stringify(message)}`);
-
       const usageReport = message.usageReport
         ? typeof message.usageReport === 'string'
           ? parseUsageReport(this.aiderManager.getAiderModelsData()?.mainModel || 'unknown', message.usageReport)
@@ -1278,7 +1275,7 @@ export class Task {
       }
 
       if (usageReport) {
-        logger.info(`Usage report: ${JSON.stringify(usageReport)}`);
+        logger.debug(`Usage report: ${JSON.stringify(usageReport)}`);
         this.updateTotalCosts(usageReport);
       }
       let data: ResponseCompletedData = {

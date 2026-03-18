@@ -44,6 +44,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
               content: message.content,
               usageReport: message.usageReport,
               promptContext: message.promptContext,
+              finished: true,
             } as ResponseMessage);
             return result;
           }
