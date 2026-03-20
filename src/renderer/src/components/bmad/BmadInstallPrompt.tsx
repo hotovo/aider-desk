@@ -20,7 +20,7 @@ export const BmadInstallPrompt = ({ refreshState, projectDir }: Props) => {
   const api = useApi();
   const [installing, setInstalling] = useState(false);
 
-  const installCommand = 'npx -y bmad-method install';
+  const installCommand = 'npx -y bmad-method@6.0.4 install';
 
   const handleInstall = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

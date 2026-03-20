@@ -178,7 +178,7 @@ describe('BmadInstallPrompt', () => {
   it('renders manual install section with copiable command', async () => {
     await renderComponent();
 
-    expect(screen.getByText('npx -y bmad-method install')).toBeInTheDocument();
+    expect(screen.getByText('npx -y bmad-method@6.0.4 install')).toBeInTheDocument();
     expect(screen.getByText('bmad.install.commandLabel')).toBeInTheDocument();
     expect(screen.getByText('bmad.install.manualInstallTitle')).toBeInTheDocument();
     expect(screen.getByText('bmad.install.manualInstallNote')).toBeInTheDocument();

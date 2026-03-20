@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 import { ModeSelector } from '../ModeSelector';
 
@@ -50,37 +50,6 @@ describe('ModeSelector', () => {
     expect(screen.getByTestId('mode-ask')).toBeInTheDocument();
     expect(screen.getByTestId('mode-architect')).toBeInTheDocument();
     expect(screen.getByTestId('mode-context')).toBeInTheDocument();
-    expect(screen.getByTestId('mode-bmad')).toBeInTheDocument();
-  });
-
-  it('calls onModeChange when BMAD mode is clicked', () => {
-    render(<ModeSelector mode="code" onModeChange={mockOnModeChange} baseDir="/test/project" />);
-
-    const bmadButton = screen.getByTestId('mode-bmad');
-    fireEvent.click(bmadButton);
-
-    expect(mockOnModeChange).toHaveBeenCalledWith('bmad');
-  });
-
-  it('uses i18n translation key for BMAD mode label', () => {
-    render(<ModeSelector mode="bmad" onModeChange={mockOnModeChange} baseDir="/test/project" />);
-
-    const bmadButton = screen.getByTestId('mode-bmad');
-    expect(bmadButton.textContent).toBe('mode.bmad');
-  });
-
-  it('highlights BMAD mode when selected', () => {
-    render(<ModeSelector mode="bmad" onModeChange={mockOnModeChange} baseDir="/test/project" />);
-
-    const bmadButton = screen.getByTestId('mode-bmad');
-    expect(bmadButton.className).toContain('active');
-  });
-
-  it('does not highlight BMAD mode when another mode is selected', () => {
-    render(<ModeSelector mode="code" onModeChange={mockOnModeChange} baseDir="/test/project" />);
-
-    const bmadButton = screen.getByTestId('mode-bmad');
-    expect(bmadButton.className).not.toContain('active');
   });
 
   it('renders all modes in correct order', () => {
@@ -89,26 +58,7 @@ describe('ModeSelector', () => {
     const buttons = container.querySelectorAll('[data-testid^="mode-"]');
     const modeOrder = Array.from(buttons).map((btn) => btn.getAttribute('data-testid')?.replace('mode-', ''));
 
-    // Verify bmad is included in the list
-    expect(modeOrder).toContain('bmad');
-
     // Verify all expected modes are present
-    expect(modeOrder).toEqual(expect.arrayContaining(['code', 'agent', 'ask', 'architect', 'context', 'bmad']));
-  });
-
-  it('supports switching between all modes including BMAD', () => {
-    const { rerender } = render(<ModeSelector mode="code" onModeChange={mockOnModeChange} baseDir="/test/project" />);
-
-    // Click BMAD mode
-    fireEvent.click(screen.getByTestId('mode-bmad'));
-    expect(mockOnModeChange).toHaveBeenCalledWith('bmad');
-
-    // Rerender with BMAD mode selected
-    rerender(<ModeSelector mode="bmad" onModeChange={mockOnModeChange} baseDir="/test/project" />);
-    expect(screen.getByTestId('mode-bmad').className).toContain('active');
-
-    // Click another mode
-    fireEvent.click(screen.getByTestId('mode-agent'));
-    expect(mockOnModeChange).toHaveBeenCalledWith('agent');
+    expect(modeOrder).toEqual(expect.arrayContaining(['code', 'agent', 'ask', 'architect', 'context']));
   });
 });

@@ -29,12 +29,6 @@ const BUILT_IN_MODES: ItemConfig<Mode>[] = [
     tooltipKey: 'modeTooltip.agent',
   },
   {
-    value: 'bmad',
-    icon: FiLayers,
-    labelKey: 'mode.bmad',
-    tooltipKey: 'modeTooltip.bmad',
-  },
-  {
     value: 'code',
     icon: CgTerminal,
     labelKey: 'mode.code',

@@ -6,37 +6,29 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 
 import { v4 as uuidv4 } from 'uuid';
-import { BMAD_WORKFLOWS } from '@common/bmad-workflows';
-import { StoryStatus } from '@common/types';
 import { glob } from 'glob';
 import * as yaml from 'yaml';
 import * as yamlFront from 'yaml-front-matter';
 
+import { StoryStatus } from './types';
+import { BMAD_WORKFLOWS } from './workflows';
 import { ContextPreparer } from './context-preparer';
 
-import type {
-  BmadError,
-  BmadStatus,
-  InstallResult,
-  WorkflowExecutionResult,
-  IncompleteWorkflowMetadata,
-  SprintStatusData,
-  WorkflowArtifacts,
-  ContextFile,
-} from '@common/types';
-import type { Task } from '@/task';
-
-import logger from '@/logger';
+import type { BmadError, BmadStatus, InstallResult, IncompleteWorkflowMetadata, SprintStatusData, WorkflowArtifacts, WorkflowExecutionResult } from './types';
+import type { ExtensionContext, TaskContext, ContextFile, PromptContext } from '@aiderdesk/extensions';
 
 export class BmadManager {
-  constructor(private readonly projectDir: string) {}
+  constructor(
+    private readonly projectDir: string,
+    private readonly context: ExtensionContext,
+  ) {}
 
   checkInstallation(): boolean {
     try {
       const bmadPath = path.join(this.projectDir, '_bmad', 'bmm');
       return fs.existsSync(bmadPath);
-    } catch (error) {
-      logger.error('BMAD installation check failed', { error });
+    } catch {
+      this.context.log('BMAD installation check failed', 'error');
       return false;
     }
   }
@@ -55,38 +47,24 @@ export class BmadManager {
         }
       }
       return undefined;
-    } catch (error) {
-      logger.error('BMAD version detection failed', { error });
+    } catch {
+      this.context.log('BMAD version detection failed', 'error');
       return undefined;
     }
   }
 
-  /**
-   * Parses a step identifier to extract the step number.
-   * Handles formats:
-   * - Pure numbers: '1', '5', '12'
-   * - Prefixed step IDs: 'step-01-document-discovery', 'step-5-analysis'
-   * - Falls back to index + 1 for unrecognized formats
-   *
-   * @param stepId - The step identifier string
-   * @param index - The index of the step in the array (used as fallback)
-   * @returns The extracted step number
-   */
   private parseStepNumber = (stepId: string, index: number): number => {
-    // Try pure number first
     const pureNumber = parseInt(stepId, 10);
     if (!isNaN(pureNumber)) {
       return pureNumber;
     }
 
-    // Try to extract number from patterns like 'step-01-...' or 'step-1-...'
     const stepPattern = /^step-(\d+)/i;
     const match = stepId.match(stepPattern);
     if (match) {
       return parseInt(match[1], 10);
     }
 
-    // Fallback to index + 1
     return index + 1;
   };
 
@@ -96,14 +74,6 @@ export class BmadManager {
     return this.VALID_STORY_STATUSES.includes(status as StoryStatus);
   };
 
-  /**
-   * Parses sprint-status.yaml and extracts story statuses (excluding epics and retrospectives)
-   * Also determines which workflows are completed based on story statuses:
-   * - 'dev-story' and 'code-review' are completed if all stories are 'done' (non-empty)
-   * - 'create-story' is completed if there are no 'backlog' stories
-   * @param projectRoot - Absolute path to the project root directory
-   * @returns SprintStatusData with array of story statuses and completed workflows, or undefined if file doesn't exist
-   */
   private async parseSprintStatus(projectRoot: string): Promise<SprintStatusData | undefined> {
     const sprintStatusPath = path.join(projectRoot, '_bmad-output/implementation-artifacts/sprint-status.yaml');
 
@@ -144,7 +114,7 @@ export class BmadManager {
         }
       }
 
-      logger.info('Parsed sprint-status.yaml', { storyStatuses, completedWorkflows });
+      this.context.log('Parsed sprint-status.yaml', 'debug');
 
       return { storyStatuses, completedWorkflows };
     } catch {
@@ -152,22 +122,12 @@ export class BmadManager {
     }
   }
 
-  /**
-   * Scans for completed workflow artifacts in the project
-   * Uses a hybrid two-tier detection strategy:
-   * - Tier 1: Fast file existence check using glob patterns
-   * - Tier 2: Detailed state parsing via YAML frontmatter for resume capability
-   * @param projectRoot - Absolute path to the project root directory
-   * @returns Workflow artifacts with completed workflows and artifact details
-   */
   private async scanWorkflows(projectRoot: string): Promise<WorkflowArtifacts> {
-    // Check if _bmad-output directory exists
     const outputDir = path.join(projectRoot, '_bmad-output');
 
     try {
       await fsPromises.access(outputDir);
     } catch {
-      // Directory doesn't exist or permission denied - return greenfield state
       return {
         completedWorkflows: [],
         inProgressWorkflows: [],
@@ -175,22 +135,18 @@ export class BmadManager {
       };
     }
 
-    // Scan for artifacts using glob patterns from workflow registry
     const completedWorkflows: string[] = [];
     const inProgressWorkflows: string[] = [];
     const detectedArtifacts: WorkflowArtifacts['detectedArtifacts'] = {};
     const incompleteWorkflows: IncompleteWorkflowMetadata[] = [];
-    // Track workflows with non-completing status for quick-dev (same artifact pattern as quick-spec)
     const workflowsWithNonCompletingStatus = new Set<string>();
 
     for (const workflow of BMAD_WORKFLOWS) {
       const { id, outputArtifact } = workflow;
 
       try {
-        // Resolve glob pattern relative to project root
         const fullPattern = path.join(projectRoot, outputArtifact);
 
-        // Use glob to find matching files
         const matches = await glob(fullPattern, {
           windowsPathsNoEscape: true,
         });
@@ -198,7 +154,6 @@ export class BmadManager {
         if (matches.length > 0) {
           const artifactPath = matches[0];
 
-          // Try to parse YAML frontmatter for stepsCompleted and status
           let stepsCompleted: string[] | undefined;
           let status: string | undefined;
           let frontmatterError: string | undefined;
@@ -206,8 +161,6 @@ export class BmadManager {
           try {
             const content = await fsPromises.readFile(artifactPath, 'utf-8');
             const { __content, ...properties } = yamlFront.loadFront(content);
-
-            logger.debug('Parsed frontmatter', { parsed: properties });
 
             if (properties.stepsCompleted) {
               stepsCompleted = properties.stepsCompleted;
@@ -217,12 +170,9 @@ export class BmadManager {
               status = properties.status;
             }
           } catch (parseError) {
-            // File read or YAML parse error - track corruption
             frontmatterError = parseError instanceof Error ? parseError.message : 'Unknown error parsing frontmatter';
-            // Artifact is still detected (file existence), just no detailed state
           }
 
-          // Store artifact details
           detectedArtifacts[id] = {
             path: artifactPath,
             ...(stepsCompleted && { stepsCompleted }),
@@ -230,7 +180,6 @@ export class BmadManager {
             ...(frontmatterError && { error: frontmatterError }),
           };
 
-          // Track quick-dev workflows with non-completing status
           if (id === 'quick-dev' && status) {
             const statusLower = status.toLowerCase();
             const hasCompletingStatus = statusLower.includes('complete') || statusLower.includes('done');
@@ -239,52 +188,29 @@ export class BmadManager {
             }
           }
 
-          // Determine completion status using workflow.totalSteps from registry
           const workflowTotalSteps = workflow.totalSteps;
 
           if (workflowTotalSteps > 0) {
             const stepsCompletedNumbers = stepsCompleted?.map((s, i) => this.parseStepNumber(s, i)) || [];
             const maxCompletedStep = stepsCompletedNumbers.length > 0 ? Math.max(...stepsCompletedNumbers) : 0;
 
-            // Workflow is complete if:
-            // 1. No stepsCompleted in frontmatter (legacy/simple artifact) - assume complete
-            // 2. stepsCompleted exists and max step >= totalSteps from registry
-            // 3. For quick-spec workflow: status is 'ready-for-dev'
-            // 4. For quick-dev workflow: status (lowercase) contains 'complete' or 'done'
             const isQuickSpecReadyForDevStatus = id === 'quick-spec' && status === 'ready-for-dev';
             const statusLower = status?.toLowerCase() || '';
             const isQuickDevCompletedByStatus = id === 'quick-dev' && (statusLower.includes('complete') || statusLower.includes('done'));
 
-            // quick-dev uses status field only for completion, ignores stepsCompleted
             const isLegacyComplete = !stepsCompleted && id !== 'quick-dev';
             const isStepsComplete = id === 'quick-dev' ? false : maxCompletedStep >= workflowTotalSteps;
             const isFullyCompleted = isLegacyComplete || isStepsComplete || isQuickSpecReadyForDevStatus || isQuickDevCompletedByStatus;
-
-            logger.debug('Workflow completion status', {
-              workflowId: id,
-              stepsCompleted,
-              maxCompletedStep,
-              workflowTotalSteps,
-              status,
-              isLegacyComplete,
-              isStepsComplete,
-              isQuickSpecReadyForDevStatus,
-              isQuickDevCompletedByStatus,
-              isFullyCompleted,
-            });
 
             if (isFullyCompleted) {
               completedWorkflows.push(id);
             } else {
               if (id === 'quick-dev' && detectedArtifacts['quick-spec']?.status === 'ready-for-dev') {
-                // quick-dev is not in progress if quick-spec is ready-for-dev
                 continue;
               }
 
-              // Workflow is in progress
               inProgressWorkflows.push(id);
 
-              // Also add to incompleteWorkflows for resume functionality
               try {
                 const stats = await fsPromises.stat(artifactPath);
                 const nextStep = stepsCompletedNumbers.length === 0 ? 1 : maxCompletedStep + 1;
@@ -301,13 +227,13 @@ export class BmadManager {
                   }),
                 });
               } catch {
-                // Failed to get file stats - still mark as in progress but skip incompleteWorkflows entry
+                // Failed to get file stats
               }
             }
           }
         }
       } catch {
-        // Glob error - continue scanning other workflows
+        // Glob error - continue scanning
       }
     }
 
@@ -321,8 +247,6 @@ export class BmadManager {
       }
     }
 
-    // Remove workflows with non-completing status from completedWorkflows
-    // This ensures quick-dev with status like 'ready-for-dev' is not marked as completed
     for (const workflowId of workflowsWithNonCompletingStatus) {
       const index = completedWorkflows.indexOf(workflowId);
       if (index !== -1) {
@@ -343,7 +267,6 @@ export class BmadManager {
     const installed = this.checkInstallation();
     const version = installed ? this.getVersion() : undefined;
 
-    // Scan for workflow artifacts
     const workflowArtifacts = await this.scanWorkflows(this.projectDir);
 
     return {
@@ -361,7 +284,6 @@ export class BmadManager {
 
   async install(): Promise<InstallResult> {
     try {
-      // Check for legacy BMAD v4 folder (.bmad-method)
       const legacyV4Path = path.join(this.projectDir, '.bmad-method');
       if (fs.existsSync(legacyV4Path)) {
         const bmadError: BmadError = {
@@ -372,7 +294,6 @@ export class BmadManager {
         throw bmadError;
       }
 
-      // Get safe username for config
       let safeUsername: string;
       try {
         const username = os.userInfo().username;
@@ -381,13 +302,11 @@ export class BmadManager {
         safeUsername = process.env.USER || process.env.USERNAME || 'User';
       }
 
-      // Determine if this is a reinstall/update
       const isReinstall = this.checkInstallation();
 
-      // Build npx command with non-interactive flags
       const commandParts = [
         'npx',
-        '-y', // Auto-confirm npx
+        '-y',
         'bmad-method@6.0.4',
         'install',
         `--directory ${this.projectDir}`,
@@ -399,45 +318,35 @@ export class BmadManager {
         '--output-folder _bmad-output',
       ];
 
-      // Add action flag if updating
       if (isReinstall) {
         commandParts.push('--action update');
       }
 
-      commandParts.push('--yes'); // Accept all defaults and skip prompts
+      commandParts.push('--yes');
 
       const command = commandParts.join(' ');
 
-      logger.info('Installing BMAD using npx', {
-        command,
-        isReinstall,
-        directory: this.projectDir,
-      });
+      this.context.log('Installing BMAD using npx', 'info');
 
-      // Execute the npx command
       const execAsync = promisify(exec);
-      const { stdout, stderr } = await execAsync(command, {
+      const { stdout: _stdout, stderr } = await execAsync(command, {
         cwd: this.projectDir,
         env: { ...process.env, FORCE_COLOR: '0' },
       });
 
       if (stderr) {
-        logger.warn('BMAD installation stderr output', { stderr });
+        this.context.log('BMAD installation stderr output', 'warn');
       }
 
-      logger.debug('BMAD installation stdout', { stdout });
+      this.context.log('BMAD installation stdout', 'debug');
 
-      // Verify installation
       const installed = this.checkInstallation();
       if (!installed) {
         throw new Error('Installation verification failed - BMAD directory not detected');
       }
 
       const version = this.getVersion();
-      logger.info('BMAD installation completed', {
-        version,
-        actionType: isReinstall ? 'update' : 'install',
-      });
+      this.context.log('BMAD installation completed', 'info');
 
       return {
         success: true,
@@ -445,7 +354,7 @@ export class BmadManager {
         message: isReinstall ? 'BMAD updated successfully' : 'BMAD installed successfully',
       };
     } catch (error: unknown) {
-      logger.error('BMAD installation failed', { error });
+      this.context.log('BMAD installation failed', 'error');
 
       const bmadError: BmadError = {
         errorCode: 'BMAD_INSTALL_FAILED',
@@ -478,40 +387,28 @@ export class BmadManager {
     return 'Try restarting the application and retry installation';
   }
 
-  /**
-   * Execute a BMAD workflow via Agent Mode
-   * @param workflowId - ID of the workflow to execute
-   * @param task - Task instance for Agent Mode execution
-   * @returns Workflow execution result with success status
-   */
-  /**
-   * Reset BMAD workflow state by clearing the _bmad-output directory
-   * @returns Promise resolving to success status
-   */
   async resetWorkflow(): Promise<{ success: boolean; message?: string }> {
     try {
       const outputDir = path.join(this.projectDir, '_bmad-output');
 
-      // Check if directory exists
       if (!fs.existsSync(outputDir)) {
-        logger.info('BMAD output directory does not exist, nothing to reset');
+        this.context.log('BMAD output directory does not exist, nothing to reset', 'info');
         return {
           success: true,
           message: 'No workflow state to reset',
         };
       }
 
-      // Remove the directory recursively
       await fsPromises.rm(outputDir, { recursive: true, force: true });
 
-      logger.info('BMAD workflow state reset successfully', { outputDir });
+      this.context.log('BMAD workflow state reset successfully', 'info');
 
       return {
         success: true,
         message: 'Workflow state reset successfully',
       };
     } catch (error) {
-      logger.error('Failed to reset BMAD workflow state', { error });
+      this.context.log('Failed to reset BMAD workflow state', 'error');
 
       return {
         success: false,
@@ -520,38 +417,77 @@ export class BmadManager {
     }
   }
 
-  async executeWorkflow(workflowId: string, task: Task): Promise<WorkflowExecutionResult> {
+  async executeWorkflow(workflowId: string, taskContext: TaskContext, provider?: string, model?: string, asSubtask = false): Promise<WorkflowExecutionResult> {
     try {
+      this.context.log(`Starting workflow execution: ${workflowId}, asSubtask: ${asSubtask}`, 'info');
+
+      // If asSubtask is true, create a new subtask with the provider/model
+      if (asSubtask) {
+        this.context.log('Creating subtask for workflow execution...', 'debug');
+        const parentId = taskContext.data.parentId || taskContext.data.id;
+        
+        // Get the project context to create a new task
+        const projectContext = this.context.getProjectContext();
+        const subtaskData = await projectContext.createTask({
+          parentId,
+          activate: true,
+          provider,
+          model,
+        });
+
+        this.context.log(`Subtask created: ${subtaskData.id}`, 'info');
+
+        // Get the subtask context and execute the workflow on it
+        const subtaskContext = projectContext.getTask(subtaskData.id);
+        if (!subtaskContext) {
+          throw new Error('Failed to get subtask context');
+        }
+
+        // Execute workflow on the subtask (without asSubtask to avoid infinite recursion)
+        return await this.executeWorkflow(workflowId, subtaskContext, provider, model, false);
+      }
+
       const workflow = BMAD_WORKFLOWS.find((w) => w.id === workflowId);
       if (!workflow) {
         throw new Error(`Workflow '${workflowId}' not found in registry`);
       }
 
+      this.context.log(`Workflow found: ${workflow.name}`, 'debug');
+
       // 1. Get current BMAD status
+      this.context.log('Getting BMAD status...', 'debug');
       const status = await this.getBmadStatus();
+      this.context.log(`BMAD status retrieved: installed=${status.installed}`, 'debug');
 
       // 2. Prepare context using ContextPreparer
-      const preparer = new ContextPreparer(this.projectDir);
+      this.context.log('Preparing workflow context...', 'debug');
+      const preparer = new ContextPreparer(this.projectDir, this.context);
       const preparedContext = await preparer.prepare(workflowId, status);
 
-      logger.info('Context prepared for workflow execution', {
-        workflowId,
-        contextFilesCount: preparedContext.contextFiles.length,
-      });
+      this.context.log(`Context prepared: ${preparedContext.contextMessages.length} messages, ${preparedContext.contextFiles.length} files`, 'debug');
 
       // 3. Execute workflow via Agent Mode
-      const agentProfile = await task.getTaskAgentProfile();
+      this.context.log('Getting task agent profile...', 'debug');
+      let agentProfile = await taskContext.getTaskAgentProfile();
       if (!agentProfile) {
         throw new Error('No agent profile configured for this task');
       }
 
-      const promptContext = { id: uuidv4() };
+      // Override provider/model if provided
+      if (provider && model) {
+        this.context.log(`Using custom provider/model: ${provider}/${model}`, 'debug');
+        agentProfile = {
+          ...agentProfile,
+          provider,
+          model,
+        };
+      }
 
-      logger.info('Executing workflow via Agent Mode', {
-        workflowId,
-        agentProfile: agentProfile.name,
-      });
+      this.context.log(`Agent profile retrieved: ${agentProfile.name}`, 'debug');
 
+      const promptContext: PromptContext = { id: uuidv4() };
+
+      this.context.log('Building context files array...', 'debug');
       const contextFiles: ContextFile[] = preparedContext.contextFiles.map((filePath) => ({
         path: filePath,
         readOnly: true,
@@ -559,28 +495,29 @@ export class BmadManager {
 
       // Store prepared context messages in task context and send to UI
       if (preparedContext.contextMessages.length > 0) {
-        await task.loadContextMessages(preparedContext.contextMessages);
-        logger.info('Prepared context messages loaded into task context', {
-          workflowId,
-          contextMessagesCount: preparedContext.contextMessages.length,
-        });
+        this.context.log('Loading context messages...', 'debug');
+        await taskContext.loadContextMessages(preparedContext.contextMessages);
+        this.context.log('Context messages loaded', 'debug');
       }
 
-      if (!task.task.name) {
-        await task.saveTask({ name: preparedContext.taskName ?? workflow.name });
+      if (!taskContext.data.name) {
+        this.context.log('Updating task name...', 'debug');
+        await taskContext.updateTask({ name: preparedContext.taskName ?? workflow.name });
       }
 
       // Store workflow ID in task metadata
-      await task.updateTask({
+      this.context.log('Storing workflow ID in metadata...', 'debug');
+      await taskContext.updateTask({
         metadata: {
-          ...task.task.metadata,
+          ...taskContext.data.metadata,
           bmadWorkflowId: workflowId,
         },
       });
 
       if (preparedContext.execute) {
-        task.addLogMessage('loading');
-        await task.runPromptInAgent(
+        this.context.log('Starting agent execution...', 'info');
+        taskContext.addLoadingMessage();
+        await taskContext.runPromptInAgent(
           agentProfile,
           'bmad',
           null, // No user prompt - workflow is system-driven
@@ -589,17 +526,27 @@ export class BmadManager {
           contextFiles,
           undefined,
           true,
+          true,
         );
+        this.context.log('Agent execution completed', 'info');
+      } else {
+        this.context.log('Workflow prepared but not set to execute', 'info');
       }
 
-      logger.info('Workflow execution completed', { workflowId });
+      this.context.log('Workflow execution completed', 'info');
 
       // 4. Return success
       return {
         success: true,
       };
     } catch (error) {
-      logger.error('Workflow execution failed:', { workflowId, error });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.context.log(`Workflow execution failed: ${errorMessage}`, 'error');
+      if (errorStack) {
+        this.context.log(`Stack trace: ${errorStack}`, 'error');
+      }
 
       // Determine error code based on error type
       let errorCode = 'WORKFLOW_EXECUTION_FAILED';
@@ -622,7 +569,7 @@ export class BmadManager {
       return {
         success: false,
         error: {
-          message: error instanceof Error ? error.message : String(error),
+          message: errorMessage,
           errorCode,
           recoveryAction,
         },

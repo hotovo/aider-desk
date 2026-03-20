@@ -1,0 +1,16 @@
+{
+  "name": "bmad-extension",
+  "version": "1.0.0",
+  "description": "BMAD (Breakthrough Method for Agile AI-Driven Development) mode with structured workflows",
+  "main": "index.ts",
+  "author": "AiderDesk",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "glob": "^11.0.0",
+    "handlebars": "^4.7.8",
+    "uuid": "^11.0.0",
+    "yaml": "^2.7.0",
+    "yaml-front-matter": "^4.1.1"
+  }
+}
