@@ -608,7 +608,7 @@ export class Task {
 
   public async runPrompt(
     prompt: string,
-    mode: Mode = 'code',
+    mode: Mode = this.task.currentMode || 'agent',
     addToInputHistory = true,
     userMessageId = uuidv4(),
     sendNotification = true,
@@ -2135,6 +2135,8 @@ export class Task {
     });
 
     await this.updateTask({
+      state: DefaultTaskState.Todo,
+      metadata: undefined,
       lastAgentProviderMetadata: null,
     });
     this.contextManager.clearMessages();

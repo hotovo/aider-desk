@@ -1129,6 +1129,7 @@ export class EventsHandler {
       placement: c.component.placement,
       jsx: c.component.jsx,
       loadData: c.component.loadData,
+      noDataCache: c.component.noDataCache,
     }));
   }
 

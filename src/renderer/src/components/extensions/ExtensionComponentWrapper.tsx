@@ -18,9 +18,7 @@ const ExtensionComponentWrapperInner = ({ placement, className, direction = 'hor
     return renderNullOnEmpty ? null : <div></div>;
   }
 
-  return (
-    <div className={twMerge('flex items-center gap-2 flex-wrap', direction === 'horizontal' ? 'flex-row' : 'flex-col', className)}>{renderComponents()}</div>
-  );
+  return <div className={twMerge('flex items-center flex-wrap', direction === 'horizontal' ? 'flex-row' : 'flex-col', className)}>{renderComponents()}</div>;
 };
 
 export const ExtensionComponentWrapper = memo(ExtensionComponentWrapperInner);

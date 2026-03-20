@@ -129,7 +129,9 @@ export type UIComponentPlacement =
   | 'task-message-bar'
   | 'task-top-bar-left'
   | 'task-top-bar-right'
-  | 'task-state-actions';
+  | 'task-state-actions'
+  | 'task-state-actions-all'
+  | 'welcome-page';
 
 /**
  * Definition of a React UI component that can be registered by an extension.
@@ -165,6 +167,8 @@ export interface UIComponentDefinition {
   jsx: string;
   /** Optional flag to indicate if the component should load data from the extension to be passed as a prop (default: false) */
   loadData?: boolean;
+  /** Optional flag to disable data caching - when true, data is always fetched fresh on render (default: false) */
+  noDataCache?: boolean;
 }
 
 /**
@@ -189,6 +193,9 @@ export interface UIComponents {
   DatePicker: UIComponent;
   Chip: UIComponent;
   ModelSelector: UIComponent;
+  Tooltip: UIComponent;
+  LoadingOverlay: UIComponent;
+  ConfirmDialog: UIComponent;
 }
 
 export interface UIComponentProps {
@@ -198,6 +205,7 @@ export interface UIComponentProps {
   models: Model[];
   providers: ProviderProfile[];
   ui: UIComponents;
+  icons: Record<string, unknown>;
 }
 
 /**
@@ -536,6 +544,17 @@ export interface TaskContext {
 
   // Execution
   runPrompt(prompt: string, mode?: string): Promise<void>;
+  runPromptInAgent(
+    profile: AgentProfile,
+    mode: string,
+    prompt: string | null,
+    promptContext?: PromptContext,
+    contextMessages?: ContextMessage[],
+    contextFiles?: ContextFile[],
+    systemPrompt?: string,
+    waitForCurrentAgentToFinish?: boolean,
+    sendNotification?: boolean,
+  ): Promise<ResponseCompletedData[]>;
   runCustomCommand(name: string, args?: string[], mode?: string): Promise<void>;
   runSubagent(agentProfile: AgentProfile, prompt: string): Promise<void>;
   runCommand(command: string): Promise<void>;
@@ -680,6 +699,13 @@ export interface ExtensionContext {
    * @returns Promise that resolves when URL is opened
    */
   openUrl(url: string, target?: 'external' | 'window' | 'modal-overlay'): Promise<void>;
+
+  /**
+   * Open a file or directory in the system's default application or file manager
+   * @param path - Absolute path to the file or directory to open
+   * @returns Promise that resolves to true if successful, false otherwise
+   */
+  openPath(path: string): Promise<boolean>;
 }
 
 /**

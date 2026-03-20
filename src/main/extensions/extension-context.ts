@@ -134,4 +134,16 @@ export class ExtensionContextImpl implements ExtensionContext {
       throw error;
     }
   }
+
+  async openPath(path: string): Promise<boolean> {
+    this.log(`Opening path: ${path}`);
+    try {
+      const { shell } = await import('electron');
+      await shell.openPath(path);
+      return true;
+    } catch (error) {
+      this.log(`Failed to open path: ${error}`, 'error');
+      return false;
+    }
+  }
 }

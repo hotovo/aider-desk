@@ -5,6 +5,7 @@ import {
   Mode,
   PromptContext,
   QueuedPromptData,
+  ResponseCompletedData,
   TaskData,
   TodoItem,
   UpdatedFile,
@@ -152,7 +153,31 @@ export class TaskContextImpl implements TaskContext {
   // Execution
 
   async runPrompt(prompt: string, mode?: string): Promise<void> {
-    await this.task.runPrompt(prompt, mode as Mode | undefined);
+    await this.task.runPrompt(prompt, mode);
+  }
+
+  async runPromptInAgent(
+    profile: AgentProfile,
+    mode: string,
+    prompt: string | null,
+    promptContext?: PromptContext,
+    contextMessages?: ContextMessage[],
+    contextFiles?: ContextFile[],
+    systemPrompt?: string,
+    waitForCurrentAgentToFinish = true,
+    sendNotification = true,
+  ): Promise<ResponseCompletedData[]> {
+    return this.task.runPromptInAgent(
+      profile,
+      mode as Mode,
+      prompt,
+      promptContext,
+      contextMessages,
+      contextFiles,
+      systemPrompt,
+      waitForCurrentAgentToFinish,
+      sendNotification,
+    );
   }
 
   async runCustomCommand(name: string, args: string[] = [], mode?: string): Promise<void> {

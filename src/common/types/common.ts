@@ -966,6 +966,7 @@ export interface ExtensionUIComponent {
   placement: string;
   jsx: string;
   loadData?: boolean;
+  noDataCache?: boolean;
 }
 
 export interface ExtensionUIRefreshData {

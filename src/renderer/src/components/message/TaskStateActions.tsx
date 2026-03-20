@@ -7,6 +7,7 @@ import { DefaultTaskState, Mode, TaskData } from '@common/types';
 import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 
 import { Button } from '@/components/common/Button';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 type Props = {
   projectDir: string;
@@ -39,7 +40,7 @@ export const TaskStateActions = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { isEmpty: isEmptyTaskActions, renderComponents: renderTaskActionsComponents } = useExtensionComponentsWrapper({
-    placement: 'task-state-actions',
+    placement: 'task-state-actions-all',
     additionalProps: {
       task,
       taskId,
@@ -47,8 +48,8 @@ export const TaskStateActions = ({
     },
   });
 
-  if (!isEmptyTaskActions && state !== DefaultTaskState.Todo) {
-    return <div className="flex items-center gap-2 flex-wrap">{renderTaskActionsComponents()}</div>;
+  if (!isEmptyTaskActions) {
+    return renderTaskActionsComponents();
   }
 
   const handleDeleteClick = () => {
@@ -82,6 +83,7 @@ export const TaskStateActions = ({
         <div className="flex items-center gap-2">
           {icon}
           <div className="flex-1 text-text-secondary">{text}</div>
+          <ExtensionComponentWrapper placement="task-state-actions" direction="horizontal" />
           {actions}
         </div>
       </div>

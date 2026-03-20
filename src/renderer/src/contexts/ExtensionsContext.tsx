@@ -1,20 +1,45 @@
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 import { UIComponentProps, UIComponents } from '@common/extensions';
 import { AgentProfile, TaskData, Message } from '@common/types';
+import * as FiIcons from 'react-icons/fi';
+import * as FaIcons from 'react-icons/fa';
+import * as MdIcons from 'react-icons/md';
+import * as AiIcons from 'react-icons/ai';
+import * as BiIcons from 'react-icons/bi';
+import * as BsIcons from 'react-icons/bs';
+import * as CgIcons from 'react-icons/cg';
+import * as DiIcons from 'react-icons/di';
+import * as FcIcons from 'react-icons/fc';
+import * as GiIcons from 'react-icons/gi';
+import * as GoIcons from 'react-icons/go';
+import * as GrIcons from 'react-icons/gr';
+import * as HiIcons from 'react-icons/hi';
+import * as ImIcons from 'react-icons/im';
+import * as IoIcons from 'react-icons/io';
+import * as Io5Icons from 'react-icons/io5';
+import * as RiIcons from 'react-icons/ri';
+import * as SiIcons from 'react-icons/si';
+import * as TbIcons from 'react-icons/tb';
+import * as TiIcons from 'react-icons/ti';
+import * as VscIcons from 'react-icons/vsc';
+import * as WiIcons from 'react-icons/wi';
 
-import { Button } from '@/components/common/Button';
-import { Checkbox } from '@/components/common/Checkbox';
-import { Input } from '@/components/common/Input';
-import { Select } from '@/components/common/Select';
-import { TextArea } from '@/components/common/TextArea';
-import { IconButton } from '@/components/common/IconButton';
-import { RadioButton } from '@/components/common/RadioButton';
-import { MultiSelect } from '@/components/common/MultiSelect';
-import { Slider } from '@/components/common/Slider';
-import { DatePicker } from '@/components/common/DatePicker';
-import { Chip } from '@/components/common/Chip';
-import { ModelSelectorWrapper } from '@/components/common/ModelSelectorWrapper';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { LoadingOverlay } from '@/components/common/LoadingOverlay';
+import { ModelSelectorWrapper } from '@/components/common/ModelSelectorWrapper';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { Chip } from '@/components/common/Chip';
+import { DatePicker } from '@/components/common/DatePicker';
+import { Slider } from '@/components/common/Slider';
+import { MultiSelect } from '@/components/common/MultiSelect';
+import { RadioButton } from '@/components/common/RadioButton';
+import { IconButton } from '@/components/common/IconButton';
+import { TextArea } from '@/components/common/TextArea';
+import { Select } from '@/components/common/Select';
+import { Input } from '@/components/common/Input';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Button } from '@/components/common/Button';
 
 type ExtensionsContextValue = {
   projectDir?: string;
@@ -65,7 +90,35 @@ const uiComponents: UIComponents = {
   Slider,
   DatePicker,
   Chip,
+  Tooltip,
   ModelSelector: ModelSelectorWrapper,
+  LoadingOverlay,
+  ConfirmDialog,
+};
+
+const reactIcons = {
+  Fi: FiIcons,
+  Fa: FaIcons,
+  Md: MdIcons,
+  Ai: AiIcons,
+  Bi: BiIcons,
+  Bs: BsIcons,
+  Cg: CgIcons,
+  Di: DiIcons,
+  Fc: FcIcons,
+  Gi: GiIcons,
+  Go: GoIcons,
+  Gr: GrIcons,
+  Hi: HiIcons,
+  Im: ImIcons,
+  Io: IoIcons,
+  Io5: Io5Icons,
+  Ri: RiIcons,
+  Si: SiIcons,
+  Tb: TbIcons,
+  Ti: TiIcons,
+  Vsc: VscIcons,
+  Wi: WiIcons,
 };
 
 type ExtensionsHookResult = {
@@ -84,6 +137,7 @@ export const useExtensions = (): ExtensionsHookResult => {
       models,
       providers,
       ui: uiComponents,
+      icons: reactIcons,
     }),
     [projectDir, task, agentProfile, models, providers],
   );

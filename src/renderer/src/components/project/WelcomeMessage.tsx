@@ -9,7 +9,7 @@ import icon from '../../../../../resources/icon.png?asset';
 
 import type { Mode } from '@common/types';
 
-import { BmadWorkflowPage } from '@/components/bmad/BmadWorkflowPage';
+import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
 
 type Props = {
   onModeChange?: (mode: Mode) => void;
@@ -18,8 +18,15 @@ type Props = {
   taskId?: string;
 };
 
-export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props) => {
+export const WelcomeMessage = ({ onModeChange, mode: _mode, projectDir, taskId: _taskId }: Props) => {
   const { t } = useTranslation();
+
+  const { isEmpty: isEmptyWelcomePage, renderComponents: renderWelcomePageComponents } = useExtensionComponentsWrapper({
+    placement: 'welcome-page',
+    additionalProps: {
+      projectDir,
+    },
+  });
 
   const features = [
     { icon: FiCode, key: 'aiCoding' },
@@ -45,14 +52,6 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
       iconColor: 'text-info',
       borderHover: 'hover:border-info',
     },
-    {
-      icon: FiLayers,
-      key: 'bmad',
-      value: 'bmad' as Mode,
-      iconBg: 'bg-warning-subtle',
-      iconColor: 'text-warning',
-      borderHover: 'hover:border-warning',
-    },
   ];
 
   const tips = ['addFiles', 'askQuestion', 'useCommands', 'switchMode'];
@@ -61,8 +60,12 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
     onModeChange?.(mode);
   };
 
-  if (mode === 'bmad') {
-    return <BmadWorkflowPage projectDir={projectDir} taskId={taskId} />;
+  if (!isEmptyWelcomePage) {
+    return (
+      <div className="absolute inset-0 text-text-muted-light overflow-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary py-4 px-4">
+        <div className="w-full h-full flex flex-col gap-2">{renderWelcomePageComponents()}</div>
+      </div>
+    );
   }
 
   return (
@@ -91,13 +94,13 @@ export const WelcomeMessage = ({ onModeChange, mode, projectDir, taskId }: Props
 
         <div className="mb-8">
           <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-4">{t('welcomeMessage.modes.title')}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
             {modes.map(({ icon: Icon, key, value, iconBg, iconColor, borderHover }) => (
               <div
                 key={key}
                 onClick={() => handleModeClick(value)}
                 className={clsx(
-                  'group relative overflow-hidden rounded-xl border border-border-dark-light bg-bg-primary-light-strong p-4 cursor-pointer transition-all duration-300 hover:scale-105 flex flex-col',
+                  'group relative overflow-hidden rounded-xl border border-border-dark-light bg-bg-primary-light-strong p-4 cursor-pointer transition-all duration-300 hover:scale-105 flex flex-col md:max-w-[300px]',
                   borderHover,
                   'hover:bg-bg-secondary',
                 )}

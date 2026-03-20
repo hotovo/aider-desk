@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
 
@@ -16,26 +16,52 @@ export const useExtensionComponentsWrapper = ({ placement, additionalProps }: Us
   const { componentProps } = useExtensions();
   const api = useApi();
   const store = useExtensionUIStore();
+  const currentProjectDir = componentProps.projectDir;
+  const currentTaskId = componentProps.task?.id;
 
-  const components = useExtensionComponents(placement, componentProps.projectDir);
+  const components = useExtensionComponents(placement, currentProjectDir, currentTaskId);
 
+  // Track which components have been loaded in this mount to prevent infinite loops with noDataCache
+  const loadedComponentsRef = useRef<Set<string>>(new Set());
+
+  // Load components list if not yet loaded
   useEffect(() => {
-    if (components.length === 0) {
-      void store.loadComponents(api, placement, componentProps.projectDir);
+    if (components === undefined) {
+      void store.loadComponents(api, placement, currentProjectDir, currentTaskId);
     }
-  }, [api, componentProps.projectDir, placement, components.length, store]);
+  }, [api, currentProjectDir, placement, components, store, currentTaskId]);
 
+  // Reset loaded components tracking when components list changes
   useEffect(() => {
-    if (components.length > 0) {
-      void store.loadAllComponentsData(api, components, componentProps.projectDir, componentProps.task?.id);
+    loadedComponentsRef.current = new Set();
+  }, [components]);
+
+  // Load data for each component individually
+  useEffect(() => {
+    if (!components) {
+      return;
     }
-  }, [api, componentProps.projectDir, componentProps.task?.id, components, store]);
+
+    const componentsWithData = components.filter((comp) => comp.loadData);
+
+    componentsWithData.forEach((comp) => {
+      const componentKey = `${comp.extensionId}:${comp.componentId}:${currentProjectDir}:${currentTaskId}`;
+      const isLoaded = store.isDataLoaded(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId);
+      const hasBeenLoadedThisMount = loadedComponentsRef.current.has(componentKey);
+
+      // For noDataCache components, only load once per mount (unless explicitly refreshed)
+      // For normal components, only load if not already loaded
+      const shouldLoad = comp.noDataCache ? !hasBeenLoadedThisMount : !isLoaded;
+
+      if (shouldLoad) {
+        loadedComponentsRef.current.add(componentKey);
+        void store.loadComponentData(api, comp.extensionId, comp.componentId, currentProjectDir, currentTaskId, comp.noDataCache);
+      }
+    });
+  }, [api, currentProjectDir, currentTaskId, components, store]);
 
   useEffect(() => {
     return api.onExtensionUIRefresh((data) => {
-      const currentProjectDir = componentProps.projectDir;
-      const currentTaskId = componentProps.task?.id;
-
       if (data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
         return;
       }
@@ -45,6 +71,10 @@ export const useExtensionComponentsWrapper = ({ placement, additionalProps }: Us
         void store.loadComponents(api, placement, currentProjectDir);
       } else {
         if (data.taskId !== undefined && data.taskId !== currentTaskId) {
+          return;
+        }
+
+        if (!components) {
           return;
         }
 
@@ -59,29 +89,46 @@ export const useExtensionComponentsWrapper = ({ placement, additionalProps }: Us
         });
 
         if (affectedComponents.length > 0) {
-          void store.loadAllComponentsData(api, affectedComponents, currentProjectDir, currentTaskId, true);
+          affectedComponents.forEach((comp) => {
+            const componentKey = `${comp.extensionId}:${comp.componentId}:${currentProjectDir}:${currentTaskId}`;
+            // Remove from tracking so it can be loaded again
+            loadedComponentsRef.current.delete(componentKey);
+
+            void store.loadComponentData(
+              api,
+              comp.extensionId,
+              comp.componentId,
+              currentProjectDir,
+              currentTaskId,
+              true, // forceRefresh
+            );
+          });
         }
       }
     });
-  }, [api, componentProps.projectDir, componentProps.task?.id, components, placement, store]);
+  }, [api, currentProjectDir, currentTaskId, components, placement, store]);
 
   const getComponentData = useCallback(
     (comp: ExtensionUIComponent) => {
       const executeExtensionAction = async (action: string, ...args: unknown[]) => {
-        return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, componentProps.projectDir, componentProps.task?.id);
+        return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, currentProjectDir, currentTaskId);
       };
 
       return {
         ...componentProps,
         ...additionalProps,
         executeExtensionAction,
-        data: store.getComponentData(comp.extensionId, comp.componentId, componentProps.projectDir, componentProps.task?.id),
+        data: store.getComponentData(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId),
       };
     },
-    [api, componentProps, additionalProps, store],
+    [componentProps, additionalProps, store, currentProjectDir, currentTaskId, api],
   );
 
   const renderComponents = useCallback(() => {
+    if (!components) {
+      return [];
+    }
+
     return components.map((comp) => (
       <ExtensionUIErrorBoundary key={`${comp.extensionId}-${comp.componentId}`} extensionId={comp.extensionId} componentId={comp.componentId}>
         <StringToReactComponent data={getComponentData(comp)}>{comp.jsx}</StringToReactComponent>
@@ -92,6 +139,6 @@ export const useExtensionComponentsWrapper = ({ placement, additionalProps }: Us
   return {
     components,
     renderComponents,
-    isEmpty: components.length === 0,
+    isEmpty: !components || components.length === 0,
   };
 };

@@ -13,6 +13,7 @@ const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: 
 interface ExtensionUIState {
   componentsMap: Map<string, ExtensionUIComponent[]>;
   dataMap: Map<string, unknown>;
+  dataLoadedMap: Map<string, boolean>;
   loadingComponents: Set<string>;
   loadingData: Set<string>;
   initialized: boolean;
@@ -28,18 +29,12 @@ interface ExtensionUIActions {
     taskId?: string,
     forceRefresh?: boolean,
   ) => Promise<unknown>;
-  loadAllComponentsData: (
-    api: ApplicationAPI,
-    components: ExtensionUIComponent[],
-    projectDir?: string,
-    taskId?: string,
-    forceRefresh?: boolean,
-  ) => Promise<void>;
   handleRefreshEvent: (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) => void;
   invalidateComponents: (placement?: string, projectDir?: string, taskId?: string) => void;
   invalidateData: (extensionId?: string, componentId?: string, projectDir?: string, taskId?: string) => void;
-  getComponents: (placement?: string, projectDir?: string, taskId?: string) => ExtensionUIComponent[];
+  getComponents: (placement?: string, projectDir?: string, taskId?: string) => ExtensionUIComponent[] | undefined;
   getComponentData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => unknown;
+  isDataLoaded: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => boolean;
   isLoadingComponents: (placement?: string, projectDir?: string, taskId?: string) => boolean;
 }
 
@@ -49,6 +44,7 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
   (set, get) => ({
     componentsMap: new Map(),
     dataMap: new Map(),
+    dataLoadedMap: new Map(),
     loadingComponents: new Set(),
     loadingData: new Set(),
     initialized: false,
@@ -118,16 +114,17 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
       const cacheKey = getDataCacheKey(extensionId, componentId, projectDir, taskId);
       const state = get();
       const hasCachedData = state.dataMap.has(cacheKey);
+      const isLoaded = state.dataLoadedMap.get(cacheKey) || false;
 
       // Return cached if available and not forcing refresh
-      if (hasCachedData && !forceRefresh) {
+      if (hasCachedData && isLoaded && !forceRefresh) {
         return state.dataMap.get(cacheKey);
       }
 
       // Prevent duplicate requests (only block if no cached data to show)
       if (state.loadingData.has(cacheKey)) {
         // If we have cached data, return it immediately (stale-while-revalidate)
-        if (hasCachedData) {
+        if (hasCachedData && isLoaded) {
           return state.dataMap.get(cacheKey);
         }
         // Otherwise wait for the pending request
@@ -155,10 +152,13 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
         set((state) => {
           const newDataMap = new Map(state.dataMap);
           newDataMap.set(cacheKey, data);
+          const newDataLoadedMap = new Map(state.dataLoadedMap);
+          newDataLoadedMap.set(cacheKey, true);
           const newLoadingData = new Set(state.loadingData);
           newLoadingData.delete(cacheKey);
           return {
             dataMap: newDataMap,
+            dataLoadedMap: newDataLoadedMap,
             loadingData: newLoadingData,
           };
         });
@@ -177,15 +177,6 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
         // Return cached data on error if available
         return hasCachedData ? get().dataMap.get(cacheKey) : undefined;
       }
-    },
-
-    loadAllComponentsData: async (api, components, projectDir, taskId, forceRefresh = false) => {
-      const componentsWithData = components.filter((comp) => comp.loadData);
-      if (componentsWithData.length === 0) {
-        return;
-      }
-
-      await Promise.all(componentsWithData.map((comp) => get().loadComponentData(api, comp.extensionId, comp.componentId, projectDir, taskId, forceRefresh)));
     },
 
     handleRefreshEvent: (_api, data, currentProjectDir, _currentTaskId) => {
@@ -241,35 +232,50 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
     invalidateData: (extensionId, componentId, projectDir, taskId) => {
       if (extensionId === undefined && componentId === undefined && projectDir === undefined && taskId === undefined) {
         // Clear all
-        set({ dataMap: new Map() });
+        set({ dataMap: new Map(), dataLoadedMap: new Map() });
         return;
       }
 
       const cacheKey = getDataCacheKey(extensionId || '', componentId || '', projectDir, taskId);
       set((state) => {
         const newDataMap = new Map(state.dataMap);
+        const newDataLoadedMap = new Map(state.dataLoadedMap);
         // If partial key, find all matching
         if (!extensionId || !componentId) {
           newDataMap.forEach((_, key) => {
             if ((extensionId === undefined || key.startsWith(extensionId + ':')) && (componentId === undefined || key.includes(':' + componentId + ':'))) {
               newDataMap.delete(key);
+              newDataLoadedMap.delete(key);
             }
           });
         } else {
           newDataMap.delete(cacheKey);
+          newDataLoadedMap.delete(cacheKey);
         }
-        return { dataMap: newDataMap };
+        return { dataMap: newDataMap, dataLoadedMap: newDataLoadedMap };
       });
     },
 
     getComponents: (placement, projectDir, taskId) => {
       const cacheKey = getComponentsCacheKey(placement, projectDir, taskId);
-      return get().componentsMap.get(cacheKey) || [];
+      return get().componentsMap.get(cacheKey);
     },
 
     getComponentData: (extensionId, componentId, projectDir, taskId) => {
       const cacheKey = getDataCacheKey(extensionId, componentId, projectDir, taskId);
-      return get().dataMap.get(cacheKey);
+      const state = get();
+      const isLoaded = state.dataLoadedMap.get(cacheKey) || false;
+
+      if (!isLoaded) {
+        return undefined;
+      }
+
+      return state.dataMap.get(cacheKey);
+    },
+
+    isDataLoaded: (extensionId, componentId, projectDir, taskId) => {
+      const cacheKey = getDataCacheKey(extensionId, componentId, projectDir, taskId);
+      return get().dataLoadedMap.get(cacheKey) || false;
     },
 
     isLoadingComponents: (placement, projectDir, taskId) => {
@@ -281,9 +287,9 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
 );
 
 // Selector hooks for optimized re-renders
-export const useExtensionComponents = (placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[] => {
+export const useExtensionComponents = (placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[] | undefined => {
   const cacheKey = getComponentsCacheKey(placement, projectDir, taskId);
-  return useExtensionUIStore(useShallow((state) => state.componentsMap.get(cacheKey) || []));
+  return useExtensionUIStore(useShallow((state) => state.componentsMap.get(cacheKey)));
 };
 
 export const useExtensionComponentData = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): unknown => {
