@@ -1259,6 +1259,7 @@
     "subagents": {
       "groupRunning": "{{name}}: 子代理正在工作...",
       "groupCompleted": "{{name}}: 子代理已完成任务。",
+      "groupCancelled": "{{name}}: 子代理运行已被用户取消。",
       "running": "正在运行子代理...",
       "completed": "子代理执行了以下查询:",
       "prompt": "提示",

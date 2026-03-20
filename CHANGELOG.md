@@ -8,6 +8,7 @@
 - optimized prompt field and files sidebar
 - implemented virtualization for the task sidebar
 - added subagents quick toggle action to agent selector
+- added support for cancelling running subagents
 
 ## [0.57.0]
 

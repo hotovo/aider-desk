@@ -131,6 +131,7 @@ export class Task {
   private responseChunkMap: Map<string, { buffer: string; interval: NodeJS.Timeout }> = new Map();
   private isDeterminingTaskState = false;
   private resolutionAbortControllers: Record<string, AbortController> = {};
+  private subagentAbortControllers: Record<string, AbortController> = {};
   private tokensInfo: TokensInfoData;
   private queuedPrompts: QueuedPromptData[] = [];
   private isCompacting = false;
@@ -1057,7 +1058,7 @@ export class Task {
     contextMessages?: ContextMessage[],
     contextFiles?: ContextFile[],
     systemPrompt?: string,
-    abortSignal?: AbortSignal,
+    abortController?: AbortController,
     promptContext?: PromptContext,
   ): Promise<ContextMessage[]> {
     profile = {
@@ -1065,70 +1066,83 @@ export class Task {
       isSubagent: true,
     };
 
-    const hookResult = await this.hookManager.trigger('onSubagentStarted', { subagentId: profile.id, prompt }, this, this.project);
-    if (hookResult.blocked) {
-      logger.info('Subagent execution blocked by hook');
-      return [];
-    }
-    prompt = hookResult.event.prompt;
-
-    if (!contextMessages) {
-      contextMessages = await this.getContextMessages();
-    }
-    if (!contextFiles) {
-      contextFiles = await this.getContextFiles();
+    // Register abort controller if provided and promptContext has interruptId
+    const interruptId = promptContext?.group?.interruptId;
+    if (abortController && interruptId) {
+      this.registerSubagentAbortController(interruptId, abortController);
     }
 
-    const extensionResult = await this.extensionManager.dispatchEvent(
-      'onSubagentStarted',
-      {
-        subagentProfile: profile,
+    try {
+      const hookResult = await this.hookManager.trigger('onSubagentStarted', { subagentId: profile.id, prompt }, this, this.project);
+      if (hookResult.blocked) {
+        logger.info('Subagent execution blocked by hook');
+        return [];
+      }
+      prompt = hookResult.event.prompt;
+
+      if (!contextMessages) {
+        contextMessages = await this.getContextMessages();
+      }
+      if (!contextFiles) {
+        contextFiles = await this.getContextFiles();
+      }
+
+      const extensionResult = await this.extensionManager.dispatchEvent(
+        'onSubagentStarted',
+        {
+          subagentProfile: profile,
+          prompt,
+          contextMessages,
+          contextFiles,
+          systemPrompt,
+          promptContext,
+        },
+        this.project,
+        this,
+      );
+      if (extensionResult.blocked) {
+        logger.info('Subagent execution blocked by extension');
+        return [];
+      }
+      prompt = extensionResult.prompt;
+      contextMessages = extensionResult.contextMessages;
+      contextFiles = extensionResult.contextFiles;
+      systemPrompt = extensionResult.systemPrompt;
+      promptContext = extensionResult.promptContext;
+
+      let resultMessages = await this.agent.runAgent(
+        this,
+        profile,
         prompt,
+        'subagent',
+        promptContext,
         contextMessages,
         contextFiles,
         systemPrompt,
-        promptContext,
-      },
-      this.project,
-      this,
-    );
-    if (extensionResult.blocked) {
-      logger.info('Subagent execution blocked by extension');
-      return [];
+        false,
+        abortController?.signal,
+      );
+      const finishedHookResult = await this.hookManager.trigger('onSubagentFinished', { subagentId: profile.id, resultMessages }, this, this.project);
+
+      if (finishedHookResult.event.resultMessages) {
+        resultMessages = finishedHookResult.event.resultMessages;
+      }
+
+      const subagentFinishedExtensionResult = await this.extensionManager.dispatchEvent(
+        'onSubagentFinished',
+        { subagentProfile: profile, resultMessages },
+        this.project,
+        this,
+      );
+      resultMessages = subagentFinishedExtensionResult.resultMessages;
+
+      return resultMessages;
+    } finally {
+      // Unregister abort controller if it was registered
+      if (abortController && interruptId) {
+        this.unregisterSubagentAbortController(interruptId);
+      }
     }
-    prompt = extensionResult.prompt;
-    contextMessages = extensionResult.contextMessages;
-    contextFiles = extensionResult.contextFiles;
-    systemPrompt = extensionResult.systemPrompt;
-    promptContext = extensionResult.promptContext;
-
-    let resultMessages = await this.agent.runAgent(
-      this,
-      profile,
-      prompt,
-      'subagent',
-      promptContext,
-      contextMessages,
-      contextFiles,
-      systemPrompt,
-      false,
-      abortSignal,
-    );
-    const finishedHookResult = await this.hookManager.trigger('onSubagentFinished', { subagentId: profile.id, resultMessages }, this, this.project);
-
-    if (finishedHookResult.event.resultMessages) {
-      resultMessages = finishedHookResult.event.resultMessages;
-    }
-
-    const subagentFinishedExtensionResult = await this.extensionManager.dispatchEvent(
-      'onSubagentFinished',
-      { subagentProfile: profile, resultMessages },
-      this.project,
-      this,
-    );
-    resultMessages = subagentFinishedExtensionResult.resultMessages;
-
-    return resultMessages;
   }
 
   public sendPromptToAider(
@@ -2174,27 +2188,58 @@ export class Task {
 
   public async interruptResponse(interruptId?: string) {
     if (interruptId) {
-      // Interrupt specific conflict resolution agent
-      logger.info('Interrupting specific conflict resolution agent:', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-        interruptId,
-      });
+      // Check for subagent abort controller first
+      const subagentAbortController = this.subagentAbortControllers[interruptId];
+      if (subagentAbortController) {
+        logger.info('Interrupting subagent:', {
+          baseDir: this.project.baseDir,
+          taskId: this.taskId,
+          interruptId,
+        });
+        subagentAbortController.abort();
+        delete this.subagentAbortControllers[interruptId];
+        logger.info('Aborted subagent', { interruptId });
+        return;
+      }
 
+      // Check for conflict resolution agent
       const abortController = this.resolutionAbortControllers[interruptId];
       if (abortController) {
+        logger.info('Interrupting conflict resolution agent:', {
+          baseDir: this.project.baseDir,
+          taskId: this.taskId,
+          interruptId,
+        });
         abortController.abort();
         delete this.resolutionAbortControllers[interruptId];
         logger.info('Aborted conflict resolution agent', { interruptId });
-      } else {
-        logger.warn('Conflict resolution agent not found for interruptId', {
-          interruptId,
-        });
+        return;
       }
+
+      logger.warn('No agent found for interruptId', {
+        interruptId,
+      });
       return;
     }
 
-    // Default behavior: interrupt all agents
+    // No specific interruptId - check for running subagents first
+    const subagentInterruptIds = Object.keys(this.subagentAbortControllers);
+    if (subagentInterruptIds.length > 0) {
+      // Cancel the first running subagent
+      const firstInterruptId = subagentInterruptIds[0];
+      logger.info('Interrupting first running subagent:', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        interruptId: firstInterruptId,
+      });
+      const abortController = this.subagentAbortControllers[firstInterruptId];
+      abortController.abort();
+      delete this.subagentAbortControllers[firstInterruptId];
+      logger.info('Aborted subagent', { interruptId: firstInterruptId });
+      return;
+    }
+
+    // Default behavior: interrupt main agent
     logger.info('Interrupting response:', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
@@ -2224,6 +2269,16 @@ export class Task {
         });
       }
     }
+  }
+
+  public registerSubagentAbortController(interruptId: string, abortController: AbortController): void {
+    this.subagentAbortControllers[interruptId] = abortController;
+    logger.debug('Registered subagent abort controller', { interruptId });
+  }
+
+  public unregisterSubagentAbortController(interruptId: string): void {
+    delete this.subagentAbortControllers[interruptId];
+    logger.debug('Unregistered subagent abort controller', { interruptId });
   }
 
   public getQueuedPrompts(): QueuedPromptData[] {
