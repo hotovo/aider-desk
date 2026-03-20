@@ -3272,7 +3272,7 @@ ${error.stderr}`,
       void this.aiderManager.start();
     }
 
-    this.task.updatedAt = new Date().toISOString();
+    const previousTaskString = JSON.stringify(this.task);
     for (const key of Object.keys(updates)) {
       this.task[key] = updates[key];
     }
@@ -3288,6 +3288,13 @@ ${error.stderr}`,
     if (!this.task.createdAt && 'name' in updates) {
       this.task.createdAt = new Date().toISOString();
     }
+
+    // no need to save if nothing changed
+    if (previousTaskString === JSON.stringify(this.task)) {
+      return this.task;
+    }
+
+    this.task.updatedAt = new Date().toISOString();
 
     return this.saveTask(updates, !!this.task.createdAt);
   }

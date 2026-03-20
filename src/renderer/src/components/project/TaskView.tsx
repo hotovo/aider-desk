@@ -35,6 +35,7 @@ import { useApi } from '@/contexts/ApiContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { TaskBar, TaskBarRef } from '@/components/project/TaskBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
+import { TaskControlBar } from '@/components/project/TaskControlBar';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
@@ -762,47 +763,57 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 </div>
               )}
               <ExtensionComponentWrapper placement="task-input-above" />
-              <PromptField
-                key={task.id}
-                ref={promptFieldRef}
-                baseDir={projectDir}
-                taskId={task.id}
-                task={task}
-                inputHistory={inputHistory}
-                processing={inProgress}
-                mode={currentMode}
-                onModeChanged={handleModeChange}
-                runPrompt={runPrompt}
-                savePrompt={handleSavePrompt}
-                editLastUserMessage={handleEditLastUserMessage}
-                isActive={isActive}
-                allFiles={allFiles}
-                words={autocompletionWords}
-                clearMessages={clearMessages}
-                scrapeWeb={scrapeWeb}
-                showFileDialog={showFileDialog}
-                addFiles={handleAddFiles}
-                question={question}
-                answerQuestion={handleAnswerQuestion}
-                queuedPrompts={queuedPrompts}
-                removeQueuedPrompt={handleRemoveQueuedPrompt}
-                sendQueuedPromptNow={handleSendQueuedPromptNow}
-                interruptResponse={handleInterruptResponse}
-                runCommand={runCommand}
-                runTests={runTests}
-                redoLastUserPrompt={handleRedoLastUserPrompt}
-                openModelSelector={handleOpenModelSelector}
-                openAgentModelSelector={handleOpenAgentModelSelector}
-                promptBehavior={settings.promptBehavior}
-                clearLogMessages={clearLogMessages}
-                toggleTerminal={api.isTerminalSupported() ? toggleTerminal : undefined}
-                terminalVisible={terminalVisible}
-                scrollToBottom={handleScrollToBottom}
-                onAutoApproveChanged={handleAutoApproveChanged}
-                showSettingsPage={showSettingsPage}
-                showTaskInfo={handleShowTaskInfo}
-                handoffConversation={handleHandoff}
-              />
+              <div className="flex flex-col gap-1.5">
+                <PromptField
+                  key={task.id}
+                  ref={promptFieldRef}
+                  baseDir={projectDir}
+                  taskId={task.id}
+                  inputHistory={inputHistory}
+                  processing={inProgress}
+                  mode={currentMode}
+                  onModeChanged={handleModeChange}
+                  runPrompt={runPrompt}
+                  savePrompt={handleSavePrompt}
+                  editLastUserMessage={handleEditLastUserMessage}
+                  isActive={isActive}
+                  allFiles={allFiles}
+                  words={autocompletionWords}
+                  clearMessages={clearMessages}
+                  scrapeWeb={scrapeWeb}
+                  showFileDialog={showFileDialog}
+                  addFiles={handleAddFiles}
+                  question={question}
+                  answerQuestion={handleAnswerQuestion}
+                  queuedPrompts={queuedPrompts}
+                  removeQueuedPrompt={handleRemoveQueuedPrompt}
+                  sendQueuedPromptNow={handleSendQueuedPromptNow}
+                  interruptResponse={handleInterruptResponse}
+                  runCommand={runCommand}
+                  runTests={runTests}
+                  redoLastUserPrompt={handleRedoLastUserPrompt}
+                  openModelSelector={handleOpenModelSelector}
+                  openAgentModelSelector={handleOpenAgentModelSelector}
+                  promptBehavior={settings.promptBehavior}
+                  clearLogMessages={clearLogMessages}
+                  scrollToBottom={handleScrollToBottom}
+                  showTaskInfo={handleShowTaskInfo}
+                  handoffConversation={handleHandoff}
+                />
+                <TaskControlBar
+                  baseDir={projectDir}
+                  task={task}
+                  isActive={isActive}
+                  mode={currentMode}
+                  onModeChanged={handleModeChange}
+                  clearMessages={clearMessages}
+                  toggleTerminal={api.isTerminalSupported() ? toggleTerminal : undefined}
+                  terminalVisible={terminalVisible}
+                  showTaskInfo={handleShowTaskInfo}
+                  onAutoApproveChanged={handleAutoApproveChanged}
+                  showSettingsPage={showSettingsPage}
+                />
+              </div>
               <div className="flex gap-2 justify-between flex-wrap">
                 <ExtensionComponentWrapper placement="task-status-bar-left" />
                 <ExtensionComponentWrapper placement="task-status-bar-right" />

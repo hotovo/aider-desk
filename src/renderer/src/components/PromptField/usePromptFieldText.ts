@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDebounceFn } from '@reactuses/core';
 
 import { useIndexedDB } from '@/hooks/useIndexedDB';
@@ -25,10 +25,13 @@ export const usePromptFieldText = (baseDir: string, taskId: string, onLoad?: (va
     setImmediateText(persistedText);
   }, [persistedText]);
 
-  const setText = (newText: string) => {
-    setImmediateText(newText);
-    run(newText);
-  };
+  const setText = useCallback(
+    (newText: string) => {
+      setImmediateText(newText);
+      run(newText);
+    },
+    [run],
+  );
 
   return {
     text: immediateText,

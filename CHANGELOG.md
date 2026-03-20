@@ -4,6 +4,8 @@
 
 - added onAgentStepStarted extension hook
 - properly triggering onTaskUpdated on empty task updates
+- exposed openPath and direct runPromptInAgent functions to Extension
+- optimized prompt field and files sidebar
 
 ## [0.57.0]
 
