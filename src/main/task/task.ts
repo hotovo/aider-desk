@@ -3253,6 +3253,8 @@ ${error.stderr}`,
   }
 
   public async updateTask(updates: Partial<TaskData>): Promise<TaskData> {
+    const previousTaskString = JSON.stringify(this.task);
+
     // Handle worktree configuration changes
     if (updates.workingMode !== undefined && updates.workingMode !== this.task.workingMode) {
       if (!(await this.applyWorkingMode(updates.workingMode))) {
@@ -3272,7 +3274,6 @@ ${error.stderr}`,
       void this.aiderManager.start();
     }
 
-    const previousTaskString = JSON.stringify(this.task);
     for (const key of Object.keys(updates)) {
       this.task[key] = updates[key];
     }
@@ -3291,6 +3292,11 @@ ${error.stderr}`,
 
     // no need to save if nothing changed
     if (previousTaskString === JSON.stringify(this.task)) {
+      logger.debug('Task update prevented because no changes were detected', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        updates,
+      });
       return this.task;
     }
 
