@@ -7,6 +7,7 @@
 - exposed openPath and direct runPromptInAgent functions to Extension
 - optimized prompt field and files sidebar
 - implemented virtualization for the task sidebar
+- added subagents quick toggle action to agent selector
 
 ## [0.57.0]
 

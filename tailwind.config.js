@@ -95,6 +95,7 @@ module.exports = {
           'memory-tools': 'var(--color-agent-memory-tools)',
           'skills-tools': 'var(--color-agent-skills-tools)',
           'context-files': 'var(--color-agent-context-files)',
+          'subagents-tools': 'var(--color-agent-subagents-tools)',
           'repo-map': 'var(--color-agent-repo-map)',
         },
         button: {

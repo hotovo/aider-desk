@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdCheck, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdPsychology, MdSave } from 'react-icons/md';
+import { HiUserGroup } from 'react-icons/hi';
 import { RiToolsFill } from 'react-icons/ri';
 import { clsx } from 'clsx';
 import { AgentProfile, TaskData, ToolApprovalState } from '@common/types';
@@ -240,6 +241,7 @@ export const AgentSelector = memo(
               {activeTaskProfile.useTaskTools && <LuClipboardList className="w-3.5 h-3.5 text-agent-tasks-tools opacity-70" />}
               {activeTaskProfile.useMemoryTools && <LuBrain className="w-3 h-3 text-agent-memory-tools opacity-70" />}
               {activeTaskProfile.useSkillsTools && <MdPsychology className="w-3.5 h-3.5 text-agent-skills-tools opacity-70" />}
+              {activeTaskProfile.useSubagents && <HiUserGroup className="w-3.5 h-3.5 text-agent-subagents-tools opacity-70" />}
               {activeTaskProfile.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-agent-context-files opacity-70" />}
               {activeTaskProfile.includeRepoMap && <MdOutlineMap className="w-3 h-3 text-agent-repo-map opacity-70" />}
             </>
@@ -380,6 +382,16 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('useSkillsTools', !activeTaskProfile.useSkillsTools)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={`${t('settings.agent.useSkillsTools')} (Alt + S)`}
+                  />
+                  <IconButton
+                    icon={
+                      <HiUserGroup
+                        className={clsx('w-3.5 h-3.5', activeTaskProfile.useSubagents ? 'text-agent-subagents-tools' : 'text-text-muted opacity-50')}
+                      />
+                    }
+                    onClick={() => handleToggleProfileSetting('useSubagents', !activeTaskProfile.useSubagents)}
+                    className="p-1.5 hover:bg-bg-secondary rounded-md"
+                    tooltip={t('settings.agent.canUseSubagents')}
                   />
                   <IconButton
                     icon={
