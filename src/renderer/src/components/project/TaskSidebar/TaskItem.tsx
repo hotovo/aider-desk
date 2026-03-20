@@ -1,17 +1,15 @@
 import { TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { KeyboardEvent, MouseEvent, useEffect, memo, useState } from 'react';
+import { KeyboardEvent, MouseEvent, memo, useState } from 'react';
 import { HiPlus, HiCheck, HiSparkles } from 'react-icons/hi';
 import { IoGitBranch } from 'react-icons/io5';
 import { MdPushPin, MdChevronRight } from 'react-icons/md';
 import { clsx } from 'clsx';
-import { useLocalStorage, useLongPress } from '@reactuses/core';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useLongPress } from '@reactuses/core';
 
 import { TaskStatusIcon } from './TaskStatusIcon';
 import { TaskMenuButton } from './TaskMenuButton';
 
-import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { LoadingText } from '@/components/common/LoadingText';
@@ -24,8 +22,6 @@ type Props = {
   level: number;
   selectedTasks: Set<string>;
   deleteConfirmTaskId: string | null;
-  showArchived: boolean;
-  searchQuery: string;
   isMultiselectMode: boolean;
   setIsMultiselectMode: (value: boolean) => void;
   activeTaskId: string | null;
@@ -44,10 +40,11 @@ type Props = {
   onExportToMarkdown?: (taskId: string) => void;
   onExportToImage?: (taskId: string) => void;
   onDuplicateTask?: (taskId: string) => void;
-  updateTask?: (taskId: string, updates: Partial<TaskData>) => Promise<void>;
-  deleteTask?: (taskId: string) => Promise<void>;
   handleConfirmDelete: (taskId: string) => Promise<void>;
   handleCancelDelete: () => void;
+  isExpanded: boolean;
+  onToggleExpand: (taskId: string) => void;
+  hasChildren: boolean;
 };
 
 export const TaskItem = memo(
@@ -57,8 +54,6 @@ export const TaskItem = memo(
     level,
     selectedTasks,
     deleteConfirmTaskId,
-    showArchived,
-    searchQuery,
     isMultiselectMode,
     setIsMultiselectMode,
     activeTaskId,
@@ -77,18 +72,16 @@ export const TaskItem = memo(
     onExportToMarkdown,
     onExportToImage,
     onDuplicateTask,
-    updateTask,
-    deleteTask,
     handleConfirmDelete,
     handleCancelDelete,
+    isExpanded,
+    onToggleExpand,
+    hasChildren,
   }: Props) => {
     const { t } = useTranslation();
-    const [isExpanded, setIsExpanded] = useLocalStorage(`aider-desk-expanded-task-${task.id}`, false);
     const [editTaskName, setEditTaskName] = useState(task.name);
     const isGeneratingName = task.name === '<<generating>>';
     const subtasks = tasks.filter((t) => t.parentId === task.id);
-    const visibleSubtasks = getSortedVisibleTasks(subtasks, showArchived, searchQuery);
-    const hasChildren = subtasks.length > 0;
     const isEditing = editingTaskId === task.id;
     const isSubtask = level > 0;
 
@@ -102,27 +95,9 @@ export const TaskItem = memo(
       },
     );
 
-    // Auto-expand if this task contains the active task as a subtask (recursively)
-    useEffect(() => {
-      if (activeTaskId && tasks.length > 0) {
-        const hasActiveSubtask = (taskId: string): boolean => {
-          const childTasks = tasks.filter((t) => t.parentId === taskId);
-          if (childTasks.some((t) => t.id === activeTaskId)) {
-            return true;
-          }
-          return childTasks.some((child) => hasActiveSubtask(child.id));
-        };
-
-        if (hasActiveSubtask(task.id)) {
-          setIsExpanded(true);
-        }
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeTaskId, tasks]);
-
     const toggleExpand = (e: MouseEvent) => {
       e.stopPropagation();
-      setIsExpanded(!isExpanded);
+      onToggleExpand(task.id);
     };
 
     const handleCreateSubtask = (e: MouseEvent) => {
@@ -296,51 +271,6 @@ export const TaskItem = memo(
             </div>
           </div>
         )}
-        <AnimatePresence>
-          {visibleSubtasks.length > 0 && isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            >
-              {visibleSubtasks.map((subtask) => (
-                <TaskItem
-                  key={subtask.id}
-                  task={subtask}
-                  tasks={tasks}
-                  level={level + 1}
-                  selectedTasks={selectedTasks}
-                  deleteConfirmTaskId={deleteConfirmTaskId}
-                  showArchived={showArchived}
-                  searchQuery={searchQuery}
-                  isMultiselectMode={isMultiselectMode}
-                  setIsMultiselectMode={setIsMultiselectMode}
-                  activeTaskId={activeTaskId}
-                  onTaskClick={onTaskClick}
-                  createNewTask={createNewTask}
-                  editingTaskId={editingTaskId}
-                  onEditClick={onEditClick}
-                  onEditConfirm={onEditConfirm}
-                  onEditCancel={onEditCancel}
-                  onDeleteClick={onDeleteClick}
-                  onArchiveTask={onArchiveTask}
-                  onUnarchiveTask={onUnarchiveTask}
-                  onTogglePin={onTogglePin}
-                  onChangeState={onChangeState}
-                  onCopyAsMarkdown={onCopyAsMarkdown}
-                  onExportToMarkdown={onExportToMarkdown}
-                  onExportToImage={onExportToImage}
-                  onDuplicateTask={onDuplicateTask}
-                  updateTask={updateTask}
-                  deleteTask={deleteTask}
-                  handleConfirmDelete={handleConfirmDelete}
-                  handleCancelDelete={handleCancelDelete}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     );
   },

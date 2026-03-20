@@ -9,6 +9,24 @@ import { useTask } from '@/contexts/TasksContext';
 import { useTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
 import { createMockTaskContext } from '@/__tests__/mocks/contexts';
 
+// Mock @tanstack/react-virtual
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: vi.fn(({ count }: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, i) => ({
+        index: i,
+        start: i * 28,
+        size: 28,
+        key: i,
+      })),
+    getTotalSize: () => count * 28,
+    scrollToOffset: vi.fn(),
+    scrollToIndex: vi.fn(),
+    measureElement: vi.fn(),
+    isScrolling: false,
+  })),
+}));
+
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

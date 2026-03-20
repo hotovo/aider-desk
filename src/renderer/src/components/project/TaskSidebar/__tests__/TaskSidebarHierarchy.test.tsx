@@ -7,6 +7,24 @@ import { TaskSidebar } from '../TaskSidebar';
 import { render } from '@/__tests__/render';
 import { useTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
 
+// Mock @tanstack/react-virtual
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: vi.fn(({ count }: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, i) => ({
+        index: i,
+        start: i * 28,
+        size: 28,
+        key: i,
+      })),
+    getTotalSize: () => count * 28,
+    scrollToOffset: vi.fn(),
+    scrollToIndex: vi.fn(),
+    measureElement: vi.fn(),
+    isScrolling: false,
+  })),
+}));
+
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -106,8 +124,8 @@ describe('TaskSidebar Hierarchy', () => {
       fireEvent.click(chevron);
     });
 
-    const stored = localStorage.getItem('aider-desk-expanded-task-parent-1');
-    expect(stored).toBe('true');
+    const stored = localStorage.getItem('aider-desk-expanded-tasks');
+    expect(stored).toBe(JSON.stringify(['parent-1']));
   });
 
   it('shows "+ create subtask" button on hover for parent tasks', () => {

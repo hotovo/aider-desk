@@ -1,6 +1,6 @@
 import { TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { MouseEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useDeferredValue } from 'react';
+import { MouseEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
 import { HiPlus } from 'react-icons/hi';
 import { RiMenuUnfold4Line } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
@@ -9,15 +9,15 @@ import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BiArchive, BiArchiveIn } from 'react-icons/bi';
 import { HiXMark } from 'react-icons/hi2';
-import { useDebounce } from '@reactuses/core';
+import { useDebounce, useLocalStorage } from '@reactuses/core';
+import { useVirtualizer } from '@tanstack/react-virtual';
 
 import { TaskSidebarMultiSelectMenu } from './TaskSidebarMultiSelectMenu';
 import { TaskItem } from './TaskItem';
 import { TaskSectionHeader } from './TaskSectionHeader';
 
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
-import { getSortedVisibleTasks } from '@/utils/task-utils';
-import { groupTasksByDate } from '@/utils/date-utils';
+import { flattenTasksForVirtualization } from '@/utils/task-utils';
 import { Input } from '@/components/common/Input';
 import { IconButton } from '@/components/common/IconButton';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -70,8 +70,10 @@ const TaskSidebarComponent = ({
   const [showArchived, setShowArchived] = useState<boolean>(false);
   const [isSearchVisible, setIsSearchVisible] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [expandedIds, setExpandedIds] = useLocalStorage<string[]>('aider-desk-expanded-tasks', []);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const listContainerRef = useRef<HTMLDivElement>(null);
   const debouncedSearchQuery = useDebounce(searchQuery, 50);
   const [optimisticActiveTaskId, setOptimisticActiveTaskId] = useOptimistic(activeTaskId);
 
@@ -112,8 +114,57 @@ const TaskSidebarComponent = ({
     setIsMultiselectMenuOpen(false);
   });
 
-  const sortedTasks = getSortedVisibleTasks(tasks, showArchived, debouncedSearchQuery);
-  const deferredTasks = useDeferredValue(sortedTasks);
+  const expandedIdsSet = useMemo(() => new Set(expandedIds ?? []), [expandedIds]);
+
+  const virtualItems = useMemo(
+    () => flattenTasksForVirtualization(tasks, expandedIdsSet, showArchived, debouncedSearchQuery),
+    [tasks, expandedIdsSet, showArchived, debouncedSearchQuery],
+  );
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const virtualizer = useVirtualizer({
+    count: virtualItems.length,
+    getScrollElement: () => listContainerRef.current,
+    estimateSize: () => 28,
+    overscan: 10,
+  });
+
+  const handleToggleExpand = useCallback(
+    (taskId: string) => {
+      setExpandedIds((prev) => {
+        const newSet = new Set(prev);
+        if (newSet.has(taskId)) {
+          newSet.delete(taskId);
+        } else {
+          newSet.add(taskId);
+        }
+        return Array.from(newSet);
+      });
+    },
+    [setExpandedIds],
+  );
+
+  useEffect(() => {
+    if (activeTaskId && tasks.length > 0) {
+      const hasActiveSubtask = (taskId: string): boolean => {
+        const childTasks = tasks.filter((t) => t.parentId === taskId);
+        if (childTasks.some((t) => t.id === activeTaskId)) {
+          return true;
+        }
+        return childTasks.some((child) => hasActiveSubtask(child.id));
+      };
+
+      const parentWithActiveSubtask = tasks.find((task) => hasActiveSubtask(task.id));
+      if (parentWithActiveSubtask && !expandedIdsSet.has(parentWithActiveSubtask.id)) {
+        setExpandedIds((prev) => [...(prev ?? []), parentWithActiveSubtask.id]);
+      }
+    }
+  }, [activeTaskId, tasks, expandedIdsSet, setExpandedIds]);
+
+  const sortedTasks = useMemo(() => {
+    const taskItems = virtualItems.filter((item): item is { type: 'task'; id: string; task: TaskData; level: number } => item.type === 'task');
+    return taskItems.map((item) => item.task);
+  }, [virtualItems]);
 
   const handleDeleteClick = useCallback((taskId: string) => {
     setDeleteConfirmTaskId(taskId);
@@ -493,7 +544,10 @@ const TaskSidebarComponent = ({
           <ExtensionComponentWrapper placement="tasks-sidebar-header" />
         </div>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-bg-primary-light-strong scrollbar-thumb-border-default bg-bg-primary-light-strong py-0.5">
+        <div
+          ref={listContainerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-bg-primary-light-strong scrollbar-thumb-border-default bg-bg-primary-light-strong py-0.5"
+        >
           <AnimatePresence>
             {!isCollapsed && (
               <motion.div
@@ -514,69 +568,95 @@ const TaskSidebarComponent = ({
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    {(() => {
-                      const topLevelTasks = deferredTasks.filter((task) => !task.parentId || !deferredTasks.some((t) => t.id === task.parentId));
-                      const pinnedTasks = topLevelTasks.filter((task) => task.pinned);
-                      const nonPinnedTasks = topLevelTasks.filter((task) => !task.pinned);
-                      const groupedTasks = groupTasksByDate(nonPinnedTasks);
-                      const taskItemCommonProps = {
-                        tasks,
-                        level: 0,
-                        selectedTasks,
-                        deleteConfirmTaskId,
-                        showArchived,
-                        searchQuery: debouncedSearchQuery,
-                        isMultiselectMode,
-                        setIsMultiselectMode,
-                        activeTaskId: optimisticActiveTaskId,
-                        onTaskClick: handleTaskClick,
-                        createNewTask,
-                        editingTaskId,
-                        onEditClick: handleEditClick,
-                        onEditConfirm: handleEditConfirm,
-                        onEditCancel: handleEditCancel,
-                        onDeleteClick: handleDeleteClick,
-                        onArchiveTask: handleArchiveTask,
-                        onUnarchiveTask: handleUnarchiveTask,
-                        onTogglePin: handleTogglePin,
-                        onChangeState: handleChangeState,
-                        onCopyAsMarkdown,
-                        onExportToMarkdown,
-                        onExportToImage,
-                        onDuplicateTask,
-                        updateTask,
-                        deleteTask,
-                        handleConfirmDelete,
-                        handleCancelDelete,
-                      };
+                  <div
+                    style={{
+                      height: `${virtualizer.getTotalSize()}px`,
+                      width: '100%',
+                      position: 'relative',
+                    }}
+                  >
+                    {virtualizer.getVirtualItems().map((virtualRow) => {
+                      const item = virtualItems[virtualRow.index];
+
+                      if (item.type === 'header') {
+                        return (
+                          <div
+                            key={`${virtualRow.index}-${item.id}`}
+                            data-index={virtualRow.index}
+                            ref={virtualizer.measureElement}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                          >
+                            <TaskSectionHeader
+                              title={
+                                item.title === 'today'
+                                  ? t('taskSidebar.today')
+                                  : item.title === 'yesterday'
+                                    ? t('taskSidebar.yesterday')
+                                    : item.title === 'unknown'
+                                      ? t('taskSidebar.noDate')
+                                      : item.title
+                              }
+                            />
+                          </div>
+                        );
+                      }
+
+                      const task = item.task;
+                      const subtasks = tasks.filter((t) => t.parentId === task.id);
+                      const isExpanded = expandedIdsSet.has(task.id);
 
                       return (
-                        <>
-                          {pinnedTasks.map((task) => (
-                            <TaskItem key={task.id} task={task} {...taskItemCommonProps} />
-                          ))}
-                          {Array.from(groupedTasks.entries()).map(([dateGroup, groupTasks]) => (
-                            <div key={dateGroup}>
-                              <TaskSectionHeader
-                                title={
-                                  dateGroup === 'today'
-                                    ? t('taskSidebar.today')
-                                    : dateGroup === 'yesterday'
-                                      ? t('taskSidebar.yesterday')
-                                      : dateGroup === 'unknown'
-                                        ? t('taskSidebar.noDate')
-                                        : dateGroup
-                                }
-                              />
-                              {groupTasks.map((task) => (
-                                <TaskItem key={task.id} task={task} {...taskItemCommonProps} />
-                              ))}
-                            </div>
-                          ))}
-                        </>
+                        <div
+                          key={`${virtualRow.index}-${task.id}`}
+                          data-index={virtualRow.index}
+                          ref={virtualizer.measureElement}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
+                          <TaskItem
+                            task={task}
+                            tasks={tasks}
+                            level={item.level}
+                            selectedTasks={selectedTasks}
+                            deleteConfirmTaskId={deleteConfirmTaskId}
+                            isMultiselectMode={isMultiselectMode}
+                            setIsMultiselectMode={setIsMultiselectMode}
+                            activeTaskId={optimisticActiveTaskId}
+                            onTaskClick={handleTaskClick}
+                            createNewTask={createNewTask}
+                            editingTaskId={editingTaskId}
+                            onEditClick={handleEditClick}
+                            onEditConfirm={handleEditConfirm}
+                            onEditCancel={handleEditCancel}
+                            onDeleteClick={handleDeleteClick}
+                            onArchiveTask={handleArchiveTask}
+                            onUnarchiveTask={handleUnarchiveTask}
+                            onTogglePin={handleTogglePin}
+                            onChangeState={handleChangeState}
+                            onCopyAsMarkdown={onCopyAsMarkdown}
+                            onExportToMarkdown={onExportToMarkdown}
+                            onExportToImage={onExportToImage}
+                            onDuplicateTask={onDuplicateTask}
+                            handleConfirmDelete={handleConfirmDelete}
+                            handleCancelDelete={handleCancelDelete}
+                            isExpanded={isExpanded}
+                            onToggleExpand={handleToggleExpand}
+                            hasChildren={subtasks.length > 0}
+                          />
+                        </div>
                       );
-                    })()}
+                    })}
                   </div>
                 )}
               </motion.div>
