@@ -116,11 +116,11 @@ const getManager = (projectDir: string, context: ExtensionContext): BmadManager 
 
 export default class BmadExtension implements Extension {
   static metadata = {
-    name: 'BMAD Extension',
+    name: 'BMAD Method',
     version: '1.0.0',
     description: 'Provides BMAD mode with structured workflows for planning, designing, and implementing software projects',
     author: 'AiderDesk',
-    capabilities: ['modes', 'ui'],
+    capabilities: ['modes', 'ui', 'workflows'],
   };
 
   async onLoad(context: ExtensionContext) {

@@ -323,7 +323,7 @@ const chunkhoundSearch = async function (
 
 export default class ChunkhoundExtension implements Extension {
   static metadata = {
-    name: 'ChunkHound Search Extension',
+    name: 'ChunkHound Semantic Search Override',
     version: '1.5.0',
     description: 'Utilizes onToolCalled to override power---semantic_search tool with ChunkHound semantic search',
     author: 'wladimiiir',

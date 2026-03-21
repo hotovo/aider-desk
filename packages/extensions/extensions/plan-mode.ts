@@ -37,7 +37,7 @@ const PLAN_ASSISTANT_MESSAGE = `OK, I will follow the instructions and create a 
 
 export default class PlanModeExtension implements Extension {
   static metadata = {
-    name: 'Plan Mode Extension',
+    name: 'Plan Mode',
     version: '1.1.0',
     description: 'Adds a Plan mode that enforces planning and analysis before making code changes',
     author: 'wladimiiir',

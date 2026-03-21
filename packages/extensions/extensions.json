@@ -6,7 +6,7 @@
       "description": "Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli",
       "file": "wakatime.ts",
       "type": "single",
-      "capabilities": ["onLoad", "onPromptStarted", "onPromptFinished", "onToolFinished", "onFilesAdded"]
+      "capabilities": ["tracking"]
     },
     {
       "id": "pirate",
@@ -14,7 +14,7 @@
       "description": "Adds a Pirate agent that speaks like a swashbuckling sea dog",
       "file": "pirate.ts",
       "type": "single",
-      "capabilities": ["onLoad", "getAgents", "onAgentProfileUpdated"]
+      "capabilities": ["agents", "example"]
     },
     {
       "id": "generate-tests",
@@ -22,7 +22,7 @@
       "description": "Adds /generate-tests command to generate unit tests for files",
       "file": "generate-tests.ts",
       "type": "single",
-      "capabilities": ["onLoad", "getCommands"]
+      "capabilities": ["commands"]
     },
     {
       "id": "theme",
@@ -30,7 +30,7 @@
       "description": "Adds /theme command to switch AiderDesk themes",
       "file": "theme.ts",
       "type": "single",
-      "capabilities": ["onLoad", "getCommands"]
+      "capabilities": ["commands"]
     },
     {
       "id": "plan-mode",
@@ -38,7 +38,7 @@
       "description": "Adds a Plan mode that enforces planning before coding",
       "file": "plan-mode.ts",
       "type": "single",
-      "capabilities": ["onLoad", "getModes", "onAgentStarted"]
+      "capabilities": ["modes"]
     },
     {
       "id": "protected-paths",
@@ -46,7 +46,7 @@
       "description": "Blocks file operations on protected paths (.env, .git/, node_modules/)",
       "file": "protected-paths.ts",
       "type": "single",
-      "capabilities": ["onLoad", "onToolCalled"]
+      "capabilities": ["security"]
     },
     {
       "id": "permission-gate",
@@ -54,7 +54,7 @@
       "description": "Prompts for confirmation before running dangerous bash commands",
       "file": "permission-gate.ts",
       "type": "single",
-      "capabilities": ["onLoad", "onToolCalled"]
+      "capabilities": ["security"]
     },
     {
       "id": "ultrathink",
@@ -62,7 +62,7 @@
       "description": "Detects 'ultrathink' / 'think hard' and increases reasoning effort",
       "file": "ultrathink.ts",
       "type": "single",
-      "capabilities": ["onLoad", "onAgentStarted"]
+      "capabilities": ["optimization"]
     },
     {
       "id": "external-rules",
@@ -70,7 +70,7 @@
       "description": "Includes rule files from Cursor, Claude Code, and Roo Code",
       "file": "external-rules.ts",
       "type": "single",
-      "capabilities": ["onLoad", "onRuleFilesRetrieved"]
+      "capabilities": ["context"]
     },
     {
       "id": "sound-notification",
@@ -78,7 +78,7 @@
       "description": "Plays a 'Jobs Done' sound when a prompt finishes",
       "file": "sound-notification.ts",
       "type": "single",
-      "capabilities": ["onLoad", "onPromptFinished"]
+      "capabilities": ["notifications"]
     },
     {
       "id": "sandbox",
@@ -87,7 +87,7 @@
       "folder": "sandbox",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["onLoad", "onUnload", "onTaskInitialized", "onTaskClosed", "onToolCalled"]
+      "capabilities": ["security"]
     },
     {
       "id": "rtk",
@@ -96,7 +96,7 @@
       "folder": "rtk",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["onLoad", "getCommands", "onToolCalled"]
+      "capabilities": ["optimization", "commands"]
     },
     {
       "id": "redact-secrets",
@@ -105,7 +105,7 @@
       "folder": "redact-secrets",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["onLoad", "onProjectOpen", "onToolFinished"]
+      "capabilities": ["security"]
     },
     {
       "id": "chunkhound-search",
@@ -114,7 +114,7 @@
       "folder": "chunkhound-search",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["onLoad", "onUnload", "onProjectOpen", "onToolFinished", "getTools"]
+      "capabilities": ["search"]
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -123,7 +123,7 @@
       "folder": "chunkhound-on-semantic-search-tool",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["onLoad", "onUnload", "onProjectOpen", "onToolCalled", "onToolFinished"]
+      "capabilities": ["search"]
     },
     {
       "id": "tree-sitter-repo-map",
@@ -132,7 +132,7 @@
       "folder": "tree-sitter-repo-map",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["onLoad", "onAgentStarted", "getCommands"]
+      "capabilities": ["context", "commands"]
     },
     {
       "id": "context-autocompletion-words",
@@ -141,7 +141,7 @@
       "folder": "context-autocompletion-words",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["onLoad", "onFilesAdded", "onFilesDropped"]
+      "capabilities": ["context"]
     },
     {
       "id": "lsp",
@@ -150,7 +150,7 @@
       "folder": "lsp",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["onLoad", "onUnload", "onProjectStarted", "onProjectStopped", "getTools", "onToolFinished"]
+      "capabilities": ["tools", "code-intelligence"]
     },
     {
       "id": "plannotator",
@@ -159,7 +159,7 @@
       "folder": "plannotator",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["onLoad", "onAgentStarted", "onToolCalled", "onToolApproval"]
+      "capabilities": ["modes", "tools", "commands", "workflows"]
     },
     {
       "id": "programmatic-tool-calls",
@@ -168,7 +168,7 @@
       "folder": "programmatic-tool-calls",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["getTools"]
+      "capabilities": ["tools"]
     },
     {
       "id": "ui-placement-demo",
@@ -176,7 +176,7 @@
       "description": "Demonstrates all available UI component placement locations in AiderDesk",
       "file": "ui-placement-demo.ts",
       "type": "single",
-      "capabilities": ["onLoad", "ui-components"]
+      "capabilities": ["ui", "example"]
     },
     {
       "id": "multi-model-run",
@@ -185,7 +185,7 @@
       "folder": "multi-model-run",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["onLoad", "onPromptStarted", "ui-components"]
+      "capabilities": ["ui"]
     },
     {
       "id": "providers-quota-extension",
@@ -194,7 +194,7 @@
       "folder": "providers-quota-extension",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["onLoad", "onPromptFinished", "ui-components"]
+      "capabilities": ["ui"]
     },
     {
       "id": "tps-counter",
@@ -203,7 +203,16 @@
       "folder": "tps-counter",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["onLoad", "onUnload", "onResponseChunk", "onResponseCompleted", "getUIComponents", "getCommands", "ui-components"]
+      "capabilities": ["metrics"]
+    },
+    {
+      "id": "bmad",
+      "name": "BMAD Method",
+      "description": "Provides BMAD mode with structured workflows for planning, designing, and implementing software projects",
+      "folder": "bmad",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["modes", "ui"]
     }
   ]
 }

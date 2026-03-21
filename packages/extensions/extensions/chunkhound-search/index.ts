@@ -332,7 +332,7 @@ const inputSchema = z.object({
 
 export default class ChunkhoundSearchExtension implements Extension {
   static metadata = {
-    name: 'ChunkHound Search Tool Extension',
+    name: 'ChunkHound Search',
     version: '1.0.0',
     description: 'Replaces power semantic_search tool with ChunkHound for semantic code search',
     author: 'wladimiiir',

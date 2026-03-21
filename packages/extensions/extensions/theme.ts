@@ -81,7 +81,7 @@ const THEME_COMMAND: CommandDefinition = {
 
 export default class ThemeExtension implements Extension {
   static metadata = {
-    name: 'Theme Extension',
+    name: 'Theme',
     version: '1.0.0',
     description: 'Adds a /theme command to switch AiderDesk themes',
     author: 'wladimiiir',

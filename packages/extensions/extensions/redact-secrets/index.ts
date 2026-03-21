@@ -109,7 +109,7 @@ const redactObject = function (obj: unknown, secretValues: Set<string>): unknown
 
 export default class RedactSecretsExtension implements Extension {
   static metadata = {
-    name: 'Redact Secrets Extension',
+    name: 'Redact Secrets',
     version: '1.0.0',
     description: 'Redacts secret values from .env* files in file read results',
     author: 'wladimiiir',

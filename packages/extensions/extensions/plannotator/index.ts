@@ -129,11 +129,11 @@ After completing each step, include [DONE:n] in your response where n is the ste
 
 export default class PlannotatorExtension implements Extension {
   static metadata = {
-    name: 'Plannotator Extension',
+    name: 'Plannotator',
     version: '1.1.0',
     description: 'Plan-based development workflow with planning mode and plan review utilizing plannotator.ai',
     author: 'wladimiiir',
-    capabilities: ['modes', 'tools', 'commands', 'workflow'],
+    capabilities: ['modes', 'tools', 'commands', 'workflows'],
   };
 
   // Track state per task

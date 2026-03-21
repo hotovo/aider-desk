@@ -24,7 +24,7 @@ const ROOT_RULE_FILES = ['CLAUDE.md'];
 
 export default class ExternalRulesExtension implements Extension {
   static metadata = {
-    name: 'External Rules Extension',
+    name: 'External Rules',
     version: '1.0.0',
     description: 'Includes rule files from Cursor, Claude Code, and Roo Code configurations',
     author: 'wladimiiir',

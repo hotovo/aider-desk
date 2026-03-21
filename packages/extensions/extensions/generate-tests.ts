@@ -55,7 +55,7 @@ Instructions:
 
 export default class GenerateTestsExtension implements Extension {
   static metadata = {
-    name: 'Generate Tests Extension',
+    name: 'Generate Tests',
     version: '1.0.0',
     description: 'Adds a /generate-tests command that generates unit tests for a specified file',
     author: 'wladimiiir',

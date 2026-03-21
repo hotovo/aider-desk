@@ -11,7 +11,7 @@ const dangerousPatterns = [/\brm\s+(-rf?|--recursive)/i, /\bsudo\b/i, /\b(chmod|
 
 export default class PermissionGateExtension implements Extension {
   static metadata = {
-    name: 'Permission Gate Extension',
+    name: 'Permission Gate',
     version: '1.0.0',
     description: 'Prompts for confirmation before running potentially dangerous bash commands (rm -rf, sudo, chmod/chown 777)',
     author: 'wladimiiir',
