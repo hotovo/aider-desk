@@ -50,6 +50,20 @@ Do not use when:
 
 **Never:** Use `@/` imports in extension files
 
+### Rule: Add UI components when needed
+
+**When:** Extension needs to display UI elements
+
+**Then:** Implement `getUIComponents()` method
+
+**Must:** Return array of UIComponentDefinition objects with id, placement, jsx
+
+**Must:** Define components as JSX strings or load from .jsx files
+
+**If:** Component needs data, set `loadData: true` and implement `getUIExtensionData()`
+
+**If:** Component triggers actions, implement `executeUIExtensionAction()`
+
 ### Rule: Update extensions.json
 
 **When:** Extension file created
@@ -99,6 +113,7 @@ Do not use when:
 - If extension needs config storage, create config.ts
 - If extension needs logging, create logger.ts
 - If extension needs constants, create constants.ts
+- If extension has UI components, create .jsx files for components (recommended for components > 20 lines)
 
 ## Preconditions
 
@@ -148,6 +163,16 @@ After completing this skill, verify:
 - Then: Implement getCommands() method
 - Return: Array of CommandDefinition objects
 
+**Situation:** Extension needs to add UI components
+
+**Pattern:**
+- When: Extension needs to display information in UI
+- Then: Implement getUIComponents() method
+- Return: Array of UIComponentDefinition objects
+- Use: JSX strings or external .jsx files
+- Load data: Implement getUIExtensionData() if component needs data
+- Handle actions: Implement executeUIExtensionAction() for user interactions
+
 **Situation:** Extension needs config storage
 
 **Pattern:**
@@ -158,12 +183,17 @@ After completing this skill, verify:
 ## References
 
 - [packages/extensions/extensions.d.ts]({projectDir}/packages/extensions/extensions.d.ts) - Full Extension interface and types
+- [src/common/extensions.ts]({projectDir}/src/common/extensions.ts) - Extension types and interfaces
 - [event-types.md](references/event-types.md) - All event types and payloads
 - [command-definition.md](references/command-definition.md) - Command structure
+- [ui-components.md](references/ui-components.md) - UI component system, placements, and available components
 - [examples-gallery.md](references/examples-gallery.md) - Real extension examples
 - [extension-types.md](references/extension-types.md) - Single-file vs folder extensions
 
 ## Assets
 
 - [templates/single-file.ts.template](assets/templates/single-file.ts.template) - Single-file template
-- [templates/folder-extension.template/](assets/templates/folder-extension.template/) - Folder template
+- [templates/folder-extension/](assets/templates/folder-extension/) - Folder template
+- [templates/ui-component.ts.template](assets/templates/ui-component.ts.template) - UI component inline template
+- [templates/ui-component-external.ts.template](assets/templates/ui-component-external.ts.template) - UI component with external JSX
+- [templates/Component.jsx.template](assets/templates/Component.jsx.template) - JSX component template

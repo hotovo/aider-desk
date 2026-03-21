@@ -15,6 +15,11 @@ interface Extension {
   getTools?(context: ExtensionContext, mode: string, agentProfile: AgentProfile): ToolDefinition[];
   getAgents?(context: ExtensionContext): AgentProfile[];
   getModes?(context: ExtensionContext): ModeDefinition[];
+  getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
+  
+  // UI Component support
+  getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
+  executeUIExtensionAction?(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown>;
 
   // Task Events
   onTaskCreated?(event: TaskCreatedEvent, context: ExtensionContext): Promise<void | Partial<TaskCreatedEvent>>;
@@ -73,6 +78,14 @@ interface ExtensionContext {
 
   // Models
   getModelConfigs(): Promise<Model[]>;
+  
+  // UI updates
+  triggerUIDataRefresh(componentId?: string, taskId?: string): void;
+  triggerUIComponentsReload(): void;
+  
+  // Navigation
+  openUrl(url: string, target?: 'external' | 'window' | 'modal-overlay'): Promise<void>;
+  openPath(path: string): Promise<boolean>;
 }
 ```
 
@@ -101,6 +114,97 @@ interface TaskContext {
 }
 ```
 
+## UIComponentDefinition
+
+```typescript
+interface UIComponentDefinition {
+  /** Unique component identifier */
+  id: string;
+  
+  /** Where in UI to render this component */
+  placement: UIComponentPlacement;
+  
+  /** JSX/TSX component as string to be parsed */
+  jsx: string;
+  
+  /** Optional flag to load data from extension (default: false) */
+  loadData?: boolean;
+  
+  /** Optional flag to disable data caching (default: false) */
+  noDataCache?: boolean;
+}
+
+type UIComponentPlacement =
+  | 'task-status-bar-left'
+  | 'task-status-bar-right'
+  | 'task-usage-info-bottom'
+  | 'task-messages-top'
+  | 'task-messages-bottom'
+  | 'task-input-above'
+  | 'task-input-toolbar-left'
+  | 'task-input-toolbar-right'
+  | 'tasks-sidebar-header'
+  | 'tasks-sidebar-bottom'
+  | 'task-message-above'
+  | 'task-message-below'
+  | 'task-message-bar'
+  | 'task-top-bar-left'
+  | 'task-top-bar-right'
+  | 'task-state-actions'
+  | 'task-state-actions-all'
+  | 'header-left'
+  | 'header-right'
+  | 'welcome-page';
+```
+
+## UIComponentProps
+
+Props available to UI components via the `data` prop (React is globally available, not a prop):
+
+```typescript
+interface UIComponentProps {
+  // Context data
+  projectDir?: string;
+  task?: TaskData;
+  agentProfile?: AgentProfile;
+  models: Model[];
+  providers: ProviderProfile[];
+  
+  // UI library
+  ui: UIComponents;
+  
+  // Icons library (organized by icon set)
+  icons: Record<string, Record<string, IconComponent>>;
+  
+  // Extension actions
+  executeExtensionAction: (action: string, ...args: unknown[]) => Promise<unknown>;
+  
+  // Data from getUIExtensionData() (if loadData: true)
+  data?: unknown;
+  
+  // Message-specific (for message placements)
+  message?: MessageData;
+}
+
+interface UIComponents {
+  Button: Component;
+  Checkbox: Component;
+  Input: Component;
+  Select: Component;
+  TextArea: Component;
+  IconButton: Component;
+  RadioButton: Component;
+  MultiSelect: Component;
+  Slider: Component;
+  DatePicker: Component;
+  Chip: Component;
+  ModelSelector: Component;
+  Tooltip: Component;
+  LoadingOverlay: Component;
+  ConfirmDialog: Component;
+}
+```
+
 ## Metadata
 
 ```typescript
@@ -115,6 +219,7 @@ interface ExtensionMetadata {
     | 'tools'
     | 'agents'
     | 'modes'
+    | 'ui'
     | 'onLoad'
     | 'onAgentStarted'
     | 'onToolCalled'

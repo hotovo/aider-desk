@@ -1,0 +1,79 @@
+/**
+ * {{EXTENSION_NAME}} Extension
+ *
+ * {{DESCRIPTION}}
+ */
+
+import type { 
+  Extension, 
+  ExtensionContext, 
+  UIComponentDefinition 
+} from '@aiderdesk/extensions';
+
+export default class {{CLASS_NAME}}Extension implements Extension {
+  static metadata = {
+    name: '{{EXTENSION_NAME}}',
+    version: '1.0.0',
+    description: '{{DESCRIPTION}}',
+    author: '{{AUTHOR}}',
+    capabilities: ['ui'],
+  };
+
+  async onLoad(context: ExtensionContext): Promise<void> {
+    context.log('{{EXTENSION_NAME}} extension loaded', 'info');
+  }
+
+  getUIComponents(_context: ExtensionContext): UIComponentDefinition[] {
+    return [
+      {
+        id: '{{COMPONENT_ID}}',
+        placement: '{{PLACEMENT}}', // e.g., 'task-status-bar-right'
+        jsx: `
+          ({ data, task, ui }) => {
+            // Component implementation
+            return (
+              <div className="flex items-center gap-2 text-sm">
+                <span>Hello from {{EXTENSION_NAME}}</span>
+              </div>
+            );
+          }
+        `,
+        loadData: false, // Set to true if component needs data
+      },
+    ];
+  }
+
+  // Optional: Provide data to components
+  async getUIExtensionData(
+    componentId: string,
+    _context: ExtensionContext
+  ): Promise<unknown> {
+    if (componentId === '{{COMPONENT_ID}}') {
+      return {
+        // Data to pass to component
+        message: 'Hello from extension!',
+      };
+    }
+    return undefined;
+  }
+
+  // Optional: Handle actions from components
+  async executeUIExtensionAction(
+    componentId: string,
+    action: string,
+    args: unknown[],
+    context: ExtensionContext
+  ): Promise<unknown> {
+    if (componentId === '{{COMPONENT_ID}}') {
+      if (action === 'my-action') {
+        context.log('Action executed with args: ' + JSON.stringify(args), 'info');
+        
+        // Trigger UI refresh if needed
+        context.triggerUIDataRefresh('{{COMPONENT_ID}}');
+        
+        return { success: true };
+      }
+    }
+    return undefined;
+  }
+}
