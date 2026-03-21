@@ -59,6 +59,11 @@ interface ExtensionContext {
 
   // UI refresh
   triggerUIDataRefresh(componentId?: string, taskId?: string): void;
+  triggerUIComponentsReload(): void;
+  
+  // Navigation
+  openUrl(url: string, target?: 'external' | 'window' | 'modal-overlay'): Promise<void>;
+  openPath(path: string): Promise<boolean>;
 }
 ```
 
@@ -74,6 +79,9 @@ interface ExtensionContext {
 | `getSetting(key)` | Get a setting value (supports dot-notation) |
 | `updateSettings(updates)` | Update multiple settings at once |
 | `triggerUIDataRefresh(componentId?, taskId?)` | Trigger UI component data refresh |
+| `triggerUIComponentsReload()` | Reload all UI component definitions for this extension |
+| `openUrl(url, target?)` | Open URL in external browser, new window, or modal overlay |
+| `openPath(path)` | Open file or directory in system's default application |
 
 ## TaskContext
 
@@ -283,12 +291,15 @@ const planMode: ModeDefinition = {
 
 Define custom React components that render in AiderDesk's UI.
 
+**Important:** The `jsx` property must be a **string** containing the component code, not a function. The `React` object is globally available within components (not passed as a prop).
+
 ```typescript
 interface UIComponentDefinition {
   id: string;                      // Unique component identifier
   placement: UIComponentPlacement; // Where to render the component
   jsx: string;                     // JSX/TSX component as string
-  loadData?: boolean;              // Enable data loading via getUIExtensionData
+  loadData?: boolean;              // Enable data loading via getUIExtensionData (default: false)
+  noDataCache?: boolean;           // Always fetch fresh data on render (default: false)
 }
 ```
 
@@ -298,34 +309,85 @@ interface UIComponentDefinition {
 const myComponent: UIComponentDefinition = {
   id: 'my-status-indicator',
   placement: 'task-status-bar-right',
-  jsx: (props) => {
-    const { Flex, Text, Badge } = props.ui;
-    return (
-      <Flex align="center" gap="xs">
-        <Badge color="green">Active</Badge>
-        <Text size="xs">{props.task?.name}</Text>
-      </Flex>
-    );
-  },
+  loadData: true,
+  jsx: `
+(props) => {
+  const { ui, data, task } = props;
+  const { useState } = React;
+  const { Tooltip } = ui;
+  
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <Tooltip content="Task status">
+      <div 
+        className="flex items-center gap-1 text-xs"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <span className="w-2 h-2 rounded-full bg-success" />
+        <span>{task?.name || 'No task'}</span>
+      </div>
+    </Tooltip>
+  );
+}
+  `,
 };
 ```
 
+### Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `id` | `string` | Yes | Unique identifier for the component |
+| `placement` | `UIComponentPlacement` | Yes | Where to render the component (see placements below) |
+| `jsx` | `string` | Yes | JSX/TSX component code as a string |
+| `loadData` | `boolean` | No | Enable data loading via `getUIExtensionData()` |
+| `noDataCache` | `boolean` | No | Disable caching - always fetch fresh data |
+
 ## UIComponentPlacement
 
-Available placement locations for UI components.
+Available placement locations for UI components (21 total).
 
 ```typescript
 type UIComponentPlacement =
-  | 'task-status-bar-left'
-  | 'task-status-bar-right'
-  | 'task-usage-info-bottom'
-  | 'task-messages-top'
-  | 'task-messages-bottom'
-  | 'header-left'
-  | 'header-right'
-  | 'task-input-above'
-  | 'task-input-toolbar-left'
-  | 'task-input-toolbar-right'
+  // Task Status Bar
+  | 'task-status-bar-left'        // Left side of task status bar (top of task page)
+  | 'task-status-bar-right'       // Right side of task status bar
+  
+  // Task Top Bar
+  | 'task-top-bar-left'           // Left side of task top bar (above messages)
+  | 'task-top-bar-right'          // Right side of task top bar
+  
+  // Task Messages
+  | 'task-messages-top'           // Above all messages
+  | 'task-messages-bottom'        // Below all messages
+  | 'task-message-above'          // Above each message (receives message prop)
+  | 'task-message-below'          // Below each message (receives message prop)
+  | 'task-message-bar'            // In message action bar (receives message prop)
+  
+  // Task Usage Info
+  | 'task-usage-info-bottom'      // Below usage info (tokens, costs)
+  
+  // Task Input
+  | 'task-input-above'            // Above input field
+  | 'task-input-toolbar-left'     // Left side of input toolbar
+  | 'task-input-toolbar-right'    // Right side of input toolbar
+  
+  // Task State Actions
+  | 'task-state-actions'          // Action buttons (when stopped/waiting)
+  | 'task-state-actions-all'      // Action buttons (all states)
+  
+  // Sidebar
+  | 'tasks-sidebar-header'        // Header of tasks sidebar
+  | 'tasks-sidebar-bottom'        // Bottom of tasks sidebar
+  
+  // Header
+  | 'header-left'                 // Left side of main header
+  | 'header-right'                // Right side of main header
+  
+  // Welcome Page
+  | 'welcome-page'                // Full welcome page (no task open)
   | 'tasks-sidebar-header'
   | 'tasks-sidebar-bottom'
   | 'task-message-above'
@@ -336,29 +398,95 @@ type UIComponentPlacement =
   | 'task-state-actions';
 ```
 
+## UI Component Props
+
+**Important:** The `React` object is globally available in all UI components (not passed as a prop). Access hooks via `React.useState`, `React.useEffect`, etc.
+
+Props passed to UI component functions:
+
+```typescript
+interface UIComponentProps {
+  // Context data
+  projectDir?: string;              // Project directory path
+  task?: TaskData;                  // Current task data
+  agentProfile?: AgentProfile;      // Current agent profile
+  models: Model[];                  // Available AI models
+  providers: ProviderProfile[];     // Available provider profiles
+  
+  // UI library
+  ui: UIComponents;                 // Pre-built UI components
+  
+  // Icons library (organized by icon set)
+  icons: Record<string, Record<string, IconComponent>>;
+  
+  // Extension integration
+  executeExtensionAction: (action: string, ...args: unknown[]) => Promise<unknown>;
+  
+  // Data from getUIExtensionData() (if loadData: true)
+  data?: unknown;
+  
+  // Message-specific (for message placements)
+  message?: MessageData;
+}
+```
+
+### Using React Hooks
+
+```jsx
+(props) => {
+  const { useState, useEffect, useCallback } = React;
+  const [count, setCount] = useState(0);
+  
+  const handleClick = useCallback(() => {
+    setCount(count + 1);
+  }, [count]);
+  
+  return <button onClick={handleClick}>Count: {count}</button>;
+}
+```
+
+### Using Icons
+
+The `icons` prop provides access to all react-icons libraries:
+
+```jsx
+(props) => {
+  const { icons } = props;
+  const FiSettings = icons.Fi.FiSettings;
+  const HiCheck = icons.Hi.HiCheck;
+  
+  return (
+    <div>
+      <FiSettings className="w-4 h-4" />
+      <HiCheck className="w-5 h-5 text-success" />
+    </div>
+  );
+}
+```
+
+Available icon sets: `Ai`, `Bi`, `Bs`, `Cg`, `Ci`, `Di`, `Fa`, `Fc`, `Fi`, `Gi`, `Go`, `Gr`, `Hi`, `Im`, `Io`, `Io5`, `Lu`, `Md`, `Pi`, `Ri`, `Rx`, `Si`, `Sl`, `Tb`, `Tfi`, `Ti`, `Vsc`, `Wi`
+
 ## UIComponents
 
-UI components available in the `props.ui` object within your JSX.
+Pre-built UI components available via `props.ui`:
 
 ```typescript
 interface UIComponents {
-  Button: UIComponent;
-  Checkbox: UIComponent;
-  Input: UIComponent;
-  Select: UIComponent;
-  TextArea: UIComponent;
-  IconButton: UIComponent;
-  RadioButton: UIComponent;
-  MultiSelect: UIComponent;
-  Slider: UIComponent;
-  DatePicker: UIComponent;
-  Chip: UIComponent;
-  ModelSelector: UIComponent;
-  Flex: UIComponent;
-  Box: UIComponent;
-  Text: UIComponent;
-  Badge: UIComponent;
-  Tooltip: UIComponent;
+  Button: UIComponent;            // Standard button with variants
+  IconButton: UIComponent;        // Button with icon only
+  Checkbox: UIComponent;          // Checkbox input with label
+  Input: UIComponent;             // Text input field
+  Select: UIComponent;            // Dropdown select
+  MultiSelect: UIComponent;       // Multi-value select
+  TextArea: UIComponent;          // Multi-line text input
+  RadioButton: UIComponent;       // Radio button input
+  Slider: UIComponent;            // Range slider
+  DatePicker: UIComponent;        // Date picker
+  Chip: UIComponent;              // Tag/chip component
+  ModelSelector: UIComponent;     // AiderDesk model selector
+  Tooltip: UIComponent;           // Tooltip wrapper
+  LoadingOverlay: UIComponent;    // Loading spinner with message
+  ConfirmDialog: UIComponent;     // Confirmation dialog modal
 }
 ```
 

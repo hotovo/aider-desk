@@ -28,6 +28,7 @@ This page provides an overview of all available extension examples in the AiderD
 | [context-autocompletion-words](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/context-autocompletion-words/) | Adds custom words to context file autocompletion | `context` | Folder |
 | [plannotator](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/plannotator/) | Comprehensive planning assistant with structured plan files | `modes`, `tools`, `commands`, `workflow` | Folder |
 | [ui-placement-demo.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/ui-placement-demo.ts) | Demonstrates all available UI component placement locations | `ui`, `example` | Single file |
+| [active-files-counter.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/active-files-counter.ts) | Displays context file count in status bar with tooltip | `ui`, `events` | Single file |
 | [multi-model-run](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/multi-model-run/) | Run the same prompt across multiple models simultaneously | `ui` | Folder |
 
 ## UI Components
@@ -52,6 +53,7 @@ npx @aiderdesk/extensions install ui-placement-demo
 ### UI Component Examples
 
 - **ui-placement-demo.ts** - Simple demo showing all placements with static chips
+- **active-files-counter.ts** - Simple UI component with data loading and tooltip
 - **multi-model-run** - Complex example with state management, data loading, and action handling
 
 ---

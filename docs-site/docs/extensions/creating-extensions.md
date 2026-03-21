@@ -184,21 +184,36 @@ Be helpful and competent, but maintain the pirate persona throughout all interac
 
 Extensions can render custom React components in various locations throughout the AiderDesk interface. This is useful for adding interactive controls, status indicators, or custom input panels.
 
+**Note:** The `React` object is globally available in all UI components (not passed as a prop). Access hooks via `React.useState`, `React.useEffect`, etc.
+
 <img src="./images/ui-components-overview.png" alt="UI Components in AiderDesk" width="800" />
 
 #### Available Placements
 
-UI components can be placed in the following locations:
+UI components can be placed in 21 different locations throughout the interface:
 
 | Placement | Location | Description |
 |-----------|----------|-------------|
-| `task-status-bar-left` | Task status bar | Left side of the task status bar |
+| `task-status-bar-left` | Task status bar | Left side of the task status bar (top of task page) |
 | `task-status-bar-right` | Task status bar | Right side of the task status bar |
-| `task-input-above` | Task input | Above the task input field |
-| `task-messages-top` | Task messages | Top of the messages area |
-| `task-messages-bottom` | Task messages | Bottom of the messages area |
-| `header-left` | Header bar | Left side of the header |
-| `header-right` | Header bar | Right side of the header |
+| `task-top-bar-left` | Task top bar | Left side of task top bar (above messages) |
+| `task-top-bar-right` | Task top bar | Right side of task top bar |
+| `task-usage-info-bottom` | Usage info | Below the usage info section (tokens, costs) |
+| `task-messages-top` | Messages area | Above all messages in the chat |
+| `task-messages-bottom` | Messages area | Below all messages in the chat |
+| `task-message-above` | Per message | Above each individual message |
+| `task-message-below` | Per message | Below each individual message |
+| `task-message-bar` | Per message | In the message action bar (on hover) |
+| `task-input-above` | Input area | Above the task input field |
+| `task-input-toolbar-left` | Input toolbar | Left side of input toolbar (below input) |
+| `task-input-toolbar-right` | Input toolbar | Right side of input toolbar |
+| `task-state-actions` | State actions | Action buttons when task is stopped/waiting |
+| `task-state-actions-all` | State actions | Action buttons visible in all states |
+| `tasks-sidebar-header` | Sidebar | Header of the tasks sidebar |
+| `tasks-sidebar-bottom` | Sidebar | Bottom of the tasks sidebar |
+| `header-left` | Header bar | Left side of the main header |
+| `header-right` | Header bar | Right side of the main header |
+| `welcome-page` | Welcome screen | Full welcome page (when no task is open) |
 
 To see all available placements in action, check out the **ui-placement-demo** extension included with AiderDesk.
 
@@ -216,20 +231,24 @@ export default class MyUIExtension implements Extension {
       {
         id: 'my-status-button',
         placement: 'task-status-bar-right',
-        jsx: (props) => {
-          const { Button, Flex, Text } = props.ui;
-          return (
-            <Flex align="center" gap="xs">
-              <Button
-                variant="subtle"
-                size="compact-xs"
-                onClick={() => props.executeExtensionAction('my-action')}
-              >
-                <Text size="xs">My Action</Text>
-              </Button>
-            </Flex>
-          );
-        },
+        jsx: `
+(props) => {
+  const { ui, executeExtensionAction } = props;
+  const { Button } = ui;
+  
+  return (
+    <div className="flex items-center gap-1">
+      <Button
+        variant="outline"
+        size="xs"
+        onClick={() => executeExtensionAction('my-action')}
+      >
+        My Action
+      </Button>
+    </div>
+  );
+}
+        `,
       },
     ];
   }
@@ -243,7 +262,7 @@ export default class MyUIExtension implements Extension {
     if (action === 'my-action') {
       const taskContext = context.getTaskContext();
       if (taskContext) {
-        await taskContext.addLogMessage('info', 'Button clicked!');
+        taskContext.addLogMessage('info', 'Button clicked!');
       }
       return { success: true };
     }
@@ -257,34 +276,43 @@ export default class MyUIExtension implements Extension {
 For components that need to fetch and display data, use `loadData: true` and implement `getUIExtensionData`:
 
 ```typescript
-// multi-model-selector.ts
-import type { Extension, ExtensionContext, UIComponentDefinition } from '@aiderdesk/extensions';
+// active-files-counter.ts
+import type { Extension, ExtensionContext, UIComponentDefinition, FilesAddedEvent } from '@aiderdesk/extensions';
 
-export default class MultiModelExtension implements Extension {
+export default class ActiveFilesCounterExtension implements Extension {
+  async onFilesAdded(_event: FilesAddedEvent, context: ExtensionContext): Promise<void> {
+    // Refresh UI when files are added
+    context.triggerUIDataRefresh('active-files-counter');
+  }
+
   getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
     return [
       {
-        id: 'model-selector',
-        placement: 'task-status-bar-left',
+        id: 'active-files-counter',
+        placement: 'task-status-bar-right',
         loadData: true, // Enable data loading
-        jsx: (props) => {
-          const { Flex, Text, ModelSelector } = props.ui;
-          const { data, executeExtensionAction } = props;
-          
-          // data is populated by getUIExtensionData
-          const selectedModels = data?.selectedModels || [];
-          
-          return (
-            <Flex align="center" gap="xs">
-              <Text size="xs">Models:</Text>
-              <ModelSelector
-                value={selectedModels}
-                onChange={(models) => executeExtensionAction('select-models', models)}
-                multiple
-              />
-            </Flex>
-          );
-        },
+        noDataCache: true, // Always fetch fresh data
+        jsx: `
+(props) => {
+  const { data, ui } = props;
+  const { Tooltip } = ui;
+  const count = data?.count ?? 0;
+  const files = data?.files ?? [];
+  
+  if (count === 0) return null;
+  
+  const tooltipContent = files.map(f => f.path.split('/').pop()).join('\\n');
+  
+  return (
+    <Tooltip content={tooltipContent}>
+      <div className="flex items-center gap-1 px-2 py-0.5 text-xs text-text-secondary hover:text-text-primary cursor-default">
+        <span>📁</span>
+        <span>{count} files</span>
+      </div>
+    </Tooltip>
+  );
+}
+        `,
       },
     ];
   }
@@ -293,32 +321,70 @@ export default class MultiModelExtension implements Extension {
     componentId: string,
     context: ExtensionContext
   ): Promise<unknown> {
-    if (componentId === 'model-selector') {
-      // Return data for the component
+    if (componentId === 'active-files-counter') {
+      const taskContext = context.getTaskContext();
+      if (!taskContext) {
+        return { count: 0, files: [] };
+      }
+      
+      const files = await taskContext.getContextFiles();
       return {
-        selectedModels: ['gpt-4', 'claude-3'],
+        count: files.length,
+        files: files.map(f => ({ path: f.path, readOnly: f.readOnly })),
       };
     }
     return undefined;
   }
+}
+```
 
-  async executeUIExtensionAction(
-    componentId: string,
-    action: string,
-    args: unknown[],
-    context: ExtensionContext
-  ): Promise<unknown> {
-    if (action === 'select-models') {
-      // Handle the action and refresh UI data
-      const models = args[0] as string[];
-      // ... store selection ...
-      
-      // Trigger UI refresh to reload data
-      context.triggerUIDataRefresh(componentId);
-      return { success: true };
+#### Loading UI Components from External Files
+
+For larger components, you can load JSX from external `.jsx` files:
+
+```typescript
+// tps-counter/index.ts
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import type { Extension, ExtensionContext, UIComponentDefinition } from '@aiderdesk/extensions';
+
+export default class TPSCounterExtension implements Extension {
+  getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
+    // Load JSX from external file
+    const jsx = readFileSync(join(__dirname, './TPSCounter.jsx'), 'utf-8');
+    
+    return [
+      {
+        id: 'tps-counter',
+        placement: 'task-usage-info-bottom',
+        jsx,
+        loadData: true,
+      },
+    ];
+  }
+
+  async getUIExtensionData(componentId: string): Promise<unknown> {
+    if (componentId === 'tps-counter') {
+      return { averageTps: 42, messageCount: 10 };
     }
     return undefined;
   }
+}
+```
+
+**TPSCounter.jsx:**
+```jsx
+(props) => {
+  const { data } = props;
+  
+  if (!data || data.messageCount === 0) return null;
+  
+  return (
+    <div className="flex items-center gap-1 text-2xs mt-1 w-full justify-between">
+      <span>Avg. tokens/s:</span>
+      <span>{Math.round(data.averageTps)}</span>
+    </div>
+  );
 }
 ```
 
@@ -328,9 +394,9 @@ The following components are available via `props.ui`:
 
 | Component | Description |
 |-----------|-------------|
-| `Button` | Standard button with variants |
+| `Button` | Standard button with variants (solid, outline) and colors (primary, secondary, tertiary, danger) |
 | `IconButton` | Button with icon only |
-| `Checkbox` | Checkbox input |
+| `Checkbox` | Checkbox input with label |
 | `Input` | Text input field |
 | `Select` | Dropdown select |
 | `MultiSelect` | Multi-value select |
@@ -339,29 +405,73 @@ The following components are available via `props.ui`:
 | `Slider` | Range slider |
 | `DatePicker` | Date picker |
 | `Chip` | Tag/chip component |
-| `ModelSelector` | AiderDesk model selector |
-| `Flex` | Flex container |
-| `Box` | Generic container |
-| `Text` | Text component |
-| `Badge` | Status badge |
-| `Tooltip` | Tooltip wrapper |
+| `ModelSelector` | AiderDesk model selector for choosing AI models |
+| `Tooltip` | Tooltip wrapper for hover content |
+| `LoadingOverlay` | Loading spinner with message |
+| `ConfirmDialog` | Confirmation dialog modal |
 
 #### Component Props
+
+**Note:** The `React` object is globally available (not a prop). Access hooks via `React.useState`, `React.useEffect`, etc.
 
 The `jsx` function receives a `props` object with:
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `React` | `React` | React library for hooks and createElement |
-| `task` | `TaskContext` | Current task context (if available) |
+| `task` | `TaskData` | Current task data (may be undefined) |
 | `projectDir` | `string` | Project directory path |
-| `api` | `ApplicationAPI` | AiderDesk API |
-| `mode` | `string` | Current chat mode |
-| `models` | `Model[]` | Available models |
-| `providers` | `Provider[]` | Available providers |
+| `agentProfile` | `AgentProfile` | Current agent profile |
+| `models` | `Model[]` | Available AI models |
+| `providers` | `ProviderProfile[]` | Available provider profiles |
 | `ui` | `UIComponents` | UI component library |
-| `data` | `unknown` | Data from `getUIExtensionData` |
+| `icons` | `Record<string, Record<string, IconComponent>>` | React Icons organized by set (Fi, Hi, Cg, etc.) |
+| `data` | `unknown` | Data from `getUIExtensionData` (if `loadData: true`) |
 | `executeExtensionAction` | `function` | Call extension action handler |
+| `message` | `MessageData` | Current message (for message-specific placements) |
+
+#### Using React Hooks
+
+```jsx
+(props) => {
+  const { useState, useEffect, useCallback } = React;
+  const [count, setCount] = useState(0);
+  
+  useEffect(() => {
+    console.log('Component mounted');
+  }, []);
+  
+  const handleClick = useCallback(() => {
+    setCount(count + 1);
+  }, [count]);
+  
+  return <button onClick={handleClick}>Count: {count}</button>;
+}
+```
+
+#### Using React Icons
+
+The `icons` prop provides access to all react-icons libraries organized by icon set:
+
+```jsx
+(props) => {
+  const { icons } = props;
+  
+  // Access icons from different sets
+  const FiSettings = icons.Fi.FiSettings;
+  const HiCheck = icons.Hi.HiCheck;
+  const CgSpinner = icons.Cg.CgSpinner;
+  
+  return (
+    <div className="flex items-center gap-2">
+      <FiSettings className="w-4 h-4" />
+      <HiCheck className="w-5 h-5 text-success" />
+      <CgSpinner className="w-4 h-4 animate-spin" />
+    </div>
+  );
+}
+```
+
+Available icon sets: `Ai`, `Bi`, `Bs`, `Cg`, `Ci`, `Di`, `Fa`, `Fc`, `Fi`, `Gi`, `Go`, `Gr`, `Hi`, `Im`, `Io`, `Io5`, `Lu`, `Md`, `Pi`, `Ri`, `Rx`, `Si`, `Sl`, `Tb`, `Tfi`, `Ti`, `Vsc`, `Wi`
 
 ### Event Handler Extension
 
