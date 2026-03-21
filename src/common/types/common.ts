@@ -510,6 +510,9 @@ export interface TaskSettings {
   worktreeSymlinkFolders: string[];
   contextCompactingThreshold: number;
   contextCompactionType: ContextCompactionType;
+  taskNameModel?: string | null;
+  taskStateModel?: string | null;
+  commitMessageModel?: string | null;
 }
 
 export interface MemoryConfig {

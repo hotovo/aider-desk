@@ -226,6 +226,23 @@ export class Task {
     return profile;
   }
 
+  private getAuxiliaryAgentProfile(baseProfile: AgentProfile, auxiliaryModelId: string | null | undefined): AgentProfile {
+    // If auxiliary model is not set, return base profile unchanged
+    if (!auxiliaryModelId) {
+      return baseProfile;
+    }
+
+    // Parse model ID to extract provider and model
+    const [providerId, modelId] = extractProviderModel(auxiliaryModelId);
+
+    // Return new AgentProfile with modified provider and model
+    return {
+      ...baseProfile,
+      provider: providerId,
+      model: modelId,
+    };
+  }
+
   private async loadTaskData() {
     logger.debug('Loading task data', {
       baseDir: this.project.baseDir,
@@ -959,9 +976,11 @@ export class Task {
   private async generateTaskNameInBackground(prompt: string): Promise<string | null> {
     const agentProfile = await this.getTaskAgentProfile();
     if (agentProfile) {
+      const settings = this.store.getSettings();
+      const auxiliaryProfile = this.getAuxiliaryAgentProfile(agentProfile, settings.taskSettings.taskNameModel);
       const maxPromptLength = 1000;
       const taskName = await this.agent.generateText(
-        agentProfile,
+        auxiliaryProfile,
         await this.promptsManager.getGenerateTaskNamePrompt(this),
         `Generate a concise task name for this request:\n\n${prompt.length > maxPromptLength ? prompt.substring(0, maxPromptLength) + '...' : prompt}\n\nOnly answer with the task name, nothing else.`,
         this.getProjectDir(),
@@ -1013,10 +1032,13 @@ export class Task {
         return null;
       }
 
+      const settings = this.store.getSettings();
+      const auxiliaryProfile = this.getAuxiliaryAgentProfile(agentProfile, settings.taskSettings.taskStateModel);
+
       this.addLogMessage('loading', 'Updating task state...');
 
       const answer = await this.agent.generateText(
-        agentProfile,
+        auxiliaryProfile,
         await this.promptsManager.getUpdateTaskStatePrompt(this),
         wrappedMessage,
         this.getProjectDir(),
@@ -1029,6 +1051,7 @@ export class Task {
       logger.info('Determining task state:', {
         baseDir: this.project.baseDir,
         taskId: this.taskId,
+        modelId: `${auxiliaryProfile.provider}/${auxiliaryProfile.model}`,
       });
 
       const trimmedAnswer = answer.trim();
@@ -3438,9 +3461,11 @@ ${error.stderr}`,
           // Try to generate commit message using AI
           const agentProfile = await this.getTaskAgentProfile();
           if (agentProfile) {
+            const settings = this.store.getSettings();
+            const auxiliaryProfile = this.getAuxiliaryAgentProfile(agentProfile, settings.taskSettings.commitMessageModel);
             try {
               effectiveCommitMessage = await this.agent.generateText(
-                agentProfile,
+                auxiliaryProfile,
                 await this.promptsManager.getGenerateCommitMessageSystemPrompt(this),
                 `Generate a concise conventional commit message for these changes:\n\n${changesDiff}\n\nOnly answer with the commit message, nothing else.`,
                 this.getProjectDir(),
@@ -3632,6 +3657,9 @@ ${error.stderr}`,
       throw new Error('No agent profile configured');
     }
 
+    const settings = this.store.getSettings();
+    const auxiliaryProfile = this.getAuxiliaryAgentProfile(agentProfile, settings.taskSettings.commitMessageModel);
+
     // Get last 10 commit messages for context
     let commitHistoryText = '';
     try {
@@ -3646,7 +3674,7 @@ ${error.stderr}`,
     }
 
     const commitMessage = await this.agent.generateText(
-      agentProfile,
+      auxiliaryProfile,
       await this.promptsManager.getGenerateCommitMessageSystemPrompt(this),
       `Here is the git diff of uncommitted changes:\n\n\`\`\`diff\n${diff}\n\`\`\`${commitHistoryText}`,
       this.getProjectDir(),

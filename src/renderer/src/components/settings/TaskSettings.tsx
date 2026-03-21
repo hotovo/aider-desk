@@ -1,6 +1,7 @@
-import { SettingsData, ContextCompactionType } from '@common/types';
+import { SettingsData, ContextCompactionType, Model } from '@common/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getProviderModelId } from '@common/agent';
 
 import { Chip } from '../common/Chip';
 import { Checkbox } from '../common/Checkbox';
@@ -8,6 +9,7 @@ import { Section } from '../common/Section';
 import { InfoIcon } from '../common/InfoIcon';
 import { Button } from '../common/Button';
 import { Slider } from '../common/Slider';
+import { ModelSelectorWrapper } from '../common/ModelSelectorWrapper';
 
 type Props = {
   settings: SettingsData;
@@ -99,28 +101,93 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const handleTaskNameModelChange = (model: Model | null) => {
+    const modelId = model ? getProviderModelId(model) : null;
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        taskNameModel: modelId,
+      },
+    });
+  };
+
+  const handleTaskStateModelChange = (model: Model | null) => {
+    const modelId = model ? getProviderModelId(model) : null;
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        taskStateModel: modelId,
+      },
+    });
+  };
+
+  const handleCommitMessageModelChange = (model: Model | null) => {
+    const modelId = model ? getProviderModelId(model) : null;
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        commitMessageModel: modelId,
+      },
+    });
+  };
+
   return (
     <div className="space-y-6 h-full flex flex-col">
       <Section title={t('settings.tasks.title')} className="px-4 py-5">
         <div className="space-y-3">
-          <div className="flex items-start gap-1">
-            <Checkbox
-              id="smart-task-state"
-              checked={settings.taskSettings.smartTaskState}
-              onChange={handleSmartTaskStateChange}
-              label={t('settings.tasks.smartTaskState')}
-            />
-            <InfoIcon tooltip={t('settings.tasks.smartTaskStateTooltip')} />
+          <div className="space-y-2">
+            <div className="flex items-start gap-1">
+              <Checkbox
+                id="smart-task-state"
+                checked={settings.taskSettings.smartTaskState}
+                onChange={handleSmartTaskStateChange}
+                label={t('settings.tasks.smartTaskState')}
+              />
+              <InfoIcon tooltip={t('settings.tasks.smartTaskStateTooltip')} />
+            </div>
+            {settings.taskSettings.smartTaskState && (
+              <div className="ml-6 flex items-center gap-1">
+                <div className="w-64 p-2 bg-bg-secondary-light border-2 border-border-default rounded focus-within:outline-none focus-within:border-border-light">
+                  <ModelSelectorWrapper
+                    className="w-full justify-between"
+                    selectedModelId={settings.taskSettings.taskStateModel || null}
+                    onChange={handleTaskStateModelChange}
+                    labelOnNull={t('settings.tasks.inheritModel')}
+                    skipPreferredModelsUpdate
+                  />
+                </div>
+                <InfoIcon tooltip={t('settings.tasks.taskStateModelTooltip')} />
+              </div>
+            )}
           </div>
 
-          <div className="flex items-start gap-1">
-            <Checkbox
-              id="auto-generate-task-name"
-              checked={settings.taskSettings?.autoGenerateTaskName ?? true}
-              onChange={handleAutoGenerateTaskNameChange}
-              label={t('settings.tasks.autoGenerateTaskName')}
-            />
-            <InfoIcon tooltip={t('settings.tasks.autoGenerateTaskNameTooltip')} />
+          <div className="space-y-2">
+            <div className="flex items-start gap-1">
+              <Checkbox
+                id="auto-generate-task-name"
+                checked={settings.taskSettings?.autoGenerateTaskName ?? true}
+                onChange={handleAutoGenerateTaskNameChange}
+                label={t('settings.tasks.autoGenerateTaskName')}
+              />
+              <InfoIcon tooltip={t('settings.tasks.autoGenerateTaskNameTooltip')} />
+            </div>
+            {settings.taskSettings?.autoGenerateTaskName && (
+              <div className="ml-6 flex items-center gap-1">
+                <div className="w-64 p-2 bg-bg-secondary-light border-2 border-border-default rounded focus-within:outline-none focus-within:border-border-light">
+                  <ModelSelectorWrapper
+                    className="w-full justify-between"
+                    selectedModelId={settings.taskSettings.taskNameModel || null}
+                    onChange={handleTaskNameModelChange}
+                    labelOnNull={t('settings.tasks.inheritModel')}
+                    skipPreferredModelsUpdate
+                  />
+                </div>
+                <InfoIcon tooltip={t('settings.tasks.taskNameModelTooltip')} />
+              </div>
+            )}
           </div>
 
           <div className="flex items-start gap-1">
@@ -131,6 +198,27 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
               label={t('settings.tasks.showTaskStateActions')}
             />
             <InfoIcon tooltip={t('settings.tasks.showTaskStateActionsTooltip')} />
+          </div>
+        </div>
+      </Section>
+
+      <Section title={t('settings.tasks.auxiliaryModelsTitle')}>
+        <div className="px-4 py-3 pt-4">
+          <div className="text-2xs text-text-muted mb-4">{t('settings.tasks.auxiliaryModelsDescription')}</div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <label className="text-xs text-text-primary font-medium">{t('settings.tasks.commitMessageModel')}</label>
+              <InfoIcon tooltip={t('settings.tasks.commitMessageModelTooltip')} />
+            </div>
+            <div className="w-64 p-2 bg-bg-secondary-light border-2 border-border-default rounded focus-within:outline-none focus-within:border-border-light">
+              <ModelSelectorWrapper
+                className="w-full justify-between"
+                selectedModelId={settings.taskSettings.commitMessageModel || null}
+                onChange={handleCommitMessageModelChange}
+                labelOnNull={t('settings.tasks.inheritModel')}
+                skipPreferredModelsUpdate
+              />
+            </div>
           </div>
         </div>
       </Section>

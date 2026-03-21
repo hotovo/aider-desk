@@ -107,7 +107,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     }, [currentTaskModelId, models]);
 
     const handleTaskModelChange = useCallback(
-      (selectedModel: Model) => {
+      (selectedModel: Model | null) => {
+        if (!selectedModel) {
+          return;
+        }
         const selectedModelId = getProviderModelId(selectedModel);
         const providerId = selectedModel.providerId;
         const modelId = selectedModel.id;
@@ -203,7 +206,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     );
 
     const updateMainModel = useCallback(
-      (mainModel: Model) => {
+      (mainModel: Model | null) => {
+        if (!mainModel) {
+          return;
+        }
         const modelId = getProviderModelId(mainModel);
         api.updateMainModel(baseDir, task.id, modelId);
         updatePreferredModels(modelId);
@@ -216,7 +222,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     );
 
     const updateWeakModel = useCallback(
-      (weakModel: Model) => {
+      (weakModel: Model | null) => {
+        if (!weakModel) {
+          return;
+        }
         const modelId = getProviderModelId(weakModel);
         api.updateWeakModel(baseDir, task.id, modelId);
         updatePreferredModels(modelId);
@@ -237,7 +246,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     }, [task.id, task.weakModelLocked, updateTask]);
 
     const updateArchitectModel = useCallback(
-      (architectModel: Model) => {
+      (architectModel: Model | null) => {
+        if (!architectModel) {
+          return;
+        }
         const modelId = getProviderModelId(architectModel);
         api.updateArchitectModel(baseDir, task.id, modelId);
         updatePreferredModels(modelId);

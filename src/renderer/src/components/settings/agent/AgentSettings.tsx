@@ -632,8 +632,8 @@ export const AgentSettings = ({
     setSettings(updatedSettings);
   };
 
-  const handleModelChange = (model: Model) => {
-    if (!selectedProfile) {
+  const handleModelChange = (model: Model | null) => {
+    if (!model || !selectedProfile) {
       return;
     }
 

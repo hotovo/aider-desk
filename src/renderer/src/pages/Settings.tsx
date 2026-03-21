@@ -19,6 +19,16 @@ import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
 import { TaskSettings } from '@/components/settings/TaskSettings';
 import { ExtensionsSettings } from '@/components/settings/ExtensionsSettings';
 
+type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
+
+interface SidebarItem {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+  children?: { id: string; label: string }[];
+  pageId: PageId;
+}
+
 type Props = {
   settings: SettingsData;
   updateSettings: (settings: SettingsData) => void;
@@ -35,16 +45,6 @@ type Props = {
   providers?: ProviderProfile[];
   setProviders?: (providers: ProviderProfile[]) => void;
 };
-
-type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
-
-interface SidebarItem {
-  id: string;
-  label: string;
-  icon?: ReactNode;
-  children?: { id: string; label: string }[];
-  pageId: PageId;
-}
 
 export const Settings = ({
   settings,

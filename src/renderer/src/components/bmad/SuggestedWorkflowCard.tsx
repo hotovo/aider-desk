@@ -31,7 +31,10 @@ export const SuggestedWorkflowCard = ({ workflow, projectDir, taskId, onRefresh,
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string | undefined>(defaultModelId);
 
-  const handleModelChange = useCallback((model: Model) => {
+  const handleModelChange = useCallback((model: Model | null) => {
+    if (!model) {
+      return;
+    }
     const modelId = getProviderModelId(model);
     setSelectedModelId(modelId);
   }, []);
