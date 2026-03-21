@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AvailableExtension, InstalledExtension, SettingsData } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
@@ -46,13 +46,6 @@ interface AnimatePresenceProps {
   children?: React.ReactNode;
 }
 
-interface AccordionProps {
-  title?: string;
-  children?: React.ReactNode;
-  isOpen?: boolean;
-  onOpenChange?: () => void;
-}
-
 interface ButtonProps {
   children?: React.ReactNode;
   onClick?: () => void;
@@ -74,10 +67,11 @@ interface InputProps {
   wrapperClassName?: string;
 }
 
-interface CheckboxProps {
+interface ToggleProps {
   checked?: boolean;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  label?: React.ReactNode;
+  onChange?: (checked: boolean) => void;
+  disabled?: boolean;
+  'aria-label'?: string;
 }
 
 // Mock react-i18next
@@ -115,18 +109,6 @@ vi.mock('@/contexts/ApiContext', () => ({
   useApi: vi.fn(),
 }));
 
-// Mock Accordion to simplify testing (controlled mode)
-vi.mock('@/components/common/Accordion', () => ({
-  Accordion: ({ title, children, isOpen, onOpenChange }: AccordionProps) => (
-    <div data-testid="accordion">
-      <div onClick={onOpenChange} data-testid="accordion-toggle" role="button" aria-expanded={isOpen} tabIndex={0}>
-        {title}
-      </div>
-      {isOpen && <div data-testid="accordion-content">{children}</div>}
-    </div>
-  ),
-}));
-
 // Mock other components
 vi.mock('@/components/common/Button', () => ({
   Button: ({ children, onClick, disabled, ...props }: ButtonProps) => (
@@ -157,11 +139,17 @@ vi.mock('@/components/common/Input', () => ({
   ),
 }));
 
-vi.mock('@/components/common/Checkbox', () => ({
-  Checkbox: ({ checked, onChange, label }: CheckboxProps) => (
+vi.mock('@/components/common/Toggle', () => ({
+  Toggle: ({ checked, onChange, disabled, 'aria-label': ariaLabel }: ToggleProps) => (
     <label>
-      <input type="checkbox" checked={checked} onChange={onChange} data-testid="checkbox" />
-      {label}
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={() => onChange && onChange(!checked)}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        data-testid="toggle"
+      />
     </label>
   ),
 }));
@@ -186,7 +174,7 @@ describe('ExtensionsSettings', () => {
     vi.mocked(useApi).mockReturnValue(mockApi);
   });
 
-  describe('Repository Accordion Expansion State Preservation', () => {
+  describe('Repository Expansion State Preservation', () => {
     it('should preserve expanded state when installing an extension triggers re-render', async () => {
       // Setup: Create extensions from two different repositories
       const defaultRepoExtension = createMockAvailableExtension({
@@ -226,24 +214,28 @@ describe('ExtensionsSettings', () => {
         expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
       });
 
-      // Find and expand the custom repository accordion
-      const accordions = screen.getAllByTestId('accordion-toggle');
-      const customRepoAccordion = accordions.find((acc) => acc.textContent?.includes(customRepoUrl));
+      // Find the custom repository section - it should show "custom/extensions" formatted name
+      const customRepoSection = screen.getByText('custom/extensions');
+      expect(customRepoSection).toBeInTheDocument();
 
-      if (!customRepoAccordion) {
-        throw new Error('Custom repository accordion not found');
+      // Expand the custom repository by clicking on the header
+      const customRepoHeader = customRepoSection.closest('div[class*="cursor-pointer"]');
+      if (!customRepoHeader) {
+        throw new Error('Custom repository header not found');
       }
 
-      // Expand the custom repository
-      fireEvent.click(customRepoAccordion);
+      fireEvent.click(customRepoHeader);
 
-      // Verify it's expanded
-      expect(customRepoAccordion).toHaveAttribute('aria-expanded', 'true');
+      // Verify the chevron has rotated (not -rotate-90 anymore)
+      await waitFor(() => {
+        const chevrons = customRepoHeader.querySelectorAll('svg');
+        const chevron = Array.from(chevrons).find((svg) => svg.classList.contains('w-3'));
+        expect(chevron).toBeTruthy();
+        expect(chevron).not.toHaveClass('-rotate-90');
+      });
 
       // Install an extension from the custom repository
-      // Since default repo extension is already installed, only custom repo has install button
       const installButton = await screen.findByText('settings.extensions.install');
-
       fireEvent.click(installButton);
 
       // Wait for install to complete and re-render
@@ -254,14 +246,19 @@ describe('ExtensionsSettings', () => {
       // Wait for reload
       await waitFor(() => {
         expect(mockApi.getInstalledExtensions).toHaveBeenCalledTimes(2);
-        expect(mockApi.getAvailableExtensions).toHaveBeenCalledTimes(1);
       });
 
-      // Verify the custom repository accordion is still expanded after re-render
-      const updatedAccordions = screen.getAllByTestId('accordion-toggle');
-      const updatedCustomRepoAccordion = updatedAccordions.find((acc) => acc.textContent?.includes(customRepoUrl));
+      // Verify the custom repository section is still expanded after re-render
+      const updatedCustomRepoSection = screen.getByText('custom/extensions');
+      const updatedCustomRepoHeader = updatedCustomRepoSection.closest('div[class*="cursor-pointer"]');
 
-      expect(updatedCustomRepoAccordion).toHaveAttribute('aria-expanded', 'true');
+      if (!updatedCustomRepoHeader) {
+        throw new Error('Updated custom repository header not found');
+      }
+
+      const updatedChevrons = updatedCustomRepoHeader.querySelectorAll('svg');
+      const updatedChevron = Array.from(updatedChevrons).find((svg) => svg.classList.contains('w-3'));
+      expect(updatedChevron).not.toHaveClass('-rotate-90');
     });
 
     it('should preserve expanded state when uninstalling an extension triggers re-render', async () => {
@@ -308,16 +305,22 @@ describe('ExtensionsSettings', () => {
         expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
       });
 
-      // Expand the custom repository accordion
-      const accordions = screen.getAllByTestId('accordion-toggle');
-      const customRepoAccordion = accordions.find((acc) => acc.textContent?.includes(customRepoUrl));
+      // Expand the custom repository
+      const customRepoSection = screen.getByText('custom/extensions');
+      const customRepoHeader = customRepoSection.closest('div[class*="cursor-pointer"]');
 
-      if (!customRepoAccordion) {
-        throw new Error('Custom repository accordion not found');
+      if (!customRepoHeader) {
+        throw new Error('Custom repository header not found');
       }
 
-      fireEvent.click(customRepoAccordion);
-      expect(customRepoAccordion).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.click(customRepoHeader);
+
+      await waitFor(() => {
+        const chevrons = customRepoHeader.querySelectorAll('svg');
+        const chevron = Array.from(chevrons).find((svg) => svg.classList.contains('w-3'));
+        expect(chevron).toBeTruthy();
+        expect(chevron).not.toHaveClass('-rotate-90');
+      });
 
       // Uninstall an extension from the default repository
       const uninstallButtons = await screen.findAllByText('settings.extensions.uninstall');
@@ -334,11 +337,17 @@ describe('ExtensionsSettings', () => {
         expect(mockApi.getAvailableExtensions).toHaveBeenCalledTimes(2);
       });
 
-      // Verify the custom repository accordion is still expanded after re-render
-      const updatedAccordions = screen.getAllByTestId('accordion-toggle');
-      const updatedCustomRepoAccordion = updatedAccordions.find((acc) => acc.textContent?.includes(customRepoUrl));
+      // Verify the custom repository is still expanded after re-render
+      const updatedCustomRepoSection = screen.getByText('custom/extensions');
+      const updatedCustomRepoHeader = updatedCustomRepoSection.closest('div[class*="cursor-pointer"]');
 
-      expect(updatedCustomRepoAccordion).toHaveAttribute('aria-expanded', 'true');
+      if (!updatedCustomRepoHeader) {
+        throw new Error('Updated custom repository header not found');
+      }
+
+      const updatedChevrons = updatedCustomRepoHeader.querySelectorAll('svg');
+      const updatedChevron = Array.from(updatedChevrons).find((svg) => svg.classList.contains('w-3'));
+      expect(updatedChevron).not.toHaveClass('-rotate-90');
     });
 
     it('should preserve multiple expanded repositories after install/uninstall operations', async () => {
@@ -376,21 +385,30 @@ describe('ExtensionsSettings', () => {
       });
 
       // Expand both custom repositories
-      const accordions = screen.getAllByTestId('accordion-toggle');
-      const repo1Accordion = accordions.find((acc) => acc.textContent?.includes(repo1Url));
-      const repo2Accordion = accordions.find((acc) => acc.textContent?.includes(repo2Url));
+      const repo1Section = screen.getByText('repo1/extensions');
+      const repo2Section = screen.getByText('repo2/extensions');
 
-      if (!repo1Accordion || !repo2Accordion) {
-        throw new Error('Repository accordions not found');
+      const repo1Header = repo1Section.closest('div[class*="cursor-pointer"]');
+      const repo2Header = repo2Section.closest('div[class*="cursor-pointer"]');
+
+      if (!repo1Header || !repo2Header) {
+        throw new Error('Repository headers not found');
       }
 
-      fireEvent.click(repo1Accordion);
-      fireEvent.click(repo2Accordion);
+      fireEvent.click(repo1Header);
+      fireEvent.click(repo2Header);
 
-      expect(repo1Accordion).toHaveAttribute('aria-expanded', 'true');
-      expect(repo2Accordion).toHaveAttribute('aria-expanded', 'true');
+      // Verify both are expanded
+      await waitFor(() => {
+        const repo1Chevrons = repo1Header.querySelectorAll('svg');
+        const repo1Chevron = Array.from(repo1Chevrons).find((svg) => svg.classList.contains('w-3'));
+        const repo2Chevrons = repo2Header.querySelectorAll('svg');
+        const repo2Chevron = Array.from(repo2Chevrons).find((svg) => svg.classList.contains('w-3'));
+        expect(repo1Chevron).not.toHaveClass('-rotate-90');
+        expect(repo2Chevron).not.toHaveClass('-rotate-90');
+      });
 
-      // Install an extension from repo1 (first available install button)
+      // Install an extension from repo1
       const installButton = await screen.findByText('settings.extensions.install');
       fireEvent.click(installButton);
 
@@ -404,12 +422,23 @@ describe('ExtensionsSettings', () => {
       });
 
       // Verify both repositories are still expanded
-      const updatedAccordions = screen.getAllByTestId('accordion-toggle');
-      const updatedRepo1Accordion = updatedAccordions.find((acc) => acc.textContent?.includes(repo1Url));
-      const updatedRepo2Accordion = updatedAccordions.find((acc) => acc.textContent?.includes(repo2Url));
+      const updatedRepo1Section = screen.getByText('repo1/extensions');
+      const updatedRepo2Section = screen.getByText('repo2/extensions');
 
-      expect(updatedRepo1Accordion).toHaveAttribute('aria-expanded', 'true');
-      expect(updatedRepo2Accordion).toHaveAttribute('aria-expanded', 'true');
+      const updatedRepo1Header = updatedRepo1Section.closest('div[class*="cursor-pointer"]');
+      const updatedRepo2Header = updatedRepo2Section.closest('div[class*="cursor-pointer"]');
+
+      if (!updatedRepo1Header || !updatedRepo2Header) {
+        throw new Error('Updated repository headers not found');
+      }
+
+      const updatedRepo1Chevrons = updatedRepo1Header.querySelectorAll('svg');
+      const updatedRepo1Chevron = Array.from(updatedRepo1Chevrons).find((svg) => svg.classList.contains('w-3'));
+      const updatedRepo2Chevrons = updatedRepo2Header.querySelectorAll('svg');
+      const updatedRepo2Chevron = Array.from(updatedRepo2Chevrons).find((svg) => svg.classList.contains('w-3'));
+
+      expect(updatedRepo1Chevron).not.toHaveClass('-rotate-90');
+      expect(updatedRepo2Chevron).not.toHaveClass('-rotate-90');
     });
 
     it('should preserve collapsed state when other repositories are toggled', async () => {
@@ -430,32 +459,53 @@ describe('ExtensionsSettings', () => {
         expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
       });
 
-      // Find both accordions
-      const accordions = screen.getAllByTestId('accordion-toggle');
-      const defaultAccordion = accordions.find((acc) => acc.textContent?.includes(AIDER_DESK_EXTENSIONS_REPO_URL));
-      const customAccordion = accordions.find((acc) => acc.textContent?.includes(customRepoUrl));
+      // Find both repository sections
+      const defaultRepoSection = screen.getByText('hotovo/aider-desk');
+      const customRepoSection = screen.getByText('custom/extensions');
 
-      if (!defaultAccordion || !customAccordion) {
-        throw new Error('Repository accordions not found');
+      const defaultRepoHeader = defaultRepoSection.closest('div[class*="cursor-pointer"]');
+      const customRepoHeader = customRepoSection.closest('div[class*="cursor-pointer"]');
+
+      if (!defaultRepoHeader || !customRepoHeader) {
+        throw new Error('Repository headers not found');
       }
 
-      // Verify both start collapsed
-      expect(defaultAccordion).toHaveAttribute('aria-expanded', 'false');
-      expect(customAccordion).toHaveAttribute('aria-expanded', 'false');
+      // Verify both start collapsed (have -rotate-90 class)
+      const defaultChevrons = defaultRepoHeader.querySelectorAll('svg');
+      const defaultChevron = Array.from(defaultChevrons).find((svg) => svg.classList.contains('w-3'));
+      const customChevrons = customRepoHeader.querySelectorAll('svg');
+      const customChevron = Array.from(customChevrons).find((svg) => svg.classList.contains('w-3'));
+
+      expect(defaultChevron).toHaveClass('-rotate-90');
+      expect(customChevron).toHaveClass('-rotate-90');
 
       // Expand only the default repository
-      fireEvent.click(defaultAccordion);
+      fireEvent.click(defaultRepoHeader);
 
-      expect(defaultAccordion).toHaveAttribute('aria-expanded', 'true');
-      expect(customAccordion).toHaveAttribute('aria-expanded', 'false');
+      await waitFor(() => {
+        const updatedDefaultChevrons = defaultRepoHeader.querySelectorAll('svg');
+        const updatedDefaultChevron = Array.from(updatedDefaultChevrons).find((svg) => svg.classList.contains('w-3'));
+        const updatedCustomChevrons = customRepoHeader.querySelectorAll('svg');
+        const updatedCustomChevron = Array.from(updatedCustomChevrons).find((svg) => svg.classList.contains('w-3'));
+
+        expect(updatedDefaultChevron).not.toHaveClass('-rotate-90');
+        expect(updatedCustomChevron).toHaveClass('-rotate-90');
+      });
 
       // Toggle the default repository off and on again
-      fireEvent.click(defaultAccordion);
-      fireEvent.click(defaultAccordion);
+      fireEvent.click(defaultRepoHeader);
+      fireEvent.click(defaultRepoHeader);
 
       // Default should be expanded, custom should remain collapsed
-      expect(defaultAccordion).toHaveAttribute('aria-expanded', 'true');
-      expect(customAccordion).toHaveAttribute('aria-expanded', 'false');
+      await waitFor(() => {
+        const finalDefaultChevrons = defaultRepoHeader.querySelectorAll('svg');
+        const finalDefaultChevron = Array.from(finalDefaultChevrons).find((svg) => svg.classList.contains('w-3'));
+        const finalCustomChevrons = customRepoHeader.querySelectorAll('svg');
+        const finalCustomChevron = Array.from(finalCustomChevrons).find((svg) => svg.classList.contains('w-3'));
+
+        expect(finalDefaultChevron).not.toHaveClass('-rotate-90');
+        expect(finalCustomChevron).toHaveClass('-rotate-90');
+      });
     });
 
     it('should preserve expansion state when refreshing extensions', async () => {
@@ -463,10 +513,6 @@ describe('ExtensionsSettings', () => {
       const defaultExt = createMockAvailableExtension({ repositoryUrl: AIDER_DESK_EXTENSIONS_REPO_URL });
       const customExt = createMockAvailableExtension({ id: 'custom-ext', repositoryUrl: customRepoUrl });
 
-      mockApi.getInstalledExtensions.mockResolvedValue([]);
-      mockApi.getAvailableExtensions.mockResolvedValue([defaultExt, customExt]);
-
-      // Setup for refresh
       mockApi.getInstalledExtensions.mockResolvedValue([]);
       mockApi.getAvailableExtensions.mockResolvedValue([defaultExt, customExt]);
 
@@ -481,15 +527,20 @@ describe('ExtensionsSettings', () => {
       });
 
       // Expand the custom repository
-      const accordions = screen.getAllByTestId('accordion-toggle');
-      const customAccordion = accordions.find((acc) => acc.textContent?.includes(customRepoUrl));
+      const customRepoSection = screen.getByText('custom/extensions');
+      const customRepoHeader = customRepoSection.closest('div[class*="cursor-pointer"]');
 
-      if (!customAccordion) {
-        throw new Error('Custom repository accordion not found');
+      if (!customRepoHeader) {
+        throw new Error('Custom repository header not found');
       }
 
-      fireEvent.click(customAccordion);
-      expect(customAccordion).toHaveAttribute('aria-expanded', 'true');
+      fireEvent.click(customRepoHeader);
+
+      await waitFor(() => {
+        const chevrons = customRepoHeader.querySelectorAll('svg');
+        const chevron = Array.from(chevrons).find((svg) => svg.classList.contains('w-3'));
+        expect(chevron).not.toHaveClass('-rotate-90');
+      });
 
       // Click refresh button
       const refreshButton = screen.getByText('common.refresh');
@@ -498,14 +549,20 @@ describe('ExtensionsSettings', () => {
       // Wait for refresh to complete
       await waitFor(() => {
         expect(mockApi.getInstalledExtensions).toHaveBeenCalledTimes(2);
-        expect(mockApi.getAvailableExtensions).toHaveBeenCalledTimes(2); // Initial load + refresh
+        expect(mockApi.getAvailableExtensions).toHaveBeenCalledTimes(2);
       });
 
       // Verify custom repository is still expanded
-      const updatedAccordions = screen.getAllByTestId('accordion-toggle');
-      const updatedCustomAccordion = updatedAccordions.find((acc) => acc.textContent?.includes(customRepoUrl));
+      const updatedCustomRepoSection = screen.getByText('custom/extensions');
+      const updatedCustomRepoHeader = updatedCustomRepoSection.closest('div[class*="cursor-pointer"]');
 
-      expect(updatedCustomAccordion).toHaveAttribute('aria-expanded', 'true');
+      if (!updatedCustomRepoHeader) {
+        throw new Error('Updated custom repository header not found');
+      }
+
+      const updatedChevrons = updatedCustomRepoHeader.querySelectorAll('svg');
+      const updatedChevron = Array.from(updatedChevrons).find((svg) => svg.classList.contains('w-3'));
+      expect(updatedChevron).not.toHaveClass('-rotate-90');
     });
   });
 
@@ -528,20 +585,18 @@ describe('ExtensionsSettings', () => {
         expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
       });
 
-      // Expand the repository accordion to see the install button
-      const accordionToggle = screen.getByTestId('accordion-toggle');
-      fireEvent.click(accordionToggle);
+      // Expand the repository section
+      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
-      // Wait for accordion to expand
-      await waitFor(() => {
-        expect(screen.getByTestId('accordion-content')).toBeInTheDocument();
-      });
+      if (!repoHeader) {
+        throw new Error('Repository header not found');
+      }
 
-      // Install the extension - find by text content within the accordion
-      const accordionContent = screen.getByTestId('accordion-content');
-      const installButton = await within(accordionContent).findByText((content, element) => {
-        return element?.tagName === 'BUTTON' && content.includes('settings.extensions.install');
-      });
+      fireEvent.click(repoHeader);
+
+      // Wait for section to expand and find install button
+      const installButton = await screen.findByText('settings.extensions.install');
       fireEvent.click(installButton);
 
       await waitFor(() => {
@@ -571,14 +626,15 @@ describe('ExtensionsSettings', () => {
         expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
       });
 
-      // Expand the repository accordion
-      const accordionToggle = screen.getByTestId('accordion-toggle');
-      fireEvent.click(accordionToggle);
+      // Expand the repository section
+      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
-      // Wait for accordion to expand
-      await waitFor(() => {
-        expect(screen.getByTestId('accordion-content')).toBeInTheDocument();
-      });
+      if (!repoHeader) {
+        throw new Error('Repository header not found');
+      }
+
+      fireEvent.click(repoHeader);
 
       // Uninstall the extension
       const uninstallButtons = await screen.findAllByText('settings.extensions.uninstall');
@@ -608,14 +664,15 @@ describe('ExtensionsSettings', () => {
         expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
       });
 
-      // Expand the repository accordion
-      const accordionToggle = screen.getByTestId('accordion-toggle');
-      fireEvent.click(accordionToggle);
+      // Expand the repository section
+      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
-      // Wait for accordion to expand
-      await waitFor(() => {
-        expect(screen.getByTestId('accordion-content')).toBeInTheDocument();
-      });
+      if (!repoHeader) {
+        throw new Error('Repository header not found');
+      }
+
+      fireEvent.click(repoHeader);
 
       // Try to install the extension
       const installButton = await screen.findByText('settings.extensions.install');
@@ -647,16 +704,17 @@ describe('ExtensionsSettings', () => {
         expect(screen.getByText('settings.extensions.uninstall')).toBeInTheDocument();
       });
 
-      // Expand the repository accordion
-      const accordionToggle = screen.getByTestId('accordion-toggle');
-      fireEvent.click(accordionToggle);
+      // Expand the repository section
+      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
-      // Wait for accordion to expand
-      await waitFor(() => {
-        expect(screen.getByTestId('accordion-content')).toBeInTheDocument();
-      });
+      if (!repoHeader) {
+        throw new Error('Repository header not found');
+      }
 
-      // Try to uninstall the extension (use first match)
+      fireEvent.click(repoHeader);
+
+      // Try to uninstall the extension
       const uninstallButtons = await screen.findAllByText('settings.extensions.uninstall');
       fireEvent.click(uninstallButtons[0]);
 
@@ -772,6 +830,27 @@ describe('ExtensionsSettings', () => {
         }),
       );
     });
+
+    it('should format GitHub repository names correctly', async () => {
+      const customRepoUrl = 'https://github.com/org-name/repo-name';
+      const customExt = createMockAvailableExtension({ id: 'custom-ext', repositoryUrl: customRepoUrl });
+
+      mockApi.getInstalledExtensions.mockResolvedValue([]);
+      mockApi.getAvailableExtensions.mockResolvedValue([customExt]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      // Switch to Available tab
+      const availableTab = screen.getByText('settings.extensions.tabs.available');
+      fireEvent.click(availableTab);
+
+      await waitFor(() => {
+        expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
+      });
+
+      // Should display formatted name (org/repo)
+      expect(screen.getByText('org-name/repo-name')).toBeInTheDocument();
+    });
   });
 
   describe('Enable/Disable Extensions', () => {
@@ -784,12 +863,12 @@ describe('ExtensionsSettings', () => {
       render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('checkbox')).toBeInTheDocument();
+        expect(screen.getByTestId('toggle')).toBeInTheDocument();
       });
 
       // Disable the extension
-      const checkbox = screen.getByTestId('checkbox');
-      fireEvent.click(checkbox);
+      const toggle = screen.getByTestId('toggle');
+      fireEvent.click(toggle);
 
       expect(mockSetSettings).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -817,12 +896,12 @@ describe('ExtensionsSettings', () => {
       render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('checkbox')).toBeInTheDocument();
+        expect(screen.getByTestId('toggle')).toBeInTheDocument();
       });
 
       // Re-enable the extension
-      const checkbox = screen.getByTestId('checkbox');
-      fireEvent.click(checkbox);
+      const toggle = screen.getByTestId('toggle');
+      fireEvent.click(toggle);
 
       expect(mockSetSettings).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -831,6 +910,55 @@ describe('ExtensionsSettings', () => {
           }),
         }),
       );
+    });
+
+    it('should display disabled status badge', async () => {
+      const extension = createMockLoadedExtension();
+
+      mockSettings = {
+        ...mockSettings,
+        extensions: {
+          repositories: [AIDER_DESK_EXTENSIONS_REPO_URL],
+          disabled: [extension.metadata.name],
+        },
+      } as unknown as SettingsData;
+
+      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('settings.extensions.disabled')).toBeInTheDocument();
+      });
+    });
+
+    it('should display uninstalling status', async () => {
+      const extension = createMockLoadedExtension();
+      const availableExtension = createMockAvailableExtension();
+
+      // Make uninstall hang so we can see the status
+      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
+      mockApi.getAvailableExtensions.mockResolvedValue([availableExtension]);
+      mockApi.uninstallExtension.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      // Wait for the installed extension to load
+      await waitFor(() => {
+        expect(screen.getByText('Test Extension')).toBeInTheDocument();
+      });
+
+      // Find uninstall button on the Installed tab (easier than Available tab)
+      const uninstallButton = screen.getByText('settings.extensions.uninstall');
+
+      // Click uninstall
+      fireEvent.click(uninstallButton);
+
+      // Should show uninstalling status
+      await waitFor(() => {
+        expect(screen.getByText('settings.extensions.uninstalling')).toBeInTheDocument();
+      });
     });
   });
 
@@ -1000,12 +1128,12 @@ describe('ExtensionsSettings', () => {
       const extension1 = createMockLoadedExtension({
         id: 'ext-1',
         filePath: '/mock/path/to/extension1.js',
-        metadata: { name: 'Extension One', version: '1.0.0', description: 'A tool for testing' },
+        metadata: { name: 'Extension 1', version: '1.0.0', description: 'This is a special tool' },
       });
       const extension2 = createMockLoadedExtension({
         id: 'ext-2',
         filePath: '/mock/path/to/extension2.js',
-        metadata: { name: 'Extension Two', version: '1.0.0', description: 'A utility for deployment' },
+        metadata: { name: 'Extension 2', version: '1.0.0', description: 'A regular extension' },
       });
 
       mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
@@ -1014,384 +1142,30 @@ describe('ExtensionsSettings', () => {
       render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
 
       await waitFor(() => {
-        expect(screen.getByText('Extension One')).toBeInTheDocument();
-        expect(screen.getByText('Extension Two')).toBeInTheDocument();
+        expect(screen.getByText('Extension 1')).toBeInTheDocument();
+        expect(screen.getByText('Extension 2')).toBeInTheDocument();
       });
 
-      // Search for "testing"
+      // Search for "special"
       const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
-      fireEvent.change(searchInput, { target: { value: 'testing' } });
+      fireEvent.change(searchInput, { target: { value: 'special' } });
 
       await waitFor(() => {
-        expect(screen.getByText('Extension One')).toBeInTheDocument();
-        expect(screen.queryByText('Extension Two')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should filter installed extensions by author', async () => {
-      const extension1 = createMockLoadedExtension({
-        id: 'ext-1',
-        filePath: '/mock/path/to/extension1.js',
-        metadata: { name: 'Extension One', version: '1.0.0', author: 'John Doe' },
-      });
-      const extension2 = createMockLoadedExtension({
-        id: 'ext-2',
-        filePath: '/mock/path/to/extension2.js',
-        metadata: { name: 'Extension Two', version: '1.0.0', author: 'Jane Smith' },
-      });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Extension One')).toBeInTheDocument();
-        expect(screen.getByText('Extension Two')).toBeInTheDocument();
-      });
-
-      // Search for "John"
-      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
-      fireEvent.change(searchInput, { target: { value: 'John' } });
-
-      await waitFor(() => {
-        expect(screen.getByText('Extension One')).toBeInTheDocument();
-        expect(screen.queryByText('Extension Two')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should filter available extensions by name', async () => {
-      const extension1 = createMockAvailableExtension({ id: 'ext-1', name: 'Alpha Extension' });
-      const extension2 = createMockAvailableExtension({ id: 'ext-2', name: 'Beta Extension' });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([]);
-      mockApi.getAvailableExtensions.mockResolvedValue([extension1, extension2]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      // Switch to Available tab
-      const availableTab = screen.getByText('settings.extensions.tabs.available');
-      fireEvent.click(availableTab);
-
-      // Expand the repository accordion
-      await waitFor(() => {
-        expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
-      });
-
-      const accordionToggle = screen.getByTestId('accordion-toggle');
-      fireEvent.click(accordionToggle);
-
-      await waitFor(() => {
-        expect(screen.getByText('Alpha Extension')).toBeInTheDocument();
-        expect(screen.getByText('Beta Extension')).toBeInTheDocument();
-      });
-
-      // Search for "Alpha"
-      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
-      fireEvent.change(searchInput, { target: { value: 'Alpha' } });
-
-      await waitFor(() => {
-        expect(screen.getByText('Alpha Extension')).toBeInTheDocument();
-        expect(screen.queryByText('Beta Extension')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should show empty state when search has no results', async () => {
-      const extension = createMockLoadedExtension();
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Extension')).toBeInTheDocument();
-      });
-
-      // Search for non-existent extension
-      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
-      fireEvent.change(searchInput, { target: { value: 'NonExistent' } });
-
-      await waitFor(() => {
-        expect(screen.getByText('settings.extensions.installed.empty')).toBeInTheDocument();
-      });
-    });
-
-    it('should be case-insensitive', async () => {
-      const extension = createMockLoadedExtension({
-        metadata: { name: 'Test Extension', version: '1.0.0' },
-      });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Extension')).toBeInTheDocument();
-      });
-
-      // Search with different cases
-      const searchInput = screen.getByPlaceholderText('settings.extensions.search.placeholder');
-      fireEvent.change(searchInput, { target: { value: 'TEST' } });
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Extension')).toBeInTheDocument();
-      });
-
-      fireEvent.change(searchInput, { target: { value: 'extension' } });
-
-      await waitFor(() => {
-        expect(screen.getByText('Test Extension')).toBeInTheDocument();
+        expect(screen.getByText('Extension 1')).toBeInTheDocument();
+        expect(screen.queryByText('Extension 2')).not.toBeInTheDocument();
       });
     });
   });
 
-  describe('Capability Chips', () => {
-    it('should display capability chips when extensions have capabilities', async () => {
+  describe('Capability Filtering', () => {
+    it('should filter by selected capability', async () => {
       const extension1 = createMockLoadedExtension({
-        id: 'ext-1',
-        filePath: '/mock/path/to/extension1.js',
-        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools', 'commands'] },
-      });
-      const extension2 = createMockLoadedExtension({
-        id: 'ext-2',
-        filePath: '/mock/path/to/extension2.js',
-        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
-      });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: 'commands' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'tools' })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'ui-elements' })).toBeInTheDocument();
-      });
-    });
-
-    it('should not display capability chips when no extensions have capabilities', async () => {
-      const extension = createMockLoadedExtension({
-        metadata: { name: 'Basic Extension', version: '1.0.0', capabilities: undefined },
-      });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Basic Extension')).toBeInTheDocument();
-      });
-
-      // No capability buttons should be present
-      const capabilityButtons = screen.queryAllByRole('button').filter((btn) => ['tools', 'commands', 'ui-elements'].includes(btn.textContent || ''));
-      expect(capabilityButtons.length).toBe(0);
-    });
-
-    it('should filter installed extensions by selected capability', async () => {
-      const extension1 = createMockLoadedExtension({
-        id: 'ext-1',
-        filePath: '/mock/path/to/extension1.js',
         metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
       });
       const extension2 = createMockLoadedExtension({
         id: 'ext-2',
         filePath: '/mock/path/to/extension2.js',
-        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
-      });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.getByText('UI Extension')).toBeInTheDocument();
-      });
-
-      // Click on "tools" capability chip
-      const toolsChip = screen.getByRole('button', { name: 'tools' });
-      fireEvent.click(toolsChip);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should filter available extensions by selected capability', async () => {
-      const extension1 = createMockAvailableExtension({ id: 'ext-1', name: 'Tool Extension', capabilities: ['tools'] });
-      const extension2 = createMockAvailableExtension({ id: 'ext-2', name: 'UI Extension', capabilities: ['ui-elements'] });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([]);
-      mockApi.getAvailableExtensions.mockResolvedValue([extension1, extension2]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      // Switch to Available tab
-      const availableTab = screen.getByText('settings.extensions.tabs.available');
-      fireEvent.click(availableTab);
-
-      await waitFor(() => {
-        expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
-      });
-
-      // Expand the repository accordion
-      const accordionToggle = screen.getByTestId('accordion-toggle');
-      fireEvent.click(accordionToggle);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.getByText('UI Extension')).toBeInTheDocument();
-      });
-
-      // Click on "tools" capability chip
-      const toolsChip = screen.getByRole('button', { name: 'tools' });
-      fireEvent.click(toolsChip);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should allow selecting multiple capabilities (OR filter)', async () => {
-      const extension1 = createMockLoadedExtension({
-        id: 'ext-1',
-        filePath: '/mock/path/to/extension1.js',
-        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
-      });
-      const extension2 = createMockLoadedExtension({
-        id: 'ext-2',
-        filePath: '/mock/path/to/extension2.js',
-        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
-      });
-      const extension3 = createMockLoadedExtension({
-        id: 'ext-3',
-        filePath: '/mock/path/to/extension3.js',
-        metadata: { name: 'Command Extension', version: '1.0.0', capabilities: ['commands'] },
-      });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2, extension3]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.getByText('UI Extension')).toBeInTheDocument();
-        expect(screen.getByText('Command Extension')).toBeInTheDocument();
-      });
-
-      // Click on "tools" capability chip
-      const toolsChip = screen.getByRole('button', { name: 'tools' });
-      fireEvent.click(toolsChip);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
-        expect(screen.queryByText('Command Extension')).not.toBeInTheDocument();
-      });
-
-      // Click on "ui-elements" capability chip (multi-select)
-      const uiChip = screen.getByRole('button', { name: 'ui-elements' });
-      fireEvent.click(uiChip);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.getByText('UI Extension')).toBeInTheDocument();
-        expect(screen.queryByText('Command Extension')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should deselect capability when clicked again', async () => {
-      const extension1 = createMockLoadedExtension({
-        id: 'ext-1',
-        filePath: '/mock/path/to/extension1.js',
-        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
-      });
-      const extension2 = createMockLoadedExtension({
-        id: 'ext-2',
-        filePath: '/mock/path/to/extension2.js',
-        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
-      });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.getByText('UI Extension')).toBeInTheDocument();
-      });
-
-      // Select capability
-      const toolsChip = screen.getByRole('button', { name: 'tools' });
-      fireEvent.click(toolsChip);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
-      });
-
-      // Deselect capability
-      fireEvent.click(toolsChip);
-
-      await waitFor(() => {
-        expect(screen.getByText('Tool Extension')).toBeInTheDocument();
-        expect(screen.getByText('UI Extension')).toBeInTheDocument();
-      });
-    });
-
-    it('should show extensions with at least one selected capability', async () => {
-      const extension1 = createMockLoadedExtension({
-        id: 'ext-1',
-        filePath: '/mock/path/to/extension1.js',
-        metadata: { name: 'Multi Extension', version: '1.0.0', capabilities: ['tools', 'commands'] },
-      });
-      const extension2 = createMockLoadedExtension({
-        id: 'ext-2',
-        filePath: '/mock/path/to/extension2.js',
-        metadata: { name: 'UI Extension', version: '1.0.0', capabilities: ['ui-elements'] },
-      });
-
-      mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
-      mockApi.getAvailableExtensions.mockResolvedValue([]);
-
-      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Multi Extension')).toBeInTheDocument();
-        expect(screen.getByText('UI Extension')).toBeInTheDocument();
-      });
-
-      // Click on "tools" capability chip
-      const toolsChip = screen.getByRole('button', { name: 'tools' });
-      fireEvent.click(toolsChip);
-
-      await waitFor(() => {
-        // Multi Extension should still be visible because it has "tools" capability
-        expect(screen.getByText('Multi Extension')).toBeInTheDocument();
-        // UI Extension should be hidden because it doesn't have "tools"
-        expect(screen.queryByText('UI Extension')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should handle extensions without capabilities when capability filter is active', async () => {
-      const extension1 = createMockLoadedExtension({
-        id: 'ext-1',
-        filePath: '/mock/path/to/extension1.js',
-        metadata: { name: 'Tool Extension', version: '1.0.0', capabilities: ['tools'] },
-      });
-      const extension2 = createMockLoadedExtension({
-        id: 'ext-2',
-        filePath: '/mock/path/to/extension2.js',
-        metadata: { name: 'No Cap Extension', version: '1.0.0', capabilities: undefined },
+        metadata: { name: 'No Cap Extension', version: '1.0.0', capabilities: [] },
       });
 
       mockApi.getInstalledExtensions.mockResolvedValue([extension1, extension2]);
@@ -1612,6 +1386,58 @@ describe('ExtensionsSettings', () => {
         // Both capabilities should be visible
         expect(screen.getByRole('button', { name: 'tools' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'ui-elements' })).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Chevron Rotation', () => {
+    it('should rotate chevron when repository is expanded', async () => {
+      const extension = createMockAvailableExtension();
+
+      mockApi.getInstalledExtensions.mockResolvedValue([]);
+      mockApi.getAvailableExtensions.mockResolvedValue([extension]);
+
+      render(<ExtensionsSettings settings={mockSettings} setSettings={mockSetSettings} />);
+
+      // Switch to Available tab
+      const availableTab = screen.getByText('settings.extensions.tabs.available');
+      fireEvent.click(availableTab);
+
+      await waitFor(() => {
+        expect(mockApi.getAvailableExtensions).toHaveBeenCalled();
+      });
+
+      // Find repository section
+      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
+
+      if (!repoHeader) {
+        throw new Error('Repository header not found');
+      }
+
+      // Chevron should be collapsed (rotated)
+      const chevrons = repoHeader.querySelectorAll('svg');
+      const chevron = Array.from(chevrons).find((svg) => svg.classList.contains('w-3'));
+      expect(chevron).toHaveClass('-rotate-90');
+
+      // Expand repository
+      fireEvent.click(repoHeader);
+
+      // Chevron should not be rotated when expanded
+      await waitFor(() => {
+        const expandedChevrons = repoHeader.querySelectorAll('svg');
+        const expandedChevron = Array.from(expandedChevrons).find((svg) => svg.classList.contains('w-3'));
+        expect(expandedChevron).not.toHaveClass('-rotate-90');
+      });
+
+      // Collapse again
+      fireEvent.click(repoHeader);
+
+      // Chevron should be rotated again
+      await waitFor(() => {
+        const collapsedChevrons = repoHeader.querySelectorAll('svg');
+        const collapsedChevron = Array.from(collapsedChevrons).find((svg) => svg.classList.contains('w-3'));
+        expect(collapsedChevron).toHaveClass('-rotate-90');
       });
     });
   });

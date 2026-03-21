@@ -1,7 +1,7 @@
 import { AvailableExtension, InstalledExtension, ProjectData, SettingsData } from '@common/types';
 import { Activity, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
+import { FaChevronDown, FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 import { clsx } from 'clsx';
 
@@ -10,10 +10,39 @@ import { getPathBasename } from '@/utils/path-utils';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { Input } from '@/components/common/Input';
-import { Accordion } from '@/components/common/Accordion';
 import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { ExtensionCard } from '@/components/settings/ExtensionCard';
+
+// Helper to format repository URL for display
+const formatRepositoryName = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+
+    // Check if it's a GitHub URL
+    if (urlObj.hostname === 'github.com' || urlObj.hostname === 'www.github.com') {
+      // Extract pathname and remove leading/trailing slashes
+      const path = urlObj.pathname.replace(/^\/+|\/+$/g, '');
+
+      // Remove .git suffix if present
+      const cleanPath = path.replace(/\.git$/, '');
+
+      // Extract only organization/repository (first two segments)
+      const segments = cleanPath.split('/');
+      if (segments.length >= 2) {
+        return `${segments[0]}/${segments[1]}`;
+      }
+
+      return cleanPath || url;
+    }
+
+    // For non-GitHub URLs, return the full URL
+    return url;
+  } catch {
+    // If URL parsing fails, return original
+    return url;
+  }
+};
 
 enum Tab {
   Available = 'available',
@@ -31,7 +60,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   const { t } = useTranslation();
   const api = useApi();
 
-  const [activeTab, setActiveTab] = useState<Tab>(Tab.Available);
+  const [activeTab, setActiveTab] = useState<Tab>(Tab.Installed);
   const [installedExtensions, setInstalledExtensions] = useState<InstalledExtension[]>([]);
   const [availableExtensions, setAvailableExtensions] = useState<AvailableExtension[]>([]);
   const [loadingInstalled, setLoadingInstalled] = useState(false);
@@ -42,6 +71,9 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   const [expandedRepositories, setExpandedRepositories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCapabilities, setSelectedCapabilities] = useState<Set<string>>(new Set());
+
+  // Track repositories that are currently being loaded
+  const [loadingRepositories, setLoadingRepositories] = useState<Set<string>>(new Set());
 
   // Context state for project-level extensions
   const contexts = useMemo(() => ['global', ...openProjects.map((p) => p.baseDir)], [openProjects]);
@@ -89,11 +121,11 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     }
   };
 
-  const loadAvailableExtensions = async (forceRefresh = false) => {
+  const loadAvailableExtensions = async (forceRefresh = false, repositories?: string[]) => {
     setLoadingAvailable(true);
     try {
-      const repositories = settings.extensions?.repositories || [AIDER_DESK_EXTENSIONS_REPO_URL];
-      const extensions = await api.getAvailableExtensions(repositories, forceRefresh);
+      const repos = repositories || settings.extensions?.repositories || [AIDER_DESK_EXTENSIONS_REPO_URL];
+      const extensions = await api.getAvailableExtensions(repos, forceRefresh);
       setAvailableExtensions(extensions);
     } catch {
       showErrorNotification(t('settings.extensions.errors.loadAvailable'));
@@ -111,10 +143,11 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectDir]);
 
+  // Load available extensions on initial mount only
   useEffect(() => {
     void loadAvailableExtensions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.extensions?.repositories]);
+  }, []);
 
   const handleToggleDisabled = (extensionName: string, isCurrentlyDisabled: boolean) => {
     const disabledExtensions = settings.extensions?.disabled || [];
@@ -173,7 +206,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     }
   };
 
-  const handleAddRepository = () => {
+  const handleAddRepository = async () => {
     const trimmedUrl = newRepositoryUrl.trim();
     if (!trimmedUrl) {
       return;
@@ -185,6 +218,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       return;
     }
 
+    // Update settings first
     setSettings({
       ...settings,
       extensions: {
@@ -195,7 +229,22 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     });
 
     setNewRepositoryUrl('');
-    showSuccessNotification(t('settings.extensions.success.addRepository'));
+
+    // Fetch extensions from the new repository (fetchOnly=true to bypass all caching)
+    setLoadingRepositories((prev) => new Set(prev).add(trimmedUrl));
+    try {
+      const newExtensions = await api.getAvailableExtensions([trimmedUrl], true, true);
+      // Add new extensions to existing list
+      setAvailableExtensions((prev) => [...prev, ...newExtensions]);
+    } catch {
+      showErrorNotification(t('settings.extensions.errors.loadAvailable'));
+    } finally {
+      setLoadingRepositories((prev) => {
+        const next = new Set(prev);
+        next.delete(trimmedUrl);
+        return next;
+      });
+    }
   };
 
   const handleRemoveRepository = (repositoryUrl: string) => {
@@ -216,7 +265,8 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       },
     });
 
-    showSuccessNotification(t('settings.extensions.success.removeRepository'));
+    // Remove extensions from the removed repository from UI
+    setAvailableExtensions((prev) => prev.filter((ext) => ext.repositoryUrl !== repositoryUrl));
   };
 
   const disabledExtensions = settings.extensions?.disabled || [];
@@ -305,7 +355,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             key={extension.filePath}
             extension={extension}
             isDisabled={disabledExtensions.includes(extension.metadata.name)}
-            isUninstalling={uninstallingExtensions.has(extension.metadata.name)}
+            isUninstalling={uninstallingExtensions.has(extension.filePath)}
             onToggle={handleToggleDisabled}
             onUninstall={handleUninstall}
           />
@@ -369,7 +419,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             key={extension.id}
             extension={installedExtension}
             isDisabled={disabledExtensions.includes(installedExtension.metadata.name)}
-            isUninstalling={uninstallingExtensions.has(installedExtension.metadata.name)}
+            isUninstalling={uninstallingExtensions.has(installedExtension.filePath)}
             onToggle={handleToggleDisabled}
             onUninstall={handleUninstall}
           />
@@ -392,8 +442,8 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       });
     };
 
-    // Render repository accordion
-    const renderRepositoryAccordion = (repositoryUrl: string, extensions: AvailableExtension[]) => {
+    // Render repository section
+    const renderRepositorySection = (repositoryUrl: string, extensions: AvailableExtension[]) => {
       const installedCount = extensions.filter((ext) =>
         installedExtensions.some((inst) => {
           if (inst.id !== ext.id) {
@@ -407,35 +457,46 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       ).length;
       const isDefault = repositoryUrl === AIDER_DESK_EXTENSIONS_REPO_URL;
       const isExpanded = expandedRepositories.has(repositoryUrl);
+      const isLoadingRepo = loadingRepositories.has(repositoryUrl);
 
       return (
-        <Accordion
-          key={repositoryUrl}
-          title={
-            <div className="flex items-center gap-2 text-sm font-medium text-text-primary w-full pr-2">
-              <span className="truncate text-xs flex-1 text-left">{repositoryUrl}</span>
-              <span className="text-2xs text-text-tertiary">
-                {installedCount}/{extensions.length} {t('settings.extensions.available.installedExtensions')}
-              </span>
+        <div key={repositoryUrl} className="rounded-lg border border-border-light bg-bg-secondary-light overflow-hidden group">
+          {/* Repository Header */}
+          <div
+            className={clsx(
+              'flex items-center justify-between px-4 py-3 cursor-pointer transition-colors',
+              'bg-gradient-to-r from-button-primary via-button-primary to-bg-tertiary',
+              'bg-[length:4px_100%,100%_100%] bg-no-repeat hover:bg-[length:4px_100%,100%_100%]',
+              'hover:to-bg-secondary-light',
+            )}
+            onClick={() => handleToggleRepository(repositoryUrl)}
+          >
+            <div className="flex items-center gap-3 flex-1 min-w-0 ml-3">
+              <span className="text-sm font-semibold text-text-primary font-mono truncate">{formatRepositoryName(repositoryUrl)}</span>
+              {isLoadingRepo ? (
+                <span className="text-3xs text-text-muted font-medium">{t('settings.extensions.loading')}</span>
+              ) : (
+                <span className="text-3xs text-text-muted font-medium">
+                  {installedCount}/{extensions.length} {t('settings.extensions.available.installedExtensions')}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
               {!isDefault && (
                 <IconButton
                   icon={<FaTrash />}
                   onClick={() => handleRemoveRepository(repositoryUrl)}
                   tooltip={t('settings.extensions.repositories.remove')}
-                  className="hidden group-hover:block ml-2 text-error hover:text-error-light transition-colors"
+                  className="text-error hover:text-error-light transition-colors opacity-0 group-hover:opacity-100"
                 />
               )}
+              <FaChevronDown className={clsx('w-3 h-3 text-text-muted transition-transform duration-200', !isExpanded && '-rotate-90')} />
             </div>
-          }
-          isOpen={isExpanded}
-          onOpenChange={() => handleToggleRepository(repositoryUrl)}
-          noMaxHeight={true}
-          chevronPosition="right"
-          className="rounded-lg border border-border-default bg-bg-primary-light group relative"
-          buttonClassName="px-4 py-3"
-        >
-          <div className="px-4 pb-4 pt-2 space-y-2">{extensions.map(renderExtensionCard)}</div>
-        </Accordion>
+          </div>
+
+          {/* Repository Content */}
+          {isExpanded && <div className="p-4 space-y-3">{extensions.map(renderExtensionCard)}</div>}
+        </div>
       );
     };
 
@@ -451,8 +512,15 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             <p className="text-xs text-text-muted">{t('settings.extensions.available.empty')}</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {Array.from(extensionsByRepository.entries()).map(([repoUrl, extensions]) => renderRepositoryAccordion(repoUrl, extensions))}
+          <div className="space-y-3">
+            {Array.from(extensionsByRepository.entries()).map(([repoUrl, extensions]) => renderRepositorySection(repoUrl, extensions))}
+            {/* Show loading repositories that don't have extensions yet */}
+            {Array.from(loadingRepositories).map((repoUrl) => {
+              if (!extensionsByRepository.has(repoUrl)) {
+                return renderRepositorySection(repoUrl, []);
+              }
+              return null;
+            })}
           </div>
         )}
       </div>
@@ -471,16 +539,6 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       <div className="flex items-center justify-between gap-4">
         <div className="flex gap-1 p-1 bg-bg-primary rounded-lg border border-border-default">
           <button
-            onClick={() => setActiveTab(Tab.Available)}
-            className={clsx(
-              'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
-              activeTab === Tab.Available ? 'bg-bg-tertiary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
-            )}
-          >
-            {t('settings.extensions.tabs.available')}
-            {availableExtensions.length > 0 && <span className="ml-2 text-2xs px-1.5 py-0.5 rounded-full bg-bg-tertiary">{availableExtensions.length}</span>}
-          </button>
-          <button
             onClick={() => setActiveTab(Tab.Installed)}
             className={clsx(
               'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
@@ -491,6 +549,16 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             {filteredInstalledExtensions.length > 0 && (
               <span className="ml-2 text-2xs px-1.5 py-0.5 rounded-full bg-bg-tertiary">{filteredInstalledExtensions.length}</span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab(Tab.Available)}
+            className={clsx(
+              'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
+              activeTab === Tab.Available ? 'bg-bg-tertiary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
+            )}
+          >
+            {t('settings.extensions.tabs.available')}
+            {availableExtensions.length > 0 && <span className="ml-2 text-2xs px-1.5 py-0.5 rounded-full bg-bg-tertiary">{availableExtensions.length}</span>}
           </button>
         </div>
         <div className="flex items-center justify-between w-[200px]">

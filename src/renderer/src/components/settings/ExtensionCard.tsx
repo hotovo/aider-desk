@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
-import { FaCheck, FaChevronDown, FaDownload } from 'react-icons/fa';
+import { FaChevronDown, FaDownload } from 'react-icons/fa';
 import { clsx } from 'clsx';
 
 import type { AvailableExtension, InstalledExtension } from '@common/types';
 
 import { Button } from '@/components/common/Button';
-import { Checkbox } from '@/components/common/Checkbox';
+import { Toggle } from '@/components/common/Toggle';
 import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
 
 // Helper to normalize extension data
@@ -20,8 +20,8 @@ const getExtensionData = (extension: InstalledExtension | AvailableExtension) =>
     description: isLoadedExtension ? extension.metadata.description : extension.description,
     author: isLoadedExtension ? extension.metadata.author : extension.author,
     projectDir: isLoadedExtension ? extension.projectDir : undefined,
-    hasDependencies: isLoadedExtension ? false : extension.hasDependencies,
     readmeContent: extension.readmeContent,
+    iconUrl: isLoadedExtension ? extension.metadata.iconUrl : extension.iconUrl,
   };
 };
 
@@ -68,42 +68,61 @@ export const ExtensionCard = ({ extension, isDisabled = false, isUninstalling = 
   return (
     <div
       className={clsx(
-        'group relative rounded-lg border transition-all duration-200',
-        isInstalled && isDisabled ? 'bg-bg-primary-light-strong border-border-default' : 'bg-bg-secondary border-border-default',
+        'group relative rounded-xl transition-all duration-200',
+        isInstalled
+          ? clsx('bg-bg-secondary border-2 shadow-subtle border-border-default', isDisabled && 'opacity-60')
+          : 'bg-bg-secondary border-2 border-border-default',
       )}
     >
       <div className="p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className={clsx('min-w-0 flex-1', isInstalled && isDisabled ? 'opacity-50' : '')}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-sm font-semibold text-text-primary truncate">{data.name}</h4>
-              <span className="text-2xs px-1.5 py-0.5 rounded bg-bg-tertiary text-text-muted font-medium">v{data.version}</span>
-              {isInstalled && !isDisabled && (
-                <span className="text-2xs px-1.5 py-0.5 rounded bg-success/10 text-success font-medium flex items-center gap-1">
-                  <FaCheck className="w-2 h-2" />
-                  {t('settings.extensions.active')}
-                </span>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex gap-3 flex-1 min-w-0">
+            {/* Icon */}
+            <div
+              className={clsx(
+                'w-12 h-12 rounded-xl flex items-center justify-center text-text-primary font-bold text-lg flex-shrink-0 bg-bg-primary-light-strong overflow-hidden',
+                isDisabled && 'opacity-50',
               )}
-              {data.hasDependencies && (
-                <span className="text-2xs px-1.5 py-0.5 rounded bg-warning/10 text-warning font-medium">{t('settings.extensions.hasDependencies')}</span>
+            >
+              {data.iconUrl ? <img src={data.iconUrl} alt={data.name} className="p-1 w-full h-full object-cover" /> : data.name.charAt(0).toUpperCase()}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h4 className={clsx('text-sm font-semibold truncate', isDisabled ? 'text-text-muted' : 'text-text-primary')}>{data.name}</h4>
+                <span className="text-3xs px-2 py-0.5 rounded bg-bg-tertiary text-text-muted font-medium font-mono">v{data.version}</span>
+                {isInstalled && !isDisabled && (
+                  <span className="text-3xs px-2 py-0.5 rounded bg-success-subtle text-success font-semibold flex items-center gap-1">
+                    ✓ {t('settings.extensions.active')}
+                  </span>
+                )}
+                {isInstalled && isDisabled && (
+                  <span className="text-3xs px-2 py-0.5 rounded bg-bg-tertiary text-text-muted font-semibold">{t('settings.extensions.disabled')}</span>
+                )}
+                {data.projectDir && (
+                  <span className="text-3xs px-2 py-0.5 rounded bg-info-subtle text-info font-semibold">{t('settings.extensions.projectSpecific')}</span>
+                )}
+              </div>
+              {data.description && (
+                <p className={clsx('text-xs mt-1.5 line-clamp-2', isDisabled ? 'text-text-muted' : 'text-text-secondary')}>{data.description}</p>
               )}
-              {data.projectDir && (
-                <span className="text-2xs px-1.5 py-0.5 rounded bg-info/10 text-info font-medium">{t('settings.extensions.projectSpecific')}</span>
+              {data.author && (
+                <p className="text-3xs text-text-muted mt-2">
+                  {t('settings.extensions.by')} {data.author}
+                </p>
               )}
             </div>
-            {data.description && <p className="text-xs text-text-secondary mt-1.5 line-clamp-2">{data.description}</p>}
-            {data.author && (
-              <p className="text-2xs text-text-muted mt-2">
-                {t('settings.extensions.by')} {data.author}
-              </p>
-            )}
           </div>
+
+          {/* Actions */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {isInstalled ? (
               <>
-                <Checkbox checked={!isDisabled} onChange={handleToggleDisabled} label={t('settings.extensions.enabled')} />
+                <Toggle checked={!isDisabled} onChange={handleToggleDisabled} aria-label={t('settings.extensions.enabled')} />
+
                 <Button onClick={handleUninstall} disabled={isUninstalling} variant="outline" size="xs" color="danger">
-                  {t('settings.extensions.uninstall')}
+                  {isUninstalling ? t('settings.extensions.uninstalling') : t('settings.extensions.uninstall')}
                 </Button>
               </>
             ) : (
@@ -120,7 +139,7 @@ export const ExtensionCard = ({ extension, isDisabled = false, isUninstalling = 
       {hasReadme && (
         <>
           {/* Chevron button at bottom center */}
-          <div className="flex justify-center pb-2 -mt-8">
+          <div className="flex justify-center pb-2 -mt-6">
             <button
               onClick={handleToggleExpand}
               className="flex items-center justify-center w-8 h-6 rounded hover:bg-bg-tertiary transition-colors"

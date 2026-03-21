@@ -184,28 +184,36 @@ export class ExtensionManager {
   settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void {
     const oldDisabled = oldSettings.extensions?.disabled || [];
     const newDisabled = newSettings.extensions?.disabled || [];
+    const oldRepositories = oldSettings.extensions?.repositories || [AIDER_DESK_EXTENSIONS_REPO_URL];
+    const newRepositories = newSettings.extensions?.repositories || [AIDER_DESK_EXTENSIONS_REPO_URL];
 
-    // Early exit if no change
-    if (JSON.stringify(oldDisabled.sort()) === JSON.stringify(newDisabled.sort())) {
-      return;
+    // Check for disabled extensions changes
+    const disabledChanged = JSON.stringify(oldDisabled.sort()) !== JSON.stringify(newDisabled.sort());
+
+    if (disabledChanged) {
+      // Find extensions that changed state
+      const newlyDisabled = oldDisabled.filter((name) => !newDisabled.includes(name));
+      const newlyEnabled = newDisabled.filter((name) => !oldDisabled.includes(name));
+      const changedExtensions = [...newlyDisabled, ...newlyEnabled];
+
+      if (changedExtensions.length > 0) {
+        // Check if any changed extensions have UI components
+        const allExtensions = this.registry.getExtensions();
+        const hasUIComponentsChange = allExtensions.some((ext) => changedExtensions.includes(ext.metadata.name) && ext.instance.getUIComponents !== undefined);
+
+        if (hasUIComponentsChange) {
+          logger.info('[Extensions] Extensions with UI components changed, triggering UI refresh');
+          this.eventManager.sendExtensionUIRefresh({ reloadComponents: true });
+        }
+      }
     }
 
-    // Find extensions that changed state
-    const newlyDisabled = oldDisabled.filter((name) => !newDisabled.includes(name));
-    const newlyEnabled = newDisabled.filter((name) => !oldDisabled.includes(name));
-    const changedExtensions = [...newlyDisabled, ...newlyEnabled];
+    // Check for repository changes
+    const repositoriesChanged = JSON.stringify(oldRepositories.sort()) !== JSON.stringify(newRepositories.sort());
 
-    if (changedExtensions.length === 0) {
-      return;
-    }
-
-    // Check if any changed extensions have UI components
-    const allExtensions = this.registry.getExtensions();
-    const hasUIComponentsChange = allExtensions.some((ext) => changedExtensions.includes(ext.metadata.name) && ext.instance.getUIComponents !== undefined);
-
-    if (hasUIComponentsChange) {
-      logger.info('[Extensions] Extensions with UI components changed, triggering UI refresh');
-      this.eventManager.sendExtensionUIRefresh({ reloadComponents: true });
+    if (repositoriesChanged) {
+      logger.info('[Extensions] Repository list changed, refreshing extension cache');
+      void this.fetcher.getAvailableExtensions(newRepositories, true);
     }
   }
 
@@ -1196,9 +1204,26 @@ export class ExtensionManager {
    * Fetch available extensions from a repository URL
    * @param repositories - Array of repository URLs
    * @param forceRefresh - Force refresh cache and refetch
+   * @param fetchOnly - Bypass all caching (promise and repo cache) and fetch directly via git clone
    * @returns Array of available extensions with metadata
    */
-  async getAvailableExtensions(repositories: string[], forceRefresh = false): Promise<AvailableExtension[]> {
+  async getAvailableExtensions(repositories: string[], forceRefresh = false, fetchOnly = false): Promise<AvailableExtension[]> {
+    // If fetchOnly is true, bypass all caching and fetch directly via git clone
+    if (fetchOnly) {
+      const allExtensions: AvailableExtension[] = [];
+
+      for (const repoUrl of repositories) {
+        try {
+          const extensions = await this.fetcher.fetchExtensionsViaGitClone(repoUrl);
+          allExtensions.push(...extensions);
+        } catch (error) {
+          logger.error(`[ExtensionManager] Failed to fetch extensions from ${repoUrl}:`, error);
+        }
+      }
+
+      return allExtensions;
+    }
+
     return this.fetcher.getAvailableExtensions(repositories, forceRefresh);
   }
 

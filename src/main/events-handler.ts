@@ -1098,8 +1098,8 @@ export class EventsHandler {
     }));
   }
 
-  async getAvailableExtensions(repositories: string[], forceRefresh?: boolean) {
-    return await this.extensionManager.getAvailableExtensions(repositories, forceRefresh);
+  async getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) {
+    return await this.extensionManager.getAvailableExtensions(repositories, forceRefresh, fetchOnly);
   }
 
   async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string) {

@@ -476,16 +476,16 @@
       "by": "by",
       "enabled": "Enabled",
       "active": "Active",
+      "disabled": "Disabled",
       "projectSpecific": "Project",
       "hasDependencies": "Has dependencies",
       "install": "Install",
       "installing": "Installing...",
       "uninstall": "Uninstall",
+      "uninstalling": "Uninstalling...",
       "success": {
         "install": "Successfully installed {{name}}",
-        "uninstall": "Successfully uninstalled {{name}}",
-        "addRepository": "Repository added successfully",
-        "removeRepository": "Repository removed successfully"
+        "uninstall": "Successfully uninstalled {{name}}"
       },
       "errors": {
         "loadInstalled": "Failed to load installed extensions",

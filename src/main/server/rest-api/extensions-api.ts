@@ -12,6 +12,7 @@ const GetInstalledExtensionsSchema = z.object({
 const GetAvailableExtensionsSchema = z.object({
   repositories: z.string().optional(), // Comma-separated URLs
   forceRefresh: z.coerce.boolean().optional(),
+  fetchOnly: z.coerce.boolean().optional(),
 });
 
 const InstallExtensionSchema = z.object({
@@ -56,7 +57,7 @@ export class ExtensionsApi extends BaseApi {
         }
 
         const repositories = parsed.repositories ? parsed.repositories.split(',') : [];
-        const extensions = await this.eventsHandler.getAvailableExtensions(repositories, parsed.forceRefresh);
+        const extensions = await this.eventsHandler.getAvailableExtensions(repositories, parsed.forceRefresh, parsed.fetchOnly);
         res.status(200).json(extensions);
       }),
     );

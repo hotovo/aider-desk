@@ -50,7 +50,7 @@ export class ExtensionFetcher {
     return allExtensions;
   }
 
-  private async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]> {
+  async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]> {
     const cached = this.cache.get(repoUrl);
     const now = Date.now();
 
@@ -78,7 +78,7 @@ export class ExtensionFetcher {
     }
   }
 
-  private async fetchExtensionsViaGitClone(repoUrl: string): Promise<AvailableExtension[]> {
+  async fetchExtensionsViaGitClone(repoUrl: string): Promise<AvailableExtension[]> {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ext-repo-'));
 
     try {
@@ -244,7 +244,7 @@ export class ExtensionFetcher {
     }
   }
 
-  private async extractMetadataFromLocalFile(filePath: string): Promise<Omit<AvailableExtension, 'id' | 'type' | 'repositoryUrl'> | null> {
+  private async extractMetadataFromLocalFile(filePath: string): Promise<ExtensionMetadata | null> {
     try {
       const metadata = this.getStaticMetadata(filePath);
 
@@ -253,13 +253,7 @@ export class ExtensionFetcher {
         return null;
       }
 
-      return {
-        name: metadata.name,
-        version: metadata.version,
-        description: metadata.description,
-        author: metadata.author,
-        capabilities: metadata.capabilities,
-      };
+      return metadata;
     } catch (error) {
       logger.error(`[ExtensionFetcher] Failed to extract metadata from ${filePath}:`, error);
       return null;

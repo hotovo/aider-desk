@@ -474,16 +474,16 @@
       "by": "作者",
       "enabled": "启用",
       "active": "激活",
+      "disabled": "已禁用",
       "projectSpecific": "项目",
       "hasDependencies": "有依赖",
       "install": "安装",
       "installing": "安装中...",
       "uninstall": "卸载",
+      "uninstalling": "卸载中...",
       "success": {
         "install": "成功安装 {{name}}",
-        "uninstall": "成功卸载 {{name}}",
-        "addRepository": "仓库添加成功",
-        "removeRepository": "仓库移除成功"
+        "uninstall": "成功卸载 {{name}}"
       },
       "errors": {
         "loadInstalled": "加载已安装扩展失败",

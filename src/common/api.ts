@@ -133,7 +133,7 @@ export interface ApplicationAPI {
 
   // Extension operations
   getInstalledExtensions: (projectDir?: string) => Promise<InstalledExtension[]>;
-  getAvailableExtensions: (repositories: string[], forceRefresh?: boolean) => Promise<AvailableExtension[]>;
+  getAvailableExtensions: (repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) => Promise<AvailableExtension[]>;
   installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
   uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
   getExtensionUIComponents: (placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;

@@ -58,6 +58,8 @@ export interface ExtensionMetadata {
   author?: string;
   /** Optional list of extension capabilities (e.g., ["tools", "ui-elements"]) */
   capabilities?: string[];
+  /** Optional URL to an icon image for the extension */
+  iconUrl?: string;
 }
 
 /**

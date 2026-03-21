@@ -1135,10 +1135,11 @@ export class BrowserApi implements ApplicationAPI {
     return this.get('/extensions', { projectDir });
   }
 
-  getAvailableExtensions(repositories: string[], forceRefresh?: boolean): Promise<AvailableExtension[]> {
+  getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean): Promise<AvailableExtension[]> {
     return this.get('/extensions/available', {
       repositories: repositories.join(','),
       forceRefresh,
+      fetchOnly,
     });
   }
 

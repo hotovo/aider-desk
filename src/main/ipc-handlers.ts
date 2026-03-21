@@ -271,8 +271,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getInstalledExtensions(projectDir);
   });
 
-  ipcMain.handle('get-available-extensions', async (_, repositories: string[], forceRefresh?: boolean) => {
-    return await eventsHandler.getAvailableExtensions(repositories, forceRefresh);
+  ipcMain.handle('get-available-extensions', async (_, repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) => {
+    return await eventsHandler.getAvailableExtensions(repositories, forceRefresh, fetchOnly);
   });
 
   ipcMain.handle('install-extension', async (_, extensionId: string, repositoryUrl: string, projectDir?: string) => {
