@@ -119,7 +119,7 @@ interface TaskContext {
   runSubagent(agentProfile: AgentProfile, prompt: string): Promise<void>;
   runCommand(command: string): Promise<void>;
   interruptResponse(): Promise<void>;
-  generateText(agentProfile: AgentProfile, systemPrompt: string, prompt: string): Promise<string | undefined>;
+  generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>;
 
   // User Interaction
   askQuestion(text: string, options?: QuestionOptions): Promise<string>;

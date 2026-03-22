@@ -196,8 +196,8 @@ export class TaskContextImpl implements TaskContext {
     await this.task.interruptResponse();
   }
 
-  async generateText(agentProfile: AgentProfile, systemPrompt: string, prompt: string): Promise<string | undefined> {
-    return this.task.generateText(agentProfile, prompt, systemPrompt);
+  async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined> {
+    return this.task.generateText(modelId, systemPrompt, prompt);
   }
 
   // User Interaction

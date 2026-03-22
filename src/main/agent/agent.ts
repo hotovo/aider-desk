@@ -45,7 +45,7 @@ import {
   type TypedToolResult,
   wrapLanguageModel,
 } from 'ai';
-import { delay, extractServerNameToolName } from '@common/utils';
+import { delay, extractProviderModel, extractServerNameToolName } from '@common/utils';
 import { LlmProviderName } from '@common/agent';
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
@@ -1641,7 +1641,7 @@ export class Agent {
   }
 
   async generateText(
-    agentProfile: AgentProfile,
+    modelId: string,
     systemPrompt: string,
     prompt: string,
     projectDir: string,
@@ -1649,16 +1649,17 @@ export class Agent {
     abortable = true,
     abortSignal?: AbortSignal,
   ): Promise<string | undefined> {
+    const [providerId, modelName] = extractProviderModel(modelId);
     const providers = this.store.getProviders();
-    const provider = providers.find((p) => p.id === agentProfile.provider);
+    const provider = providers.find((p) => p.id === providerId);
     if (!provider) {
-      throw new Error(`Provider ${agentProfile.provider} not found`);
+      throw new Error(`Provider ${providerId} not found`);
     }
 
     const settings = this.store.getSettings();
-    const model = await this.modelManager.createLlm(provider, agentProfile.model, settings, projectDir, undefined, systemPrompt, undefined);
-    const providerOptions = this.modelManager.getProviderOptions(provider, agentProfile.model);
-    const providerParameters = this.modelManager.getProviderParameters(provider, agentProfile.model);
+    const model = await this.modelManager.createLlm(provider, modelName, settings, projectDir, undefined, systemPrompt, undefined);
+    const providerOptions = this.modelManager.getProviderOptions(provider, modelName);
+    const providerParameters = this.modelManager.getProviderParameters(provider, modelName);
 
     const controllerId = uuidv4();
     const newController = abortable ? new AbortController() : null;
@@ -1670,7 +1671,7 @@ export class Agent {
     logger.info('Generating text:', {
       providerId: provider.id,
       providerName: provider.provider.name,
-      modelName: agentProfile.model,
+      modelName,
       systemPrompt: systemPrompt.substring(0, 100),
       prompt: prompt.substring(0, 100),
     });
