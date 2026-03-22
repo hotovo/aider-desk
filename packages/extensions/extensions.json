@@ -185,7 +185,7 @@
       "folder": "multi-model-run",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["ui"]
+      "capabilities": ["ui", "workflows"]
     },
     {
       "id": "providers-quota-extension",

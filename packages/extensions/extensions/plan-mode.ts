@@ -41,6 +41,7 @@ export default class PlanModeExtension implements Extension {
     version: '1.1.0',
     description: 'Adds a Plan mode that enforces planning and analysis before making code changes',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/plan-mode.png',
     capabilities: ['modes'],
   };
 

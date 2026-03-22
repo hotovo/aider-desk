@@ -113,6 +113,7 @@ export default class RedactSecretsExtension implements Extension {
     version: '1.0.0',
     description: 'Redacts secret values from .env* files in file read results',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/redact-secrets/icon.png',
     capabilities: ['security'],
   };
 

@@ -26,6 +26,7 @@ export default class WakaTimeExtension implements Extension {
     version: '1.0.0',
     description: 'Tracks coding activity by sending heartbeats to WakaTime',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/wakatime.png',
     capabilities: ['tracking'],
   };
 

@@ -29,7 +29,8 @@ export default class MultiModelRunExtension implements Extension {
     version: '1.0.0',
     description: 'Run the same prompt across multiple models simultaneously',
     author: 'AiderDesk',
-    capabilities: ['ui'],
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/multi-model-run/icon.png',
+    capabilities: ['ui', 'workflows'],
   };
 
   private modelSelectionsPerTask: Map<string, ModelSelection[]> = new Map();

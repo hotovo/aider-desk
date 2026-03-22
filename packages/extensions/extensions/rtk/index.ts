@@ -171,6 +171,7 @@ export default class RTKExtension implements Extension {
     version: '1.0.0',
     description: 'Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90%',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/rtk/icon.png',
     capabilities: ['optimization', 'commands'],
   };
 
