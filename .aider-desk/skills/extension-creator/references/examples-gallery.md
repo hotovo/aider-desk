@@ -39,7 +39,7 @@ export const metadata = {
   name: 'Theme Extension',
   version: '1.0.0',
   description: 'Adds /theme command',
-  author: 'AiderDesk',
+  author: 'my_git_name',
   capabilities: ['commands']
 };
 
@@ -76,7 +76,7 @@ export const metadata = {
   name: 'Plan Mode',
   version: '1.0.0',
   description: 'Adds Plan mode',
-  author: 'AiderDesk',
+  author: 'my_git_name',
   capabilities: ['modes', 'events']
 };
 
@@ -114,7 +114,7 @@ export const metadata = {
   name: 'Permission Gate',
   version: '1.0.0',
   description: 'Prompts for dangerous commands',
-  author: 'AiderDesk',
+  author: 'my_git_name',
   capabilities: ['events']
 };
 
@@ -170,12 +170,12 @@ sandbox/
 // tps-counter/index.ts - Display tokens per second metrics
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import type { 
-  Extension, 
-  ExtensionContext, 
+import type {
+  Extension,
+  ExtensionContext,
   UIComponentDefinition,
   ResponseChunkEvent,
-  ResponseCompletedEvent 
+  ResponseCompletedEvent
 } from '@aiderdesk/extensions';
 
 export default class TPSCounterExtension implements Extension {
@@ -183,7 +183,7 @@ export default class TPSCounterExtension implements Extension {
     name: 'TPS Counter',
     version: '1.0.0',
     description: 'Displays tokens per second for responses',
-    author: 'AiderDesk',
+    author: 'my_git_name',
     capabilities: ['metrics', 'ui'],
   };
 
@@ -255,7 +255,7 @@ export default class TPSCounterExtension implements Extension {
 ```jsx
 ({ data }) => {
   if (!data || data.messageCount === 0) return null;
-  
+
   return (
     <div className="flex items-center gap-1 text-2xs mt-1 w-full justify-between">
       <span>Avg. tokens/s:</span>
@@ -269,12 +269,12 @@ export default class TPSCounterExtension implements Extension {
 ```jsx
 ({ data, message }) => {
   if (!data || !message?.id) return null;
-  
+
   const messageTps = data[message.id];
   if (!messageTps) return null;
-  
+
   return (
-    <span 
+    <span
       className="text-2xs mt-[4px] text-text-muted"
       title={`${messageTps.tokens} tokens in ${messageTps.duration.toFixed(2)}s`}
     >
@@ -290,11 +290,11 @@ export default class TPSCounterExtension implements Extension {
 // multi-model-run/index.ts - Run prompts across multiple models
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import type { 
-  Extension, 
-  ExtensionContext, 
+import type {
+  Extension,
+  ExtensionContext,
   UIComponentDefinition,
-  PromptStartedEvent 
+  PromptStartedEvent
 } from '@aiderdesk/extensions';
 
 interface MultiModelState {
@@ -307,7 +307,7 @@ export default class MultiModelRunExtension implements Extension {
     name: 'Multi-Model Run',
     version: '1.0.0',
     description: 'Run prompts across multiple models',
-    author: 'AiderDesk',
+    author: 'my_git_name',
     capabilities: ['ui', 'task-manipulation'],
   };
 
@@ -338,19 +338,19 @@ export default class MultiModelRunExtension implements Extension {
     if (componentId !== 'multi-model-selector') return;
 
     if (action === 'add-model') {
-      this.state.models.push({ 
-        index: this.state.models.length, 
-        modelId: '' 
+      this.state.models.push({
+        index: this.state.models.length,
+        modelId: ''
       });
       context.triggerUIDataRefresh('multi-model-selector');
     }
-    
+
     if (action === 'remove-model') {
       const index = args[0] as number;
       this.state.models = this.state.models.filter(m => m.index !== index);
       context.triggerUIDataRefresh('multi-model-selector');
     }
-    
+
     if (action === 'update-model') {
       const [index, modelId] = args as [number, string];
       const model = this.state.models.find(m => m.index === index);
@@ -359,7 +359,7 @@ export default class MultiModelRunExtension implements Extension {
         context.triggerUIDataRefresh('multi-model-selector');
       }
     }
-    
+
     if (action === 'set-use-worktrees') {
       this.state.useWorktrees = args[0] as boolean;
       context.triggerUIDataRefresh('multi-model-selector');
@@ -375,7 +375,7 @@ export default class MultiModelRunExtension implements Extension {
     // Create duplicate tasks for each additional model
     const projectContext = context.getProjectContext();
     const taskContext = context.getTaskContext();
-    
+
     for (const model of selectedModels.slice(1)) {
       await projectContext.createTask({
         name: `${taskContext?.data.name} (${model.modelId})`,
@@ -392,27 +392,27 @@ export default class MultiModelRunExtension implements Extension {
 ({ data, models, providers, ui, executeExtensionAction }) => {
   const { useCallback } = React;
   const { Button, ModelSelector, Checkbox } = ui;
-  
+
   const modelSelections = data?.models ?? [];
   const useWorktrees = data?.useWorktrees ?? true;
-  
+
   const handleAddModel = useCallback(async () => {
     await executeExtensionAction('add-model');
   }, [executeExtensionAction]);
-  
+
   const handleRemoveModel = useCallback((index) => async () => {
     await executeExtensionAction('remove-model', index);
   }, [executeExtensionAction]);
-  
+
   const handleModelChange = useCallback((index) => async (model) => {
     const modelId = model ? `${model.providerId}/${model.id}` : '';
     await executeExtensionAction('update-model', index, modelId);
   }, [executeExtensionAction]);
-  
+
   const handleWorktreesChange = useCallback(async (checked) => {
     await executeExtensionAction('set-use-worktrees', checked);
   }, [executeExtensionAction]);
-  
+
   return (
     <div className="flex flex-col gap-2 pb-2 w-full">
       <div className="flex gap-4 w-full justify-between items-center">
@@ -425,7 +425,7 @@ export default class MultiModelRunExtension implements Extension {
                 selectedModelId={selection.modelId}
                 onChange={handleModelChange(selection.index)}
               />
-              <button 
+              <button
                 onClick={handleRemoveModel(selection.index)}
                 className="text-text-muted hover:text-text-primary"
               >
@@ -441,9 +441,9 @@ export default class MultiModelRunExtension implements Extension {
             onChange={handleWorktreesChange}
             size="xs"
           />
-          <Button 
-            variant="outline" 
-            size="xs" 
+          <Button
+            variant="outline"
+            size="xs"
             onClick={handleAddModel}
           >
             + Add model

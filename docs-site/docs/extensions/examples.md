@@ -9,6 +9,7 @@ This page provides an overview of all available extension examples in the AiderD
 | [wakatime.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/wakatime.ts) | Tracks coding activity by sending heartbeats to WakaTime | `tracking` | Single file |
 | [pirate.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/pirate.ts) | Adds a Pirate agent that speaks like a swashbuckling sea dog | `agents`, `example` | Single file |
 | [generate-tests.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/generate-tests.ts) | Adds `/generate-tests` command to generate unit tests for files | `commands` | Single file |
+| [questions](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/questions/) | Extracts questions from messages and displays as interactive questionnaire | `commands`, `ui` | Folder |
 | [theme.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/theme.ts) | Adds `/theme` command to switch AiderDesk themes | `commands` | Single file |
 | [plan-mode.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/plan-mode.ts) | Adds a Plan mode that enforces planning before coding | `modes` | Single file |
 | [protected-paths.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/protected-paths.ts) | Blocks file operations on protected paths (`.env`, `.git/`, `node_modules/`) | `security` | Single file |

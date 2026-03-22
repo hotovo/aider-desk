@@ -65,7 +65,7 @@ export default class UIPlacementDemoExtension implements Extension {
     name: 'UI Placement Demo',
     version: '1.0.0',
     description: 'Demonstrates all available UI component placement locations in AiderDesk for extension development',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['ui', 'example'],
   };
 

@@ -210,7 +210,7 @@ export default class ProvidersQuotaExtension implements Extension {
     name: 'Providers Quota',
     version: '1.1.0',
     description: 'Displays API quota information for Synthetic and Z.AI providers in the task status bar',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['ui'],
   };
 

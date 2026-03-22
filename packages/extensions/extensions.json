@@ -25,6 +25,15 @@
       "capabilities": ["commands"]
     },
     {
+      "id": "questions",
+      "name": "Questions",
+      "description": "Extract questions from messages and display as interactive questionnaire",
+      "folder": "questions",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["commands", "ui"]
+    },
+    {
       "id": "theme",
       "name": "Theme Switcher",
       "description": "Adds /theme command to switch AiderDesk themes",

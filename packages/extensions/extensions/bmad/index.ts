@@ -119,7 +119,7 @@ export default class BmadExtension implements Extension {
     name: 'BMAD Method',
     version: '1.0.0',
     description: 'Provides BMAD mode with structured workflows for planning, designing, and implementing software projects',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/bmad/icon.png',
     capabilities: ['modes', 'ui', 'workflows'],
   };

@@ -29,7 +29,7 @@ export default class TPSCounterExtension implements Extension {
     name: 'TPS Counter',
     version: '1.0.0',
     description: 'Displays tokens per second for agent responses',
-    author: 'AiderDesk',
+    author: 'wladimiiir',
     capabilities: ['metrics'],
   };
 
