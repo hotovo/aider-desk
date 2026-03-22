@@ -352,6 +352,7 @@ src/
           Table.tsx
           TaskStateChip.tsx
           TextArea.tsx
+          Toggle.tsx
           TriStateCheckbox.tsx
           VerticalDotsMenu.tsx
           VirtualTable.tsx
@@ -1928,16 +1929,16 @@ File: src/common/locales/en.json
       "by": "by",
       "enabled": "Enabled",
       "active": "Active",
+      "disabled": "Disabled",
       "projectSpecific": "Project",
       "hasDependencies": "Has dependencies",
       "install": "Install",
       "installing": "Installing...",
       "uninstall": "Uninstall",
+      "uninstalling": "Uninstalling...",
       "success": {
         "install": "Successfully installed {{name}}",
-        "uninstall": "Successfully uninstalled {{name}}",
-        "addRepository": "Repository added successfully",
-        "removeRepository": "Repository removed successfully"
+        "uninstall": "Successfully uninstalled {{name}}"
       },
       "errors": {
         "loadInstalled": "Failed to load installed extensions",
@@ -2035,7 +2036,16 @@ File: src/common/locales/en.json
       "noSymlinkFolders": "No symlink folders configured",
       "symlinkFolderPlaceholder": "Folder name (e.g. node_modules)",
       "addSymlinkFolder": "Add",
-      "removeSymlinkFolder": "Remove folder"
+      "removeSymlinkFolder": "Remove folder",
+      "auxiliaryModelsTitle": "Auxiliary Models",
+      "auxiliaryModelsDescription": "Configure models for background AI operations. Set to 'Inherit' to use the main agent model.",
+      "taskNameModel": "Task Name Model",
+      "taskNameModelTooltip": "Model used for auto-generating task names from prompts",
+      "taskStateModel": "Task State Model",
+      "taskStateModelTooltip": "Model used for determining task state (Ready for Review, More Info Needed, etc.)",
+      "commitMessageModel": "Commit Message",
+      "commitMessageModelTooltip": "Model used for generating commit messages",
+      "inheritModel": "Inherit"
     },
     "language": "Language",
     "notifications": {
@@ -3763,16 +3773,16 @@ File: src/common/locales/zh.json
       "by": "作者",
       "enabled": "启用",
       "active": "激活",
+      "disabled": "已禁用",
       "projectSpecific": "项目",
       "hasDependencies": "有依赖",
       "install": "安装",
       "installing": "安装中...",
       "uninstall": "卸载",
+      "uninstalling": "卸载中...",
       "success": {
         "install": "成功安装 {{name}}",
-        "uninstall": "成功卸载 {{name}}",
-        "addRepository": "仓库添加成功",
-        "removeRepository": "仓库移除成功"
+        "uninstall": "成功卸载 {{name}}"
       },
       "errors": {
         "loadInstalled": "加载已安装扩展失败",
@@ -3870,7 +3880,16 @@ File: src/common/locales/zh.json
       "noSymlinkFolders": "未配置符号链接文件夹",
       "symlinkFolderPlaceholder": "文件夹名称（例如 node_modules）",
       "addSymlinkFolder": "添加",
-      "removeSymlinkFolder": "移除文件夹"
+      "removeSymlinkFolder": "移除文件夹",
+      "auxiliaryModelsTitle": "辅助模型",
+      "auxiliaryModelsDescription": "配置后台 AI 操作的模型。设置为 '继承' 以使用主代理模型。",
+      "taskNameModel": "任务名称模型",
+      "taskNameModelTooltip": "用于从提示自动生成任务名称的模型",
+      "taskStateModel": "任务状态模型",
+      "taskStateModelTooltip": "用于确定任务状态（准备审查、需要更多信息等）的模型",
+      "commitMessageModel": "提交消息",
+      "commitMessageModelTooltip": "用于生成提交消息的模型",
+      "inheritModel": "继承"
     },
     "language": "语言",
     "notifications": {
@@ -5730,6 +5749,9 @@ export interface TaskSettings {
   worktreeSymlinkFolders: string[];
   contextCompactingThreshold: number;
   contextCompactionType: ContextCompactionType;
+  taskNameModel?: string | null;
+  taskStateModel?: string | null;
+  commitMessageModel?: string | null;
 }
 ⋮----
 export interface MemoryConfig {
@@ -6111,6 +6133,7 @@ export interface InstalledExtension {
     description?: string;
     author?: string;
     capabilities?: string[];
+    iconUrl?: string;
   };
   filePath: string;
   initialized: boolean;
@@ -6125,6 +6148,7 @@ export interface AvailableExtension {
   version: string;
   author?: string;
   capabilities?: string[];
+  iconUrl?: string;
   type: 'single' | 'folder';
   file?: string;
   folder?: string;
@@ -6920,7 +6944,7 @@ export interface ApplicationAPI {
 
   // Extension operations
   getInstalledExtensions: (projectDir?: string) => Promise<InstalledExtension[]>;
-  getAvailableExtensions: (repositories: string[], forceRefresh?: boolean) => Promise<AvailableExtension[]>;
+  getAvailableExtensions: (repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) => Promise<AvailableExtension[]>;
   installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
   uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
   getExtensionUIComponents: (placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
@@ -7169,6 +7193,8 @@ export interface ExtensionMetadata {
   author?: string;
   /** Optional list of extension capabilities (e.g., ["tools", "ui-elements"]) */
   capabilities?: string[];
+  /** Optional URL to an icon image for the extension */
+  iconUrl?: string;
 }
 ⋮----
 /** Extension name (displayed in UI) */
@@ -7180,6 +7206,8 @@ export interface ExtensionMetadata {
 /** Author name or organization */
 ⋮----
 /** Optional list of extension capabilities (e.g., ["tools", "ui-elements"]) */
+⋮----
+/** Optional URL to an icon image for the extension */
 ⋮----
 /**
  * Result returned by tool execution
@@ -13697,9 +13725,9 @@ async getAvailableExtensions(repositories: string[], forceRefresh = false): Prom
 ⋮----
 private async getAvailableExtensionsInternal(repositories: string[], forceRefresh: boolean): Promise<AvailableExtension[]>
 ⋮----
-private async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]>
+async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]>
 ⋮----
-private async fetchExtensionsViaGitClone(repoUrl: string): Promise<AvailableExtension[]>
+async fetchExtensionsViaGitClone(repoUrl: string): Promise<AvailableExtension[]>
 ⋮----
 private getCloneUrl(webUrl: string): string | null
 ⋮----
@@ -13715,7 +13743,7 @@ private async scanForExtensions(extensionsPath: string, repoUrl: string): Promis
 ⋮----
 private async fileExists(filePath: string): Promise<boolean>
 ⋮----
-private async extractMetadataFromLocalFile(filePath: string): Promise<Omit<AvailableExtension, 'id' | 'type' | 'repositoryUrl'> | null>
+private async extractMetadataFromLocalFile(filePath: string): Promise<ExtensionMetadata | null>
 ⋮----
 private getStaticMetadata(filePath: string): ExtensionMetadata | null
 ⋮----
@@ -13953,11 +13981,13 @@ private filterEnabledExtensions(extensions: LoadedExtension[]): LoadedExtension[
    */
 settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void
 ⋮----
-// Early exit if no change
+// Check for disabled extensions changes
 ⋮----
 // Find extensions that changed state
 ⋮----
 // Check if any changed extensions have UI components
+⋮----
+// Check for repository changes
 ⋮----
 addListener(listener: ExtensionsChangeListener): void
 ⋮----
@@ -14077,9 +14107,12 @@ async executeCommand(commandName: string, args: string[], project: Project, task
    * Fetch available extensions from a repository URL
    * @param repositories - Array of repository URLs
    * @param forceRefresh - Force refresh cache and refetch
+   * @param fetchOnly - Bypass all caching (promise and repo cache) and fetch directly via git clone
    * @returns Array of available extensions with metadata
    */
-async getAvailableExtensions(repositories: string[], forceRefresh = false): Promise<AvailableExtension[]>
+async getAvailableExtensions(repositories: string[], forceRefresh = false, fetchOnly = false): Promise<AvailableExtension[]>
+⋮----
+// If fetchOnly is true, bypass all caching and fetch directly via git clone
 ⋮----
 /**
    * Install an extension from a repository
@@ -18679,6 +18712,14 @@ public async getTaskAgentProfile(): Promise<AgentProfile | null>
 ⋮----
 // Create a temporary profile with task-level overrides
 ⋮----
+private getAuxiliaryAgentProfile(baseProfile: AgentProfile, auxiliaryModelId: string | null | undefined): AgentProfile
+⋮----
+// If auxiliary model is not set, return base profile unchanged
+⋮----
+// Parse model ID to extract provider and model
+⋮----
+// Return new AgentProfile with modified provider and model
+⋮----
 private async loadTaskData()
 ⋮----
 // make sure we always have the most recent project baseDir, in case the task was migrated from another path
@@ -21112,7 +21153,7 @@ async resetBmadWorkflow(projectDir: string): Promise<
 ⋮----
 getInstalledExtensions(projectDir?: string): InstalledExtension[]
 ⋮----
-async getAvailableExtensions(repositories: string[], forceRefresh?: boolean)
+async getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean)
 ⋮----
 async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string)
 ⋮----
@@ -22259,7 +22300,7 @@ addBmadStatusChangedListener(baseDir: string, callback: (status: BmadStatus) => 
 ⋮----
 getInstalledExtensions(projectDir?: string): Promise<InstalledExtension[]>
 ⋮----
-getAvailableExtensions(repositories: string[], forceRefresh?: boolean): Promise<AvailableExtension[]>
+getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean): Promise<AvailableExtension[]>
 ⋮----
 installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean>
 ⋮----
@@ -23618,9 +23659,11 @@ import { useSettings } from '@/contexts/SettingsContext';
 ⋮----
 type Props = {
   className?: string;
-  selectedModelId?: string;
-  onChange: (model: Model) => void;
+  selectedModelId?: string | null;
+  onChange: (model: Model | null) => void;
   popupPlacement?: 'top' | 'bottom';
+  labelOnNull?: string;
+  skipPreferredModelsUpdate?: boolean;
 };
 
 ================
@@ -23859,6 +23902,26 @@ export type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
 };
 ⋮----
 export const TextArea = (
+
+================
+File: src/renderer/src/components/common/Toggle.tsx
+================
+import { clsx } from 'clsx';
+⋮----
+type Props = {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+  'aria-label'?: string;
+};
+⋮----
+export const Toggle = (
+⋮----
+const handleChange = () =>
+⋮----
+<label className=
+⋮----
+className=
 
 ================
 File: src/renderer/src/components/common/TriStateCheckbox.tsx
@@ -29503,7 +29566,7 @@ const handleRemovePreferredModel = (modelId: string) =>
 ⋮----
 const handleAddPreferredModel = (modelId: string) =>
 ⋮----
-const handleModelChange = (model: Model) =>
+const handleModelChange = (model: Model | null) =>
 ⋮----
 // Validate provider
 ⋮----
@@ -29829,13 +29892,13 @@ File: src/renderer/src/components/settings/ExtensionCard.tsx
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
-import { FaCheck, FaChevronDown, FaDownload } from 'react-icons/fa';
+import { FaChevronDown, FaDownload } from 'react-icons/fa';
 import { clsx } from 'clsx';
 ⋮----
 import type { AvailableExtension, InstalledExtension } from '@common/types';
 ⋮----
 import { Button } from '@/components/common/Button';
-import { Checkbox } from '@/components/common/Checkbox';
+import { Toggle } from '@/components/common/Toggle';
 import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
 ⋮----
 // Helper to normalize extension data
@@ -29861,11 +29924,17 @@ const handleInstall = () =>
 ⋮----
 className=
 ⋮----
-<div className=
+{/* Icon */}
 ⋮----
-<Checkbox checked=
+{/* Info */}
 ⋮----
-
+<h4 className=
+⋮----
+<p className=
+⋮----
+{/* Actions */}
+⋮----
+<Toggle checked=
 ⋮----
 {/* Expandable README section */}
 ⋮----
@@ -29902,7 +29971,7 @@ File: src/renderer/src/components/settings/ExtensionsSettings.tsx
 import { AvailableExtension, InstalledExtension, ProjectData, SettingsData } from '@common/types';
 import { Activity, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
+import { FaChevronDown, FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 import { clsx } from 'clsx';
 ⋮----
@@ -29911,10 +29980,24 @@ import { getPathBasename } from '@/utils/path-utils';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { Input } from '@/components/common/Input';
-import { Accordion } from '@/components/common/Accordion';
 import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { ExtensionCard } from '@/components/settings/ExtensionCard';
+⋮----
+// Helper to format repository URL for display
+const formatRepositoryName = (url: string): string =>
+⋮----
+// Check if it's a GitHub URL
+⋮----
+// Extract pathname and remove leading/trailing slashes
+⋮----
+// Remove .git suffix if present
+⋮----
+// Extract only organization/repository (first two segments)
+⋮----
+// For non-GitHub URLs, return the full URL
+⋮----
+// If URL parsing fails, return original
 ⋮----
 enum Tab {
   Available = 'available',
@@ -29928,6 +30011,8 @@ type Props = {
   selectedProjectContext?: 'global' | string;
 };
 ⋮----
+// Track repositories that are currently being loaded
+⋮----
 // Context state for project-level extensions
 ⋮----
 // Sync internal profileContext with selectedProjectContext prop
@@ -29940,11 +30025,13 @@ const getContextDisplayName = () =>
 ⋮----
 const loadInstalledExtensions = async () =>
 ⋮----
-const loadAvailableExtensions = async (forceRefresh = false) =>
+const loadAvailableExtensions = async (forceRefresh = false, repositories?: string[]) =>
 ⋮----
 const handleRefresh = async () =>
 ⋮----
 // eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+// Load available extensions on initial mount only
 ⋮----
 // eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
@@ -29954,9 +30041,17 @@ const handleUninstall = async (extensionFilePath: string) =>
 ⋮----
 const handleInstall = async (extension: AvailableExtension) =>
 ⋮----
-const handleAddRepository = () =>
+const handleAddRepository = async () =>
+⋮----
+// Update settings first
+⋮----
+// Fetch extensions from the new repository (fetchOnly=true to bypass all caching)
+⋮----
+// Add new extensions to existing list
 ⋮----
 const handleRemoveRepository = (repositoryUrl: string) =>
+⋮----
+// Remove extensions from the removed repository from UI
 ⋮----
 // Filter by context: in Global context, hide project-level extensions
 // In project context, show only extensions for that specific project
@@ -29983,17 +30078,21 @@ isUninstalling=
 ⋮----
 // If not installed, render with available extension (AvailableExtension)
 ⋮----
-// Render repository accordion
+// Render repository section
+⋮----
+{/* Repository Header */}
+⋮----
+className=
 ⋮----
 onClick=
+⋮----
+{/* Show loading repositories that don't have extensions yet */}
 ⋮----
 {/* Tab Navigation */}
 ⋮----
 {/* Search and Filters */}
 ⋮----
 setSelectedCapabilities((prev) =>
-⋮----
-className=
 
 ================
 File: src/renderer/src/components/settings/GeneralSettings.tsx
@@ -30338,9 +30437,10 @@ const handleZoomChange = (zoomLevel: number) =>
 ================
 File: src/renderer/src/components/settings/TaskSettings.tsx
 ================
-import { SettingsData, ContextCompactionType } from '@common/types';
+import { SettingsData, ContextCompactionType, Model } from '@common/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getProviderModelId } from '@common/agent';
 ⋮----
 import { Chip } from '../common/Chip';
 import { Checkbox } from '../common/Checkbox';
@@ -30348,6 +30448,7 @@ import { Section } from '../common/Section';
 import { InfoIcon } from '../common/InfoIcon';
 import { Button } from '../common/Button';
 import { Slider } from '../common/Slider';
+import { ModelSelectorWrapper } from '../common/ModelSelectorWrapper';
 ⋮----
 type Props = {
   settings: SettingsData;
@@ -30367,6 +30468,12 @@ const handleRemoveSymlinkFolder = (folder: string) =>
 const handleCompactingThresholdChange = (value: number) =>
 ⋮----
 const handleCompactionTypeChange = (value: ContextCompactionType) =>
+⋮----
+const handleTaskNameModelChange = (model: Model | null) =>
+⋮----
+const handleTaskStateModelChange = (model: Model | null) =>
+⋮----
+const handleCommitMessageModelChange = (model: Model | null) =>
 ⋮----
 <Section title=
 ⋮----
@@ -31001,21 +31108,24 @@ export type ModelSelectorRef = {
 type Props = {
   className?: string;
   models: Model[];
-  selectedModelId?: string;
-  onChange: (model: Model) => void;
+  selectedModelId?: string | null;
+  onChange: (model: Model | null) => void;
   preferredModelIds: string[];
   removePreferredModel?: (modelId: string) => void;
   providers: ProviderProfile[];
   popupPlacement?: 'top' | 'bottom';
+  labelOnNull?: string;
 };
 ⋮----
 const getProviderName = (providerId: string) =>
 ⋮----
 // Group filtered models by providerId
 ⋮----
-const onModelSelected = (model: Model) =>
+const onModelSelected = (model: Model | null) =>
 ⋮----
 const onModelSelectorSearchInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) =>
+⋮----
+// Check if inherit option is selected
 ⋮----
 const handleRemovePreferredModel = (e: MouseEvent) =>
 ⋮----
@@ -32776,6 +32886,16 @@ import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
 import { TaskSettings } from '@/components/settings/TaskSettings';
 import { ExtensionsSettings } from '@/components/settings/ExtensionsSettings';
 ⋮----
+type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
+⋮----
+interface SidebarItem {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+  children?: { id: string; label: string }[];
+  pageId: PageId;
+}
+⋮----
 type Props = {
   settings: SettingsData;
   updateSettings: (settings: SettingsData) => void;
@@ -32792,16 +32912,6 @@ type Props = {
   providers?: ProviderProfile[];
   setProviders?: (providers: ProviderProfile[]) => void;
 };
-⋮----
-type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
-⋮----
-interface SidebarItem {
-  id: string;
-  label: string;
-  icon?: ReactNode;
-  children?: { id: string; label: string }[];
-  pageId: PageId;
-}
 ⋮----
 export const Settings = ({
   settings,
@@ -35474,7 +35584,7 @@ File: src/renderer/index.html
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' blob: https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:; frame-src http: https:;"
+      content="default-src 'self'; script-src 'self' blob: https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:; frame-src http: https:;"
     />
     <link rel="stylesheet" href="/src/fonts.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
