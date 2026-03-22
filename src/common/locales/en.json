@@ -941,16 +941,14 @@
     "ask": "Ask",
     "architect": "Architect",
     "context": "Context",
-    "agent": "Agent",
-    "bmad": "BMAD"
+    "agent": "Agent"
   },
   "modeTooltip": {
     "code": "Direct code generation and editing with Aider AI assistant",
     "agent": "Autonomous AI agent with advanced reasoning and tool usage capabilities",
     "ask": "Ask questions about your codebase without making changes",
     "architect": "High-level project planning and architecture design",
-    "context": "Search and explore your codebase context",
-    "bmad": "Guided workflows for planning, spec'ing, and implementing features"
+    "context": "Search and explore your codebase context"
   },
   "addFileDialog": {
     "title": "Add context files",
@@ -1657,186 +1655,10 @@
       "code": {
         "title": "Code Mode",
         "description": "Use for direct code changes and specific tasks. Important: Add files to context to ensure the AI works on the right files."
-      },
-      "bmad": {
-        "title": "BMAD Mode",
-        "description": "Guided workflows for planning, spec'ing, and implementing features. Best for structured development processes."
       }
     },
     "selectMode": "Select"
   },
-  "bmad": {
-    "welcome": {
-      "title": "Welcome to BMAD Mode",
-      "subtitle": "Guided workflows for planning, spec'ing, and implementing features"
-    },
-    "workflows": {
-      "phaseProgress": "{{completed}}/{{total}} completed",
-      "installedVersion": "BMAD Library installed (v{{version}})",
-      "comingSoon": "Workflow list coming in Story 2.4",
-      "loading": "Loading workflows...",
-      "errorLoading": "Failed to load workflows: {{error}}",
-      "noWorkflows": "No workflows available",
-      "execute": "Execute",
-      "executing": "Executing...",
-      "workflowCompleted": "Workflow completed successfully",
-      "workflowError": "Workflow execution failed",
-      "retryExecution": "Retry",
-      "research": {
-        "name": "Research",
-        "description": "Conduct comprehensive research across multiple domains using current web data and verified sources"
-      },
-      "product-brief": {
-        "name": "Create Product Brief",
-        "description": "Define product vision and target users"
-      },
-      "prd": {
-        "name": "Create PRD",
-        "description": "Create comprehensive requirements document"
-      },
-      "architecture": {
-        "name": "Architecture",
-        "description": "Design technical architecture and system structure"
-      },
-      "ux-design": {
-        "name": "UX Design",
-        "description": "Create UX design documentation for product interface"
-      },
-      "quick-spec": {
-        "name": "Quick Spec",
-        "description": "Create focused specifications for well-defined features"
-      },
-      "quick-dev": {
-        "name": "Quick Dev",
-        "description": "Rapid spec-to-implementation for small features"
-      },
-      "epics-stories": {
-        "name": "Epics/Stories",
-        "description": "Break down requirements into implementation-ready epics and stories"
-      },
-      "implementation": {
-        "name": "Implementation",
-        "description": "Guided development for implementing stories and features"
-      }
-    },
-    "phase": {
-      "analysis": "Analysis",
-      "planning": "Planning",
-      "solutioning": "Solutioning",
-      "implementation": "Implementation",
-      "quick-flow": "Quick Flow"
-    },
-    "resume": {
-      "sectionTitle": "Resume Workflows",
-      "button": "Resume",
-      "stepIndicator": "Step {{current}} of {{total}}",
-      "lastModified": "Modified {{time}}",
-      "resuming": "Resuming...",
-      "unavailable": "Resume unavailable - workflow file corrupted",
-      "noSteps": "No progress recorded",
-      "corrupted": "Corrupted",
-      "corruptedDescription": "Artifact frontmatter is unreadable. Restart from beginning to recover.",
-      "restartFromBeginning": "Restart from Beginning",
-      "restarting": "Restarting..."
-    },
-    "errors": {
-      "npmInstallFailed": "NPM installation failed",
-      "workflowNotFound": "Workflow not found",
-      "artifactMissing": "Required artifact is missing"
-    },
-    "hierarchy": {
-      "expand": "Expand",
-      "collapse": "Collapse",
-      "expandAll": "Expand All",
-      "collapseAll": "Collapse All",
-      "workflowProgress": "Workflow Progress",
-      "subtasksCompleted": "{{completed}} of {{total}} subtasks completed",
-      "noSubtasks": "No subtasks"
-    },
-    "progress": {
-      "completed": "Completed",
-      "inProgress": "In Progress",
-      "notStarted": "Not Started",
-      "percentage": "{{percentage}}% complete"
-    },
-    "install": {
-      "button": "Install BMAD",
-      "installing": "Installing...",
-      "success": "BMAD installed successfully",
-      "error": "BMAD installation failed",
-      "autoInstallNote": "Click the button above to automatically install BMAD for the current project.",
-      "manualInstallTitle": "Manual Installation",
-      "manualInstallNote": "For advanced customization, you can also install BMAD manually by running this command in your terminal.",
-      "terminalPrompt": "Install BMAD to access guided workflows for planning, spec'ing, and implementing features.",
-      "commandLabel": "Command that will be executed:",
-      "openTerminal": "Open Terminal & Install",
-      "opening": "Opening Terminal...",
-      "terminalError": "Failed to open terminal",
-      "autoCheckNote": "This page will automatically detect when BMAD installation is complete.",
-      "benefits": [
-        "Structured workflows from brainstorming to implementation",
-        "Automatic context preparation (50-80% cost savings)",
-        "No context-switching between tools",
-        "Smart next-step recommendations"
-      ]
-    },
-    "tabs": {
-      "fullWorkflow": "Full Workflow",
-      "quickFlow": "Quick Flow"
-    },
-    "pathInfo": {
-      "fullWorkflow": {
-        "title": "Full Workflow",
-        "description": "Use for new projects, complex features, or when requirements need exploration. Guides you through analysis, planning, solutioning, and implementation phases.",
-        "whenToUse": "When to use:",
-        "useCases": {
-          "newProject": "New project from scratch",
-          "complexFeature": "Complex feature development",
-          "unclearRequirements": "Unclear or evolving requirements",
-          "teamCollaboration": "Team collaboration needed"
-        }
-      },
-      "quickFlow": {
-        "title": "Quick Flow",
-        "description": "Skip planning phases for small, well-understood work. Create a quick spec and go directly to implementation.",
-        "whenToUse": "When to use:",
-        "useCases": {
-          "bugFixes": "Bug fixes",
-          "smallFeatures": "Small feature additions",
-          "refactoring": "Refactoring tasks",
-          "wellDefined": "Well-defined changes"
-        }
-      }
-    },
-    "artifact": {
-      "openFile": "Open file",
-      "notCreated": "Not created yet"
-    },
-    "taskActions": {
-      "loading": "Loading BMAD workflows...",
-      "error": "Failed to load BMAD status",
-      "resumeSection": "Resume Workflows",
-      "workflowsSection": "Follow-up workflows",
-      "noWorkflows": "No workflows available",
-      "execute": "Execute",
-      "entryPoint": "Entry point - start your project here",
-      "recommendedAfter": "Recommended after completing",
-      "currentWorkflow": "Current Workflow",
-      "changeWorkflow": "Change Workflow",
-      "outputArtifacts": "Output Artifacts"
-    },
-    "reset": {
-      "bannerTitle": "Reset Workflow Progress",
-      "bannerDescription": "This will permanently delete all files in the _bmad-output folder. If you have a completed workflow or want to preserve your progress, backup the files from _bmad-output/ to docs/ or another location first.",
-      "button": "Reset",
-      "resetting": "Resetting...",
-      "confirmTitle": "Reset Workflow Progress?",
-      "confirmDescription": "This action will permanently delete all generated artifacts and workflow progress in the _bmad-output folder. This cannot be undone.",
-      "confirmButton": "Reset All Progress",
-      "success": "Workflow progress has been reset",
-      "error": "Failed to reset workflow progress"
-    },
-    "showModelSelector": "Change model",
-    "hideModelSelector": "Hide model selector"
-  }
+  "showModelSelector": "Change model",
+  "hideModelSelector": "Hide model selector"
 }

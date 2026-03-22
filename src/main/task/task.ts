@@ -41,8 +41,6 @@ import {
   WorkingMode,
   AIDER_COMMANDS,
   ConnectorMessage,
-  WorkflowExecutionOptions,
-  WorkflowExecutionResult,
 } from '@common/types';
 import { extractProviderModel, extractTextContent, extractServerNameToolName, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
@@ -917,27 +915,6 @@ export class Task {
     }
 
     return [];
-  }
-
-  public async executeBmadWorkflow(workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult> {
-    if (options?.asSubtask) {
-      // Create a new subtask. If the current task already has a parentId (is a subtask),
-      // use that parentId to maintain only 1 level of subtasks
-      const parentId = this.task.parentId || this.taskId;
-      const subtaskData = await this.project.createNewTask({
-        parentId,
-        activate: true,
-        provider: options?.provider,
-        model: options?.model,
-      });
-      const subtask = this.project.getTask(subtaskData.id);
-      if (!subtask) {
-        throw new Error('Failed to create subtask');
-      }
-      return await subtask.executeBmadWorkflow(workflowId);
-    }
-
-    return await this.project.executeBmadWorkflow(workflowId, this);
   }
 
   private getTaskNameFromPrompt(prompt: string): string {
@@ -2182,7 +2159,7 @@ export class Task {
 
   /**
    * Load context messages into the task context and send them to the UI.
-   * This is used for loading pre-authored context (e.g., BMAD workflow context).
+   * This is used for loading pre-authored context (e.g., from extensions).
    */
   public async loadContextMessages(messages: ContextMessage[]) {
     logger.info('Loading context messages:', {

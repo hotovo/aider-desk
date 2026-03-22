@@ -33,7 +33,6 @@ import {
   UpdatedFilesUpdatedData,
   QueuedPromptData,
   QueuedPromptsUpdatedData,
-  BmadStatus,
   CommandsData,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
@@ -412,12 +411,6 @@ export class EventManager {
         this.unsubscribe(connector.socket);
       }
     });
-  }
-
-  // BMAD events
-  sendBmadStatusChanged(status: BmadStatus): void {
-    this.sendToMainWindow('bmad-status-changed', status);
-    this.broadcastToEventConnectors('bmad-status-changed', status);
   }
 
   // Extension UI events

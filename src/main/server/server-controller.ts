@@ -19,7 +19,6 @@ import {
   MemoryApi,
   VoiceApi,
   TerminalApi,
-  BmadApi,
   ExtensionsApi,
 } from '@/server/rest-api';
 import { AUTH_PASSWORD, AUTH_USERNAME, SERVER_PORT } from '@/constants';
@@ -117,7 +116,6 @@ export class ServerController {
     new MemoryApi(this.eventsHandler).registerRoutes(apiRouter);
     new VoiceApi(this.eventsHandler).registerRoutes(apiRouter);
     new TerminalApi(this.eventsHandler).registerRoutes(apiRouter);
-    new BmadApi(this.eventsHandler).registerRoutes(apiRouter);
     new ExtensionsApi(this.eventsHandler).registerRoutes(apiRouter);
 
     // Mount the API router globally under /api

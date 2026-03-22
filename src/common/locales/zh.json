@@ -897,16 +897,14 @@
     "ask": "提问",
     "architect": "架构",
     "context": "上下文",
-    "agent": "代理",
-    "bmad": "BMAD"
+    "agent": "代理"
   },
   "modeTooltip": {
     "code": "使用 Aider AI 助手进行直接代码生成和编辑",
     "agent": "具有高级推理和工具使用能力的自主 AI 代理",
     "ask": "询问有关代码库的问题而不进行更改",
     "architect": "高级项目规划和架构设计",
-    "context": "搜索和探索代码库上下文",
-    "bmad": "用于规划、规范和实现功能的引导式工作流程"
+    "context": "搜索和探索代码库上下文"
   },
   "addFileDialog": {
     "title": "添加上下文文件",
@@ -1667,186 +1665,10 @@
       "code": {
         "title": "代码模式",
         "description": "用于直接代码更改和特定任务。重要提示：将文件添加到上下文以确保 AI 处理正确的文件。"
-      },
-      "bmad": {
-        "title": "BMAD 模式",
-        "description": "用于规划、规范和实现功能的引导式工作流程。最适合结构化的开发流程。"
       }
     },
     "selectMode": "选择"
   },
-  "bmad": {
-    "welcome": {
-      "title": "欢迎使用 BMAD 模式",
-      "subtitle": "用于规划、规范和实现功能的引导式工作流"
-    },
-    "workflows": {
-      "phaseProgress": "{{completed}}/{{total}} 已完成",
-      "installedVersion": "已安装 BMAD 库（v{{version}}）",
-      "comingSoon": "工作流列表将在 Story 2.4 中提供",
-      "loading": "正在加载工作流...",
-      "errorLoading": "加载工作流失败：{{error}}",
-      "noWorkflows": "没有可用的工作流",
-      "execute": "执行",
-      "executing": "正在执行...",
-      "workflowCompleted": "工作流执行成功",
-      "workflowError": "工作流执行失败",
-      "retryExecution": "重试",
-      "research": {
-        "name": "研究",
-        "description": "利用当前网络数据和可靠来源进行多领域综合研究"
-      },
-      "product-brief": {
-        "name": "产品简介",
-        "description": "定义产品愿景和目标用户"
-      },
-      "prd": {
-        "name": "创建 PRD",
-        "description": "创建全面的需求文档"
-      },
-      "architecture": {
-        "name": "架构",
-        "description": "设计技术架构和系统结构"
-      },
-      "ux-design": {
-        "name": "用户体验设计",
-        "description": "为产品界面创建用户体验设计文档"
-      },
-      "quick-spec": {
-        "name": "快速规范",
-        "description": "为明确定义的功能创建专注的规范"
-      },
-      "quick-dev": {
-        "name": "快速开发",
-        "description": "小型功能的快速规范到实现"
-      },
-      "epics-stories": {
-        "name": "史诗/故事",
-        "description": "将需求分解为可实施的史诗和故事"
-      },
-      "implementation": {
-        "name": "实施",
-        "description": "故事和功能实现的引导式开发"
-      }
-    },
-    "phase": {
-      "analysis": "分析",
-      "planning": "规划",
-      "solutioning": "解决方案",
-      "implementation": "实施",
-      "quick-flow": "快速流程"
-    },
-    "resume": {
-      "sectionTitle": "恢复工作流",
-      "button": "恢复",
-      "stepIndicator": "第 {{current}} 步，共 {{total}} 步",
-      "lastModified": "修改于 {{time}}",
-      "resuming": "恢复中...",
-      "unavailable": "无法恢复 - 工作流文件已损坏",
-      "noSteps": "未记录进度",
-      "corrupted": "已损坏",
-      "corruptedDescription": "工件前置信息无法读取。从头开始重启以恢复。",
-      "restartFromBeginning": "从头开始重启",
-      "restarting": "重启中..."
-    },
-    "errors": {
-      "npmInstallFailed": "NPM 安装失败",
-      "workflowNotFound": "未找到工作流",
-      "artifactMissing": "缺少必需的工件"
-    },
-    "hierarchy": {
-      "expand": "展开",
-      "collapse": "折叠",
-      "expandAll": "全部展开",
-      "collapseAll": "全部折叠",
-      "workflowProgress": "工作流进度",
-      "subtasksCompleted": "已完成 {{completed}}/{{total}} 个子任务",
-      "noSubtasks": "没有子任务"
-    },
-    "progress": {
-      "completed": "已完成",
-      "inProgress": "进行中",
-      "notStarted": "未开始",
-      "percentage": "完成 {{percentage}}%"
-    },
-    "install": {
-      "button": "安装 BMAD",
-      "installing": "安装中...",
-      "success": "BMAD 安装成功",
-      "error": "BMAD 安装失败",
-      "autoInstallNote": "点击上方按钮为当前项目自动安装 BMAD。",
-      "manualInstallTitle": "手动安装",
-      "manualInstallNote": "对于高级自定义，您也可以在终端中运行以下命令手动安装 BMAD。",
-      "terminalPrompt": "安装 BMAD 以访问用于规划、规范和实现功能的引导式工作流程。",
-      "commandLabel": "将要执行的命令：",
-      "openTerminal": "打开终端并安装",
-      "opening": "正在打开终端...",
-      "terminalError": "无法打开终端",
-      "autoCheckNote": "此页面将自动检测 BMAD 安装何时完成。",
-      "benefits": [
-        "从头脑风暴到实现的结构化工作流程",
-        "自动上下文准备（节省50-80%成本）",
-        "工具间无需上下文切换",
-        "智能下一步建议"
-      ]
-    },
-    "tabs": {
-      "fullWorkflow": "完整工作流",
-      "quickFlow": "快速流程"
-    },
-    "pathInfo": {
-      "fullWorkflow": {
-        "title": "完整工作流",
-        "description": "用于新项目、复杂功能或需要探索需求的情况。指导您完成分析、规划、解决方案和实施阶段。",
-        "whenToUse": "何时使用：",
-        "useCases": {
-          "newProject": "从零开始的新项目",
-          "complexFeature": "复杂功能开发",
-          "unclearRequirements": "需求不明确或不断变化",
-          "teamCollaboration": "需要团队协作"
-        }
-      },
-      "quickFlow": {
-        "title": "快速流程",
-        "description": "对于小型、易于理解的工作，跳过规划阶段。创建快速规范并直接进入实施。",
-        "whenToUse": "何时使用：",
-        "useCases": {
-          "bugFixes": "错误修复",
-          "smallFeatures": "小型功能添加",
-          "refactoring": "重构任务",
-          "wellDefined": "明确定义的变更"
-        }
-      }
-    },
-    "artifact": {
-      "openFile": "打开文件",
-      "notCreated": "尚未创建"
-    },
-    "taskActions": {
-      "loading": "正在加载 BMAD 工作流...",
-      "error": "加载 BMAD 状态失败",
-      "resumeSection": "恢复工作流",
-      "workflowsSection": "可用工作流",
-      "noWorkflows": "没有可用的工作流",
-      "execute": "执行",
-      "entryPoint": "入口点 - 从这里开始您的项目",
-      "recommendedAfter": "完成后推荐",
-      "currentWorkflow": "当前工作流",
-      "changeWorkflow": "更改工作流",
-      "outputArtifacts": "输出文件"
-    },
-    "reset": {
-      "bannerTitle": "重置工作流进度",
-      "bannerDescription": "这将永久删除 _bmad-output 文件夹中的所有文件。如果您有已完成的工作流或想保留进度，请先将 _bmad-output/ 中的文件备份到 docs/ 或其他位置。",
-      "button": "重置",
-      "resetting": "正在重置...",
-      "confirmTitle": "重置工作流进度？",
-      "confirmDescription": "此操作将永久删除 _bmad-output 文件夹中的所有生成的工件和工作流进度。此操作无法撤消。",
-      "confirmButton": "重置所有进度",
-      "success": "工作流进度已重置",
-      "error": "重置工作流进度失败"
-    },
-    "showModelSelector": "更换模型",
-    "hideModelSelector": "隐藏模型选择器"
-  }
+  "showModelSelector": "更换模型",
+  "hideModelSelector": "隐藏模型选择器"
 }

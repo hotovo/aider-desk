@@ -1,18 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import {
-  AgentProfile,
-  BmadStatus,
-  CreateTaskParams,
-  DefaultTaskState,
-  InstallResult,
-  ModeDefinition,
-  ProjectSettings,
-  SettingsData,
-  TaskData,
-  WorkflowExecutionResult,
-} from '@common/types';
+import { AgentProfile, CreateTaskParams, DefaultTaskState, ModeDefinition, ProjectSettings, SettingsData, TaskData } from '@common/types';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -34,11 +23,9 @@ import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { determineMainModel, determineWeakModel } from '@/utils';
-import { BmadManager } from '@/bmad/bmad-manager';
 
 export class Project {
   private readonly customCommandManager: CustomCommandManager;
-  private readonly bmadManager: BmadManager;
   private readonly tasksLoadingPromise: Promise<void> | null = null;
   private readonly tasks = new Map<string, Task>();
 
@@ -61,7 +48,6 @@ export class Project {
     private readonly extensionManager: ExtensionManager,
   ) {
     this.customCommandManager = new CustomCommandManager(this, this.eventManager, this.extensionManager);
-    this.bmadManager = new BmadManager(this.baseDir);
     this.tasksLoadingPromise = this.loadTasks();
   }
 
@@ -484,34 +470,6 @@ export class Project {
     this.forEachTask((task) => {
       void task.projectSettingsChanged(oldSettings, newSettings);
     });
-  }
-
-  async getBmadStatus(): Promise<BmadStatus> {
-    return await this.bmadManager.getBmadStatus();
-  }
-
-  async installBmad(): Promise<InstallResult> {
-    const result = await this.bmadManager.install();
-
-    // Emit events for browser clients
-    const status = await this.bmadManager.getBmadStatus();
-    this.eventManager.sendBmadStatusChanged(status);
-
-    return result;
-  }
-
-  async executeBmadWorkflow(workflowId: string, task: Task): Promise<WorkflowExecutionResult> {
-    return await this.bmadManager.executeWorkflow(workflowId, task);
-  }
-
-  async resetBmadWorkflow(): Promise<{ success: boolean; message?: string }> {
-    const result = await this.bmadManager.resetWorkflow();
-
-    // Emit status change event for browser clients
-    const status = await this.bmadManager.getBmadStatus();
-    this.eventManager.sendBmadStatusChanged(status);
-
-    return result;
   }
 
   async close() {

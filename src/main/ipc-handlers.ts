@@ -552,26 +552,6 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getMemoryEmbeddingProgress();
   });
 
-  // BMAD handlers
-  ipcMain.handle('bmad-install', async (_, projectDir: string) => {
-    return await eventsHandler.installBmad(projectDir);
-  });
-
-  ipcMain.handle('bmad-get-status', async (_, projectDir: string) => {
-    return await eventsHandler.getBmadStatus(projectDir);
-  });
-
-  ipcMain.handle(
-    'bmad-execute-workflow',
-    async (_, projectDir: string, taskId: string, workflowId: string, options?: { asSubtask?: boolean; provider?: string; model?: string }) => {
-      return await eventsHandler.executeWorkflow(projectDir, taskId, workflowId, options);
-    },
-  );
-
-  ipcMain.handle('bmad-reset-workflow', async (_, projectDir: string) => {
-    return await eventsHandler.resetBmadWorkflow(projectDir);
-  });
-
   ipcMain.handle('clipboard-write-text', async (_, text: string) => {
     clipboard.writeText(text);
   });

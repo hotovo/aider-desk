@@ -41,10 +41,10 @@ describe('ModeSelector', () => {
     mockOnModeChange.mockClear();
   });
 
-  it('renders BMAD mode alongside other modes', () => {
+  it('renders all available modes', () => {
     render(<ModeSelector mode="code" onModeChange={mockOnModeChange} baseDir="/test/project" />);
 
-    // Verify all modes are rendered including BMAD
+    // Verify all built-in modes are rendered
     expect(screen.getByTestId('mode-code')).toBeInTheDocument();
     expect(screen.getByTestId('mode-agent')).toBeInTheDocument();
     expect(screen.getByTestId('mode-ask')).toBeInTheDocument();

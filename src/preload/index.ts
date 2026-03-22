@@ -667,13 +667,6 @@ const api: ApplicationAPI = {
   deleteProjectMemories: (projectId) => ipcRenderer.invoke('delete-project-memories', projectId),
   getMemoryEmbeddingProgress: () => ipcRenderer.invoke('get-memory-embedding-progress'),
 
-  // BMAD operations
-  installBmad: (projectDir: string) => ipcRenderer.invoke('bmad-install', projectDir),
-  getBmadStatus: (projectDir: string) => ipcRenderer.invoke('bmad-get-status', projectDir),
-  executeWorkflow: (projectDir: string, taskId: string, workflowId: string, options?: { asSubtask?: boolean; provider?: string; model?: string }) =>
-    ipcRenderer.invoke('bmad-execute-workflow', projectDir, taskId, workflowId, options),
-  resetBmadWorkflow: (projectDir: string) => ipcRenderer.invoke('bmad-reset-workflow', projectDir),
-
   writeToClipboard: (text: string) => ipcRenderer.invoke('clipboard-write-text', text),
   openPath: (path: string) => ipcRenderer.invoke('open-path', path),
 
@@ -686,16 +679,6 @@ const api: ApplicationAPI = {
   addNotificationListener: () => {
     // notifications in Electron app are handled by the main process
     return () => {};
-  },
-
-  addBmadStatusChangedListener: (baseDir: string, callback) => {
-    const listener = (_, data) => {
-      if (data.projectDir === baseDir) {
-        callback(data);
-      }
-    };
-    ipcRenderer.on('bmad-status-changed', listener);
-    return () => ipcRenderer.off('bmad-status-changed', listener);
   },
 };
 

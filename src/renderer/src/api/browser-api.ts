@@ -1,7 +1,6 @@
 import {
   AgentProfilesUpdatedData,
   AutocompletionData,
-  BmadStatus,
   ClearTaskData,
   CloudflareTunnelStatus,
   CommandOutputData,
@@ -56,8 +55,6 @@ import {
   TaskCreatedData,
   UpdatedFilesUpdatedData,
   QueuedPromptsUpdatedData,
-  WorkflowExecutionOptions,
-  WorkflowExecutionResult,
   InstalledExtension,
   AvailableExtension,
   ExtensionUIComponent,
@@ -105,7 +102,6 @@ type EventDataMap = {
   'message-removed': MessageRemovedData;
   'terminal-data': TerminalData;
   'terminal-exit': TerminalExitData;
-  'bmad-status-changed': BmadStatus;
   'extension-ui-refresh': ExtensionUIRefreshData;
   'modal-overlay-url': ModalOverlayUrlData;
 };
@@ -176,7 +172,6 @@ export class BrowserApi implements ApplicationAPI {
       'message-removed': new Map(),
       'terminal-data': new Map(),
       'terminal-exit': new Map(),
-      'bmad-status-changed': new Map(),
       'queued-prompts-updated': new Map(),
       'extension-ui-refresh': new Map(),
       'modal-overlay-url': new Map(),
@@ -1034,32 +1029,6 @@ export class BrowserApi implements ApplicationAPI {
     return data.deletedCount;
   }
 
-  // BMAD operations
-  async installBmad(projectDir: string): Promise<{ success: boolean; version?: string; message?: string }> {
-    return this.post<{ projectDir: string }, { success: boolean; version?: string; message?: string }>('/bmad/install', {
-      projectDir,
-    });
-  }
-
-  getBmadStatus(projectDir: string): Promise<BmadStatus> {
-    return this.get<BmadStatus>('/bmad/status', { projectDir });
-  }
-
-  async executeWorkflow(projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult> {
-    return await this.post('/bmad/execute-workflow', {
-      projectDir,
-      taskId,
-      workflowId,
-      options,
-    });
-  }
-
-  async resetBmadWorkflow(projectDir: string): Promise<{ success: boolean; message?: string }> {
-    return await this.post<{ projectDir: string }, { success: boolean; message?: string }>('/bmad/reset-workflow', {
-      projectDir,
-    });
-  }
-
   async writeToClipboard(text: string): Promise<void> {
     try {
       await navigator.clipboard.writeText(text);
@@ -1125,10 +1094,6 @@ export class BrowserApi implements ApplicationAPI {
         callback(data);
       }
     });
-  }
-
-  addBmadStatusChangedListener(baseDir: string, callback: (status: BmadStatus) => void): () => void {
-    return this.addListener('bmad-status-changed', callback, baseDir);
   }
 
   getInstalledExtensions(projectDir?: string): Promise<InstalledExtension[]> {

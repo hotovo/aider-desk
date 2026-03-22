@@ -22,7 +22,6 @@ import {
   AgentProfile,
   MemoryEntry,
   MemoryEmbeddingProgress,
-  BmadStatus,
   ModeDefinition,
   InstalledExtension,
   AvailableExtension,
@@ -262,24 +261,6 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     // Custom modes operations
     getCustomModes: vi.fn((): Promise<ModeDefinition[]> => Promise.resolve([])),
 
-    // BMAD operations
-    installBmad: vi.fn((): Promise<{ success: boolean; message?: string }> => Promise.resolve({ success: false })),
-    getBmadStatus: vi.fn(
-      (): Promise<BmadStatus> =>
-        Promise.resolve({
-          projectDir: '/path/to/project',
-          installed: false,
-          availableWorkflows: [],
-          completedWorkflows: [],
-          inProgressWorkflows: [],
-          incompleteWorkflows: [],
-          detectedArtifacts: {},
-          sprintStatus: undefined,
-        }),
-    ),
-    addBmadStatusChangedListener: vi.fn(() => vi.fn()),
-    executeWorkflow: vi.fn(() => Promise.resolve({ success: true, artifactPath: '/path/to/artifact.md' })),
-    resetBmadWorkflow: vi.fn((): Promise<{ success: boolean; message?: string }> => Promise.resolve({ success: true })),
     removeQueuedPrompt: vi.fn((): void => undefined),
     sendQueuedPromptNow: vi.fn((): Promise<void> => Promise.resolve()),
     addQueuedPromptsUpdatedListener: vi.fn(() => vi.fn()),

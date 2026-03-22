@@ -31,14 +31,12 @@ import {
   UsageDataRow,
   VersionsInfo,
   VoiceSession,
-  WorkflowExecutionOptions,
-  WorkflowExecutionResult,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 
-import type { ModeDefinition, BmadStatus, InstallResult, ExtensionUIComponent } from '@common/types';
+import type { ModeDefinition, ExtensionUIComponent } from '@common/types';
 import type { BrowserWindow } from 'electron';
 
 import { McpManager, AgentProfileManager } from '@/agent';
@@ -1046,44 +1044,6 @@ export class EventsHandler {
 
   getMemoryEmbeddingProgress() {
     return this.memoryManager.getProgress();
-  }
-
-  async getBmadStatus(projectDir: string): Promise<BmadStatus> {
-    const project = this.projectManager.getProject(projectDir);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-    return await project.getBmadStatus();
-  }
-
-  async installBmad(projectDir: string): Promise<InstallResult> {
-    const project = this.projectManager.getProject(projectDir);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-    return await project.installBmad();
-  }
-
-  async executeWorkflow(projectDir: string, taskId: string, workflowId: string, options?: WorkflowExecutionOptions): Promise<WorkflowExecutionResult> {
-    const project = this.projectManager.getProject(projectDir);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-
-    const task = project.getTask(taskId);
-    if (!task) {
-      throw new Error('Task not found');
-    }
-
-    return await task.executeBmadWorkflow(workflowId, options);
-  }
-
-  async resetBmadWorkflow(projectDir: string): Promise<{ success: boolean; message?: string }> {
-    const project = this.projectManager.getProject(projectDir);
-    if (!project) {
-      throw new Error('Project not found');
-    }
-    return await project.resetBmadWorkflow();
   }
 
   getInstalledExtensions(projectDir?: string): InstalledExtension[] {
