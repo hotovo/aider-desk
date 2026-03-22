@@ -27,21 +27,34 @@ const getExtensionData = (extension: InstalledExtension | AvailableExtension) =>
 
 type Props = {
   extension: InstalledExtension | AvailableExtension;
+  isInstalled?: boolean;
   isDisabled?: boolean;
   isUninstalling?: boolean;
   isInstalling?: boolean;
+  installedFilePath?: string;
   onToggle?: (extensionName: string, isDisabled: boolean) => void;
   onUninstall?: (exensionFilePath: string) => void;
   onInstall?: (extension: AvailableExtension) => void;
 };
 
-export const ExtensionCard = ({ extension, isDisabled = false, isUninstalling = false, isInstalling = false, onToggle, onUninstall, onInstall }: Props) => {
+export const ExtensionCard = ({
+  extension,
+  isInstalled: isInstalledProp = false,
+  isDisabled = false,
+  isUninstalling = false,
+  isInstalling = false,
+  installedFilePath,
+  onToggle,
+  onUninstall,
+  onInstall,
+}: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const data = getExtensionData(extension);
   const hasReadme = data.readmeContent && data.readmeContent.trim().length > 0;
-  const isInstalled = 'metadata' in extension;
+  const isInstalled = isInstalledProp || 'metadata' in extension;
+  const filePath = installedFilePath ?? data.filePath;
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -54,8 +67,8 @@ export const ExtensionCard = ({ extension, isDisabled = false, isUninstalling = 
   };
 
   const handleUninstall = () => {
-    if (onUninstall && data.filePath) {
-      onUninstall(data.filePath);
+    if (onUninstall && filePath) {
+      onUninstall(filePath);
     }
   };
 
@@ -84,7 +97,7 @@ export const ExtensionCard = ({ extension, isDisabled = false, isUninstalling = 
                 isDisabled && 'opacity-50',
               )}
             >
-              {data.iconUrl ? <img src={data.iconUrl} alt={data.name} className="p-1 w-full h-full object-cover" /> : data.name.charAt(0).toUpperCase()}
+              {data.iconUrl ? <img src={data.iconUrl} alt={data.name} className="w-full h-full object-cover" /> : data.name.charAt(0).toUpperCase()}
             </div>
 
             {/* Info */}

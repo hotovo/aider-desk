@@ -412,14 +412,16 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
         return inst.projectDir === profileContext;
       });
 
-      // If installed, render with installed extension (LoadedExtension)
+      // If installed, render with available extension data but installed controls
       if (installedExtension) {
         return (
           <ExtensionCard
             key={extension.id}
-            extension={installedExtension}
+            extension={extension}
+            isInstalled={true}
             isDisabled={disabledExtensions.includes(installedExtension.metadata.name)}
             isUninstalling={uninstallingExtensions.has(installedExtension.filePath)}
+            installedFilePath={installedExtension.filePath}
             onToggle={handleToggleDisabled}
             onUninstall={handleUninstall}
           />
