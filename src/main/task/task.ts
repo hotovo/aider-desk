@@ -2833,9 +2833,13 @@ export class Task {
   }
 
   async updateContextInfo(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {
+    void this.debouncedUpdateContextInfo(checkContextFilesIncluded, checkRepoMapIncluded);
+  }
+
+  private debouncedUpdateContextInfo = debounce(async (checkContextFilesIncluded = false, checkRepoMapIncluded = false) => {
     void this.sendRequestContextInfo();
     await this.updateAgentEstimatedTokens(checkContextFilesIncluded, checkRepoMapIncluded);
-  }
+  }, 500);
 
   private async sendRequestContextInfo() {
     const contextFiles = await this.getContextFiles();
