@@ -5,13 +5,15 @@
  * - Planning mode with tool restrictions (read-only + PLAN.md writes)
  * - Context injection for planning workflow
  * - Execution tracking via checklist items
- * - Browser-based plan review UI (coming soon)
+ * - Browser-based plan review UI
+ * - Code review UI for git changes
  *
  * The extension tracks mode and phase per task, responding to mode changes
  * regardless of how they were triggered (command or UI).
  *
  * Commands:
  * - /plannotator - Toggle plannotator mode
+ * - /plannotator-review - Open code review UI for current git changes
  *
  * Tools:
  * - exit_plan_mode - Exit planning phase and start execution
@@ -23,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 
 import { z } from 'zod';
 
-import { startPlanReviewServer, openBrowser } from './review-server.js';
+import { startPlanReviewServer, startReviewServer, getGitContext, runGitDiff, openBrowser } from './server.js';
 import { parseChecklist, markCompletedSteps, type ChecklistItem } from './utils.js';
 
 import type {
@@ -44,11 +46,17 @@ import type {
 
 // Load review HTML at module initialization
 const __dirname = dirname(fileURLToPath(import.meta.url));
-let indexHtmlContent = '';
+let planHtmlContent = '';
+let reviewHtmlContent = '';
 try {
-  indexHtmlContent = readFileSync(resolve(__dirname, 'index.html'), 'utf-8');
+  planHtmlContent = readFileSync(resolve(__dirname, 'plannotator.html'), 'utf-8');
 } catch {
-  // HTML not found - review feature will be unavailable
+  // HTML not found - plan review feature will be unavailable
+}
+try {
+  reviewHtmlContent = readFileSync(resolve(__dirname, 'review-editor.html'), 'utf-8');
+} catch {
+  // HTML not found - code review feature will be unavailable
 }
 
 // Phase schema
@@ -130,7 +138,7 @@ After completing each step, include [DONE:n] in your response where n is the ste
 export default class PlannotatorExtension implements Extension {
   static metadata = {
     name: 'Plannotator',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Plan-based development workflow with planning mode and plan review utilizing plannotator.ai',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/plannotator/icon.png',
@@ -201,6 +209,63 @@ export default class PlannotatorExtension implements Extension {
           }
         },
       },
+      {
+        name: 'plannotator-review',
+        description: 'Open code review UI for current git changes',
+        arguments: [],
+        execute: async (_args: string[], context: ExtensionContext) => {
+          const taskContext = context.getTaskContext();
+          const projectContext = context.getProjectContext();
+
+          if (!reviewHtmlContent) {
+            const errorMsg = 'Error: Code review UI not available. review-editor.html file is missing.';
+            context.log(errorMsg, 'error');
+            taskContext?.addLogMessage('error', errorMsg);
+            return;
+          }
+
+          const cwd = projectContext?.baseDir;
+
+          try {
+            const gitContext = getGitContext(cwd);
+            const { patch, label } = runGitDiff('uncommitted', gitContext.defaultBranch, cwd);
+
+            if (!patch.trim()) {
+              taskContext?.addLogMessage('info', 'No uncommitted changes to review.');
+              return;
+            }
+
+            context.log('Starting code review server...', 'info');
+            const server = startReviewServer({
+              rawPatch: patch,
+              gitRef: label,
+              htmlContent: reviewHtmlContent,
+              origin: 'aiderdesk',
+              diffType: 'uncommitted',
+              gitContext,
+              cwd,
+            });
+
+            context.log(`Opening code review UI at ${server.url}`, 'info');
+            void context.openUrl(server.url, 'modal-overlay');
+
+            const result = await server.waitForDecision();
+
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+            server.stop();
+
+            if (result.feedback) {
+              void context.getTaskContext()?.runPrompt(`\`\`\`\n${result.feedback}\`\`\`\n\nAddress the Core Review Feedback.`);
+            } else {
+              taskContext?.addLogMessage('info', 'Code review completed.');
+            }
+          } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Unknown error starting code review';
+            context.log(errorMsg, 'error');
+            taskContext?.addLogMessage('error', errorMsg);
+          }
+        },
+      },
     ];
   }
 
@@ -244,8 +309,8 @@ export default class PlannotatorExtension implements Extension {
           context.log(`Parsed ${taskState.checklistItems.length} checklist items`, 'info');
 
           // Check if review HTML is available
-          if (!indexHtmlContent) {
-            const errorMsg = 'Error: Review UI not available. review.html file is missing.';
+          if (!planHtmlContent) {
+            const errorMsg = 'Error: Review UI not available. plannotator.html file is missing.';
             context.log(errorMsg, 'error');
             taskContext.addLogMessage('error', errorMsg);
             return {
@@ -258,7 +323,7 @@ export default class PlannotatorExtension implements Extension {
           context.log('Starting plan review server...', 'info');
           const server = startPlanReviewServer({
             plan: planContent,
-            htmlContent: indexHtmlContent,
+            htmlContent: planHtmlContent,
             origin: 'aiderdesk',
           });
 

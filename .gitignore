@@ -33,3 +33,7 @@ repomix-output.txt
 .eslintcache
 ai-docs
 .chunkhound.db*
+
+# Extension generated files
+packages/extensions/extensions/plannotator/plannotator.html
+packages/extensions/extensions/plannotator/review-editor.html

@@ -1,0 +1,20 @@
+{
+  "name": "plannotator-extension",
+  "version": "1.2.0",
+  "description": "Plan-based development workflow with planning mode and plan review utilizing plannotator.ai",
+  "main": "index.ts",
+  "keywords": [
+    "aiderdesk",
+    "extension",
+    "plannotator",
+    "planning"
+  ],
+  "author": "wladimiiir",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "dependencies": {
+    "tar": "^7.5.12"
+  }
+}

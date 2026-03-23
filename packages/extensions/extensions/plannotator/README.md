@@ -26,6 +26,23 @@ The extension uses a **task-based state management** approach:
 
 ### Commands
 - `/plannotator [file]` - Toggle plannotator mode (optionally specify plan file path)
+- `/plannotator-review` - Open code review UI for current git changes
+
+### Code Review
+
+The `/plannotator-review` command opens a browser-based code review UI for your current uncommitted git changes:
+
+**Features:**
+- View git diffs (uncommitted, staged, last commit, branch comparison)
+- Add line annotations and comments
+- Send feedback directly to the agent for fixes
+
+**Workflow:**
+1. Run `/plannotator-review` command
+2. Browser opens with code review UI showing current diff
+3. Review changes, add annotations if needed
+4. Submit feedback
+5. If feedback is provided, agent receives a prompt to address the issues
 
 ### Tools
 - `exit_plan_mode` - Exit planning phase and start execution
