@@ -1901,7 +1901,8 @@ export class Agent {
     const contextCompactionType = profile.isSubagent
       ? ContextCompactionType.Compact
       : (this.store.getSettings().taskSettings.contextCompactionType ?? ContextCompactionType.Compact);
-    const usageReport = resultMessages[resultMessages.length - 1]?.usageReport;
+    const lastAssistantMessage = [...resultMessages].reverse().find((m) => m.role === 'assistant');
+    const usageReport = lastAssistantMessage?.usageReport;
     const maxTokens = this.modelManager.getModelSettings(provider.provider.name, model)?.maxInputTokens;
 
     if (contextCompactingThreshold === 0 || !usageReport || !maxTokens) {
