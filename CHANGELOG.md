@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- correctly triggering auto-compacting as expected when threshold is reached
+
 ## [0.58.0]
 
 - added onAgentStepStarted extension hook
