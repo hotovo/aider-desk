@@ -211,6 +211,7 @@ export default class ProvidersQuotaExtension implements Extension {
     version: '1.1.0',
     description: 'Displays API quota information for Synthetic and Z.AI providers in the task status bar',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
     capabilities: ['ui'],
   };
 

@@ -48,6 +48,7 @@ const metadata = {
   version: '1.0.0',
   description: 'Language Server Protocol integration for code intelligence and error detection',
   author: 'wladimiiir',
+  iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/lsp/icon.png',
   capabilities: ['tools', 'code-intelligence'],
 };
 
