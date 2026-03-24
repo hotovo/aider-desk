@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.58.1]
 
 - correctly triggering auto-compacting as expected when threshold is reached
 
