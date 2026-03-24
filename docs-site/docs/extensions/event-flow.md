@@ -560,5 +560,5 @@ if (task) {
 
 - [Events Reference](./events.md) - Complete event documentation
 - [API Reference](./api-reference.md) - Full type definitions
-- [Examples](./examples.md) - Real-world examples
+- [Extensions Gallery](./extensions-gallery.md) - Browse example extensions for inspiration and check out production-ready extensions
 - [Creating Extensions](./creating-extensions.md) - Step-by-step tutorial

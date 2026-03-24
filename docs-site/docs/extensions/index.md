@@ -57,7 +57,7 @@ Extensions are **automatically reloaded** when changes are detected. There's no 
 2. [Installation Guide](./installation.md) - Install extensions via CLI or manually
 3. [API Reference](./api-reference.md) - Complete API documentation
 4. [Events Reference](./events.md) - All available events and their properties
-5. [Examples](./examples.md) - Browse example extensions for inspiration
+5. [Extension Gallery](./extensions-gallery.md) - Browse example extensions for inspiration and check out production-ready extensions
 
 ## Quick Install
 
