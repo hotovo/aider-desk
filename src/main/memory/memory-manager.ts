@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { MemoryConfig, MemoryEmbeddingProgress, MemoryEmbeddingProgressPhase, MemoryEntry, MemoryEntryType, SettingsData } from '@common/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,6 +32,127 @@ export class MemoryManager {
   };
 
   constructor(private readonly store: Store) {}
+
+  /**
+   * Checks if an error indicates a corrupted or incomplete model file.
+   */
+  private isCorruptedModelError(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+      return false;
+    }
+
+    const errorMessage = error.message.toLowerCase();
+    return (
+      errorMessage.includes('protobuf parsing failed') ||
+      errorMessage.includes('failed to load model') ||
+      errorMessage.includes('invalid model') ||
+      errorMessage.includes('corrupted') ||
+      errorMessage.includes('unexpected end of file') ||
+      errorMessage.includes('invalid file')
+    );
+  }
+
+  /**
+   * Deletes the cached model directory for a given model name.
+   */
+  private async deleteModelCache(modelName: string): Promise<void> {
+    try {
+      const modelCacheDir = path.join(AIDER_DESK_CACHE_DIR, ...modelName.split('/'));
+      if (fs.existsSync(modelCacheDir)) {
+        logger.info(`Deleting corrupted model cache at: ${modelCacheDir}`);
+        await fs.promises.rm(modelCacheDir, { recursive: true, force: true });
+        logger.info('Model cache deleted successfully');
+      }
+    } catch (error) {
+      logger.error('Failed to delete model cache:', error);
+    }
+  }
+
+  /**
+   * Loads the embedding pipeline with retry logic for corrupted models.
+   * If the model fails to load due to corruption, it will delete the cache and retry once.
+   */
+  private async loadEmbeddingPipelineWithRetry(modelName: string): Promise<FeatureExtractionPipeline | null> {
+    if (!this.transformers) {
+      return null;
+    }
+
+    const attemptLoad = async (): Promise<FeatureExtractionPipeline | null> => {
+      const pipeline = await this.transformers!.pipeline('feature-extraction', modelName, {
+        cache_dir: AIDER_DESK_CACHE_DIR,
+        progress_callback: (progress) => {
+          // @ts-expect-error progress is not typed properly
+          const status = `${Number(progress.progress).toFixed(2)}%`;
+          if (status) {
+            this.embeddingProgress.status = status;
+          }
+        },
+      });
+      return pipeline as FeatureExtractionPipeline;
+    };
+
+    try {
+      const pipeline = await attemptLoad();
+      this.isInitialized = true;
+      this.embeddingProgress = {
+        phase: MemoryEmbeddingProgressPhase.Done,
+        status: this.embeddingProgress.status,
+        done: this.embeddingProgress.total,
+        total: this.embeddingProgress.total,
+        finished: true,
+      };
+      return pipeline;
+    } catch (error) {
+      // Check if this is a corrupted model error
+      if (this.isCorruptedModelError(error)) {
+        logger.warn('Detected corrupted model cache, deleting and retrying...', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        // Delete the corrupted cache
+        await this.deleteModelCache(modelName);
+
+        // Retry loading
+        try {
+          logger.info('Retrying model download after clearing cache...');
+          const pipeline = await attemptLoad();
+          this.isInitialized = true;
+          this.embeddingProgress = {
+            phase: MemoryEmbeddingProgressPhase.Done,
+            status: this.embeddingProgress.status,
+            done: this.embeddingProgress.total,
+            total: this.embeddingProgress.total,
+            finished: true,
+          };
+          logger.info('Model successfully loaded after retry');
+          return pipeline;
+        } catch (retryError) {
+          logger.error('Failed to load model even after clearing cache:', retryError);
+          this.embeddingProgress = {
+            phase: MemoryEmbeddingProgressPhase.Error,
+            status: this.embeddingProgress.status,
+            done: this.embeddingProgress.done,
+            total: this.embeddingProgress.total,
+            finished: true,
+            error: retryError instanceof Error ? retryError.message : String(retryError),
+          };
+          return null;
+        }
+      } else {
+        // Non-corruption error, just log and fail
+        logger.error('Failed to load local embedding model:', error);
+        this.embeddingProgress = {
+          phase: MemoryEmbeddingProgressPhase.Error,
+          status: this.embeddingProgress.status,
+          done: this.embeddingProgress.done,
+          total: this.embeddingProgress.total,
+          finished: true,
+          error: error instanceof Error ? error.message : String(error),
+        };
+        return null;
+      }
+    }
+  }
 
   /**
    * Initialize the database connection and the local embedding model.
@@ -98,40 +220,7 @@ export class MemoryManager {
           }
         }
 
-        this.embeddingPipelinePromise = this.transformers
-          .pipeline('feature-extraction', config.model, {
-            cache_dir: AIDER_DESK_CACHE_DIR,
-            progress_callback: (progress) => {
-              // @ts-expect-error progress is not typed properly
-              const status = `${Number(progress.progress).toFixed(2)}%`;
-              if (status) {
-                this.embeddingProgress.status = status;
-              }
-            },
-          })
-          .then((p) => {
-            this.isInitialized = true;
-            this.embeddingProgress = {
-              phase: MemoryEmbeddingProgressPhase.Done,
-              status: this.embeddingProgress.status,
-              done: this.embeddingProgress.total,
-              total: this.embeddingProgress.total,
-              finished: true,
-            };
-            return p;
-          })
-          .catch((error) => {
-            this.embeddingProgress = {
-              phase: MemoryEmbeddingProgressPhase.Error,
-              status: this.embeddingProgress.status,
-              done: this.embeddingProgress.done,
-              total: this.embeddingProgress.total,
-              finished: true,
-              error: error instanceof Error ? error.message : String(error),
-            };
-            logger.error('Failed to load local embedding model:', error);
-            return null;
-          });
+        this.embeddingPipelinePromise = this.loadEmbeddingPipelineWithRetry(config.model);
       }
 
       logger.info('Memory manager initialized successfully');
@@ -230,7 +319,19 @@ export class MemoryManager {
       }
 
       try {
-        const rows = await this.table.query().select(['id', 'content']).toArray();
+        const rows = await this.table.query().select(['id', 'content', 'type', 'timestamp', 'projectid', 'taskid']).toArray();
+
+        if (rows.length === 0) {
+          this.embeddingProgress = {
+            phase: MemoryEmbeddingProgressPhase.Done,
+            status: this.embeddingProgress.status,
+            done: 0,
+            total: 0,
+            finished: true,
+          };
+          logger.info('No memories to re-embed');
+          return;
+        }
 
         this.embeddingProgress = {
           phase: MemoryEmbeddingProgressPhase.ReEmbedding,
@@ -240,31 +341,55 @@ export class MemoryManager {
           finished: false,
         };
 
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i] as { id?: string; content?: string };
-          if (!row?.id || !row?.content) {
-            continue;
-          }
+        const memories = rows.map((row) => ({
+          id: row.id as string,
+          content: row.content as string,
+          type: row.type as string,
+          timestamp: row.timestamp as number,
+          projectid: row.projectid as string,
+          taskid: row.taskid as string,
+        }));
 
-          const vector = await this.getEmbedding(row.content);
-          await this.table.update({ where: `id = '${row.id}'`, values: { vector } });
+        const firstVector = await this.getEmbedding(memories[0].content);
+        const vectorDimension = firstVector.length;
+
+        const placeholderVector = new Array(vectorDimension).fill(0);
+        const memoriesWithPlaceholder = memories.map((m) => ({
+          ...m,
+          vector: placeholderVector,
+        }));
+
+        await this.db.dropTable(this.tableName);
+        this.table = await this.db.createTable(this.tableName, memoriesWithPlaceholder);
+        logger.info('Created new table with placeholder vectors', { count: memories.length, vectorDimension });
+
+        await this.table.update({
+          where: `id = '${memories[0].id}'`,
+          values: { vector: firstVector },
+        });
+        this.embeddingProgress.done = 1;
+
+        for (let i = 1; i < memories.length; i++) {
+          const memory = memories[i];
+          const vector = await this.getEmbedding(memory.content);
+          await this.table.update({ where: `id = '${memory.id}'`, values: { vector } });
 
           this.embeddingProgress.done = i + 1;
 
           if ((i + 1) % 50 === 0) {
-            logger.info('Re-embedding memories progress', { done: i + 1, total: rows.length });
+            logger.info('Re-embedding memories progress', { done: i + 1, total: memories.length });
           }
         }
 
         this.embeddingProgress = {
           phase: MemoryEmbeddingProgressPhase.Done,
           status: this.embeddingProgress.status,
-          done: rows.length,
-          total: rows.length,
+          done: memories.length,
+          total: memories.length,
           finished: true,
         };
 
-        logger.info('Re-embedding memories completed', { total: rows.length });
+        logger.info('Re-embedding memories completed', { total: memories.length });
       } catch (error) {
         this.embeddingProgress = {
           phase: MemoryEmbeddingProgressPhase.Error,
@@ -296,19 +421,8 @@ export class MemoryManager {
       }
     }
 
-    this.embeddingPipelinePromise = this.transformers
-      .pipeline('feature-extraction', newModel, {
-        cache_dir: AIDER_DESK_CACHE_DIR,
-        progress_callback: (progress) => {
-          // @ts-expect-error progress is not typed properly
-          const status = `${Number(progress.progress).toFixed(2)}%`;
-          if (status) {
-            this.embeddingProgress.status = status;
-          }
-        },
-      })
-      .then(async (p) => {
-        this.isInitialized = true;
+    this.embeddingPipelinePromise = this.loadEmbeddingPipelineWithRetry(newModel).then(async (p) => {
+      if (p) {
         this.embeddingProgress = {
           phase: MemoryEmbeddingProgressPhase.ReEmbedding,
           status: this.embeddingProgress.status,
@@ -316,20 +430,9 @@ export class MemoryManager {
           total: this.embeddingProgress.total,
           finished: true,
         };
-        return p as FeatureExtractionPipeline;
-      })
-      .catch((error) => {
-        this.embeddingProgress = {
-          phase: MemoryEmbeddingProgressPhase.Error,
-          status: this.embeddingProgress.status,
-          done: this.embeddingProgress.done,
-          total: this.embeddingProgress.total,
-          finished: true,
-          error: error instanceof Error ? error.message : String(error),
-        };
-        logger.error('Failed to load local embedding model:', error);
-        return null;
-      });
+      }
+      return p;
+    });
 
     await migrate();
   }

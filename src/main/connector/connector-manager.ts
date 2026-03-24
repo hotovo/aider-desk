@@ -50,19 +50,35 @@ export class ConnectorManager {
       maxHttpBufferSize: 1e8, // Increase payload size to 100 MB
     });
 
+    // Log when Socket.IO server is ready to accept connections
+    // The 'connection' event fires after the namespace handshake is complete
+    this.io.engine.on('connection_error', (err) => {
+      logger.warn('Socket.IO engine connection error', { error: err.message });
+    });
+
     this.io.on('connection', (socket) => {
-      logger.info('Socket.IO client connected');
+      logger.info('Socket.IO client connected', {
+        socketId: socket.id,
+        handshake: {
+          time: socket.handshake.time,
+          address: socket.handshake.address,
+        },
+      });
 
       socket.on('message', (message) => this.processMessage(socket, message));
       socket.on('log', (message) => this.processLogMessage(socket, message));
 
-      socket.on('disconnect', () => {
+      socket.on('disconnect', (reason) => {
         const connector = this.findConnectorBySocket(socket);
         logger.info('Socket.IO client disconnected', {
           baseDir: connector?.baseDir,
+          reason,
+          socketId: socket.id,
         });
         this.eventManager.unsubscribe(socket);
-        this.removeConnector(socket);
+        if (connector) {
+          this.removeConnector(socket);
+        }
       });
     });
 
@@ -77,7 +93,6 @@ export class ConnectorManager {
 
   private processMessage = (socket: Socket, message: Message) => {
     try {
-      logger.debug('Received message from client', { action: message.action });
       logger.debug('Message:', {
         message: JSON.stringify(message).slice(0, 1000),
       });
@@ -88,6 +103,18 @@ export class ConnectorManager {
           taskId: message.taskId,
           listenTo: message.listenTo,
         });
+
+        // Check if there's an existing connector with the same baseDir and taskId
+        // This can happen on reconnection when the old connector wasn't properly cleaned up
+        const existingConnector = this.connectors.find((c) => c.baseDir === message.baseDir && c.taskId === message.taskId);
+        if (existingConnector) {
+          logger.info('Removing existing connector before creating new one', {
+            baseDir: message.baseDir,
+            taskId: message.taskId,
+          });
+          this.removeConnector(existingConnector.socket);
+        }
+
         const connector = new Connector(socket, message.baseDir, message.taskId, message.source, message.listenTo, message.inputHistoryFile);
         this.connectors.push(connector);
 
@@ -242,7 +269,10 @@ export class ConnectorManager {
         if (!connector) {
           return;
         }
-        void this.projectManager.getProject(connector.baseDir).getTask(connector.taskId)?.addContextMessage(message.role, message.content, message.usageReport);
+        void this.projectManager
+          .getProject(connector.baseDir)
+          .getTask(connector.taskId)
+          ?.addRoleContextMessage(message.role, message.content, message.usageReport);
       } else if (isSubscribeEventsMessage(message)) {
         logger.info('Subscribing to events', { eventTypes: message.eventTypes, baseDirs: message.baseDirs });
         this.eventManager.subscribe(socket, {
@@ -261,6 +291,7 @@ export class ConnectorManager {
   };
 
   private processLogMessage = (socket: Socket, message: LogMessage) => {
+    logger.debug('Received log message from connector', { message });
     const connector = this.findConnectorBySocket(socket);
     if (!connector) {
       return;

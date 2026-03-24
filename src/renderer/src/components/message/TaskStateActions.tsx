@@ -1,25 +1,56 @@
 import { IoPlayOutline } from 'react-icons/io5';
 import { RiAlertLine, RiCheckLine, RiPlayLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { useState, ReactNode } from 'react';
-import { DefaultTaskState } from '@common/types';
+import { ReactNode, useState } from 'react';
+import { DefaultTaskState, Mode, TaskData } from '@common/types';
+
+import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 
 import { Button } from '@/components/common/Button';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 type Props = {
+  projectDir: string;
+  taskId: string;
   state: string | undefined;
+  mode?: Mode;
   isArchived: boolean | undefined;
+  task?: TaskData | null;
   onResumeTask: () => void;
   onMarkAsDone: () => void;
-  onProceed?: () => void;
+  onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
 };
 
-export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone, onProceed, onArchiveTask, onUnarchiveTask, onDeleteTask }: Props) => {
+export const TaskStateActions = ({
+  taskId,
+  state,
+  isArchived,
+  task,
+  onResumeTask,
+  onMarkAsDone,
+  onRunPrompt,
+  onArchiveTask,
+  onUnarchiveTask,
+  onDeleteTask,
+}: Props) => {
   const { t } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const { isEmpty: isEmptyTaskActions, renderComponents: renderTaskActionsComponents } = useExtensionComponentsWrapper({
+    placement: 'task-state-actions-all',
+    additionalProps: {
+      task,
+      taskId,
+      onRunPrompt,
+    },
+  });
+
+  if (!isEmptyTaskActions) {
+    return renderTaskActionsComponents();
+  }
 
   const handleDeleteClick = () => {
     setIsDeleting(true);
@@ -35,7 +66,7 @@ export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone
   };
 
   const handleProceedClick = () => {
-    onProceed?.();
+    onRunPrompt?.('Proceed.');
   };
 
   const handleArchiveClick = () => {
@@ -48,10 +79,11 @@ export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone
 
   const renderSection = (icon: ReactNode, text: string, actions: ReactNode) => {
     return (
-      <div className="p-2.5 max-w-full break-words text-xs border-t border-border-dark-light relative group bg-bg-primary-light-strong">
-        <div className="flex items-center gap-3">
+      <div className="px-4 p-2 max-w-full break-words text-xs border-t border-border-dark-light relative group bg-bg-primary-light-strong">
+        <div className="flex items-center gap-2">
           {icon}
           <div className="flex-1 text-text-secondary">{text}</div>
+          <ExtensionComponentWrapper placement="task-state-actions" direction="horizontal" />
           {actions}
         </div>
       </div>
@@ -84,18 +116,6 @@ export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone
     );
   }
 
-  if (state === DefaultTaskState.ReadyForReview) {
-    return renderSection(
-      <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
-      t('messages.taskReadyForReview'),
-      <>
-        <Button key="markAsDone" variant="outline" color="primary" size="xs" onClick={onMarkAsDone}>
-          {t('messages.markAsDone')}
-        </Button>
-      </>,
-    );
-  }
-
   if (state === DefaultTaskState.ReadyForImplementation) {
     return renderSection(
       <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
@@ -104,6 +124,18 @@ export const TaskStateActions = ({ state, isArchived, onResumeTask, onMarkAsDone
         <Button key="proceed" variant="outline" color="primary" size="xs" onClick={handleProceedClick}>
           <IoPlayOutline className="mr-1 w-3 h-3" />
           {t('messages.proceed')}
+        </Button>
+      </>,
+    );
+  }
+
+  if (state === DefaultTaskState.ReadyForReview) {
+    return renderSection(
+      <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
+      t('messages.taskReadyForReview'),
+      <>
+        <Button key="markAsDone" variant="outline" color="primary" size="xs" onClick={onMarkAsDone}>
+          {t('messages.markAsDone')}
         </Button>
       </>,
     );

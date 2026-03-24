@@ -2,20 +2,22 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignmentAdd } from 'react-icons/md';
+import { ToolMessage } from '@common/types';
 
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
   onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
+export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const prompt = message.args.prompt as string;
@@ -23,8 +25,11 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
   const name = message.args.name as string | undefined;
   const parentTaskId = message.args.parentTaskId as string | null | undefined;
   const modelId = message.args.modelId as string;
-  const execute = message.args.execute as boolean;
-  const executeInBackground = message.args.executeInBackground as boolean;
+  const mode = message.args.mode as string | undefined;
+  const autoApprove = message.args.autoApprove as boolean | undefined;
+  const worktree = message.args.worktree as boolean | undefined;
+  const executeAndWait = message.args.executeAndWait as boolean | undefined;
+  const executeInBackground = message.args.executeInBackground as boolean | undefined;
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Error creating task:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Creating task denied by user.');
@@ -34,40 +39,22 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
       <div className="text-text-muted">
         <MdAssignmentAdd className="w-4 h-4" />
       </div>
-      <div className="text-xs text-text-primary flex flex-wrap gap-1">
-        <span>{t('toolMessage.tasks.createTask')}</span>
-        <span>
-          <CodeInline className="bg-bg-primary-light">{prompt.length > 30 ? prompt.substring(0, 27) + '...' : prompt}</CodeInline>
+      <div className="text-xs text-text-primary flex gap-3 overflow-hidden">
+        <span className="flex-shrink-0">{t('toolMessage.tasks.createTask')}</span>
+        <span className="overflow-hidden text-ellipsis max-w-[600px]">
+          <CodeInline className="bg-bg-primary-light whitespace-nowrap">{prompt}</CodeInline>
         </span>
-        {agentProfileId && (
-          <>
-            <span>{t('toolMessage.tasks.agentProfile')}:</span>
-            <span>
-              <CodeInline className="bg-bg-primary-light">{agentProfileId}</CodeInline>
-            </span>
-          </>
-        )}
-        {modelId && (
-          <>
-            <span>{t('toolMessage.tasks.model')}:</span>
-            <span>
-              <CodeInline className="bg-bg-primary-light">{modelId}</CodeInline>
-            </span>
-          </>
-        )}
       </div>
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
         (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`create-task-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`create-task-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiErrorWarningFill className="w-3 h-3 text-error" />
+          </Tooltip>
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`create-task-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`create-task-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiCloseCircleFill className="w-3 h-3 text-warning" />
+          </Tooltip>
         ) : (
           <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
         ))}
@@ -114,9 +101,6 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
               <div className="text-3xs">
                 <span className="text-text-muted">{t('toolMessage.tasks.taskId')}:</span> {content.id}
               </div>
-              <div className="text-3xs">
-                <span className="text-text-muted">{t('agentProfiles.profileName')}:</span> {content.name}
-              </div>
               {name && (
                 <div className="text-3xs">
                   <span className="text-text-muted">{t('toolMessage.tasks.name')}:</span> {name}
@@ -137,17 +121,32 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
                   <span className="text-text-muted">{t('toolMessage.tasks.model')}:</span> {modelId}
                 </div>
               )}
-              {execute !== undefined && (
+              {mode && (
                 <div className="text-3xs">
-                  <span className="text-text-muted">{t('toolMessage.tasks.execute')}:</span> {execute ? t('toolMessage.tasks.yes') : t('toolMessage.tasks.no')}
+                  <span className="text-text-muted">{t('toolMessage.tasks.mode')}:</span> {mode}
                 </div>
               )}
-              {executeInBackground !== undefined && execute && (
+              {autoApprove && (
                 <div className="text-3xs">
-                  <span className="text-text-muted">{t('toolMessage.tasks.executeInBackground')}:</span>{' '}
-                  {executeInBackground ? t('toolMessage.tasks.yes') : t('toolMessage.tasks.no')}
+                  <span className="text-text-muted">{t('toolMessage.tasks.autoApprove')}:</span>{' '}
+                  {autoApprove ? t('toolMessage.tasks.yes') : t('toolMessage.tasks.no')}
                 </div>
               )}
+              {worktree && (
+                <div className="text-3xs">
+                  <span className="text-text-muted">{t('toolMessage.tasks.worktree')}:</span>{' '}
+                  {worktree ? t('toolMessage.tasks.yes') : t('toolMessage.tasks.no')}
+                </div>
+              )}
+              {executeAndWait ? (
+                <div className="text-3xs">
+                  <span className="text-text-muted">{t('toolMessage.tasks.executeAndWait')}:</span> {t('toolMessage.tasks.yes')}
+                </div>
+              ) : executeInBackground ? (
+                <div className="text-3xs">
+                  <span className="text-text-muted">{t('toolMessage.tasks.executeInBackground')}:</span> {t('toolMessage.tasks.yes')}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -159,5 +158,16 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} onFork={onFork} />;
+  return (
+    <ExpandableMessageBlock
+      message={message}
+      title={title}
+      content={renderContent()}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
+    />
+  );
 };

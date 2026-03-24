@@ -16,14 +16,19 @@ import {
 import { extractProviderModel } from '@common/utils';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
+import { anthropicCompatibleProviderStrategy } from './providers/anthropic-compatible';
+import { auggieProviderStrategy } from './providers/auggie';
 import { azureProviderStrategy } from './providers/azure';
 import { bedrockProviderStrategy } from './providers/bedrock';
 import { cerebrasProviderStrategy } from './providers/cerebras';
 import { claudeAgentSdkProviderStrategy } from './providers/claude-agent-sdk';
 import { deepseekProviderStrategy } from './providers/deepseek';
 import { geminiProviderStrategy } from './providers/gemini';
+import { geminiCliProviderStrategy } from './providers/gemini-cli';
 import { gpustackProviderStrategy } from './providers/gpustack';
 import { groqProviderStrategy } from './providers/groq';
+import { alibabaPlanProviderStrategy } from './providers/alibaba-plan';
+import { kimiPlanProviderStrategy } from './providers/kimi-plan';
 import { litellmProviderStrategy } from './providers/litellm';
 import { lmStudioProviderStrategy } from './providers/lm-studio';
 import { minimaxProviderStrategy } from './providers/minimax';
@@ -38,7 +43,7 @@ import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { JSONValue, LanguageModelUsage, ToolSet } from 'ai';
+import type { JSONValue, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
@@ -83,14 +88,19 @@ export class ModelManager {
   // Provider registry for strategy pattern
   private providerRegistry: LlmProviderRegistry = {
     anthropic: anthropicProviderStrategy,
+    'anthropic-compatible': anthropicCompatibleProviderStrategy,
+    auggie: auggieProviderStrategy,
     azure: azureProviderStrategy,
     bedrock: bedrockProviderStrategy,
     cerebras: cerebrasProviderStrategy,
     'claude-agent-sdk': claudeAgentSdkProviderStrategy,
     deepseek: deepseekProviderStrategy,
     gemini: geminiProviderStrategy,
+    'gemini-cli': geminiCliProviderStrategy,
     gpustack: gpustackProviderStrategy,
     groq: groqProviderStrategy,
+    'alibaba-plan': alibabaPlanProviderStrategy,
+    'kimi-plan': kimiPlanProviderStrategy,
     litellm: litellmProviderStrategy,
     lmstudio: lmStudioProviderStrategy,
     minimax: minimaxProviderStrategy,
@@ -614,7 +624,7 @@ export class ModelManager {
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
-  ): LanguageModelV2 {
+  ): LanguageModelV2 | Promise<LanguageModelV2> {
     const strategy = this.providerRegistry[provider.provider.name];
     if (!strategy) {
       throw new Error(`Unsupported LLM provider: ${provider.provider.name}`);
@@ -782,5 +792,44 @@ export class ModelManager {
     }
 
     return await strategy.createVoiceSession(provider, this.store.getSettings());
+  }
+
+  /**
+   * Normalizes messages for provider-specific requirements
+   */
+  normalizeMessages(provider: ProviderProfile, model: string | Model, messages: ModelMessage[]): ModelMessage[] {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy?.normalizeMessages) {
+      return messages;
+    }
+
+    // Resolve Model object
+    let modelObj: Model | undefined;
+    if (typeof model === 'string') {
+      modelObj = this.getModelSettings(provider.id, model);
+    } else {
+      modelObj = model;
+    }
+
+    if (!modelObj) {
+      logger.warn(`Model not found for normalization: ${model}`);
+      return messages;
+    }
+
+    return strategy.normalizeMessages(provider.provider, modelObj, messages);
+  }
+
+  /**
+   * Determines if an error is retryable for the given provider and model
+   * Defaults to true (retryable) if the provider doesn't implement isRetryable
+   */
+  isRetryable(provider: ProviderProfile, _modelId: string, error: unknown): boolean {
+    const strategy = this.providerRegistry[provider.provider.name];
+    if (!strategy?.isRetryable) {
+      // Default to retryable if provider doesn't implement this method
+      return true;
+    }
+
+    return strategy.isRetryable(error);
   }
 }

@@ -1,9 +1,10 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, GeminiProvider, GeminiVoiceModel, isGeminiProvider, LlmProvider } from '@common/agent';
 import { createGoogleGenerativeAI, google, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import { Modality } from '@google/genai';
+import { v4 as uuidv4 } from 'uuid';
 
-import type { LanguageModelUsage, ToolSet } from 'ai';
+import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -209,6 +210,27 @@ const getGeminiModelInfo = (_provider: ProviderProfile, modelId: string, allMode
   return allModelInfos[fullModelId];
 };
 
+const normalizeGeminiMessages = (_provider: LlmProvider, _model: Model, messages: ModelMessage[]): ModelMessage[] => {
+  if (messages.length === 0) {
+    return messages;
+  }
+
+  const lastMessage = messages[messages.length - 1];
+
+  if (lastMessage.role !== 'user') {
+    const continueMessage: ContextUserMessage = {
+      id: uuidv4(),
+      role: 'user',
+      content: 'Continue',
+    };
+
+    logger.debug('Added "Continue" user message for Gemini provider (last message was not a user message)');
+    return [...messages, continueMessage];
+  }
+
+  return messages;
+};
+
 const createGeminiVoiceSession = async (profile: ProviderProfile, settings: SettingsData): Promise<VoiceSession> => {
   if (!isGeminiProvider(profile.provider)) {
     throw new Error('Gemini provider not configured');
@@ -282,6 +304,18 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
   }
 };
 
+const isGeminiRetryable = (error: unknown): boolean => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+
+  // Gemini: thought_signature errors (occurs when resuming from another model's conversation) - non-retryable
+  if (errorMessage.includes('thought_signature')) {
+    return false;
+  }
+
+  // All other errors are retryable by default
+  return true;
+};
+
 // === Complete Strategy Implementation ===
 export const geminiProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
@@ -297,4 +331,10 @@ export const geminiProviderStrategy: LlmProviderStrategy = {
   getProviderTools: getGeminiProviderTools,
   getModelInfo: getGeminiModelInfo,
   createVoiceSession: createGeminiVoiceSession,
+
+  // Message normalization
+  normalizeMessages: normalizeGeminiMessages,
+
+  // Error handling
+  isRetryable: isGeminiRetryable,
 };

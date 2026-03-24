@@ -31,22 +31,24 @@ export const createTodoToolset = (task: Task, profile: AgentProfile, promptConte
         .describe('An array of todo items.'),
       initialUserPrompt: z.string().describe('The original user prompt that initiated the task.'),
     }),
-    execute: async (args, { toolCallId }) => {
-      task.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, args, undefined, undefined, promptContext);
+    execute: async (input, { toolCallId }) => {
+      const { items, initialUserPrompt } = input;
+      task.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, input, undefined, undefined, promptContext);
 
-      const questionKey = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_SET_ITEMS}`;
+      const toolName = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_SET_ITEMS}`;
+      const questionKey = toolName;
       const questionText = 'Approve setting todo items? This will overwrite any existing todo list.';
-      const questionSubject = `Initial User Prompt: ${args.initialUserPrompt}
-Items: ${JSON.stringify(args.items)}`;
+      const questionSubject = `Initial User Prompt: ${initialUserPrompt}
+Items: ${JSON.stringify(items)}`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         return `Setting todo items denied by user. Reason: ${userInput}`;
       }
 
       try {
-        await task.setTodos(args.items, args.initialUserPrompt);
+        await task.setTodos(items, initialUserPrompt);
         return 'Todo items set successfully.';
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -58,13 +60,14 @@ Items: ${JSON.stringify(args.items)}`;
   const getTodoItemsTool = tool({
     description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_GET_ITEMS],
     inputSchema: z.object({}),
-    execute: async (_, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
       task.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_GET_ITEMS, {}, undefined, undefined, promptContext);
 
-      const questionKey = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_GET_ITEMS}`;
+      const toolName = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_GET_ITEMS}`;
+      const questionKey = toolName;
       const questionText = 'Approve getting todo items?';
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Getting todo items denied by user. Reason: ${userInput}`;
@@ -89,20 +92,22 @@ Items: ${JSON.stringify(args.items)}`;
       name: z.string().describe('The name of the todo item to update.'),
       completed: z.boolean().describe('The new completion status for the todo item.'),
     }),
-    execute: async (args, { toolCallId }) => {
-      task.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_UPDATE_ITEM_COMPLETION, args, undefined, undefined, promptContext);
+    execute: async (input, { toolCallId }) => {
+      const { name, completed } = input;
+      task.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_UPDATE_ITEM_COMPLETION, input, undefined, undefined, promptContext);
 
-      const questionKey = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_UPDATE_ITEM_COMPLETION}`;
-      const questionText = `Approve updating completion status for todo item "${args.name}" to ${args.completed}?`;
+      const toolName = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_UPDATE_ITEM_COMPLETION}`;
+      const questionKey = toolName;
+      const questionText = `Approve updating completion status for todo item "${name}" to ${completed}?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Updating todo item completion denied by user. Reason: ${userInput}`;
       }
 
       try {
-        await task.updateTodo(args.name, { completed: args.completed });
+        await task.updateTodo(name, { completed });
         const data = await task.readTodoFile();
         if (!data) {
           return 'No todo items found.';
@@ -118,13 +123,14 @@ Items: ${JSON.stringify(args.items)}`;
   const clearTodoItemsTool = tool({
     description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_CLEAR_ITEMS],
     inputSchema: z.object({}),
-    execute: async (_, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
       task.addToolMessage(toolCallId, TODO_TOOL_GROUP_NAME, TODO_TOOL_CLEAR_ITEMS, {}, undefined, undefined, promptContext);
 
-      const questionKey = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_CLEAR_ITEMS}`;
+      const toolName = `${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_CLEAR_ITEMS}`;
+      const questionKey = toolName;
       const questionText = 'Approve clearing all todo items? This action cannot be undone.';
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Clearing todo items denied by user. Reason: ${userInput}`;

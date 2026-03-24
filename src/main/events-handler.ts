@@ -2,15 +2,21 @@ import path from 'path';
 import fs from 'fs/promises';
 
 import {
+  AgentProfile,
   CloudflareTunnelStatus,
-  CustomCommand,
+  CommandsData,
+  CreateTaskParams,
   EditFormat,
   EnvironmentVariable,
   FileEdit,
+  InstalledExtension,
   McpServerConfig,
   McpTool,
+  MemoryEntry,
   Mode,
   Model,
+  OpenDialogOptions,
+  OpenDialogResult,
   OS,
   ProjectData,
   ProjectSettings,
@@ -19,29 +25,31 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
-  CreateTaskParams,
   TaskStateData,
   TodoItem,
+  UpdatedFile,
   UsageDataRow,
   VersionsInfo,
   VoiceSession,
-  AgentProfile,
-  MemoryEntry,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
+// @ts-expect-error istextorbinary is not typed properly
+import { isBinary } from 'istextorbinary';
 
+import type { ModeDefinition, ExtensionUIComponent } from '@common/types';
 import type { BrowserWindow } from 'electron';
 
 import { McpManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ModelManager } from '@/models';
-import { ProjectManager } from '@/project';
+import { Project, ProjectManager } from '@/project';
 import { CloudflareTunnelManager } from '@/server';
 import { Store } from '@/store';
 import { TelemetryManager } from '@/telemetry';
 import { VersionsManager } from '@/versions';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal/terminal-manager';
+import { ExtensionManager, LoadedExtension } from '@/extensions';
 import logger from '@/logger';
 import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
@@ -63,6 +71,7 @@ export class EventsHandler {
     private eventManager: EventManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
+    private readonly extensionManager: ExtensionManager,
   ) {}
 
   loadSettings(): SettingsData {
@@ -73,10 +82,11 @@ export class EventsHandler {
     const oldSettings = this.store.getSettings();
     this.store.saveSettings(newSettings);
 
-    this.mcpManager.settingsChanged(oldSettings, newSettings);
     void this.projectManager.settingsChanged(oldSettings, newSettings);
     this.telemetryManager.settingsChanged(oldSettings, newSettings);
     void this.memoryManager.settingsChanged(oldSettings, newSettings);
+    this.extensionManager.settingsChanged(oldSettings, newSettings);
+    this.eventManager.sendSettingsUpdated(newSettings);
 
     return this.store.getSettings();
   }
@@ -185,8 +195,6 @@ export class EventsHandler {
 
     this.store.setOpenProjects(updatedProjects);
 
-    void this.mcpManager.initMcpConnectors(this.store.getSettings().mcpServers, baseDir, baseDir);
-
     return updatedProjects;
   }
 
@@ -207,8 +215,8 @@ export class EventsHandler {
     this.store.removeRecentProject(baseDir);
   }
 
-  interruptResponse(baseDir: string, taskId: string): void {
-    this.projectManager.getProject(baseDir).getTask(taskId)?.interruptResponse();
+  async interruptResponse(baseDir: string, taskId: string, interruptId?: string): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.interruptResponse(interruptId);
   }
 
   clearContext(baseDir: string, taskId: string, includeLastMessage = true): void {
@@ -221,6 +229,11 @@ export class EventsHandler {
 
   async removeMessage(baseDir: string, taskId: string, messageId: string): Promise<void> {
     const removedIds = (await this.projectManager.getProject(baseDir).getTask(taskId)?.removeMessage(messageId)) ?? [];
+    this.eventManager.sendTaskMessageRemoved(baseDir, taskId, removedIds);
+  }
+
+  async removeMessagesUpTo(baseDir: string, taskId: string, messageId: string): Promise<void> {
+    const removedIds = (await this.projectManager.getProject(baseDir).getTask(taskId)?.removeMessagesUpTo(messageId)) ?? [];
     this.eventManager.sendTaskMessageRemoved(baseDir, taskId, removedIds);
   }
 
@@ -248,6 +261,17 @@ export class EventsHandler {
     await task.handoffConversation(mode, focus);
   }
 
+  async runCodeInlineRequest(
+    baseDir: string,
+    taskId: string,
+    filename: string,
+    lineNumber: number,
+    userComment: string,
+    createNewTask?: boolean,
+  ): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.runCodeInlineRequest(filename, lineNumber, userComment, createNewTask);
+  }
+
   async loadInputHistory(baseDir: string): Promise<string[]> {
     return await this.projectManager.getProject(baseDir).loadInputHistory();
   }
@@ -264,6 +288,14 @@ export class EventsHandler {
     return task.getAllFiles(useGit);
   }
 
+  async getUpdatedFiles(baseDir: string, taskId: string): Promise<UpdatedFile[]> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      return [];
+    }
+    return await task.getUpdatedFiles();
+  }
+
   async addFile(baseDir: string, taskId: string, filePath: string, readOnly = false): Promise<void> {
     void this.projectManager.getProject(baseDir).getTask(taskId)?.addFiles({ path: filePath, readOnly });
   }
@@ -272,18 +304,25 @@ export class EventsHandler {
     void this.projectManager.getProject(baseDir).getTask(taskId)?.dropFile(filePath);
   }
 
-  async pasteImage(baseDir: string, taskId: string): Promise<void> {
+  async pasteImage(baseDir: string, taskId: string, imageBuffer?: Buffer): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       return;
     }
 
     try {
-      const { clipboard } = await import('electron');
-      const image = clipboard.readImage();
-      if (image.isEmpty()) {
-        task.addLogMessage('info', 'No image found in clipboard.');
-        return;
+      let buffer: Buffer;
+
+      if (imageBuffer) {
+        buffer = imageBuffer;
+      } else {
+        const { clipboard } = await import('electron');
+        const image = clipboard.readImage();
+        if (image.isEmpty()) {
+          task.addLogMessage('info', 'No image found in clipboard.');
+          return;
+        }
+        buffer = image.toPNG();
       }
 
       const imagesDir = path.join(AIDER_DESK_TMP_DIR, 'images');
@@ -304,11 +343,10 @@ export class EventsHandler {
       }
       const nextImageNumber = maxNumber + 1;
       const imageName = `image-${nextImageNumber.toString().padStart(3, '0')}`;
-      const imageBuffer = image.toPNG();
       const imagePath = path.join(imagesDir, `${imageName}.png`);
       const absoluteImagePath = path.join(baseDir, imagePath);
 
-      await fs.writeFile(absoluteImagePath, imageBuffer);
+      await fs.writeFile(absoluteImagePath, buffer);
 
       await task.addFiles({ path: imagePath, readOnly: true });
     } catch (error) {
@@ -329,16 +367,31 @@ export class EventsHandler {
     return this.projectManager.getProject(baseDir).getTask(taskId)?.savePromptOnly(prompt);
   }
 
-  answerQuestion(baseDir: string, taskId: string, answer: string): void {
-    this.projectManager.getProject(baseDir).getTask(taskId)?.answerQuestion(answer);
+  async answerQuestion(baseDir: string, taskId: string, answer: string): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.answerQuestion(answer);
+  }
+
+  removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void {
+    this.projectManager.getProject(baseDir).getTask(taskId)?.removeQueuedPrompt(promptId);
+  }
+
+  async sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (task) {
+      await task.sendQueuedPromptNow(promptId);
+    }
   }
 
   runCommand(baseDir: string, taskId: string, command: string): void {
     void this.projectManager.getProject(baseDir).getTask(taskId)?.runCommand(command);
   }
 
-  async getCustomCommands(baseDir: string): Promise<CustomCommand[]> {
-    return this.projectManager.getCustomCommands(baseDir);
+  async getCommands(baseDir: string): Promise<CommandsData> {
+    return this.projectManager.getCommands(baseDir);
+  }
+
+  async getCustomModes(baseDir: string): Promise<ModeDefinition[]> {
+    return this.projectManager.getCustomModes(baseDir);
   }
 
   async runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void> {
@@ -403,16 +456,20 @@ export class EventsHandler {
       .forEachTask((task) => task.updateModels(task.task.mainModel, task.task.weakModel || null, projectSettings.modelEditFormats[task.task.mainModel]));
   }
 
-  async loadMcpServerTools(serverName: string, config?: McpServerConfig): Promise<McpTool[] | null> {
-    return await this.mcpManager.getMcpServerTools(serverName, config);
+  async loadMcpServerTools(serverName: string, config?: McpServerConfig): Promise<McpTool[] | string | null> {
+    const serverConfig = config ?? this.store.getSettings().mcpServers[serverName];
+    if (!serverConfig) {
+      return null;
+    }
+    return await this.mcpManager.getMcpServerTools(serverName, serverConfig);
   }
 
   async reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void> {
-    // Get the currently active project's base directory
-    const activeProject = this.store.getOpenProjects().find((p) => p.active);
-    const projectDir = activeProject ? activeProject.baseDir : null;
-    // taskDir defaults to projectDir when there's no task context
-    await this.mcpManager.initMcpConnectors(mcpServers, projectDir, projectDir, force);
+    await this.mcpManager.reloadAllServers(mcpServers, force);
+  }
+
+  async reloadMcpServer(serverName: string, config: McpServerConfig): Promise<McpTool[]> {
+    return await this.mcpManager.reloadSingleServer(serverName, config);
   }
 
   async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {
@@ -485,6 +542,44 @@ export class EventsHandler {
     await task.revertLastMerge();
   }
 
+  async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.restoreFile(filePath);
+  }
+
+  async readFile(baseDir: string, filePath: string): Promise<string> {
+    const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(baseDir, filePath);
+    const fileContentBuffer = await fs.readFile(absolutePath);
+
+    if (isBinary(filePath, fileContentBuffer)) {
+      throw new Error('Cannot read binary file');
+    }
+
+    return fileContentBuffer.toString('utf-8');
+  }
+
+  async generateCommitMessage(baseDir: string, taskId: string): Promise<string> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    return await task.generateCommitMessage();
+  }
+
+  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.commitChanges(message, amend);
+  }
+
   async listBranches(projectDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
     return await this.projectManager.worktreeManager.listBranches(projectDir);
   }
@@ -525,13 +620,13 @@ export class EventsHandler {
     await task.continueWorktreeRebase();
   }
 
-  async resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
+  async resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);
     }
 
-    await task.resolveWorktreeConflictsWithAgent();
+    await task.resolveConflictsWithAgent();
   }
 
   async scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void> {
@@ -631,6 +726,7 @@ export class EventsHandler {
         messages: [],
         files: [],
         todoItems: [],
+        queuedPrompts: [],
         question: null,
         workingMode: 'local',
       }
@@ -641,10 +737,14 @@ export class EventsHandler {
     return (await this.projectManager.getProject(baseDir).getTask(taskId)?.generateContextMarkdown()) || null;
   }
 
-  async exportTaskToMarkdown(baseDir: string, taskId: string): Promise<void> {
+  async exportTaskToMarkdown(baseDir: string, taskId: string, copyOnly: boolean = false): Promise<string | null> {
     const markdownContent = await this.generateTaskMarkdown(baseDir, taskId);
 
     if (markdownContent) {
+      if (copyOnly) {
+        return markdownContent;
+      }
+
       try {
         const defaultPath = `${baseDir}/session-${new Date().toISOString().replace(/:/g, '-').substring(0, 19)}.md`;
         let filePath = defaultPath;
@@ -657,7 +757,7 @@ export class EventsHandler {
             filters: [{ name: 'Markdown Files', extensions: ['md'] }],
           });
           if (dialogResult.canceled) {
-            return;
+            return null;
           }
 
           filePath = dialogResult.filePath || defaultPath;
@@ -680,13 +780,15 @@ export class EventsHandler {
         logger.error('Error exporting session to Markdown', { dialogError });
       }
     }
+
+    return null;
   }
 
-  setZoomLevel(zoomLevel: number): void {
+  async setZoomLevel(zoomLevel: number) {
     logger.info(`Setting zoom level to ${zoomLevel}`);
     this.mainWindow?.webContents.setZoomFactor(zoomLevel);
     const currentSettings = this.store.getSettings();
-    this.store.saveSettings({ ...currentSettings, zoomLevel });
+    await this.saveSettings({ ...currentSettings, zoomLevel });
   }
 
   async getVersions(forceRefresh = false): Promise<VersionsInfo> {
@@ -761,7 +863,7 @@ export class EventsHandler {
     this.projectManager.modelsUpdated();
   }
 
-  async showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue> {
+  async showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult> {
     if (!this.mainWindow) {
       return {
         canceled: true,
@@ -835,7 +937,7 @@ export class EventsHandler {
     return this.projectManager.getProject(baseDir).getTask(taskId)?.initProjectAgentsFile();
   }
 
-  enableServer(username?: string, password?: string): SettingsData {
+  async enableServer(username?: string, password?: string): Promise<SettingsData> {
     const currentSettings = this.store.getSettings();
     const updatedSettings: SettingsData = {
       ...currentSettings,
@@ -850,11 +952,10 @@ export class EventsHandler {
         },
       },
     };
-    this.store.saveSettings(updatedSettings);
-    return updatedSettings;
+    return await this.saveSettings(updatedSettings);
   }
 
-  disableServer(): SettingsData {
+  async disableServer(): Promise<SettingsData> {
     const currentSettings = this.store.getSettings();
     const updatedSettings: SettingsData = {
       ...currentSettings,
@@ -863,8 +964,7 @@ export class EventsHandler {
         enabled: false,
       },
     };
-    this.store.saveSettings(updatedSettings);
-    return updatedSettings;
+    return await this.saveSettings(updatedSettings);
   }
 
   async startCloudflareTunnel(): Promise<CloudflareTunnelStatus | null> {
@@ -891,6 +991,7 @@ export class EventsHandler {
   }
 
   async getAllAgentProfiles() {
+    // Extension agents are now included in getAllProfiles()
     return this.agentProfileManager.getAllProfiles();
   }
 
@@ -900,12 +1001,24 @@ export class EventsHandler {
   }
 
   async updateAgentProfile(profile: AgentProfile) {
+    // First, check if this is an extension-provided agent
+    const extensionProfile = await this.extensionManager.updateAgentProfile(profile);
+
+    if (extensionProfile) {
+      // Extension handled it - notify projects of the change
+      this.projectManager.agentProfileUpdated(profile, extensionProfile);
+      return;
+    }
+
+    // Not an extension agent - use file-based storage
     const oldProfile = this.agentProfileManager.getProfile(profile.id);
+    if (!oldProfile) {
+      logger.warn('Agent profile not found when updating:', profile.id);
+      return;
+    }
     await this.agentProfileManager.updateProfile(profile);
 
-    if (oldProfile) {
-      this.projectManager.agentProfileUpdated(oldProfile, profile);
-    }
+    this.projectManager.agentProfileUpdated(oldProfile, profile);
   }
 
   async deleteAgentProfile(profileId: string) {
@@ -931,5 +1044,84 @@ export class EventsHandler {
 
   getMemoryEmbeddingProgress() {
     return this.memoryManager.getProgress();
+  }
+
+  getInstalledExtensions(projectDir?: string): InstalledExtension[] {
+    const extensions = this.extensionManager.getExtensions(projectDir);
+    return extensions.map((ext: LoadedExtension) => ({
+      id: ext.id,
+      metadata: ext.metadata,
+      filePath: ext.filePath,
+      initialized: ext.initialized,
+      projectDir: ext.projectDir,
+      readmeContent: ext.readmeContent,
+    }));
+  }
+
+  async getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) {
+    return await this.extensionManager.getAvailableExtensions(repositories, forceRefresh, fetchOnly);
+  }
+
+  async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string) {
+    let project: Project | undefined = undefined;
+    if (projectDir) {
+      project = this.projectManager.getProject(projectDir);
+      if (!project) {
+        throw new Error('Project not found');
+      }
+    }
+
+    return await this.extensionManager.installExtension(extensionId, repositoryUrl, project);
+  }
+
+  async uninstallExtension(extensionId: string, projectDir?: string) {
+    return await this.extensionManager.uninstallExtension(extensionId, projectDir);
+  }
+
+  getUIComponents(placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[] {
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;
+    const components = this.extensionManager.getUIComponents(project, task);
+    const filtered = placement ? components.filter((c) => c.component.placement === placement) : components;
+    return filtered.map((c) => ({
+      extensionId: c.extensionId,
+      componentId: c.component.id,
+      placement: c.component.placement,
+      jsx: c.component.jsx,
+      loadData: c.component.loadData,
+      noDataCache: c.component.noDataCache,
+    }));
+  }
+
+  async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown> {
+    logger.info('Getting UI extension data:', {
+      extensionId,
+      componentId,
+      projectDir,
+      taskId,
+    });
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;
+    return await this.extensionManager.getUIExtensionData(extensionId, componentId, project, task);
+  }
+
+  async executeUIExtensionAction(
+    extensionId: string,
+    componentId: string,
+    action: string,
+    args: unknown[],
+    projectDir?: string,
+    taskId?: string,
+  ): Promise<unknown> {
+    logger.info('Executing UI extension action:', {
+      extensionId,
+      componentId,
+      action,
+      projectDir,
+      taskId,
+    });
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;
+    return await this.extensionManager.executeUIExtensionAction(extensionId, componentId, action, args, project, task);
   }
 }

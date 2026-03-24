@@ -29,6 +29,16 @@ vi.mock('@/contexts/ProjectSettingsContext', () => ({
   useProjectSettings: vi.fn(),
 }));
 
+// Mock useAgents hook
+vi.mock('@/contexts/AgentsContext', () => ({
+  useAgents: vi.fn(() => ({
+    getProfiles: () => [],
+    getActiveProfile: () => null,
+    setActiveProfile: vi.fn(),
+    refreshProfiles: vi.fn(),
+  })),
+}));
+
 interface TaskSidebarMockProps {
   tasks: TaskData[];
   onTaskSelect: (taskId: string) => void;
@@ -65,6 +75,7 @@ describe('ProjectView', () => {
         messages: [],
         files: [],
         todoItems: [],
+        queuedPrompts: [],
         question: null,
         workingMode: 'local',
       } as TaskStateData),

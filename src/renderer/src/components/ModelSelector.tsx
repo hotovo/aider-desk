@@ -18,15 +18,17 @@ export type ModelSelectorRef = {
 type Props = {
   className?: string;
   models: Model[];
-  selectedModelId?: string;
-  onChange: (model: Model) => void;
+  selectedModelId?: string | null;
+  onChange: (model: Model | null) => void;
   preferredModelIds: string[];
-  removePreferredModel: (modelId: string) => void;
+  removePreferredModel?: (modelId: string) => void;
   providers: ProviderProfile[];
+  popupPlacement?: 'top' | 'bottom';
+  labelOnNull?: string;
 };
 
 export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
-  ({ className, models, selectedModelId, onChange, preferredModelIds, removePreferredModel, providers }, ref) => {
+  ({ className, models, selectedModelId, onChange, preferredModelIds, removePreferredModel, providers, popupPlacement = 'bottom', labelOnNull }, ref) => {
     const { t } = useTranslation();
     const modelSelectorRef = useRef<HTMLDivElement>(null);
     const highlightedModelRef = useRef<HTMLDivElement>(null);
@@ -91,23 +93,29 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
       },
     }));
 
-    const onModelSelected = (model: Model) => {
+    const onModelSelected = (model: Model | null) => {
       close();
       startTransition(async () => {
-        const modelId = getProviderModelId(model);
-        setOptimisticSelectedModel(modelId);
-        onChange(model);
+        if (model === null) {
+          setOptimisticSelectedModel(null);
+          onChange(null);
+        } else {
+          const modelId = getProviderModelId(model);
+          setOptimisticSelectedModel(modelId);
+          onChange(model);
+        }
       });
     };
 
     const onModelSelectorSearchInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
       const allModels = [...preferredModels, ...groupedFilteredModels.flatMap((group) => group.models)];
+      const totalItems = (labelOnNull && !debouncedSearchTerm ? 1 : 0) + allModels.length;
 
       switch (e.key) {
         case KeyboardKeys.ArrowDown:
           e.preventDefault();
           updateState((prev) => {
-            const newIndex = Math.min(prev.highlightedModelIndex + 1, allModels.length - 1);
+            const newIndex = Math.min(prev.highlightedModelIndex + 1, totalItems - 1);
             setTimeout(() => highlightedModelRef.current?.scrollIntoView({ block: 'nearest' }), 0);
             return { ...prev, highlightedModelIndex: newIndex };
           });
@@ -123,8 +131,14 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
         case KeyboardKeys.Enter:
           if (state.highlightedModelIndex !== -1) {
             e.preventDefault();
-            const selected = allModels[state.highlightedModelIndex];
-            onModelSelected(selected);
+            // Check if inherit option is selected
+            if (labelOnNull && !debouncedSearchTerm && state.highlightedModelIndex === 0) {
+              onModelSelected(null);
+            } else {
+              const adjustedIndex = labelOnNull && !debouncedSearchTerm ? state.highlightedModelIndex - 1 : state.highlightedModelIndex;
+              const selected = allModels[adjustedIndex];
+              onModelSelected(selected);
+            }
           }
           break;
         case KeyboardKeys.Escape:
@@ -136,11 +150,12 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
 
     const renderModelItem = (model: Model, index: number, isPreferred: boolean) => {
       const fullModelId = getProviderModelId(model);
-      index = index + (isPreferred ? 0 : preferredModels.length);
+      const inheritOffset = labelOnNull && !debouncedSearchTerm ? 1 : 0;
+      index = index + (isPreferred ? inheritOffset : preferredModels.length + inheritOffset);
 
       const handleRemovePreferredModel = (e: MouseEvent) => {
         e.stopPropagation();
-        removePreferredModel(fullModelId);
+        removePreferredModel?.(fullModelId);
       };
 
       const providerId = isPreferred ? extractProviderModel(fullModelId)[0] : model.providerId;
@@ -167,7 +182,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
               </>
             )}
           </button>
-          {isPreferred && (
+          {isPreferred && removePreferredModel && (
             <button
               onClick={handleRemovePreferredModel}
               className="px-2 py-1 text-text-muted hover:text-text-muted-light transition-colors duration-200"
@@ -183,15 +198,22 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
     return (
       <div className="relative w-full flex" ref={modelSelectorRef}>
         <button
-          onClick={optimisticSelectedModelId ? toggle : undefined}
-          disabled={!optimisticSelectedModelId}
+          onClick={selectedModelId !== undefined ? toggle : undefined}
+          disabled={selectedModelId === undefined}
           className={twMerge(
             'focus:outline-none transition-colors duration-200 text-xs',
-            optimisticSelectedModelId ? 'hover:text-text-tertiary' : 'text-text-muted cursor-not-allowed',
+            selectedModelId !== undefined ? 'hover:text-text-tertiary' : 'text-text-muted cursor-not-allowed',
             className,
           )}
         >
-          {selectedProviderName && selectedModel ? (
+          {optimisticSelectedModelId === null ? (
+            <div className="flex items-end">
+              <div className="flex items-start justify-between flex-1 min-w-0 gap-0.5">
+                <div className="text-2xs text-text-muted leading-tight">{labelOnNull ?? ''}</div>
+                <MdKeyboardArrowUp className="w-3 h-3 ml-1 flex-shrink-0 transform rotate-180" />
+              </div>
+            </div>
+          ) : selectedProviderName && selectedModel ? (
             <div className="flex items-end">
               <div className="flex flex-col items-start flex-1 min-w-0 gap-0.5">
                 <div className="text-2xs text-text-muted leading-none">{selectedProviderName}</div>
@@ -206,7 +228,12 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
           )}
         </button>
         {isOpen && (
-          <div className="absolute top-full left-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]">
+          <div
+            className={twMerge(
+              'absolute left-0 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]',
+              popupPlacement === 'bottom' ? 'top-full mt-1' : 'bottom-full mb-1',
+            )}
+          >
             <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
               <input
                 type="text"
@@ -224,6 +251,22 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
               )}
             </div>
             <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
+              {labelOnNull && !debouncedSearchTerm && (
+                <>
+                  <div
+                    ref={state.highlightedModelIndex === 0 ? highlightedModelRef : undefined}
+                    className={`flex items-center w-full hover:bg-bg-tertiary transition-colors duration-200 ${state.highlightedModelIndex === 0 ? 'bg-bg-tertiary' : 'text-text-tertiary'}`}
+                  >
+                    <button
+                      onClick={() => onModelSelected(null)}
+                      className={`flex-grow px-3 py-1 text-left ${optimisticSelectedModelId === null ? 'text-text-secondary' : ''}`}
+                    >
+                      <div className="text-xs">{labelOnNull}</div>
+                    </button>
+                  </div>
+                  <div key="inherit-divider" className="border-t border-border-default-dark" />
+                </>
+              )}
               {preferredModels.length > 0 && (
                 <>
                   {preferredModels.map((model, index) => renderModelItem(model, index, true))}

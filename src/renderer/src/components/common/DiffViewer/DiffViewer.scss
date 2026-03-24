@@ -46,4 +46,20 @@
     background-color: var(--color-bg-tertiary);
     color: var(--color-text-primary);
   }
+
+  &.selectable {
+    .diff-line-hover-new,
+    .diff-line-hover-old,
+    .diff-gutter-selected,
+    .diff-code-selected {
+      cursor: pointer;
+      background-color: var(--color-bg-tertiary) !important;
+    }
+
+    .diff-code-insert:hover,
+    .diff-code-normal:hover{
+      cursor: pointer;
+      background-color: var(--color-bg-tertiary) !important;
+    }
+  }
 }

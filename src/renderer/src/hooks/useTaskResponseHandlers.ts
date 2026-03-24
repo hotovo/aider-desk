@@ -3,8 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
-import type { ResponseChunkData, ResponseCompletedData } from '@common/types';
-import type { Message, ReflectedMessage, ResponseMessage } from '@/types/message';
+import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -17,8 +16,6 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
 
   const handleResponseChunk = useCallback(
     ({ messageId, chunk, reflectedMessage, promptContext }: ResponseChunkData) => {
-      console.log('handleResponseChunk', messageId);
-
       let processingMessage = processingResponseMessageMap.get(taskId);
       if (processingMessage?.id === messageId) {
         processingMessage = {
@@ -97,7 +94,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
                 ? {
                     ...responseMessage,
                     content,
-                    processing: false,
+                    finished: true,
                     usageReport,
                     promptContext,
                   }
@@ -122,6 +119,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
               content,
               usageReport,
               promptContext,
+              finished: true,
             };
             messages.push(newResponseMessage);
 

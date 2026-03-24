@@ -14,12 +14,32 @@ import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
 import '@/i18n';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { ApiProvider } from '@/contexts/ApiContext';
+import { TooltipProvider } from '@/components/ui/Tooltip';
+import { ApiProvider, useApi } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
+import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
+import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 
 const ICON_CONTEXT_DEFAULT_VALUE: IconContext = {};
+
+const ModalOverlayUrlHandler = () => {
+  const [modalOverlayUrl, setModalOverlayUrl] = useState<string | null>(null);
+  const api = useApi();
+
+  useEffect(() => {
+    const unsubscribe = api.onModalOverlayUrl((data) => {
+      setModalOverlayUrl(data.url);
+    });
+    return unsubscribe;
+  }, [api]);
+
+  if (!modalOverlayUrl) {
+    return null;
+  }
+
+  return <ModalOverlayUrlViewer url={modalOverlayUrl} onClose={() => setModalOverlayUrl(null)} />;
+};
 
 const ThemeAndFontManager = () => {
   const { theme, font = 'Sono', fontSize = 16 } = useSettings();
@@ -76,9 +96,6 @@ const AnimatedRoutes = () => {
               <Route path="/" element={settings.onboardingFinished ? <Navigate to={ROUTES.Home} replace /> : <Navigate to={ROUTES.Onboarding} replace />} />
             </Routes>
           )}
-          <StyledTooltip id="global-tooltip-sm" />
-          <StyledTooltip id="global-tooltip-md" maxWidth={600} />
-          <StyledTooltip id="global-tooltip-lg" maxWidth="90%" />
         </motion.div>
       </AnimatePresence>
     </div>
@@ -97,21 +114,26 @@ const App = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
       <Router>
-        <ApiProvider>
-          <IconContext.Provider value={ICON_CONTEXT_DEFAULT_VALUE}>
-            <ModelProviderProvider>
-              <SettingsProvider>
-                <AgentsProvider>
-                  <ContextMenuProvider>
-                    <ThemeAndFontManager />
-                    <AnimatedRoutes />
-                    <ToastContainer />
-                  </ContextMenuProvider>
-                </AgentsProvider>
-              </SettingsProvider>
-            </ModelProviderProvider>
-          </IconContext.Provider>
-        </ApiProvider>
+        <TooltipProvider>
+          <ApiProvider>
+            <IconContext.Provider value={ICON_CONTEXT_DEFAULT_VALUE}>
+              <ModelProviderProvider>
+                <SettingsProvider>
+                  <AgentsProvider>
+                    <ContextMenuProvider>
+                      <ExtensionsProvider>
+                        <ThemeAndFontManager />
+                        <AnimatedRoutes />
+                        <ToastContainer />
+                        <ModalOverlayUrlHandler />
+                      </ExtensionsProvider>
+                    </ContextMenuProvider>
+                  </AgentsProvider>
+                </SettingsProvider>
+              </ModelProviderProvider>
+            </IconContext.Provider>
+          </ApiProvider>
+        </TooltipProvider>
       </Router>
     </motion.div>
   );

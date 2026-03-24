@@ -3,21 +3,22 @@ import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
 import { clsx } from 'clsx';
+import { ToolMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 import { parseToolContent } from './utils';
-
-import { ToolMessage } from '@/types/message';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
   onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export const ActivateSkillToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
+export const ActivateSkillToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
   const skillName = (message.args.skill as string) || '';
   const isExecuting = message.content === '';
@@ -82,12 +83,15 @@ export const ActivateSkillToolMessage = ({ message, onRemove, compact = false, o
 
   return (
     <ExpandableMessageBlock
+      message={message}
       title={title}
       content={renderContent()}
       copyContent={copyContent}
       usageReport={message.usageReport}
       onRemove={onRemove}
       onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
     />
   );
 };

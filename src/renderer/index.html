@@ -13,7 +13,7 @@
     <!-- 'data:' in connect-src is necessary for data URL connections, e.g., WebSocket or fetch to data URLs -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://unpkg.com 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss: data:;"
+      content="default-src 'self'; script-src 'self' blob: https://unpkg.com 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss: data:; frame-src http: https:;"
     />
     <link rel="stylesheet" href="/src/fonts.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">

@@ -1,18 +1,21 @@
 import { ProjectData } from '@common/types';
 import { CSS } from '@dnd-kit/utilities';
 import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Tab, TabGroup, TabList } from '@headlessui/react';
+import { Tab, TabGroup, TabList, Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from '@headlessui/react';
 import { clsx } from 'clsx';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAdd, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { useTranslation } from 'react-i18next';
+import { HiChevronDown, HiCheck } from 'react-icons/hi2';
 
 import type { DragEndEvent } from '@dnd-kit/core';
 
 import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
+import { useResponsive } from '@/hooks/useResponsive';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 type Props = {
   openProjects: ProjectData[];
@@ -39,6 +42,7 @@ export const ProjectTabs = ({
   const [showLeftScrollButton, setShowLeftScrollButton] = useState(false);
   const [showRightScrollButton, setShowRightScrollButton] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const { isMobile } = useResponsive();
 
   const checkScrollButtonsVisibility = () => {
     const container = tabsContainerRef.current;
@@ -114,6 +118,45 @@ export const ProjectTabs = ({
   // useMemo for project IDs to prevent SortableContext from re-rendering unnecessarily
   const projectIds = useMemo(() => openProjects.map((p) => p.baseDir), [openProjects]);
 
+  if (isMobile) {
+    const selectedProject = openProjects.find((p) => p.baseDir === activeProject);
+
+    return (
+      <div className="flex items-center gap-2 px-2 py-2 min-w-0 flex-1">
+        {activeProject && (
+          <Listbox value={activeProject} onChange={onSetActiveProject}>
+            <div className="relative flex-1 min-w-0">
+              <ListboxButton className="flex w-full items-center justify-between gap-2 px-2 py-1 text-sm text-text-primary focus:outline-none">
+                <span className="flex-1 min-w-0 truncate text-left">{selectedProject?.baseDir.split(/[\\/]/).pop()}</span>
+                <HiChevronDown className="h-4 w-4 flex-shrink-0 text-text-muted" aria-hidden="true" />
+              </ListboxButton>
+              <Transition
+                as="div"
+                leave="transition ease-in duration-100"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+                className="absolute left-0 top-full z-50 mt-2"
+              >
+                <ListboxOptions className="max-h-60 max-w-[300px] overflow-auto rounded-sm bg-bg-primary py-1 shadow-lg ring-1 ring-border-default focus:outline-none">
+                  {openProjects.map((project) => (
+                    <MobileTabItem key={project.baseDir} project={project} />
+                  ))}
+                </ListboxOptions>
+              </Transition>
+            </div>
+          </Listbox>
+        )}
+        <button
+          className="flex-shrink-0 rounded-md px-3 py-2 text-text-muted hover:text-text-secondary hover:bg-bg-secondary-light transition-colors duration-200"
+          onClick={onAddProject}
+        >
+          <MdAdd className="h-5 w-5" />
+        </button>
+        <ExtensionComponentWrapper placement="header-left" />
+      </div>
+    );
+  }
+
   return (
     <TabGroup
       className="overflow-x-hidden flex-1"
@@ -164,8 +207,44 @@ export const ProjectTabs = ({
         >
           <MdAdd className="h-5 w-5" />
         </button>
+        <ExtensionComponentWrapper placement="header-left" />
       </TabList>
     </TabGroup>
+  );
+};
+
+type MobileTabItemProps = {
+  project: ProjectData;
+};
+
+const MobileTabItem = ({ project }: MobileTabItemProps) => {
+  const isProcessing = useProjectProcessingState(project.baseDir);
+
+  return (
+    <ListboxOption
+      value={project.baseDir}
+      className={({ focus, selected }) =>
+        clsx(
+          'relative cursor-pointer select-none py-2 pl-9 pr-3 text-sm transition-colors',
+          focus ? 'bg-bg-secondary-light text-text-primary' : 'text-text-muted',
+          selected && 'text-text-primary font-medium',
+        )
+      }
+    >
+      {({ selected }) => (
+        <>
+          <div className="flex items-center gap-2">
+            <span className="block truncate">{project.baseDir.split(/[\\/]/).pop()}</span>
+            {isProcessing && <CgSpinner className="h-3 w-3 animate-spin text-text-primary flex-shrink-0" />}
+          </div>
+          {selected && (
+            <span className="absolute inset-y-0 left-0 flex items-center pl-2 text-text-tertiary">
+              <HiCheck className="h-3 w-3" aria-hidden="true" />
+            </span>
+          )}
+        </>
+      )}
+    </ListboxOption>
   );
 };
 

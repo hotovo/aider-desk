@@ -15,6 +15,8 @@
     "confirm": "确认",
     "back": "返回",
     "next": "下一步",
+    "previous": "上一个",
+    "of": "共",
     "finish": "完成",
     "loading": "加载中...",
     "startingUp": "正在启动...",
@@ -28,6 +30,8 @@
     "info": "信息",
     "yes": "是",
     "no": "否",
+    "refresh": "刷新",
+    "retry": "重试",
     "open": "打开",
     "openProject": "打开项目",
     "lock": "锁定",
@@ -42,7 +46,8 @@
     "noFiles": "没有找到文件",
     "clickToRefresh": "点击刷新",
     "closeTasks": "关闭任务",
-    "toggleTasks": "切换任务"
+    "toggleTasks": "切换任务",
+    "submit": "提交"
   },
   "search": {
     "placeholder": "查找...",
@@ -250,6 +255,12 @@
     },
     "claudeAgentSdkAuthRequired": "此提供商需要安装和认证 Claude Code CLI。请从 https://claude.com/product/claude-code 安装并运行 `claude login` 进行认证。",
     "claudeAgentSdkAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "auggieAuthRequired": "此提供商需要安装和认证 Auggie CLI。请从 https://www.npmjs.com/package/@augmentcode/auggie-sdk 安装并运行 `auggie login` 进行认证。",
+    "auggieAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "geminiCliAuthRequired": "此提供商需要安装和认证 Gemini CLI。请从 https://geminicli.com 安装并运行 `gemini` 进行认证。",
+    "geminiCliAgentOnly": "此提供商仅在代理模式下工作，不支持代码/询问/架构/上下文模式。",
+    "projectId": "项目 ID",
+    "projectIdPlaceholder": "可选。组织和企业账户需要此项。",
     "overrides": {
       "title": "提供商覆盖",
       "resetToDefaults": "清除覆盖",
@@ -287,7 +298,7 @@
     "apiKey": "API 密钥",
     "mcp": {
       "title": "MCP 服务器",
-      "infoTooltip": "添加 Z.AI Coding Plan MCP 服务器以为智能体启用更多功能。",
+      "infoTooltip": "添加 Z.ai Coding Plan MCP 服务器以为智能体启用更多功能。",
       "vision": {
         "name": "视觉",
         "description": "使用 GLM-4.6V 模型进行图像和视频分析"
@@ -312,7 +323,14 @@
     "thinkingEnabledTooltip": "启用时，模型将使用思考模式进行更深入的推理（默认）。对于简单任务，可以禁用以获得更快的响应速度。"
   },
   "anthropic": {
-    "apiKey": "API 密钥"
+    "apiKey": "API 密钥",
+    "baseUrl": "基础 URL",
+    "baseUrlPlaceholder": "例如 https://api.anthropic.com"
+  },
+  "auggie": {
+    "apiKey": "API 令牌",
+    "apiUrl": "API URL",
+    "apiUrlPlaceholder": "https://api.augmentcode.com"
   },
   "minimax": {
     "apiKey": "API 密钥"
@@ -332,6 +350,16 @@
   "groq": {
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 moonshotai/kimi-k2-instruct"
+  },
+  "kimiPlan": {
+    "apiKey": "API 密钥"
+  },
+  "alibabaPlan": {
+    "apiKey": "API 密钥",
+    "thinkingEnabled": "启用思考",
+    "thinkingEnabledTooltip": "启用思考模式以增强推理能力",
+    "thinkingBudget": "思考预算",
+    "thinkingBudgetTooltip": "思考的最大令牌数 (0-81920)"
   },
   "deepseek": {
     "apiKey": "API 密钥"
@@ -369,12 +397,17 @@
   },
   "providers": {
     "anthropic": "Anthropic",
+    "anthropic-compatible": "Anthropic 兼容",
+    "auggie": "Augie SDK",
+    "alibaba-plan": "阿里云编码计划",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
     "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
+    "gemini-cli": "Gemini CLI",
     "groq": "Groq",
+    "kimi-plan": "Kimi Coding Plan",
     "gpustack": "GPUStack",
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
@@ -387,7 +420,7 @@
     "requesty": "Requesty",
     "synthetic": "Synthetic",
     "vertex-ai": "Vertex AI",
-    "zai-plan": "Z.AI Coding Plan",
+    "zai-plan": "Z.ai Coding Plan",
     "azure": "Azure"
   },
   "select": {
@@ -402,11 +435,68 @@
       "aider": "Aider",
       "agents": "代理",
       "hotkeys": "快捷键",
+      "extensions": "扩展",
       "server": "服务器",
       "memory": "记忆",
       "tasks": "任务",
       "voice": "语音",
       "about": "关于"
+    },
+    "extensions": {
+      "loading": "正在加载扩展...",
+      "tabs": {
+        "installed": "已安装",
+        "available": "可用"
+      },
+      "installed": {
+        "empty": "没有已安装的扩展",
+        "emptyHint": "浏览「可用」选项卡以发现并安装扩展"
+      },
+      "available": {
+        "empty": "所有可用扩展都已安装",
+        "extensionsCount": "扩展",
+        "installedCount": "已安装",
+        "installedExtensions": "已安装扩展"
+      },
+      "search": {
+        "placeholder": "搜索扩展..."
+      },
+      "capabilities": {
+        "all": "全部"
+      },
+      "repositories": {
+        "title": "仓库",
+        "placeholder": "输入仓库URL...",
+        "add": "添加",
+        "remove": "移除仓库",
+        "default": "默认仓库"
+      },
+      "by": "作者",
+      "enabled": "启用",
+      "active": "激活",
+      "disabled": "已禁用",
+      "projectSpecific": "项目",
+      "hasDependencies": "有依赖",
+      "install": "安装",
+      "installing": "安装中...",
+      "uninstall": "卸载",
+      "uninstalling": "卸载中...",
+      "success": {
+        "install": "成功安装 {{name}}",
+        "uninstall": "成功卸载 {{name}}"
+      },
+      "errors": {
+        "loadInstalled": "加载已安装扩展失败",
+        "loadAvailable": "加载可用扩展失败",
+        "install": "安装扩展失败",
+        "uninstall": "卸载扩展失败",
+        "repositoryExists": "此仓库已添加",
+        "cannotRemoveDefault": "无法移除默认仓库"
+      },
+      "previousContext": "上一个上下文",
+      "nextContext": "下一个上下文",
+      "expandReadme": "展开 README",
+      "collapseReadme": "收起 README"
     },
     "hotkeys": {
       "projectHotkeys": "项目快捷键",
@@ -478,13 +568,29 @@
       "autoGenerateTaskNameTooltip": "启用后，模型会根据您的提示生成简洁的任务名称。禁用时，将使用提示的前5个词作为任务名称。",
       "showTaskStateActions": "显示任务状态操作",
       "showTaskStateActionsTooltip": "启用后，任务状态操作将显示在消息底部。禁用以隐藏这些操作。",
+      "contextManagement": "上下文管理",
+      "contextCompactingThreshold": "自动压缩阈值",
+      "contextCompactingThresholdTooltip": "当令牌使用量超过此阈值时，将根据所选的压缩类型自动管理对话。设置为 0 可禁用。",
+      "contextCompactionType": "压缩类型",
+      "contextCompactionTypeCompact": "压缩",
+      "contextCompactionTypeHandoff": "交接",
+      "contextCompactionTypeTooltip": "选择当令牌阈值超出时如何管理对话上下文：压缩在任务内总结对话，交接则创建一个带有交接的新任务。",
       "worktree": "工作树",
       "worktreeSymlinkFoldersLabel": "符号链接文件夹",
       "worktreeSymlinkFoldersTooltip": "这些文件夹将从项目根目录符号链接到任务工作树。适用于像 node_modules 这样的大型依赖。",
       "noSymlinkFolders": "未配置符号链接文件夹",
       "symlinkFolderPlaceholder": "文件夹名称（例如 node_modules）",
       "addSymlinkFolder": "添加",
-      "removeSymlinkFolder": "移除文件夹"
+      "removeSymlinkFolder": "移除文件夹",
+      "auxiliaryModelsTitle": "辅助模型",
+      "auxiliaryModelsDescription": "配置后台 AI 操作的模型。设置为 '继承' 以使用主代理模型。",
+      "taskNameModel": "任务名称模型",
+      "taskNameModelTooltip": "用于从提示自动生成任务名称的模型",
+      "taskStateModel": "任务状态模型",
+      "taskStateModelTooltip": "用于确定任务状态（准备审查、需要更多信息等）的模型",
+      "commitMessageModel": "提交消息",
+      "commitMessageModelTooltip": "用于生成提交消息的模型",
+      "inheritModel": "继承"
     },
     "language": "语言",
     "notifications": {
@@ -585,7 +691,12 @@
       "copyProfile": "复制",
       "cutProfile": "剪切",
       "deleteProfile": "删除",
-      "pasteProfile": "粘贴代理"
+      "pasteProfile": "粘贴代理",
+      "resetProfileToDefaults": "重置为默认值",
+      "resetProfileTitle": "将 '{{name}}' 重置为默认值？",
+      "resetProfileConfirm": "这将把 '{{name}}' 恢复到原始默认设置。任何自定义修改都将丢失。",
+      "restoreProfile": "恢复",
+      "restoreProfileTooltip": "恢复此默认配置"
     },
     "aider": {
       "options": "选项",
@@ -679,6 +790,9 @@
       "display": "显示选项",
       "markdownRendering": "启用 Markdown 渲染",
       "diffViewMode": "差异视图模式",
+      "viewMode": "消息视图模式",
+      "viewModeFull": "完整",
+      "viewModeCompact": "紧凑",
       "virtualizedRendering": "使用虚拟化渲染（实验性）",
       "virtualizedRenderingTooltip": "实验性功能，当您在对话历史中有大量消息时可以通过仅渲染可见消息来提高性能。"
     },
@@ -755,13 +869,15 @@
     "archive": "归档",
     "unarchive": "取消归档",
     "confirmDelete": "确认删除",
-    "remove": "移除消息"
+    "remove": "移除消息",
+    "deleteUpToHere": "删除到此为止"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
     "frozenMessage": "Aider进程似乎已冻结。您想重启任务吗?",
     "removeMessageFailed": "删除消息失败 - 请重试",
-    "forkTaskFailed": "从消息分叉任务失败 - 请重试"
+    "forkTaskFailed": "从消息分叉任务失败 - 请重试",
+    "removeMessagesUpToFailed": "删除到此为止的消息失败 - 请重试"
   },
   "dialogs": {
     "confirm": "确认",
@@ -813,8 +929,18 @@
   "fileChip": {
     "removeFileTooltip": "移除文件"
   },
+  "filePreview": {
+    "title": "文件查看器",
+    "errorLoading": "加载文件失败"
+  },
   "contextFiles": {
     "title": "上下文文件",
+    "updatedFiles": "已更新文件",
+    "updated": "已更新",
+    "viewChanges": "查看更改",
+    "viewAllFiles": "查看所有文件",
+    "viewSingleFile": "查看单个文件",
+    "allFiles": "所有文件",
     "add": "添加上下文文件",
     "addFileTooltip": "添加文件 (按 Ctrl/Cmd 键添加为只读)",
     "addFileTooltip.ctrl": "添加文件 (按 Ctrl 键添加为只读)",
@@ -830,12 +956,44 @@
     "agentRule": "代理规则文件",
     "projectFiles": "项目文件",
     "rules": "规则文件",
+    "diffViewer": {
+      "file": "文件"
+    },
     "search": "搜索文件",
     "searchPlaceholder": "搜索文件...",
     "refresh": "刷新",
     "useGit": "使用 Git",
     "useGitEnabled": "Git 已启用 - 点击使用文件系统",
-    "useGitDisabled": "文件系统已启用 - 点击使用 Git"
+    "useGitDisabled": "文件系统已启用 - 点击使用 Git",
+    "revertFile": "恢复更改",
+    "confirmRevertTitle": "恢复文件更改？",
+    "confirmRevertMessage": "这将丢弃此文件的所有更改。此操作无法撤销。",
+    "revert": "恢复",
+    "expandWidth": "展开至全宽",
+    "collapseWidth": "收起宽度",
+    "commitSection": "提交更改",
+    "commitMessage": "提交信息",
+    "commitMessagePlaceholder": "输入提交信息...",
+    "commitMessagePlaceholderAmend": "保持空白以使用上一次提交信息，或输入新的信息",
+    "generateMessage": "生成信息",
+    "amend": "修改",
+    "amendTooltip": "修改上一次提交而不是创建新提交",
+    "commit": "提交",
+    "generatingMessage": "生成中...",
+    "committing": "提交中...",
+    "commitError": "提交错误",
+    "empty": {
+      "title": "没有上下文文件",
+      "aiderMode": {
+        "description": "在此处添加您想要读取或修改的文件。Aider 只能访问上下文中的文件。",
+        "hint": "提示：添加相关文件（导入、类型）以获得更好的理解。"
+      },
+      "agentMode": {
+        "description": "代理可以使用工具访问项目中的任何文件。在此处添加文件是可选的，但可以通过提供即时上下文来加快任务速度。",
+        "hint": "提示：使用 Aider 工具时或希望将文件内容包含在提示中时，在此处添加文件。",
+        "includeContextFiles": "当在代理设置中启用'包含上下文文件'时，文件内容会直接嵌入到提示中以便立即访问。"
+      }
+    }
   },
   "modelSelector": {
     "mainModel": "主模型",
@@ -863,6 +1021,7 @@
   },
   "mcp": {
     "noDescription": "无描述",
+    "initializingServers": "正在初始化 MCP 服务器...",
     "serverToolStatus": "已启用{{enabledCount}}个工具，共{{count}}个",
     "loading": "加载中...",
     "toolsCount_one": "{{count}}个工具",
@@ -973,6 +1132,10 @@
       "parentTaskId": "父任务ID",
       "execute": "执行",
       "executeInBackground": "在后台执行",
+      "mode": "模式",
+      "autoApprove": "自动批准",
+      "worktree": "工作树",
+      "executeAndWait": "执行并等待",
       "yes": "是",
       "no": "否",
       "taskId": "任务ID",
@@ -1030,15 +1193,18 @@
       },
       "glob": {
         "title": "查找匹配模式的文件:",
+        "findingFiles": "正在查找文件...",
         "foundFiles": "找到 {{count}} 文件",
-        "foundMatches": "找到 {{count}} 个匹配项",
-        "noMatches": "未找到匹配项。"
+        "noMatches": "未找到文件",
+        "matching": "匹配"
       },
       "grep": {
         "title": "在",
-        "for": "搜索",
+        "findingMatches": "正在查找...",
+        "in": "中",
+
         "foundMatches": "找到 {{count}} 个匹配项",
-        "noMatches": "未找到匹配项。",
+        "noMatches": "未找到匹配项",
         "contextLines": "({{count}} 行上下文)",
         "matchesCount": "({{count}} 个匹配)",
         "lineLabel": "第 {{lineNumber}} 行:",
@@ -1049,7 +1215,8 @@
         "exitCode": "退出码",
         "stdout": "标准输出",
         "stderr": "标准错误",
-        "commandFailed": "命令失败"
+        "commandFailed": "命令失败",
+        "timeout": "超时"
       },
       "semanticSearch": {
         "title": "语义搜索:",
@@ -1099,9 +1266,11 @@
     "subagents": {
       "groupRunning": "{{name}}: 子代理正在工作...",
       "groupCompleted": "{{name}}: 子代理已完成任务。",
+      "groupCancelled": "{{name}}: 子代理运行已被用户取消。",
       "running": "正在运行子代理...",
       "completed": "子代理执行了以下查询:",
-      "prompt": "提示"
+      "prompt": "提示",
+      "error": "运行子代理"
     },
     "errors": {
       "noSuchTool": "尝试使用未知工具: {{toolName}}",
@@ -1115,7 +1284,12 @@
     "sideBySide": "并排",
     "unified": "统一",
     "compact": "紧凑",
-    "noChanges": "没有进行任何更改。内容相同。"
+    "noChanges": "没有进行任何更改。内容相同。",
+    "lineComment": {
+      "placeholder": "描述您想要对此代码进行的更改...",
+      "taskName": "更新 {{filename}}",
+      "createNewTask": "创建新任务"
+    }
   },
   "promptField": {
     "savePrompt": "保存提示",
@@ -1147,6 +1321,11 @@
       "19": "在 ProductList 的 fetchProducts 方法中实现分页逻辑..."
     },
     "questionPlaceholder": "...或建议其他内容",
+    "queueTitle": "排队的提示",
+    "queuedPrompt": "排队",
+    "queueMessage": "队列消息(Enter)",
+    "removeQueuedPrompt": "移除",
+    "sendQueuedPromptNow": "立即发送",
     "answers": {
       "yes": "(Y)是",
       "no": "(N)否",
@@ -1158,7 +1337,8 @@
     "sendMessage": "发送消息(Enter)",
     "clearChat": "清除聊天",
     "agentModeOnly": "仅在代理模式下可用",
-    "handoffError": "交接失败：{{error}}"
+    "handoffError": "交接失败：{{error}}",
+    "taskInfo": "任务信息"
   },
   "agentProfiles": {
     "title": "代理配置",
@@ -1202,6 +1382,7 @@
     "low": "低",
     "medium": "中",
     "high": "高",
+    "xhigh": "极高",
     "max": "最大"
   },
   "commands": {
@@ -1225,6 +1406,7 @@
     "model": "打开模型选择器",
     "read-only": "将文件添加到聊天中，这些文件仅供参考，或将添加的文件设为只读。",
     "redo": "重做上一个用户提示。",
+    "resolve-conflicts": "使用 AI 解决合并冲突",
     "reasoning-effort": "设置推理工作量级别（值：数字或低/中/高，取决于模型）",
     "reset": "删除所有文件并清除聊天历史记录",
     "run": "运行 shell 命令并可选地将输出添加到聊天中",
@@ -1358,11 +1540,16 @@
     "taskNamePlaceholder": "输入任务名称...",
     "untitled": "[未命名]",
     "exportAsMarkdown": "导出为 Markdown",
+    "copyAsMarkdown": "复制为 Markdown",
+    "copiedAsMarkdown": "已复制为 Markdown",
     "exportAsImage": "导出为图片",
     "taskIdCopied": "任务 ID {{taskId}} 已复制到剪贴板",
     "duplicateTask": "复制任务",
     "search": "搜索任务",
     "searchPlaceholder": "搜索任务...",
+    "today": "今天",
+    "yesterday": "昨天",
+    "noDate": "无日期",
     "archiveTask": "归档任务",
     "unarchiveTask": "取消归档任务",
     "showArchived": "显示已归档",
@@ -1456,14 +1643,14 @@
     "title": "AiderDesk",
     "subtitle": "您的 AI 驱动编程助手",
     "features": {
-      "title": "您可以做什么：",
+      "title": "您可以做什么",
       "aiCoding": "使用 AI 辅助生成和修改代码",
       "contextManagement": "添加文件到上下文以获得更好的结果",
       "multiModel": "选择多种 AI 模型和提供商",
       "commands": "执行命令和运行测试"
     },
     "tips": {
-      "title": "入门指南：",
+      "title": "入门指南",
       "addFiles": "使用侧边栏或 /add 命令添加文件到上下文",
       "askQuestion": "在下方的提示字段中输入您的请求",
       "useCommands": "使用 / 命令进行快速操作",
@@ -1479,6 +1666,9 @@
         "title": "代码模式",
         "description": "用于直接代码更改和特定任务。重要提示：将文件添加到上下文以确保 AI 处理正确的文件。"
       }
-    }
-  }
+    },
+    "selectMode": "选择"
+  },
+  "showModelSelector": "更换模型",
+  "hideModelSelector": "隐藏模型选择器"
 }

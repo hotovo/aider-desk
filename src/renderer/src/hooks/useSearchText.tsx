@@ -6,7 +6,6 @@ import { clsx } from 'clsx';
 
 import { Input } from '@/components/common/Input';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 export const useSearchText = (inElement: HTMLElement | null, className?: string, enabled = true) => {
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -158,7 +157,6 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string,
           className="text-xs w-[250px]"
         />
         <div className="flex items-center gap-1 ml-2">
-          <StyledTooltip id="search-tooltip" />
           <span className="text-xs text-text-muted-light">
             {foundElementsRef.current.size > 0 ? `${currentElementIndex + 1}/${foundElementsRef.current.size}` : '0/0'}
           </span>

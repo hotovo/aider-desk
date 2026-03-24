@@ -60,6 +60,7 @@ export const getLatestPythonLibVersion = async (library: string): Promise<string
         PATH: `${pythonBinPath}${path.delimiter}${process.env.PATH}`,
       },
       windowsHide: true,
+      timeout: 30000,
     });
 
     const latestMatch = stdout.match(/LATEST:\s+(\S+)/);
@@ -69,7 +70,7 @@ export const getLatestPythonLibVersion = async (library: string): Promise<string
     logger.warn(`Could not find latest version for library '${library}' in pip index output.`);
     return null;
   } catch (error) {
-    logger.error(`Failed to get latest available version for library '${library}'`, { error });
+    logger.warn(`Failed to get latest available version for library '${library}' (possibly offline or network issue)`, { error });
     return null;
   }
 };

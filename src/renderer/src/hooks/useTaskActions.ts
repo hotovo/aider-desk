@@ -3,8 +3,8 @@ import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 import { v4 as uuidv4 } from 'uuid';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
+import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 
-import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@/types/message';
 import { useTaskStore } from '@/stores/taskStore';
 import { useApi } from '@/contexts/ApiContext';
 
@@ -24,7 +24,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
       try {
         updateTaskState(taskId, { loading: true });
 
-        const { messages: stateMessages, files, todoItems, question } = await api.loadTask(baseDir, taskId);
+        const { messages: stateMessages, files, todoItems, question, queuedPrompts } = await api.loadTask(baseDir, taskId);
 
         const messages: Message[] = stateMessages.flatMap((message): Message[] => {
           if (message.type === 'response-completed') {
@@ -44,6 +44,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
               content: message.content,
               usageReport: message.usageReport,
               promptContext: message.promptContext,
+              finished: true,
             } as ResponseMessage);
             return result;
           }
@@ -87,6 +88,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
           contextFiles: files,
           todoItems: todoItems || [],
           question,
+          queuedPrompts,
         });
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -113,8 +115,8 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
   );
 
   const interruptResponse = useCallback(
-    (taskId: string) => {
-      api.interruptResponse(baseDir, taskId);
+    (taskId: string, interruptId?: string) => {
+      api.interruptResponse(baseDir, taskId, interruptId);
       updateTaskState(taskId, {
         question: null,
       });

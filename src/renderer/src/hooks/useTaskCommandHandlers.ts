@@ -3,8 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
-import type { CommandOutputData } from '@common/types';
-import type { CommandOutputMessage, Message } from '@/types/message';
+import type { CommandOutputData, CommandOutputMessage, Message } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';

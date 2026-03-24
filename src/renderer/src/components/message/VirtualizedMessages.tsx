@@ -1,22 +1,21 @@
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { DefaultTaskState, TaskData } from '@common/types';
+import { DefaultTaskState, MessageViewMode, TaskData, isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
-import { TaskStateActions } from 'src/renderer/src/components/message/TaskStateActions';
 import { clsx } from 'clsx';
 
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
+import { AssistantMessageBlock } from './AssistantMessageBlock';
 
-import { isGroupMessage, isLoadingMessage, isUserMessage, Message } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { groupMessagesByPromptContext } from '@/components/message/utils';
+import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
@@ -32,16 +31,11 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
-  resumeTask: () => void;
   redoLastUserPrompt: () => void;
   editLastUserMessage: (content: string) => void;
-  onMarkAsDone: () => void;
-  onProceed?: () => void;
-  onArchiveTask?: () => void;
-  onUnarchiveTask?: () => void;
-  onDeleteTask?: () => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
+  onRemoveUpToMessage?: (message: Message) => void;
 };
 
 export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
@@ -54,27 +48,25 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
       allFiles = [],
       renderMarkdown,
       removeMessage,
-      resumeTask,
       redoLastUserPrompt,
       editLastUserMessage,
-      onMarkAsDone,
-      onProceed,
-      onArchiveTask,
-      onUnarchiveTask,
-      onDeleteTask,
       onInterrupt,
       onForkFromMessage,
+      onRemoveUpToMessage,
     },
     ref,
   ) => {
     const { t } = useTranslation();
     const { settings } = useSettings();
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const isCompactMode = settings?.messageViewMode === MessageViewMode.Compact;
 
-    // Group messages by promptContext.group.id
-    const processedMessages = useMemo(() => groupMessagesByPromptContext(messages), [messages]);
+    // Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
+    const processedMessages = useMemo(() => {
+      const grouped = groupMessagesByPromptContext(messages);
+      return isCompactMode ? groupAssistantMessages(grouped) : grouped;
+    }, [messages, isCompactMode]);
     const lastUserMessageIndex = processedMessages.findLastIndex(isUserMessage);
-    const isLastLoadingMessage = processedMessages.length > 0 && isLoadingMessage(processedMessages[processedMessages.length - 1]);
     const inProgress = task.state === DefaultTaskState.InProgress;
 
     // Get all user message IDs
@@ -83,6 +75,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
     }, [processedMessages]);
 
     // Create virtualizer for dynamic sized items
+    // eslint-disable-next-line react-hooks/incompatible-library
     const virtualizer = useVirtualizer({
       count: processedMessages.length,
       getScrollElement: () => messagesContainerRef.current,
@@ -150,8 +143,6 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
 
     return (
       <div className="relative flex flex-col h-full">
-        <StyledTooltip id="usage-info-tooltip" />
-
         <div
           ref={messagesContainerRef}
           className={clsx(
@@ -184,6 +175,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
+                  <ExtensionComponentWrapper placement="task-message-above" />
                   {isGroupMessage(message) ? (
                     <GroupMessageBlock
                       baseDir={baseDir}
@@ -196,6 +188,17 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                       edit={editLastUserMessage}
                       onInterrupt={onInterrupt}
                     />
+                  ) : isAssistantGroupMessage(message) ? (
+                    <AssistantMessageBlock
+                      baseDir={baseDir}
+                      taskId={taskId}
+                      message={message}
+                      allFiles={allFiles}
+                      renderMarkdown={renderMarkdown}
+                      remove={inProgress ? undefined : () => removeMessage(message)}
+                      onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
+                      onRemoveUpTo={onRemoveUpToMessage ? () => onRemoveUpToMessage(message) : undefined}
+                    />
                   ) : (
                     <MessageBlock
                       baseDir={baseDir}
@@ -207,9 +210,11 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                       redo={virtualRow.index === lastUserMessageIndex && !inProgress ? redoLastUserPrompt : undefined}
                       edit={virtualRow.index === lastUserMessageIndex ? editLastUserMessage : undefined}
                       onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
+                      onRemoveUpTo={onRemoveUpToMessage ? () => onRemoveUpToMessage(message) : undefined}
                       onInterrupt={onInterrupt}
                     />
                   )}
+                  <ExtensionComponentWrapper placement="task-message-below" />
                 </div>
               );
             })}
@@ -229,18 +234,6 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
           )}
           {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToNext()}
         </div>
-        {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
-          <TaskStateActions
-            state={task.state}
-            isArchived={task.archived}
-            onResumeTask={resumeTask}
-            onMarkAsDone={onMarkAsDone}
-            onProceed={onProceed}
-            onArchiveTask={onArchiveTask}
-            onUnarchiveTask={onUnarchiveTask}
-            onDeleteTask={onDeleteTask}
-          />
-        )}
       </div>
     );
   },

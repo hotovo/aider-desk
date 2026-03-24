@@ -497,7 +497,7 @@ export const getShellPath = (): string => {
       .filter((p) => p)
       .join(pathSep);
     const pathEntries = cachedPath.split(pathSep);
-    logger.info('PATH loading completed successfully', {
+    logger.debug('PATH loading completed successfully', {
       totalEntries: pathEntries.length,
       additionalPaths: additionalPaths.length,
       firstFewEntries: pathEntries.slice(0, 5).join(', '),
@@ -631,8 +631,21 @@ export const findExecutableInPath = (executable: string, checkOnly = false): str
   return null;
 };
 
+/**
+ * Get shell and arguments to execute a command using the user's default shell.
+ * This respects the $SHELL environment variable instead of always using /bin/sh.
+ * @param command The command string to execute
+ * @returns Object with shell path and args array (e.g. ['-c', command])
+ */
+export const getShellCommandArgs = (command: string): { shell: string; args: string[] } => {
+  return ShellDetector.getShellCommandArgs(command);
+};
+
 // Wrapper for execAsync that includes enhanced PATH
-export const execWithShellPath = async (command: string, options?: { cwd?: string; env?: NodeJS.ProcessEnv }): Promise<{ stdout: string; stderr: string }> => {
+export const execWithShellPath = async (
+  command: string,
+  options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number },
+): Promise<{ stdout: string; stderr: string }> => {
   const shellPath = getShellPath();
   return execAsync(command, {
     ...options,

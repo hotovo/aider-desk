@@ -1,13 +1,13 @@
-import { AgentProfile, EditFormat, Mode, Model, ModelsData, RawModelInfo, TaskData } from '@common/types';
+import { AgentProfile, AIDER_MODES, EditFormat, Mode, Model, ModelsData, RawModelInfo, TaskData } from '@common/types';
 import React, { ReactNode, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
-import { RiRobot2Line, RiMenuUnfold4Line } from 'react-icons/ri';
+import { RiMenuUnfold4Line, RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { getProviderModelId, AVAILABLE_PROVIDERS } from '@common/agent';
+import { AVAILABLE_PROVIDERS, getProviderModelId } from '@common/agent';
 import { clsx } from 'clsx';
 import { extractProviderModel } from '@common/utils';
 
@@ -16,11 +16,12 @@ import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector';
 import { TaskWorkingMode } from '@/components/PromptField/TaskWorkingMode';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 export type TaskBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -77,7 +78,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     const mainModelSelectorRef = useRef<ModelSelectorRef>(null);
     const architectModelSelectorRef = useRef<ModelSelectorRef>(null);
 
-    const showAiderInfo = mode !== 'agent' || activeAgentProfile?.useAiderTools;
+    const showAiderInfo = AIDER_MODES.includes(mode) || activeAgentProfile?.useAiderTools || false;
 
     // Use task provider/model first, fallback to active agent profile
     const effectiveAgentProvider = task.provider || activeAgentProfile?.provider;
@@ -106,7 +107,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     }, [currentTaskModelId, models]);
 
     const handleTaskModelChange = useCallback(
-      (selectedModel: Model) => {
+      (selectedModel: Model | null) => {
+        if (!selectedModel) {
+          return;
+        }
         const selectedModelId = getProviderModelId(selectedModel);
         const providerId = selectedModel.providerId;
         const modelId = selectedModel.id;
@@ -202,7 +206,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     );
 
     const updateMainModel = useCallback(
-      (mainModel: Model) => {
+      (mainModel: Model | null) => {
+        if (!mainModel) {
+          return;
+        }
         const modelId = getProviderModelId(mainModel);
         api.updateMainModel(baseDir, task.id, modelId);
         updatePreferredModels(modelId);
@@ -215,7 +222,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     );
 
     const updateWeakModel = useCallback(
-      (weakModel: Model) => {
+      (weakModel: Model | null) => {
+        if (!weakModel) {
+          return;
+        }
         const modelId = getProviderModelId(weakModel);
         api.updateWeakModel(baseDir, task.id, modelId);
         updatePreferredModels(modelId);
@@ -236,7 +246,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     }, [task.id, task.weakModelLocked, updateTask]);
 
     const updateArchitectModel = useCallback(
-      (architectModel: Model) => {
+      (architectModel: Model | null) => {
+        if (!architectModel) {
+          return;
+        }
         const modelId = getProviderModelId(architectModel);
         api.updateArchitectModel(baseDir, task.id, modelId);
         updatePreferredModels(modelId);
@@ -378,14 +391,16 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
       }
     }, [api, baseDir, task.id]);
 
-    const isTwoRowLayout = mode === 'agent' && showAiderInfo;
+    const isTwoRowLayout = !AIDER_MODES.includes(mode) && showAiderInfo;
+
     const renderAiderInfo = (showLabel = false) => {
       return (
         <div className={clsx('flex flex-wrap gap-x-2 flex-shrink-0', isMobile ? 'flex-col items-start gap-y-1' : 'flex-row items-center gap-y-0.5')}>
           {showLabel && <span className="text-2xs font-semibold text-text-primary uppercase whitespace-nowrap">{t('projectBar.aider')}:</span>}
           <div className="flex items-center space-x-2 flex-shrink-0">
-            <CgTerminal className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="main-model-tooltip" />
-            <StyledTooltip id="main-model-tooltip" content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)} />
+            <Tooltip content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)}>
+              <CgTerminal className="w-4 h-4 text-text-primary mr-1" />
+            </Tooltip>
             <ModelSelector
               ref={mainModelSelectorRef}
               models={aiderModels}
@@ -398,8 +413,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
           </div>
           {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
           <div className="flex items-center space-x-2 flex-shrink-0">
-            <BsFilter className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
-            <StyledTooltip id="weak-model-tooltip" />
+            <Tooltip content={t('modelSelector.weakModel')}>
+              <BsFilter className="w-4 h-4 text-text-primary mr-1" />
+            </Tooltip>
             <ModelSelector
               models={aiderModels}
               selectedModelId={modelsData?.weakModel || modelsData?.mainModel}
@@ -420,8 +436,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
             <>
               {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
               <div className="flex items-center space-x-1 flex-shrink-0">
-                <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="edit-format-tooltip" />
-                <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
+                <Tooltip content={t('projectBar.editFormatTooltip')}>
+                  <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" />
+                </Tooltip>
                 <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
               </div>
             </>
@@ -464,8 +481,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                 {/* Row 1: AGENT */}
                 <div className="flex items-center space-x-2 flex-shrink-0">
                   <div className="flex items-center space-x-2 flex-shrink-0">
-                    <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
-                    <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
+                    <Tooltip content={t('modelSelector.agentModel')}>
+                      <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" />
+                    </Tooltip>
                     {!currentTaskModelId ? (
                       <div className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.noModelSelected')}</div>
                     ) : (
@@ -484,15 +502,17 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
 
                 {/* Row 2: AIDER */}
                 {renderAiderInfo(true)}
+                <ExtensionComponentWrapper placement="task-top-bar-left" />
               </div>
             ) : (
               // Original horizontal layout for other modes
               <div className="flex items-center space-x-3 flex-wrap">
-                {mode === 'agent' ? (
+                {!AIDER_MODES.includes(mode) ? (
                   <>
                     <div className="flex items-center space-x-2 flex-shrink-0">
-                      <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
-                      <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
+                      <Tooltip content={t('modelSelector.agentModel')}>
+                        <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" />
+                      </Tooltip>
                       {!currentTaskModelId ? (
                         <div className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.noModelSelected')}</div>
                       ) : (
@@ -514,12 +534,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                     {mode === 'architect' && (
                       <>
                         <div className="flex items-center space-x-2 flex-shrink-0">
-                          <GoProjectRoadmap
-                            className="w-4 h-4 text-text-primary mr-1"
-                            data-tooltip-id="architect-model-tooltip"
-                            data-tooltip-content={t('modelSelector.architectModel')}
-                          />
-                          <StyledTooltip id="architect-model-tooltip" />
+                          <Tooltip content={t('modelSelector.architectModel')}>
+                            <GoProjectRoadmap className="w-4 h-4 text-text-primary mr-1" />
+                          </Tooltip>
                           <ModelSelector
                             ref={architectModelSelectorRef}
                             models={aiderModels}
@@ -536,10 +553,12 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                   </>
                 )}
                 {showAiderInfo && renderAiderInfo()}
+                <ExtensionComponentWrapper placement="task-top-bar-left" />
               </div>
             )}
           </div>
           <div className="flex items-center space-x-1 mr-2">
+            <ExtensionComponentWrapper placement="task-top-bar-right" />
             <TaskWorkingMode
               task={task}
               onMerge={(branch) => handleMerge(false, branch)}

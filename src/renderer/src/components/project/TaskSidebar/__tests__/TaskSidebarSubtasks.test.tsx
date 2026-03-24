@@ -1,12 +1,31 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskData } from '@common/types';
 
 import { TaskSidebar } from '../TaskSidebar';
 
-import { useTask } from '@/contexts/TaskContext';
+import { render } from '@/__tests__/render';
+import { useTask } from '@/contexts/TasksContext';
 import { useTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
 import { createMockTaskContext } from '@/__tests__/mocks/contexts';
+
+// Mock @tanstack/react-virtual
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: vi.fn(({ count }: { count: number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, i) => ({
+        index: i,
+        start: i * 28,
+        size: 28,
+        key: i,
+      })),
+    getTotalSize: () => count * 28,
+    scrollToOffset: vi.fn(),
+    scrollToIndex: vi.fn(),
+    measureElement: vi.fn(),
+    isScrolling: false,
+  })),
+}));
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -16,8 +35,24 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock useTask context
-vi.mock('@/contexts/TaskContext', () => ({
+vi.mock('@/contexts/TasksContext', () => ({
   useTask: vi.fn(),
+}));
+
+// Mock useExtensions hook
+vi.mock('@/contexts/ExtensionsContext', () => ({
+  useExtensions: vi.fn(() => ({
+    componentProps: {
+      projectDir: '/test/project',
+      task: null,
+      agentProfile: null,
+    },
+  })),
+}));
+
+// Mock ExtensionComponentWrapper to avoid API context requirement
+vi.mock('@/components/extensions/ExtensionComponentWrapper', () => ({
+  ExtensionComponentWrapper: () => null,
 }));
 
 // Mock useTaskState from taskStore

@@ -1,6 +1,7 @@
 name: Bug Report
 description: Report a reproducible bug
-labels: ["bug"]
+title: "Bug: "
+type: bug
 body:
   - type: textarea
     id: description
@@ -48,8 +49,9 @@ body:
     id: version
     attributes:
       label: Version
-      description: e.g. v1.0.0, commit hash
-      placeholder: v1.0.0
+      description: e.g. v0.50.0, commit hash
+      placeholder: v0.50.0
+      value: v0.50.0
     validations:
       required: false
 

@@ -1,0 +1,236 @@
+{
+  "extensions": [
+    {
+      "id": "wakatime",
+      "name": "WakaTime",
+      "description": "Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli",
+      "file": "wakatime.ts",
+      "type": "single",
+      "capabilities": ["tracking"]
+    },
+    {
+      "id": "pirate",
+      "name": "Pirate Agent",
+      "description": "Adds a Pirate agent that speaks like a swashbuckling sea dog",
+      "file": "pirate.ts",
+      "type": "single",
+      "capabilities": ["agents", "example"]
+    },
+    {
+      "id": "generate-tests",
+      "name": "Generate Tests",
+      "description": "Adds /generate-tests command to generate unit tests for files",
+      "file": "generate-tests.ts",
+      "type": "single",
+      "capabilities": ["commands", "example"]
+    },
+    {
+      "id": "questions",
+      "name": "Questions",
+      "description": "Extract questions from messages and display as interactive questionnaire",
+      "folder": "questions",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["commands", "ui"]
+    },
+    {
+      "id": "theme",
+      "name": "Theme Switcher",
+      "description": "Adds /theme command to switch AiderDesk themes",
+      "file": "theme.ts",
+      "type": "single",
+      "capabilities": ["commands"]
+    },
+    {
+      "id": "plan-mode",
+      "name": "Plan Mode",
+      "description": "Adds a Plan mode that enforces planning before coding",
+      "file": "plan-mode.ts",
+      "type": "single",
+      "capabilities": ["modes"]
+    },
+    {
+      "id": "protected-paths",
+      "name": "Protected Paths",
+      "description": "Blocks file operations on protected paths (.env, .git/, node_modules/)",
+      "file": "protected-paths.ts",
+      "type": "single",
+      "capabilities": ["security"]
+    },
+    {
+      "id": "permission-gate",
+      "name": "Permission Gate",
+      "description": "Prompts for confirmation before running dangerous bash commands",
+      "file": "permission-gate.ts",
+      "type": "single",
+      "capabilities": ["security"]
+    },
+    {
+      "id": "ultrathink",
+      "name": "Ultrathink",
+      "description": "Detects 'ultrathink' / 'think hard' and increases reasoning effort",
+      "file": "ultrathink.ts",
+      "type": "single",
+      "capabilities": ["optimization"]
+    },
+    {
+      "id": "external-rules",
+      "name": "External Rules",
+      "description": "Includes rule files from Cursor, Claude Code, and Roo Code",
+      "file": "external-rules.ts",
+      "type": "single",
+      "capabilities": ["context"]
+    },
+    {
+      "id": "sound-notification",
+      "name": "Sound Notification",
+      "description": "Plays a 'Jobs Done' sound when a prompt finishes",
+      "file": "sound-notification.ts",
+      "type": "single",
+      "capabilities": ["notifications"]
+    },
+    {
+      "id": "sandbox",
+      "name": "Sandbox",
+      "description": "OS-level sandboxing for bash commands using @anthropic-ai/sandbox-runtime",
+      "folder": "sandbox",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["security"]
+    },
+    {
+      "id": "rtk",
+      "name": "RTK Auto-Rewrite",
+      "description": "Rewrites shell commands to RTK equivalents, reducing token usage by 60-90%",
+      "folder": "rtk",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["optimization", "commands"]
+    },
+    {
+      "id": "redact-secrets",
+      "name": "Redact Secrets",
+      "description": "Redacts secret values from .env* files in file read results",
+      "folder": "redact-secrets",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["security"]
+    },
+    {
+      "id": "chunkhound-search",
+      "name": "ChunkHound Search",
+      "description": "Provides chunkhound-search tool for semantic code search",
+      "folder": "chunkhound-search",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["search"]
+    },
+    {
+      "id": "chunkhound-on-semantic-search-tool",
+      "name": "ChunkHound Semantic Search Override",
+      "description": "Overrides power---semantic_search to use ChunkHound for better semantic understanding",
+      "folder": "chunkhound-on-semantic-search-tool",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["search"]
+    },
+    {
+      "id": "tree-sitter-repo-map",
+      "name": "Tree-Sitter Repo Map",
+      "description": "Enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking",
+      "folder": "tree-sitter-repo-map",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["context", "commands"]
+    },
+    {
+      "id": "context-autocompletion-words",
+      "name": "Context Autocompletion Words",
+      "description": "Automatically extracts symbols from context files and adds them to autocompletion",
+      "folder": "context-autocompletion-words",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["context"]
+    },
+    {
+      "id": "lsp",
+      "name": "LSP Integration",
+      "description": "Language Server Protocol integration for code intelligence and error detection",
+      "folder": "lsp",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["tools", "code-intelligence"]
+    },
+    {
+      "id": "plannotator",
+      "name": "Plannotator",
+      "description": "Plan-based development workflow with visual review",
+      "folder": "plannotator",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["modes", "tools", "commands", "workflows"]
+    },
+    {
+      "id": "programmatic-tool-calls",
+      "name": "Programmatic Tool Calls",
+      "description": "Execute JavaScript code in a sandbox with access to all tools as async functions",
+      "folder": "programmatic-tool-calls",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["tools"]
+    },
+    {
+      "id": "ui-placement-demo",
+      "name": "UI Placement Demo",
+      "description": "Demonstrates all available UI component placement locations in AiderDesk",
+      "file": "ui-placement-demo.ts",
+      "type": "single",
+      "capabilities": ["ui", "example"]
+    },
+    {
+      "id": "multi-model-run",
+      "name": "Multi-Model Run",
+      "description": "Run the same prompt across multiple models simultaneously",
+      "folder": "multi-model-run",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["ui", "workflows"]
+    },
+    {
+      "id": "providers-quota-extension",
+      "name": "Providers Quota",
+      "description": "Displays API quota information for Synthetic and Z.AI providers in the task status bar",
+      "folder": "providers-quota-extension",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["ui"]
+    },
+    {
+      "id": "tps-counter",
+      "name": "TPS Counter",
+      "description": "Displays tokens per second for agent responses with UI components in usage info and message bar",
+      "folder": "tps-counter",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["metrics"]
+    },
+    {
+      "id": "bmad",
+      "name": "BMAD Method",
+      "description": "Provides BMAD mode with structured workflows for planning, designing, and implementing software projects",
+      "folder": "bmad",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["modes", "ui"]
+    },
+    {
+      "id": "fast-grep",
+      "name": "Fast Grep",
+      "description": "Fast regex search using sparse n-gram indexing. Replaces internal power---grep tool with better performance in large codebases.",
+      "folder": "fast-grep",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["tools"]
+    }
+  ]
+}

@@ -1,12 +1,17 @@
 export { AnthropicIcon } from './AnthropicIcon';
+export { AnthropicCompatibleIcon } from './AnthropicCompatibleIcon';
+export { AuggieIcon } from './AuggieIcon';
 export { AzureIcon } from './AzureIcon';
 export { BedrockIcon } from './BedrockIcon';
 export { CerebrasIcon } from './CerebrasIcon';
 export { ClaudeAgentSdkIcon } from './ClaudeAgentSdkIcon';
 export { DeepseekIcon } from './DeepseekIcon';
+export { GeminiCliIcon } from './GeminiCliIcon';
 export { GeminiIcon } from './GeminiIcon';
 export { GpustackIcon } from './GpustackIcon';
 export { GroqIcon } from './GroqIcon';
+export { AlibabaPlanIcon } from './AlibabaPlanIcon';
+export { KimiPlanIcon } from './KimiPlanIcon';
 export { LitellmIcon } from './LitellmIcon';
 export { LmStudioIcon } from './LmStudioIcon';
 export { MinimaxIcon } from './MinimaxIcon';

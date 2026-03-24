@@ -1,10 +1,35 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+/* eslint-disable no-console */
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { ApplicationAPI } from '@common/api';
 
 import { OpenProjectDialog } from '../OpenProjectDialog';
 
+import { render } from '@/__tests__/render';
 import { useApi } from '@/contexts/ApiContext';
+
+// Suppress HotkeysProvider warnings
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+beforeAll(() => {
+  console.error = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].includes('HotkeysProvider')) {
+      return;
+    }
+    originalConsoleError(...args);
+  };
+  console.warn = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].includes('HotkeysProvider')) {
+      return;
+    }
+    originalConsoleWarn(...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
+});
 
 // Mock contexts
 vi.mock('@/contexts/ApiContext', () => ({
@@ -38,12 +63,12 @@ describe('OpenProjectDialog', () => {
 
   it('renders and allows browsing for a project', async () => {
     const onAddProject = vi.fn();
-    const { container } = render(<OpenProjectDialog onClose={vi.fn()} onAddProject={onAddProject} openProjects={[]} />);
+    render(<OpenProjectDialog onClose={vi.fn()} onAddProject={onAddProject} openProjects={[]} />);
 
     expect(screen.getByText('dialogs.openProjectTitle')).toBeInTheDocument();
 
-    const browseButton = container.querySelector('[data-tooltip-content="dialogs.browseFoldersTooltip"]');
-    fireEvent.click(browseButton!);
+    const browseButton = screen.getByTestId('browse-folder-button');
+    fireEvent.click(browseButton);
 
     await waitFor(() => {
       expect(mockApi.showOpenDialog).toHaveBeenCalled();

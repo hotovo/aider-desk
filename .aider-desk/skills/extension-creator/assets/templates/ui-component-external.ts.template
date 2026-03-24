@@ -1,0 +1,91 @@
+/**
+ * {{EXTENSION_NAME}} Extension
+ *
+ * {{DESCRIPTION}}
+ * 
+ * This extension uses external JSX files for UI components.
+ */
+
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import type { 
+  Extension, 
+  ExtensionContext, 
+  UIComponentDefinition 
+} from '@aiderdesk/extensions';
+
+interface ComponentData {
+  // Define data structure passed to component
+  message: string;
+  count: number;
+}
+
+export default class {{CLASS_NAME}}Extension implements Extension {
+  static metadata = {
+    name: '{{EXTENSION_NAME}}',
+    version: '1.0.0',
+    description: '{{DESCRIPTION}}',
+    author: '{{AUTHOR}}',
+    capabilities: ['ui'],
+  };
+
+  private state = {
+    count: 0,
+    message: 'Hello!',
+  };
+
+  async onLoad(context: ExtensionContext): Promise<void> {
+    context.log('{{EXTENSION_NAME}} extension loaded', 'info');
+  }
+
+  getUIComponents(_context: ExtensionContext): UIComponentDefinition[] {
+    // Load JSX from external file
+    const jsx = readFileSync(join(__dirname, './Component.jsx'), 'utf-8');
+    
+    return [
+      {
+        id: '{{COMPONENT_ID}}',
+        placement: '{{PLACEMENT}}',
+        jsx,
+        loadData: true,
+        noDataCache: false, // Set to true if data should always be fresh
+      },
+    ];
+  }
+
+  async getUIExtensionData(
+    componentId: string,
+    _context: ExtensionContext
+  ): Promise<ComponentData | undefined> {
+    if (componentId === '{{COMPONENT_ID}}') {
+      return {
+        message: this.state.message,
+        count: this.state.count,
+      };
+    }
+    return undefined;
+  }
+
+  async executeUIExtensionAction(
+    componentId: string,
+    action: string,
+    args: unknown[],
+    context: ExtensionContext
+  ): Promise<unknown> {
+    if (componentId !== '{{COMPONENT_ID}}') return;
+
+    if (action === 'increment') {
+      this.state.count++;
+      context.triggerUIDataRefresh('{{COMPONENT_ID}}');
+      return { success: true, count: this.state.count };
+    }
+
+    if (action === 'set-message') {
+      this.state.message = args[0] as string;
+      context.triggerUIDataRefresh('{{COMPONENT_ID}}');
+      return { success: true };
+    }
+
+    return undefined;
+  }
+}

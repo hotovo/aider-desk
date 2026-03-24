@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdCheck, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdPsychology, MdSave } from 'react-icons/md';
+import { HiUserGroup } from 'react-icons/hi';
 import { RiToolsFill } from 'react-icons/ri';
 import { clsx } from 'clsx';
 import { AgentProfile, TaskData, ToolApprovalState } from '@common/types';
@@ -13,14 +14,13 @@ import { McpServerSelectorItem } from './McpServerSelectorItem';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { Accordion } from '@/components/common/Accordion';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
-import { useTask } from '@/contexts/TaskContext';
-import { resolveAgentProfile } from '@/utils/agents';
+import { useTask } from '@/contexts/TasksContext';
+import { useActiveAgentProfile } from '@/utils/agents';
 
 type Props = {
   projectDir: string;
@@ -43,9 +43,7 @@ export const AgentSelector = memo(
 
     const profiles = useMemo(() => getProfiles(projectDir), [getProfiles, projectDir]);
 
-    const activeTaskProfile = useMemo(() => {
-      return resolveAgentProfile(task, projectSettings?.agentProfileId, profiles);
-    }, [task, projectSettings?.agentProfileId, profiles]);
+    const activeTaskProfile = useActiveAgentProfile(task, projectDir);
     const activeGlobalProfile = useMemo(() => {
       return profiles.find((p) => p.id === (task.agentProfileId || projectSettings?.agentProfileId));
     }, [profiles, projectSettings?.agentProfileId, task.agentProfileId]);
@@ -231,7 +229,11 @@ export const AgentSelector = memo(
           {activeTaskProfile ? (
             <>
               <span className="text-2xs truncate max-w-[250px] -mb-0.5">{activeTaskProfile.name}</span>
-              <span className="text-2xs font-mono text-text-muted">({enabledToolsCount ?? '...'})</span>
+              {enabledToolsCount === null ? (
+                <span className="text-2xs font-mono text-text-muted">(...)</span>
+              ) : enabledToolsCount > 0 ? (
+                <span className="text-2xs font-mono text-text-muted">({enabledToolsCount})</span>
+              ) : null}
 
               {activeTaskProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-agent-aider-tools opacity-90" />}
               {activeTaskProfile.usePowerTools && <MdFlashOn className="w-3.5 h-3.5 text-agent-power-tools opacity-70" />}
@@ -239,6 +241,7 @@ export const AgentSelector = memo(
               {activeTaskProfile.useTaskTools && <LuClipboardList className="w-3.5 h-3.5 text-agent-tasks-tools opacity-70" />}
               {activeTaskProfile.useMemoryTools && <LuBrain className="w-3 h-3 text-agent-memory-tools opacity-70" />}
               {activeTaskProfile.useSkillsTools && <MdPsychology className="w-3.5 h-3.5 text-agent-skills-tools opacity-70" />}
+              {activeTaskProfile.useSubagents && <HiUserGroup className="w-3.5 h-3.5 text-agent-subagents-tools opacity-70" />}
               {activeTaskProfile.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-agent-context-files opacity-70" />}
               {activeTaskProfile.includeRepoMap && <MdOutlineMap className="w-3 h-3 text-agent-repo-map opacity-70" />}
             </>
@@ -260,7 +263,6 @@ export const AgentSelector = memo(
                       onClick={handleSaveAsProjectDefault}
                       className="opacity-60 hover:opacity-100 p-1 hover:bg-bg-secondary rounded-md"
                       tooltip={t('agentProfiles.saveAsProjectDefault')}
-                      tooltipId="agent-selector-tooltip"
                     />
                   )}
                   <IconButton
@@ -268,7 +270,6 @@ export const AgentSelector = memo(
                     onClick={handleOpenAgentProfiles}
                     className="opacity-60 hover:opacity-100 p-1 hover:bg-bg-secondary  rounded-md"
                     tooltip={t('agentProfiles.manageProfiles')}
-                    tooltipId="agent-selector-tooltip"
                   />
                 </div>
               </div>
@@ -337,7 +338,6 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('useAiderTools', !activeTaskProfile.useAiderTools)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={t('settings.agent.useAiderTools')}
-                    tooltipId="agent-selector-tooltip"
                   />
                   <IconButton
                     icon={
@@ -346,7 +346,6 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('usePowerTools', !activeTaskProfile.usePowerTools)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={t('settings.agent.usePowerTools')}
-                    tooltipId="agent-selector-tooltip"
                   />
                   <IconButton
                     icon={
@@ -357,7 +356,6 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('useTodoTools', !activeTaskProfile.useTodoTools)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={`${t('settings.agent.useTodoTools')} (Alt + T)`}
-                    tooltipId="agent-selector-tooltip"
                   />
                   <IconButton
                     icon={
@@ -368,7 +366,6 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('useTaskTools', !activeTaskProfile.useTaskTools)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={t('settings.agent.useTaskTools')}
-                    tooltipId="agent-selector-tooltip"
                   />
                   <IconButton
                     icon={
@@ -377,7 +374,6 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('useMemoryTools', !activeTaskProfile.useMemoryTools)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={`${t('settings.agent.useMemoryTools')} (Alt + M)`}
-                    tooltipId="agent-selector-tooltip"
                   />
                   <IconButton
                     icon={
@@ -386,7 +382,16 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('useSkillsTools', !activeTaskProfile.useSkillsTools)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={`${t('settings.agent.useSkillsTools')} (Alt + S)`}
-                    tooltipId="agent-selector-tooltip"
+                  />
+                  <IconButton
+                    icon={
+                      <HiUserGroup
+                        className={clsx('w-3.5 h-3.5', activeTaskProfile.useSubagents ? 'text-agent-subagents-tools' : 'text-text-muted opacity-50')}
+                      />
+                    }
+                    onClick={() => handleToggleProfileSetting('useSubagents', !activeTaskProfile.useSubagents)}
+                    className="p-1.5 hover:bg-bg-secondary rounded-md"
+                    tooltip={t('settings.agent.canUseSubagents')}
                   />
                   <IconButton
                     icon={
@@ -397,7 +402,6 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('includeContextFiles', !activeTaskProfile.includeContextFiles)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={`${t('settings.agent.includeContextFiles')} (Alt + F)`}
-                    tooltipId="agent-selector-tooltip"
                   />
                   <IconButton
                     icon={
@@ -406,15 +410,12 @@ export const AgentSelector = memo(
                     onClick={() => handleToggleProfileSetting('includeRepoMap', !activeTaskProfile.includeRepoMap)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
                     tooltip={`${t('settings.agent.includeRepoMap')} (Alt + R)`}
-                    tooltipId="agent-selector-tooltip"
                   />
                 </div>
               </div>
             )}
           </div>
         )}
-
-        <StyledTooltip id="agent-selector-tooltip" />
       </div>
     );
   },

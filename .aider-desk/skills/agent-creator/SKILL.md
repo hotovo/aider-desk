@@ -1,19 +1,15 @@
 ---
 name: agent-creator
-description: Create AiderDesk agent profiles via interactive Q&A.
+description: Create and configure AiderDesk agent profiles by defining tool groups, approval rules, subagent settings, and provider/model selection. Use when setting up a new agent, creating a profile, or configuring agent tools and permissions.
 ---
 
 # Agent Profile Creator
 
 Create agent profiles stored as `config.json` in `~/.aider-desk/agents/{name}/` (global) or `{project}/.aider-desk/agents/{name}/` (project-level).
 
-**READ REFERENCES** before proposing to ensure accuracy:
-- Tool groups & schema: `references/agent-profile-schema.md`
-- Tool approvals: `references/tool-approval-guide.md` + `references/agent-profile-schema.md`
-- Subagent config: `references/subagent-guide.md`
-- Examples: `references/profile-examples.md`
+Read all reference files before proposing a profile to ensure accuracy.
 
-## Simplified Q&A Process
+## Q&A Process
 
 ### Step 1: Understand Purpose
 
@@ -26,8 +22,6 @@ Based on their response, **internally propose** all properties:
 - Custom instructions (if applicable)
 - Subagent config (always enabled, contextMemory: "off" by default)
 - Tool approvals (based on needs)
-
-**READ all reference files** before proposing.
 
 ### Step 2: Provider/Model
 
@@ -68,23 +62,7 @@ Show:
 
 ### Step 6: Create
 
-On user confirmation, generate the profile.
-
-**READ `references/profile-examples.md`** to verify structure before creating files.
-
-## Tool Group Reference
-
-- **Power Tools**: File system, shell, search (for agents that read/write files)
-- **Aider Tools**: AI code generation via Aider (NOT default - see note below)
-- **Power Search**: Advanced code search (for analysis/docs)
-- **Todo Tools**: Task list management (for agents that track work)
-- **Memory Tools**: Persistent information storage (for learning agents)
-- **Skills Tools**: Access to project-specific skills (for agents using custom skills)
-- **Subagents**: Task delegation to specialized subagents (for agents that can call others)
-
-**Aider Tools Note**: Specialized for AI code generation. Do NOT enable by default.
-- If user wants coding: explain Aider (advanced refactoring) vs Power Tools (direct editing)
-- Ask preference before enabling
+On user confirmation, generate the profile. Verify structure against `references/profile-examples.md` before creating files.
 
 ## Tool Approval Strategy
 
@@ -94,15 +72,11 @@ On user confirmation, generate the profile.
 - **"never"**: Tools completely irrelevant (e.g., `power---bash` for read-only agents)
 - **"always"**: Safe, essential tools (e.g., read operations for reviewers)
 
-**READ `references/tool-approval-guide.md`** to see all available tools and their purposes.
-
-Only include tools that exist in reference docs.
+Only include tools that exist in `references/tool-approval-guide.md`.
 
 ## Subagent Configuration
 
-**Every agent is a subagent (enabled: true)**
-
-**READ `references/subagent-guide.md`** for detailed guidance on context memory modes and configuration:
+**Every agent is a subagent (enabled: true)**. See `references/subagent-guide.md` for detailed guidance.
 
 - `contextMemory`: **Default is `"off"`** (fresh each time)
   - Use `"full-context"` only for specialized analysis agents (code review, security audit)
@@ -112,11 +86,24 @@ Only include tools that exist in reference docs.
 - `color`: Relevant color (e.g., red=security, blue=power tools)
 - `description`: Clear description for auto-invocation
 
-## File Structure
+## Minimal config.json Structure
 
-```
-{profile-name}/
-└── config.json
+```json
+{
+  "name": "my-agent",
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-5-20250929",
+  "maxIterations": 250,
+  "toolGroups": ["power", "todo"],
+  "toolApprovals": {
+    "power---bash": "ask",
+    "power---read": "always"
+  },
+  "subagent": {
+    "enabled": true,
+    "contextMemory": "off"
+  }
+}
 ```
 
 ## Validation

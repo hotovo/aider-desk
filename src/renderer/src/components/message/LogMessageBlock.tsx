@@ -1,11 +1,11 @@
 import { FaInfoCircle, FaExclamationTriangle, FaExclamationCircle } from 'react-icons/fa';
 import { MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
+import { LogMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { MessageActions } from './MessageActions';
 
-import { LogMessage } from '@/types/message';
 import { IconButton } from '@/components/common/IconButton';
 
 type Props = {
@@ -19,7 +19,7 @@ type Props = {
 
 export const LogMessageBlock = ({ baseDir, taskId, message, onRemove, compact = false, onInterrupt }: Props) => {
   const { t } = useTranslation();
-  const baseClasses = 'rounded-md p-3 mb-2 max-w-full break-words whitespace-pre-wrap text-xs border';
+  const baseClasses = 'rounded-md p-3 max-w-full break-words whitespace-pre-wrap text-xs border';
 
   const levelConfig = {
     info: {

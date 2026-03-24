@@ -23,6 +23,7 @@ export const OpenAiAdvancedSettings = ({ provider, onChange }: Props) => {
     { value: ReasoningEffort.Low, label: t('reasoningEffort.low') },
     { value: ReasoningEffort.Medium, label: t('reasoningEffort.medium') },
     { value: ReasoningEffort.High, label: t('reasoningEffort.high') },
+    { value: ReasoningEffort.XHigh, label: t('reasoningEffort.xhigh') },
   ];
 
   const handleReasoningEffortChange = (value: string) => {

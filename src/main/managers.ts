@@ -14,6 +14,7 @@ import { VersionsManager } from '@/versions';
 import { TelemetryManager } from '@/telemetry';
 import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
+import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
 import logger from '@/logger';
@@ -27,18 +28,21 @@ export interface ManagersResult {
   cleanup: () => Promise<void>;
   modelManager: ModelManager;
   agentProfileManager: AgentProfileManager;
+  extensionManager: ExtensionManager;
 }
 
 export const initManagers = async (store: Store, mainWindow: BrowserWindow | null = null): Promise<ManagersResult> => {
-  // Initialize telemetry manager
+  // Initialize telemetry manager (non-blocking - analytics not critical for startup)
   const telemetryManager = new TelemetryManager(store);
-  await telemetryManager.init();
+  telemetryManager.init().catch((error) => {
+    logger.error('[Telemetry] Telemetry initialization failed, continuing without analytics:', error);
+  });
 
   // Initialize MCP manager
   const mcpManager = new McpManager();
-  const activeProject = store.getOpenProjects().find((project) => project.active);
-
-  void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir, activeProject?.baseDir);
+  mcpManager.init().catch((error) => {
+    logger.error('[MCP] MCP manager initialization failed, continuing without MCP:', error);
+  });
 
   // Initialize event manager (no main window in headless)
   const eventManager = new EventManager(mainWindow);
@@ -50,21 +54,37 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   const dataManager = new DataManager();
   dataManager.init();
 
-  // Initialize memory manager
+  // Initialize memory manager (non-blocking - heavy operation with lazy loading)
   const memoryManager = new MemoryManager(store);
-  await memoryManager.init();
+  memoryManager.init().catch((error) => {
+    logger.error('[Memory] Memory system initialization failed, continuing without memories:', error);
+  });
 
+  // Initialize hook manager (non-blocking - has lazy init in trigger method)
   const hookManager = new HookManager();
-  await hookManager.init();
+  hookManager.init().catch((error) => {
+    logger.error('[Hooks] Hook system initialization failed:', error);
+  });
 
-  const promptsManager = new PromptsManager();
-  await promptsManager.init();
+  // Initialize extension manager (non-blocking - errors should not crash app)
+  const extensionManager = new ExtensionManager(store, modelManager, eventManager, telemetryManager);
+  extensionManager.init().catch((error) => {
+    logger.error('[Extensions] Extension system initialization failed, continuing without extensions:', error);
+  });
+
+  // Initialize prompts manager (non-blocking - templates compile lazily)
+  const promptsManager = new PromptsManager(extensionManager);
+  promptsManager.init().catch((error) => {
+    logger.error('[Prompts] Prompts system initialization failed:', error);
+  });
 
   const worktreeManager = new WorktreeManager();
 
-  // Initialize agent profile manager
-  const agentProfileManager = new AgentProfileManager(eventManager);
-  await agentProfileManager.start();
+  // Initialize agent profile manager with extension manager for unified profile access
+  const agentProfileManager = new AgentProfileManager(eventManager, extensionManager);
+  agentProfileManager.init().catch((error) => {
+    logger.error('[AgentProfile] Agent profile system initialization failed:', error);
+  });
 
   // Initialize project manager
   const projectManager = new ProjectManager(
@@ -79,6 +99,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     memoryManager,
     hookManager,
     promptsManager,
+    extensionManager,
   );
 
   // Initialize terminal manager
@@ -108,6 +129,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     eventManager,
     agentProfileManager,
     memoryManager,
+    extensionManager,
   );
 
   // Create and initialize REST API controller with the server
@@ -141,6 +163,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
         agentProfileManager.dispose(),
         hookManager.dispose(),
         promptsManager.dispose(),
+        extensionManager.dispose(),
       ]);
     } catch (error) {
       logger.error('Error during cleanup:', {
@@ -170,5 +193,6 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     cleanup,
     modelManager,
     agentProfileManager,
+    extensionManager,
   };
 };

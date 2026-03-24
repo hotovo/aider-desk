@@ -27,13 +27,15 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
       type: z.enum(['task', 'user-preference', 'code-pattern']).describe('The type of memory to store'),
       content: z.string().describe('The content to store in memory'),
     }),
-    execute: async ({ type, content }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { type, content } = input;
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_STORE, { type, content }, undefined, undefined, promptContext);
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_STORE}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_STORE}`;
+      const questionKey = toolName;
       const questionText = `Store memory of type '${type}'?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, content);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, content);
 
       if (!isApproved) {
         return userInput || 'Memory storage cancelled by user.';
@@ -67,13 +69,15 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
       query: z.string().describe('The search query to find relevant memories'),
       limit: z.number().optional().default(3).describe('Maximum number of memories to retrieve (default: 3)'),
     }),
-    execute: async ({ query, limit }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { query, limit } = input;
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_RETRIEVE, { query, limit }, undefined, undefined, promptContext);
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_RETRIEVE}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_RETRIEVE}`;
+      const questionKey = toolName;
       const questionText = `Retrieve memories with query: "${query}" (limit: ${limit})?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return userInput || 'Memory retrieval cancelled by user.';
@@ -102,7 +106,8 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
     inputSchema: z.object({
       id: z.string().describe('The ID of the memory to delete'),
     }),
-    execute: async ({ id }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { id } = input;
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_DELETE, { id }, undefined, undefined, promptContext);
 
       // Get the memory to show its content in the approval question
@@ -112,11 +117,12 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
         return `Memory with ID ${id} not found.`;
       }
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_DELETE}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_DELETE}`;
+      const questionKey = toolName;
       const questionText = `Delete memory with ID: ${id}?`;
       const questionSubject = `Content: "${memory.content}"\nType: ${memory.type}\nTimestamp: ${new Date(memory.timestamp).toLocaleString()}`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         return userInput || 'Memory deletion cancelled by user.';
@@ -144,13 +150,15 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
       type: z.enum(['task', 'user-preference', 'code-pattern']).optional().describe('Filter by memory type'),
       limit: z.number().optional().default(20).describe('Maximum number of memories to list (default: 20)'),
     }),
-    execute: async ({ type, limit }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { type, limit } = input;
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_LIST, { type, limit }, undefined, undefined, promptContext);
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_LIST}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_LIST}`;
+      const questionKey = toolName;
       const questionText = `List memories with type filter: ${type || 'all'} (limit: ${limit})?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return userInput || 'Memory listing cancelled by user.';
@@ -193,7 +201,8 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
       id: z.string().describe('The ID of the memory to update'),
       content: z.string().describe('The new content for the memory'),
     }),
-    execute: async ({ id, content }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { id, content } = input;
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_UPDATE, { id, content }, undefined, undefined, promptContext);
 
       // Get the memory to show its content in the approval question
@@ -203,11 +212,12 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
         return `Memory with ID ${id} not found.`;
       }
 
-      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_UPDATE}`;
+      const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_UPDATE}`;
+      const questionKey = toolName;
       const questionText = `Update memory with ID: ${id}?`;
       const questionSubject = `Old content: "${memory.content}"\nNew content: "${content}"`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         return userInput || 'Memory update cancelled by user.';

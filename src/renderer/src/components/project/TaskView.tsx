@@ -1,5 +1,20 @@
-import { DefaultTaskState, Mode, Model, ModelsData, TaskData, TodoItem } from '@common/types';
-import { forwardRef, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import {
+  AIDER_MODES,
+  DefaultTaskState,
+  isLoadingMessage,
+  isLogMessage,
+  isTaskInfoMessage,
+  isUserMessage,
+  Message,
+  Mode,
+  Model,
+  ModelsData,
+  TaskData,
+  TaskInfoMessage,
+  TodoItem,
+  UserMessage,
+} from '@common/types';
+import { forwardRef, startTransition, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useOptimistic, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import { clsx } from 'clsx';
@@ -11,15 +26,17 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { useSidebarWidth } from './useSidebarWidth';
 
-import { StyledTooltip } from '@/components/common/StyledTooltip';
-import { isLogMessage, isTaskInfoMessage, isUserMessage, Message, TaskInfoMessage, UserMessage } from '@/types/message';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+import { useApi } from '@/contexts/ApiContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { TaskBar, TaskBarRef } from '@/components/project/TaskBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
+import { TaskControlBar } from '@/components/project/TaskControlBar';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
 import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
@@ -27,17 +44,16 @@ import { MobileSidebar } from '@/components/project/MobileSidebar';
 import { FilesContextInfoContent } from '@/components/project/FilesContextInfoContent';
 import { WelcomeMessage } from '@/components/project/WelcomeMessage';
 import 'react-resizable/css/styles.css';
-import { useApi } from '@/contexts/ApiContext';
-import { resolveAgentProfile } from '@/utils/agents';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useActiveAgentProfile } from '@/utils/agents';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
-import { useTask } from '@/contexts/TaskContext';
-import { useAgents } from '@/contexts/AgentsContext';
+import { useTask } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useTaskMessages, useTaskState } from '@/stores/taskStore';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
+import { TaskStateActions } from '@/components/message/TaskStateActions';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -59,7 +75,6 @@ type Props = {
   isActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   shouldFocusPrompt?: boolean;
-  onProceed?: () => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
   onDeleteTask?: () => void;
@@ -77,7 +92,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       showSettingsPage,
       shouldFocusPrompt = false,
       updateOptimisticTaskState,
-      onProceed,
       onArchiveTask,
       onUnarchiveTask,
       onDeleteTask,
@@ -93,14 +107,14 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const api = useApi();
     const { models } = useModelProviders();
     const { loadTask, clearSession, resetTask, setMessages, setTodoItems, setAiderModelsData, answerQuestion, interruptResponse, refreshAllFiles } = useTask();
-    const { getProfiles } = useAgents();
 
     const taskState = useTaskState(task.id);
-    const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData } = taskState;
+    const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData, queuedPrompts } = taskState;
 
     const messages = useTaskMessages(task.id);
-    const displayedMessages = useDeferredValue(messages, []);
-    const messagesPending = messages.length !== displayedMessages.length;
+    const deferredMessages = useDeferredValue(messages);
+    const [displayedMessages, setDisplayedMessages] = useOptimistic(deferredMessages);
+    const messagesPending = task.updatedAt && messages.length !== displayedMessages.length;
 
     const currentMode = task.currentMode || 'agent';
 
@@ -114,14 +128,13 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const { renderSearchInput } = useSearchText(searchContainer, 'absolute top-1 left-1', isActive);
 
     const inProgress = task.state === DefaultTaskState.InProgress;
+    const isLastLoadingMessage = displayedMessages.length > 0 && isLoadingMessage(displayedMessages[displayedMessages.length - 1]);
 
     const promptFieldRef = useRef<PromptFieldRef>(null);
     const projectTopBarRef = useRef<TaskBarRef>(null);
     const messagesRef = useRef<MessagesRef | VirtualizedMessagesRef>(null);
     const terminalViewRef = useRef<TerminalViewRef | null>(null);
-    const activeAgentProfile = useMemo(() => {
-      return resolveAgentProfile(task, projectSettings?.agentProfileId, getProfiles(projectDir));
-    }, [task, projectSettings?.agentProfileId, getProfiles, projectDir]);
+    const activeAgentProfile = useActiveAgentProfile(task, projectDir);
 
     useEffect(() => {
       if (isActive && !taskState.loaded && !taskState.loading) {
@@ -163,7 +176,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const currentModel = useMemo(() => {
       let model: Model | undefined;
-      if (currentMode === 'agent') {
+      if (!AIDER_MODES.includes(currentMode)) {
         if (activeAgentProfile) {
           model = models.find((m) => m.id === activeAgentProfile.model && m.providerId === activeAgentProfile.provider);
         }
@@ -176,7 +189,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const maxInputTokens = currentModel?.maxInputTokens || 0;
 
     const todoListVisible = useMemo(() => {
-      return currentMode === 'agent' && activeAgentProfile?.useTodoTools;
+      return !AIDER_MODES.includes(currentMode) && activeAgentProfile?.useTodoTools;
     }, [currentMode, activeAgentProfile?.useTodoTools]);
 
     const handleOpenModelSelector = useCallback(() => {
@@ -289,22 +302,35 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           });
           api.redoLastUserPrompt(projectDir, task.id, currentMode, prompt);
         } else {
-          if (!question) {
-            // OPTIMISTIC: Add user message immediately before backend response
-            setMessages(task.id, (prevMessages) => [
-              ...prevMessages,
-              {
+          if (!question && !inProgress) {
+            startTransition(() => {
+              // OPTIMISTIC: Add user message immediately before backend response
+              const optimisticUserMessage = {
                 id: uuidv4(),
                 type: 'user',
                 content: prompt,
                 isOptimistic: true,
-              } satisfies UserMessage,
-            ]);
+              } satisfies UserMessage;
+              setMessages(task.id, (prevMessages) => [...prevMessages, optimisticUserMessage]);
+              setDisplayedMessages([...displayedMessages, optimisticUserMessage]);
+            });
           }
           api.runPrompt(projectDir, task.id, prompt, currentMode);
         }
       },
-      [updateOptimisticTaskState, task.id, editingMessageIndex, setMessages, api, projectDir, currentMode, question],
+      [
+        updateOptimisticTaskState,
+        task.id,
+        editingMessageIndex,
+        setMessages,
+        api,
+        projectDir,
+        currentMode,
+        question,
+        inProgress,
+        setDisplayedMessages,
+        displayedMessages,
+      ],
     );
 
     const handleSavePrompt = useCallback(
@@ -373,21 +399,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       api.resumeTask(projectDir, task.id);
     }, [api, projectDir, task.id]);
 
-    const handleProceed = useCallback(() => {
-      onProceed?.();
-    }, [onProceed]);
-
-    const handleArchiveTask = useCallback(() => {
-      onArchiveTask?.();
-    }, [onArchiveTask]);
-
-    const handleUnarchiveTask = useCallback(() => {
-      onUnarchiveTask?.();
-    }, [onUnarchiveTask]);
-
-    const handleDeleteTask = useCallback(() => {
-      onDeleteTask?.();
-    }, [onDeleteTask]);
+    const handleRunPrompt = useCallback(
+      (prompt: string) => {
+        api.runPrompt(projectDir, task.id, prompt, currentMode);
+      },
+      [api, currentMode, projectDir, task.id],
+    );
 
     const handleForkFromMessage = useCallback(
       async (message: Message) => {
@@ -419,6 +436,31 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           console.error('Failed to remove message:', error);
           setMessages(task.id, () => originalMessages);
           showErrorNotification(t('errors.removeMessageFailed'));
+        }
+      },
+      [displayedMessages, setMessages, task.id, api, projectDir, t],
+    );
+
+    const handleRemoveUpToMessage = useCallback(
+      async (messageToRemove: Message) => {
+        const originalMessages = displayedMessages;
+
+        // Optimistically remove the messages after it
+        setMessages(task.id, (prevMessages) => {
+          const messageIndex = prevMessages.findIndex((msg) => msg.id === messageToRemove.id);
+          if (messageIndex === -1) {
+            return prevMessages;
+          }
+          return prevMessages.slice(0, messageIndex + 1);
+        });
+
+        try {
+          await api.removeMessagesUpTo(projectDir, task.id, messageToRemove.id);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to remove messages up to:', error);
+          setMessages(task.id, () => originalMessages);
+          showErrorNotification(t('errors.removeMessagesUpToFailed'));
         }
       },
       [displayedMessages, setMessages, task.id, api, projectDir, t],
@@ -537,10 +579,30 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [answerQuestion, task.id],
     );
 
-    const handleInterruptResponse = useCallback(() => {
-      interruptResponse(task.id);
-      updateOptimisticTaskState(task.id, DefaultTaskState.Interrupted);
-    }, [interruptResponse, task.id, updateOptimisticTaskState]);
+    const handleRemoveQueuedPrompt = useCallback(
+      (id: string) => {
+        api.removeQueuedPrompt(projectDir, task.id, id);
+      },
+      [api, projectDir, task.id],
+    );
+
+    const handleSendQueuedPromptNow = useCallback(
+      (id: string) => {
+        api.sendQueuedPromptNow(projectDir, task.id, id);
+      },
+      [api, projectDir, task.id],
+    );
+
+    const handleInterruptResponse = useCallback(
+      (interruptId?: string) => {
+        interruptResponse(task.id, interruptId);
+        if (!interruptId) {
+          // Only update task state if we're interrupting the entire task, not a specific agent
+          updateOptimisticTaskState(task.id, DefaultTaskState.Interrupted);
+        }
+      },
+      [interruptResponse, task.id, updateOptimisticTaskState],
+    );
 
     const handleHandoff = useCallback(
       async (focus?: string) => {
@@ -603,9 +665,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 onClearAllTodos={handleClearAllTodos}
               />
             )}
+            <ExtensionComponentWrapper placement="task-messages-top" />
             <div className="overflow-hidden flex-grow relative">
               {displayedMessages.length === 0 && !loading && !messagesPending && !inProgress ? (
-                <WelcomeMessage onModeChange={handleModeChange} />
+                <WelcomeMessage onModeChange={handleModeChange} mode={currentMode} projectDir={projectDir} taskId={task.id} />
               ) : (
                 <>
                   {settings.virtualizedRendering ? (
@@ -618,15 +681,11 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={settings.renderMarkdown}
                       removeMessage={handleRemoveMessage}
-                      resumeTask={handleResumeTask}
                       redoLastUserPrompt={handleRedoLastUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
-                      onMarkAsDone={handleMarkAsDone}
-                      onProceed={handleProceed}
-                      onArchiveTask={handleArchiveTask}
-                      onUnarchiveTask={handleUnarchiveTask}
-                      onDeleteTask={handleDeleteTask}
                       onInterrupt={handleInterruptResponse}
+                      onForkFromMessage={handleForkFromMessage}
+                      onRemoveUpToMessage={handleRemoveUpToMessage}
                     />
                   ) : (
                     <Messages
@@ -638,21 +697,33 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={settings.renderMarkdown}
                       removeMessage={handleRemoveMessage}
-                      resumeTask={handleResumeTask}
                       redoLastUserPrompt={handleRedoLastUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
-                      onMarkAsDone={handleMarkAsDone}
-                      onProceed={handleProceed}
-                      onArchiveTask={handleArchiveTask}
-                      onUnarchiveTask={handleUnarchiveTask}
-                      onDeleteTask={handleDeleteTask}
                       onInterrupt={handleInterruptResponse}
                       onForkFromMessage={handleForkFromMessage}
+                      onRemoveUpToMessage={handleRemoveUpToMessage}
                     />
                   )}
                 </>
               )}
             </div>
+            <ExtensionComponentWrapper placement="task-messages-bottom" />
+            {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
+              <TaskStateActions
+                state={task.state}
+                mode={task.currentMode}
+                isArchived={task.archived}
+                task={task}
+                projectDir={projectDir}
+                taskId={task.id}
+                onResumeTask={handleResumeTask}
+                onMarkAsDone={handleMarkAsDone}
+                onRunPrompt={handleRunPrompt}
+                onArchiveTask={onArchiveTask}
+                onUnarchiveTask={onUnarchiveTask}
+                onDeleteTask={onDeleteTask}
+              />
+            )}
             {terminalVisible && (
               <ResizableBox
                 className="flex flex-col flex-shrink-0"
@@ -666,7 +737,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               >
                 <TerminalView
                   ref={terminalViewRef}
-                  baseDir={project.baseDir}
+                  baseDir={projectDir}
                   taskId={task.id}
                   visible={terminalVisible}
                   className="border-t border-border-dark-light flex-grow"
@@ -693,43 +764,62 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   </Button>
                 </div>
               )}
-              <PromptField
-                ref={promptFieldRef}
-                baseDir={projectDir}
-                taskId={task.id}
-                task={task}
-                inputHistory={inputHistory}
-                processing={inProgress}
-                mode={currentMode}
-                onModeChanged={handleModeChange}
-                runPrompt={runPrompt}
-                savePrompt={handleSavePrompt}
-                editLastUserMessage={handleEditLastUserMessage}
-                isActive={isActive}
-                allFiles={allFiles}
-                words={autocompletionWords}
-                clearMessages={clearMessages}
-                scrapeWeb={scrapeWeb}
-                showFileDialog={showFileDialog}
-                addFiles={handleAddFiles}
-                question={question}
-                answerQuestion={handleAnswerQuestion}
-                interruptResponse={handleInterruptResponse}
-                runCommand={runCommand}
-                runTests={runTests}
-                redoLastUserPrompt={handleRedoLastUserPrompt}
-                openModelSelector={handleOpenModelSelector}
-                openAgentModelSelector={handleOpenAgentModelSelector}
-                promptBehavior={settings.promptBehavior}
-                clearLogMessages={clearLogMessages}
-                toggleTerminal={api.isTerminalSupported() ? toggleTerminal : undefined}
-                terminalVisible={terminalVisible}
-                scrollToBottom={handleScrollToBottom}
-                onAutoApproveChanged={handleAutoApproveChanged}
-                showSettingsPage={showSettingsPage}
-                showTaskInfo={handleShowTaskInfo}
-                handoffConversation={handleHandoff}
-              />
+              <ExtensionComponentWrapper placement="task-input-above" />
+              <div className="flex flex-col gap-1.5">
+                <PromptField
+                  key={task.id}
+                  ref={promptFieldRef}
+                  baseDir={projectDir}
+                  taskId={task.id}
+                  inputHistory={inputHistory}
+                  processing={inProgress}
+                  mode={currentMode}
+                  onModeChanged={handleModeChange}
+                  runPrompt={runPrompt}
+                  savePrompt={handleSavePrompt}
+                  editLastUserMessage={handleEditLastUserMessage}
+                  isActive={isActive}
+                  allFiles={allFiles}
+                  words={autocompletionWords}
+                  clearMessages={clearMessages}
+                  scrapeWeb={scrapeWeb}
+                  showFileDialog={showFileDialog}
+                  addFiles={handleAddFiles}
+                  question={question}
+                  answerQuestion={handleAnswerQuestion}
+                  queuedPrompts={queuedPrompts}
+                  removeQueuedPrompt={handleRemoveQueuedPrompt}
+                  sendQueuedPromptNow={handleSendQueuedPromptNow}
+                  interruptResponse={handleInterruptResponse}
+                  runCommand={runCommand}
+                  runTests={runTests}
+                  redoLastUserPrompt={handleRedoLastUserPrompt}
+                  openModelSelector={handleOpenModelSelector}
+                  openAgentModelSelector={handleOpenAgentModelSelector}
+                  promptBehavior={settings.promptBehavior}
+                  clearLogMessages={clearLogMessages}
+                  scrollToBottom={handleScrollToBottom}
+                  showTaskInfo={handleShowTaskInfo}
+                  handoffConversation={handleHandoff}
+                />
+                <TaskControlBar
+                  baseDir={projectDir}
+                  task={task}
+                  isActive={isActive}
+                  mode={currentMode}
+                  onModeChanged={handleModeChange}
+                  clearMessages={clearMessages}
+                  toggleTerminal={api.isTerminalSupported() ? toggleTerminal : undefined}
+                  terminalVisible={terminalVisible}
+                  showTaskInfo={handleShowTaskInfo}
+                  onAutoApproveChanged={handleAutoApproveChanged}
+                  showSettingsPage={showSettingsPage}
+                />
+              </div>
+              <div className="flex gap-2 justify-between flex-wrap">
+                <ExtensionComponentWrapper placement="task-status-bar-left" />
+                <ExtensionComponentWrapper placement="task-status-bar-right" />
+              </div>
             </div>
           </div>
         </div>
@@ -740,20 +830,14 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               width: isFilesSidebarCollapsed ? FILES_COLLAPSED_WIDTH : sidebarWidth,
             }}
           >
-            <StyledTooltip id="files-sidebar-tooltip" />
-
-            {/* Expand/Collapse Button */}
-            <button
-              data-tooltip-id="files-sidebar-tooltip"
-              data-tooltip-content={isFilesSidebarCollapsed ? t('common.expand') : t('common.collapse')}
-              className={clsx(
-                'absolute top-[50%] translate-y-[-50%] z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5',
-                isFilesSidebarCollapsed ? 'left-1' : 'transition-opacity opacity-0 group-hover:opacity-100 left-3',
-              )}
-              onClick={handleToggleFilesSidebarCollapse}
-            >
-              <RiMenuUnfold4Line className={clsx('w-4 h-4 text-text-primary transition-transform duration-300', !isFilesSidebarCollapsed && 'rotate-180')} />
-            </button>
+            {/* Expand/Collapse Button for collapsed state */}
+            {isFilesSidebarCollapsed && (
+              <Tooltip content={t('common.expand')}>
+                <button className="absolute top-2 z-10 p-1.5 rounded-md hover:bg-bg-tertiary -mt-0.5 left-1" onClick={handleToggleFilesSidebarCollapse}>
+                  <RiMenuUnfold4Line className="w-4 h-4 text-text-primary" />
+                </button>
+              </Tooltip>
+            )}
 
             {/* Resizable wrapper for expanded state */}
             {!isFilesSidebarCollapsed && (
@@ -784,6 +868,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                     task={task}
                     updateTask={updateTask}
                     refreshAllFiles={handleRefreshAllFiles}
+                    onToggleFilesSidebarCollapse={handleToggleFilesSidebarCollapse}
                   />
                 </div>
               </ResizableBox>

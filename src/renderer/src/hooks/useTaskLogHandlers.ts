@@ -4,8 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
-import type { LogData } from '@common/types';
-import type { LogMessage, LoadingMessage, Message } from '@/types/message';
+import type { LogData, LogMessage, LoadingMessage, Message } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';

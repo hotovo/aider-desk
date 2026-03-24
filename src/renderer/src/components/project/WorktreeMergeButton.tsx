@@ -7,6 +7,7 @@ import { WorktreeIntegrationStatus } from '@common/types';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   baseDir: string;
@@ -116,16 +117,16 @@ export const WorktreeMergeButton = ({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={handleToggle}
-        disabled={disabled}
-        className="flex items-center gap-1 px-2 py-1 text-text-tertiary hover:bg-bg-secondary-light hover:text-text-primary focus:outline-none transition-colors duration-200 text-xs rounded disabled:opacity-50 disabled:cursor-not-allowed"
-        data-tooltip-id="merge-button-tooltip"
-        data-tooltip-content={t('worktree.mergeTooltip')}
-      >
-        <FaDownload className="w-3.5 h-3.5" />
-        <MdKeyboardArrowDown className="w-3 h-3" />
-      </button>
+      <Tooltip content={t('worktree.mergeTooltip')}>
+        <button
+          onClick={handleToggle}
+          disabled={disabled}
+          className="flex items-center gap-1 px-2 py-1 text-text-tertiary hover:bg-bg-secondary-light hover:text-text-primary focus:outline-none transition-colors duration-200 text-xs rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <FaDownload className="w-3.5 h-3.5" />
+          <MdKeyboardArrowDown className="w-3 h-3" />
+        </button>
+      </Tooltip>
 
       {isOpen && (
         <div className="absolute top-full right-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded shadow-lg z-50 min-w-[200px]">

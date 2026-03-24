@@ -11,6 +11,7 @@ export const useArrayField = (
   useEffect(() => {
     const arrayValue = provider[field];
     if (Array.isArray(arrayValue)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDraftValue(arrayValue.join(','));
     } else {
       setDraftValue('');

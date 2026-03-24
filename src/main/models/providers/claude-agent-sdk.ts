@@ -205,6 +205,7 @@ export const createClaudeAgentSdkLlm = (
       'Bash',
       'TaskOutput',
       'Edit',
+      'EnterPlanMode',
       'ExitPlanMode',
       'Glob',
       'Grep',
@@ -272,10 +273,8 @@ const getClaudeAgentSdkUsageReport = (
 
   return {
     model: `${provider.id}/${model.id}`,
-    sentTokens,
-    receivedTokens,
-    cacheReadTokens,
-    cacheWriteTokens,
+    sentTokens: sentTokens + cacheReadTokens,
+    receivedTokens: receivedTokens + cacheWriteTokens,
     messageCost,
     agentTotalCost: task.task.agentTotalCost + messageCost,
   };

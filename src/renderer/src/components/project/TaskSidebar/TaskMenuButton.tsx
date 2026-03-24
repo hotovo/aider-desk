@@ -6,7 +6,7 @@ import { FaEllipsisVertical } from 'react-icons/fa6';
 import { IoLogoMarkdown } from 'react-icons/io';
 import { RiFlag2Line } from 'react-icons/ri';
 import { MdImage, MdPushPin, MdChevronRight } from 'react-icons/md';
-import { BiDuplicate, BiArchive, BiArchiveIn } from 'react-icons/bi';
+import { BiDuplicate, BiArchive, BiArchiveIn, BiCopy } from 'react-icons/bi';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
 
@@ -17,6 +17,7 @@ type Props = {
   task: TaskData;
   onEdit: () => void;
   onDelete?: () => void;
+  onCopyAsMarkdown?: () => void;
   onExportToMarkdown?: () => void;
   onExportToImage?: () => void;
   onDuplicateTask?: () => void;
@@ -32,6 +33,7 @@ export const TaskMenuButton = memo(
     task,
     onEdit,
     onDelete,
+    onCopyAsMarkdown,
     onExportToMarkdown,
     onExportToImage,
     onDuplicateTask,
@@ -45,11 +47,24 @@ export const TaskMenuButton = memo(
     const isNewTask = !task.createdAt;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isStateSubmenuOpen, setIsStateSubmenuOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
     const [submenuPosition, setSubmenuPosition] = useState<{ top: number; left: number } | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLDivElement>(null);
     const stateSubmenuItemRef = useRef<HTMLLIElement>(null);
     const stateSubmenuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (isMenuOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setMenuPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 170,
+        });
+      } else {
+        setMenuPosition(null);
+      }
+    }, [isMenuOpen]);
 
     useEffect(() => {
       if (isStateSubmenuOpen && stateSubmenuItemRef.current) {
@@ -81,6 +96,12 @@ export const TaskMenuButton = memo(
     const handleDeleteClick = (e: MouseEvent) => {
       e.stopPropagation();
       onDelete?.();
+      setIsMenuOpen(false);
+    };
+
+    const handleCopyAsMarkdownClick = (e: MouseEvent) => {
+      e.stopPropagation();
+      onCopyAsMarkdown?.();
       setIsMenuOpen(false);
     };
 
@@ -146,99 +167,116 @@ export const TaskMenuButton = memo(
             <FaEllipsisVertical className="w-4 h-4" />
           </button>
         </div>
-        {isMenuOpen && (
-          <div
-            ref={menuRef}
-            className="absolute right-0 top-full mt-1 w-[170px] bg-bg-secondary-light border border-border-default-dark rounded shadow-lg z-10"
-          >
-            <ul className="display-none group-hover:display-block">
-              <li
-                className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                onClick={handleEditClick}
-              >
-                <HiOutlinePencil className="w-4 h-4" />
-                <span className="whitespace-nowrap">{t('taskSidebar.rename')}</span>
-              </li>
-              {onTogglePin && !isNewTask && (
+        {isMenuOpen &&
+          menuPosition &&
+          createPortal(
+            <div
+              ref={menuRef}
+              style={{
+                position: 'fixed',
+                top: `${menuPosition.top}px`,
+                left: `${menuPosition.left}px`,
+              }}
+              className="w-[170px] bg-bg-secondary-light border border-border-default-dark rounded shadow-lg z-[9999]"
+            >
+              <ul className="display-none group-hover:display-block">
                 <li
                   className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                  onClick={handlePinClick}
+                  onClick={handleEditClick}
                 >
-                  <MdPushPin className={clsx('w-4 h-4', isPinned && 'rotate-45')} />
-                  <span className="whitespace-nowrap">{isPinned ? t('taskSidebar.unpinTask') : t('taskSidebar.pinTask')}</span>
+                  <HiOutlinePencil className="w-4 h-4" />
+                  <span className="whitespace-nowrap">{t('taskSidebar.rename')}</span>
                 </li>
-              )}
-              {onExportToMarkdown && (
-                <li
-                  className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                  onClick={handleExportToMarkdownClick}
-                >
-                  <IoLogoMarkdown className="w-4 h-4" />
-                  <span className="whitespace-nowrap">{t('taskSidebar.exportAsMarkdown')}</span>
-                </li>
-              )}
-              {onExportToImage && (
-                <li
-                  className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                  onClick={handleExportToImageClick}
-                >
-                  <MdImage className="w-4 h-4" />
-                  <span className="whitespace-nowrap">{t('taskSidebar.exportAsImage')}</span>
-                </li>
-              )}
-              {onDuplicateTask && (
-                <li
-                  className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                  onClick={handleDuplicateTaskClick}
-                >
-                  <BiDuplicate className="w-4 h-4" />
-                  <span className="whitespace-nowrap">{t('taskSidebar.duplicateTask')}</span>
-                </li>
-              )}
-              {task.state !== DefaultTaskState.InProgress && !isNewTask && (
-                <li
-                  ref={stateSubmenuItemRef}
-                  className="relative flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleStateSubmenuToggle();
-                  }}
-                >
-                  <RiFlag2Line className="w-4 h-4" />
-                  <span className="whitespace-nowrap flex-1">{t('taskSidebar.changeState')}</span>
-                  <MdChevronRight className="w-3.5 h-3.5 text-text-muted" />
-                </li>
-              )}
-              {onArchiveTask && (
-                <li
-                  className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                  onClick={handleArchiveTaskClick}
-                >
-                  <BiArchive className="w-4 h-4" />
-                  <span className="whitespace-nowrap">{t('taskSidebar.archiveTask')}</span>
-                </li>
-              )}
-              {onUnarchiveTask && (
-                <li
-                  className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                  onClick={handleUnarchiveTaskClick}
-                >
-                  <BiArchiveIn className="w-4 h-4" />
-                  <span className="whitespace-nowrap">{t('taskSidebar.unarchiveTask')}</span>
-                </li>
-              )}
-              {onDelete && (
-                <li
-                  className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
-                  onClick={handleDeleteClick}
-                >
-                  <HiOutlineTrash className="w-4 h-4 text-error" />
-                  <span className="whitespace-nowrap">{t('taskSidebar.deleteTask')}</span>
-                </li>
-              )}
-            </ul>
-          </div>
-        )}
+                {onTogglePin && !isNewTask && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handlePinClick}
+                  >
+                    <MdPushPin className={clsx('w-4 h-4', isPinned && 'rotate-45')} />
+                    <span className="whitespace-nowrap">{isPinned ? t('taskSidebar.unpinTask') : t('taskSidebar.pinTask')}</span>
+                  </li>
+                )}
+                {onCopyAsMarkdown && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handleCopyAsMarkdownClick}
+                  >
+                    <BiCopy className="w-4 h-4" />
+                    <span className="whitespace-nowrap">{t('taskSidebar.copyAsMarkdown')}</span>
+                  </li>
+                )}
+                {onExportToMarkdown && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handleExportToMarkdownClick}
+                  >
+                    <IoLogoMarkdown className="w-4 h-4" />
+                    <span className="whitespace-nowrap">{t('taskSidebar.exportAsMarkdown')}</span>
+                  </li>
+                )}
+                {onExportToImage && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handleExportToImageClick}
+                  >
+                    <MdImage className="w-4 h-4" />
+                    <span className="whitespace-nowrap">{t('taskSidebar.exportAsImage')}</span>
+                  </li>
+                )}
+                {onDuplicateTask && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handleDuplicateTaskClick}
+                  >
+                    <BiDuplicate className="w-4 h-4" />
+                    <span className="whitespace-nowrap">{t('taskSidebar.duplicateTask')}</span>
+                  </li>
+                )}
+                {task.state !== DefaultTaskState.InProgress && !isNewTask && (
+                  <li
+                    ref={stateSubmenuItemRef}
+                    className="relative flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStateSubmenuToggle();
+                    }}
+                  >
+                    <RiFlag2Line className="w-4 h-4" />
+                    <span className="whitespace-nowrap flex-1">{t('taskSidebar.changeState')}</span>
+                    <MdChevronRight className="w-3.5 h-3.5 text-text-muted" />
+                  </li>
+                )}
+                {onArchiveTask && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handleArchiveTaskClick}
+                  >
+                    <BiArchive className="w-4 h-4" />
+                    <span className="whitespace-nowrap">{t('taskSidebar.archiveTask')}</span>
+                  </li>
+                )}
+                {onUnarchiveTask && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handleUnarchiveTaskClick}
+                  >
+                    <BiArchiveIn className="w-4 h-4" />
+                    <span className="whitespace-nowrap">{t('taskSidebar.unarchiveTask')}</span>
+                  </li>
+                )}
+                {onDelete && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handleDeleteClick}
+                  >
+                    <HiOutlineTrash className="w-4 h-4 text-error" />
+                    <span className="whitespace-nowrap">{t('taskSidebar.deleteTask')}</span>
+                  </li>
+                )}
+              </ul>
+            </div>,
+            document.body,
+          )}
         {isStateSubmenuOpen &&
           submenuPosition &&
           createPortal(

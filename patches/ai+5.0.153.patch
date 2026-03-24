@@ -1,0 +1,33 @@
+diff --git a/node_modules/ai/dist/index.js b/node_modules/ai/dist/index.js
+index 6ee382c..071536f 100644
+--- a/node_modules/ai/dist/index.js
++++ b/node_modules/ai/dist/index.js
+@@ -1487,17 +1487,17 @@ async function standardizePrompt(prompt) {
+       message: "messages must not be empty"
+     });
+   }
+-  const validationResult = await (0, import_provider_utils7.safeValidateTypes)({
+-    value: messages,
+-    schema: import_v46.z.array(modelMessageSchema)
+-  });
+-  if (!validationResult.success) {
+-    throw new import_provider19.InvalidPromptError({
+-      prompt,
+-      message: "The messages must be a ModelMessage[]. If you have passed a UIMessage[], you can use convertToModelMessages to convert them.",
+-      cause: validationResult.error
+-    });
+-  }
++  // const validationResult = await (0, import_provider_utils7.safeValidateTypes)({
++  //   value: messages,
++  //   schema: import_v46.z.array(modelMessageSchema)
++  // });
++  // if (!validationResult.success) {
++  //   throw new import_provider19.InvalidPromptError({
++  //     prompt,
++  //     message: "The messages must be a ModelMessage[]. If you have passed a UIMessage[], you can use convertToModelMessages to convert them.",
++  //     cause: validationResult.error
++  //   });
++  // }
+   return {
+     messages,
+     system: prompt.system

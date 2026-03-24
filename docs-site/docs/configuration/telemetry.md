@@ -43,6 +43,18 @@ When telemetry is enabled, AiderDesk captures the following events:
     *   `commandName`: The name of the custom command.
     *   `argsCount`: The number of arguments provided to the command.
 *   **`terminal-created`**: Sent when a new terminal instance is created.
+*   **`extensions-loaded`**: Sent when the extension system is initialized on startup.
+    *   `totalExtensions`: The total number of loaded extensions.
+    *   `globalExtensions`: The number of global extensions.
+    *   `projectExtensions`: The number of project-specific extensions.
+    *   `enabledExtensions`: The number of enabled extensions.
+    *   `disabledExtensions`: The number of disabled extensions.
+*   **`extension-installed`**: Sent when an extension is installed.
+    *   `extensionName`: The name of the installed extension.
+    *   `location`: Where the extension was installed (`global` or `project`).
+*   **`extension-uninstalled`**: Sent when an extension is uninstalled.
+    *   `extensionName`: The name of the uninstalled extension.
+    *   `location`: Where the extension was uninstalled from (`global` or `project`).
 
 ## Source Code Transparency
 

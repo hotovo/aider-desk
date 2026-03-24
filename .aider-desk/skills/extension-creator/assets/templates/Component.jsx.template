@@ -1,0 +1,76 @@
+/**
+ * UI Component for {{EXTENSION_NAME}}
+ * 
+ * Note: React is globally available (use React.useState, React.useEffect, etc.)
+ * 
+ * Available props (via 'props' or destructured):
+ * - data: Data from getUIExtensionData()
+ * - task: Current TaskData
+ * - projectDir: Project directory path
+ * - models: Available models
+ * - providers: Available providers
+ * - ui: UI components (Button, Checkbox, Input, etc.)
+ * - icons: React Icons organized by set (Fi, Hi, Cg, etc.)
+ * - executeExtensionAction: Function to call extension actions
+ */
+
+(props) => {
+  const { data, task, ui, icons, executeExtensionAction } = props;
+  const { useState, useCallback } = React;
+  const { Button } = ui;
+  const { FiCheckCircle } = icons.Fi;
+  
+  // Early return if no data
+  if (!data) return null;
+  
+  // Local state
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // Event handlers
+  const handleIncrement = useCallback(async () => {
+    const result = await executeExtensionAction('increment');
+    console.log('Increment result:', result);
+  }, [executeExtensionAction]);
+  
+  const handleSetMessage = useCallback(async () => {
+    await executeExtensionAction('set-message', 'New message!');
+  }, [executeExtensionAction]);
+  
+  return (
+    <div 
+      className="flex items-center gap-2 p-2 bg-bg-secondary rounded"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <FiCheckCircle className="w-4 h-4 text-success" />
+      
+      <div className="flex-1">
+        <div className="text-sm text-text-primary">
+          {data.message}
+        </div>
+        <div className="text-xs text-text-secondary">
+          Count: {data.count}
+        </div>
+      </div>
+      
+      {isHovered && (
+        <div className="flex gap-1">
+          <Button 
+            size="xs" 
+            variant="outline"
+            onClick={handleIncrement}
+          >
+            +1
+          </Button>
+          <Button 
+            size="xs" 
+            variant="outline"
+            onClick={handleSetMessage}
+          >
+            Change
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};

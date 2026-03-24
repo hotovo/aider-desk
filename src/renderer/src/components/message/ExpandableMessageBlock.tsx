@@ -1,12 +1,18 @@
 import { ReactNode, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import { UsageReportData } from '@common/types';
+import { Message, UsageReportData } from '@common/types';
 
 import { MessageBar } from './MessageBar';
 
 import { Accordion } from '@/components/common/Accordion';
 
+export interface ExpandableMessageBlockRef {
+  open: () => void;
+  close: () => void;
+}
+
 type Props = {
   title: ReactNode;
+  message: Message;
   content: ReactNode;
   copyContent?: string;
   usageReport?: UsageReportData;
@@ -14,15 +20,15 @@ type Props = {
   initialExpanded?: boolean;
   onOpenChange?: (open: boolean) => void;
   onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export interface ExpandableMessageBlockRef {
-  open: () => void;
-  close: () => void;
-}
-
 export const ExpandableMessageBlock = forwardRef<ExpandableMessageBlockRef, Props>(
-  ({ title, content, copyContent, usageReport, onRemove, initialExpanded = false, onOpenChange, onFork }, ref) => {
+  (
+    { title, message, content, copyContent, usageReport, onRemove, initialExpanded = false, onOpenChange, onFork, onRemoveUpTo, hideMessageBar = false },
+    ref,
+  ) => {
     const [isExpanded, setIsExpanded] = useState(initialExpanded);
     const [isInitialAutoExpand, setIsInitialAutoExpand] = useState(!initialExpanded);
 
@@ -60,7 +66,7 @@ export const ExpandableMessageBlock = forwardRef<ExpandableMessageBlockRef, Prop
     }, [isInitialAutoExpand, isExpanded]);
 
     return (
-      <div className="border border-border-dark-light rounded-md mb-2 group bg-bg-secondary">
+      <div className="border border-border-dark-light rounded-md group bg-bg-secondary">
         <Accordion
           title={title}
           isOpen={isExpanded}
@@ -79,9 +85,19 @@ export const ExpandableMessageBlock = forwardRef<ExpandableMessageBlockRef, Prop
             )}
           </div>
         </Accordion>
-        <div className="px-3 pb-3 bg-bg-secondary">
-          <MessageBar className="mt-0" content={copyContent} usageReport={usageReport} remove={onRemove} onFork={onFork} />
-        </div>
+        {!hideMessageBar && (
+          <div className="px-3 pb-3 bg-bg-secondary">
+            <MessageBar
+              className="mt-0"
+              message={message}
+              content={copyContent}
+              usageReport={usageReport}
+              remove={onRemove}
+              onFork={onFork}
+              onRemoveUpTo={onRemoveUpTo}
+            />
+          </div>
+        )}
       </div>
     );
   },

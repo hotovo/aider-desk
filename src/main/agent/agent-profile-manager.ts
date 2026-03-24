@@ -1,15 +1,17 @@
-import fs from 'fs/promises';
-import path from 'path';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { homedir } from 'os';
 
 import { FSWatcher, watch } from 'chokidar';
-import debounce from 'lodash/debounce';
+import { debounce } from 'lodash';
 import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { AgentProfile } from '@common/types';
 
+import { Project } from '@/project';
+import { ExtensionManager, ExtensionsChangeListener } from '@/extensions/extension-manager';
 import { AIDER_DESK_AGENTS_DIR, AIDER_DESK_RULES_DIR } from '@/constants';
 import logger from '@/logger';
 import { EventManager } from '@/events';
@@ -74,11 +76,22 @@ export class AgentProfileManager {
   // Directory watching (one watcher per directory)
   private directoryWatchers: Map<string, FSWatcher> = new Map(); // agentsDir → watcher
 
-  constructor(private readonly eventManager: EventManager) {}
+  // Listener for extension changes
+  private extensionsChangeListener: ExtensionsChangeListener;
 
-  public async start(): Promise<void> {
+  constructor(
+    private readonly eventManager: EventManager,
+    private readonly extensionManager: ExtensionManager,
+  ) {
+    this.extensionsChangeListener = () => {
+      this.sendAgentProfilesUpdated();
+    };
+  }
+
+  public async init(): Promise<void> {
     await this.initializeProfiles();
     await this.setupGlobalFileWatcher();
+    this.extensionManager.addListener(this.extensionsChangeListener);
   }
 
   public async initializeForProject(projectDir: string): Promise<void> {
@@ -92,7 +105,7 @@ export class AgentProfileManager {
     // Setup file watcher for project directory
     await this.setupWatcherForDirectory(projectAgentsDir);
 
-    this.notifyListeners();
+    this.sendAgentProfilesUpdated();
   }
 
   public removeProject(projectDir: string): void {
@@ -118,7 +131,7 @@ export class AgentProfileManager {
     }
   }
 
-  private notifyListeners(): void {
+  public sendAgentProfilesUpdated(): void {
     const allProfiles = this.getAllProfiles();
     this.eventManager.sendAgentProfilesUpdated(allProfiles);
   }
@@ -136,7 +149,7 @@ export class AgentProfileManager {
     // Load global profiles
     await this.loadProfilesFromDirectory(globalAgentsDir);
 
-    this.notifyListeners();
+    this.sendAgentProfilesUpdated();
   }
 
   private async ensureDefaultProfiles(globalAgentsDir: string): Promise<void> {
@@ -286,7 +299,7 @@ export class AgentProfileManager {
     await this.loadProfilesFromDirectory(agentsDir);
 
     // Notify listeners
-    this.notifyListeners();
+    this.sendAgentProfilesUpdated();
   }
 
   private async getExistingDirNames(agentsDir: string): Promise<Set<string>> {
@@ -544,7 +557,7 @@ export class AgentProfileManager {
     await this.saveProfileToFile(profile, configPath);
 
     // Reload profiles to update the cache
-    await this.debounceReloadProfiles(agentsDir);
+    await this.reloadProfiles(agentsDir);
   }
 
   public async updateProfile(profile: AgentProfile): Promise<void> {
@@ -563,6 +576,8 @@ export class AgentProfileManager {
 
     existingContext.agentProfile = profile;
     await this.saveProfileToFile(profile, configPath);
+
+    this.sendAgentProfilesUpdated();
   }
 
   public async deleteProfile(profileId: string): Promise<void> {
@@ -577,6 +592,7 @@ export class AgentProfileManager {
 
     try {
       await fs.rm(profileDir, { recursive: true, force: true });
+      this.profiles.delete(profileId);
     } catch (err) {
       logger.error(`Failed to delete agent profile directory ${profileDir}: ${err}`);
       throw err;
@@ -587,6 +603,12 @@ export class AgentProfileManager {
   }
 
   public getProfile(profileId: string): AgentProfile | undefined {
+    // Check extension agents first (they can override file-based profiles)
+    const extensionAgent = this.extensionManager.getAgentById(profileId);
+    if (extensionAgent) {
+      return extensionAgent.agent;
+    }
+    // Fall back to file-based profiles
     return this.profiles.get(profileId)?.agentProfile;
   }
 
@@ -615,15 +637,26 @@ export class AgentProfileManager {
   }
 
   public getAllProfiles(): AgentProfile[] {
-    return this.getOrderedProfiles(Array.from(this.profiles.values()));
+    // Get extension agents first (they can override file-based profiles)
+    const extensionAgents = this.extensionManager.getAgents(undefined).map((registered) => registered.agent);
+    // Then get file-based profiles
+    const fileBasedProfiles = this.getOrderedProfiles(Array.from(this.profiles.values()));
+    // Extension agents come first for override capability
+    return [...extensionAgents, ...fileBasedProfiles.filter((profile) => !extensionAgents.some((extAgent) => extAgent.id === profile.id))];
   }
 
-  public getProjectProfiles(projectDir: string, includeGlobal = true): AgentProfile[] {
-    const projectProfiles = Array.from(this.profiles.values()).filter((ctx) => ctx.agentProfile.projectDir === projectDir);
+  public getProjectProfiles(project: Project, includeGlobal = true, includeExtension = true): AgentProfile[] {
+    const projectProfiles = Array.from(this.profiles.values()).filter((ctx) => ctx.agentProfile.projectDir === project.baseDir);
     const profiles = this.getOrderedProfiles(projectProfiles);
 
     if (includeGlobal) {
       profiles.push(...this.getGlobalProfiles());
+    }
+
+    if (includeExtension) {
+      const extensionAgents = this.extensionManager.getAgents(project).map((registered) => registered.agent);
+      // Extension agents come first for override capability
+      return [...extensionAgents, ...profiles.filter((profile) => !extensionAgents.some((extAgent) => extAgent.id === profile.id))];
     }
 
     return profiles;
@@ -668,7 +701,7 @@ export class AgentProfileManager {
     }
 
     // Notify listeners
-    this.notifyListeners();
+    this.sendAgentProfilesUpdated();
   }
 
   private async mergeProjectRuleFilesIntoGlobalProfile(agentDirName: string, projectAgentsDir: string): Promise<void> {
@@ -711,6 +744,9 @@ export class AgentProfileManager {
   }
 
   async dispose(): Promise<void> {
+    // Remove extension change listener
+    this.extensionManager.removeListener(this.extensionsChangeListener);
+
     // Clean up all directory watchers
     for (const watcher of this.directoryWatchers.values()) {
       await watcher.close();

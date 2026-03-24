@@ -6,10 +6,10 @@ out
 .DS_Store
 *.log*
 .aider*
-!.aider-desk
-.aider-desk/tasks
-.aider-desk/todos.json
-.aider-desk/tmp
+!.aider-desk/agents
+!.aider-desk/commands
+!.aider-desk/rules
+!.aider-desk/skills
 .junie*
 .env
 tsconfig.*.tsbuildinfo
@@ -31,3 +31,8 @@ start-docker.sh
 repomix-output.txt
 .eslintcache
 ai-docs
+.chunkhound.db*
+
+# Extension generated files
+packages/extensions/extensions/plannotator/plannotator.html
+packages/extensions/extensions/plannotator/review-editor.html

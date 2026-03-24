@@ -35,14 +35,16 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
       limit: z.number().optional().describe('The maximum number of tasks to return'),
       state: z.string().optional().describe('Filter tasks by state (e.g., TODO, IN_PROGRESS, DONE)'),
     }),
-    execute: async ({ offset = 0, limit, state }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { offset = 0, limit, state } = input;
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_LIST_TASKS, { offset, limit, state }, undefined, undefined, promptContext);
 
-      const questionKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_LIST_TASKS}`;
+      const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_LIST_TASKS}`;
+      const questionKey = toolName;
       const questionText = 'Approve listing tasks?';
       const questionSubject = `Offset: ${offset}, Limit: ${limit}, State: ${state || 'all'}`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         return `Listing tasks denied by user. Reason: ${userInput}`;
@@ -88,13 +90,15 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     inputSchema: z.object({
       taskId: z.string().describe('The ID of the task to get information for'),
     }),
-    execute: async ({ taskId }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { taskId } = input;
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_GET_TASK, { taskId }, undefined, undefined, promptContext);
 
-      const questionKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_GET_TASK}`;
+      const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_GET_TASK}`;
+      const questionKey = toolName;
       const questionText = `Approve getting information for task ${taskId}?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Getting task information denied by user. Reason: ${userInput}`;
@@ -150,13 +154,15 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           'The index of the message to retrieve (0-based). Use negative numbers to count from the end: -1 for last message, -2 for second to last, etc.',
         ),
     }),
-    execute: async ({ taskId, messageIndex }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { taskId, messageIndex } = input;
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_GET_TASK_MESSAGE, { taskId, messageIndex }, undefined, undefined, promptContext);
 
-      const questionKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_GET_TASK_MESSAGE}`;
+      const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_GET_TASK_MESSAGE}`;
+      const questionKey = toolName;
       const questionText = `Approve retrieving message ${messageIndex} from task ${taskId}?`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Retrieving task message denied by user. Reason: ${userInput}`;
@@ -209,16 +215,30 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     name: nameProperty,
     agentProfileId: z.string().optional().describe('Optional agent profile ID to use for the task. Use only when explicitly requested by the user.'),
     modelId: z.string().optional().describe('Optional model ID to use for the task. Use only when explicitly requested by the user.'),
-    execute: z
+    mode: z.string().optional().default('agent').describe('Optional mode to use for the task. Use only when explicitly requested by the user.'),
+    asSubtask: z
       .boolean()
       .optional()
       .default(false)
-      .describe('If true, the task will be created and executed with the initial prompt. If false, only the task is created without executing.'),
-    executeInBackground: z
+      .describe('If true, the task will be created as a subtask of the current task. Use only when explicitly requested by the user.'),
+    autoApprove: z
       .boolean()
       .optional()
       .default(false)
-      .describe('If true, the task will be created and executed in the background. Only applicable if execute is true.'),
+      .describe(
+        'If true, the task will be created with auto-approve enabled. Set autoApprove to true when no planning is needed, just execution of the task with all the work.',
+      ),
+    worktree: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe('If true, the task will be created in worktree mode. Use only when explicitly requested by the user.'),
+    executeAndWait: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe('If true, the task will be created and executed immediately and the tool will wait for it to complete before returning.'),
+    executeInBackground: z.boolean().optional().default(false).describe('If true, the task will be created and executed in the background.'),
   });
 
   const CreateTaskWithParentInputSchema = CreateTaskInputSchema.extend({
@@ -227,25 +247,26 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
       .nullable()
       .optional()
       .describe(
-        `Optional ID of the parent task. If provided, the new task will be created as a subtask of the specified parent. Use the current task's ID (${task.taskId}) to create a subtask of the current task. If not provided or null, creates a top-level task.`,
+        `Optional ID of the parent task. If provided, the new task will be created as a subtask of the specified parent. Use the current task's ID (${task.taskId}) to create a subtask of the current task. When asSubtask is true, this tasks ID will be used automatically.`,
       ),
   });
 
   const createTaskTool = tool({
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_CREATE_TASK],
     inputSchema: isSubtask ? CreateTaskInputSchema : CreateTaskWithParentInputSchema,
-    execute: async (args, { toolCallId }) => {
-      const { prompt, name, agentProfileId, modelId, execute: shouldExecute, executeInBackground } = args;
-      const parentTaskId: string | null | undefined = 'parentTaskId' in args ? (args.parentTaskId as string | null) : undefined;
-      task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_CREATE_TASK, args, undefined, undefined, promptContext);
+    execute: async (input, { toolCallId }) => {
+      const { prompt, name, agentProfileId, modelId, mode = 'agent', asSubtask = false, autoApprove, worktree, executeAndWait, executeInBackground } = input;
+      const parentTaskId: string | null | undefined = asSubtask ? task.taskId : 'parentTaskId' in input ? (input.parentTaskId as string | null) : undefined;
+      task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_CREATE_TASK, input, undefined, undefined, promptContext);
 
-      const questionKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_CREATE_TASK}`;
+      const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_CREATE_TASK}`;
+      const questionKey = toolName;
       const questionText = 'Approve creating a new task?';
-      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${agentProfileId || 'default'}\nModel: ${modelId || 'default'}\nExecute: ${shouldExecute}${
-        parentTaskId !== undefined ? `\nParent Task ID: ${parentTaskId || 'none (top-level task)'}` : ''
-      }`;
+      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${agentProfileId || 'default'}\nModel: ${modelId || 'default'}${
+        executeAndWait ? '\nExecute and wait: true' : executeInBackground ? '\nExecute in background: true' : ''
+      }${parentTaskId !== undefined ? `\nParent Task ID: ${parentTaskId || 'none (top-level task)'}` : ''}`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         return `Creating task denied by user. Reason: ${userInput}`;
@@ -255,6 +276,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         const newTask = await task.getProject().createNewTask({
           parentId: parentTaskId || null,
           name: name || '',
+          autoApprove,
         });
         const updates: Partial<TaskData> = {};
 
@@ -270,6 +292,10 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           updates.mainModel = modelId;
         }
 
+        if (worktree) {
+          updates.workingMode = 'worktree';
+        }
+
         // createNewTask returns TaskData, not Task instance
         // We need to get the actual Task instance to call methods on it
         const taskInstance = task.getProject().getTask(newTask.id);
@@ -280,8 +306,8 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         await taskInstance.init();
         await taskInstance.saveTask(updates);
 
-        if (shouldExecute) {
-          const run = taskInstance.runPrompt(prompt, 'agent', false);
+        if (executeAndWait || executeInBackground) {
+          const run = taskInstance.runPrompt(prompt, mode, false);
           if (!executeInBackground) {
             await run;
           }
@@ -294,8 +320,8 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         return {
           id: newTask.id,
           name: newTask.name,
-          result: shouldExecute ? 'Task created and executed successfully' : 'Task created successfully',
-          ...(shouldExecute &&
+          result: executeAndWait ? 'Task has been created and executed successfully' : 'Task created successfully',
+          ...(executeAndWait &&
             contextMessages.length > 0 && {
               lastMessage: contextMessages[contextMessages.length - 1],
             }),
@@ -312,13 +338,15 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     inputSchema: z.object({
       taskId: z.string().describe('The ID of the task to delete'),
     }),
-    execute: async ({ taskId }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { taskId } = input;
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_DELETE_TASK, { taskId }, undefined, undefined, promptContext);
 
-      const questionKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_DELETE_TASK}`;
+      const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_DELETE_TASK}`;
+      const questionKey = toolName;
       const questionText = `Approve deleting task ${taskId}? This action cannot be undone.`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText);
 
       if (!isApproved) {
         return `Deleting task denied by user. Reason: ${userInput}`;
@@ -346,14 +374,16 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
       query: z.string().describe('Search query with Elasticsearch syntax. Use + for important terms.'),
       maxTokens: z.number().optional().default(10000).describe('Maximum number of tokens to return in the search results. Default: 10000'),
     }),
-    execute: async ({ taskId, query, maxTokens }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { taskId, query, maxTokens } = input;
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_SEARCH_TASK, { taskId, query, maxTokens }, undefined, undefined, promptContext);
 
-      const questionKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_TASK}`;
+      const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_TASK}`;
+      const questionKey = toolName;
       const questionText = `Approve searching in task ${taskId}?`;
       const questionSubject = `Query: ${query}\nTask ID: ${taskId}`;
 
-      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
       if (!isApproved) {
         return `Task search denied by user. Reason: ${userInput}`;

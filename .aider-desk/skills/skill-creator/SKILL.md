@@ -1,7 +1,7 @@
 ---
 name: skill-creator
 # prettier-ignore
-description: Design and create Agent Skills using progressive disclosure principles. Use when building new skills, planning skill architecture, or writing skill content.
+description: Create AiderDesk Agent Skills by writing SKILL.md files, defining frontmatter metadata, structuring references, and organizing skill directories. Use when building a new skill, creating a SKILL.md, planning skill architecture, or writing skill content.
 ---
 
 # Skill Creator
@@ -26,6 +26,45 @@ Skills load in 3 levels:
    demand
 
 **Key**: Keep Levels 1 & 2 lean. Move details to Level 3.
+
+## Quick Workflow
+
+1. Create skill directory: `.aider-desk/skills/my-skill/`
+2. Write `SKILL.md` with YAML frontmatter (`name`, `description`) and body instructions
+3. Add detailed docs to `references/` as needed
+4. Verify: mention a trigger keyword — skill should appear in active skills sidebar
+
+**If skill doesn't load**: check YAML syntax is valid, `name` is lowercase-hyphenated, and `description` contains the trigger terms users would say
+
+### SKILL.md Example
+
+```yaml
+---
+name: deploy-helper
+description: Deploy AiderDesk builds to staging and production environments. Use when deploying, releasing, or publishing builds.
+---
+```
+
+```markdown
+# Deploy Helper
+
+Build and deploy AiderDesk to target environments.
+
+## Steps
+
+1. Run `npm run build` to generate production artifacts
+2. Verify build output exists in `dist/`
+3. Deploy to staging: `./scripts/deploy.sh staging`
+4. Verify deployment: check health endpoint returns 200
+
+## Troubleshooting
+
+- Build fails: check `tsconfig.json` paths and run `npm run typecheck`
+
+## References
+
+- [environments.md](references/environments.md) - Environment configs
+```
 
 ## Structure
 

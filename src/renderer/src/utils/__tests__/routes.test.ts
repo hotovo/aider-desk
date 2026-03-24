@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { encodeBaseDir, decodeBaseDir, buildHomeUrl, parseUrlParams } from '../routes';
+import { encodeBaseDir, decodeBaseDir } from '../routes';
 
 describe('routes utilities', () => {
   beforeEach(() => {
@@ -49,78 +49,6 @@ describe('routes utilities', () => {
       const encoded = encodeBaseDir(originalPath);
       const decoded = decodeBaseDir(encoded);
       expect(decoded).toBe(originalPath);
-    });
-  });
-
-  describe('buildHomeUrl', () => {
-    it('returns home route without parameters', () => {
-      expect(buildHomeUrl()).toBe('/home');
-    });
-
-    it('returns home URL with project parameter', () => {
-      expect(buildHomeUrl('/home/user/project')).toBe('/home?project=%2Fhome%2Fuser%2Fproject');
-    });
-
-    it('returns home URL with task parameter', () => {
-      expect(buildHomeUrl(undefined, 'task-123')).toBe('/home?task=task-123');
-    });
-
-    it('returns home URL with both project and task parameters', () => {
-      expect(buildHomeUrl('/home/user/project', 'task-123')).toBe('/home?project=%2Fhome%2Fuser%2Fproject&task=task-123');
-    });
-
-    it('properly encodes special characters in baseDir', () => {
-      expect(buildHomeUrl('/home/user/my project', 'task-123')).toBe('/home?project=%2Fhome%2Fuser%2Fmy%20project&task=task-123');
-    });
-  });
-
-  describe('parseUrlParams', () => {
-    it('parses URL with no parameters', () => {
-      (window as any).location.hash = '#/home';
-      expect(parseUrlParams((window as any).location)).toEqual({
-        projectBaseDir: null,
-        taskId: null,
-      });
-    });
-
-    it('parses URL with project parameter', () => {
-      (window as any).location.hash = '#/home?project=%2Fhome%2Fuser%2Fproject';
-      expect(parseUrlParams((window as any).location)).toEqual({
-        projectBaseDir: '/home/user/project',
-        taskId: null,
-      });
-    });
-
-    it('parses URL with task parameter', () => {
-      (window as any).location.hash = '#/home?task=task-123';
-      expect(parseUrlParams((window as any).location)).toEqual({
-        projectBaseDir: null,
-        taskId: 'task-123',
-      });
-    });
-
-    it('parses URL with both project and task parameters', () => {
-      (window as any).location.hash = '#/home?project=%2Fhome%2Fuser%2Fproject&task=task-123';
-      expect(parseUrlParams((window as any).location)).toEqual({
-        projectBaseDir: '/home/user/project',
-        taskId: 'task-123',
-      });
-    });
-
-    it('decodes encoded baseDir', () => {
-      (window as any).location.hash = '#/home?project=%2Fhome%2Fuser%2Fmy%20project';
-      expect(parseUrlParams((window as any).location)).toEqual({
-        projectBaseDir: '/home/user/my project',
-        taskId: null,
-      });
-    });
-
-    it('handles URLs with additional hash fragments', () => {
-      (window as any).location.hash = '#/home?project=%2Fhome%2Fuser%2Fproject#some-fragment';
-      expect(parseUrlParams((window as any).location)).toEqual({
-        projectBaseDir: '/home/user/project',
-        taskId: null,
-      });
     });
   });
 });

@@ -1,21 +1,35 @@
-import { useMemo } from 'react';
-import { Diff, Hunk, parseDiff } from 'react-diff-view';
+import { useMemo, MouseEvent, useCallback } from 'react';
+import { Diff, Hunk, parseDiff, getChangeKey } from 'react-diff-view';
 import { DiffViewMode } from '@common/types';
+import { clsx } from 'clsx';
 
 import { createTokens } from './utils';
+
+import type { ChangeData, HunkData } from 'react-diff-view';
+import type { NormalChange } from 'gitdiff-parser';
 
 import 'react-diff-view/style/index.css';
 import './DiffViewer.scss';
 
 import { useResponsive } from '@/hooks/useResponsive';
 
+export type LineClickInfo = {
+  lineKey: string;
+  change: ChangeData;
+  lineNumber: number;
+  content: string;
+};
+
 type Props = {
   udiff: string;
   language: string;
   viewMode?: DiffViewMode;
+  showFilename?: boolean;
+  onLineClick?: (lineInfo: LineClickInfo, event: MouseEvent) => void;
+  activeLineKey?: string | null;
 };
 
-export const UDiffViewer = ({ udiff, language, viewMode = DiffViewMode.SideBySide }: Props) => {
+export const UDiffViewer = ({ udiff, language, viewMode = DiffViewMode.SideBySide, showFilename = true, onLineClick, activeLineKey }: Props) => {
   const { isMobile } = useResponsive();
   const parsedFiles = useMemo(() => {
     try {
@@ -26,6 +40,26 @@ export const UDiffViewer = ({ udiff, language, viewMode = DiffViewMode.SideBySid
       return [];
     }
   }, [udiff]);
+
+  const handleCodeClick = useCallback(
+    ({ change }: { change: ChangeData | null }, event: MouseEvent) => {
+      if (onLineClick && change) {
+        const lineKey = getChangeKey(change);
+        const lineNumber = change.type === 'normal' ? (change as NormalChange).newLineNumber : change.lineNumber;
+        const content = change.content;
+
+        onLineClick({ lineKey, change, lineNumber, content }, event);
+      }
+    },
+    [onLineClick],
+  );
+
+  const codeEvents = useMemo(
+    () => ({
+      onClick: handleCodeClick,
+    }),
+    [handleCodeClick],
+  );
 
   if (parsedFiles.length === 0) {
     return <span>{udiff}</span>;
@@ -38,24 +72,28 @@ export const UDiffViewer = ({ udiff, language, viewMode = DiffViewMode.SideBySid
 
         return (
           <div key={index} className="diff-viewer-container">
-            <div className="text-xs font-semibold text-text-secondary mb-2">
-              {file.oldPath !== file.newPath ? (
-                <span>
-                  {file.oldPath} → {file.newPath}
-                </span>
-              ) : (
-                <span>{file.newPath}</span>
-              )}
-            </div>
+            {showFilename && (
+              <div className="text-xs font-semibold text-text-secondary mb-2">
+                {file.oldPath !== file.newPath ? (
+                  <span>
+                    {file.oldPath} → {file.newPath}
+                  </span>
+                ) : (
+                  <span>{file.newPath}</span>
+                )}
+              </div>
+            )}
             <Diff
               viewType={isMobile || viewMode === DiffViewMode.Unified ? 'unified' : 'split'}
               diffType={file.type}
               hunks={file.hunks}
-              className="diff-viewer"
+              className={clsx('diff-viewer', !!onLineClick && 'selectable')}
               optimizeSelection={true}
               tokens={tokens}
+              selectedChanges={activeLineKey ? [activeLineKey] : []}
+              codeEvents={codeEvents}
             >
-              {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
+              {(hunks: HunkData[]) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
             </Diff>
           </div>
         );

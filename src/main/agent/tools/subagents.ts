@@ -23,7 +23,7 @@ export const createSubagentsToolset = async (
   contextMessages: ContextMessage[] = [],
   currentMessages: ContextMessage[] = [],
 ): Promise<ToolSet> => {
-  const allProfiles = agentProfileManager.getProjectProfiles(task.getProjectDir());
+  const allProfiles = agentProfileManager.getProjectProfiles(task.project);
   const enabledSubagents = allProfiles.filter((agentProfile) => isSubagentEnabled(agentProfile, mainAgentProfile.id));
 
   const generateSubagentsRunTaskDescription = (): string => {
@@ -77,8 +77,20 @@ export const createSubagentsToolset = async (
         useTodoTools: false, // Disable todo tools for simplicity,
         useSubagents: false, // Disable nested subagents
         useMemoryTools: targetSubagent.useMemoryTools ?? false, // Use memory tools if enabled, false by default
-        isSubagent: true,
       };
+
+      // Create interrupt ID and abort controller for the subagent
+      const interruptId = uuidv4();
+      const subagentAbortController = new AbortController();
+
+      // If the parent aborts, also abort the subagent
+      if (abortSignal) {
+        if (abortSignal.aborted) {
+          subagentAbortController.abort();
+        } else {
+          abortSignal.addEventListener('abort', () => subagentAbortController.abort());
+        }
+      }
 
       // Create promptContext with working group
       const promptContext: PromptContext = {
@@ -92,6 +104,7 @@ export const createSubagentsToolset = async (
               name: targetSubagent.name,
             },
           },
+          interruptId,
         },
       };
 
@@ -120,7 +133,7 @@ export const createSubagentsToolset = async (
           }, []);
         };
 
-        logger.info('Subagent context messages:', {
+        logger.debug('Subagent context messages:', {
           messages: contextMessages.length,
           currentMessages: currentMessages.length,
         });
@@ -206,9 +219,40 @@ Make sure to reuse the previous conversation if possible.`
           subagentContextMessages,
           [],
           targetSubagent.subagent.systemPrompt,
-          abortSignal,
+          subagentAbortController,
           promptContext,
         );
+
+        // Check if the subagent was cancelled
+        if (subagentAbortController.signal.aborted) {
+          logger.info('Subagent run cancelled by user', { subagentId, interruptId });
+
+          // Update promptContext to finished state with cancellation
+          promptContext.group = {
+            ...promptContext.group!,
+            name: {
+              key: 'toolMessage.subagents.groupCancelled',
+              params: {
+                name: targetSubagent.name,
+              },
+            },
+            finished: true,
+          };
+
+          // Add cancellation message to the result
+          subagentResultMessages.push({
+            id: uuidv4(),
+            role: 'user' as const,
+            content: 'Subagent run cancelled by user.',
+            promptContext,
+          });
+
+          return {
+            messages: subagentResultMessages,
+            promptContext,
+            cancelled: true,
+          };
+        }
 
         // Update promptContext to finished state with success
         promptContext.group = {
@@ -227,6 +271,36 @@ Make sure to reuse the previous conversation if possible.`
           promptContext,
         };
       } catch (error) {
+        // Check if the subagent was cancelled
+        if (subagentAbortController.signal.aborted) {
+          logger.info('Subagent run cancelled by user (in catch)', { subagentId, interruptId });
+
+          // Update promptContext to finished state with cancellation
+          promptContext.group = {
+            ...promptContext.group!,
+            name: {
+              key: 'toolMessage.subagents.groupCancelled',
+              params: {
+                name: targetSubagent.name,
+              },
+            },
+            finished: true,
+          };
+
+          return {
+            messages: [
+              {
+                id: uuidv4(),
+                role: 'user' as const,
+                content: 'Subagent run cancelled by user.',
+                promptContext,
+              },
+            ],
+            promptContext,
+            cancelled: true,
+          };
+        }
+
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Error running subagent:', error);
 

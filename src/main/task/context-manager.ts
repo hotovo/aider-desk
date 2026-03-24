@@ -3,7 +3,18 @@ import { promises as fs } from 'fs';
 
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
-import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, TaskContext, ToolData, UsageReportData, UserMessageData } from '@common/types';
+import {
+  ConnectorMessage,
+  ContextFile,
+  ContextMessage,
+  ContextToolMessage,
+  MessageRole,
+  ResponseCompletedData,
+  TaskContext,
+  ToolData,
+  UsageReportData,
+  UserMessageData,
+} from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
 
@@ -221,7 +232,19 @@ export class ContextManager {
     if (!this.loaded) {
       await this.load();
     }
-    return [...this.messages];
+    // Deep clone messages to prevent external modifications from affecting internal state
+    return this.messages.map((msg): ContextMessage => {
+      if (msg.role === 'tool') {
+        return {
+          ...msg,
+          content: msg.content.map((part) => ({ ...part })),
+        };
+      }
+      return {
+        ...msg,
+        content: Array.isArray(msg.content) ? msg.content.map((part) => ({ ...part })) : msg.content,
+      };
+    });
   }
 
   clearContextFiles(save = true) {
@@ -457,7 +480,7 @@ export class ContextManager {
     return removedMessages;
   }
 
-  toConnectorMessages(contextMessages: ContextMessage[] = this.messages): { role: MessageRole; content: string }[] {
+  toConnectorMessages(contextMessages: ContextMessage[] = this.messages): ConnectorMessage[] {
     let aiderPrompt = '';
     let subAgentsPrompt = '';
 
@@ -761,7 +784,7 @@ export class ContextManager {
     for (const message of contextMessages) {
       const processToolResult = (part: ToolResultPart) => {
         const [serverName, toolName] = extractServerNameToolName(part.toolName);
-        const promptContext = extractPromptContextFromToolResult(part.output.value);
+        const promptContext = extractPromptContextFromToolResult(part.output.value) || message.promptContext;
         const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === part.toolCallId) as ToolData | undefined;
 
         if (toolMessage) {
@@ -1160,5 +1183,103 @@ export class ContextManager {
 
     // For non-tool messages or if we couldn't find the assistant message, return all messages up to the target
     return this.messages.slice(0, messageIndex + 1).map((msg) => ({ ...msg }));
+  }
+
+  /**
+   * Removes all messages after the specified message ID, keeping messages up to and including the specified message.
+   * Uses intelligent slicing logic from getMessagesUpTo to handle tool messages and assistant messages with tool calls.
+   * For assistant messages that are the target, inverts the filtering to keep tool calls instead of text/reasoning.
+   *
+   * @param messageId - The ID of the message to keep (all messages after this will be removed), or a toolCallId
+   * @returns Array of removed message IDs
+   */
+  removeMessagesAfter(messageId: string): string[] {
+    // Find the target message index in the original messages array
+    let targetMessageIndex = this.messages.findIndex((msg) => msg.id === messageId);
+
+    // If not found as a message ID, check if it's a toolCallId
+    if (targetMessageIndex === -1) {
+      for (let i = 0; i < this.messages.length; i++) {
+        const msg = this.messages[i];
+        if (msg.role === 'tool' && Array.isArray(msg.content)) {
+          const hasMatchingToolResult = msg.content.some((part) => part.type === 'tool-result' && part.toolCallId === messageId);
+          if (hasMatchingToolResult) {
+            targetMessageIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    const targetMessage = targetMessageIndex !== -1 ? this.messages[targetMessageIndex] : undefined;
+    const isTargetAssistant = targetMessage?.role === 'assistant';
+
+    // Get the messages to keep using the intelligent slicing logic
+    const messagesToKeep = this.getMessagesUpTo(messageId);
+
+    // If no messages would be removed, return early
+    if (messagesToKeep.length === this.messages.length) {
+      return [];
+    }
+
+    // Process messages: deep clone all messages and handle assistant message filtering
+    const processedMessages = messagesToKeep.map((msg) => {
+      // Deep clone the message object
+      let clonedMsg: ContextMessage;
+
+      if (msg.role === 'tool') {
+        clonedMsg = {
+          ...msg,
+          content: msg.content.map((part) => ({ ...part })),
+        } as ContextToolMessage;
+      } else {
+        clonedMsg = {
+          ...msg,
+          content: Array.isArray(msg.content) ? msg.content.map((part) => ({ ...part })) : msg.content,
+        } as ContextMessage;
+      }
+
+      if (clonedMsg.role === 'assistant' && Array.isArray(clonedMsg.content)) {
+        const hasToolCalls = clonedMsg.content.some((part) => part.type === 'tool-call');
+        const hasReasoning = clonedMsg.content.some((part) => part.type === 'reasoning');
+
+        if (isTargetAssistant && clonedMsg.id === targetMessage.id) {
+          // For target assistant message, get original content and keep text/reasoning (remove tool calls)
+          const originalMsg = this.messages.find((m) => m.id === clonedMsg.id);
+          if (originalMsg && Array.isArray(originalMsg.content)) {
+            const originalHasToolCalls = originalMsg.content.some((part) => part.type === 'tool-call');
+            if (originalHasToolCalls) {
+              clonedMsg.content = originalMsg.content.filter((part) => part.type === 'text' || part.type === 'reasoning').map((part) => ({ ...part }));
+            }
+          }
+        } else if (hasToolCalls && hasReasoning) {
+          // For non-target assistant messages, keep tool calls and text, remove reasoning only
+          clonedMsg.content = clonedMsg.content.filter((part) => part.type !== 'reasoning').map((part) => ({ ...part }));
+        }
+      }
+
+      return clonedMsg;
+    });
+
+    // Collect IDs of messages that will be removed
+    const removedIds: string[] = [];
+    for (let i = messagesToKeep.length; i < this.messages.length; i++) {
+      removedIds.push(this.messages[i].id);
+    }
+
+    // Replace the messages array with the processed messages
+    this.messages = processedMessages;
+
+    logger.debug(`Task ${this.taskId}: Removed ${removedIds.length} message(s) after ${messageId}`, {
+      removedIds,
+      remainingCount: this.messages.length,
+    });
+
+    // Trigger autosave if messages were removed
+    if (removedIds.length > 0) {
+      this.autosave();
+    }
+
+    return removedIds;
   }
 }

@@ -1,0 +1,15 @@
+{
+  "name": "redact-secrets-extension",
+  "version": "1.0.0",
+  "description": "AiderDesk extension that redacts secrets from file read results",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["aiderdesk", "extension", "secrets", "redaction"],
+  "author": "AiderDesk",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}

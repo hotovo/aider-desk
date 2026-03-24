@@ -12,3 +12,4 @@ export * from './providers-api';
 export * from './memory-api';
 export * from './voice-api';
 export * from './terminal-api';
+export * from './extensions-api';

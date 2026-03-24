@@ -30,6 +30,11 @@ const GetAllFilesSchema = z.object({
   useGit: z.boolean().optional(),
 });
 
+const GetUpdatedFilesSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
+});
+
 export class ContextApi extends BaseApi {
   constructor(
     private readonly projectManager: ProjectManager,
@@ -117,6 +122,20 @@ export class ContextApi extends BaseApi {
         const { projectDir, taskId, useGit } = parsed;
         const allFiles = await this.eventsHandler.getAllFiles(projectDir, taskId, useGit);
         res.status(200).json(allFiles);
+      }),
+    );
+
+    router.post(
+      '/get-updated-files',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GetUpdatedFilesSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        const updatedFiles = await this.eventsHandler.getUpdatedFiles(projectDir, taskId);
+        res.status(200).json(updatedFiles);
       }),
     );
   }

@@ -3,8 +3,7 @@ import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 
-import type { TodoItem, ToolData } from '@common/types';
-import type { ToolMessage } from '@/types/message';
+import type { TodoItem, ToolData, ToolMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';

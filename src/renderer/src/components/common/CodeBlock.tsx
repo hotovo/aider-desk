@@ -8,6 +8,7 @@ import { DiffViewMode } from '@common/types';
 
 import { CopyMessageButton } from '../message/CopyMessageButton';
 
+import { MermaidDiagram } from './MermaidDiagram';
 import { IconButton } from './IconButton';
 import { CompactSelect } from './CompactSelect';
 
@@ -134,6 +135,8 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
         return <CompactDiffViewer oldValue={diffOldValue} newValue={diffNewValue} fileName={file} language={language} />;
       }
       return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} isComplete={isComplete} viewMode={diffViewMode} />;
+    } else if (language === 'mermaid' && codeForSyntaxHighlight) {
+      return <MermaidDiagram code={codeForSyntaxHighlight} />;
     } else if (codeForSyntaxHighlight && language) {
       return (
         <pre

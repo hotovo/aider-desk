@@ -6,7 +6,7 @@ import {
   SettingsData,
   TaskData,
   TaskStateData,
-  CustomCommand,
+  CommandsData,
   VersionsInfo,
   OS,
   UsageDataRow,
@@ -22,6 +22,11 @@ import {
   AgentProfile,
   MemoryEntry,
   MemoryEmbeddingProgress,
+  ModeDefinition,
+  InstalledExtension,
+  AvailableExtension,
+  ExtensionUIComponent,
+  OpenDialogResult,
 } from '@common/types';
 
 /**
@@ -33,6 +38,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     // Directory and logging operations
     isOpenLogsDirectorySupported: vi.fn((): boolean => true),
     openLogsDirectory: vi.fn((): Promise<boolean> => Promise.resolve(true)),
+    isWebViewSupported: vi.fn((): boolean => true),
 
     // Settings operations
     loadSettings: vi.fn((): Promise<SettingsData> => Promise.resolve({} as SettingsData)),
@@ -61,7 +67,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
 
     // Dialog operations
     isOpenDialogSupported: vi.fn((): boolean => true),
-    showOpenDialog: vi.fn((): Promise<Electron.OpenDialogReturnValue> => Promise.resolve({ canceled: false, filePaths: [] })),
+    showOpenDialog: vi.fn((): Promise<OpenDialogResult> => Promise.resolve({ canceled: false, filePaths: [] })),
     getPathForFile: vi.fn((): string => '/mock/path'),
 
     // Open projects operations
@@ -85,6 +91,10 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     getFilePathSuggestions: vi.fn((): Promise<string[]> => Promise.resolve([])),
     getAddableFiles: vi.fn((): Promise<string[]> => Promise.resolve([])),
     getAllFiles: vi.fn((): Promise<string[]> => Promise.resolve([])),
+    getUpdatedFiles: vi.fn((): Promise<Array<{ path: string; additions: number; deletions: number }>> => Promise.resolve([])),
+    restoreFile: vi.fn((): Promise<void> => Promise.resolve()),
+    generateCommitMessage: vi.fn((): Promise<string> => Promise.resolve('')),
+    commitChanges: vi.fn((): Promise<void> => Promise.resolve()),
     addFile: vi.fn((): void => undefined),
     isValidPath: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     isProjectPath: vi.fn((): Promise<boolean> => Promise.resolve(true)),
@@ -93,6 +103,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     pasteImage: vi.fn((): void => undefined),
     scrapeWeb: vi.fn((): Promise<void> => Promise.resolve()),
     initProjectRulesFile: vi.fn((): Promise<void> => Promise.resolve()),
+    readFile: vi.fn((): Promise<string> => Promise.resolve('')),
 
     // Todo operations
     getTodos: vi.fn((): Promise<TodoItem[]> => Promise.resolve([])),
@@ -104,6 +115,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     // MCP operations
     loadMcpServerTools: vi.fn((): Promise<McpTool[] | null> => Promise.resolve([])),
     reloadMcpServers: vi.fn((): Promise<void> => Promise.resolve()),
+    reloadMcpServer: vi.fn((): Promise<McpTool[]> => Promise.resolve([])),
 
     // Task operations
     createNewTask: vi.fn((): Promise<TaskData> => Promise.resolve({ id: 'mock-task-id' } as TaskData)),
@@ -113,7 +125,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     forkTask: vi.fn((): Promise<TaskData> => Promise.resolve({ id: 'mock-fork-task-id' } as TaskData)),
     getTasks: vi.fn((): Promise<TaskData[]> => Promise.resolve([])),
     loadTask: vi.fn((): Promise<TaskStateData> => Promise.resolve({} as TaskStateData)),
-    exportTaskToMarkdown: vi.fn((): Promise<void> => Promise.resolve()),
+    exportTaskToMarkdown: vi.fn((): Promise<string | void> => Promise.resolve()),
 
     // Recent projects operations
     getRecentProjects: vi.fn((): Promise<string[]> => Promise.resolve([])),
@@ -126,7 +138,10 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     clearContext: vi.fn((): void => undefined),
     removeLastMessage: vi.fn((): void => undefined),
     removeMessage: vi.fn((): Promise<void> => Promise.resolve()),
+    removeMessagesUpTo: vi.fn((): Promise<void> => Promise.resolve()),
     compactConversation: vi.fn((): void => undefined),
+    handoffConversation: vi.fn((): Promise<void> => Promise.resolve()),
+    runCodeInlineRequest: vi.fn((): void => undefined),
 
     // UI operations
     setZoomLevel: vi.fn((): Promise<void> => Promise.resolve()),
@@ -158,7 +173,8 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addResponseCompletedListener: vi.fn(() => vi.fn()),
     addLogListener: vi.fn(() => vi.fn()),
     addContextFilesUpdatedListener: vi.fn(() => vi.fn()),
-    addCustomCommandsUpdatedListener: vi.fn(() => vi.fn()),
+    addUpdatedFilesUpdatedListener: vi.fn(() => vi.fn()),
+    addCommandsUpdatedListener: vi.fn(() => vi.fn()),
     addUpdateAutocompletionListener: vi.fn(() => vi.fn()),
     addAskQuestionListener: vi.fn(() => vi.fn()),
     addQuestionAnsweredListener: vi.fn(() => vi.fn()),
@@ -174,6 +190,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addProviderModelsUpdatedListener: vi.fn(() => vi.fn()),
     addProvidersUpdatedListener: vi.fn(() => vi.fn()),
     addAgentProfilesUpdatedListener: vi.fn(() => vi.fn()),
+    addNotificationListener: vi.fn(() => vi.fn()),
     addProjectSettingsUpdatedListener: vi.fn(() => vi.fn()),
     addWorktreeIntegrationStatusUpdatedListener: vi.fn(() => vi.fn()),
     addTerminalDataListener: vi.fn(() => vi.fn()),
@@ -192,7 +209,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addTaskDeletedListener: vi.fn(() => vi.fn()),
 
     // Custom commands
-    getCustomCommands: vi.fn((): Promise<CustomCommand[]> => Promise.resolve([])),
+    getCommands: vi.fn((): Promise<CommandsData> => Promise.resolve({ baseDir: '', customCommands: [], extensionCommands: [] })),
     runCustomCommand: vi.fn((): Promise<void> => Promise.resolve()),
 
     // Terminal operations
@@ -214,6 +231,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     abortWorktreeRebase: vi.fn((): Promise<void> => Promise.resolve()),
     continueWorktreeRebase: vi.fn((): Promise<void> => Promise.resolve()),
     resolveWorktreeConflictsWithAgent: vi.fn((): Promise<void> => Promise.resolve()),
+    resolveConflictsWithAgent: vi.fn((): Promise<void> => Promise.resolve()),
 
     // Agent profile operations
     getAllAgentProfiles: vi.fn((): Promise<AgentProfile[]> => Promise.resolve([])),
@@ -222,6 +240,16 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     deleteAgentProfile: vi.fn((): Promise<AgentProfile[]> => Promise.resolve([])),
     updateAgentProfilesOrder: vi.fn((): Promise<void> => Promise.resolve()),
 
+    // Extension operations
+    getInstalledExtensions: vi.fn((): Promise<InstalledExtension[]> => Promise.resolve([])),
+    getAvailableExtensions: vi.fn((): Promise<AvailableExtension[]> => Promise.resolve([])),
+    installExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),
+    uninstallExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),
+    getExtensionUIComponents: vi.fn((): Promise<ExtensionUIComponent[]> => Promise.resolve([])),
+    getUIExtensionData: vi.fn((): Promise<unknown> => Promise.resolve({})),
+    executeUIExtensionAction: vi.fn((): Promise<unknown> => Promise.resolve({})),
+    onExtensionUIRefresh: vi.fn(() => vi.fn()),
+
     // Memory operations
     getMemoryEmbeddingProgress: vi.fn((): Promise<MemoryEmbeddingProgress> => Promise.resolve({} as MemoryEmbeddingProgress)),
     listAllMemories: vi.fn((): Promise<MemoryEntry[]> => Promise.resolve([])),
@@ -229,7 +257,14 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     deleteProjectMemories: vi.fn((): Promise<number> => Promise.resolve(0)),
     writeToClipboard: vi.fn((): Promise<void> => Promise.resolve()),
     openPath: vi.fn((): Promise<boolean> => Promise.resolve(true)),
-    handoffConversation: vi.fn((): Promise<void> => Promise.resolve()),
+
+    // Custom modes operations
+    getCustomModes: vi.fn((): Promise<ModeDefinition[]> => Promise.resolve([])),
+
+    removeQueuedPrompt: vi.fn((): void => undefined),
+    sendQueuedPromptNow: vi.fn((): Promise<void> => Promise.resolve()),
+    addQueuedPromptsUpdatedListener: vi.fn(() => vi.fn()),
+    onModalOverlayUrl: vi.fn(() => vi.fn()),
   };
 
   return vi.mocked<ApplicationAPI>({ ...defaultMock, ...overrides });

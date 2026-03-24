@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { AgentProfile } from '@common/types';
 
-import { TaskContextType } from '@/contexts/TaskContext';
+import { TaskContextType } from '@/contexts/TasksContext';
 import { ModelProviderContextType } from '@/contexts/ModelProviderContext';
 import { AgentsContextType } from '@/contexts/AgentsContext';
 

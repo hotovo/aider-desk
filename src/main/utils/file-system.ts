@@ -216,8 +216,8 @@ export const getAllFiles = async (baseDir: string, useGit = true): Promise<strin
       // Try to use git first
       try {
         const git = simpleGit(baseDir);
-        const result = await git.raw(['ls-files']);
-        const files = result.trim().split('\n').filter(Boolean);
+        const result = await git.raw(['ls-files', '-z']);
+        const files = result.split('\0').filter(Boolean);
         logger.debug('Retrieved tracked files from Git', { count: files.length, baseDir });
         return files;
       } catch (gitError) {

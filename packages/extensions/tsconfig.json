@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@aiderdesk/extensions": ["./extensions.d.ts"]
+    }
+  },
+  "include": [
+    "*.ts",
+    "**/*.ts",
+    "extensions.d.ts"
+  ],
+  "exclude": [
+    "**/node_modules/**",
+    "**/*.test.ts"
+  ]
+}

@@ -2,20 +2,22 @@ import { useTranslation } from 'react-i18next';
 import { RiFolderLine, RiFileTextLine, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { LuFolderSearch } from 'react-icons/lu';
 import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
 
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
   onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
-export const GlobToolMessage = ({ message, onRemove, compact = false, onFork }: Props) => {
+export const GlobToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const pattern = message.args.pattern as string;
@@ -23,13 +25,24 @@ export const GlobToolMessage = ({ message, onRemove, compact = false, onFork }: 
   const isError = content && !Array.isArray(content) && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Glob search with pattern');
 
+  const fileCount = Array.isArray(content) ? content.length : 0;
+
   const title = (
-    <div className="flex items-center gap-2 w-full">
+    <div className="flex items-center gap-2 w-full text-left">
       <div className="text-text-muted">
         <LuFolderSearch className="w-4 h-4" />
       </div>
       <div className="text-xs text-text-primary flex flex-wrap gap-1">
-        <span>{t('toolMessage.power.glob.title')}</span>
+        {!content ? (
+          <span>{t('toolMessage.power.glob.findingFiles')}</span>
+        ) : isError || isDenied ? (
+          <span>{t('toolMessage.power.glob.title')}</span>
+        ) : fileCount > 0 ? (
+          <span>{t('toolMessage.power.glob.foundFiles', { count: fileCount })}</span>
+        ) : (
+          <span>{t('toolMessage.power.glob.noMatches')}</span>
+        )}
+        <span>{t('toolMessage.power.glob.matching')}</span>
         <span>
           <CodeInline className="bg-bg-primary-light">{pattern}</CodeInline>
         </span>
@@ -37,31 +50,31 @@ export const GlobToolMessage = ({ message, onRemove, compact = false, onFork }: 
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
         (isError ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`glob-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`glob-error-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
+          <Tooltip content={content}>
+            <RiErrorWarningFill className="w-3 h-3 text-error flex-shrink-0" />
+          </Tooltip>
         ) : isDenied ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`glob-denied-tooltip-${message.id}`} maxWidth={600} />
-            <RiCloseCircleFill className="w-3 h-3 text-warning" data-tooltip-id={`glob-denied-tooltip-${message.id}`} data-tooltip-content={content} />
-          </span>
-        ) : content.length === 0 ? (
-          <span className="text-left flex-shrink-0">
-            <StyledTooltip id={`glob-error-tooltip-${message.id}`} maxWidth={600} />
-            <RiErrorWarningFill
-              className="w-3 h-3 text-error"
-              data-tooltip-id={`glob-error-tooltip-${message.id}`}
-              data-tooltip-content={t('toolMessage.power.glob.noMatches')}
-            />
-          </span>
-        ) : (
+          <Tooltip content={content}>
+            <RiCloseCircleFill className="w-3 h-3 text-warning flex-shrink-0" />
+          </Tooltip>
+        ) : fileCount > 0 ? (
           <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
-        ))}
+        ) : null)}
     </div>
   );
 
   const renderContent = () => {
+    if (!content) {
+      return (
+        <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
+          <div className="flex items-center gap-2">
+            <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />
+            <span>{t('toolMessage.power.glob.findingFiles')}</span>
+          </div>
+        </div>
+      );
+    }
+
     if (isError) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
@@ -82,7 +95,7 @@ export const GlobToolMessage = ({ message, onRemove, compact = false, onFork }: 
       );
     }
 
-    if (!content || content.length === 0) {
+    if (!Array.isArray(content) || content.length === 0) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
           <div className="text-text-muted">{t('toolMessage.power.glob.noMatches')}</div>
@@ -141,5 +154,16 @@ export const GlobToolMessage = ({ message, onRemove, compact = false, onFork }: 
     return title;
   }
 
-  return <ExpandableMessageBlock title={title} content={renderContent()} usageReport={message.usageReport} onRemove={onRemove} onFork={onFork} />;
+  return (
+    <ExpandableMessageBlock
+      message={message}
+      title={title}
+      content={renderContent()}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
+    />
+  );
 };

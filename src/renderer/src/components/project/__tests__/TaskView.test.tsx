@@ -1,21 +1,21 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TaskData, ModelsData } from '@common/types';
+import { TaskData, ModelsData, Message } from '@common/types';
 import { toast } from 'react-toastify';
 
 import { TaskView } from '../TaskView';
 
+import { render } from '@/__tests__/render';
 import { useApi } from '@/contexts/ApiContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
-import { useTask } from '@/contexts/TaskContext';
+import { useTask } from '@/contexts/TasksContext';
 import { useTaskState, useTaskMessages } from '@/stores/taskStore';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { useAgents } from '@/contexts/AgentsContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { createMockApi } from '@/__tests__/mocks/api';
 import { createMockTaskContext, createMockModelProviderContext, createMockAgentsContext, createMockResponsive } from '@/__tests__/mocks/contexts';
-import { Message } from '@/types/message';
 
 // Mock react-toastify for error notifications
 vi.mock('react-toastify', () => ({
@@ -38,7 +38,7 @@ vi.mock('@/contexts/ProjectSettingsContext', () => ({
   useProjectSettings: vi.fn(),
 }));
 
-vi.mock('@/contexts/TaskContext', () => ({
+vi.mock('@/contexts/TasksContext', () => ({
   useTask: vi.fn(),
 }));
 
@@ -57,6 +57,18 @@ vi.mock('@/contexts/AgentsContext', () => ({
 
 vi.mock('@/hooks/useResponsive', () => ({
   useResponsive: vi.fn(),
+}));
+
+vi.mock('@/contexts/ExtensionsContext', () => ({
+  useExtensions: vi.fn(() => ({
+    componentProps: {
+      projectDir: '/test/project',
+      task: null,
+      api: {},
+      agentProfile: null,
+      mode: 'code',
+    },
+  })),
 }));
 
 // Mock hooks
@@ -135,6 +147,7 @@ describe('TaskView', () => {
     todoItems: [],
     aiderModelsData: null,
     lastActiveAt: null,
+    queuedPrompts: [],
   };
   const mockMessages: Message[] = [];
 

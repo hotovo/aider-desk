@@ -1,4 +1,5 @@
 import { McpServerConfig, McpTool, ToolApprovalState } from '@common/types';
+import { extractIpcErrorMessage } from '@common/utils';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaPencilAlt, FaTrash } from 'react-icons/fa';
@@ -10,6 +11,7 @@ import { Accordion } from '@/components/common/Accordion';
 import { IconButton } from '@/components/common/IconButton';
 import { Checkbox } from '@/components/common/Checkbox';
 import { useApi } from '@/contexts/ApiContext';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   serverName: string;
@@ -50,7 +52,7 @@ export const McpServerItem = ({
         // eslint-disable-next-line no-console
         console.error('Failed to load MCP server tools:', error);
         setTools(null);
-        setError(error instanceof Error ? error.message : String(error));
+        setError(extractIpcErrorMessage(error));
       } finally {
         setLoading(false);
       }
@@ -86,7 +88,13 @@ export const McpServerItem = ({
           )}
           {!loading && (
             <div className="flex items-center">
-              <div className={`w-3 h-3 rounded-full flex items-center justify-center ${tools && tools.length > 0 ? 'bg-success' : 'bg-error'}`}></div>
+              {error ? (
+                <Tooltip content={error}>
+                  <div className="w-3 h-3 rounded-full flex items-center justify-center bg-error" />
+                </Tooltip>
+              ) : (
+                <div className="w-3 h-3 rounded-full flex items-center justify-center bg-success" />
+              )}
             </div>
           )}
           {onEdit && (
@@ -95,7 +103,6 @@ export const McpServerItem = ({
               onClick={onEdit}
               tooltip={t('common.edit')}
               className="ml-4"
-              tooltipId="mcp-server-item"
             />
           )}
           {onRemove && (
@@ -104,7 +111,6 @@ export const McpServerItem = ({
               onClick={onRemove}
               tooltip={t('common.remove')}
               className="ml-3"
-              tooltipId="mcp-server-item"
             />
           )}
         </div>

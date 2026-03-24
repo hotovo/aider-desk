@@ -2,7 +2,7 @@ import { Font, ProjectData, SettingsData, Theme, AgentProfile, ProviderProfile }
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone, FaKeyboard } from 'react-icons/fa';
+import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone, FaKeyboard, FaPuzzlePiece } from 'react-icons/fa';
 import { MdTerminal } from 'react-icons/md';
 import { LuClipboardList } from 'react-icons/lu';
 
@@ -17,6 +17,17 @@ import { MemorySettings } from '@/components/settings/MemorySettings';
 import { VoiceSettings } from '@/components/settings/VoiceSettings';
 import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
 import { TaskSettings } from '@/components/settings/TaskSettings';
+import { ExtensionsSettings } from '@/components/settings/ExtensionsSettings';
+
+type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
+
+interface SidebarItem {
+  id: string;
+  label: string;
+  icon?: ReactNode;
+  children?: { id: string; label: string }[];
+  pageId: PageId;
+}
 
 type Props = {
   settings: SettingsData;
@@ -34,16 +45,6 @@ type Props = {
   providers?: ProviderProfile[];
   setProviders?: (providers: ProviderProfile[]) => void;
 };
-
-type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'about';
-
-interface SidebarItem {
-  id: string;
-  label: string;
-  icon?: ReactNode;
-  children?: { id: string; label: string }[];
-  pageId: PageId;
-}
 
 export const Settings = ({
   settings,
@@ -67,13 +68,6 @@ export const Settings = ({
 
   const [activePage, setActivePage] = useState<PageId>((initialPageId as PageId) || 'general');
   const [selectedProfileContext, setSelectedProfileContext] = useState<string>('global');
-  const [expandedPages, setExpandedPages] = useState<Record<string, boolean>>({
-    general: true,
-    aider: true,
-    agents: true,
-    memory: true,
-    server: true,
-  });
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -147,6 +141,18 @@ export const Settings = ({
       label: t('settings.tabs.hotkeys'),
       icon: <FaKeyboard className="w-4 h-4" />,
     },
+    {
+      id: 'extensions',
+      pageId: 'extensions',
+      label: t('settings.tabs.extensions'),
+      icon: <FaPuzzlePiece className="w-4 h-4" />,
+      children: [
+        ...(openProjects || []).map((project) => ({
+          id: `extension-${project.baseDir}`,
+          label: getPathBasename(project.baseDir),
+        })),
+      ],
+    },
     ...(isServerManagementSupported
       ? [
           {
@@ -185,22 +191,9 @@ export const Settings = ({
     }, 100);
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedPages((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
   const handleItemClick = (item: SidebarItem) => {
     setSelectedProfileContext('global');
     setActivePage(item.pageId);
-    if (item.children) {
-      setExpandedPages((prev) => ({
-        ...prev,
-        [item.id]: true,
-      }));
-    }
   };
 
   const handleChildClick = (pageId: PageId, sectionId: string) => {
@@ -210,6 +203,10 @@ export const Settings = ({
     if (pageId === 'agents' && sectionId.startsWith('agent-')) {
       // Extract project baseDir from sectionId (format: agent-{baseDir})
       const projectBaseDir = sectionId.replace('agent-', '');
+      setSelectedProfileContext(projectBaseDir);
+    } else if (pageId === 'extensions' && sectionId.startsWith('extension-')) {
+      // Extract project baseDir from sectionId (format: extension-{baseDir})
+      const projectBaseDir = sectionId.replace('extension-', '');
       setSelectedProfileContext(projectBaseDir);
     } else {
       scrollToSection(sectionId);
@@ -252,6 +249,10 @@ export const Settings = ({
         return <VoiceSettings providers={providers} setProviders={setProviders} initialProviderId={initialOptions?.providerId as string | undefined} />;
       case 'hotkeys':
         return <HotkeysSettings settings={settings} setSettings={updateSettings} />;
+      case 'extensions':
+        return (
+          <ExtensionsSettings settings={settings} setSettings={updateSettings} openProjects={openProjects} selectedProjectContext={selectedProfileContext} />
+        );
       case 'server':
         return <ServerSettings settings={settings} setSettings={updateSettings} />;
       case 'about':
@@ -282,10 +283,9 @@ export const Settings = ({
                     className="mr-2 p-0.5 rounded hover:bg-bg-tertiary-strong transition-colors"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleExpand(item.id);
                     }}
                   >
-                    {expandedPages[item.id] ? <FaChevronDown className="w-3 h-3" /> : <FaChevronRight className="w-3 h-3" />}
+                    {activePage === item.id ? <FaChevronDown className="w-3 h-3" /> : <FaChevronRight className="w-3 h-3" />}
                   </div>
                 )}
                 {!item.children?.length && <span className="w-6" />} {/* Spacer for items without children */}
@@ -294,7 +294,7 @@ export const Settings = ({
               </div>
 
               {/* Children */}
-              {item.children && expandedPages[item.id] && (
+              {item.children && activePage === item.id && (
                 <div className="ml-9 space-y-0.5 mt-0.5 border-l border-border-default pl-2">
                   {item.children.map((child) => (
                     <div

@@ -55,6 +55,14 @@ export interface HandoffPromptData {
   contextFiles?: ContextFile[];
 }
 
+export interface CodeInlineRequestPromptData {
+  filename: string;
+  lineNumber: number;
+  fileExtension: string;
+  contextLines: { lineNumber: number; content: string }[];
+  userComment: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface CommitMessagePromptData {
   // Static for now
@@ -93,4 +101,5 @@ export type PromptTemplateName =
   | 'conflict-resolution'
   | 'conflict-resolution-system'
   | 'update-task-state'
-  | 'handoff';
+  | 'handoff'
+  | 'code-inline-request';

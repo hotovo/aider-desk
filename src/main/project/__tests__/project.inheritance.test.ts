@@ -5,7 +5,7 @@ import { TaskData, Worktree } from '@common/types';
 
 import { Project } from '../project';
 
-import { INTERNAL_TASK_ID } from '@/task';
+import { INTERNAL_TASK_ID, Task } from '@/task';
 
 // Mock dependencies
 vi.mock('@/logger');
@@ -19,10 +19,15 @@ vi.mock('@/worktrees');
 vi.mock('@/memory/memory-manager');
 vi.mock('@/hooks/hook-manager');
 vi.mock('@/prompts');
+vi.mock('@/extensions/extension-manager');
 vi.mock('@/task/aider-manager');
 vi.mock('@/task/context-manager');
 vi.mock('@/project/migrations');
 vi.mock('fs/promises');
+vi.mock('@/utils', () => ({
+  determineMainModel: vi.fn(() => 'default-model'),
+  determineWeakModel: vi.fn(() => null),
+}));
 vi.mock('uuid', () => ({
   v4: vi.fn(() => 'test-task-id'),
 }));
@@ -40,7 +45,9 @@ describe('Project Inheritance', () => {
     mockStore = {
       getSettings: vi.fn(() => ({
         taskSettings: {},
-        aider: {},
+        aider: {
+          options: '',
+        },
       })),
       getProviders: vi.fn(() => []),
       getProjectSettings: vi.fn(() => ({})),
@@ -61,6 +68,11 @@ describe('Project Inheritance', () => {
     // Mock fs.stat to avoid unhandled rejections in Task.loadTaskData
     vi.mocked(fs.stat).mockRejectedValue(new Error('File not found'));
     vi.mocked(fs.readdir).mockResolvedValue([]);
+    vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+    // Mock Task methods to avoid complex initialization
+    Task.prototype['resetContext'] = vi.fn().mockResolvedValue(undefined);
 
     project = new Project(
       '/test/dir',
@@ -75,6 +87,15 @@ describe('Project Inheritance', () => {
       {} as any,
       { trigger: vi.fn().mockResolvedValue({ event: {}, blocked: false }) } as any,
       { watchProject: vi.fn() } as any,
+      {
+        reloadProjectExtensions: vi.fn(),
+        stopWatchingProject: vi.fn(),
+        dispatchEvent: vi.fn(() => Promise.resolve({ event: {}, blocked: false, modifiedResult: undefined })),
+        getRegistry: vi.fn(() => ({
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+        })),
+      } as any,
     );
 
     // Mock prepareTask to return a mock Task
@@ -82,6 +103,7 @@ describe('Project Inheritance', () => {
       task: { id: id || 'test-task-id', ...data },
       hookManager: { trigger: vi.fn().mockResolvedValue({}) },
       addFiles: vi.fn(),
+      resetContext: vi.fn().mockResolvedValue(undefined),
     }));
 
     // Mock INTERNAL_TASK_ID

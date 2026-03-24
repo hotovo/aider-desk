@@ -6,6 +6,10 @@ sidebar_label: "Diff Viewer"
 
 One of AiderDesk's most powerful features is the ability to clearly visualize and manage the code changes proposed by the AI.
 
+:::tip Updated Files
+For a complete overview of how to track and interact with modified files, including making inline code requests, see the **[Updated Files](updated-files.md)** documentation.
+:::
+
 ## The Diff Viewer
 
 Whenever Aider modifies a file, the changes are presented in a **diff view** within a code block in the chat. This provides a clear comparison of the original code and the new, modified version.
@@ -53,3 +57,30 @@ You have granular control over which changes to accept. If you disagree with a s
 3.  Click the icon.
 
 AiderDesk will immediately apply the revert, replacing the AI's new code with the original code in the actual file on your disk. This action is instant and allows you to selectively accept or reject parts of the AI's work.
+
+## Inline Code Requests
+
+The diff viewer modal (accessed via the [Updated Files](updated-files.md) section) supports **inline code requests**, allowing you to request changes directly on specific lines.
+
+### How It Works
+
+1. **Open the diff view** by clicking on a file in the Updated Files section
+2. **Click on any line** in the code where you want to request a change
+3. **Enter your feedback** in the comment dialog that appears
+4. **Submit** - AiderDesk creates a focused task to implement your change
+
+The AI receives your comment along with surrounding code context, ensuring the change integrates well with the existing code structure.
+
+### Example Requests
+
+- *"Add error handling here"* - Request try-catch blocks on a function call
+- *"Rename this variable to userCount"* - Request naming improvements
+- *"Add JSDoc for this function"* - Request documentation
+- *"Optimize this loop"* - Request performance improvements
+
+For detailed best practices and more examples, see the **[Updated Files](updated-files.md)** documentation.
+
+## Related Features
+
+- **[Updated Files](updated-files.md)** - Track all modified files and make inline code requests
+- **[Custom Prompts](../advanced/custom-prompts.md)** - Customize diff-related prompt templates

@@ -13,7 +13,7 @@ import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
 import { MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdRepeat, MdThermostat, MdPsychology } from 'react-icons/md';
-import { DEFAULT_AGENT_PROFILE, DEFAULT_MODEL_TEMPERATURE, AVAILABLE_PROVIDERS, getProviderModelId } from '@common/agent';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_MODEL_TEMPERATURE, AVAILABLE_PROVIDERS, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import { clsx } from 'clsx';
 import Sketch from '@uiw/react-color-sketch';
@@ -68,6 +68,7 @@ import { GenericToolGroupItem } from './GenericToolGroupItem';
 import { AgentRules } from './AgentRules';
 import { SortableAgentProfileItem } from './SortableAgentProfileItem';
 
+import { useApi } from '@/contexts/ApiContext';
 import { getPathBasename } from '@/utils/path-utils';
 import { IconButton } from '@/components/common/IconButton';
 import { Button } from '@/components/common/Button';
@@ -79,7 +80,6 @@ import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
-import { useApi } from '@/contexts/ApiContext';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
 
@@ -432,6 +432,16 @@ export const AgentSettings = ({
     return agentProfiles.filter((p) => p.projectDir === profileContext);
   }, [agentProfiles, profileContext]);
 
+  // Calculate missing default profiles (only for global context)
+  const missingDefaultProfiles = useMemo(() => {
+    if (profileContext !== 'global') {
+      return [];
+    }
+
+    const currentProfileIds = agentProfiles.map((p) => p.id);
+    return DEFAULT_AGENT_PROFILES.filter((defaultProfile) => !currentProfileIds.includes(defaultProfile.id));
+  }, [agentProfiles, profileContext]);
+
   // Get context display name
   const getContextDisplayName = () => {
     if (profileContext === 'global') {
@@ -532,6 +542,28 @@ export const AgentSettings = ({
     }
   };
 
+  const isDefaultProfile = (profileId: string | null): boolean => {
+    return profileId !== null && DEFAULT_AGENT_PROFILES.some((profile) => profile.id === profileId);
+  };
+
+  const handleResetProfile = () => {
+    if (selectedProfileId) {
+      const defaultProfile = DEFAULT_AGENT_PROFILES.find((profile) => profile.id === selectedProfileId);
+      if (defaultProfile) {
+        const resetProfile = { ...defaultProfile, id: selectedProfileId };
+        setAgentProfiles(agentProfiles.map((p) => (p.id === selectedProfileId ? resetProfile : p)));
+      }
+    }
+  };
+
+  const handleRestoreProfile = (profileId: string) => {
+    const defaultProfile = DEFAULT_AGENT_PROFILES.find((profile) => profile.id === profileId);
+    if (defaultProfile) {
+      setAgentProfiles([...agentProfiles, defaultProfile]);
+      setSelectedProfileId(profileId);
+    }
+  };
+
   const handleCopyProfile = (profile: AgentProfile) => {
     setClipboardProfile({ profile: { ...profile }, action: 'copy' });
   };
@@ -600,8 +632,8 @@ export const AgentSettings = ({
     setSettings(updatedSettings);
   };
 
-  const handleModelChange = (model: Model) => {
-    if (!selectedProfile) {
+  const handleModelChange = (model: Model | null) => {
+    if (!model || !selectedProfile) {
       return;
     }
 
@@ -688,20 +720,23 @@ export const AgentSettings = ({
   };
 
   const handleMcpServerRemove = (serverName: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { [serverName]: removedServer, ...remainingServers } = settings.mcpServers;
     setSettings({ ...settings, mcpServers: remainingServers });
+    if (removedServer) {
+      void api.reloadMcpServer(serverName, removedServer);
+    }
   };
 
   const handleServersConfigSave = (servers: Record<string, McpServerConfig>) => {
     let updatedMcpServers = { ...settings.mcpServers };
+    const serversToReload: Record<string, McpServerConfig> = {};
 
     if (isAddingMcpServer) {
       // Add new servers to the existing ones
-      updatedMcpServers = {
-        ...updatedMcpServers,
-        ...servers,
-      };
+      Object.entries(servers).forEach(([name, config]) => {
+        updatedMcpServers[name] = config;
+        serversToReload[name] = config;
+      });
     } else if (editingMcpServer) {
       // If editing and the server name did not change, preserve the order
       const oldName = editingMcpServer.name;
@@ -721,6 +756,7 @@ export const AgentSettings = ({
             ...servers,
           };
         }
+        serversToReload[oldName] = servers[oldName];
       } else {
         // Remove the old server and add the updated one(s)
         const { [oldName]: _removed, ...rest } = updatedMcpServers;
@@ -728,16 +764,26 @@ export const AgentSettings = ({
           ...rest,
           ...servers,
         };
+        Object.entries(servers).forEach(([name, config]) => {
+          serversToReload[name] = config;
+        });
       }
     } else if (isEditingMcpServersConfig) {
       // Replace all servers with the new set
       updatedMcpServers = { ...servers };
+      Object.entries(servers).forEach(([name, config]) => {
+        serversToReload[name] = config;
+      });
     }
 
     setSettings({ ...settings, mcpServers: updatedMcpServers });
     setIsAddingMcpServer(false);
     setEditingMcpServer(null);
     setIsEditingMcpServersConfig(false);
+
+    Object.entries(serversToReload).forEach(([serverName, config]) => {
+      void api.reloadMcpServer(serverName, config);
+    });
   };
 
   const handleToolApprovalChange = (toolId: string, approval: ToolApprovalState) => {
@@ -812,7 +858,7 @@ export const AgentSettings = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2 space-y-0.5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-bg-tertiary">
+        <div className="flex-1 overflow-y-auto p-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-bg-tertiary">
           {filteredProfiles.length === 0 ? (
             <div className="h-full px-8 text-center flex items-center justify-center py-8 text-text-muted-light text-xs">
               {t('settings.agent.noProfilesInContext')}
@@ -841,6 +887,31 @@ export const AgentSettings = ({
             </DndContext>
           )}
         </div>
+        {/* Missing Default Profiles Section - Only shown in global context */}
+        {profileContext === 'global' && missingDefaultProfiles.length > 0 && (
+          <div className="py-2 border-t border-border-default-dark">
+            {missingDefaultProfiles.map((profile) => (
+              <div
+                key={profile.id}
+                className="px-2 py-1 rounded-sm text-sm transition-colors flex items-center justify-between text-text-muted-light"
+                onClick={() => setSelectedProfileId(profile.id)}
+              >
+                <div className="flex items-center">
+                  {profile.subagent.enabled && (
+                    <div className="w-3 h-3 rounded-full mr-2 border border-border-muted" style={{ backgroundColor: profile.subagent.color }} />
+                  )}
+                  <span className="flex-1 text-sm">{profile.name}</span>
+                </div>
+                <IconButton
+                  icon={<FaPlus className="w-3 h-3" />}
+                  onClick={() => handleRestoreProfile(profile.id)}
+                  tooltip={t('settings.agent.restoreProfileTooltip')}
+                  className="p-1 hover:bg-bg-tertiary rounded text-text-muted-light hover:text-text-primary"
+                />
+              </div>
+            ))}
+          </div>
+        )}
         <div className="p-2 border-t border-border-default flex items-center justify-center gap-2">
           <Button onClick={handleCreateNewProfile} className="" variant="text" size="sm" color="primary">
             <FaPlus className="mr-2 w-3 h-3" /> {t('settings.agent.createNewProfileInContext')}
@@ -859,7 +930,7 @@ export const AgentSettings = ({
       {/* Right Details Pane */}
       <div className="flex-1 flex flex-col h-full min-w-0">
         <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-bg-tertiary">
-          <div className="max-w-3xl mx-auto h-full">
+          <div className="max-w-3xl mx-auto">
             {selectedProfile ? (
               <div className="space-y-4">
                 <Input
@@ -1261,7 +1332,13 @@ export const AgentSettings = ({
                   </div>
                 )}
 
-                <div className="mt-4 pt-2 flex justify-end items-center">
+                <div className="mt-4 pt-2 flex justify-end items-center gap-2">
+                  {isDefaultProfile(selectedProfileId) && (
+                    <Button onClick={handleResetProfile} variant="text" size="sm" color="secondary" disabled={!selectedProfileId}>
+                      <FaSyncAlt className="w-4 h-4" />
+                      <span>{t('settings.agent.resetProfileToDefaults')}</span>
+                    </Button>
+                  )}
                   <Button
                     onClick={() => handleDeleteProfile(selectedProfileId)}
                     variant="text"

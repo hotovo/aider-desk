@@ -1,15 +1,18 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
-  ProviderProfile,
+  ContextCompactionType,
+  DiffViewMode,
+  MemoryEmbeddingProvider,
+  MessageViewMode,
   ProjectData,
   ProjectSettings,
-  SettingsData,
   ProjectStartMode,
+  ProviderProfile,
+  SettingsData,
   SuggestionMode,
   WindowState,
-  MemoryEmbeddingProvider,
-  DiffViewMode,
 } from '@common/types';
+import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
 import { normalizeBaseDir } from '@common/utils';
 
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
@@ -32,6 +35,8 @@ import { migrateProvidersV13toV14 } from '@/store/migrations/v13-to-v14';
 import { migrateSettingsV14toV15 } from '@/store/migrations/v14-to-v15';
 import { migrateSettingsV15toV16 } from '@/store/migrations/v15-to-v16';
 import { migrateSettingsV16toV17 } from '@/store/migrations/v16-to-v17';
+import { migrateSettingsV17toV18 } from '@/store/migrations/v17-to-v18';
+import { migrateSettingsV18toV19 } from '@/store/migrations/v18-to-v19';
 
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',
@@ -43,6 +48,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   renderMarkdown: true,
   virtualizedRendering: false,
   aiderDeskAutoUpdate: true,
+  messageViewMode: MessageViewMode.Compact,
   diffViewMode: DiffViewMode.SideBySide,
   aider: {
     options: '',
@@ -87,6 +93,12 @@ export const DEFAULT_SETTINGS: SettingsData = {
     autoGenerateTaskName: true,
     showTaskStateActions: true,
     worktreeSymlinkFolders: ['node_modules', 'vendor', '__pycache__', '.venv', 'venv'],
+    contextCompactingThreshold: 0,
+    contextCompactionType: ContextCompactionType.Compact,
+  },
+  extensions: {
+    repositories: [AIDER_DESK_EXTENSIONS_REPO_URL],
+    disabled: [],
   },
 };
 
@@ -105,7 +117,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 17;
+const CURRENT_SETTINGS_VERSION = 19;
 
 export class Store {
   // @ts-expect-error expected to be initialized
@@ -268,6 +280,16 @@ export class Store {
       if (settingsVersion === 16) {
         settings = await migrateSettingsV16toV17(settings);
         settingsVersion = 17;
+      }
+
+      if (settingsVersion === 17) {
+        settings = migrateSettingsV17toV18(settings);
+        settingsVersion = 18;
+      }
+
+      if (settingsVersion === 18) {
+        settings = migrateSettingsV18toV19(settings);
+        settingsVersion = 19;
       }
 
       this.store.set('settings', settings as SettingsData);

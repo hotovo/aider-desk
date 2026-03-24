@@ -1,0 +1,8 @@
+{
+  "name": "programmatic-tool-calls",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@nyariv/sandboxjs": "^0.8.33"
+  }
+}

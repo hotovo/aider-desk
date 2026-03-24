@@ -4,6 +4,7 @@ import {
   McpServerConfig,
   Mode,
   Model,
+  OpenDialogOptions,
   ProjectSettings,
   ProviderProfile,
   SettingsData,
@@ -41,7 +42,15 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.on('answer-question', (_, baseDir: string, taskId: string, answer: string) => {
-    eventsHandler.answerQuestion(baseDir, taskId, answer);
+    void eventsHandler.answerQuestion(baseDir, taskId, answer);
+  });
+
+  ipcMain.on('remove-queued-prompt', (_, baseDir: string, taskId: string, promptId: string) => {
+    eventsHandler.removeQueuedPrompt(baseDir, taskId, promptId);
+  });
+
+  ipcMain.on('send-queued-prompt-now', async (_, baseDir: string, taskId: string, promptId: string) => {
+    await eventsHandler.sendQueuedPromptNow(baseDir, taskId, promptId);
   });
 
   ipcMain.on('drop-file', (_, baseDir: string, taskId: string, filePath: string) => {
@@ -68,7 +77,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.resetTask(baseDir, taskId);
   });
 
-  ipcMain.handle('show-open-dialog', async (_, options: Electron.OpenDialogSyncOptions) => {
+  ipcMain.handle('show-open-dialog', async (_, options: OpenDialogOptions) => {
     return await eventsHandler.showOpenDialog(options);
   });
 
@@ -124,6 +133,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.getAllFiles(baseDir, taskId, useGit);
   });
 
+  ipcMain.handle('get-updated-files', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.getUpdatedFiles(baseDir, taskId);
+  });
+
   ipcMain.handle('is-project-path', async (_, path: string) => {
     return await eventsHandler.isProjectPath(path);
   });
@@ -137,11 +150,11 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.on('update-main-model', (_, baseDir: string, taskId: string, mainModel: string) => {
-    eventsHandler.updateMainModel(baseDir, taskId, mainModel);
+    void eventsHandler.updateMainModel(baseDir, taskId, mainModel);
   });
 
   ipcMain.on('update-weak-model', (_, baseDir: string, taskId: string, weakModel: string) => {
-    eventsHandler.updateWeakModel(baseDir, taskId, weakModel);
+    void eventsHandler.updateWeakModel(baseDir, taskId, weakModel);
   });
 
   ipcMain.on('update-architect-model', (_, baseDir: string, taskId: string, architectModel: string) => {
@@ -160,8 +173,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.pasteImage(baseDir, taskId);
   });
 
-  ipcMain.on('interrupt-response', (_, baseDir: string, taskId: string) => {
-    eventsHandler.interruptResponse(baseDir, taskId);
+  ipcMain.on('interrupt-response', (_, baseDir: string, taskId: string, interruptId?: string) => {
+    void eventsHandler.interruptResponse(baseDir, taskId, interruptId);
   });
 
   ipcMain.on('apply-edits', (_, baseDir: string, taskId: string, edits: FileEdit[]) => {
@@ -181,6 +194,11 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return { message: 'Message removed' };
   });
 
+  ipcMain.handle('remove-messages-up-to', async (_, baseDir: string, taskId: string, messageId: string) => {
+    await eventsHandler.removeMessagesUpTo(baseDir, taskId, messageId);
+    return { message: 'Messages removed' };
+  });
+
   ipcMain.on('redo-last-user-prompt', (_, baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string) => {
     void eventsHandler.redoLastUserPrompt(baseDir, taskId, mode, updatedPrompt);
   });
@@ -196,6 +214,13 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   ipcMain.handle('handoff-conversation', async (_event, baseDir: string, taskId: string, focus?: string) => {
     return await eventsHandler.handoffConversation(baseDir, taskId, focus);
   });
+
+  ipcMain.on(
+    'run-code-inline-request',
+    async (_, baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string, createNewTask?: boolean) => {
+      await eventsHandler.runCodeInlineRequest(baseDir, taskId, filename, lineNumber, userComment, createNewTask);
+    },
+  );
 
   ipcMain.handle('scrape-web', async (_, baseDir: string, taskId: string, url: string, filePath?: string) => {
     await eventsHandler.scrapeWeb(baseDir, taskId, url, filePath);
@@ -237,12 +262,48 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.reloadMcpServers(mcpServers, force);
   });
 
-  ipcMain.handle('export-task-to-markdown', async (_, baseDir: string, taskId: string) => {
-    return await eventsHandler.exportTaskToMarkdown(baseDir, taskId);
+  ipcMain.handle('reload-mcp-server', async (_, serverName: string, config: McpServerConfig) => {
+    return await eventsHandler.reloadMcpServer(serverName, config);
   });
 
-  ipcMain.handle('set-zoom-level', (_, zoomLevel: number) => {
-    eventsHandler.setZoomLevel(zoomLevel);
+  // Extension handlers
+  ipcMain.handle('get-installed-extensions', (_, projectDir?: string) => {
+    return eventsHandler.getInstalledExtensions(projectDir);
+  });
+
+  ipcMain.handle('get-available-extensions', async (_, repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) => {
+    return await eventsHandler.getAvailableExtensions(repositories, forceRefresh, fetchOnly);
+  });
+
+  ipcMain.handle('install-extension', async (_, extensionId: string, repositoryUrl: string, projectDir?: string) => {
+    return await eventsHandler.installExtension(extensionId, repositoryUrl, projectDir);
+  });
+
+  ipcMain.handle('uninstall-extension', async (_, extensionId: string, projectDir?: string) => {
+    return await eventsHandler.uninstallExtension(extensionId, projectDir);
+  });
+
+  ipcMain.handle('get-extension-ui-components', (_, placement?: string, projectDir?: string, taskId?: string) => {
+    return eventsHandler.getUIComponents(placement, projectDir, taskId);
+  });
+
+  ipcMain.handle('get-extension-ui-data', async (_, extensionId: string, componentId: string, projectDir?: string, taskId?: string) => {
+    return await eventsHandler.getUIExtensionData(extensionId, componentId, projectDir, taskId);
+  });
+
+  ipcMain.handle(
+    'execute-extension-ui-action',
+    async (_, extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string) => {
+      return await eventsHandler.executeUIExtensionAction(extensionId, componentId, action, args, projectDir, taskId);
+    },
+  );
+
+  ipcMain.handle('export-task-to-markdown', async (_, baseDir: string, taskId: string, copyOnly: boolean = false) => {
+    return await eventsHandler.exportTaskToMarkdown(baseDir, taskId, copyOnly);
+  });
+
+  ipcMain.handle('set-zoom-level', async (_, zoomLevel: number) => {
+    return await eventsHandler.setZoomLevel(zoomLevel);
   });
 
   ipcMain.handle('get-versions', async (_, forceRefresh = false) => {
@@ -305,8 +366,12 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.openPath(path);
   });
 
-  ipcMain.handle('get-custom-commands', async (_, baseDir: string) => {
-    return eventsHandler.getCustomCommands(baseDir);
+  ipcMain.handle('get-commands', async (_, baseDir: string) => {
+    return eventsHandler.getCommands(baseDir);
+  });
+
+  ipcMain.handle('get-custom-modes', async (_, baseDir: string) => {
+    return eventsHandler.getCustomModes(baseDir);
   });
 
   ipcMain.handle('run-custom-command', async (_, baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode) => {
@@ -351,6 +416,22 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.revertLastMerge(baseDir, taskId);
   });
 
+  ipcMain.handle('restore-file', async (_, baseDir: string, taskId: string, filePath: string) => {
+    await eventsHandler.restoreFile(baseDir, taskId, filePath);
+  });
+
+  ipcMain.handle('read-file', async (_, baseDir: string, filePath: string) => {
+    return await eventsHandler.readFile(baseDir, filePath);
+  });
+
+  ipcMain.handle('generate-commit-message', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.generateCommitMessage(baseDir, taskId);
+  });
+
+  ipcMain.handle('commit-changes', async (_, baseDir: string, taskId: string, message: string, amend: boolean) => {
+    await eventsHandler.commitChanges(baseDir, taskId, message, amend);
+  });
+
   ipcMain.handle('list-branches', async (_, baseDir: string) => {
     return await eventsHandler.listBranches(baseDir);
   });
@@ -372,14 +453,14 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.handle('resolve-worktree-conflicts-with-agent', async (_, baseDir: string, taskId: string) => {
-    await eventsHandler.resolveWorktreeConflictsWithAgent(baseDir, taskId);
+    await eventsHandler.resolveConflictsWithAgent(baseDir, taskId);
   });
 
   // Server control handlers
   ipcMain.handle('start-server', async (_, username?: string, password?: string) => {
     const started = await serverController.startServer();
     if (started) {
-      eventsHandler.enableServer(username, password);
+      await eventsHandler.enableServer(username, password);
     }
     return started;
   });
@@ -387,7 +468,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   ipcMain.handle('stop-server', async () => {
     const stopped = await serverController.stopServer();
     if (stopped) {
-      eventsHandler.disableServer();
+      await eventsHandler.disableServer();
     }
     return stopped;
   });

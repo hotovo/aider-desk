@@ -95,7 +95,9 @@ describe('SettingsPage', () => {
   });
 
   it('calls saveSettings when Save is clicked after changes', async () => {
-    render(<SettingsPage onClose={vi.fn()} />);
+    await act(async () => {
+      render(<SettingsPage onClose={vi.fn()} />);
+    });
 
     fireEvent.click(screen.getByText('Change Language'));
 
@@ -112,7 +114,9 @@ describe('SettingsPage', () => {
 
   it('calls onClose when Cancel is clicked', async () => {
     const onClose = vi.fn();
-    render(<SettingsPage onClose={onClose} />);
+    await act(async () => {
+      render(<SettingsPage onClose={onClose} />);
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('common.cancel'));

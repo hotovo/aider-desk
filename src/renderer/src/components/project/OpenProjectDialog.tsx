@@ -9,7 +9,6 @@ import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { Accordion } from '@/components/common/Accordion';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { IconButton } from '@/components/common/IconButton';
-import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
@@ -103,7 +102,6 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
       width={600}
       closeOnEscape={true}
     >
-      <StyledTooltip id="browseTooltipId" />
       <AutocompletionInput
         value={projectPath}
         suggestions={suggestions}
@@ -120,8 +118,8 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
               onClick={handleSelectProject}
               className="p-1.5 rounded-md hover:bg-bg-tertiary-strong transition-colors"
               tooltip={t('dialogs.browseFoldersTooltip')}
-              tooltipId="browseTooltipId"
               icon={<FaFolder className="w-4 h-4" />}
+              data-testid="browse-folder-button"
             />
           )
         }

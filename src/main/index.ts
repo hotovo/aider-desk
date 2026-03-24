@@ -2,6 +2,7 @@ import { join } from 'path';
 import { existsSync, statSync } from 'fs';
 
 import { compareBaseDirs, delay } from '@common/utils';
+import { ContextMenuParams } from '@common/types';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron';
 
@@ -147,6 +148,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       webSecurity: false,
+      webviewTag: true,
     },
   });
 
@@ -163,7 +165,13 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   });
 
   mainWindow.webContents.on('context-menu', (_event, params) => {
-    mainWindow.webContents.send('context-menu', params);
+    const contextMenuParams: ContextMenuParams = {
+      x: params.x,
+      y: params.y,
+      selectionText: params.selectionText,
+      isEditable: params.isEditable,
+    };
+    mainWindow.webContents.send('context-menu', contextMenuParams);
   });
 
   const saveWindowState = (): void => {

@@ -5,10 +5,11 @@ import {
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
-  CustomCommand,
-  CustomCommandsUpdatedData,
+  ContextMenuParams,
+  CommandsData,
   EditFormat,
   EnvironmentVariable,
+  ExtensionUIRefreshData,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -16,8 +17,12 @@ import {
   McpTool,
   MessageRemovedData,
   Mode,
+  ModeDefinition,
   Model,
   ModelsData,
+  NotificationData,
+  OpenDialogOptions,
+  OpenDialogResult,
   OS,
   ProjectData,
   ProjectSettings,
@@ -48,6 +53,12 @@ import {
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
   TaskCreatedData,
+  UpdatedFilesUpdatedData,
+  QueuedPromptsUpdatedData,
+  InstalledExtension,
+  AvailableExtension,
+  ExtensionUIComponent,
+  ModalOverlayUrlData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -61,10 +72,11 @@ type EventDataMap = {
   'response-completed': ResponseCompletedData;
   log: LogData;
   'context-files-updated': ContextFilesUpdatedData;
-  'custom-commands-updated': CustomCommandsUpdatedData;
+  'commands-updated': CommandsData;
   'update-autocompletion': AutocompletionData;
   'ask-question': QuestionData;
   'question-answered': QuestionAnsweredData;
+  'queued-prompts-updated': QueuedPromptsUpdatedData;
   'update-aider-models': ModelsData;
   'command-output': CommandOutputData;
   'update-tokens-info': TokensInfoData;
@@ -78,6 +90,8 @@ type EventDataMap = {
   'project-settings-updated': { baseDir: string; settings: ProjectSettings };
   'worktree-integration-status-updated': WorktreeIntegrationStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
+  'updated-files-updated': UpdatedFilesUpdatedData;
+  notification: NotificationData;
   'task-created': TaskCreatedData;
   'task-initialized': TaskData;
   'task-updated': TaskData;
@@ -88,6 +102,8 @@ type EventDataMap = {
   'message-removed': MessageRemovedData;
   'terminal-data': TerminalData;
   'terminal-exit': TerminalExitData;
+  'extension-ui-refresh': ExtensionUIRefreshData;
+  'modal-overlay-url': ModalOverlayUrlData;
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -127,7 +143,7 @@ export class BrowserApi implements ApplicationAPI {
       'response-completed': new Map(),
       log: new Map(),
       'context-files-updated': new Map(),
-      'custom-commands-updated': new Map(),
+      'commands-updated': new Map(),
       'update-autocompletion': new Map(),
       'ask-question': new Map(),
       'question-answered': new Map(),
@@ -142,6 +158,7 @@ export class BrowserApi implements ApplicationAPI {
       'worktree-integration-status-updated': new Map(),
       'provider-models-updated': new Map(),
       'providers-updated': new Map(),
+      'updated-files-updated': new Map(),
       'project-settings-updated': new Map(),
       'task-created': new Map(),
       'task-initialized': new Map(),
@@ -151,9 +168,13 @@ export class BrowserApi implements ApplicationAPI {
       'task-completed': new Map(),
       'task-cancelled': new Map(),
       'agent-profiles-updated': new Map(),
+      notification: new Map(),
       'message-removed': new Map(),
       'terminal-data': new Map(),
       'terminal-exit': new Map(),
+      'queued-prompts-updated': new Map(),
+      'extension-ui-refresh': new Map(),
+      'modal-overlay-url': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -312,13 +333,27 @@ export class BrowserApi implements ApplicationAPI {
       answer,
     });
   }
+  removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void {
+    this.post('/project/remove-queued-prompt', {
+      projectDir: baseDir,
+      taskId,
+      promptId,
+    });
+  }
+  sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): void {
+    this.post('/project/send-queued-prompt-now', {
+      projectDir: baseDir,
+      taskId,
+      promptId,
+    });
+  }
   loadInputHistory(baseDir: string): Promise<string[]> {
     return this.get('/project/input-history', { projectDir: baseDir });
   }
   isOpenDialogSupported(): boolean {
     return false;
   }
-  showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue> {
+  showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult> {
     void options;
     throw new UnsupportedError('showOpenDialog not supported yet.');
   }
@@ -389,6 +424,24 @@ export class BrowserApi implements ApplicationAPI {
   getAllFiles(baseDir: string, taskId: string, useGit?: boolean): Promise<string[]> {
     return this.post('/get-all-files', { projectDir: baseDir, taskId, useGit });
   }
+  getUpdatedFiles(baseDir: string, taskId: string): Promise<{ path: string; additions: number; deletions: number }[]> {
+    return this.post('/get-updated-files', { projectDir: baseDir, taskId });
+  }
+  async generateCommitMessage(baseDir: string, taskId: string): Promise<string> {
+    const res = await this.post<{ projectDir: string; taskId: string }, { message: string }>('/project/worktree/generate-commit-message', {
+      projectDir: baseDir,
+      taskId,
+    });
+    return res.message;
+  }
+  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void> {
+    await this.post('/project/worktree/commit-changes', {
+      projectDir: baseDir,
+      taskId,
+      message,
+      amend,
+    });
+  }
   addFile(baseDir: string, taskId: string, filePath: string, readOnly?: boolean): void {
     this.post('/add-context-file', {
       projectDir: baseDir,
@@ -411,8 +464,20 @@ export class BrowserApi implements ApplicationAPI {
   runCommand(baseDir: string, taskId: string, command: string): void {
     this.post('/project/run-command', { projectDir: baseDir, taskId, command });
   }
-  pasteImage(baseDir: string, taskId: string): void {
-    this.post('/project/paste-image', { projectDir: baseDir, taskId });
+  async pasteImage(baseDir: string, taskId: string, imageBuffer?: ArrayBuffer): Promise<void> {
+    if (imageBuffer) {
+      const blob = new Blob([imageBuffer], { type: 'image/png' });
+      const reader = new FileReader();
+      const base64String = await new Promise<string>((resolve) => {
+        reader.onload = () => {
+          resolve(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      });
+      await this.post('/project/paste-image', { projectDir: baseDir, taskId, base64ImageData: base64String });
+    } else {
+      await this.post('/project/paste-image', { projectDir: baseDir, taskId });
+    }
   }
   scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void> {
     return this.post('/project/scrape-web', {
@@ -459,6 +524,9 @@ export class BrowserApi implements ApplicationAPI {
   reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void> {
     return this.post('/mcp/reload', { mcpServers, force });
   }
+  reloadMcpServer(serverName: string, config: McpServerConfig): Promise<McpTool[]> {
+    return this.post('/mcp/reload-single', { serverName, config });
+  }
   createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData> {
     return this.post('/project/tasks/new', { projectDir: baseDir, ...params });
   }
@@ -488,24 +556,33 @@ export class BrowserApi implements ApplicationAPI {
     return this.post('/project/tasks/load', { projectDir: baseDir, id });
   }
 
-  async exportTaskToMarkdown(baseDir: string, taskId: string): Promise<void> {
+  async exportTaskToMarkdown(baseDir: string, taskId: string, copyOnly: boolean = false): Promise<string | void> {
     const response = await this.apiClient.post('/project/tasks/export-markdown', {
       projectDir: baseDir,
       taskId,
+      copyOnly,
     });
 
-    const markdownContent = response.data;
-    const filename = `session-${new Date().toISOString().replace(/:/g, '-').substring(0, 19)}.md`;
+    if (copyOnly) {
+      const { markdown } = response.data;
+      if (!markdown) {
+        throw new Error('No markdown content received');
+      }
+      return markdown;
+    } else {
+      const markdownContent = response.data;
+      const filename = `session-${new Date().toISOString().replace(/:/g, '-').substring(0, 19)}.md`;
 
-    const blob = new Blob([markdownContent], { type: 'text/markdown' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+      const blob = new Blob([markdownContent], { type: 'text/markdown' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }
   }
 
   getRecentProjects(): Promise<string[]> {
@@ -517,8 +594,8 @@ export class BrowserApi implements ApplicationAPI {
   removeRecentProject(baseDir: string): Promise<void> {
     return this.post('/settings/remove-recent-project', { baseDir });
   }
-  interruptResponse(baseDir: string, taskId: string): void {
-    this.post('/project/interrupt', { projectDir: baseDir, taskId });
+  interruptResponse(baseDir: string, taskId: string, interruptId?: string): void {
+    this.post('/project/interrupt', { projectDir: baseDir, taskId, interruptId });
   }
   applyEdits(baseDir: string, taskId: string, edits: FileEdit[]): void {
     this.post('/project/apply-edits', { projectDir: baseDir, taskId, edits });
@@ -534,6 +611,10 @@ export class BrowserApi implements ApplicationAPI {
   async removeMessage(baseDir: string, taskId: string, messageId: string): Promise<void> {
     await this.deleteWithBody('/project/remove-message', { projectDir: baseDir, taskId, messageId });
   }
+
+  async removeMessagesUpTo(baseDir: string, taskId: string, messageId: string): Promise<void> {
+    await this.deleteWithBody('/project/remove-messages-up-to', { projectDir: baseDir, taskId, messageId });
+  }
   compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructions?: string): void {
     this.post('/project/compact-conversation', {
       projectDir: baseDir,
@@ -548,6 +629,17 @@ export class BrowserApi implements ApplicationAPI {
       projectDir: baseDir,
       taskId,
       focus,
+    });
+  }
+
+  runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string, createNewTask?: boolean): void {
+    this.post('/project/run-code-inline-request', {
+      projectDir: baseDir,
+      taskId,
+      filename,
+      lineNumber,
+      userComment,
+      createNewTask,
     });
   }
 
@@ -619,8 +711,11 @@ export class BrowserApi implements ApplicationAPI {
   addContextFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void): () => void {
     return this.addListener('context-files-updated', callback, baseDir, taskId);
   }
-  addCustomCommandsUpdatedListener(baseDir: string, callback: (data: CustomCommandsUpdatedData) => void): () => void {
-    return this.addListener('custom-commands-updated', callback, baseDir);
+  addUpdatedFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void {
+    return this.addListener('updated-files-updated', callback, baseDir, taskId);
+  }
+  addCommandsUpdatedListener(baseDir: string, callback: (data: CommandsData) => void): () => void {
+    return this.addListener('commands-updated', callback, baseDir);
   }
   addUpdateAutocompletionListener(baseDir: string, taskId: string, callback: (data: AutocompletionData) => void): () => void {
     return this.addListener('update-autocompletion', callback, baseDir, taskId);
@@ -631,6 +726,9 @@ export class BrowserApi implements ApplicationAPI {
 
   addQuestionAnsweredListener(baseDir: string, taskId: string, callback: (data: QuestionAnsweredData) => void): () => void {
     return this.addListener('question-answered', callback, baseDir, taskId);
+  }
+  addQueuedPromptsUpdatedListener(baseDir: string, taskId: string, callback: (data: QueuedPromptsUpdatedData) => void): () => void {
+    return this.addListener('queued-prompts-updated', callback, baseDir, taskId);
   }
   addUpdateAiderModelsListener(baseDir: string, taskId: string, callback: (data: ModelsData) => void): () => void {
     return this.addListener('update-aider-models', callback, baseDir, taskId);
@@ -719,7 +817,7 @@ export class BrowserApi implements ApplicationAPI {
   addTerminalExitListener(baseDir: string, callback: (data: TerminalExitData) => void): () => void {
     return this.addListener('terminal-exit', callback, baseDir);
   }
-  addContextMenuListener(callback: (params: Electron.ContextMenuParams) => void): () => void {
+  addContextMenuListener(callback: (params: ContextMenuParams) => void): () => void {
     void callback;
     return () => {};
   }
@@ -727,8 +825,16 @@ export class BrowserApi implements ApplicationAPI {
     void callback;
     return () => {};
   }
-  getCustomCommands(baseDir: string): Promise<CustomCommand[]> {
-    return this.get('/project/custom-commands', { projectDir: baseDir });
+  async getCommands(baseDir: string): Promise<CommandsData> {
+    const response = await this.get<CommandsData>('/project/commands', { projectDir: baseDir });
+    return {
+      baseDir,
+      customCommands: response.customCommands,
+      extensionCommands: response.extensionCommands,
+    };
+  }
+  getCustomModes(baseDir: string): Promise<ModeDefinition[]> {
+    return this.get<ModeDefinition[]>('/project/custom-modes', { projectDir: baseDir });
   }
   runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void> {
     return this.post('/project/custom-commands', {
@@ -834,6 +940,22 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void> {
+    return this.post('/project/worktree/restore-file', {
+      projectDir: baseDir,
+      taskId,
+      filePath,
+    });
+  }
+
+  async readFile(baseDir: string, filePath: string): Promise<string> {
+    const response = await this.post<{ projectDir: string; filePath: string }, { content: string }>('/project/read-file', {
+      projectDir: baseDir,
+      filePath,
+    });
+    return response.content;
+  }
+
   listBranches(baseDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
     return this.get('/project/worktree/branches', {
       projectDir: baseDir,
@@ -872,6 +994,13 @@ export class BrowserApi implements ApplicationAPI {
 
   resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
     return this.post('/project/worktree/resolve-conflicts-with-agent', {
+      projectDir: baseDir,
+      taskId,
+    });
+  }
+
+  resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/resolve-conflicts-with-agent', {
       projectDir: baseDir,
       taskId,
     });
@@ -957,5 +1086,80 @@ export class BrowserApi implements ApplicationAPI {
     return this.post('/agent-profiles/order', {
       agentProfiles,
     });
+  }
+
+  addNotificationListener(baseDir: string, callback: (data: NotificationData) => void): () => void {
+    return this.addListener('notification', (data: NotificationData) => {
+      if (data.baseDir === baseDir) {
+        callback(data);
+      }
+    });
+  }
+
+  getInstalledExtensions(projectDir?: string): Promise<InstalledExtension[]> {
+    return this.get('/extensions', { projectDir });
+  }
+
+  getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean): Promise<AvailableExtension[]> {
+    return this.get('/extensions/available', {
+      repositories: repositories.join(','),
+      forceRefresh,
+      fetchOnly,
+    });
+  }
+
+  installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean> {
+    return this.post('/extensions/install', {
+      extensionId,
+      repositoryUrl,
+      projectDir,
+    });
+  }
+
+  uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean> {
+    return this.post('/extensions/uninstall', {
+      extensionId,
+      projectDir,
+    });
+  }
+
+  getExtensionUIComponents(placement?: string, projectDir?: string, taskId?: string): Promise<ExtensionUIComponent[]> {
+    return this.get('/extensions/ui-components', {
+      projectDir,
+      placement,
+      taskId,
+    });
+  }
+
+  getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown> {
+    return this.get('/extensions/ui-data', {
+      extensionId,
+      componentId,
+      projectDir,
+      taskId,
+    });
+  }
+
+  executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string): Promise<unknown> {
+    return this.post('/extensions/ui-action', {
+      extensionId,
+      componentId,
+      action,
+      args,
+      projectDir,
+      taskId,
+    });
+  }
+
+  onExtensionUIRefresh(callback: (data: ExtensionUIRefreshData) => void): () => void {
+    return this.addListener('extension-ui-refresh', callback);
+  }
+
+  onModalOverlayUrl(callback: (data: ModalOverlayUrlData) => void): () => void {
+    return this.addListener('modal-overlay-url', callback);
+  }
+
+  isWebViewSupported(): boolean {
+    return false;
   }
 }

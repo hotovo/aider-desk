@@ -16,12 +16,12 @@ import {
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
 } from '@common/tools';
+import { ToolMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 
-import { ToolMessage } from '@/types/message';
 import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {
@@ -29,6 +29,8 @@ type Props = {
   onRemove?: () => void;
   compact?: boolean;
   onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
 };
 
 const formatName = (name: string): string => {
@@ -39,7 +41,7 @@ const formatName = (name: string): string => {
     .join(' ');
 };
 
-export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork }: Props) => {
+export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar = false }: Props) => {
   const { t } = useTranslation();
   const isExecuting = message.content === '';
   const parsedResult = !isExecuting ? parseToolContent(message.content) : null;
@@ -191,7 +193,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork }:
 
   const title = (
     <div className="w-full text-left">
-      <div className="flex items-center justify-between gap-2 select-none w-full px-1 py-0.5">
+      <div className="flex items-center justify-between gap-2 select-none w-full">
         <div className="flex items-center gap-2">
           <div className={`text-text-muted ${isExecuting ? 'animate-pulse' : ''}`}>
             <RiToolsFill className="w-4 h-4" />
@@ -213,6 +215,16 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork }:
   }
 
   return (
-    <ExpandableMessageBlock title={title} content={content} copyContent={copyContent} usageReport={message.usageReport} onRemove={onRemove} onFork={onFork} />
+    <ExpandableMessageBlock
+      message={message}
+      title={title}
+      content={content}
+      copyContent={copyContent}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      onFork={onFork}
+      onRemoveUpTo={onRemoveUpTo}
+      hideMessageBar={hideMessageBar}
+    />
   );
 };

@@ -116,7 +116,7 @@ export class SettingsApi extends BaseApi {
         }
 
         const { level } = parsed;
-        this.eventsHandler.setZoomLevel(level);
+        await this.eventsHandler.setZoomLevel(level);
         res.status(200).json({ message: 'Zoom level set' });
       }),
     );

@@ -25,6 +25,7 @@ vi.mock('@/worktrees');
 vi.mock('@/memory/memory-manager');
 vi.mock('@/hooks/hook-manager');
 vi.mock('@/prompts');
+vi.mock('@/extensions/extension-manager');
 vi.mock('@/constants');
 vi.mock('@/utils');
 vi.mock('fs/promises');
@@ -38,7 +39,7 @@ import * as fs from 'fs/promises';
 
 import { v4 as uuidv4 } from 'uuid';
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
-import { CreateTaskParams, SettingsData, ProjectSettings, Mode } from '@common/types';
+import { CreateTaskParams, SettingsData, ProjectSettings, Mode, ContextCompactionType } from '@common/types';
 
 import { Project } from '../project';
 
@@ -49,6 +50,7 @@ import { HookManager } from '@/hooks/hook-manager';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ModelManager } from '@/models';
 import { PromptsManager } from '@/prompts';
+import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { Task, INTERNAL_TASK_ID } from '@/task';
 import { TelemetryManager } from '@/telemetry';
@@ -69,6 +71,7 @@ describe('Project - createNewTask', () => {
   let mockMemoryManager: Partial<MemoryManager>;
   let mockHookManager: Partial<HookManager>;
   let mockPromptsManager: Partial<PromptsManager>;
+  let mockExtensionManager: Partial<ExtensionManager>;
   let baseDir: string;
 
   beforeEach(async () => {
@@ -129,6 +132,8 @@ describe('Project - createNewTask', () => {
               autoGenerateTaskName: true,
               showTaskStateActions: true,
               worktreeSymlinkFolders: [],
+              contextCompactingThreshold: 0,
+              contextCompactionType: ContextCompactionType.Compact,
             },
             aider: {
               options: '',
@@ -199,6 +204,11 @@ describe('Project - createNewTask', () => {
       dispose: vi.fn(),
     } as unknown as PromptsManager;
     (mockPromptsManager as any).start = vi.fn(() => Promise.resolve());
+    mockExtensionManager = {
+      reloadProjectExtensions: vi.fn(() => Promise.resolve()),
+      stopProjectWatcher: vi.fn(),
+      dispatchEvent: vi.fn(() => Promise.resolve({} as any)),
+    };
 
     // Mock file system operations
     vi.mocked(fs.readdir).mockResolvedValue([] as any);
@@ -238,6 +248,7 @@ describe('Project - createNewTask', () => {
       mockMemoryManager as MemoryManager,
       mockHookManager as HookManager,
       mockPromptsManager as PromptsManager,
+      mockExtensionManager as ExtensionManager,
     );
 
     // Wait for tasks to load
@@ -565,25 +576,12 @@ describe('Project - createNewTask', () => {
       expect(mockEventManager.sendTaskCreated).not.toHaveBeenCalled();
     });
 
-    it('should call sendTaskCreated with the exact task object returned by prepareTask', async () => {
-      // Spy on prepareTask to capture the created task
-      const prepareTaskSpy = vi.spyOn(project as any, 'prepareTask');
-
+    it('should call sendTaskCreated with the exact task object returned by createNewTask', async () => {
       // Act: Create a task
       const task = await project.createNewTask();
 
-      // Get the task returned by prepareTask
-      const preparedTaskWrapper = prepareTaskSpy.mock.results[0].value;
-      const preparedTaskData = preparedTaskWrapper.task;
-
       // Assert: sendTaskCreated should be called with the exact same task data
-      expect(mockEventManager.sendTaskCreated).toHaveBeenCalledWith(preparedTaskData, undefined);
-
-      // The returned task should match the task sent to event manager
-      expect(task).toEqual(preparedTaskData);
-
-      // Clean up
-      prepareTaskSpy.mockRestore();
+      expect(mockEventManager.sendTaskCreated).toHaveBeenCalledWith(task, undefined);
     });
   });
 });

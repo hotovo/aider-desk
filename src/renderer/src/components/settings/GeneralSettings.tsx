@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode } from '@common/types';
+import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode } from '@common/types';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -66,6 +66,11 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     { label: t('diffViewer.compact'), value: DiffViewMode.Compact },
   ];
 
+  const messageViewOptions: Option[] = [
+    { label: t('settings.messages.viewModeFull'), value: MessageViewMode.Full },
+    { label: t('settings.messages.viewModeCompact'), value: MessageViewMode.Compact },
+  ];
+
   const handleStartupModeChange = (mode: ProjectStartMode) => {
     setSettings({
       ...settings,
@@ -120,6 +125,13 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     setSettings({
       ...settings,
       diffViewMode: value as DiffViewMode,
+    });
+  };
+
+  const handleMessageViewModeChange = (value: string) => {
+    setSettings({
+      ...settings,
+      messageViewMode: value as MessageViewMode,
     });
   };
 
@@ -251,7 +263,14 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
               </div>
             </div>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
+            <Select
+              label={<span className="text-xs">{t('settings.messages.viewMode')}</span>}
+              options={messageViewOptions}
+              value={settings.messageViewMode ?? MessageViewMode.Full}
+              onChange={handleMessageViewModeChange}
+              size="sm"
+            />
             <Select
               label={<span className="text-xs">{t('settings.messages.diffViewMode')}</span>}
               options={diffViewOptions}

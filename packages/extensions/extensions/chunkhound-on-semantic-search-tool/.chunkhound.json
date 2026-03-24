@@ -1,0 +1,11 @@
+{
+  "embedding": {
+    "provider": "openai",
+    "model": "text-embedding-3-small",
+    "api_key": "your_api_key"
+  },
+  "indexing": {
+    "include": ["**/*.py", "**/*.js", "**/*.ts", "**/*.tsx"],
+    "exclude": ["**/node_modules/**", "**/__pycache__/**", "**/.aider-desk/**"]
+  }
+}

@@ -35,14 +35,19 @@ import {
 
 export type LlmProviderName =
   | 'anthropic'
+  | 'anthropic-compatible'
+  | 'auggie'
   | 'azure'
   | 'bedrock'
   | 'cerebras'
   | 'claude-agent-sdk'
   | 'deepseek'
   | 'gemini'
+  | 'gemini-cli'
   | 'gpustack'
   | 'groq'
+  | 'alibaba-plan'
+  | 'kimi-plan'
   | 'litellm'
   | 'lmstudio'
   | 'minimax'
@@ -75,15 +80,20 @@ export interface OllamaProvider extends LlmProviderBase {
 }
 
 export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
+  'alibaba-plan',
   'anthropic',
+  'anthropic-compatible',
+  'auggie',
   'azure',
   'bedrock',
   'cerebras',
   'claude-agent-sdk',
   'deepseek',
   'gemini',
+  'gemini-cli',
   'gpustack',
   'groq',
+  'kimi-plan',
   'litellm',
   'lmstudio',
   'minimax',
@@ -131,6 +141,34 @@ export interface AnthropicProvider extends LlmProviderBase {
   apiKey: string;
 }
 export const isAnthropicProvider = (provider: LlmProviderBase): provider is AnthropicProvider => provider.name === 'anthropic';
+
+export interface AnthropicCompatibleProvider extends LlmProviderBase {
+  name: 'anthropic-compatible';
+  apiKey: string;
+  baseUrl?: string;
+}
+export const isAnthropicCompatibleProvider = (provider: LlmProviderBase): provider is AnthropicCompatibleProvider => provider.name === 'anthropic-compatible';
+
+export interface AuggieProvider extends LlmProviderBase {
+  name: 'auggie';
+  apiKey: string;
+  apiUrl?: string;
+}
+export const isAuggieProvider = (provider: LlmProviderBase): provider is AuggieProvider => provider.name === 'auggie';
+
+export interface KimiPlanProvider extends LlmProviderBase {
+  name: 'kimi-plan';
+  apiKey: string;
+}
+export const isKimiPlanProvider = (provider: LlmProviderBase): provider is KimiPlanProvider => provider.name === 'kimi-plan';
+
+export interface AlibabaPlanProvider extends LlmProviderBase {
+  name: 'alibaba-plan';
+  apiKey: string;
+  thinkingEnabled?: boolean;
+  thinkingBudget?: number;
+}
+export const isAlibabaPlanProvider = (provider: LlmProviderBase): provider is AlibabaPlanProvider => provider.name === 'alibaba-plan';
 
 export enum GeminiVoiceModel {
   GeminiLive25FlashNativeAudio = 'gemini-2.5-flash-native-audio-preview-12-2025',
@@ -194,6 +232,12 @@ export interface ClaudeAgentSdkProvider extends LlmProviderBase {
   mcpServers?: Record<string, unknown>;
 }
 export const isClaudeAgentSdkProvider = (provider: LlmProviderBase): provider is ClaudeAgentSdkProvider => provider.name === 'claude-agent-sdk';
+
+export interface GeminiCliProvider extends LlmProviderBase {
+  name: 'gemini-cli';
+  projectId?: string;
+}
+export const isGeminiCliProvider = (provider: LlmProviderBase): provider is GeminiCliProvider => provider.name === 'gemini-cli';
 
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
@@ -279,8 +323,11 @@ export const isSyntheticProvider = (provider: LlmProviderBase): provider is Synt
 export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
+  | AnthropicCompatibleProvider
+  | AuggieProvider
   | AzureProvider
   | GeminiProvider
+  | GeminiCliProvider
   | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
@@ -289,6 +336,8 @@ export type LlmProvider =
   | GroqProvider
   | GpustackProvider
   | CerebrasProvider
+  | AlibabaPlanProvider
+  | KimiPlanProvider
   | OpenAiCompatibleProvider
   | LitellmProvider
   | OllamaProvider
@@ -302,18 +351,20 @@ export type LlmProvider =
 export const DEFAULT_MODEL_TEMPERATURE = 0.0;
 
 export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> = {
-  anthropic: 'claude-sonnet-4-5-20250929',
+  'alibaba-plan': 'qwen3-coder-plus',
+  anthropic: 'claude-sonnet-4-6',
   cerebras: 'qwen-3-235b-a22b-instruct-2507',
   'claude-agent-sdk': 'sonnet',
   deepseek: 'deepseek-chat',
-  gemini: 'gemini-3-pro',
+  gemini: 'gemini-pro-latest',
+  'gemini-cli': 'gemini-2.5-flash',
   groq: 'moonshotai/kimi-k2-instruct-0905',
-  openai: 'gpt-5.2',
-  openrouter: 'anthropic/claude-sonnet-4.5',
-  opencode: 'claude-sonnet-4-5',
-  requesty: 'anthropic/claude-sonnet-4-5',
-  synthetic: 'anthropic/claude-sonnet-4.5',
-  'zai-plan': 'glm-4.7',
+  openai: 'gpt-5.4',
+  openrouter: 'anthropic/claude-sonnet-4.6',
+  opencode: 'claude-sonnet-4-6',
+  requesty: 'anthropic/claude-sonnet-4-6',
+  synthetic: 'hf:zai-org/GLM-4.7',
+  'zai-plan': 'glm-5',
   minimax: 'MiniMax-M2',
 };
 
@@ -366,7 +417,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
       deniedPattern: 'rm .*;del .*;chown .*;chgrp .*;chmod .*',
     },
   },
-  includeContextFiles: true,
+  includeContextFiles: false,
   includeRepoMap: false,
   usePowerTools: true,
   useAiderTools: false,
@@ -375,6 +426,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   useTaskTools: false,
   useMemoryTools: true,
   useSkillsTools: true,
+  useExtensionTools: true,
   customInstructions: '',
   enabledServers: [],
   subagent: {
@@ -579,6 +631,20 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         apiKey: '',
       } satisfies AnthropicProvider;
       break;
+    case 'anthropic-compatible':
+      provider = {
+        name: 'anthropic-compatible',
+        apiKey: '',
+        baseUrl: '',
+      } satisfies AnthropicCompatibleProvider;
+      break;
+    case 'auggie':
+      provider = {
+        name: 'auggie',
+        apiKey: '',
+        apiUrl: '',
+      } satisfies AuggieProvider;
+      break;
     case 'gemini':
       provider = {
         name: 'gemini',
@@ -610,6 +676,20 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         name: 'groq',
         apiKey: '',
       } satisfies GroqProvider;
+      break;
+    case 'kimi-plan':
+      provider = {
+        name: 'kimi-plan',
+        apiKey: '',
+      } satisfies KimiPlanProvider;
+      break;
+    case 'alibaba-plan':
+      provider = {
+        name: 'alibaba-plan',
+        apiKey: '',
+        thinkingEnabled: true,
+        thinkingBudget: 8192,
+      } satisfies AlibabaPlanProvider;
       break;
     case 'gpustack':
       provider = {
@@ -710,6 +790,12 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         name: 'minimax',
         apiKey: '',
       } satisfies MinimaxProvider;
+      break;
+    case 'gemini-cli':
+      provider = {
+        name: 'gemini-cli',
+        projectId: '',
+      } satisfies GeminiCliProvider;
       break;
     default:
       // For any other provider, create a base structure. This might need more specific handling if new providers are added.

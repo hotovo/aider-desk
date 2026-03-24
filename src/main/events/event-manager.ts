@@ -1,11 +1,11 @@
 import { Socket } from 'socket.io';
 import {
   ContextFile,
-  CustomCommand,
   InputHistoryData,
   ProviderProfile,
   LogData,
   ModelsData,
+  NotificationData,
   QuestionData,
   QuestionAnsweredData,
   ResponseChunkData,
@@ -29,6 +29,13 @@ import {
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
   TaskCreatedData,
+  UpdatedFile,
+  UpdatedFilesUpdatedData,
+  QueuedPromptData,
+  QueuedPromptsUpdatedData,
+  CommandsData,
+  ExtensionUIRefreshData,
+  ModalOverlayUrlData,
 } from '@common/types';
 
 import type { BrowserWindow } from 'electron';
@@ -88,6 +95,16 @@ export class EventManager {
     this.broadcastToEventConnectors('context-files-updated', data);
   }
 
+  sendUpdatedFilesUpdated(baseDir: string, taskId: string, files: UpdatedFile[]): void {
+    const data: UpdatedFilesUpdatedData = {
+      baseDir,
+      taskId,
+      files,
+    };
+    this.sendToMainWindow('updated-files-updated', data);
+    this.broadcastToEventConnectors('updated-files-updated', data);
+  }
+
   // Response events
   sendResponseChunk(data: ResponseChunkData): void {
     this.sendToMainWindow('response-chunk', data);
@@ -127,6 +144,17 @@ export class EventManager {
     };
     this.sendToMainWindow('update-autocompletion', data);
     this.broadcastToEventConnectors('update-autocompletion', data);
+  }
+
+  // Queue events
+  sendQueuedPromptsUpdated(baseDir: string, taskId: string, queuedPrompts: QueuedPromptData[]): void {
+    const data: QueuedPromptsUpdatedData = {
+      baseDir,
+      taskId,
+      queuedPrompts,
+    };
+    this.sendToMainWindow('queued-prompts-updated', data);
+    this.broadcastToEventConnectors('queued-prompts-updated', data);
   }
 
   // Aider models events
@@ -183,15 +211,10 @@ export class EventManager {
     this.broadcastToEventConnectors('input-history-updated', data);
   }
 
-  // Custom commands events
-  sendCustomCommandsUpdated(baseDir: string, taskId: string, commands: CustomCommand[]): void {
-    const data = {
-      baseDir,
-      taskId,
-      commands,
-    };
-    this.sendToMainWindow('custom-commands-updated', data);
-    this.broadcastToEventConnectors('custom-commands-updated', data);
+  // Commands events
+  sendCommandsUpdated(data: CommandsData): void {
+    this.sendToMainWindow('commands-updated', data);
+    this.broadcastToEventConnectors('commands-updated', data);
   }
 
   sendCustomCommandError(baseDir: string, taskId: string, error: string): void {
@@ -317,9 +340,22 @@ export class EventManager {
     this.broadcastToEventConnectors('message-removed', data);
   }
 
+  sendNotification(baseDir: string, title: string, body: string): void {
+    const data: NotificationData = {
+      title,
+      body,
+      baseDir,
+    };
+    this.sendToMainWindow('notification', data);
+    this.broadcastToEventConnectors('notification', data);
+  }
+
   subscribe(socket: Socket, config: EventsConnectorConfig): void {
     this.eventsConnectors = this.eventsConnectors.filter((connector) => connector.socket.id !== socket.id);
-    logger.info('Subscribing to events', { eventTypes: config.eventTypes, baseDirs: config.baseDirs });
+    logger.info('Subscribing to events', {
+      eventTypes: config.eventTypes,
+      baseDirs: config.baseDirs,
+    });
     this.eventsConnectors.push({
       socket,
       eventTypes: config.eventTypes,
@@ -330,7 +366,10 @@ export class EventManager {
   unsubscribe(socket: Socket): void {
     const before = this.eventsConnectors.length;
     this.eventsConnectors = this.eventsConnectors.filter((connector) => connector.socket.id !== socket.id);
-    logger.info('Unsubscribed from events', { before, after: this.eventsConnectors.length });
+    logger.info('Unsubscribed from events', {
+      before,
+      after: this.eventsConnectors.length,
+    });
   }
 
   private sendToMainWindow(eventType: string, data: unknown): void {
@@ -342,7 +381,10 @@ export class EventManager {
   }
 
   private broadcastToEventConnectors(eventType: string, data: unknown): void {
-    logger.debug('Broadcasting event to connectors:', { connectors: this.eventsConnectors.length, eventType });
+    logger.debug('Broadcasting event to connectors:', {
+      connectors: this.eventsConnectors.length,
+      eventType,
+    });
 
     this.eventsConnectors.forEach((connector) => {
       // Filter by event types if specified
@@ -359,12 +401,29 @@ export class EventManager {
       }
 
       try {
-        logger.debug('Broadcasting event to connector:', { eventType, baseDir });
+        logger.debug('Broadcasting event to connector:', {
+          eventType,
+          baseDir,
+        });
         connector.socket.emit('event', { type: eventType, data });
       } catch {
         // Remove disconnected sockets
         this.unsubscribe(connector.socket);
       }
     });
+  }
+
+  // Extension UI events
+  sendExtensionUIRefresh(options: { projectDir?: string; extensionId?: string; componentId?: string; taskId?: string; reloadComponents?: boolean }): void {
+    const data: ExtensionUIRefreshData = options;
+    this.sendToMainWindow('extension-ui-refresh', data);
+    this.broadcastToEventConnectors('extension-ui-refresh', data);
+  }
+
+  // Modal overlay URL events
+  sendModalOverlayUrl(url: string): void {
+    const data: ModalOverlayUrlData = { url };
+    this.sendToMainWindow('modal-overlay-url', data);
+    this.broadcastToEventConnectors('modal-overlay-url', data);
   }
 }

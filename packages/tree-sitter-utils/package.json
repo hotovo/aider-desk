@@ -1,0 +1,62 @@
+{
+  "name": "@aiderdesk/tree-sitter-utils",
+  "version": "0.1.0",
+  "description": "Tree-sitter utilities for code analysis, symbol extraction, and repository mapping",
+  "author": "Hotovo",
+  "homepage": "https://aiderdesk.hotovo.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hotovo/aider-desk.git",
+    "directory": "packages/tree-sitter-utils"
+  },
+  "bugs": {
+    "url": "https://github.com/hotovo/aider-desk/issues"
+  },
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "resources",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc --emitDeclarationOnly --declaration && esbuild src/index.ts --bundle --platform=node --packages=external --format=cjs --outfile=dist/index.js --sourcemap",
+    "build:check": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "tree-sitter",
+    "code-analysis",
+    "symbol-extraction",
+    "repository-map",
+    "pagerank",
+    "ast",
+    "parsing"
+  ],
+  "dependencies": {
+    "glob": "^13.0.6",
+    "graphology": "^0.26.0",
+    "graphology-metrics": "^2.4.0",
+    "simple-git": "^3.32.3",
+    "web-tree-sitter": "^0.26.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
