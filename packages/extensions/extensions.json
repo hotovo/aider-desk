@@ -222,15 +222,6 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["modes", "ui"]
-    },
-    {
-      "id": "fast-grep",
-      "name": "Fast Grep",
-      "description": "Fast regex search using sparse n-gram indexing. Replaces internal power---grep tool with better performance in large codebases.",
-      "folder": "fast-grep",
-      "type": "folder",
-      "hasDependencies": true,
-      "capabilities": ["tools"]
     }
   ]
 }

@@ -27,7 +27,6 @@ Ready-to-use extensions that add functionality to AiderDesk.
 | [context-autocompletion-words](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/context-autocompletion-words/) | Adds custom words to context file autocompletion | `onLoad`, `onFilesAdded`, `onFilesDropped`, `TaskContext.getContextFiles`, `TaskContext.updateAutocompletionWords` |
 | [plannotator](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/plannotator/) | Comprehensive planning assistant with structured plan files | `onLoad`, `onUnload`, `getModes`, `getTools`, `getCommands`, `onToolCalled`, `onToolApproval`, `onAgentStarted`, `onAgentFinished`, `onTaskInitialized`, `onTaskClosed`, `onImportantReminders` |
 | [multi-model-run](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/multi-model-run/) | Run the same prompt across multiple models simultaneously | `onLoad`, `getUIComponents`, `getUIExtensionData`, `executeUIExtensionAction`, `onPromptStarted`, `ProjectContext.duplicateTask`, `ProjectContext.getTask`, `TaskContext.runPrompt` |
-| [fast-grep](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/fast-grep/) | Fast regex search using sparse n-gram indexing. Replaces power---grep tool | `onUnload`, `onProjectStarted`, `getTools` |
 
 ---
 
