@@ -16,13 +16,26 @@ import { Store } from '@/store';
 import logger from '@/logger';
 import { initManagers } from '@/managers';
 import { getDefaultProjectSettings } from '@/utils';
+import { WindowManager } from '@/window-manager';
 
-const setupCustomMenu = (): void => {
+// Global instances shared across all windows
+let windowManager: WindowManager;
+let store: Store;
+
+const setupCustomMenu = (createWindowFn: () => void): void => {
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [
     // File menu
     {
       label: 'File',
-      submenu: [{ role: 'quit', label: 'Quit', accelerator: 'CmdOrCtrl+Q' }],
+      submenu: [
+        {
+          label: 'New Window',
+          accelerator: 'CmdOrCtrl+N',
+          click: createWindowFn,
+        },
+        { type: 'separator' },
+        { role: 'quit', label: 'Quit', accelerator: 'CmdOrCtrl+Q' },
+      ],
     },
     // Edit menu
     {
@@ -134,13 +147,25 @@ const initStore = async (): Promise<Store> => {
   return store;
 };
 
-const initWindow = async (store: Store): Promise<BrowserWindow> => {
-  const lastWindowState = store.getWindowState();
-  const mainWindow = new BrowserWindow({
+const initWindow = async (windowMgr: WindowManager, storeInstance: Store, projectToActivate?: string): Promise<BrowserWindow> => {
+  const lastWindowState = storeInstance.getWindowState();
+
+  // Calculate position - offset from focused window if exists
+  const focusedWindow = BrowserWindow.getFocusedWindow();
+  let x = lastWindowState.x;
+  let y = lastWindowState.y;
+
+  if (focusedWindow && !focusedWindow.isDestroyed()) {
+    const [focusedX, focusedY] = focusedWindow.getPosition();
+    x = focusedX + 30;
+    y = focusedY + 30;
+  }
+
+  const newWindow = new BrowserWindow({
     width: lastWindowState.width,
     height: lastWindowState.height,
-    x: lastWindowState.x,
-    y: lastWindowState.y,
+    x,
+    y,
     show: false,
     autoHideMenuBar: true,
     icon,
@@ -152,119 +177,108 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
     },
   });
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show();
-    if (lastWindowState.isMaximized) {
-      mainWindow.maximize();
+  // Register window with window manager
+  windowMgr.addWindow(newWindow);
+
+  newWindow.on('ready-to-show', () => {
+    newWindow.show();
+    if (lastWindowState.isMaximized && windowMgr.isMainWindow(newWindow)) {
+      newWindow.maximize();
     }
   });
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
+  newWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
     return { action: 'deny' };
   });
 
-  mainWindow.webContents.on('context-menu', (_event, params) => {
+  newWindow.webContents.on('context-menu', (_event, params) => {
     const contextMenuParams: ContextMenuParams = {
       x: params.x,
       y: params.y,
       selectionText: params.selectionText,
       isEditable: params.isEditable,
     };
-    mainWindow.webContents.send('context-menu', contextMenuParams);
+    newWindow.webContents.send('context-menu', contextMenuParams);
   });
 
   const saveWindowState = (): void => {
-    const [width, height] = mainWindow.getSize();
-    const [x, y] = mainWindow.getPosition();
-    store.setWindowState({
+    // Only save state if this is the main window
+    if (!windowMgr.isMainWindow(newWindow)) {
+      return;
+    }
+
+    const [width, height] = newWindow.getSize();
+    const [x, y] = newWindow.getPosition();
+    storeInstance.setWindowState({
       width,
       height,
       x,
       y,
-      isMaximized: mainWindow.isMaximized(),
+      isMaximized: newWindow.isMaximized(),
     });
   };
 
-  mainWindow.on('resize', saveWindowState);
-  mainWindow.on('move', saveWindowState);
-  mainWindow.on('maximize', saveWindowState);
-  mainWindow.on('unmaximize', saveWindowState);
+  newWindow.on('resize', saveWindowState);
+  newWindow.on('move', saveWindowState);
+  newWindow.on('maximize', saveWindowState);
+  newWindow.on('unmaximize', saveWindowState);
 
-  const { eventsHandler, serverController, cleanup } = await initManagers(store, mainWindow);
-
-  let cleanedUp = false;
-  const beforeQuit = async (event?: Electron.Event) => {
-    if (cleanedUp) {
-      return;
-    }
-
-    event?.preventDefault();
-
-    try {
-      await cleanup();
-    } catch (error) {
-      logger.error('Error during cleanup:', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-
-    cleanedUp = true;
-    app.quit();
-  };
-
-  app.on('before-quit', beforeQuit);
-
-  // Handle CTRL+C (SIGINT)
-  process.on('SIGINT', async () => {
-    await beforeQuit();
-    process.exit(0);
+  // Handle window close
+  newWindow.on('closed', () => {
+    windowMgr.removeWindow(newWindow);
   });
-
-  if (process.platform === 'darwin') {
-    // Allow renderer getUserMedia() microphone access.
-    // Without this, Electron may never surface the macOS TCC permission prompt and the mic stays unavailable.
-    session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
-      if (permission === 'media') {
-        callback(true);
-        return;
-      }
-
-      callback(false);
-    });
-  }
-
-  // Initialize IPC handlers
-  setupIpcHandlers(eventsHandler, serverController);
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    await mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+    let url = process.env['ELECTRON_RENDERER_URL'];
+    // For HashRouter, query params must come after the hash: #/home?project=...
+    if (projectToActivate) {
+      url += `#/home?project=${encodeURIComponent(projectToActivate)}`;
+    }
+    await newWindow.loadURL(url);
   } else {
-    await mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    // For production with HashRouter, append hash with query params
+    let url = `file://${join(__dirname, '../renderer/index.html')}`;
+    if (projectToActivate) {
+      url += `#/home?project=${encodeURIComponent(projectToActivate)}`;
+    }
+    await newWindow.loadURL(url);
   }
 
   // Apply saved zoom level
-  const settings = store.getSettings();
-  mainWindow.webContents.setZoomFactor(settings.zoomLevel ?? 1.0);
+  const settings = storeInstance.getSettings();
+  newWindow.webContents.setZoomFactor(settings.zoomLevel ?? 1.0);
 
   if (settings.fontSize) {
-    mainWindow.webContents.on('did-finish-load', () => {
-      mainWindow.webContents.insertCSS(`:root { --font-size: ${settings.fontSize}px !important; }`);
+    newWindow.webContents.on('did-finish-load', () => {
+      newWindow.webContents.insertCSS(`:root { --font-size: ${settings.fontSize}px !important; }`);
     });
   }
 
-  return mainWindow;
+  return newWindow;
 };
+
+// Function to create a new window
+const createNewWindow = async (projectToActivate?: string) => {
+  if (!store || !windowManager) {
+    logger.error('Cannot create window: store or windowManager not initialized');
+    return;
+  }
+  await initWindow(windowManager, store, projectToActivate);
+};
+
+// Export getter for IPC handlers
+export const getCreateNewWindow = () => createNewWindow;
 
 app.whenReady().then(async () => {
   try {
     electronApp.setAppUserModelId('com.hotovo.aider-desk');
 
     if (!HEADLESS_MODE) {
-      // Setup custom menu only in GUI mode
-      setupCustomMenu();
+      // Setup custom menu only in GUI mode - pass createNewWindow function
+      setupCustomMenu(() => void createNewWindow());
 
       app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window);
@@ -322,18 +336,62 @@ app.whenReady().then(async () => {
       return;
     }
 
-    const store = await initStore();
+    // Initialize store globally
+    store = await initStore();
 
-    if (HEADLESS_MODE) {
-      // Initialize managers without window in headless mode
-      await initManagers(store, null);
-    } else {
-      await initWindow(store);
+    // Initialize window manager
+    windowManager = new WindowManager();
+
+    // Initialize managers (shared across all windows)
+    const managers = await initManagers(store, windowManager);
+
+    // Setup global cleanup
+    const globalCleanup = async () => {
+      try {
+        await managers.cleanup();
+      } catch (error) {
+        logger.error('Error during cleanup:', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    };
+
+    app.on('before-quit', async (event) => {
+      event.preventDefault();
+      await globalCleanup();
+      app.exit(0);
+    });
+
+    // Handle CTRL+C (SIGINT)
+    process.on('SIGINT', async () => {
+      await globalCleanup();
+      process.exit(0);
+    });
+
+    if (process.platform === 'darwin') {
+      // Allow renderer getUserMedia() microphone access.
+      // Without this, Electron may never surface the macOS TCC permission prompt and the mic stays unavailable.
+      session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+        if (permission === 'media') {
+          callback(true);
+          return;
+        }
+
+        callback(false);
+      });
+    }
+
+    // Initialize IPC handlers
+    setupIpcHandlers(managers.eventsHandler, managers.serverController);
+
+    if (!HEADLESS_MODE) {
+      // Create the first window
+      await createNewWindow();
       progressBar?.close();
 
       app.on('activate', function () {
-        if (BrowserWindow.getAllWindows().length === 0 && store) {
-          void initWindow(store);
+        if (BrowserWindow.getAllWindows().length === 0) {
+          void createNewWindow();
         }
       });
     }

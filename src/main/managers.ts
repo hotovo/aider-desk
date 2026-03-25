@@ -1,6 +1,6 @@
 import { createServer } from 'http';
 
-import type { BrowserWindow } from 'electron';
+import type { WindowManager } from '@/window-manager';
 
 import { AgentProfileManager, McpManager } from '@/agent';
 import { CloudflareTunnelManager, ServerController } from '@/server';
@@ -31,7 +31,7 @@ export interface ManagersResult {
   extensionManager: ExtensionManager;
 }
 
-export const initManagers = async (store: Store, mainWindow: BrowserWindow | null = null): Promise<ManagersResult> => {
+export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> => {
   // Initialize telemetry manager (non-blocking - analytics not critical for startup)
   const telemetryManager = new TelemetryManager(store);
   telemetryManager.init().catch((error) => {
@@ -44,8 +44,8 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
     logger.error('[MCP] MCP manager initialization failed, continuing without MCP:', error);
   });
 
-  // Initialize event manager (no main window in headless)
-  const eventManager = new EventManager(mainWindow);
+  // Initialize event manager with window manager
+  const eventManager = new EventManager(windowManager);
 
   // Initialize model manager
   const modelManager = new ModelManager(store, eventManager);
@@ -114,9 +114,8 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
   // Initialize Cloudflare tunnel manager
   const cloudflareTunnelManager = new CloudflareTunnelManager();
 
-  // Initialize events handler (no main window)
+  // Initialize events handler with window manager
   const eventsHandler = new EventsHandler(
-    mainWindow,
     projectManager,
     store,
     mcpManager,

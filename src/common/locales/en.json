@@ -1516,7 +1516,13 @@
     "paste": "Paste",
     "close": "Close",
     "closeOtherTabs": "Close other tabs",
-    "closeAllTabs": "Close all tabs"
+    "closeAllTabs": "Close all tabs",
+    "openInNewWindow": "Open in new window"
+  },
+  "menu": {
+    "file": {
+      "newWindow": "New Window"
+    }
   },
   "taskSidebar": {
     "title": "Tasks",

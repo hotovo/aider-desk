@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - correctly triggering auto-compacting as expected when threshold is reached
+- added support for multiple windows
 
 ## [0.58.0]
 

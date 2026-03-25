@@ -37,7 +37,7 @@ import { normalizeBaseDir } from '@common/utils';
 import { isBinary } from 'istextorbinary';
 
 import type { ModeDefinition, ExtensionUIComponent } from '@common/types';
-import type { BrowserWindow } from 'electron';
+import type { WindowManager } from '@/window-manager';
 
 import { McpManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
@@ -58,20 +58,20 @@ import { isElectron } from '@/app';
 
 export class EventsHandler {
   constructor(
-    private mainWindow: BrowserWindow | null,
-    private projectManager: ProjectManager,
-    private store: Store,
-    private mcpManager: McpManager,
-    private versionsManager: VersionsManager,
-    private modelManager: ModelManager,
-    private telemetryManager: TelemetryManager,
-    private dataManager: DataManager,
-    private terminalManager: TerminalManager,
-    private cloudflareTunnelManager: CloudflareTunnelManager,
-    private eventManager: EventManager,
+    private readonly projectManager: ProjectManager,
+    private readonly store: Store,
+    private readonly mcpManager: McpManager,
+    private readonly versionsManager: VersionsManager,
+    private readonly modelManager: ModelManager,
+    private readonly telemetryManager: TelemetryManager,
+    private readonly dataManager: DataManager,
+    private readonly terminalManager: TerminalManager,
+    private readonly cloudflareTunnelManager: CloudflareTunnelManager,
+    private readonly eventManager: EventManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly windowManager?: WindowManager,
   ) {}
 
   loadSettings(): SettingsData {
@@ -749,9 +749,10 @@ export class EventsHandler {
         const defaultPath = `${baseDir}/session-${new Date().toISOString().replace(/:/g, '-').substring(0, 19)}.md`;
         let filePath = defaultPath;
 
-        if (this.mainWindow) {
+        const targetWindow = this.windowManager?.getMainWindow();
+        if (targetWindow) {
           const { dialog } = await import('electron');
-          const dialogResult = await dialog.showSaveDialog(this.mainWindow, {
+          const dialogResult = await dialog.showSaveDialog(targetWindow, {
             title: 'Export Session to Markdown',
             defaultPath: defaultPath,
             filters: [{ name: 'Markdown Files', extensions: ['md'] }],
@@ -786,7 +787,13 @@ export class EventsHandler {
 
   async setZoomLevel(zoomLevel: number) {
     logger.info(`Setting zoom level to ${zoomLevel}`);
-    this.mainWindow?.webContents.setZoomFactor(zoomLevel);
+    // Apply zoom level to all open windows
+    const windows = this.windowManager?.getAllWindows() || [];
+    windows.forEach((window) => {
+      if (!window.isDestroyed()) {
+        window.webContents.setZoomFactor(zoomLevel);
+      }
+    });
     const currentSettings = this.store.getSettings();
     await this.saveSettings({ ...currentSettings, zoomLevel });
   }
@@ -864,14 +871,15 @@ export class EventsHandler {
   }
 
   async showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult> {
-    if (!this.mainWindow) {
+    const targetWindow = this.windowManager?.getMainWindow();
+    if (!targetWindow) {
       return {
         canceled: true,
         filePaths: [],
       };
     }
     const { dialog } = await import('electron');
-    return await dialog.showOpenDialog(this.mainWindow, options);
+    return await dialog.showOpenDialog(targetWindow, options);
   }
 
   async openLogsDirectory(): Promise<boolean> {
@@ -1094,7 +1102,7 @@ export class EventsHandler {
   }
 
   async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown> {
-    logger.info('Getting UI extension data:', {
+    logger.debug('Getting UI extension data:', {
       extensionId,
       componentId,
       projectDir,
@@ -1113,7 +1121,7 @@ export class EventsHandler {
     projectDir?: string,
     taskId?: string,
   ): Promise<unknown> {
-    logger.info('Executing UI extension action:', {
+    logger.debug('Executing UI extension action:', {
       extensionId,
       componentId,
       action,

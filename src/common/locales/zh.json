@@ -1526,7 +1526,13 @@
     "paste": "粘贴",
     "close": "关闭",
     "closeOtherTabs": "关闭其他标签页",
-    "closeAllTabs": "关闭所有标签页"
+    "closeAllTabs": "关闭所有标签页",
+    "openInNewWindow": "在新窗口中打开"
+  },
+  "menu": {
+    "file": {
+      "newWindow": "新建窗口"
+    }
   },
   "taskSidebar": {
     "title": "任务",

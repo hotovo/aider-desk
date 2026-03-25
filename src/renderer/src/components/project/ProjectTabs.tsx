@@ -16,6 +16,7 @@ import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   openProjects: ProjectData[];
@@ -261,12 +262,19 @@ const SortableTabItem = ({ project, isActive, onCloseProject, onCloseOtherProjec
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.baseDir });
   const { showMenu } = useContextMenu();
   const { t } = useTranslation();
+  const api = useApi();
   const isProcessing = useProjectProcessingState(project.baseDir);
 
   const handleRightClick = (event: MouseEvent) => {
     event.preventDefault();
 
     const options: MenuOption[] = [
+      {
+        label: t('contextMenu.openInNewWindow'),
+        action: () => {
+          void api.openProjectInNewWindow(project.baseDir);
+        },
+      },
       {
         label: t('contextMenu.close'),
         action: () => onCloseProject(project.baseDir),

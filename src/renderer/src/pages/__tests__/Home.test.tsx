@@ -225,7 +225,6 @@ describe('Home', () => {
         { baseDir: '/project/other', active: true },
       ] as ProjectData[];
       mockApi.getOpenProjects.mockResolvedValue(mockProjects);
-      mockApi.setActiveProject.mockResolvedValue(mockProjects.map((p) => ({ ...p, active: p.baseDir === '/project/existing' })));
 
       render(
         <MemoryRouter initialEntries={['/home?project=%2Fproject%2Fexisting']}>
@@ -235,22 +234,31 @@ describe('Home', () => {
         </MemoryRouter>,
       );
 
+      // Wait for projects to load first
       await waitFor(() => {
-        expect(mockApi.setActiveProject).toHaveBeenCalledWith('/project/existing');
+        expect(screen.queryByTestId('no-projects')).not.toBeInTheDocument();
       });
+
+      // Project views should be rendered for all open projects
+      // (the URL parameter now drives the active state per-window)
+      await waitFor(() => {
+        expect(screen.getAllByTestId('project-view').length).toBeGreaterThan(0);
+      });
+
+      // setActiveProject should NOT be called for existing projects from URL
+      // (the URL parameter now drives the active state per-window)
+      expect(mockApi.setActiveProject).not.toHaveBeenCalled();
     });
 
     it('adds and activates new project from URL', async () => {
       const existingProjects = [{ baseDir: '/project/other', active: true }] as ProjectData[];
-      const updatedProjects = [{ baseDir: '/project/new', active: false }, ...existingProjects] as ProjectData[];
-      const finalProjects = [
-        { baseDir: '/project/new', active: true },
-        { baseDir: '/project/other', active: false },
+      const updatedProjects = [
+        { baseDir: '/project/new', active: false },
+        { baseDir: '/project/other', active: true },
       ] as ProjectData[];
 
       mockApi.getOpenProjects.mockResolvedValueOnce(existingProjects).mockResolvedValue(updatedProjects);
       mockApi.addOpenProject.mockResolvedValue(updatedProjects);
-      mockApi.setActiveProject.mockResolvedValue(finalProjects);
 
       render(
         <MemoryRouter initialEntries={['/home?project=%2Fproject%2Fnew']}>
@@ -260,9 +268,22 @@ describe('Home', () => {
         </MemoryRouter>,
       );
 
+      // Wait for initial projects to load
+      await waitFor(() => {
+        expect(screen.queryByTestId('no-projects')).not.toBeInTheDocument();
+      });
+
+      // New project should be added
       await waitFor(() => {
         expect(mockApi.addOpenProject).toHaveBeenCalledWith('/project/new');
-        expect(mockApi.setActiveProject).toHaveBeenCalledWith('/project/new');
+      });
+
+      // setActiveProject should NOT be called - URL drives the active state
+      expect(mockApi.setActiveProject).not.toHaveBeenCalled();
+
+      // Project views should be rendered after projects are updated
+      await waitFor(() => {
+        expect(screen.getAllByTestId('project-view').length).toBeGreaterThan(0);
       });
     });
 

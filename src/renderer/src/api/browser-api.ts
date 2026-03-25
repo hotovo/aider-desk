@@ -373,6 +373,19 @@ export class BrowserApi implements ApplicationAPI {
   removeOpenProject(baseDir: string): Promise<ProjectData[]> {
     return this.post('/project/remove-open', { projectDir: baseDir });
   }
+  openNewWindow(): Promise<void> {
+    // In browser mode, open a new tab with the home page
+    const url = `${window.location.origin}${window.location.pathname}#/home`;
+    window.open(url, '_blank');
+    return Promise.resolve();
+  }
+  openProjectInNewWindow(baseDir: string): Promise<void> {
+    // In browser mode, open a new tab with the specific project
+    const encodedBaseDir = encodeURIComponent(baseDir);
+    const url = `${window.location.origin}${window.location.pathname}#/home?project=${encodedBaseDir}`;
+    window.open(url, '_blank');
+    return Promise.resolve();
+  }
   updateOpenProjectsOrder(baseDirs: string[]): Promise<ProjectData[]> {
     return this.post('/project/update-order', { projectDirs: baseDirs });
   }

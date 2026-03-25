@@ -1,6 +1,6 @@
 import { ProjectData } from '@common/types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useState, useTransition, useRef } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useState, useTransition } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
 import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
@@ -53,9 +53,12 @@ export const Home = () => {
   const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [initialUrlNavigationDone, setInitialUrlNavigationDone] = useState(false);
   const [initialTaskId, setInitialTaskId] = useState<string | undefined>();
-  const isUpdatingFromUrl = useRef(false);
 
-  const activeProject = (optimisticOpenProjects.find((project) => project.active) || optimisticOpenProjects[0])?.baseDir;
+  // Derive active project from URL parameter first, then fall back to store
+  const projectParam = searchParams.get(URL_PARAMS.PROJECT);
+  const urlProjectBaseDir = projectParam ? decodeBaseDir(projectParam) : null;
+  const storeActiveProject = (optimisticOpenProjects.find((project) => project.active) || optimisticOpenProjects[0])?.baseDir;
+  const activeProject = urlProjectBaseDir || storeActiveProject;
   const [optimisticActiveProject, setOptimisticActiveProject] = useOptimistic(activeProject);
 
   const handleReorderProjects = useCallback(
@@ -130,11 +133,14 @@ export const Home = () => {
     (baseDir: string) => {
       startProjectTransition(async () => {
         setOptimisticActiveProject(baseDir);
+        // Update URL parameter instead of global store
+        // This allows each window to have its own active project
+        setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(baseDir) });
         const projects = await api.setActiveProject(baseDir);
         setOpenProjects(projects);
       });
     },
-    [api, setOptimisticActiveProject],
+    [api, setOptimisticActiveProject, setSearchParams],
   );
 
   const handleCloseProject = useCallback(
@@ -188,19 +194,17 @@ export const Home = () => {
       }
 
       if (existingProject) {
-        // Only switch if not already active
+        // Project exists, just update optimistic state (URL is already set)
         if (activeProject !== projectBaseDir) {
-          isUpdatingFromUrl.current = true;
-          setActiveProject(projectBaseDir);
+          setOptimisticActiveProject(projectBaseDir);
         }
       } else {
+        // Project doesn't exist, add it and update optimistic state
         try {
-          isUpdatingFromUrl.current = true;
           await api.addOpenProject(projectBaseDir);
           const updatedProjects = await api.getOpenProjects();
           setOpenProjects(updatedProjects);
-
-          setActiveProject(projectBaseDir);
+          setOptimisticActiveProject(projectBaseDir);
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error('Failed to open project from URL:', error);
@@ -209,23 +213,9 @@ export const Home = () => {
     };
 
     void handleUrlNavigation();
-  }, [searchParams, projectsLoaded, openProjects, setActiveProject, initialUrlNavigationDone, api, activeProject, initialTaskId]);
+  }, [searchParams, projectsLoaded, openProjects, setActiveProject, initialUrlNavigationDone, api, activeProject, initialTaskId, setOptimisticActiveProject]);
 
-  // Update URL when project changes from user interaction (not from URL navigation)
-  useEffect(() => {
-    // Skip if the change came from URL navigation
-    if (isUpdatingFromUrl.current) {
-      isUpdatingFromUrl.current = false;
-      return;
-    }
-
-    const projectParam = searchParams.get(URL_PARAMS.PROJECT);
-    const urlProjectBaseDir = projectParam ? decodeBaseDir(projectParam) : null;
-
-    if (activeProject && urlProjectBaseDir !== activeProject && initialUrlNavigationDone) {
-      setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(activeProject) });
-    }
-  }, [activeProject, initialUrlNavigationDone, searchParams, setSearchParams]);
+  // Note: We no longer sync activeProject to URL here because setActiveProject now updates the URL directly
 
   // Open new project dialog
   useHotkeys(

@@ -97,6 +97,18 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.removeOpenProject(baseDir);
   });
 
+  ipcMain.handle('create-new-window', async () => {
+    const { getCreateNewWindow } = await import('./index');
+    const createWindowFn = getCreateNewWindow();
+    await createWindowFn();
+  });
+
+  ipcMain.handle('open-project-in-new-window', async (_, baseDir: string) => {
+    const { getCreateNewWindow } = await import('./index');
+    const createWindowFn = getCreateNewWindow();
+    await createWindowFn(baseDir);
+  });
+
   ipcMain.handle('set-active-project', async (_, baseDir: string) => {
     return eventsHandler.setActiveProject(baseDir);
   });

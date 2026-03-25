@@ -76,6 +76,8 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     setActiveProject: vi.fn((): Promise<ProjectData[]> => Promise.resolve([])),
     removeOpenProject: vi.fn((): Promise<ProjectData[]> => Promise.resolve([])),
     updateOpenProjectsOrder: vi.fn((): Promise<ProjectData[]> => Promise.resolve([])),
+    openNewWindow: vi.fn((): Promise<void> => Promise.resolve()),
+    openProjectInNewWindow: vi.fn((): Promise<void> => Promise.resolve()),
 
     // Model operations
     updateMainModel: vi.fn((): void => undefined),

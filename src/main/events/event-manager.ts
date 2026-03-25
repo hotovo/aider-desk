@@ -38,7 +38,7 @@ import {
   ModalOverlayUrlData,
 } from '@common/types';
 
-import type { BrowserWindow } from 'electron';
+import type { WindowManager } from '@/window-manager';
 
 import logger from '@/logger';
 
@@ -54,12 +54,12 @@ export interface EventsConnector extends EventsConnectorConfig {
 export class EventManager {
   private eventsConnectors: EventsConnector[] = [];
 
-  constructor(private readonly mainWindow: BrowserWindow | null) {}
+  constructor(private readonly windowManager?: WindowManager) {}
 
   // Project lifecycle events
   sendProjectStarted(baseDir: string): void {
     const data = { baseDir };
-    this.sendToMainWindow('project-started', data);
+    this.sendToWindows('project-started', data);
     this.broadcastToEventConnectors('project-started', data);
   }
 
@@ -70,7 +70,7 @@ export class EventManager {
       clearMessages,
       clearSession: clearFiles,
     };
-    this.sendToMainWindow('clear-task', data);
+    this.sendToWindows('clear-task', data);
     this.broadcastToEventConnectors('clear-task', data);
   }
 
@@ -81,7 +81,7 @@ export class EventManager {
       taskId,
       file,
     };
-    this.sendToMainWindow('file-added', data);
+    this.sendToWindows('file-added', data);
     this.broadcastToEventConnectors('file-added', data);
   }
 
@@ -91,7 +91,7 @@ export class EventManager {
       taskId,
       files,
     };
-    this.sendToMainWindow('context-files-updated', data);
+    this.sendToWindows('context-files-updated', data);
     this.broadcastToEventConnectors('context-files-updated', data);
   }
 
@@ -101,24 +101,24 @@ export class EventManager {
       taskId,
       files,
     };
-    this.sendToMainWindow('updated-files-updated', data);
+    this.sendToWindows('updated-files-updated', data);
     this.broadcastToEventConnectors('updated-files-updated', data);
   }
 
   // Response events
   sendResponseChunk(data: ResponseChunkData): void {
-    this.sendToMainWindow('response-chunk', data);
+    this.sendToWindows('response-chunk', data);
     this.broadcastToEventConnectors('response-chunk', data);
   }
 
   sendResponseCompleted(data: ResponseCompletedData): void {
-    this.sendToMainWindow('response-completed', data);
+    this.sendToWindows('response-completed', data);
     this.broadcastToEventConnectors('response-completed', data);
   }
 
   // Question events
   sendAskQuestion(questionData: QuestionData): void {
-    this.sendToMainWindow('ask-question', questionData);
+    this.sendToWindows('ask-question', questionData);
     this.broadcastToEventConnectors('ask-question', questionData);
   }
 
@@ -130,7 +130,7 @@ export class EventManager {
       answer,
       userInput,
     };
-    this.sendToMainWindow('question-answered', data);
+    this.sendToWindows('question-answered', data);
     this.broadcastToEventConnectors('question-answered', data);
   }
 
@@ -142,7 +142,7 @@ export class EventManager {
       words,
       allFiles,
     };
-    this.sendToMainWindow('update-autocompletion', data);
+    this.sendToWindows('update-autocompletion', data);
     this.broadcastToEventConnectors('update-autocompletion', data);
   }
 
@@ -153,14 +153,14 @@ export class EventManager {
       taskId,
       queuedPrompts,
     };
-    this.sendToMainWindow('queued-prompts-updated', data);
+    this.sendToWindows('queued-prompts-updated', data);
     this.broadcastToEventConnectors('queued-prompts-updated', data);
   }
 
   // Aider models events
   sendUpdateAiderModels(_baseDir: string, _taskId: string, modelsData: ModelsData): void {
     const data = modelsData;
-    this.sendToMainWindow('update-aider-models', data);
+    this.sendToWindows('update-aider-models', data);
     this.broadcastToEventConnectors('update-aider-models', data);
   }
 
@@ -172,31 +172,31 @@ export class EventManager {
       command,
       output,
     };
-    this.sendToMainWindow('command-output', data);
+    this.sendToWindows('command-output', data);
     this.broadcastToEventConnectors('command-output', data);
   }
 
   // Log events
   sendLog(data: LogData): void {
-    this.sendToMainWindow('log', data);
+    this.sendToWindows('log', data);
     this.broadcastToEventConnectors('log', data);
   }
 
   // Tool events
   sendTool(data: ToolData): void {
-    this.sendToMainWindow('tool', data);
+    this.sendToWindows('tool', data);
     this.broadcastToEventConnectors('tool', data);
   }
 
   // User message events
   sendUserMessage(data: UserMessageData): void {
-    this.sendToMainWindow('user-message', data);
+    this.sendToWindows('user-message', data);
     this.broadcastToEventConnectors('user-message', data);
   }
 
   // Tokens info events
   sendUpdateTokensInfo(tokensInfo: TokensInfoData): void {
-    this.sendToMainWindow('update-tokens-info', tokensInfo);
+    this.sendToWindows('update-tokens-info', tokensInfo);
     this.broadcastToEventConnectors('update-tokens-info', tokensInfo);
   }
 
@@ -207,13 +207,13 @@ export class EventManager {
       taskId,
       inputHistory,
     };
-    this.sendToMainWindow('input-history-updated', data);
+    this.sendToWindows('input-history-updated', data);
     this.broadcastToEventConnectors('input-history-updated', data);
   }
 
   // Commands events
   sendCommandsUpdated(data: CommandsData): void {
-    this.sendToMainWindow('commands-updated', data);
+    this.sendToWindows('commands-updated', data);
     this.broadcastToEventConnectors('commands-updated', data);
   }
 
@@ -223,7 +223,7 @@ export class EventManager {
       taskId,
       error,
     };
-    this.sendToMainWindow('custom-command-error', data);
+    this.sendToWindows('custom-command-error', data);
     this.broadcastToEventConnectors('custom-command-error', data);
   }
 
@@ -234,29 +234,29 @@ export class EventManager {
       status,
     };
     logger.debug('Sending worktree integration status updated', data);
-    this.sendToMainWindow('worktree-integration-status-updated', data);
+    this.sendToWindows('worktree-integration-status-updated', data);
     this.broadcastToEventConnectors('worktree-integration-status-updated', data);
   }
 
   // Terminal events
   sendTerminalData(data: TerminalData): void {
-    this.sendToMainWindow('terminal-data', data);
+    this.sendToWindows('terminal-data', data);
     this.broadcastToEventConnectors('terminal-data', data);
   }
 
   sendTerminalExit(data: TerminalExitData): void {
-    this.sendToMainWindow('terminal-exit', data);
+    this.sendToWindows('terminal-exit', data);
     this.broadcastToEventConnectors('terminal-exit', data);
   }
 
   // Versions events
   sendVersionsInfoUpdated(versionsInfo: VersionsInfo): void {
-    this.sendToMainWindow('versions-info-updated', versionsInfo);
+    this.sendToWindows('versions-info-updated', versionsInfo);
     this.broadcastToEventConnectors('versions-info-updated', versionsInfo);
   }
 
   sendSettingsUpdated(settings: SettingsData): void {
-    this.sendToMainWindow('settings-updated', settings);
+    this.sendToWindows('settings-updated', settings);
     this.broadcastToEventConnectors('settings-updated', settings);
   }
 
@@ -265,18 +265,18 @@ export class EventManager {
     const data: ProvidersUpdatedData = {
       providers,
     };
-    this.sendToMainWindow('providers-updated', data);
+    this.sendToWindows('providers-updated', data);
     this.broadcastToEventConnectors('providers-updated', data);
   }
 
   sendProviderModelsUpdated(data: ProviderModelsData): void {
-    this.sendToMainWindow('provider-models-updated', data);
+    this.sendToWindows('provider-models-updated', data);
     this.broadcastToEventConnectors('provider-models-updated', data);
   }
 
   sendProjectSettingsUpdated(baseDir: string, settings: ProjectSettings): void {
     const data = { baseDir, settings };
-    this.sendToMainWindow('project-settings-updated', data);
+    this.sendToWindows('project-settings-updated', data);
     this.broadcastToEventConnectors('project-settings-updated', data);
   }
 
@@ -285,7 +285,7 @@ export class EventManager {
     const data: AgentProfilesUpdatedData = {
       profiles,
     };
-    this.sendToMainWindow('agent-profiles-updated', data);
+    this.sendToWindows('agent-profiles-updated', data);
     this.broadcastToEventConnectors('agent-profiles-updated', data);
   }
 
@@ -296,37 +296,37 @@ export class EventManager {
       task,
       activate,
     };
-    this.sendToMainWindow('task-created', eventData);
+    this.sendToWindows('task-created', eventData);
     this.broadcastToEventConnectors('task-created', eventData);
   }
 
   sendTaskInitialized(task: TaskData): void {
-    this.sendToMainWindow('task-initialized', task);
+    this.sendToWindows('task-initialized', task);
     this.broadcastToEventConnectors('task-initialized', task);
   }
 
   sendTaskUpdated(task: TaskData): void {
-    this.sendToMainWindow('task-updated', task);
+    this.sendToWindows('task-updated', task);
     this.broadcastToEventConnectors('task-updated', task);
   }
 
   sendTaskStarted(task: TaskData): void {
-    this.sendToMainWindow('task-started', task);
+    this.sendToWindows('task-started', task);
     this.broadcastToEventConnectors('task-started', task);
   }
 
   sendTaskCompleted(task: TaskData): void {
-    this.sendToMainWindow('task-completed', task);
+    this.sendToWindows('task-completed', task);
     this.broadcastToEventConnectors('task-completed', task);
   }
 
   sendTaskCancelled(task: TaskData): void {
-    this.sendToMainWindow('task-cancelled', task);
+    this.sendToWindows('task-cancelled', task);
     this.broadcastToEventConnectors('task-cancelled', task);
   }
 
   sendTaskDeleted(task: TaskData): void {
-    this.sendToMainWindow('task-deleted', task);
+    this.sendToWindows('task-deleted', task);
     this.broadcastToEventConnectors('task-deleted', task);
   }
 
@@ -336,7 +336,7 @@ export class EventManager {
       taskId,
       messageIds,
     };
-    this.sendToMainWindow('message-removed', data);
+    this.sendToWindows('message-removed', data);
     this.broadcastToEventConnectors('message-removed', data);
   }
 
@@ -346,7 +346,7 @@ export class EventManager {
       body,
       baseDir,
     };
-    this.sendToMainWindow('notification', data);
+    this.sendToWindows('notification', data);
     this.broadcastToEventConnectors('notification', data);
   }
 
@@ -372,12 +372,22 @@ export class EventManager {
     });
   }
 
-  private sendToMainWindow(eventType: string, data: unknown): void {
-    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+  private sendToWindows(eventType: string, data: unknown): void {
+    if (!this.windowManager) {
       return;
     }
 
-    this.mainWindow.webContents.send(eventType, data);
+    const windows = this.windowManager.getAllWindows();
+    if (windows.length === 0) {
+      return;
+    }
+
+    // Send event to all open windows
+    windows.forEach((window) => {
+      if (!window.isDestroyed()) {
+        window.webContents.send(eventType, data);
+      }
+    });
   }
 
   private broadcastToEventConnectors(eventType: string, data: unknown): void {
@@ -416,14 +426,14 @@ export class EventManager {
   // Extension UI events
   sendExtensionUIRefresh(options: { projectDir?: string; extensionId?: string; componentId?: string; taskId?: string; reloadComponents?: boolean }): void {
     const data: ExtensionUIRefreshData = options;
-    this.sendToMainWindow('extension-ui-refresh', data);
+    this.sendToWindows('extension-ui-refresh', data);
     this.broadcastToEventConnectors('extension-ui-refresh', data);
   }
 
   // Modal overlay URL events
   sendModalOverlayUrl(url: string): void {
     const data: ModalOverlayUrlData = { url };
-    this.sendToMainWindow('modal-overlay-url', data);
+    this.sendToWindows('modal-overlay-url', data);
     this.broadcastToEventConnectors('modal-overlay-url', data);
   }
 }
