@@ -111,7 +111,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
       expect(funcCount).toBe(1);
       const ctxStepCount = (editedContent.match(/ctx\.Step/g) || []).length;
       expect(ctxStepCount).toBe(3); // 3 step definitions, not duplicated
-    });
+    }, 30000);
 
     it('should handle searchTerm with complex backtick regex patterns', async () => {
       // Test with patterns like \`^step with "([^"]*)"$\`

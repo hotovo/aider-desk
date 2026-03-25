@@ -5,6 +5,7 @@
 - correctly triggering auto-compacting as expected when threshold is reached
 - added support for multiple windows
 - added ability to customize window title
+- power edit tool now correctly handles files with \r\n line separators
 
 ## [0.58.0]
 

@@ -48,11 +48,13 @@ const fileLocks = new Map<string, Promise<unknown>>();
  * If another operation is in progress for the same file, it waits for it to complete.
  */
 const withFileLock = <T>(filePath: string, operation: () => Promise<T>): Promise<T> => {
+  logger.debug('Acquiring file lock:', { filePath });
   const currentLock = fileLocks.get(filePath) || Promise.resolve();
   const newLock = currentLock.then(operation, operation);
   fileLocks.set(filePath, newLock);
   newLock.finally(() => {
     if (fileLocks.get(filePath) === newLock) {
+      logger.debug('Releasing file lock:', { filePath });
       fileLocks.delete(filePath);
     }
   });
@@ -185,18 +187,24 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
 
       return withFileLock(absolutePath, async () => {
         try {
-          const fileContent = await fs.readFile(absolutePath, {
+          logger.debug('Reading file content:', { absolutePath });
+          let fileContent = await fs.readFile(absolutePath, {
             encoding: 'utf8',
             signal: abortSignal,
           });
+          // Normalize Windows line endings to Unix for consistent matching
+          fileContent = fileContent.replace(/\r\n/g, '\n');
           let modifiedContent: string;
 
           if (isRegex) {
             const regex = new RegExp(searchTerm, replaceAll ? 'g' : '');
             modifiedContent = fileContent.replace(regex, replacementText);
           } else {
-            const sanitizedSearchTerm = sanitize(searchTerm);
+            const sanitizedSearchTerm = sanitize(searchTerm).replace(/\r\n/g, '\n');
             const sanitizedReplacementText = sanitize(replacementText);
+
+            logger.debug('Sanitized search term:', { sanitizedSearchTerm });
+            logger.debug('Sanitized replacement text:', { sanitizedReplacementText });
 
             if (replaceAll) {
               // Use replacer function to avoid special replacement patterns ($&, $`, '$', $$)
