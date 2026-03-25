@@ -598,6 +598,11 @@
     "notifications": {
       "title": "Notifications"
     },
+    "windowTitle": {
+      "title": "Window Title"
+    },
+    "windowTitleTemplateLabel": "Window title template",
+    "windowTitleTemplateTooltip": "Use {project} for project name and {task} for current task name. Example: 'AiderDesk - {project}' or '{project} - {task}'",
     "agent": {
       "mcpServers": "MCP Servers",
       "provider": "Provider",

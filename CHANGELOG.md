@@ -4,6 +4,7 @@
 
 - correctly triggering auto-compacting as expected when threshold is reached
 - added support for multiple windows
+- added ability to customize window title
 
 ## [0.58.0]
 

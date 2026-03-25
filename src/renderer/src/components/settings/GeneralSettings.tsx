@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode } from '@common/types';
+import { ChangeEvent } from 'react';
 
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -7,6 +8,7 @@ import { Select, Option } from '../common/Select';
 import { Section } from '../common/Section';
 import { Slider } from '../common/Slider';
 import { InfoIcon } from '../common/InfoIcon';
+import { Input } from '../common/Input';
 
 import { LanguageSelector } from './LanguageSelector';
 
@@ -149,6 +151,13 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     handleSuggestionModeChange(value as SuggestionMode);
   };
 
+  const handleWindowTitleTemplateChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setSettings({
+      ...settings,
+      windowTitleTemplate: e.target.value,
+    });
+  };
+
   const handleSuggestionDelayChange = (delay: number) => {
     setSettings({
       ...settings,
@@ -208,6 +217,13 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
             onChange={handleFontSizeChange}
             size="sm"
           />
+        </div>
+        <div className="px-4 pb-4">
+          <div className="flex items-center gap-1 mb-2">
+            <span className="text-xs text-text-primary">{t('settings.windowTitleTemplateLabel')}</span>
+            <InfoIcon tooltip={t('settings.windowTitleTemplateTooltip')} />
+          </div>
+          <Input size="sm" value={settings.windowTitleTemplate ?? 'AiderDesk - {project}'} onChange={handleWindowTitleTemplateChange} />
         </div>
       </Section>
 

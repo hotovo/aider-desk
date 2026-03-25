@@ -596,6 +596,11 @@
     "notifications": {
       "title": "通知"
     },
+    "windowTitle": {
+      "title": "窗口标题"
+    },
+    "windowTitleTemplateLabel": "窗口标题模板",
+    "windowTitleTemplateTooltip": "使用 {project} 表示项目名称，{task} 表示当前任务名称。例如：'AiderDesk - {project}' 或 '{project} - {task}'",
     "agent": {
       "mcpServers": "MCP 服务器",
       "provider": "提供商",

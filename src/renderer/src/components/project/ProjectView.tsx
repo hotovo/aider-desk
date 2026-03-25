@@ -486,6 +486,16 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     <TasksProvider baseDir={projectDir} tasks={tasks}>
       <ExtensionsProvider projectDir={projectDir} agentProfile={agentProfile}>
         <div className="h-full w-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative">
+          {isProjectActive && (
+            <title>
+              {(() => {
+                const projectName = projectDir.split(/[\\/]/).pop() || '';
+                const taskName = activeTask?.name || '';
+                const template = settings?.windowTitleTemplate ?? 'AiderDesk - {project}';
+                return template.replace('{project}', projectName).replace('{task}', taskName);
+              })()}
+            </title>
+          )}
           {starting && <LoadingOverlay message={t('common.startingUp')} />}
 
           {(isTaskSidebarOpen || !isMobile) && (

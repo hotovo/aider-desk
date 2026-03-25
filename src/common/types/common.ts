@@ -589,6 +589,7 @@ export interface SettingsData {
   };
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
+  windowTitleTemplate?: string;
   promptBehavior: PromptBehavior;
   server: {
     enabled: boolean;
