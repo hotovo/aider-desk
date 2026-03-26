@@ -7,6 +7,7 @@
 - power edit tool now correctly handles files with \r\n line separators
 - added system logs viewer
 - properly focusing the terminal when it's activated
+- state of view all files mode in Updated Files is now remembered
 
 ## [0.58.1]
 

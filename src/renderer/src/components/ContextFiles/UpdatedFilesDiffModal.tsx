@@ -49,7 +49,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
   const [commitError, setCommitError] = useState<string | null>(null);
-  const [isAllFilesView, setIsAllFilesView] = useState(false);
+  const [isAllFilesView, setIsAllFilesView] = useLocalStorage('diff-modal-all-files-view', false);
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(() => new Set(files.map((f) => f.path)));
   const [isFullWidth, setIsFullWidth] = useLocalStorage('diff-modal-full-width', false);
 
