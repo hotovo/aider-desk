@@ -80,3 +80,23 @@ enum Status {
 - only add comments that are beneficial and describe some functionality
 - use `clsx` library for conditional classes - `import { clsx } from 'clsx';`
 - do not use `any` type - this is not allowed by eslint - find and use the existing type instead
+- when showing one overlay/dialog should hide another, clear the other's state in the show handler function, not with useEffect. This keeps related state changes co-located and avoids unnecessary re-renders. Example:
+
+```tsx
+// bad - using useEffect to clear state
+useEffect(() => {
+  if (isModalBVisible) {
+    setIsModalAVisible(false);
+  }
+}, [isModalBVisible]);
+
+const handleShowModalB = () => {
+  setIsModalBVisible(true);
+};
+
+// good - clearing state in the handler
+const handleShowModalB = () => {
+  setIsModalAVisible(false);
+  setIsModalBVisible(true);
+};
+```
