@@ -1,7 +1,13 @@
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
+import { EventTransport } from './logger/event-transport';
+
 import { LOGS_DIR } from '@/constants';
+import { EventManager } from '@/events';
+
+// Create event transport immediately to capture all logs since startup
+export const eventTransport = new EventTransport();
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -20,6 +26,8 @@ const logger = winston.createLogger({
       maxSize: '20m',
       maxFiles: '14d',
     }),
+    // Add event transport immediately to capture all logs from startup
+    eventTransport,
   ],
 });
 
@@ -31,5 +39,12 @@ if (process.env.NODE_ENV !== 'production' || process.env.AIDER_DESK_HEADLESS ===
     }),
   );
 }
+
+/**
+ * Initialize event-based logging (call this after EventManager is available)
+ */
+export const initEventLogging = (eventManager: EventManager): void => {
+  eventTransport.setEventManager(eventManager);
+};
 
 export default logger;

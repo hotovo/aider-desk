@@ -4,6 +4,7 @@ import {
   InputHistoryData,
   ProviderProfile,
   LogData,
+  SystemLogData,
   ModelsData,
   NotificationData,
   QuestionData,
@@ -180,6 +181,12 @@ export class EventManager {
   sendLog(data: LogData): void {
     this.sendToWindows('log', data);
     this.broadcastToEventConnectors('log', data);
+  }
+
+  // System log events (application-wide logs)
+  sendSystemLog(data: SystemLogData): void {
+    this.sendToWindows('system-log', data);
+    this.broadcastToEventConnectors('system-log', data, false);
   }
 
   // Tool events
@@ -363,13 +370,15 @@ export class EventManager {
     });
   }
 
-  unsubscribe(socket: Socket): void {
+  unsubscribe(socket: Socket, log = true): void {
     const before = this.eventsConnectors.length;
     this.eventsConnectors = this.eventsConnectors.filter((connector) => connector.socket.id !== socket.id);
-    logger.info('Unsubscribed from events', {
-      before,
-      after: this.eventsConnectors.length,
-    });
+    if (log) {
+      logger.info('Unsubscribed from events', {
+        before,
+        after: this.eventsConnectors.length,
+      });
+    }
   }
 
   private sendToWindows(eventType: string, data: unknown): void {
@@ -390,35 +399,43 @@ export class EventManager {
     });
   }
 
-  private broadcastToEventConnectors(eventType: string, data: unknown): void {
-    logger.debug('Broadcasting event to connectors:', {
-      connectors: this.eventsConnectors.length,
-      eventType,
-    });
+  private broadcastToEventConnectors(eventType: string, data: unknown, log = true): void {
+    if (log) {
+      logger.debug('Broadcasting event to connectors:', {
+        connectors: this.eventsConnectors.length,
+        eventType,
+      });
+    }
 
     this.eventsConnectors.forEach((connector) => {
       // Filter by event types if specified
       if (connector.eventTypes && !connector.eventTypes.includes(eventType)) {
-        logger.debug('Skipping event broadcast to connector, event type not included:', { eventType, connectorEventTypes: connector.eventTypes });
+        if (log) {
+          logger.debug('Skipping event broadcast to connector, event type not included:', { eventType, connectorEventTypes: connector.eventTypes });
+        }
         return;
       }
 
       // Filter by base directories if specified
       const baseDir = (data as { baseDir?: string })?.baseDir;
       if (connector.baseDirs && baseDir && !connector.baseDirs.includes(baseDir)) {
-        logger.debug('Skipping event broadcast to connector, base dir not included:', { baseDir, connectorBaseDirs: connector.baseDirs });
+        if (log) {
+          logger.debug('Skipping event broadcast to connector, base dir not included:', { baseDir, connectorBaseDirs: connector.baseDirs });
+        }
         return;
       }
 
       try {
-        logger.debug('Broadcasting event to connector:', {
-          eventType,
-          baseDir,
-        });
+        if (log) {
+          logger.debug('Broadcasting event to connector:', {
+            eventType,
+            baseDir,
+          });
+        }
         connector.socket.emit('event', { type: eventType, data });
       } catch {
         // Remove disconnected sockets
-        this.unsubscribe(connector.socket);
+        this.unsubscribe(connector.socket, log);
       }
     });
   }

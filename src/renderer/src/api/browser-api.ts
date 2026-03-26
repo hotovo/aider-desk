@@ -13,6 +13,9 @@ import {
   FileEdit,
   InputHistoryData,
   LogData,
+  SystemLogData,
+  SystemLogLevel,
+  SystemLogsResponse,
   McpServerConfig,
   McpTool,
   MessageRemovedData,
@@ -71,6 +74,7 @@ type EventDataMap = {
   'response-chunk': ResponseChunkData;
   'response-completed': ResponseCompletedData;
   log: LogData;
+  'system-log': SystemLogData;
   'context-files-updated': ContextFilesUpdatedData;
   'commands-updated': CommandsData;
   'update-autocompletion': AutocompletionData;
@@ -142,6 +146,7 @@ export class BrowserApi implements ApplicationAPI {
       'response-chunk': new Map(),
       'response-completed': new Map(),
       log: new Map(),
+      'system-log': new Map(),
       'context-files-updated': new Map(),
       'commands-updated': new Map(),
       'update-autocompletion': new Map(),
@@ -834,7 +839,7 @@ export class BrowserApi implements ApplicationAPI {
     void callback;
     return () => {};
   }
-  addOpenSettingsListener(callback: (pageId: string) => void): () => void {
+  addShowViewListener(callback: (viewId: string) => void): () => void {
     void callback;
     return () => {};
   }
@@ -1107,6 +1112,19 @@ export class BrowserApi implements ApplicationAPI {
         callback(data);
       }
     });
+  }
+
+  // System logs
+  getSystemLogs(fromId?: number, limit?: number, levels?: SystemLogLevel[]): Promise<SystemLogsResponse> {
+    return this.get('/system/logs', { fromId, limit, levels });
+  }
+
+  clearSystemLogs(): Promise<void> {
+    return this.delete('/system/logs');
+  }
+
+  addSystemLogListener(callback: (data: SystemLogData) => void): () => void {
+    return this.addListener('system-log', callback);
   }
 
   getInstalledExtensions(projectDir?: string): Promise<InstalledExtension[]> {

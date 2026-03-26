@@ -62,6 +62,14 @@ const setupCustomMenu = (createWindowFn: () => void): void => {
         { role: 'zoomOut', label: 'Zoom Out' },
         { type: 'separator' },
         { role: 'togglefullscreen', label: 'Toggle Full Screen' },
+        { type: 'separator' },
+        {
+          label: 'Show Logs',
+          accelerator: 'CmdOrCtrl+Shift+L',
+          click: () => {
+            BrowserWindow.getFocusedWindow()?.webContents.send('show-view', 'logs');
+          },
+        },
       ],
     },
     // Settings menu
@@ -71,31 +79,31 @@ const setupCustomMenu = (createWindowFn: () => void): void => {
         {
           label: 'General',
           click: () => {
-            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 'general');
+            BrowserWindow.getFocusedWindow()?.webContents.send('show-view', 'settings/general');
           },
         },
         {
           label: 'Aider',
           click: () => {
-            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 'aider');
+            BrowserWindow.getFocusedWindow()?.webContents.send('show-view', 'settings/aider');
           },
         },
         {
           label: 'Agent',
           click: () => {
-            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 'agents');
+            BrowserWindow.getFocusedWindow()?.webContents.send('show-view', 'settings/agents');
           },
         },
         {
           label: 'Server',
           click: () => {
-            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 'server');
+            BrowserWindow.getFocusedWindow()?.webContents.send('show-view', 'settings/server');
           },
         },
         {
           label: 'About',
           click: () => {
-            BrowserWindow.getFocusedWindow()?.webContents.send('open-settings', 'about');
+            BrowserWindow.getFocusedWindow()?.webContents.send('show-view', 'settings/about');
           },
         },
       ],

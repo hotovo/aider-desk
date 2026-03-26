@@ -24,6 +24,8 @@ import {
   ProviderProfile,
   ResponseCompletedData,
   SettingsData,
+  SystemLogLevel,
+  SystemLogsResponse,
   TaskData,
   TaskStateData,
   TodoItem,
@@ -50,7 +52,7 @@ import { VersionsManager } from '@/versions';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal/terminal-manager';
 import { ExtensionManager, LoadedExtension } from '@/extensions';
-import logger from '@/logger';
+import logger, { eventTransport } from '@/logger';
 import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
@@ -893,6 +895,14 @@ export class EventsHandler {
       });
       return false;
     }
+  }
+
+  getSystemLogs(fromId?: number, limit?: number, levels?: SystemLogLevel[]): SystemLogsResponse {
+    return eventTransport.getPaged(fromId, limit, levels);
+  }
+
+  clearSystemLogs(): void {
+    eventTransport.clear();
   }
 
   async openPath(path: string): Promise<boolean> {

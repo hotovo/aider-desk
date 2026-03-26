@@ -793,7 +793,12 @@
       "downloadAutomatically": "Download update automatically",
       "releaseNotes": "Release notes",
       "openLogsDirectory": "Open logs directory",
-      "openLogsError": "Error opening a log directory"
+      "openLogsError": "Error opening a log directory",
+      "showLogs": "Show logs"
+    },
+    "viewMenu": {
+      "title": "View",
+      "showLogs": "Show Logs"
     },
     "telemetry": {
       "title": "Telemetry"
@@ -1671,5 +1676,23 @@
     "selectMode": "Select"
   },
   "showModelSelector": "Change model",
-  "hideModelSelector": "Hide model selector"
+  "hideModelSelector": "Hide model selector",
+  "logs": {
+    "title": "System Logs",
+    "level": "Level",
+    "allExtensions": "All extensions",
+    "searchPlaceholder": "Search logs...",
+    "debugTooltip": "Debug logs are visible only when LOG_LEVEL environment variable is set to 'debug'.",
+    "autoScroll": "Auto-scroll",
+    "showing": "Showing",
+    "clear": "Clear logs",
+    "noLogs": "No logs to display",
+    "metadata": "Metadata",
+    "clearConfirm": {
+      "title": "Clear logs",
+      "message": "Are you sure you want to clear all buffered logs? This action cannot be undone.",
+      "confirm": "Clear",
+      "cancel": "Cancel"
+    }
+  }
 }

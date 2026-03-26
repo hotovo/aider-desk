@@ -15,6 +15,9 @@ import {
   FileEdit,
   InputHistoryData,
   LogData,
+  SystemLogData,
+  SystemLogLevel,
+  SystemLogsResponse,
   McpServerConfig,
   McpTool,
   MemoryEmbeddingProgress,
@@ -219,7 +222,7 @@ export interface ApplicationAPI {
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (params: ContextMenuParams) => void) => () => void;
-  addOpenSettingsListener: (callback: (pageId: string) => void) => () => void;
+  addShowViewListener: (callback: (viewId: string) => void) => () => void;
 
   // Task lifecycle event listeners
   addTaskCreatedListener: (baseDir: string, callback: (data: TaskCreatedData) => void) => () => void;
@@ -273,4 +276,9 @@ export interface ApplicationAPI {
   openPath: (path: string) => Promise<boolean>;
 
   addNotificationListener: (baseDir: string, callback: (data: NotificationData) => void) => () => void;
+
+  // System logs operations
+  getSystemLogs: (fromId?: number, limit?: number, levels?: SystemLogLevel[]) => Promise<SystemLogsResponse>;
+  clearSystemLogs: () => Promise<void>;
+  addSystemLogListener: (callback: (data: SystemLogData) => void) => () => void;
 }

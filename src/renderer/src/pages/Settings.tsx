@@ -44,6 +44,7 @@ type Props = {
   openProjects?: ProjectData[];
   providers?: ProviderProfile[];
   setProviders?: (providers: ProviderProfile[]) => void;
+  onShowLogs?: () => void;
 };
 
 export const Settings = ({
@@ -61,6 +62,7 @@ export const Settings = ({
   openProjects,
   providers,
   setProviders,
+  onShowLogs,
 }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
@@ -256,7 +258,7 @@ export const Settings = ({
       case 'server':
         return <ServerSettings settings={settings} setSettings={updateSettings} />;
       case 'about':
-        return <AboutSettings settings={settings} setSettings={updateSettings} />;
+        return <AboutSettings settings={settings} setSettings={updateSettings} onShowLogs={onShowLogs} />;
       default:
         return null;
     }

@@ -26,6 +26,7 @@ import {
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  SystemLogLevel,
   TaskCreatedData,
   TaskData,
   TerminalData,
@@ -622,11 +623,11 @@ const api: ApplicationAPI = {
     };
   },
 
-  addOpenSettingsListener: (callback) => {
-    const listener = (_: Electron.IpcRendererEvent, pageId: string) => callback(pageId);
-    ipcRenderer.on('open-settings', listener);
+  addShowViewListener: (callback) => {
+    const listener = (_: Electron.IpcRendererEvent, viewId: string) => callback(viewId);
+    ipcRenderer.on('show-view', listener);
     return () => {
-      ipcRenderer.removeListener('open-settings', listener);
+      ipcRenderer.removeListener('show-view', listener);
     };
   },
 
@@ -671,6 +672,15 @@ const api: ApplicationAPI = {
 
   writeToClipboard: (text: string) => ipcRenderer.invoke('clipboard-write-text', text),
   openPath: (path: string) => ipcRenderer.invoke('open-path', path),
+
+  // System logs
+  getSystemLogs: (fromId?: number, limit?: number, levels?: SystemLogLevel[]) => ipcRenderer.invoke('get-system-logs', fromId, limit, levels),
+  clearSystemLogs: () => ipcRenderer.invoke('clear-system-logs'),
+  addSystemLogListener: (callback) => {
+    const listener = (_, data) => callback(data);
+    ipcRenderer.on('system-log', listener);
+    return () => ipcRenderer.removeListener('system-log', listener);
+  },
 
   addAgentProfilesUpdatedListener: (callback) => {
     const listener = (_, data) => callback(data);

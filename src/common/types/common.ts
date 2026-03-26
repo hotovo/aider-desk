@@ -174,6 +174,27 @@ export interface LogData {
   actionIds?: string[];
 }
 
+// System log types (for application-wide logging)
+export type SystemLogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+export interface SystemLogEntry {
+  id?: number;
+  timestamp: string;
+  level: SystemLogLevel;
+  message: string;
+  extension?: string; // Extension name if log is from an extension
+  metadata?: Record<string, unknown>; // Additional metadata from winston
+}
+
+export interface SystemLogsResponse {
+  logs: SystemLogEntry[];
+  hasMore: boolean;
+}
+
+export interface SystemLogData {
+  entry: SystemLogEntry;
+}
+
 export interface ToolData {
   type: 'tool';
   baseDir: string;

@@ -8,6 +8,7 @@ import {
   ProjectSettings,
   ProviderProfile,
   SettingsData,
+  SystemLogLevel,
   TaskData,
   CreateTaskParams,
   TodoItem,
@@ -566,5 +567,14 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 
   ipcMain.handle('clipboard-write-text', async (_, text: string) => {
     clipboard.writeText(text);
+  });
+
+  // System logs handlers
+  ipcMain.handle('get-system-logs', async (_, fromId?: number, limit?: number, levels?: SystemLogLevel[]) => {
+    return eventsHandler.getSystemLogs(fromId, limit, levels);
+  });
+
+  ipcMain.handle('clear-system-logs', async () => {
+    return eventsHandler.clearSystemLogs();
   });
 };

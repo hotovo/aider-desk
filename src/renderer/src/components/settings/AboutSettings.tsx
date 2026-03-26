@@ -11,9 +11,10 @@ import { useApi } from '@/contexts/ApiContext';
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
+  onShowLogs?: () => void;
 };
 
-export const AboutSettings = ({ settings, setSettings }: Props) => {
+export const AboutSettings = ({ settings, setSettings, onShowLogs }: Props) => {
   const { t } = useTranslation();
   const { versions, checkForUpdates } = useVersions();
   const api = useApi();
@@ -112,13 +113,16 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
         </div>
       </Section>
       <div className="flex flex-row justify-between items-center space-x-4">
-        {api.isOpenLogsDirectorySupported() ? (
-          <Button onClick={openLogsDirectory} variant="text" size="sm" color="secondary">
-            {t('settings.about.openLogsDirectory')}
+        <div className="flex items-center space-x-2">
+          <Button onClick={onShowLogs} variant="text" size="sm" color="secondary">
+            {t('settings.about.showLogs')}
           </Button>
-        ) : (
-          <div />
-        )}
+          {api.isOpenLogsDirectorySupported() && (
+            <Button onClick={openLogsDirectory} variant="text" size="sm" color="secondary">
+              {t('settings.about.openLogsDirectory')}
+            </Button>
+          )}
+        </div>
         <Button onClick={checkForUpdates} disabled={!versions} variant="text" size="sm">
           {t('settings.about.checkForUpdates')}
         </Button>

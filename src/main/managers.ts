@@ -17,7 +17,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
-import logger from '@/logger';
+import logger, { initEventLogging } from '@/logger';
 import { EventsHandler } from '@/events-handler';
 import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
@@ -46,6 +46,9 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
 
   // Initialize event manager with window manager
   const eventManager = new EventManager(windowManager);
+
+  // Initialize event-based logging (adds transport to logger)
+  initEventLogging(eventManager);
 
   // Initialize model manager
   const modelManager = new ModelManager(store, eventManager);

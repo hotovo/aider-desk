@@ -16,9 +16,10 @@ type Props = {
   initialPageId?: string;
   initialOptions?: Record<string, unknown>;
   openProjects?: ProjectData[];
+  onShowLogs?: () => void;
 };
 
-export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProjects }: Props) => {
+export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProjects, onShowLogs }: Props) => {
   const { t, i18n } = useTranslation();
   const api = useApi();
 
@@ -201,6 +202,7 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
             openProjects={openProjects}
             providers={providers}
             setProviders={setProviders}
+            onShowLogs={onShowLogs}
           />
         )}
       </div>

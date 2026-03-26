@@ -9,6 +9,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
+import { LogsPage } from '@/components/logs/LogsPage';
 import { IconButton } from '@/components/common/IconButton';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { NoProjectsOpen } from '@/components/project/NoProjectsOpen';
@@ -48,6 +49,7 @@ export const Home = () => {
   const [releaseNotesContent, setReleaseNotesContent] = useState<string | null>(null);
   const [isUsageDashboardVisible, showUsageDashboard, hideUsageDashboard] = useBooleanState(false);
   const [isModelLibraryVisible, showModelLibrary, hideModelLibrary] = useBooleanState(false);
+  const [isLogsVisible, showLogs, hideLogs] = useBooleanState(false);
   const [isCtrlTabbing, setIsCtrlTabbing] = useState(false);
   const [isProjectSwitching, startProjectTransition] = useTransition();
   const [projectsLoaded, setProjectsLoaded] = useState(false);
@@ -105,17 +107,24 @@ export const Home = () => {
   }, [api]);
 
   useEffect(() => {
-    const handleOpenSettings = (pageId: string) => {
-      setShowSettingsInfo({
-        pageId,
-      });
+    const handleShowView = (viewId: string) => {
+      if (viewId.startsWith('settings/')) {
+        const pageName = viewId.split('/')[1];
+        setShowSettingsInfo({
+          pageId: pageName,
+        });
+        hideLogs();
+      } else if (viewId === 'logs') {
+        setShowSettingsInfo(null);
+        showLogs();
+      }
     };
 
-    const removeListener = api.addOpenSettingsListener(handleOpenSettings);
+    const removeListener = api.addShowViewListener(handleShowView);
     return () => {
       removeListener();
     };
-  }, [api]);
+  }, [api, hideLogs, showLogs]);
 
   useEffect(() => {
     const checkReleaseNotes = async () => {
@@ -489,6 +498,11 @@ export const Home = () => {
     });
   }, []);
 
+  const handleShowLogs = useCallback(() => {
+    setShowSettingsInfo(null);
+    showLogs();
+  }, [showLogs]);
+
   return (
     <div className="flex flex-col h-full p-[4px] bg-gradient-to-b from-bg-primary to-bg-primary-light">
       <div className="flex flex-col h-full border-2 border-border-default relative">
@@ -542,6 +556,7 @@ export const Home = () => {
             initialPageId={showSettingsInfo?.pageId || 'general'}
             initialOptions={showSettingsInfo?.options}
             openProjects={optimisticOpenProjects}
+            onShowLogs={handleShowLogs}
           />
         </Activity>
         <Activity mode={isUsageDashboardVisible ? 'visible' : 'hidden'}>
@@ -549,6 +564,9 @@ export const Home = () => {
         </Activity>
         <Activity mode={isModelLibraryVisible ? 'visible' : 'hidden'}>
           <ModelLibrary onClose={hideModelLibrary} />
+        </Activity>
+        <Activity mode={isLogsVisible ? 'visible' : 'hidden'}>
+          <LogsPage onClose={hideLogs} />
         </Activity>
         {releaseNotesContent && versions && (
           <HtmlInfoDialog

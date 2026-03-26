@@ -27,6 +27,7 @@ import {
   AvailableExtension,
   ExtensionUIComponent,
   OpenDialogResult,
+  SystemLogsResponse,
 } from '@common/types';
 
 /**
@@ -198,7 +199,6 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addTerminalDataListener: vi.fn(() => vi.fn()),
     addTerminalExitListener: vi.fn(() => vi.fn()),
     addContextMenuListener: vi.fn(() => vi.fn()),
-    addOpenSettingsListener: vi.fn(() => vi.fn()),
     addMessageRemovedListener: vi.fn(() => vi.fn()),
 
     // Task lifecycle event listeners
@@ -267,6 +267,12 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     sendQueuedPromptNow: vi.fn((): Promise<void> => Promise.resolve()),
     addQueuedPromptsUpdatedListener: vi.fn(() => vi.fn()),
     onModalOverlayUrl: vi.fn(() => vi.fn()),
+    addShowViewListener: vi.fn(() => vi.fn()),
+
+    // System logs
+    getSystemLogs: vi.fn((): Promise<SystemLogsResponse> => Promise.resolve({ logs: [], hasMore: false })),
+    clearSystemLogs: vi.fn((): Promise<void> => Promise.resolve()),
+    addSystemLogListener: vi.fn(() => vi.fn()),
   };
 
   return vi.mocked<ApplicationAPI>({ ...defaultMock, ...overrides });

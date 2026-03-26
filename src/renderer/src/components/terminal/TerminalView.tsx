@@ -91,6 +91,19 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
     }
   }, [activeTabId]);
 
+  // Focus the active terminal when the terminal view becomes visible
+  useEffect(() => {
+    if (visible) {
+      const activeRef = terminalRefs.current[activeTabId];
+      if (activeRef) {
+        // Small delay to ensure terminal is rendered
+        setTimeout(() => {
+          activeRef.focus();
+        }, 100);
+      }
+    }
+  }, [visible, activeTabId]);
+
   // Handle copying terminal output
   const handleCopyOutput = () => {
     const activeRef = terminalRefs.current[activeTabId];

@@ -788,7 +788,8 @@
       "downloadAutomatically": "自动下载更新",
       "releaseNotes": "发行说明",
       "openLogsDirectory": "打开日志目录",
-      "openLogsError": "打开日志目录出错"
+      "openLogsError": "打开日志目录出错",
+      "showLogs": "显示日志"
     },
     "messages": {
       "title": "消息显示",
@@ -1681,5 +1682,23 @@
     "selectMode": "选择"
   },
   "showModelSelector": "更换模型",
-  "hideModelSelector": "隐藏模型选择器"
+  "hideModelSelector": "隐藏模型选择器",
+  "logs": {
+    "title": "系统日志",
+    "level": "级别",
+    "allExtensions": "所有扩展",
+    "searchPlaceholder": "搜索日志...",
+    "debugTooltip": "仅当 LOG_LEVEL 环境变量设置为 'debug' 时，调试日志才可见。",
+    "autoScroll": "自动滚动",
+    "showing": "显示",
+    "clear": "清除日志",
+    "noLogs": "没有日志可显示",
+    "metadata": "元数据",
+    "clearConfirm": {
+      "title": "清除日志",
+      "message": "您确定要清除所有缓冲的日志吗？此操作无法撤销。",
+      "confirm": "清除",
+      "cancel": "取消"
+    }
+  }
 }
