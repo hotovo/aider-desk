@@ -21,10 +21,10 @@ export class WindowManager {
     // Set the first window as the main window
     if (!this.mainWindow) {
       this.mainWindow = window;
-      logger.info('Main window registered');
+      logger.debug('Main window registered.');
     }
 
-    logger.info(`Window added. Total windows: ${this.windows.length}`);
+    logger.debug(`Window added. Total windows: ${this.windows.length}`);
   }
 
   /**
@@ -35,13 +35,13 @@ export class WindowManager {
     const index = this.windows.indexOf(window);
     if (index !== -1) {
       this.windows.splice(index, 1);
-      logger.info(`Window removed. Remaining windows: ${this.windows.length}`);
+      logger.debug(`Window removed. Remaining windows: ${this.windows.length}`);
     }
 
     // If the main window is closed, don't set a new one
     // The main window designation is only used for window state persistence
     if (this.mainWindow === window) {
-      logger.info('Main window closed');
+      logger.debug('Main window closed');
     }
   }
 

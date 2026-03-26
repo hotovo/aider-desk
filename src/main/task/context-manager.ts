@@ -611,7 +611,7 @@ export class ContextManager {
       };
 
       await fs.writeFile(this.storagePath, JSON.stringify(contextData, null, 2), 'utf8');
-      logger.info(`Task context saved to ${this.storagePath}`, {
+      logger.debug(`Task context saved to ${this.storagePath}`, {
         taskId: this.taskId,
       });
     } catch (error) {
@@ -677,7 +677,7 @@ export class ContextManager {
       await this.loadPromise;
       this.loadPromise = null;
 
-      logger.info(`Task context loaded from ${this.storagePath}`, {
+      logger.debug(`Task context loaded from ${this.storagePath}`, {
         taskId: this.taskId,
       });
     } catch (error) {

@@ -95,7 +95,7 @@ export class AgentProfileManager {
   }
 
   public async initializeForProject(projectDir: string): Promise<void> {
-    logger.info(`Initializing agent profiles for project: ${projectDir}`);
+    logger.debug(`Initializing agent profiles for project: ${projectDir}`);
 
     const projectAgentsDir = getProjectAgentsDir(projectDir);
 
@@ -109,7 +109,7 @@ export class AgentProfileManager {
   }
 
   public removeProject(projectDir: string): void {
-    logger.info(`Removing agent profiles for project: ${projectDir}`);
+    logger.debug(`Removing agent profiles for project: ${projectDir}`);
 
     const projectAgentsDir = getProjectAgentsDir(projectDir);
 
@@ -137,7 +137,7 @@ export class AgentProfileManager {
   }
 
   private async initializeProfiles(ensureDefaults = true): Promise<void> {
-    logger.info('Initializing agent profiles...');
+    logger.debug('Initializing agent profiles...');
     this.profiles.clear();
 
     const globalAgentsDir = getGlobalAgentsDir();
@@ -163,7 +163,7 @@ export class AgentProfileManager {
     // Only create default profiles if the directory is empty
     const isDirectoryEmpty = await this.isAgentsDirectoryEmpty(globalAgentsDir);
     if (!isDirectoryEmpty) {
-      logger.info('Agents directory is not empty, skipping default profile creation');
+      logger.debug('Agents directory is not empty, skipping default profile creation');
       return;
     }
 
@@ -182,7 +182,7 @@ export class AgentProfileManager {
         // Config file doesn't exist, create it
         await fs.mkdir(profileDir, { recursive: true });
         await this.saveProfileToFile(defaultProfile, configPath);
-        logger.info(`Created default agent profile: ${defaultProfile.id} in directory: ${dirName}`);
+        logger.debug(`Created default agent profile: ${defaultProfile.id} in directory: ${dirName}`);
       }
     }
 
@@ -283,7 +283,7 @@ export class AgentProfileManager {
   }, 1000);
 
   private async reloadProfiles(agentsDir: string): Promise<void> {
-    logger.info(`Reloading agent profiles from ${agentsDir}`);
+    logger.debug(`Reloading agent profiles from ${agentsDir}`);
 
     // Clear existing profiles from this directory
     const profilesToRemove: string[] = [];
@@ -343,11 +343,11 @@ export class AgentProfileManager {
       .then(() => true)
       .catch(() => false);
     if (!dirExists) {
-      logger.info(`Agents directory does not exist, skipping: ${agentsDir}`);
+      logger.debug(`Agents directory does not exist, skipping: ${agentsDir}`);
       return;
     }
 
-    logger.info(`Loading agent profiles from ${agentsDir}`);
+    logger.debug(`Loading agent profiles from ${agentsDir}`);
 
     // Load order first
     const order = await this.loadOrderFile(agentsDir);
@@ -432,7 +432,7 @@ export class AgentProfileManager {
       // Sanitize profile with defaults
       const profile = this.sanitizeAgentProfile(loadedProfile, dirName);
       if (JSON.stringify(profile) !== JSON.stringify(loadedProfile)) {
-        logger.info(`Saving sanitized agent profile to ${filePath}`);
+        logger.debug(`Saving sanitized agent profile to ${filePath}`);
         await this.saveProfileToFile(profile, filePath);
       }
 
@@ -474,9 +474,9 @@ export class AgentProfileManager {
         }
       }
 
-      logger.info(`Loaded order for ${order.size} profiles from ${orderPath}`);
+      logger.debug(`Loaded order for ${order.size} profiles from ${orderPath}`);
     } catch {
-      logger.info(`No order file found at ${orderPath}, will create default order`);
+      logger.debug(`No order file found at ${orderPath}, will create default order`);
     }
 
     return order;
@@ -493,7 +493,7 @@ export class AgentProfileManager {
     try {
       await fs.mkdir(path.dirname(orderPath), { recursive: true });
       await fs.writeFile(orderPath, JSON.stringify(orderData, null, 2), 'utf-8');
-      logger.info(`Saved order for ${order.size} profiles to ${orderPath}`);
+      logger.debug(`Saved order for ${order.size} profiles to ${orderPath}`);
     } catch (err) {
       logger.error(`Failed to save order file to ${orderPath}: ${err}`);
       throw err;
@@ -740,7 +740,7 @@ export class AgentProfileManager {
     };
 
     this.profiles.set(profileId, updatedContext);
-    logger.info(`Merged ${projectRuleFiles.length} project-level rule files into global profile: ${agentDirName}`);
+    logger.debug(`Merged ${projectRuleFiles.length} project-level rule files into global profile: ${agentDirName}`);
   }
 
   async dispose(): Promise<void> {

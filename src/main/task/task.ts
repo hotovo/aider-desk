@@ -323,7 +323,7 @@ export class Task {
 
     this.eventManager.sendTaskUpdated(this.task);
 
-    logger.info('Saved task data', {
+    logger.debug('Saved task data', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       task: this.task,
@@ -433,7 +433,7 @@ export class Task {
   }
 
   private async loadContext() {
-    logger.info('Loading context for task', {
+    logger.debug('Loading context for task', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
     });
@@ -552,7 +552,7 @@ export class Task {
 
   private async cleanUpEmptyTask() {
     if (this.isInternal() || !(await fileExists(this.taskDataPath))) {
-      logger.info(`Removing ${this.isInternal() ? 'internal' : 'empty'} task folder`, {
+      logger.debug(`Removing ${this.isInternal() ? 'internal' : 'empty'} task folder`, {
         baseDir: this.project.baseDir,
         taskId: this.taskId,
       });
@@ -641,7 +641,7 @@ export class Task {
 
     const hookResult = await this.hookManager.trigger('onPromptSubmitted', { prompt, mode }, this, this.project);
     if (hookResult.blocked) {
-      logger.info('Prompt blocked by hook');
+      logger.debug('Prompt blocked by hook');
       return [];
     }
     prompt = hookResult.event.prompt;
@@ -653,7 +653,7 @@ export class Task {
 
     const extensionResult = await this.extensionManager.dispatchEvent('onPromptStarted', { prompt, mode, promptContext }, this.project, this);
     if (extensionResult.blocked) {
-      logger.info('Prompt blocked by extension');
+      logger.debug('Prompt blocked by extension');
       return [];
     }
     prompt = extensionResult.prompt;
@@ -746,7 +746,7 @@ export class Task {
 
     const aiderHookResult = await this.hookManager.trigger('onAiderPromptStarted', { prompt, mode }, this, this.project);
     if (aiderHookResult.blocked) {
-      logger.info('Aider prompt blocked by hook');
+      logger.debug('Aider prompt blocked by hook');
       return [];
     }
 
@@ -782,7 +782,7 @@ export class Task {
       this,
     );
     if (extensionResult.blocked) {
-      logger.info('Aider prompt blocked by extension');
+      logger.debug('Aider prompt blocked by extension');
       return [];
     }
 
@@ -955,7 +955,7 @@ export class Task {
         false,
       );
       if (taskName) {
-        logger.info('Generated task name:', { taskName });
+        logger.debug('Generated task name:', { taskName });
         return taskName.trim();
       } else {
         logger.warn('Generate task name interrupted');
@@ -1010,7 +1010,7 @@ export class Task {
         return null;
       }
 
-      logger.info('Determining task state:', {
+      logger.debug('Determining task state:', {
         baseDir: this.project.baseDir,
         taskId: this.taskId,
         modelId,
@@ -1020,7 +1020,7 @@ export class Task {
       const validStates = [DefaultTaskState.MoreInfoNeeded, DefaultTaskState.ReadyForImplementation, DefaultTaskState.ReadyForReview];
 
       if (validStates.includes(trimmedAnswer as DefaultTaskState)) {
-        logger.info(`Determined task state: ${trimmedAnswer}`);
+        logger.debug(`Determined task state: ${trimmedAnswer}`);
 
         return trimmedAnswer;
       } else if (trimmedAnswer !== 'NONE') {
@@ -1060,7 +1060,7 @@ export class Task {
     try {
       const hookResult = await this.hookManager.trigger('onSubagentStarted', { subagentId: profile.id, prompt }, this, this.project);
       if (hookResult.blocked) {
-        logger.info('Subagent execution blocked by hook');
+        logger.debug('Subagent execution blocked by hook');
         return [];
       }
       prompt = hookResult.event.prompt;
@@ -1086,7 +1086,7 @@ export class Task {
         this,
       );
       if (extensionResult.blocked) {
-        logger.info('Subagent execution blocked by extension');
+        logger.debug('Subagent execution blocked by extension');
         return [];
       }
       prompt = extensionResult.prompt;
@@ -1378,7 +1378,7 @@ export class Task {
 
     // If user input 'd' (don't ask again) or 'a' (always), store the determined answer.
     if ((normalizedAnswer === 'd' || normalizedAnswer === 'a') && (determinedAnswer == 'y' || determinedAnswer == 'n')) {
-      logger.info('Storing answer for question due to "d" or "a" input:', {
+      logger.debug('Storing answer for question due to "d" or "a" input:', {
         baseDir: this.project.baseDir,
         questionKey: this.getQuestionKey(this.currentQuestion),
         rawInput: answer,
@@ -1414,7 +1414,7 @@ export class Task {
     for (let contextFile of contextFiles) {
       const hookResult = await this.hookManager.trigger('onFileAdded', { file: contextFile }, this, this.project);
       if (hookResult.blocked) {
-        logger.info('File addition blocked by hook');
+        logger.debug('File addition blocked by hook');
         return false;
       }
       contextFile = hookResult.event.file;
@@ -1422,7 +1422,7 @@ export class Task {
       // Extension event uses plural name
       const extensionResult = await this.extensionManager.dispatchEvent('onFilesAdded', { files: [contextFile] }, this.project, this);
       if (extensionResult.files.length === 0) {
-        logger.info('File addition blocked by extension (empty files array)');
+        logger.debug('File addition blocked by extension (empty files array)');
         return false;
       }
       contextFile = extensionResult.files[0];
@@ -1511,14 +1511,14 @@ export class Task {
   public async runCommand(command: string, addToHistory = true) {
     const hookResult = await this.hookManager.trigger('onCommandExecuted', { command }, this, this.project);
     if (hookResult.blocked) {
-      logger.info('Command execution blocked by hook');
+      logger.debug('Command execution blocked by hook');
       return;
     }
     command = hookResult.event.command;
 
     const extensionResult = await this.extensionManager.dispatchEvent('onCommandExecuted', { command }, this.project, this);
     if (extensionResult.blocked) {
-      logger.info('Command execution blocked by extension');
+      logger.debug('Command execution blocked by extension');
       return;
     }
     command = extensionResult.command;
@@ -1776,7 +1776,7 @@ export class Task {
       }
     }
 
-    logger.info('Sending update models info to connectors', {
+    logger.debug('Sending update models info to connectors', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       modelsInfo: Object.keys(modelsInfo),
@@ -1955,38 +1955,35 @@ export class Task {
     const homeDir = homedir();
 
     // Get global rule files
-    try {
-      const globalRulesDir = AIDER_DESK_GLOBAL_RULES_DIR;
-      const globalRuleFileNames = await fs.readdir(globalRulesDir);
-      for (const fileName of globalRuleFileNames) {
-        if (fileName.endsWith('.md')) {
-          const absolutePath = path.join(globalRulesDir, fileName);
-          // Convert to relative path with ~/ prefix
-          const relativePath = path.join('~', path.relative(homeDir, absolutePath));
-          ruleFiles.push({
-            path: relativePath,
-            readOnly: true,
-            source: 'global-rule',
-          });
+    if (await fileExists(AIDER_DESK_GLOBAL_RULES_DIR)) {
+      try {
+        const globalRuleFileNames = await fs.readdir(AIDER_DESK_GLOBAL_RULES_DIR);
+        for (const fileName of globalRuleFileNames) {
+          if (fileName.endsWith('.md')) {
+            const absolutePath = path.join(AIDER_DESK_GLOBAL_RULES_DIR, fileName);
+            // Convert to relative path with ~/ prefix
+            const relativePath = path.join('~', path.relative(homeDir, absolutePath));
+            ruleFiles.push({
+              path: relativePath,
+              readOnly: true,
+              source: 'global-rule',
+            });
+          }
         }
+      } catch (error) {
+        // Global rules directory doesn't exist or can't be read
+        logger.debug('Could not read global rules directory', { error });
       }
-    } catch (error) {
-      // Global rules directory doesn't exist or can't be read
-      logger.debug('Could not read global rules directory', { error });
     }
 
     // Include AGENTS.md from project root if it exists
     const agentsFilePath = path.join(this.project.baseDir, 'AGENTS.md');
-    try {
-      await fs.access(agentsFilePath);
+    if (await fileExists(agentsFilePath)) {
       ruleFiles.push({
         path: 'AGENTS.md',
         readOnly: true,
         source: 'project-rule',
       });
-    } catch (error) {
-      // AGENTS.md doesn't exist, which is fine
-      logger.debug('AGENTS.md not found in project root', { error });
     }
 
     // Get project rule files
@@ -2162,7 +2159,7 @@ export class Task {
    * This is used for loading pre-authored context (e.g., from extensions).
    */
   public async loadContextMessages(messages: ContextMessage[]) {
-    logger.info('Loading context messages:', {
+    logger.debug('Loading context messages:', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       messagesCount: messages.length,
@@ -2176,7 +2173,7 @@ export class Task {
       // Check for subagent abort controller first
       const subagentAbortController = this.subagentAbortControllers[interruptId];
       if (subagentAbortController) {
-        logger.info('Interrupting subagent:', {
+        logger.debug('Interrupting subagent:', {
           baseDir: this.project.baseDir,
           taskId: this.taskId,
           interruptId,
@@ -2190,7 +2187,7 @@ export class Task {
       // Check for conflict resolution agent
       const abortController = this.resolutionAbortControllers[interruptId];
       if (abortController) {
-        logger.info('Interrupting conflict resolution agent:', {
+        logger.debug('Interrupting conflict resolution agent:', {
           baseDir: this.project.baseDir,
           taskId: this.taskId,
           interruptId,
@@ -2212,7 +2209,7 @@ export class Task {
     if (subagentInterruptIds.length > 0) {
       // Cancel the first running subagent
       const firstInterruptId = subagentInterruptIds[0];
-      logger.info('Interrupting first running subagent:', {
+      logger.debug('Interrupting first running subagent:', {
         baseDir: this.project.baseDir,
         taskId: this.taskId,
         interruptId: firstInterruptId,
@@ -2225,7 +2222,7 @@ export class Task {
     }
 
     // Default behavior: interrupt main agent
-    logger.info('Interrupting response:', {
+    logger.debug('Interrupting response:', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       promptContext: this.currentPromptContext?.id,
@@ -2782,7 +2779,7 @@ export class Task {
     this.addLogMessage('loading', '', true);
 
     if (!generatedPrompt) {
-      logger.info('Handoff prompt generation cancelled or failed.');
+      logger.warn('Handoff prompt generation cancelled or failed.');
       return;
     }
 
@@ -3214,7 +3211,7 @@ export class Task {
 
     const extensionResult = await this.extensionManager.dispatchEvent('onCustomCommandExecuted', { command, mode }, this.project, this);
     if (extensionResult.blocked) {
-      logger.info('Custom command execution blocked by extension');
+      logger.debug('Custom command execution blocked by extension');
       this.addLogMessage('loading', '', true);
       return;
     }

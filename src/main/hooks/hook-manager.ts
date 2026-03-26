@@ -131,7 +131,7 @@ export class HookManager {
     }
 
     this.globalWatcher = await this.setupWatcherForDir(AIDER_DESK_GLOBAL_HOOKS_DIR, async () => {
-      logger.info('Global hooks changed, reloading...');
+      logger.debug('Global hooks changed, reloading...');
       this.globalHooks = await this.loadHooksFromDir(AIDER_DESK_GLOBAL_HOOKS_DIR);
     });
   }
@@ -143,7 +143,7 @@ export class HookManager {
 
     if (!this.projectWatchers.has(projectDir)) {
       const watcher = await this.setupWatcherForDir(projectHooksDir, async () => {
-        logger.info(`Project hooks changed for ${projectDir}, reloading...`);
+        logger.debug(`Project hooks changed for ${projectDir}, reloading...`);
         const updatedHooks = await this.loadHooksFromDir(projectHooksDir);
         this.projectHooksCache.set(projectDir, updatedHooks);
       });
@@ -152,7 +152,7 @@ export class HookManager {
       }
     }
 
-    logger.info(`Reloaded hooks for project: ${projectDir}`);
+    logger.debug(`Reloaded hooks for project: ${projectDir}`);
   }
 
   public async stopWatchingProject(projectDir: string) {
@@ -162,7 +162,7 @@ export class HookManager {
       this.projectWatchers.delete(projectDir);
     }
     this.projectHooksCache.delete(projectDir);
-    logger.info(`Stopped watching hooks for project: ${projectDir}`);
+    logger.debug(`Stopped watching hooks for project: ${projectDir}`);
   }
 
   private async setupWatcherForDir(dir: string, onChange: () => Promise<void>): Promise<FSWatcher | null> {
@@ -220,7 +220,7 @@ export class HookManager {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
             const hookFile = require(filePath);
             hooks.push(hookFile);
-            logger.info(`Loaded hook file: ${filePath}`);
+            logger.debug(`Loaded hook file: ${filePath}`);
           } catch (error) {
             logger.error(`Failed to load hook file ${filePath}:`, error);
           }
@@ -327,6 +327,6 @@ export class HookManager {
     }
     this.projectWatchers.clear();
     this.projectHooksCache.clear();
-    logger.info('HookManager disposed');
+    logger.debug('HookManager disposed');
   }
 }

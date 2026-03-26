@@ -95,7 +95,7 @@ export class ExtensionContextImpl implements ExtensionContext {
       this.log('EventManager not available, cannot trigger UI data refresh', 'warn');
       return;
     }
-    this.log(`Triggering UI data refresh for component: ${componentId}, task: ${taskId}`, 'info');
+    this.log(`Triggering UI data refresh for component: ${componentId}, task: ${taskId}`, 'debug');
     this.eventManager.sendExtensionUIRefresh({
       projectDir: this.project?.baseDir,
       extensionId: this.extensionId,
@@ -109,7 +109,7 @@ export class ExtensionContextImpl implements ExtensionContext {
       this.log('EventManager not available, cannot trigger UI components reload', 'warn');
       return;
     }
-    this.log('Triggering UI components reload', 'info');
+    this.log('Triggering UI components reload', 'debug');
     this.eventManager.sendExtensionUIRefresh({
       projectDir: this.project?.baseDir,
       extensionId: this.extensionId,

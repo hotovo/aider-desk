@@ -50,6 +50,12 @@ export class McpManager {
     forceReload = false,
     enabledServers?: string[],
   ): Promise<McpConnector[]> {
+    logger.info('Initializing MCP connectors', {
+      projectDir,
+      taskDir,
+      forceReload,
+      enabledServers,
+    });
     const initId = uuidv4();
 
     this.currentInitId = initId;

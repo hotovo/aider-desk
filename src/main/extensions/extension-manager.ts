@@ -202,7 +202,7 @@ export class ExtensionManager {
         const hasUIComponentsChange = allExtensions.some((ext) => changedExtensions.includes(ext.metadata.name) && ext.instance.getUIComponents !== undefined);
 
         if (hasUIComponentsChange) {
-          logger.info('[Extensions] Extensions with UI components changed, triggering UI refresh');
+          logger.debug('[Extensions] Extensions with UI components changed, triggering UI refresh');
           this.eventManager.sendExtensionUIRefresh({ reloadComponents: true });
         }
       }
@@ -212,7 +212,7 @@ export class ExtensionManager {
     const repositoriesChanged = JSON.stringify(oldRepositories.sort()) !== JSON.stringify(newRepositories.sort());
 
     if (repositoriesChanged) {
-      logger.info('[Extensions] Repository list changed, refreshing extension cache');
+      logger.debug('[Extensions] Repository list changed, refreshing extension cache');
       void this.fetcher.getAvailableExtensions(newRepositories, true);
     }
   }
@@ -260,7 +260,7 @@ export class ExtensionManager {
     const settings = this.store.getSettings();
     const repositories = settings.extensions?.repositories || [AIDER_DESK_EXTENSIONS_REPO_URL];
 
-    logger.info('[Extensions] Preloading available extensions from repositories...');
+    logger.debug('[Extensions] Preloading available extensions from repositories...');
 
     try {
       const extensions = await this.fetcher.getAvailableExtensions(repositories);
@@ -290,7 +290,7 @@ export class ExtensionManager {
         projectDir: project?.baseDir,
         extensionId: loaded.id,
       });
-      logger.info(`[Extensions] Initialized extension: ${metadata.name} v${metadata.version}${project ? ` for project ${project.baseDir}}` : ''}`);
+      logger.debug(`[Extensions] Initialized extension: ${metadata.name} v${metadata.version}${project ? ` for project ${project.baseDir}}` : ''}`);
       return true;
     } catch (error) {
       logger.error(`[Extensions] Failed to call onLoad for extension '${metadata.name}${project ? ` for project ${project.baseDir}}` : ''}':`, error);
@@ -405,7 +405,7 @@ export class ExtensionManager {
       return;
     }
 
-    logger.info('[Extensions] Disposing extension system...');
+    logger.debug('[Extensions] Disposing extension system...');
 
     await this.stopGlobalWatcher();
 
@@ -428,7 +428,7 @@ export class ExtensionManager {
     }
 
     this.initialized = false;
-    logger.info('[Extensions] Extension system disposed');
+    logger.debug('[Extensions] Extension system disposed');
   }
 
   async unloadExtension(filePath: string): Promise<void> {
@@ -451,7 +451,7 @@ export class ExtensionManager {
     }
 
     this.registry.unregister(filePath);
-    logger.info(`[Extensions] Unloaded extension: ${filePath}`);
+    logger.debug(`[Extensions] Unloaded extension: ${filePath}`);
   }
 
   private findExtensionByPath(filePath: string): LoadedExtension | undefined {
@@ -556,7 +556,7 @@ export class ExtensionManager {
 
       watcher
         .on('all', (_eventName, filePath) => {
-          logger.info(`[Extensions] File changed: ${filePath}`);
+          logger.debug(`[Extensions] File changed: ${filePath}`);
           if (isRelevantFile(filePath)) {
             debouncedOnChange();
           }
@@ -578,12 +578,12 @@ export class ExtensionManager {
     }
 
     this.globalWatcher = await this.setupWatcherForDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR, async () => {
-      logger.info('[Extensions] Global extensions changed, reloading...');
+      logger.debug('[Extensions] Global extensions changed, reloading...');
       await this.reloadGlobalExtensions();
     });
 
     if (this.globalWatcher) {
-      logger.info('[Extensions] Hot reload enabled for global directory');
+      logger.debug('[Extensions] Hot reload enabled for global directory');
     }
   }
 
@@ -605,7 +605,7 @@ export class ExtensionManager {
     if (this.globalWatcher) {
       await this.globalWatcher.close();
       this.globalWatcher = null;
-      logger.info('[Extensions] Hot reload disabled');
+      logger.debug('[Extensions] Hot reload disabled');
     }
   }
 
@@ -613,21 +613,21 @@ export class ExtensionManager {
     const projectDir = project.baseDir;
     const projectExtensionsDir = path.join(projectDir, AIDER_DESK_EXTENSIONS_DIR);
 
-    logger.info(`[Extensions] Reloading extensions for project: ${projectDir}`);
+    logger.debug(`[Extensions] Reloading extensions for project: ${projectDir}`);
 
     await this.unloadExtensionsForDir(projectExtensionsDir);
     await this.loadExtensionsForDir(projectExtensionsDir, project);
 
     if (!this.projectWatchers.has(projectDir)) {
       const watcher = await this.setupWatcherForDir(projectExtensionsDir, async () => {
-        logger.info(`[Extensions] Project extensions changed for ${projectDir}, reloading...`);
+        logger.debug(`[Extensions] Project extensions changed for ${projectDir}, reloading...`);
         await this.unloadExtensionsForDir(projectExtensionsDir);
         await this.loadExtensionsForDir(projectExtensionsDir, project);
       });
 
       if (watcher) {
         this.projectWatchers.set(projectDir, watcher);
-        logger.info(`[Extensions] Started watching project extensions: ${projectDir}`);
+        logger.debug(`[Extensions] Started watching project extensions: ${projectDir}`);
       }
     }
 
@@ -639,7 +639,7 @@ export class ExtensionManager {
     if (watcher) {
       await watcher.close();
       this.projectWatchers.delete(projectDir);
-      logger.info(`[Extensions] Stopped watching project extensions: ${projectDir}`);
+      logger.debug(`[Extensions] Stopped watching project extensions: ${projectDir}`);
     }
   }
 
@@ -1062,7 +1062,7 @@ export class ExtensionManager {
       }
 
       try {
-        logger.info(`[Extensions] Getting UI extension data from '${id}' for component '${componentId}'`);
+        logger.debug(`[Extensions] Getting UI extension data from '${id}' for component '${componentId}'`);
         const context = new ExtensionContextImpl(id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
         return await instance.getUIExtensionData(componentId, context);
       } catch (error) {
@@ -1095,7 +1095,7 @@ export class ExtensionManager {
       }
 
       try {
-        logger.info(`[Extensions] Executing UI extension action '${action}' from '${id}' for component '${componentId}'`);
+        logger.debug(`[Extensions] Executing UI extension action '${action}' from '${id}' for component '${componentId}'`);
         const context = new ExtensionContextImpl(id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
         return await instance.executeUIExtensionAction(componentId, action, args, context);
       } catch (error) {
@@ -1158,14 +1158,14 @@ export class ExtensionManager {
           );
         }
 
-        logger.info(`[Extensions] Updating agent profile '${profile.id}' via extension '${metadata.name}'`);
+        logger.debug(`[Extensions] Updating agent profile '${profile.id}' via extension '${metadata.name}'`);
         const updatedProfile = await instance.onAgentProfileUpdated(context, profile.id, profile);
 
         if (!updatedProfile) {
           throw new Error(`Extension '${metadata.name}' did not return an updated profile`);
         }
 
-        logger.info(`[Extensions] Agent profile '${profile.id}' updated successfully`);
+        logger.debug(`[Extensions] Agent profile '${profile.id}' updated successfully`);
         return updatedProfile;
       } catch (error) {
         logger.error(`[Extensions] Failed to update agent profile from extension '${metadata.name}':`, error);
@@ -1189,7 +1189,7 @@ export class ExtensionManager {
     try {
       const context = new ExtensionContextImpl(extensionId, extensionName, this.store, this.modelManager, this.eventManager, project, task);
 
-      logger.info(`[Extensions] Executing command '${commandName}' from extension '${extensionName}'`);
+      logger.debug(`[Extensions] Executing command '${commandName}' from extension '${extensionName}'`);
       await command.execute(args, context);
 
       logger.debug(`[Extensions] Command '${commandName}' executed successfully`);
@@ -1237,7 +1237,7 @@ export class ExtensionManager {
   async installExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean> {
     const projectDir = project?.baseDir;
     try {
-      logger.info(`[Extensions] Installing extension '${extensionId}' from ${repositoryUrl} into ${projectDir ?? 'global'}`);
+      logger.debug(`[Extensions] Installing extension '${extensionId}' from ${repositoryUrl} into ${projectDir ?? 'global'}`);
 
       const targetDir = projectDir ? path.join(projectDir, AIDER_DESK_EXTENSIONS_DIR) : AIDER_DESK_GLOBAL_EXTENSIONS_DIR;
 
@@ -1267,7 +1267,7 @@ export class ExtensionManager {
         const targetPath = path.join(targetDir, extension.file);
         await fs.writeFile(targetPath, code, 'utf-8');
 
-        logger.info(`[Extensions] Installed single-file extension: ${extension.file}`);
+        logger.debug(`[Extensions] Installed single-file extension: ${extension.file}`);
       } else if (extension.type === 'folder' && extension.folder) {
         const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ext-install-'));
 
@@ -1291,11 +1291,11 @@ export class ExtensionManager {
           await fs.cp(sourcePath, targetPath, { recursive: true });
 
           if (extension.hasDependencies) {
-            logger.info(`[Extensions] Installing dependencies for ${extension.name}...`);
+            logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
             await this.installDependencies(targetPath);
           }
 
-          logger.info(`[Extensions] Installed folder extension: ${extension.folder}`);
+          logger.debug(`[Extensions] Installed folder extension: ${extension.folder}`);
         } finally {
           try {
             await fs.rm(tempDir, { recursive: true, force: true });
@@ -1384,7 +1384,7 @@ export class ExtensionManager {
    */
   async uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean> {
     try {
-      logger.info(`[Extensions] Uninstalling extension '${extensionId}'`);
+      logger.debug(`[Extensions] Uninstalling extension '${extensionId}'`);
 
       const extension = this.registry.getExtension(extensionId);
       if (!extension) {
@@ -1405,10 +1405,10 @@ export class ExtensionManager {
       if (isFolderExtension) {
         const folderPath = parsedPath.dir;
         await fs.rm(folderPath, { recursive: true, force: true });
-        logger.info(`[Extensions] Removed folder: ${folderPath}`);
+        logger.debug(`[Extensions] Removed folder: ${folderPath}`);
       } else {
         await fs.unlink(extension.filePath);
-        logger.info(`[Extensions] Removed file: ${extension.filePath}`);
+        logger.debug(`[Extensions] Removed file: ${extension.filePath}`);
       }
 
       this.registry.unregister(extension.filePath);
@@ -1486,7 +1486,7 @@ export class ExtensionManager {
 
           // Check for blocking
           if ('blocked' in currentEvent && currentEvent.blocked === true) {
-            logger.info(`[Extensions] Event '${String(eventName)}' blocked by extension '${metadata.name}'`);
+            logger.debug(`[Extensions] Event '${String(eventName)}' blocked by extension '${metadata.name}'`);
             break;
           }
         }

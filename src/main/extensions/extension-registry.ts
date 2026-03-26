@@ -33,7 +33,7 @@ export class ExtensionRegistry {
 
   async register(extension: Extension, metadata: ExtensionMetadata, filePath: string, projectDir?: string) {
     const id = this.deriveExtensionId(filePath);
-    logger.info(`[Extensions] Registering extension: ${metadata.name} (id: ${id})`);
+    logger.debug(`[Extensions] Registering extension: ${metadata.name} (id: ${id})`);
 
     // Try to load README.md for folder-based extensions
     let readmeContent: string | undefined;
@@ -44,7 +44,7 @@ export class ExtensionRegistry {
         const content = await fs.readFile(readmePath, 'utf-8');
         if (content.trim()) {
           readmeContent = content;
-          logger.info(`[Extensions] Loaded README.md for extension: ${metadata.name}`);
+          logger.debug(`[Extensions] Loaded README.md for extension: ${metadata.name}`);
         }
       } catch {
         // README.md doesn't exist or can't be read, that's fine
@@ -65,7 +65,7 @@ export class ExtensionRegistry {
   setInitialized(filePath: string, initialized: boolean): void {
     const extension = this.extensions.get(filePath);
     if (extension) {
-      logger.info(`[Extensions] Set initialized: ${filePath} to ${initialized}`);
+      logger.debug(`[Extensions] Set initialized: ${filePath} to ${initialized}`);
       extension.initialized = initialized;
     } else {
       logger.warn(`[Extensions] Failed to set initialized: ${filePath} to ${initialized}, extension not found`);
@@ -84,7 +84,7 @@ export class ExtensionRegistry {
   }
 
   unregister(filePath: string): boolean {
-    logger.info(`[Extensions] Unregistering extension: ${filePath}`);
+    logger.debug(`[Extensions] Unregistering extension: ${filePath}`);
     return this.extensions.delete(filePath);
   }
 

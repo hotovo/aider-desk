@@ -205,7 +205,7 @@ export class Project {
         .map((dirent) => dirent.name)
         .filter((taskId) => taskId !== INTERNAL_TASK_ID);
 
-      logger.info(`Loading ${taskDirs.length} tasks from directory`, {
+      logger.debug(`Loading ${taskDirs.length} tasks from directory`, {
         baseDir: this.baseDir,
         tasksDir,
       });

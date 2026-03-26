@@ -730,7 +730,7 @@ export class Agent {
 
     const hookResult = await task.hookManager.trigger('onAgentStarted', { prompt, contextMessages, contextFiles }, task, task.project);
     if (hookResult.blocked) {
-      logger.info('Agent execution blocked by hook');
+      logger.debug('Agent execution blocked by hook');
       return [];
     }
     prompt = hookResult.event.prompt;
@@ -780,7 +780,7 @@ export class Agent {
         task,
       );
       if (extensionResult.blocked) {
-        logger.info('Agent execution blocked by extension');
+        logger.debug('Agent execution blocked by extension');
         return [];
       }
       profile = extensionResult.agentProfile;
@@ -876,7 +876,7 @@ export class Agent {
     }
 
     if (effectiveAbortSignal?.aborted) {
-      logger.info('Prompt aborted by user (before Agent run)');
+      logger.debug('Prompt aborted by user (before Agent run)');
       return resultMessages;
     }
 
@@ -964,7 +964,7 @@ export class Agent {
 
         // Attempt generic repair for other types of errors
         try {
-          logger.info(`Attempting generic repair for tool call error: ${toolCall.toolName}`);
+          logger.warn(`Attempting generic repair for tool call error: ${toolCall.toolName}`);
           const result = await generateText({
             model,
             system,
@@ -996,7 +996,7 @@ export class Agent {
             tools,
           });
 
-          logger.info('Repair tool call result:', result);
+          logger.debug('Repair tool call result:', result);
           const newToolCall = result.toolCalls.find((newToolCall) => newToolCall.toolName === toolCall.toolName);
           return newToolCall != null
             ? {
@@ -1016,7 +1016,7 @@ export class Agent {
       const effectiveTemperature = profile.temperature ?? modelSettings?.temperature;
       const effectiveMaxOutputTokens = profile.maxTokens ?? modelSettings?.maxOutputTokens;
 
-      logger.info('Parameters:', {
+      logger.debug('Parameters:', {
         model: model.modelId,
         temperature: effectiveTemperature,
         maxOutputTokens: effectiveMaxOutputTokens,
@@ -1778,7 +1778,7 @@ export class Agent {
 
   private async processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
+    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
     task: Task,
     provider: ProviderProfile,
     model: string,
@@ -1791,12 +1791,9 @@ export class Agent {
       text: text?.substring(0, 100), // Log truncated text
       toolCalls: toolCalls?.map((tc) => tc.toolName),
       toolResults: toolResults?.map((tr) => tr.toolName),
-      files: files?.map((f) => f.mediaType),
       usage,
       providerMetadata,
       promptContext,
-      reasoning,
-      responseBody: response.body,
     });
 
     const messages: ContextMessage[] = [];

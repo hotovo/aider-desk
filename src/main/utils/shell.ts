@@ -218,7 +218,6 @@ const getPathSeparator = (): string => (process.platform === 'win32' ? ';' : ':'
 export const getShellPath = (): string => {
   // In packaged apps, always refresh PATH on first call to avoid cached restricted PATH
   if (cachedPath && !isFirstCall) {
-    logger.debug('Using cached PATH');
     return cachedPath;
   }
   isFirstCall = false;
@@ -646,6 +645,7 @@ export const execWithShellPath = async (
   command: string,
   options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number },
 ): Promise<{ stdout: string; stderr: string }> => {
+  logger.debug(`Executing command with shell path: ${command}`);
   const shellPath = getShellPath();
   return execAsync(command, {
     ...options,

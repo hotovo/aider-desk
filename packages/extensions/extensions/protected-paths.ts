@@ -27,15 +27,15 @@ export default class ProtectedPathsExtension implements Extension {
   }
 
   async onToolCalled(event: ToolCalledEvent, context: ExtensionContext): Promise<void | Partial<ToolCalledEvent>> {
-    context.log(`onToolCalled triggered: toolName=${event.toolName}`, 'info');
+    context.log(`onToolCalled triggered: toolName=${event.toolName}`, 'debug');
 
     if (event.toolName !== 'power---file_write' && event.toolName !== 'power---file_edit' && event.toolName !== 'power---file_read') {
-      context.log(`Ignoring non-file tool: ${event.toolName}`, 'info');
+      context.log(`Ignoring non-file tool: ${event.toolName}`, 'debug');
       return undefined;
     }
 
     const path = (event.input as { filePath?: string })?.filePath;
-    context.log(`File operation detected on path: ${path}`, 'info');
+    context.log(`File operation detected on path: ${path}`, 'debug');
 
     if (typeof path !== 'string') {
       context.log('Path is not a string, skipping', 'warn');
@@ -43,7 +43,7 @@ export default class ProtectedPathsExtension implements Extension {
     }
 
     const isProtected = protectedPaths.some((p) => path.includes(p));
-    context.log(`Protected check result: ${isProtected} for path: ${path}`, 'info');
+    context.log(`Protected check result: ${isProtected} for path: ${path}`, 'debug');
 
     if (isProtected) {
       context.log(`Blocked operation on protected path: ${path}`, 'warn');

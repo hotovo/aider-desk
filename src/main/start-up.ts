@@ -119,14 +119,14 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
             // Version-pinned package - check if matches required version
             const requiredVersion = pkg.split('==')[1];
             if (currentVersion === requiredVersion) {
-              logger.info(`Package ${pkg} is already at required version ${requiredVersion}, skipping`);
+              logger.debug(`Package ${pkg} is already at required version ${requiredVersion}, skipping`);
               continue;
             }
           } else {
             // For non-version-pinned packages, check if newer version is available
             const latestVersion = await getLatestPythonLibVersion(packageName);
             if (latestVersion && currentVersion === latestVersion) {
-              logger.info(`Package ${pkg} is already at latest version ${currentVersion}, skipping`);
+              logger.debug(`Package ${pkg} is already at latest version ${currentVersion}, skipping`);
               continue;
             }
           }
