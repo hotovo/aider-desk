@@ -1574,6 +1574,8 @@ export class Task {
 
         // Reset --soft HEAD~1
         await gitRootDir.reset(['--soft', 'HEAD~1']);
+
+        void this.sendUpdatedFilesUpdated();
         if (this.task.worktree) {
           void this.sendWorktreeIntegrationStatusUpdated();
         }
@@ -3390,6 +3392,9 @@ ${error.stderr}`,
       await this.aiderManager.start(true);
     }
 
+    void this.sendUpdatedFilesUpdated();
+    void this.sendWorktreeIntegrationStatusUpdated();
+
     return true;
   }
 
@@ -3494,6 +3499,7 @@ ${error.stderr}`,
       );
     }
 
+    await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
@@ -3549,6 +3555,7 @@ ${error.stderr}`,
       );
     }
 
+    await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
@@ -3589,6 +3596,7 @@ ${error.stderr}`,
       );
     }
 
+    await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
@@ -3600,6 +3608,8 @@ ${error.stderr}`,
     });
 
     await this.worktreeManager.restoreFile(this.getTaskDir(), filePath);
+    await this.sendUpdatedFilesUpdated();
+    await this.sendWorktreeIntegrationStatusUpdated();
   }
 
   public async generateCommitMessage(): Promise<string> {
@@ -3735,6 +3745,7 @@ ${error.stderr}`,
       });
     }
 
+    await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
@@ -3758,6 +3769,7 @@ ${error.stderr}`,
       );
     }
 
+    await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
@@ -3959,6 +3971,7 @@ ${error.stderr}`,
       );
     }
 
+    await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 

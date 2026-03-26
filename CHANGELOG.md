@@ -8,6 +8,7 @@
 - added system logs viewer
 - properly focusing the terminal when it's activated
 - state of view all files mode in Updated Files is now remembered
+- updated files are now properly refreshed when using git actions
 
 ## [0.58.1]
 
