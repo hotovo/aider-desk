@@ -258,6 +258,7 @@ src/
     paths.ts
     progress-window.ts
     start-up.ts
+    window-manager.ts
   mcp-server/
     aider-desk-mcp-server.ts
   preload/
@@ -2015,6 +2016,11 @@ File: src/common/locales/en.json
     "notifications": {
       "title": "Notifications"
     },
+    "windowTitle": {
+      "title": "Window Title"
+    },
+    "windowTitleTemplateLabel": "Window title template",
+    "windowTitleTemplateTooltip": "Use {project} for project name and {task} for current task name. Example: 'AiderDesk - {project}' or '{project} - {task}'",
     "agent": {
       "mcpServers": "MCP Servers",
       "provider": "Provider",
@@ -2933,7 +2939,13 @@ File: src/common/locales/en.json
     "paste": "Paste",
     "close": "Close",
     "closeOtherTabs": "Close other tabs",
-    "closeAllTabs": "Close all tabs"
+    "closeAllTabs": "Close all tabs",
+    "openInNewWindow": "Open in new window"
+  },
+  "menu": {
+    "file": {
+      "newWindow": "New Window"
+    }
   },
   "taskSidebar": {
     "title": "Tasks",
@@ -3681,6 +3693,11 @@ File: src/common/locales/zh.json
     "notifications": {
       "title": "通知"
     },
+    "windowTitle": {
+      "title": "窗口标题"
+    },
+    "windowTitleTemplateLabel": "窗口标题模板",
+    "windowTitleTemplateTooltip": "使用 {project} 表示项目名称，{task} 表示当前任务名称。例如：'AiderDesk - {project}' 或 '{project} - {task}'",
     "agent": {
       "mcpServers": "MCP 服务器",
       "provider": "提供商",
@@ -4611,7 +4628,13 @@ File: src/common/locales/zh.json
     "paste": "粘贴",
     "close": "关闭",
     "closeOtherTabs": "关闭其他标签页",
-    "closeAllTabs": "关闭所有标签页"
+    "closeAllTabs": "关闭所有标签页",
+    "openInNewWindow": "在新窗口中打开"
+  },
+  "menu": {
+    "file": {
+      "newWindow": "新建窗口"
+    }
   },
   "taskSidebar": {
     "title": "任务",
@@ -5294,6 +5317,7 @@ export interface SettingsData {
   };
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
+  windowTitleTemplate?: string;
   promptBehavior: PromptBehavior;
   server: {
     enabled: boolean;
@@ -6371,6 +6395,8 @@ export interface ApplicationAPI {
   setActiveProject: (baseDir: string) => Promise<ProjectData[]>;
   removeOpenProject: (baseDir: string) => Promise<ProjectData[]>;
   updateOpenProjectsOrder: (baseDirs: string[]) => Promise<ProjectData[]>;
+  openNewWindow: () => Promise<void>;
+  openProjectInNewWindow: (baseDir: string) => Promise<void>;
   updateMainModel: (baseDir: string, taskId: string, model: string) => void;
   updateWeakModel: (baseDir: string, taskId: string, model: string) => void;
   updateArchitectModel: (baseDir: string, taskId: string, model: string) => void;
@@ -8560,6 +8586,8 @@ const sanitize = (str: string) =>
 ⋮----
 // Remove escaped newlines, quotes, tabs, etc. only when they have double backslashes
 ⋮----
+// Normalize Windows line endings to Unix for consistent matching
+⋮----
 // Use replacer function to avoid special replacement patterns ($&, $`, '$', $$)
 ⋮----
 absolute: false, // Keep paths relative to cwd for easier processing
@@ -10073,7 +10101,7 @@ import {
   ModalOverlayUrlData,
 } from '@common/types';
 ⋮----
-import type { BrowserWindow } from 'electron';
+import type { WindowManager } from '@/window-manager';
 ⋮----
 import logger from '@/logger';
 ⋮----
@@ -10088,7 +10116,7 @@ export interface EventsConnector extends EventsConnectorConfig {
 ⋮----
 export class EventManager
 ⋮----
-constructor(private readonly mainWindow: BrowserWindow | null)
+constructor(private readonly windowManager?: WindowManager)
 ⋮----
 // Project lifecycle events
 sendProjectStarted(baseDir: string): void
@@ -10189,7 +10217,9 @@ subscribe(socket: Socket, config: EventsConnectorConfig): void
 ⋮----
 unsubscribe(socket: Socket): void
 ⋮----
-private sendToMainWindow(eventType: string, data: unknown): void
+private sendToWindows(eventType: string, data: unknown): void
+⋮----
+// Send event to all open windows
 ⋮----
 private broadcastToEventConnectors(eventType: string, data: unknown): void
 ⋮----
@@ -17356,7 +17386,7 @@ import { normalizeBaseDir } from '@common/utils';
 import { isBinary } from 'istextorbinary';
 ⋮----
 import type { ModeDefinition, ExtensionUIComponent } from '@common/types';
-import type { BrowserWindow } from 'electron';
+import type { WindowManager } from '@/window-manager';
 ⋮----
 import { McpManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
@@ -17560,6 +17590,8 @@ async exportTaskToMarkdown(baseDir: string, taskId: string, copyOnly: boolean = 
 ⋮----
 async setZoomLevel(zoomLevel: number)
 ⋮----
+// Apply zoom level to all open windows
+⋮----
 async getVersions(forceRefresh = false): Promise<VersionsInfo>
 ⋮----
 async downloadLatestAiderDesk(): Promise<void>
@@ -17688,8 +17720,11 @@ import { Store } from '@/store';
 import logger from '@/logger';
 import { initManagers } from '@/managers';
 import { getDefaultProjectSettings } from '@/utils';
+import { WindowManager } from '@/window-manager';
 ⋮----
-const setupCustomMenu = (): void =>
+// Global instances shared across all windows
+⋮----
+const setupCustomMenu = (createWindowFn: () => void): void =>
 ⋮----
 // File menu
 ⋮----
@@ -17701,11 +17736,48 @@ const setupCustomMenu = (): void =>
 ⋮----
 const initStore = async (): Promise<Store> =>
 ⋮----
-const initWindow = async (store: Store): Promise<BrowserWindow> =>
+const initWindow = async (windowMgr: WindowManager, storeInstance: Store, projectToActivate?: string): Promise<BrowserWindow> =>
+⋮----
+// Calculate position - offset from focused window if exists
+⋮----
+// Register window with window manager
 ⋮----
 const saveWindowState = (): void =>
 ⋮----
-const beforeQuit = async (event?: Electron.Event) =>
+// Only save state if this is the main window
+⋮----
+// Handle window close
+⋮----
+// HMR for renderer base on electron-vite cli.
+// Load the remote URL for development or the local html file for production.
+⋮----
+// For HashRouter, query params must come after the hash: #/home?project=...
+⋮----
+// For production with HashRouter, append hash with query params
+⋮----
+// Apply saved zoom level
+⋮----
+// Function to create a new window
+const createNewWindow = async (projectToActivate?: string) =>
+⋮----
+// Export getter for IPC handlers
+export const getCreateNewWindow = ()
+⋮----
+// Setup custom menu only in GUI mode - pass createNewWindow function
+⋮----
+updateProgress = (
+⋮----
+// In headless mode, use a no-op updateProgress
+updateProgress = () =>
+⋮----
+// Initialize store globally
+⋮----
+// Initialize window manager
+⋮----
+// Initialize managers (shared across all windows)
+⋮----
+// Setup global cleanup
+const globalCleanup = async () =>
 ⋮----
 // Handle CTRL+C (SIGINT)
 ⋮----
@@ -17714,19 +17786,7 @@ const beforeQuit = async (event?: Electron.Event) =>
 ⋮----
 // Initialize IPC handlers
 ⋮----
-// HMR for renderer base on electron-vite cli.
-// Load the remote URL for development or the local html file for production.
-⋮----
-// Apply saved zoom level
-⋮----
-// Setup custom menu only in GUI mode
-⋮----
-updateProgress = (
-⋮----
-// In headless mode, use a no-op updateProgress
-updateProgress = () =>
-⋮----
-// Initialize managers without window in headless mode
+// Create the first window
 
 ================
 File: src/main/ipc-handlers.ts
@@ -17785,7 +17845,7 @@ File: src/main/managers.ts
 ================
 import { createServer } from 'http';
 ⋮----
-import type { BrowserWindow } from 'electron';
+import type { WindowManager } from '@/window-manager';
 ⋮----
 import { AgentProfileManager, McpManager } from '@/agent';
 import { CloudflareTunnelManager, ServerController } from '@/server';
@@ -17816,13 +17876,13 @@ export interface ManagersResult {
   extensionManager: ExtensionManager;
 }
 ⋮----
-export const initManagers = async (store: Store, mainWindow: BrowserWindow | null = null): Promise<ManagersResult> =>
+export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> =>
 ⋮----
 // Initialize telemetry manager (non-blocking - analytics not critical for startup)
 ⋮----
 // Initialize MCP manager
 ⋮----
-// Initialize event manager (no main window in headless)
+// Initialize event manager with window manager
 ⋮----
 // Initialize model manager
 ⋮----
@@ -17848,7 +17908,7 @@ export const initManagers = async (store: Store, mainWindow: BrowserWindow | nul
 ⋮----
 // Initialize Cloudflare tunnel manager
 ⋮----
-// Initialize events handler (no main window)
+// Initialize events handler with window manager
 ⋮----
 // Create and initialize REST API controller with the server
 ⋮----
@@ -18223,6 +18283,62 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
 // Clean up if setup fails
 
 ================
+File: src/main/window-manager.ts
+================
+import type { BrowserWindow } from 'electron';
+⋮----
+import logger from '@/logger';
+⋮----
+/**
+ * WindowManager manages all open BrowserWindow instances in the application.
+ * It provides a central registry for windows and tracks which is the main window.
+ */
+export class WindowManager
+⋮----
+/**
+   * Add a window to the manager.
+   * The first window added is automatically set as the main window.
+   * @param window The BrowserWindow to add
+   */
+addWindow(window: BrowserWindow): void
+⋮----
+// Set the first window as the main window
+⋮----
+/**
+   * Remove a window from the manager.
+   * @param window The BrowserWindow to remove
+   */
+removeWindow(window: BrowserWindow): void
+⋮----
+// If the main window is closed, don't set a new one
+// The main window designation is only used for window state persistence
+⋮----
+/**
+   * Get all currently open windows (non-destroyed).
+   * @returns Array of BrowserWindow instances
+   */
+getAllWindows(): BrowserWindow[]
+⋮----
+/**
+   * Get the main window (first window created).
+   * @returns The main BrowserWindow or null if it's been closed
+   */
+getMainWindow(): BrowserWindow | null
+⋮----
+/**
+   * Check if a given window is the main window.
+   * @param window The window to check
+   * @returns True if the window is the main window
+   */
+isMainWindow(window: BrowserWindow): boolean
+⋮----
+/**
+   * Get the number of open windows.
+   * @returns Number of windows
+   */
+getWindowCount(): number
+
+================
 File: src/mcp-server/aider-desk-mcp-server.ts
 ================
 /* eslint-disable func-style,@typescript-eslint/no-explicit-any */
@@ -18563,6 +18679,14 @@ getOpenProjects(): Promise<ProjectData[]>
 addOpenProject(baseDir: string): Promise<ProjectData[]>
 setActiveProject(baseDir: string): Promise<ProjectData[]>
 removeOpenProject(baseDir: string): Promise<ProjectData[]>
+openNewWindow(): Promise<void>
+⋮----
+// In browser mode, open a new tab with the home page
+⋮----
+openProjectInNewWindow(baseDir: string): Promise<void>
+⋮----
+// In browser mode, open a new tab with the specific project
+⋮----
 updateOpenProjectsOrder(baseDirs: string[]): Promise<ProjectData[]>
 updateMainModel(baseDir: string, taskId: string, model: string): void
 updateWeakModel(baseDir: string, taskId: string, model: string): void
@@ -24389,6 +24513,7 @@ import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useApi } from '@/contexts/ApiContext';
 ⋮----
 type Props = {
   openProjects: ProjectData[];
@@ -24414,8 +24539,6 @@ const handleDragEnd = (event: DragEndEvent) =>
 // useMemo for project IDs to prevent SortableContext from re-rendering unnecessarily
 ⋮----
 onChange=
-⋮----
-const handleRightClick = (event: MouseEvent) =>
 ⋮----
 className={clsx(
             'flex items-center justify-center rounded-full p-1 transition-colors duration-200 z-10',
@@ -24514,6 +24637,7 @@ const initProject = async () =>
 // Optionally switch to the new task
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
 
 ================
 File: src/renderer/src/components/project/TaskBar.tsx
@@ -26165,6 +26289,7 @@ File: src/renderer/src/components/settings/GeneralSettings.tsx
 ================
 import { useTranslation } from 'react-i18next';
 import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode } from '@common/types';
+import { ChangeEvent } from 'react';
 ⋮----
 import { Checkbox } from '../common/Checkbox';
 import { RadioButton } from '../common/RadioButton';
@@ -26172,6 +26297,7 @@ import { Select, Option } from '../common/Select';
 import { Section } from '../common/Section';
 import { Slider } from '../common/Slider';
 import { InfoIcon } from '../common/InfoIcon';
+import { Input } from '../common/Input';
 ⋮----
 import { LanguageSelector } from './LanguageSelector';
 ⋮----
@@ -26206,6 +26332,8 @@ const handleMessageViewModeChange = (value: string) =>
 const handleSuggestionModeChange = (mode: SuggestionMode) =>
 ⋮----
 const handleSuggestionModeClick = (value: string) =>
+⋮----
+const handleWindowTitleTemplateChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleSuggestionDelayChange = (delay: number) =>
 ⋮----
@@ -28778,7 +28906,7 @@ File: src/renderer/src/pages/Home.tsx
 ================
 import { ProjectData } from '@common/types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useState, useTransition, useRef } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useState, useTransition } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
 import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
@@ -28810,6 +28938,8 @@ type ShowSettingsInfo = {
   options?: Record<string, unknown>;
 };
 ⋮----
+// Derive active project from URL parameter first, then fall back to store
+⋮----
 const loadProjects = async () =>
 ⋮----
 // eslint-disable-next-line no-console
@@ -28817,6 +28947,9 @@ const loadProjects = async () =>
 const handleOpenSettings = (pageId: string) =>
 ⋮----
 const checkReleaseNotes = async () =>
+⋮----
+// Update URL parameter instead of global store
+// This allows each window to have its own active project
 ⋮----
 // Close current project tab
 ⋮----
@@ -28826,13 +28959,13 @@ const handleUrlNavigation = async () =>
 ⋮----
 // Only update initial task ID on first navigation or when task changes
 ⋮----
-// Only switch if not already active
+// Project exists, just update optimistic state (URL is already set)
+⋮----
+// Project doesn't exist, add it and update optimistic state
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-// Update URL when project changes from user interaction (not from URL navigation)
-⋮----
-// Skip if the change came from URL navigation
+// Note: We no longer sync activeProject to URL here because setActiveProject now updates the URL directly
 ⋮----
 // Open new project dialog
 ⋮----
