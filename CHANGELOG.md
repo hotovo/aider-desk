@@ -11,6 +11,7 @@
 - updated files are now properly refreshed when using git actions
 - correctly deleting messages and messages up when in compact view mode
 - removing messages that have not been finished during the interruption
+- added missing dependency when using Auggie SDK provider in Electron app
 
 ## [0.58.1]
 
