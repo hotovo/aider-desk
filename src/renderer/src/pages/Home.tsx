@@ -566,7 +566,7 @@ export const Home = () => {
           <ModelLibrary onClose={hideModelLibrary} />
         </Activity>
         <Activity mode={isLogsVisible ? 'visible' : 'hidden'}>
-          <LogsPage onClose={hideLogs} />
+          <LogsPage onClose={hideLogs} openInWindowUrl="#/logs" />
         </Activity>
         {releaseNotesContent && versions && (
           <HtmlInfoDialog

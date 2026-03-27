@@ -379,6 +379,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.openPath(path);
   });
 
+  ipcMain.handle('open-url-in-window', async (_, url: string) => {
+    return eventsHandler.openUrlInWindow(url);
+  });
+
   ipcMain.handle('get-commands', async (_, baseDir: string) => {
     return eventsHandler.getCommands(baseDir);
   });

@@ -12,8 +12,8 @@ const GetEffectiveEnvironmentVariableSchema = z.object({
 });
 
 const GetSystemLogsSchema = z.object({
-  fromId: z.number().optional(),
-  limit: z.number().optional(),
+  fromId: z.coerce.number().optional(),
+  limit: z.coerce.number().optional(),
   levels: z.array(z.string()).optional(),
 });
 

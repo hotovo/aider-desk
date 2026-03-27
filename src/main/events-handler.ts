@@ -53,7 +53,7 @@ import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal/terminal-manager';
 import { ExtensionManager, LoadedExtension } from '@/extensions';
 import logger, { eventTransport } from '@/logger';
-import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
+import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, openUrl } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
 import { isElectron } from '@/app';
@@ -916,6 +916,16 @@ export class EventsHandler {
         error: error instanceof Error ? error.message : String(error),
       });
       return false;
+    }
+  }
+
+  async openUrlInWindow(url: string): Promise<void> {
+    const win = await openUrl(url, 'window');
+    if (win && this.windowManager) {
+      this.windowManager.addWindow(win);
+      win.on('closed', () => {
+        this.windowManager?.removeWindow(win);
+      });
     }
   }
 

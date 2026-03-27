@@ -1,14 +1,22 @@
 import { ReactNode } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 
 import { ModalOverlayLayout } from '../ModalOverlayLayout';
+
+import { createMockApi } from '@/__tests__/mocks/api';
+import { useApi } from '@/contexts/ApiContext';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+}));
+
+// Mock useApi
+vi.mock('@/contexts/ApiContext', () => ({
+  useApi: vi.fn(),
 }));
 
 interface IconButtonProps {
@@ -28,6 +36,12 @@ vi.mock('../IconButton', () => ({
 }));
 
 describe('ModalOverlayLayout', () => {
+  const mockApi = createMockApi();
+
+  beforeEach(() => {
+    vi.mocked(useApi).mockReturnValue(mockApi);
+  });
+
   it('renders with title and children', () => {
     const title = 'Overlay Title';
     const content = 'Overlay Content';

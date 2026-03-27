@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
+import { FaFolderOpen, FaSyncAlt } from 'react-icons/fa';
+import { TbLogs } from 'react-icons/tb';
 import { SettingsData } from '@common/types';
 
 import { Button } from '@/components/common/Button';
@@ -115,15 +117,18 @@ export const AboutSettings = ({ settings, setSettings, onShowLogs }: Props) => {
       <div className="flex flex-row justify-between items-center space-x-4">
         <div className="flex items-center space-x-2">
           <Button onClick={onShowLogs} variant="text" size="sm" color="secondary">
+            <TbLogs className="mr-2 w-3.5 h-3.5" />
             {t('settings.about.showLogs')}
           </Button>
           {api.isOpenLogsDirectorySupported() && (
             <Button onClick={openLogsDirectory} variant="text" size="sm" color="secondary">
+              <FaFolderOpen className="mr-2 w-3.5 h-3.5" />
               {t('settings.about.openLogsDirectory')}
             </Button>
           )}
         </div>
         <Button onClick={checkForUpdates} disabled={!versions} variant="text" size="sm">
+          <FaSyncAlt className="mr-2 w-3.5 h-3.5" />
           {t('settings.about.checkForUpdates')}
         </Button>
       </div>

@@ -1,17 +1,23 @@
 import { ReactNode } from 'react';
+import { HiOutlineExternalLink } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { useHotkeys } from 'react-hotkeys-hook';
 
 import { IconButton } from './IconButton';
+
+import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   title: string;
   children: ReactNode;
   onClose?: () => void;
   closeOnEscape?: boolean;
+  openInWindowUrl?: string;
 };
 
-export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = false }: Props) => {
+export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = false, openInWindowUrl }: Props) => {
+  const api = useApi();
+
   useHotkeys(
     'escape',
     (e) => {
@@ -26,20 +32,37 @@ export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = f
     },
   );
 
+  const handleOpenUrl = async () => {
+    if (openInWindowUrl) {
+      await api.openUrlInWindow(openInWindowUrl);
+      onClose?.();
+    }
+  };
+
   return (
     <div className="fixed inset-[6px] bg-bg-primary-light z-50 flex flex-col overflow-hidden">
       <div className="flex items-center border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light min-h-[40px] pl-4">
         <div className="flex items-center space-x-4">
           <h2 className="text-md uppercase font-medium text-text-primary">{title}</h2>
         </div>
-        {onClose && (
-          <IconButton
-            data-testid="close-modal"
-            icon={<IoMdClose className="h-5 w-5 text-text-secondary" />}
-            onClick={onClose}
-            className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiary-emphasis transition-colors duration-200"
-          />
-        )}
+        <div className="flex items-center">
+          {openInWindowUrl && (
+            <IconButton
+              data-testid="open-url-modal"
+              icon={<HiOutlineExternalLink className="h-5 w-5 text-text-secondary" />}
+              onClick={handleOpenUrl}
+              className="px-3 py-2 hover:text-text-secondary hover:bg-bg-tertiary-emphasis transition-colors duration-200"
+            />
+          )}
+          {onClose && (
+            <IconButton
+              data-testid="close-modal"
+              icon={<IoMdClose className="h-5 w-5 text-text-secondary" />}
+              onClick={onClose}
+              className="px-4 py-2 hover:text-text-secondary hover:bg-bg-tertiary-emphasis transition-colors duration-200"
+            />
+          )}
+        </div>
       </div>
       {children}
     </div>

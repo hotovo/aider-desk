@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import { join } from 'path';
 import os from 'os';
 
 import { BrowserWindow } from 'electron';
@@ -13,7 +14,7 @@ import logger from '@/logger';
  * @param url - URL to open
  * @param target - Where to open: 'external' (system browser) or 'window' (new Electron window)
  */
-export const openUrl = async (url: string, target: 'external' | 'window' = 'window'): Promise<void> => {
+export const openUrl = async (url: string, target: 'external' | 'window' = 'window'): Promise<BrowserWindow | null> => {
   logger.debug(`[openUrl] Opening URL: ${url} (position: ${target})`);
 
   if (isElectron()) {
@@ -31,19 +32,31 @@ export const openUrl = async (url: string, target: 'external' | 'window' = 'wind
         });
         win.removeMenu();
         win.maximize();
-        await win.loadURL(url);
+
+        // If URL starts with #/, it's an internal app route
+        let loadUrl = url;
+        if (url.startsWith('#/')) {
+          loadUrl = process.env['ELECTRON_RENDERER_URL']
+            ? `${process.env['ELECTRON_RENDERER_URL']}${url}`
+            : `file://${join(__dirname, '../renderer/index.html')}${url}`;
+        }
+
+        await win.loadURL(loadUrl);
+        return win;
       } catch (error) {
         logger.error('[openUrl] Failed to create BrowserWindow:', error);
         throw error;
       }
     } else {
       await shell.openExternal(url);
+      return null;
     }
   } else {
     if (target === 'window') {
       logger.warn('[openUrl] Opening URL in window not supported in headless mode, opening externally');
     }
     openInExternalBrowser(url);
+    return null;
   }
 };
 

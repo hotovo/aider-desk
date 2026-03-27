@@ -132,6 +132,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     agentProfileManager,
     memoryManager,
     extensionManager,
+    windowManager,
   );
 
   // Create and initialize REST API controller with the server

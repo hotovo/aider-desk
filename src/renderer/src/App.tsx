@@ -9,6 +9,7 @@ import { IconContext } from 'react-icons';
 
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
+import { Logs } from '@/pages/Logs';
 import { ContextMenuProvider, useContextMenu } from '@/contexts/ContextMenuContext';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 import 'react-toastify/dist/ReactToastify.css';
@@ -93,6 +94,7 @@ const AnimatedRoutes = () => {
             <Routes location={location}>
               <Route path={ROUTES.Onboarding} element={<Onboarding />} />
               <Route path={ROUTES.Home} element={<Home />} />
+              <Route path={ROUTES.Logs} element={<Logs />} />
               <Route path="/" element={settings.onboardingFinished ? <Navigate to={ROUTES.Home} replace /> : <Navigate to={ROUTES.Onboarding} replace />} />
             </Routes>
           )}

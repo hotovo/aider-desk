@@ -672,6 +672,7 @@ const api: ApplicationAPI = {
 
   writeToClipboard: (text: string) => ipcRenderer.invoke('clipboard-write-text', text),
   openPath: (path: string) => ipcRenderer.invoke('open-path', path),
+  openUrlInWindow: (url: string) => ipcRenderer.invoke('open-url-in-window', url),
 
   // System logs
   getSystemLogs: (fromId?: number, limit?: number, levels?: SystemLogLevel[]) => ipcRenderer.invoke('get-system-logs', fromId, limit, levels),

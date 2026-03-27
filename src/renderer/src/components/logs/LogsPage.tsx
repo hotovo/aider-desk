@@ -13,10 +13,6 @@ import { Select } from '@/components/common/Select';
 import { Checkbox } from '@/components/common/Checkbox';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
-type Props = {
-  onClose: () => void;
-};
-
 const LOG_LEVEL_COLORS: Record<SystemLogLevel, string> = {
   debug: 'text-text-muted',
   info: 'text-info',
@@ -73,7 +69,12 @@ const deduplicateLogs = (logs: SystemLogEntry[]): SystemLogEntry[] => {
   });
 };
 
-export const LogsPage = ({ onClose }: Props) => {
+type Props = {
+  openInWindowUrl?: string;
+  onClose: () => void;
+};
+
+export const LogsPage = ({ openInWindowUrl, onClose }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
   const [logs, setLogs] = useState<SystemLogEntry[]>([]);
@@ -268,7 +269,7 @@ export const LogsPage = ({ onClose }: Props) => {
   };
 
   return (
-    <ModalOverlayLayout title={t('logs.title')} onClose={onClose} closeOnEscape>
+    <ModalOverlayLayout title={t('logs.title')} onClose={onClose} closeOnEscape openInWindowUrl={openInWindowUrl}>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Filters and Controls */}
         <div className="p-4 border-b-2 border-border-default space-y-2">

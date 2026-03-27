@@ -1074,6 +1074,10 @@ export class BrowserApi implements ApplicationAPI {
     return false;
   }
 
+  async openUrlInWindow(url: string): Promise<void> {
+    window.open(url, '_blank');
+  }
+
   // Agent profile operations
   getAllAgentProfiles(baseDir?: string): Promise<AgentProfile[]> {
     return this.get('/agent-profiles', { baseDir });
