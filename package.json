@@ -118,8 +118,8 @@
     "clsx": "^2.1.1",
     "conf": "^15.0.2",
     "cors": "^2.8.5",
-    "diff": "^8.0.2",
-    "electron-updater": "^6.6.2",
+    "diff": "^8.0.4",
+    "electron-updater": "^6.8.3",
     "env-paths": "^3.0.0",
     "express": "^4.21.2",
     "file-type": "^21.0.0",
@@ -195,7 +195,7 @@
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^2.0.0",
-    "@electron/notarize": "^3.0.2",
+    "@electron/notarize": "^3.1.1",
     "@eslint/js": "^9.33.0",
     "@modelcontextprotocol/sdk": "^1.20.0",
     "@tailwindcss/typography": "^0.5.16",
@@ -223,9 +223,9 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.2.1",
     "dts-bundle-generator": "^9.5.1",
-    "electron": "^37.6.0",
-    "electron-builder": "^26.0.12",
-    "electron-vite": "^4.0.1",
+    "electron": "^39.8.5",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^5.0.0",
     "esbuild": "^0.25.9",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^9.1.0",
@@ -246,12 +246,19 @@
     "sass-embedded": "^1.89.0",
     "tailwind-scrollbar": "^3.1.0",
     "tailwindcss": "^3.4.14",
-    "tar": "^7.4.3",
+    "tar": "^7.5.13",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
     "vite": "^7.1.10",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.0.16"
+  },
+  "overrides": {
+    "ai-sdk-provider-gemini-cli": {
+      "diff": "^8.0.4"
+    },
+    "@tootallnate/once": "^3.0.1",
+    "jsondiffpatch": "^0.7.3"
   },
   "workspaces": [
     "packages/*"

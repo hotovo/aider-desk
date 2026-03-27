@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '22.17.0'
 
-      - run: npm install --arch=x64
+      - run: npm ci --arch=x64
 
       - name: Release Linux
         run: npm run build:linux -- --x64 -p always
@@ -156,7 +156,7 @@ jobs:
           sudo apt-get install ruby ruby-dev build-essential
           sudo gem install --no-document fpm
 
-      - run: npm install --arch=arm64
+      - run: npm ci --arch=arm64
 
       - name: Release Linux ARM64
         env:
@@ -177,7 +177,7 @@ jobs:
         with:
           node-version: '22.17.0'
 
-      - run: npm install
+      - run: npm ci
 
       - name: Release Windows
         env:
@@ -195,7 +195,7 @@ jobs:
         with:
           node-version: '22.17.0'
 
-      - run: npm install --arch=x64
+      - run: npm ci --arch=x64
 
       - name: Create certificate.p12
         run: echo "$encoded_p12" | base64 --decode > certificate.p12
@@ -231,7 +231,7 @@ jobs:
         with:
           node-version: '22.17.0'
 
-      - run: npm install --arch=arm64
+      - run: npm ci --arch=arm64
 
       - name: Create certificate.p12
         run: echo "$encoded_p12" | base64 --decode > certificate.p12
