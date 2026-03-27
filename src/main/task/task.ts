@@ -3354,6 +3354,11 @@ ${error.stderr}`,
 
   private async sendUpdatedFilesUpdated() {
     const updatedFiles = await this.getUpdatedFiles();
+    logger.debug('Sending updated files', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      updatedFiles: updatedFiles.map((f) => f.path),
+    });
     this.eventManager.sendUpdatedFilesUpdated(this.project.baseDir, this.taskId, updatedFiles);
   }
 
@@ -3743,10 +3748,10 @@ ${error.stderr}`,
       logger.error('Failed to rebase worktree:', {
         error: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      await this.sendWorktreeIntegrationStatusUpdated();
+      await this.sendUpdatedFilesUpdated();
     }
-
-    await this.sendUpdatedFilesUpdated();
-    await this.sendWorktreeIntegrationStatusUpdated();
   }
 
   public async abortWorktreeRebase(): Promise<void> {
