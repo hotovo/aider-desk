@@ -2,8 +2,6 @@ import { execSync } from 'child_process';
 import { join } from 'path';
 import os from 'os';
 
-import { BrowserWindow } from 'electron';
-
 import { isElectron } from '@/app';
 import logger from '@/logger';
 
@@ -14,11 +12,11 @@ import logger from '@/logger';
  * @param url - URL to open
  * @param target - Where to open: 'external' (system browser) or 'window' (new Electron window)
  */
-export const openUrl = async (url: string, target: 'external' | 'window' = 'window'): Promise<BrowserWindow | null> => {
+export const openUrl = async (url: string, target: 'external' | 'window' = 'window'): Promise<unknown> => {
   logger.debug(`[openUrl] Opening URL: ${url} (position: ${target})`);
 
   if (isElectron()) {
-    const { shell } = await import('electron');
+    const { shell, BrowserWindow } = await import('electron');
 
     if (target === 'window') {
       try {
