@@ -9,6 +9,7 @@
 - properly focusing the terminal when it's activated
 - state of view all files mode in Updated Files is now remembered
 - updated files are now properly refreshed when using git actions
+- correctly deleting messages and messages up when in compact view mode
 
 ## [0.58.1]
 

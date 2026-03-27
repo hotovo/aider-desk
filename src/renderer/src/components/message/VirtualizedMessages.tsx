@@ -195,9 +195,9 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                       message={message}
                       allFiles={allFiles}
                       renderMarkdown={renderMarkdown}
-                      remove={inProgress ? undefined : () => removeMessage(message)}
-                      onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
-                      onRemoveUpTo={onRemoveUpToMessage ? () => onRemoveUpToMessage(message) : undefined}
+                      remove={inProgress ? undefined : removeMessage}
+                      onFork={onForkFromMessage}
+                      onRemoveUpTo={onRemoveUpToMessage}
                     />
                   ) : (
                     <MessageBlock

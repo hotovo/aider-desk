@@ -1,7 +1,7 @@
-import { memo, useRef } from 'react';
+import { memo, useCallback, useRef } from 'react';
 import { clsx } from 'clsx';
 import { RiRobot2Line } from 'react-icons/ri';
-import { UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@common/types';
+import { Message, UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@common/types';
 
 import { MessageBar } from './MessageBar';
 import { MessageBlock } from './MessageBlock';
@@ -15,9 +15,9 @@ type Props = {
   message: AssistantGroupMessage;
   allFiles: string[];
   renderMarkdown: boolean;
-  remove?: () => void;
-  onFork?: () => void;
-  onRemoveUpTo?: () => void;
+  remove?: (message: Message) => void;
+  onFork?: (message: Message) => void;
+  onRemoveUpTo?: (message: Message) => void;
 };
 
 const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, remove, onFork, onRemoveUpTo }: Props) => {
@@ -54,6 +54,29 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
   const aggregatedUsage = aggregateUsage();
 
   const allContent = [responseMessage.content, ...toolMessages.map((t) => t.content)].filter(Boolean).join('\n\n');
+
+  const handleRemove = useCallback(() => {
+    if (!remove) {
+      return;
+    }
+    remove(responseMessage);
+    toolMessages.forEach((toolMessage) => remove(toolMessage));
+  }, [remove, responseMessage, toolMessages]);
+
+  const handleRemoveUpTo = useCallback(() => {
+    if (!onRemoveUpTo) {
+      return;
+    }
+    const target = toolMessages.length > 0 ? toolMessages[toolMessages.length - 1] : responseMessage;
+    onRemoveUpTo(target);
+  }, [onRemoveUpTo, toolMessages, responseMessage]);
+
+  const handleFork = useCallback(() => {
+    if (!onFork) {
+      return;
+    }
+    onFork(responseMessage);
+  }, [onFork, responseMessage]);
 
   return (
     <div
@@ -93,7 +116,14 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
       )}
 
       {/* Single MessageBar for the entire group */}
-      <MessageBar message={message} content={allContent} usageReport={aggregatedUsage} remove={remove} onFork={onFork} onRemoveUpTo={onRemoveUpTo} />
+      <MessageBar
+        message={message}
+        content={allContent}
+        usageReport={aggregatedUsage}
+        remove={remove ? handleRemove : undefined}
+        onFork={onFork ? handleFork : undefined}
+        onRemoveUpTo={onRemoveUpTo ? handleRemoveUpTo : undefined}
+      />
     </div>
   );
 };
