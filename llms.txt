@@ -119,6 +119,9 @@ src/
     hooks/
       hook-context.ts
       hook-manager.ts
+    logger/
+      event-transport.ts
+      log-buffer.ts
     memory/
       memory-manager.ts
     models/
@@ -333,6 +336,8 @@ src/
           ExtensionComponentWrapper.tsx
           ExtensionUIErrorBoundary.tsx
           useExtensionComponentsWrapper.tsx
+        logs/
+          LogsPage.tsx
         message/
           ActivateSkillToolMessage.tsx
           AssistantMessageBlock.tsx
@@ -2211,7 +2216,12 @@ File: src/common/locales/en.json
       "downloadAutomatically": "Download update automatically",
       "releaseNotes": "Release notes",
       "openLogsDirectory": "Open logs directory",
-      "openLogsError": "Error opening a log directory"
+      "openLogsError": "Error opening a log directory",
+      "showLogs": "Show logs"
+    },
+    "viewMenu": {
+      "title": "View",
+      "showLogs": "Show Logs"
     },
     "telemetry": {
       "title": "Telemetry"
@@ -3089,7 +3099,25 @@ File: src/common/locales/en.json
     "selectMode": "Select"
   },
   "showModelSelector": "Change model",
-  "hideModelSelector": "Hide model selector"
+  "hideModelSelector": "Hide model selector",
+  "logs": {
+    "title": "System Logs",
+    "level": "Level",
+    "allExtensions": "All extensions",
+    "searchPlaceholder": "Search logs...",
+    "debugTooltip": "Debug logs are visible only when LOG_LEVEL environment variable is set to 'debug'.",
+    "autoScroll": "Auto-scroll",
+    "showing": "Showing",
+    "clear": "Clear logs",
+    "noLogs": "No logs to display",
+    "metadata": "Metadata",
+    "clearConfirm": {
+      "title": "Clear logs",
+      "message": "Are you sure you want to clear all buffered logs? This action cannot be undone.",
+      "confirm": "Clear",
+      "cancel": "Cancel"
+    }
+  }
 }
 
 ================
@@ -3885,7 +3913,8 @@ File: src/common/locales/zh.json
       "downloadAutomatically": "自动下载更新",
       "releaseNotes": "发行说明",
       "openLogsDirectory": "打开日志目录",
-      "openLogsError": "打开日志目录出错"
+      "openLogsError": "打开日志目录出错",
+      "showLogs": "显示日志"
     },
     "messages": {
       "title": "消息显示",
@@ -4778,7 +4807,25 @@ File: src/common/locales/zh.json
     "selectMode": "选择"
   },
   "showModelSelector": "更换模型",
-  "hideModelSelector": "隐藏模型选择器"
+  "hideModelSelector": "隐藏模型选择器",
+  "logs": {
+    "title": "系统日志",
+    "level": "级别",
+    "allExtensions": "所有扩展",
+    "searchPlaceholder": "搜索日志...",
+    "debugTooltip": "仅当 LOG_LEVEL 环境变量设置为 'debug' 时，调试日志才可见。",
+    "autoScroll": "自动滚动",
+    "showing": "显示",
+    "clear": "清除日志",
+    "noLogs": "没有日志可显示",
+    "metadata": "元数据",
+    "clearConfirm": {
+      "title": "清除日志",
+      "message": "您确定要清除所有缓冲的日志吗？此操作无法撤销。",
+      "confirm": "清除",
+      "cancel": "取消"
+    }
+  }
 }
 
 ================
@@ -4943,6 +4990,30 @@ export interface LogData {
   finished?: boolean;
   promptContext?: PromptContext;
   actionIds?: string[];
+}
+⋮----
+// System log types (for application-wide logging)
+export type SystemLogLevel = 'debug' | 'info' | 'warn' | 'error';
+⋮----
+export interface SystemLogEntry {
+  id?: number;
+  timestamp: string;
+  level: SystemLogLevel;
+  message: string;
+  extension?: string; // Extension name if log is from an extension
+  metadata?: Record<string, unknown>; // Additional metadata from winston
+}
+⋮----
+extension?: string; // Extension name if log is from an extension
+metadata?: Record<string, unknown>; // Additional metadata from winston
+⋮----
+export interface SystemLogsResponse {
+  logs: SystemLogEntry[];
+  hasMore: boolean;
+}
+⋮----
+export interface SystemLogData {
+  entry: SystemLogEntry;
 }
 ⋮----
 export interface ToolData {
@@ -6316,6 +6387,9 @@ import {
   FileEdit,
   InputHistoryData,
   LogData,
+  SystemLogData,
+  SystemLogLevel,
+  SystemLogsResponse,
   McpServerConfig,
   McpTool,
   MemoryEmbeddingProgress,
@@ -6520,7 +6594,7 @@ export interface ApplicationAPI {
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (params: ContextMenuParams) => void) => () => void;
-  addOpenSettingsListener: (callback: (pageId: string) => void) => () => void;
+  addShowViewListener: (callback: (viewId: string) => void) => () => void;
 
   // Task lifecycle event listeners
   addTaskCreatedListener: (baseDir: string, callback: (data: TaskCreatedData) => void) => () => void;
@@ -6574,6 +6648,11 @@ export interface ApplicationAPI {
   openPath: (path: string) => Promise<boolean>;
 
   addNotificationListener: (baseDir: string, callback: (data: NotificationData) => void) => () => void;
+
+  // System logs operations
+  getSystemLogs: (fromId?: number, limit?: number, levels?: SystemLogLevel[]) => Promise<SystemLogsResponse>;
+  clearSystemLogs: () => Promise<void>;
+  addSystemLogListener: (callback: (data: SystemLogData) => void) => () => void;
 }
 ⋮----
 // Todo operations
@@ -6593,6 +6672,8 @@ export interface ApplicationAPI {
 // Memory operations
 ⋮----
 // Clipboard operations
+⋮----
+// System logs operations
 
 ================
 File: src/common/extensions.ts
@@ -9451,7 +9532,7 @@ isRunning()
 ⋮----
 private async processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response, reasoning, files }: StepResult<TOOLS>,
+    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
     task: Task,
     provider: ProviderProfile,
     model: string,
@@ -10067,6 +10148,7 @@ import {
   InputHistoryData,
   ProviderProfile,
   LogData,
+  SystemLogData,
   ModelsData,
   NotificationData,
   QuestionData,
@@ -10155,6 +10237,9 @@ sendCommandOutput(baseDir: string, taskId: string, command: string, output: stri
 // Log events
 sendLog(data: LogData): void
 ⋮----
+// System log events (application-wide logs)
+sendSystemLog(data: SystemLogData): void
+⋮----
 // Tool events
 sendTool(data: ToolData): void
 ⋮----
@@ -10215,13 +10300,13 @@ sendNotification(baseDir: string, title: string, body: string): void
 ⋮----
 subscribe(socket: Socket, config: EventsConnectorConfig): void
 ⋮----
-unsubscribe(socket: Socket): void
+unsubscribe(socket: Socket, log = true): void
 ⋮----
 private sendToWindows(eventType: string, data: unknown): void
 ⋮----
 // Send event to all open windows
 ⋮----
-private broadcastToEventConnectors(eventType: string, data: unknown): void
+private broadcastToEventConnectors(eventType: string, data: unknown, log = true): void
 ⋮----
 // Filter by event types if specified
 ⋮----
@@ -11220,6 +11305,106 @@ public async trigger<K extends keyof HookEventMap>(
 ): Promise<
 ⋮----
 public async dispose()
+
+================
+File: src/main/logger/event-transport.ts
+================
+import Transport from 'winston-transport';
+import { SystemLogEntry, SystemLogLevel, SystemLogData, SystemLogsResponse } from '@common/types';
+⋮----
+import { LogBuffer } from './log-buffer';
+⋮----
+import { EventManager } from '@/events';
+⋮----
+/**
+ * Custom Winston transport that:
+ * 1. Stores logs in sql db
+ * 2. Emits logs to renderer via EventManager
+ */
+export class EventTransport extends Transport
+⋮----
+constructor(opts?: Transport.TransportStreamOptions)
+⋮----
+setEventManager(eventManager: EventManager): void
+⋮----
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+log(info: any, callback: () => void): void
+⋮----
+// Extract log data from winston info object
+⋮----
+// Remove standard winston fields to avoid duplication
+⋮----
+// Add to buffer and get the assigned ID
+⋮----
+// Emit to renderer (only if eventManager is available)
+⋮----
+/**
+   * Get logs with pagination.
+   * @param fromId - If provided, fetch logs with id < fromId (for loading older logs)
+   * @param limit - Maximum number of logs to return
+   * @param levels - If provided, only fetch logs with these levels
+   * @returns Object with logs array (oldest to newest) and hasMore boolean
+   */
+getPaged(fromId?: number, limit?: number, levels?: SystemLogLevel[]): SystemLogsResponse
+⋮----
+/**
+   * Clear all logs from the database
+   */
+clear(): void
+
+================
+File: src/main/logger/log-buffer.ts
+================
+import { DatabaseSync } from 'node:sqlite';
+⋮----
+import { SystemLogEntry, SystemLogsResponse, SystemLogLevel } from '@common/types';
+⋮----
+/**
+ * SQLite-backed storage for system logs.
+ * This is session-only storage that clears on app startup.
+ */
+export class LogBuffer
+⋮----
+/**
+   * Initialize the database connection and clear existing logs.
+   * Should be called once at app startup.
+   */
+async init(): Promise<void>
+⋮----
+// Drop existing table to clear session logs
+⋮----
+// Create fresh table for this session
+⋮----
+/**
+   * Add a log entry to the database
+   * @returns The ID of the inserted log entry
+   */
+add(entry: SystemLogEntry): number | undefined
+⋮----
+/**
+   * Get logs with pagination.
+   * @param fromId - If provided, fetch logs with id < fromId (for loading older logs)
+   * @param limit - Maximum number of logs to return
+   * @param levels - If provided, only fetch logs with these levels
+   * @returns Object with logs array (oldest to newest) and hasMore boolean
+   */
+getPaged(fromId?: number, limit: number = DEFAULT_PAGE_SIZE, levels?: SystemLogLevel[]): SystemLogsResponse
+⋮----
+/**
+   * Clear all logs from the database
+   */
+clear(): void
+⋮----
+/**
+   * Close the database connection
+   */
+close(): void
+⋮----
+/**
+   * Extract extension name from log message
+   * Extensions log with format: "[Extension:name] message"
+   */
+static extractExtensionName(message: string): string | undefined
 
 ================
 File: src/main/memory/memory-manager.ts
@@ -14181,6 +14366,7 @@ File: src/main/server/rest-api/system-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
+import { SystemLogLevel } from '@common/types';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
@@ -14191,6 +14377,10 @@ export class SystemApi extends BaseApi
 constructor(private readonly eventsHandler: EventsHandler)
 ⋮----
 registerRoutes(router: Router): void
+⋮----
+// Get system logs
+⋮----
+// Clear system logs
 
 ================
 File: src/main/server/rest-api/terminal-api.ts
@@ -15566,8 +15756,6 @@ public async getRuleFilesAsContextFiles(profile?: AgentProfile): Promise<Context
 // Global rules directory doesn't exist or can't be read
 ⋮----
 // Include AGENTS.md from project root if it exists
-⋮----
-// AGENTS.md doesn't exist, which is fine
 ⋮----
 // Get project rule files
 ⋮----
@@ -17373,6 +17561,8 @@ import {
   ProviderProfile,
   ResponseCompletedData,
   SettingsData,
+  SystemLogLevel,
+  SystemLogsResponse,
   TaskData,
   TaskStateData,
   TodoItem,
@@ -17399,7 +17589,7 @@ import { VersionsManager } from '@/versions';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal/terminal-manager';
 import { ExtensionManager, LoadedExtension } from '@/extensions';
-import logger from '@/logger';
+import logger, { eventTransport } from '@/logger';
 import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
@@ -17622,6 +17812,10 @@ async showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult>
 ⋮----
 async openLogsDirectory(): Promise<boolean>
 ⋮----
+getSystemLogs(fromId?: number, limit?: number, levels?: SystemLogLevel[]): SystemLogsResponse
+⋮----
+clearSystemLogs(): void
+⋮----
 async openPath(path: string): Promise<boolean>
 ⋮----
 async isProjectPath(path: string): Promise<boolean>
@@ -17801,6 +17995,7 @@ import {
   ProjectSettings,
   ProviderProfile,
   SettingsData,
+  SystemLogLevel,
   TaskData,
   CreateTaskParams,
   TodoItem,
@@ -17829,6 +18024,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 // Agent profile handlers
 ⋮----
 // Memory handlers
+⋮----
+// System logs handlers
 
 ================
 File: src/main/logger.ts
@@ -17836,9 +18033,21 @@ File: src/main/logger.ts
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 ⋮----
+import { EventTransport } from './logger/event-transport';
+⋮----
 import { LOGS_DIR } from '@/constants';
+import { EventManager } from '@/events';
+⋮----
+// Create event transport immediately to capture all logs since startup
+⋮----
+// Add event transport immediately to capture all logs from startup
 ⋮----
 // If we're not in production OR running in headless mode (Docker), also log to the console
+⋮----
+/**
+ * Initialize event-based logging (call this after EventManager is available)
+ */
+export const initEventLogging = (eventManager: EventManager): void =>
 
 ================
 File: src/main/managers.ts
@@ -17862,7 +18071,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
-import logger from '@/logger';
+import logger, { initEventLogging } from '@/logger';
 import { EventsHandler } from '@/events-handler';
 import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
@@ -17883,6 +18092,8 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
 // Initialize MCP manager
 ⋮----
 // Initialize event manager with window manager
+⋮----
+// Initialize event-based logging (adds transport to logger)
 ⋮----
 // Initialize model manager
 ⋮----
@@ -18413,6 +18624,7 @@ import {
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  SystemLogLevel,
   TaskCreatedData,
   TaskData,
   TerminalData,
@@ -18444,6 +18656,8 @@ const listener = (_: Electron.IpcRendererEvent, data: ExtensionUIRefreshData) =>
 // Agent profile operations
 ⋮----
 // Memory operations
+⋮----
+// System logs
 ⋮----
 // notifications in Electron app are handled by the main process
 ⋮----
@@ -18522,6 +18736,9 @@ import {
   FileEdit,
   InputHistoryData,
   LogData,
+  SystemLogData,
+  SystemLogLevel,
+  SystemLogsResponse,
   McpServerConfig,
   McpTool,
   MessageRemovedData,
@@ -18580,6 +18797,7 @@ type EventDataMap = {
   'response-chunk': ResponseChunkData;
   'response-completed': ResponseCompletedData;
   log: LogData;
+  'system-log': SystemLogData;
   'context-files-updated': ContextFilesUpdatedData;
   'commands-updated': CommandsData;
   'update-autocompletion': AutocompletionData;
@@ -18816,7 +19034,7 @@ addTaskDeletedListener(baseDir: string, callback: (data: TaskData) => void): () 
 addTerminalDataListener(baseDir: string, callback: (data: TerminalData) => void): () => void
 addTerminalExitListener(baseDir: string, callback: (data: TerminalExitData) => void): () => void
 addContextMenuListener(callback: (params: ContextMenuParams) => void): () => void
-addOpenSettingsListener(callback: (pageId: string) => void): () => void
+addShowViewListener(callback: (viewId: string) => void): () => void
 async getCommands(baseDir: string): Promise<CommandsData>
 getCustomModes(baseDir: string): Promise<ModeDefinition[]>
 runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void>
@@ -18897,6 +19115,13 @@ deleteAgentProfile(profileId: string, baseDir?: string): Promise<AgentProfile[]>
 updateAgentProfilesOrder(agentProfiles: AgentProfile[]): Promise<void>
 ⋮----
 addNotificationListener(baseDir: string, callback: (data: NotificationData) => void): () => void
+⋮----
+// System logs
+getSystemLogs(fromId?: number, limit?: number, levels?: SystemLogLevel[]): Promise<SystemLogsResponse>
+⋮----
+clearSystemLogs(): Promise<void>
+⋮----
+addSystemLogListener(callback: (data: SystemLogData) => void): () => void
 ⋮----
 getInstalledExtensions(projectDir?: string): Promise<InstalledExtension[]>
 ⋮----
@@ -20558,6 +20783,121 @@ true, // forceRefresh
 const executeExtensionAction = async (action: string, ...args: unknown[]) =>
 ⋮----
 <StringToReactComponent data=
+
+================
+File: src/renderer/src/components/logs/LogsPage.tsx
+================
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SystemLogEntry, SystemLogLevel } from '@common/types';
+import { clsx } from 'clsx';
+import { FaSearch, FaTrash, FaChevronDown } from 'react-icons/fa';
+import { CgSpinner } from 'react-icons/cg';
+⋮----
+import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { useApi } from '@/contexts/ApiContext';
+import { Button } from '@/components/common/Button';
+import { Input } from '@/components/common/Input';
+import { Select } from '@/components/common/Select';
+import { Checkbox } from '@/components/common/Checkbox';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+⋮----
+type Props = {
+  onClose: () => void;
+};
+⋮----
+// Track expanded log entries
+const useExpandedLogs = () =>
+⋮----
+// Helper function to deduplicate logs by ID
+const deduplicateLogs = (logs: SystemLogEntry[]): SystemLogEntry[] =>
+⋮----
+return true; // Keep logs without ID
+⋮----
+return false; // Skip duplicates
+⋮----
+const shouldAutoScrollRef = useRef(true); // Track if we should auto-scroll
+⋮----
+// Load initial logs
+⋮----
+const loadLogs = async () =>
+⋮----
+shouldAutoScrollRef.current = true; // Enable auto-scroll for initial load
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// Listen for new logs
+⋮----
+// Check if this log already exists (by ID)
+⋮----
+return prev; // Skip duplicate
+⋮----
+shouldAutoScrollRef.current = true; // Enable auto-scroll for new real-time logs
+⋮----
+// Auto-scroll to bottom when new logs arrive
+⋮----
+shouldAutoScrollRef.current = false; // Reset flag after scrolling
+⋮----
+}, [logs, autoScroll]); // eslint-disable-line react-hooks/exhaustive-deps
+⋮----
+// Extract unique extensions from logs
+⋮----
+// Filter logs
+⋮----
+// Filter by level
+⋮----
+// Filter by extension
+⋮----
+// Filter by search text
+⋮----
+const handleLevelToggle = (level: SystemLogLevel) =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// Load more logs (older logs - prepend to the beginning)
+⋮----
+const oldestLogId = logs[0].id; // First log is now the oldest
+⋮----
+setLogs((prev) => deduplicateLogs([...response.logs, ...prev])); // Prepend older logs and deduplicate
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// Handle scroll event for infinite scroll
+⋮----
+// Check if scrolled to top (scroll up to load more older logs)
+⋮----
+<div className=
+⋮----
+<span className=
+⋮----
+<ModalOverlayLayout title=
+⋮----
+{/* Filters and Controls */}
+⋮----
+{/* Search field on the left */}
+⋮----
+onChange=
+⋮----
+{/* Filter section on the right */}
+⋮----
+{/* Level checkboxes */}
+⋮----
+checked=
+⋮----
+{/* Extension filter */}
+⋮----
+{/* Logs list */}
+⋮----
+{/* Auto-scroll */}
+⋮----
+{/* Clear logs button */}
+<Button onClick=
+⋮----
+{/* Clear confirmation dialog */}
+⋮----
+title=
+⋮----
+confirmButtonText=
 
 ================
 File: src/renderer/src/components/message/ActivateSkillToolMessage.tsx
@@ -26019,6 +26359,7 @@ import { useApi } from '@/contexts/ApiContext';
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
+  onShowLogs?: () => void;
 };
 ⋮----
 const openLogsDirectory = async () =>
@@ -26594,6 +26935,7 @@ type Props = {
   initialPageId?: string;
   initialOptions?: Record<string, unknown>;
   openProjects?: ProjectData[];
+  onShowLogs?: () => void;
 };
 ⋮----
 const loadProviders = async () =>
@@ -26867,6 +27209,10 @@ const closeTerminalTab = (tabId: string) =>
 // If we're closing the last tab, minimize the terminal
 ⋮----
 // Focus the active terminal when it changes
+⋮----
+// Small delay to ensure terminal is rendered
+⋮----
+// Focus the active terminal when the terminal view becomes visible
 ⋮----
 // Small delay to ensure terminal is rendered
 ⋮----
@@ -28915,6 +29261,7 @@ import { useSearchParams } from 'react-router-dom';
 ⋮----
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
+import { LogsPage } from '@/components/logs/LogsPage';
 import { IconButton } from '@/components/common/IconButton';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { NoProjectsOpen } from '@/components/project/NoProjectsOpen';
@@ -28944,7 +29291,7 @@ const loadProjects = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const handleOpenSettings = (pageId: string) =>
+const handleShowView = (viewId: string) =>
 ⋮----
 const checkReleaseNotes = async () =>
 ⋮----
@@ -29110,6 +29457,7 @@ type Props = {
   openProjects?: ProjectData[];
   providers?: ProviderProfile[];
   setProviders?: (providers: ProviderProfile[]) => void;
+  onShowLogs?: () => void;
 };
 ⋮----
 export const Settings = ({
@@ -29127,6 +29475,7 @@ export const Settings = ({
   openProjects,
   providers,
   setProviders,
+  onShowLogs,
 }: Props) =>
 ⋮----
 const scrollToSection = (sectionId: string) =>
@@ -31996,7 +32345,7 @@ File: package.json
     "test:watch": "concurrently \"npm run test:node -- --watch\" \"npm run test:web -- --watch\"",
     "test:coverage": "npm run test:node -- --coverage && npm run test:web -- --coverage",
     "test:ui": "vitest --config vitest.config.web.ts --ui",
-    "validate": "npm-run-all --parallel lint typecheck test"
+    "validate": "npm-run-all --parallel lint typecheck test:web test:node"
   },
   "dependencies": {
     "@ai-sdk/alibaba": "^0.0.3",
@@ -32058,7 +32407,7 @@ File: package.json
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "ai": "^5.0.153",
+    "ai": "5.0.153",
     "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "^1.5.1",
     "apache-arrow": "18.1.0",
@@ -32158,7 +32507,7 @@ File: package.json
     "@types/better-sqlite3": "^7.6.13",
     "@types/handlebars": "^4.0.40",
     "@types/lodash": "^4.17.17",
-    "@types/node": "^20.14.8",
+    "@types/node": "^22.16.5",
     "@types/object-hash": "^3.0.6",
     "@types/prismjs": "^1.26.5",
     "@types/react": "^19.2.2",
