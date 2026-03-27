@@ -2415,6 +2415,12 @@ export class Task {
     return removedIds;
   }
 
+  public sendTaskMessageRemoved(messageIds: string[]) {
+    if (messageIds.length > 0) {
+      this.eventManager.sendTaskMessageRemoved(this.project.baseDir, this.taskId, messageIds);
+    }
+  }
+
   public async redoLastUserPrompt(mode: Mode, updatedPrompt?: string) {
     logger.info('Redoing last user prompt:', {
       baseDir: this.project.baseDir,
@@ -2436,11 +2442,7 @@ export class Task {
         remainingMessagesCount: (await this.contextManager.getContextMessages()).length,
       });
 
-      this.eventManager.sendTaskMessageRemoved(
-        this.project.baseDir,
-        this.taskId,
-        removedMessages.slice(0, -1).map((msg) => msg.id),
-      );
+      this.sendTaskMessageRemoved(removedMessages.slice(0, -1).map((msg) => msg.id));
 
       await this.updateContextInfo();
 

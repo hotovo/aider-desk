@@ -899,6 +899,7 @@ export class Agent {
     });
 
     let currentResponseId: string = uuidv4();
+    const streamingMessageIds: Set<string> = new Set();
 
     try {
       logger.debug('Creating LLM model', {
@@ -1138,6 +1139,7 @@ export class Agent {
           currentResponseId = uuidv4();
           responseMessageIndex = 0;
           hasReasoning = false;
+          streamingMessageIds.clear();
         };
 
         // Trigger onAgentStepStarted event
@@ -1222,6 +1224,7 @@ export class Agent {
             const responseMessageId = responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId;
             if (chunk.type === 'text-start') {
               if (hasReasoning) {
+                streamingMessageIds.add(responseMessageId);
                 await task.processResponseMessage({
                   id: responseMessageId,
                   action: 'response',
@@ -1235,6 +1238,7 @@ export class Agent {
               responseMessageIndex++;
             } else if (chunk.type === 'text-delta') {
               if (chunk.text.trim()) {
+                streamingMessageIds.add(responseMessageId);
                 await task.processResponseMessage({
                   id: responseMessageId,
                   action: 'response',
@@ -1244,6 +1248,7 @@ export class Agent {
                 });
               }
             } else if (chunk.type === 'reasoning-start') {
+              streamingMessageIds.add(responseMessageId);
               await task.processResponseMessage({
                 id: responseMessageId,
                 action: 'response',
@@ -1253,6 +1258,7 @@ export class Agent {
               });
               hasReasoning = true;
             } else if (chunk.type === 'reasoning-delta') {
+              streamingMessageIds.add(responseMessageId);
               await task.processResponseMessage({
                 id: responseMessageId,
                 action: 'response',
@@ -1262,11 +1268,14 @@ export class Agent {
               });
             } else if (chunk.type === 'tool-input-start') {
               task.addLogMessage('loading', 'Preparing tool...', false, promptContext);
+              streamingMessageIds.add(chunk.id);
             } else if (chunk.type === 'tool-call') {
               task.addLogMessage('loading', 'Executing tool...', false, promptContext);
+              streamingMessageIds.add(chunk.toolCallId);
             } else if (chunk.type === 'tool-result') {
               const [serverName, toolName] = extractServerNameToolName(chunk.toolName);
               const toolPromptContext = extractPromptContextFromToolResult(chunk.output) ?? promptContext;
+              streamingMessageIds.add(chunk.toolCallId);
               task.addToolMessage(chunk.toolCallId, serverName, toolName, chunk.input, JSON.stringify(chunk.output), undefined, toolPromptContext);
               task.addLogMessage('loading', undefined, false, promptContext);
             }
@@ -1308,6 +1317,9 @@ export class Agent {
 
         if (effectiveAbortSignal?.aborted) {
           logger.info('Prompt aborted by user (inside loop)');
+          if (streamingMessageIds.size > 0) {
+            this.removeUnfinishedStreamingMessages(task, streamingMessageIds);
+          }
           break;
         }
 
@@ -1367,6 +1379,9 @@ export class Agent {
     } catch (error) {
       if (effectiveAbortSignal?.aborted) {
         logger.info('Prompt aborted by user');
+        if (streamingMessageIds.size > 0) {
+          this.removeUnfinishedStreamingMessages(task, streamingMessageIds);
+        }
 
         const hookResult = await task.hookManager.trigger('onAgentFinished', { aborted: true, contextMessages, resultMessages }, task, task.project);
         if (hookResult?.event?.resultMessages) {
@@ -1774,6 +1789,15 @@ export class Agent {
 
   isRunning() {
     return this.abortControllers.size > 0;
+  }
+
+  private removeUnfinishedStreamingMessages(task: Task, messageIds: Set<string>) {
+    const ids = [...messageIds];
+    if (ids.length > 0) {
+      logger.info('Removing unfinished streaming messages from UI', { messageIds: ids });
+      task.sendTaskMessageRemoved(ids);
+      messageIds.clear();
+    }
   }
 
   private async processStep<TOOLS extends ToolSet>(

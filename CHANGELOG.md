@@ -10,6 +10,7 @@
 - state of view all files mode in Updated Files is now remembered
 - updated files are now properly refreshed when using git actions
 - correctly deleting messages and messages up when in compact view mode
+- removing messages that have not been finished during the interruption
 
 ## [0.58.1]
 
