@@ -14,17 +14,18 @@ import { findExecutableInPath } from '@/utils';
 // Gemini CLI models with token limits
 const GEMINI_CLI_MODELS = [
   {
-    id: 'gemini-3-pro-preview',
-    maxInputTokens: 1000000,
-    maxOutputTokens: 64000,
+    id: 'gemini-3.1-pro-preview',
+    maxInputTokens: 1048576,
+    maxOutputTokens: 65536,
   },
   {
     id: 'gemini-3-flash-preview',
-    maxInputTokens: 1000000,
-    maxOutputTokens: 64000,
+    maxInputTokens: 1048576,
+    maxOutputTokens: 65536,
   },
-  { id: 'gemini-2.5-pro', maxInputTokens: 200000, maxOutputTokens: 64000 },
-  { id: 'gemini-2.5-flash', maxInputTokens: 200000, maxOutputTokens: 64000 },
+  { id: 'gemini-2.5-pro', maxInputTokens: 1048576, maxOutputTokens: 65536 },
+  { id: 'gemini-2.5-flash', maxInputTokens: 1048576, maxOutputTokens: 65536 },
+  { id: 'gemini-2.5-flash-lite', maxInputTokens: 1048576, maxOutputTokens: 65536 },
 ];
 
 export const loadGeminiCliModels = async (profile: ProviderProfile, _settings: SettingsData): Promise<LoadModelsResponse> => {
