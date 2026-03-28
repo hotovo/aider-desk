@@ -200,7 +200,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   const handleToggleViewMode = useCallback(() => {
     setIsAllFilesView((prev) => !prev);
     resetLineState();
-  }, [resetLineState]);
+  }, [resetLineState, setIsAllFilesView]);
 
   const handleToggleFullWidth = useCallback(() => {
     setIsFullWidth((prev) => !prev);
