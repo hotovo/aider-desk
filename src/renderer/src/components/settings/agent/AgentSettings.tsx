@@ -1274,6 +1274,19 @@ export const AgentSettings = ({
                           placeholder={t('settings.agent.subagent.systemPromptPlaceholder')}
                         />
 
+                        <div className="flex items-center justify-between mb-1">
+                          <Checkbox
+                            label={
+                              <div className="flex items-center">
+                                <span>{t('settings.agent.subagent.includeRules')}</span>
+                                <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.includeRulesInformation')} />
+                              </div>
+                            }
+                            checked={selectedProfile.subagent.includeRules}
+                            onChange={(checked) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, includeRules: checked })}
+                          />
+                        </div>
+
                         <div className="flex items-center gap-4 mb-1">
                           <Select
                             label={<label className="text-xs font-medium text-text-primary">{t('settings.agent.subagent.invocationMode')}</label>}
