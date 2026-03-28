@@ -5,7 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 
-import type { ExtensionMetadata, ToolResult } from '../../../common/extensions';
+import type { ExtensionMetadata, ToolResult } from '@common/extensions';
 
 // Test ExtensionMetadata type in renderer
 const metadata: ExtensionMetadata = {

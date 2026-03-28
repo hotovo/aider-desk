@@ -7,7 +7,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/main/*", "src/renderer/src/*"],
-      "@common/*": ["src/common/*"]
+      "@common/*": ["packages/common/src/*"]
     }
   },
   "include": [

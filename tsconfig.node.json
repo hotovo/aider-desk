@@ -4,7 +4,7 @@
     "electron.vite.config.*",
     "src/main/**/*",
     "src/preload/**/*",
-    "src/common/**/*"
+    "packages/common/src/**/*"
   ],
   "exclude": [
     "**/__fixtures__/**"
@@ -18,7 +18,7 @@
         "src/main/*"
       ],
       "@common/*": [
-        "src/common/*"
+        "packages/common/src/*"
       ],
     }
   }

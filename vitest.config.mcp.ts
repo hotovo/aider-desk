@@ -14,7 +14,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@common': resolve(__dirname, 'src/common'),
+      '@common': resolve(__dirname, 'packages/common/src'),
     },
   },
 });

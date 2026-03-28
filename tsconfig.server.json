@@ -15,13 +15,13 @@
         "src/main/*"
       ],
       "@common/*": [
-        "src/common/*"
+        "packages/common/src/*"
       ],
     }
   },
   "include": [
     "src/main/**/*",
-    "src/common/**/*"
+    "packages/common/src/**/*"
   ],
   "exclude": ["node_modules", "src/main/index.ts"]
 }

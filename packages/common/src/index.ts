@@ -1,0 +1,60 @@
+export * from './types';
+export * from './api';
+export * from './agent';
+export * from './tools';
+export * from './utils';
+
+// extensions.ts re-exports some names that collide with types/ (ResponseMessage, TaskContext).
+// Re-export explicitly to resolve ambiguity — types/ versions take precedence.
+export { ContextMemoryMode, InvocationMode, ToolApprovalState, AIDER_DESK_EXTENSIONS_REPO_URL } from './extensions';
+export type {
+  AgentStartedEvent,
+  AgentStepResult,
+  AgentStepStartedEvent,
+  AgentStepFinishedEvent,
+  AgentFinishedEvent,
+  AiderPromptFinishedEvent,
+  AiderPromptStartedEvent,
+  CommandDefinition,
+  CommandExecutedEvent,
+  CustomCommandExecutedEvent,
+  Extension,
+  ExtensionContext,
+  ExtensionMetadata,
+  FilesAddedEvent,
+  FilesDroppedEvent,
+  HandleApprovalEvent,
+  ImportantRemindersEvent,
+  ModeDefinition,
+  OptimizeMessagesEvent,
+  ProjectContext,
+  ProjectStartedEvent,
+  ProjectStoppedEvent,
+  PromptFinishedEvent,
+  PromptStartedEvent,
+  PromptTemplateEvent,
+  QuestionAnsweredEvent,
+  QuestionAskedEvent,
+  QuestionOptions,
+  ResponseChunkEvent,
+  ResponseCompletedEvent,
+  RuleFilesRetrievedEvent,
+  SubagentFinishedEvent,
+  SubagentStartedEvent,
+  TaskClosedEvent,
+  TaskCreatedEvent,
+  TaskInitializedEvent,
+  TaskPreparedEvent,
+  TaskUpdatedEvent,
+  Tool,
+  ToolApprovalEvent,
+  ToolCalledEvent,
+  ToolDefinition,
+  ToolFinishedEvent,
+  ToolResult,
+  UIComponent,
+  UIComponentDefinition,
+  UIComponentPlacement,
+  UIComponentProps,
+  UIComponents,
+} from './extensions';

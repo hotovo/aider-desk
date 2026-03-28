@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { TaskData } from '@common/types';
 
 import { getSortedVisibleTasks, flattenTasksForVirtualization } from '../task-utils';
-import { TaskData } from '../../../../common/types';
 
 describe('task-utils', () => {
   describe('getSortedVisibleTasks', () => {

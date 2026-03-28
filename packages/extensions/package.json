@@ -34,7 +34,7 @@
     "extensions.json"
   ],
   "scripts": {
-    "build": "dts-bundle-generator --external-imports zod node --project ../../tsconfig.node.json --no-check --no-banner -o extensions.d.ts ../../src/common/extensions.ts && node scripts/build.mjs",
+    "build": "dts-bundle-generator --external-imports zod node --project ../../tsconfig.node.json --no-check --no-banner -o extensions.d.ts ../../packages/common/src/extensions.ts && node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
