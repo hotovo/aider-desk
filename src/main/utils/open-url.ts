@@ -12,7 +12,7 @@ import logger from '@/logger';
  * @param url - URL to open
  * @param target - Where to open: 'external' (system browser) or 'window' (new Electron window)
  */
-export const openUrl = async (url: string, target: 'external' | 'window' = 'window'): Promise<unknown> => {
+export const openUrl = async (url: string, target: 'external' | 'window' = 'window'): Promise<Electron.BrowserWindow | null> => {
   logger.debug(`[openUrl] Opening URL: ${url} (position: ${target})`);
 
   if (isElectron()) {
