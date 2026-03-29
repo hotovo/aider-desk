@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/extensions",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Type definitions and examples for AiderDesk extensions",
   "author": "Hotovo",
   "homepage": "https://aiderdesk.hotovo.com",
@@ -55,16 +55,16 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
-    "dts-bundle-generator": "^9.2.1",
-    "esbuild": "^0.25.0",
+    "dts-bundle-generator": "^9.5.1",
+    "esbuild": "^0.27.4",
     "typescript": "^5.5.4",
-    "zod": "^3.24.2"
+    "zod": "^4.3.6"
   },
   "peerDependencies": {
-    "zod": "^3.0.0"
+    "zod": "^4.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "publishConfig": {
     "access": "public"
