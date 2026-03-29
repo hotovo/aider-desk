@@ -11,7 +11,7 @@ const streamPipeline = promisify(pipeline);
 
 const UV_VERSION = '0.7.13';
 const BASE_URL = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
-const RESOURCES_DIR = './resources';
+const RESOURCES_DIR = process.env.RESOURCES_DIR || './resources';
 
 const TARGET_PLATFORMS = [
     { platform: 'linux', arch: 'x64', filename: 'uv-x86_64-unknown-linux-gnu.tar.gz', extractSubdir: 'linux-x64', uvExeName: 'uv' },
@@ -100,18 +100,28 @@ async function downloadAndExtractUVForPlatform(target) {
     }
 }
 
+const currentPlatformOnly = process.argv.includes('--current-platform-only');
+
 async function downloadAllUVs() {
     // Ensure the base resources directory exists
     if (!existsSync(RESOURCES_DIR)) {
         mkdirSync(RESOURCES_DIR, { recursive: true });
     }
 
-    for (const target of TARGET_PLATFORMS) {
+    let platforms = TARGET_PLATFORMS;
+    if (currentPlatformOnly) {
+        platforms = TARGET_PLATFORMS.filter(t => t.platform === process.platform && t.arch === process.arch);
+        if (platforms.length === 0) {
+            console.warn(`No matching uv platform for ${process.platform}-${process.arch}`);
+            return;
+        }
+    }
+
+    for (const target of platforms) {
         await downloadAndExtractUVForPlatform(target);
     }
-    console.log("All necessary uv executables processed.");
+    console.log(currentPlatformOnly ? "uv executable for current platform processed." : "All necessary uv executables processed.");
 
-    // After downloading all, copy the correct one for the current platform if it's macOS or Linux
     if (process.platform === 'darwin' || process.platform === 'linux') {
         const osDir = process.platform === 'darwin' ? 'macos' : 'linux';
         const arch = process.arch;

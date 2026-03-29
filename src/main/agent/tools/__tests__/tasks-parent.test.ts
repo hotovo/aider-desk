@@ -6,8 +6,8 @@ import path from 'path';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock @probelabs/probe at the top level
-vi.mock('@probelabs/probe', () => ({
+// Mock probe utility at the top level
+vi.mock('@/utils/probe', () => ({
   search: vi.fn(),
 }));
 
@@ -36,7 +36,7 @@ describe('Tasks Tools - search_parent_task', () => {
     vi.clearAllMocks();
 
     // Get the mocked functions
-    const { search } = await import('@probelabs/probe');
+    const { search } = await import('@/utils/probe');
     const { fileExists } = await import('@common/utils');
     mockSearch = vi.mocked(search);
     mockFileExists = vi.mocked(fileExists);

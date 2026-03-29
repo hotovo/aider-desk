@@ -154,7 +154,7 @@ describe('Tasks Tools - search_task', () => {
 
       vi.spyOn(fs, 'access').mockResolvedValue(undefined as never);
 
-      vi.mock('@probelabs/probe', () => ({
+      vi.mock('@/utils/probe', () => ({
         search: vi.fn().mockResolvedValue({
           limits: {
             max_tokens: 10000,
@@ -415,7 +415,7 @@ describe('Tasks Tools - search_task', () => {
       mockProject.baseDir = '/my/project';
       vi.spyOn(fs, 'access').mockResolvedValue(undefined as never);
 
-      vi.mock('@probelabs/probe', () => ({
+      vi.mock('@/utils/probe', () => ({
         search: vi.fn().mockResolvedValue({ results: [], summary: { count: 0 } }),
       }));
 
@@ -448,7 +448,7 @@ describe('Tasks Tools - search_task', () => {
 
       vi.spyOn(fs, 'access').mockResolvedValue(undefined as never);
 
-      vi.mock('@probelabs/probe', () => ({
+      vi.mock('@/utils/probe', () => ({
         search: vi.fn().mockResolvedValue({ results: [], summary: { count: 0 } }),
       }));
 

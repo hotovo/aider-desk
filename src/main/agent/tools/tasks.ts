@@ -15,12 +15,12 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { AgentProfile, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
-import { search } from '@probelabs/probe';
 import { fileExists } from '@common/utils';
 
 import { ApprovalManager } from './approval-manager';
 
-import { AIDER_DESK_TASKS_DIR, PROBE_BINARY_PATH } from '@/constants';
+import { AIDER_DESK_TASKS_DIR } from '@/constants';
+import { search } from '@/utils/probe';
 import logger from '@/logger';
 import { isAbortError } from '@/utils/errors';
 import { Task } from '@/task';
@@ -410,15 +410,11 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
 
         const effectiveMaxTokens = maxTokens || 10000;
 
-        // @ts-expect-error probe is not typed properly
         const results = await search({
           query,
           path: contextFilePath,
           json: false,
           maxTokens: effectiveMaxTokens,
-          binaryOptions: {
-            path: PROBE_BINARY_PATH,
-          },
         });
 
         logger.debug(`Task search results: ${JSON.stringify(results)}`);
@@ -508,15 +504,11 @@ export const createSearchParentTaskTool = (task: Task, promptContext?: PromptCon
 
         logger.debug(`Searching in parent task context file: ${contextFilePath}`, { query, maxTokens: effectiveMaxTokens, parentTaskId });
 
-        // @ts-expect-error probe is not typed properly
         const results = await search({
           query,
           path: contextFilePath,
           json: false,
           maxTokens: effectiveMaxTokens,
-          binaryOptions: {
-            path: PROBE_BINARY_PATH,
-          },
         });
 
         logger.debug(`Parent task search results: ${JSON.stringify(results)}`);

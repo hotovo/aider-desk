@@ -56,6 +56,7 @@
     "@ai-sdk/google-vertex": "^3.0.120",
     "@ai-sdk/groq": "^2.0.36",
     "@ai-sdk/openai": "^2.0.101",
+    "@ai-sdk/openai-compatible": "^1.0.34",
     "@ai-sdk/provider": "^2.0.1",
     "@aiderdesk/extensions": "workspace:*",
     "@augmentcode/auggie-sdk": "^0.1.15",
@@ -86,7 +87,6 @@
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
-    "@probelabs/probe": "0.6.0-rc161",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
@@ -188,6 +188,7 @@
     "vite-plugin-prismjs": "^0.0.11",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
+    "winston-transport": "^4.9.0",
     "ws": "^8.18.0",
     "yaml": "^2.8.0",
     "yaml-front-matter": "^4.1.1",
@@ -262,7 +263,9 @@
     "jsondiffpatch": "^0.7.3"
   },
   "workspaces": [
-    "packages/*"
+    "packages/common",
+    "packages/extensions",
+    "packages/tree-sitter-utils"
   ],
   "lint-staged": {
     "*.{ts,tsx}": "npm run lint"

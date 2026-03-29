@@ -25,11 +25,10 @@ import {
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { isURL } from '@common/utils';
-import { search } from '@probelabs/probe';
 
 import { ApprovalManager } from './approval-manager';
 
-import { PROBE_BINARY_PATH } from '@/constants';
+import { search } from '@/utils/probe';
 import { Task } from '@/task';
 import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
@@ -893,7 +892,6 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       const effectiveLanguage = language && supportedLanguages.includes(language) ? language : undefined;
 
       try {
-        // @ts-expect-error probe is not typed properly
         const results = await search({
           query: searchQuery,
           path: searchPath,
@@ -903,9 +901,6 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           json: false,
           maxTokens: effectiveMaxTokens,
           language: effectiveLanguage,
-          binaryOptions: {
-            path: PROBE_BINARY_PATH,
-          },
         });
 
         logger.debug(`Search results: ${JSON.stringify(results)}`);
