@@ -139,7 +139,6 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
       });
       const { stdout, stderr } = await execAsync(installCommand, {
         windowsHide: true,
-        timeout: 30000,
         env: {
           ...process.env,
           VIRTUAL_ENV: PYTHON_VENV_DIR,
@@ -207,12 +206,35 @@ const setupMcpServer = async () => {
   }
 };
 
+const checkNetworkConnectivity = async (): Promise<boolean> => {
+  try {
+    await fetch('https://pypi.org/', { signal: AbortSignal.timeout(5000) });
+    return true;
+  } catch {
+    logger.warn('Network connectivity check failed, skipping update checks');
+    return false;
+  }
+};
+
 const performUpdateCheck = async (updateProgress: UpdateProgressFunction): Promise<void> => {
   if (process.env.AIDER_DESK_NO_UPDATES === 'true') {
     logger.info('Skipping update checks (AIDER_DESK_NO_UPDATES is set)');
     updateProgress({
       step: 'Update Check',
       message: 'Update checks disabled',
+    });
+    return;
+  }
+
+  updateProgress({
+    step: 'Update Check',
+    message: 'Checking network connectivity...',
+  });
+
+  if (!(await checkNetworkConnectivity())) {
+    updateProgress({
+      step: 'Update Check',
+      message: 'No network connection, skipping updates',
     });
     return;
   }

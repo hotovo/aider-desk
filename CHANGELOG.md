@@ -12,6 +12,7 @@
 - correctly deleting messages and messages up when in compact view mode
 - removing messages that have not been finished during the interruption
 - added missing dependency when using Auggie SDK provider in Electron app
+- removed timeout when installing Python packages on start-up
 
 ## [0.58.1]
 
