@@ -13,6 +13,7 @@
 - removing messages that have not been finished during the interruption
 - added missing dependency when using Auggie SDK provider in Electron app
 - removed timeout when installing Python packages on start-up
+- using correct translation for Use subagents quick action in AgentSelector
 
 ## [0.58.1]
 
