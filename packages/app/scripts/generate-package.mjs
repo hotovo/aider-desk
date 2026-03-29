@@ -34,7 +34,13 @@ const NODE_BUILTINS = new Set([
   'undici',
 ]);
 
+// Packages that are already in the committed package.json CLI deps
+const CLI_PACKAGES = new Set([
+  '@mariozechner/pi-tui',
+]);
+
 const runnerJs = readFileSync(resolve(PKG_DIR, 'out', 'server', 'runner.js'), 'utf8');
+const cliJs = readFileSync(resolve(PKG_DIR, 'out', 'cli.js'), 'utf8');
 
 const requireRegex = /require(?:\.resolve)?\(["']([^"']+)["']\)/g;
 const dynamicImportRegex = /import\(["']([^"']+)["']\)/g;
@@ -47,41 +53,49 @@ const extractPackageName = (req) => {
     : req.split('/')[0];
   if (NODE_BUILTINS.has(pkgName)) return null;
   if (ELECTRON_PACKAGES.includes(pkgName)) return null;
+  if (CLI_PACKAGES.has(pkgName)) return null;
   return pkgName;
 };
 
-let match;
-while ((match = requireRegex.exec(runnerJs)) !== null) {
-  const pkg = extractPackageName(match[1]);
-  if (pkg) requiredPackages.add(pkg);
-}
-while ((match = dynamicImportRegex.exec(runnerJs)) !== null) {
-  const pkg = extractPackageName(match[1]);
-  if (pkg) requiredPackages.add(pkg);
-}
+const scanFile = (content) => {
+  let match;
+  requireRegex.lastIndex = 0;
+  while ((match = requireRegex.exec(content)) !== null) {
+    const pkg = extractPackageName(match[1]);
+    if (pkg) requiredPackages.add(pkg);
+  }
+  dynamicImportRegex.lastIndex = 0;
+  while ((match = dynamicImportRegex.exec(content)) !== null) {
+    const pkg = extractPackageName(match[1]);
+    if (pkg) requiredPackages.add(pkg);
+  }
+};
+
+scanFile(runnerJs);
+scanFile(cliJs);
 
 const rootPkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
-const template = JSON.parse(readFileSync(resolve(PKG_DIR, 'package.json.template'), 'utf8'));
+const pkgJson = JSON.parse(readFileSync(resolve(PKG_DIR, 'package.json'), 'utf8'));
 
-const dependencies = {};
 for (const pkg of [...requiredPackages].sort()) {
+  if (pkgJson.dependencies[pkg]) continue;
+
   let version = rootPkg.dependencies?.[pkg] || rootPkg.devDependencies?.[pkg];
   if (version && version.startsWith('workspace:')) {
     const wsPkg = JSON.parse(readFileSync(resolve(ROOT, 'node_modules', pkg, 'package.json'), 'utf8'));
     version = wsPkg.version;
   }
   if (version) {
-    dependencies[pkg] = version;
+    pkgJson.dependencies[pkg] = version;
   } else {
     console.warn(`Warning: version not found for "${pkg}" in root package.json`);
   }
 }
 
-template.version = rootPkg.version;
-template.dependencies = { ...template.dependencies, ...dependencies };
+pkgJson.version = rootPkg.version;
 
 const outputPath = resolve(PKG_DIR, 'package.json');
-writeFileSync(outputPath, JSON.stringify(template, null, 2) + '\n');
+writeFileSync(outputPath, JSON.stringify(pkgJson, null, 2) + '\n');
 
-console.log(`Generated ${outputPath}`);
-console.log(`Found ${Object.keys(dependencies).length} dependencies from runner.js`);
+console.log(`Updated ${outputPath}`);
+console.log(`Found ${Object.keys(pkgJson.dependencies).length} total dependencies`);
