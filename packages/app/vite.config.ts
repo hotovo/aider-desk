@@ -5,14 +5,21 @@ import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 const ROOT = resolve(__dirname, '..', '..');
+const PKG = resolve(__dirname);
 
 export default defineConfig({
   build: {
-    outDir: 'out/server',
+    outDir: 'out',
     lib: {
-      entry: resolve(ROOT, 'src/main/server/runner.ts'),
+      entry: {
+        runner: resolve(ROOT, 'src/main/server/runner.ts'),
+        cli: resolve(PKG, 'src/cli.ts'),
+      },
       formats: ['cjs'],
-      fileName: () => 'runner.js',
+      fileName: (_format, entryName) => {
+        if (entryName === 'runner') return 'server/runner.js';
+        return 'cli.js';
+      },
     },
     rollupOptions: {
       external: [
@@ -21,10 +28,9 @@ export default defineConfig({
         '@homebridge/node-pty-prebuilt-multiarch',
         '@huggingface/transformers',
         '@lancedb/lancedb',
+        '@mariozechner/pi-tui',
+        'chalk',
       ],
-      output: {
-        entryFileNames: 'runner.js',
-      },
     },
     emptyOutDir: true,
     target: 'node20',

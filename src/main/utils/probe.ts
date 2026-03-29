@@ -67,7 +67,7 @@ export const search = async (options: ProbeSearchOptions): Promise<string | unkn
     args.push(`"${options.path}"`);
   }
 
-  const command = `"${PROBE_BINARY_PATH}" ${args.join(' ')}`;
+  const command = `"${PROBE_BINARY_PATH}" search ${args.join(' ')}`;
 
   const { stdout } = await execWithShellPath(command);
 
