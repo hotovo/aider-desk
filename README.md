@@ -223,10 +223,27 @@ AiderDesk provides multiple ways to optimize your AI spending:
 
 ## 📥 Installation
 
-### Quick Start
+### Option 1: Desktop Application
 
 1. Download the latest release for your OS from [Releases](https://github.com/hotovo/aider-desk/releases).
 2. Run the executable.
+
+### Option 2: npm (Headless / Browser-Based)
+
+Run AiderDesk as a headless backend service accessible through your browser — similar to [using Docker](https://aiderdesk.hotovo.com/docs/advanced/docker):
+
+```bash
+npm install -g @aiderdesk/aiderdesk
+aiderdesk
+```
+
+Or run directly without installing:
+
+```bash
+npx @aiderdesk/aiderdesk
+```
+
+Then open `http://localhost:24337` in your browser. Supports an interactive TUI mode (default) and a headless foreground mode (`aiderdesk start`). See the [npm CLI docs](https://aiderdesk.hotovo.com/docs/advanced/npm-cli) for details.
 
 ### Recommended First Steps
 

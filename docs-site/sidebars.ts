@@ -112,6 +112,7 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: [
         "advanced/docker",
+        "advanced/npm-cli",
         "advanced/custom-aider-version",
         "advanced/extra-python-packages",
         "advanced/open-telemetry",

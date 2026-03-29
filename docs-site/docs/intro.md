@@ -13,11 +13,30 @@ AiderDesk supercharges your coding workflow by combining the power of [aider](ht
 
 ### Installation
 
+#### Option 1: Desktop Application
+
 1. **Download** the latest version for your operating system from our [Releases page](https://github.com/hotovo/aider-desk/releases)
 2. **Install** the application:
    - **Windows**: Run the `.exe` installer
    - **macOS**: Open the `.dmg` and drag AiderDesk to Applications
    - **Linux**: Extract the `.AppImage` and make it executable (`chmod +x`)
+
+#### Option 2: npm (Headless / Browser-Based)
+
+Install and run AiderDesk as a global npm package. This runs the AiderDesk backend service only — you access it through your web browser, similar to [using Docker](/docs/advanced/docker).
+
+```bash
+npm install -g @aiderdesk/aiderdesk
+aiderdesk
+```
+
+Or run directly without installing:
+
+```bash
+npx @aiderdesk/aiderdesk
+```
+
+Then open `http://localhost:24337` in your browser. See the [npm CLI guide](/docs/advanced/npm-cli) for full details.
 
 ### First Launch Experience
 
