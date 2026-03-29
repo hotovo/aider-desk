@@ -1,13 +1,12 @@
 import { resolve } from 'path';
 
-import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   main: {
     plugins: [
-      externalizeDepsPlugin(),
       tsconfigPaths({
         projects: [resolve(__dirname, 'tsconfig.node.json')],
       }),
@@ -15,7 +14,6 @@ export default defineConfig({
   },
   preload: {
     plugins: [
-      externalizeDepsPlugin(),
       tsconfigPaths({
         projects: [resolve(__dirname, 'tsconfig.node.json'), resolve(__dirname, 'tsconfig.web.json')],
       }),
