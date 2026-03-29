@@ -60,7 +60,6 @@ export const getLatestPythonLibVersion = async (library: string): Promise<string
         PATH: `${pythonBinPath}${path.delimiter}${process.env.PATH}`,
       },
       windowsHide: true,
-      timeout: 30000,
     });
 
     const latestMatch = stdout.match(/LATEST:\s+(\S+)/);
