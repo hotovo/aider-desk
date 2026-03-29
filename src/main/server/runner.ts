@@ -5,7 +5,7 @@ import logger from '@/logger';
 import { initManagers } from '@/managers';
 import { performStartUp } from '@/start-up';
 import { Store } from '@/store';
-import { AIDER_DESK_DATA_DIR } from '@/constants';
+import { AIDER_DESK_DATA_DIR, SERVER_PORT } from '@/constants';
 import { getDefaultProjectSettings } from '@/utils';
 import { ModelManager } from '@/models';
 import { AgentProfileManager } from '@/agent';
@@ -97,8 +97,7 @@ const main = async (): Promise<void> => {
     // Check for AIDER_DESK_PROJECTS environment variable and add projects
     await addProjectsFromEnv(store, modelManager, agentProfileManager);
 
-    logger.info('AiderDesk Node Runner is ready!');
-    logger.info('API server is running. You can now interact with AiderDesk via HTTP API or Socket.IO clients.');
+    logger.info(`AiderDesk Runner is ready and running on port ${SERVER_PORT}. You can now open http://localhost:${SERVER_PORT} in your browser.`);
   } catch (error) {
     logger.error('Failed to start AiderDesk Node Runner:', error);
     process.exit(1);

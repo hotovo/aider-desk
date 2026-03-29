@@ -1,6 +1,6 @@
-package-lock.json
 scripts/download-probe.mjs
 scripts/download-uv.mjs
 resources/
 out/
 node_modules/
+patches/

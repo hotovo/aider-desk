@@ -1,5 +1,5 @@
 import { Server } from 'http';
-import { join } from 'path';
+import path from 'path';
 
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
@@ -143,10 +143,16 @@ export class ServerController {
       logger.info(`Serving static renderer files on port ${SERVER_PORT}...`, {
         dirname: __dirname,
       });
-      this.app.use(express.static(join(__dirname, '../renderer')));
+      const rendererDir = process.env.AIDER_DESK_RENDERER_DIR
+        ? path.isAbsolute(process.env.AIDER_DESK_RENDERER_DIR)
+          ? process.env.AIDER_DESK_RENDERER_DIR
+          : path.join(__dirname, process.env.AIDER_DESK_RENDERER_DIR)
+        : path.join(__dirname, '../renderer');
+
+      this.app.use(express.static(rendererDir));
       // Handle SPA routing: serve index.html for non-API routes
       this.app.get('*', (_, res) => {
-        res.sendFile(join(__dirname, '../renderer/index.html'));
+        res.sendFile(path.join(rendererDir, 'index.html'));
       });
     }
 

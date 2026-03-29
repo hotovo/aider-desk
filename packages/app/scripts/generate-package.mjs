@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, copyFileSync, rmSync, existsSync } from 'fs';
+import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,7 +39,7 @@ const CLI_PACKAGES = new Set([
   '@mariozechner/pi-tui',
 ]);
 
-const runnerJs = readFileSync(resolve(PKG_DIR, 'out', 'server', 'runner.js'), 'utf8');
+const runnerJs = readFileSync(resolve(PKG_DIR, 'out', 'runner.js'), 'utf8');
 const cliJs = readFileSync(resolve(PKG_DIR, 'out', 'cli.js'), 'utf8');
 
 const requireRegex = /require(?:\.resolve)?\(["']([^"']+)["']\)/g;
@@ -99,3 +99,43 @@ writeFileSync(outputPath, JSON.stringify(pkgJson, null, 2) + '\n');
 
 console.log(`Updated ${outputPath}`);
 console.log(`Found ${Object.keys(pkgJson.dependencies).length} total dependencies`);
+
+// Step: Copy matching patches from root
+const ROOT_PATCHES_DIR = resolve(ROOT, 'patches');
+const PKG_PATCHES_DIR = resolve(PKG_DIR, 'patches');
+
+if (existsSync(ROOT_PATCHES_DIR)) {
+  const patchFiles = readdirSync(ROOT_PATCHES_DIR).filter(f => f.endsWith('.patch'));
+
+  // Extract package name from patch filename
+  // Scoped: @scope+name+version.patch → @scope/name
+  // Regular: name+version.patch → name
+  const extractPkgName = (filename) => {
+    const base = filename.replace(/\.patch$/, '');
+    if (base.startsWith('@')) {
+      const parts = base.split('+');
+      return parts.slice(0, 2).join('/');
+    }
+    return base.split('+')[0];
+  };
+
+  const depNames = new Set(Object.keys(pkgJson.dependencies));
+  const matchingPatches = patchFiles.filter(f => depNames.has(extractPkgName(f)));
+
+  if (matchingPatches.length > 0) {
+    rmSync(PKG_PATCHES_DIR, { recursive: true, force: true });
+    mkdirSync(PKG_PATCHES_DIR, { recursive: true });
+
+    for (const patchFile of matchingPatches) {
+      copyFileSync(join(ROOT_PATCHES_DIR, patchFile), join(PKG_PATCHES_DIR, patchFile));
+    }
+
+    console.log(`Copied ${matchingPatches.length} matching patch(es): ${matchingPatches.join(', ')}`);
+  } else {
+    // Remove stale patches dir if no patches match
+    rmSync(PKG_PATCHES_DIR, { recursive: true, force: true });
+    console.log('No matching patches found.');
+  }
+} else {
+  console.log('No patches directory found at root.');
+}

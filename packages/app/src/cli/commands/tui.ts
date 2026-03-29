@@ -1,6 +1,4 @@
-import { spawn, ChildProcess } from 'child_process';
-import { resolve, dirname, join } from 'path';
-import { readFileSync } from 'fs';
+import { type ChildProcess } from 'child_process';
 
 import {
   TUI,
@@ -9,148 +7,19 @@ import {
   Key,
   truncateToWidth,
   visibleWidth,
+  wrapTextWithAnsi,
   type Component,
 } from '@mariozechner/pi-tui';
 
-const c = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  blink: '\x1b[5m',
-  black: (s: string) => `\x1b[30m${s}\x1b[39m`,
-  red: (s: string) => `\x1b[31m${s}\x1b[39m`,
-  green: (s: string) => `\x1b[32m${s}\x1b[39m`,
-  yellow: (s: string) => `\x1b[33m${s}\x1b[39m`,
-  cyan: (s: string) => `\x1b[36m${s}\x1b[39m`,
-  gray: (s: string) => `\x1b[90m${s}\x1b[39m`,
-  white: (s: string) => `\x1b[37m${s}\x1b[49m`,
-  bgCyan: (s: string) => `\x1b[46m${s}\x1b[49m`,
-  boldCyan: (s: string) => `\x1b[1m\x1b[36m${s}\x1b[0m`,
-  boldWhite: (s: string) => `\x1b[1m\x1b[37m${s}\x1b[0m`,
-  bgCyanBlack: (s: string) => `\x1b[30m\x1b[46m${s}\x1b[0m`,
-};
-
-const READY_PATTERN = /AiderDesk Runner is ready and running on port (\d+)/;
-const DEFAULT_PORT = 24337;
-const MAX_LOG_LINES = 500;
-
-const pkgRoot = resolve(dirname(__filename), '..');
-const resourcesDir = resolve(pkgRoot, 'out', 'resources');
-const runnerPath = resolve(pkgRoot, 'out', 'runner.js');
-
-function getInitialPort(): number {
-  const envPort = process.env.AIDER_DESK_PORT;
-  if (envPort) {
-    const port = parseInt(envPort, 10);
-    if (port >= 1 && port <= 65535) return port;
-  }
-  return DEFAULT_PORT;
-}
-
-function parseArgs(argv: string[]): { command: string; port: number; showHelp: boolean; showVersion: boolean } {
-  const args = argv.slice(2);
-  let command = '';
-  let port = getInitialPort();
-  let showHelp = false;
-  let showVersion = false;
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
-    if (arg === '--help' || arg === '-h') {
-      showHelp = true;
-    } else if (arg === '--version' || arg === '-v') {
-      showVersion = true;
-    } else if (arg === '--port' || arg === '-p') {
-      const next = args[++i];
-      if (next) {
-        const parsed = parseInt(next, 10);
-        if (parsed >= 1 && parsed <= 65535) {
-          port = parsed;
-        } else {
-          console.error(`Invalid port: ${next}. Must be between 1 and 65535.`);
-          process.exit(1);
-        }
-      } else {
-        console.error('Missing value for --port');
-        process.exit(1);
-      }
-    } else if (!arg.startsWith('-')) {
-      command = arg;
-    } else {
-      console.error(`Unknown option: ${arg}`);
-      process.exit(1);
-    }
-  }
-
-  return { command, port, showHelp, showVersion };
-}
-
-function printVersion(): void {
-  try {
-    const pkg = JSON.parse(readFileSync(join(pkgRoot, 'package.json'), 'utf8'));
-    console.log(`AiderDesk v${pkg.version}`);
-  } catch {
-    console.log('AiderDesk (unknown version)');
-  }
-}
-
-function printHelp(): void {
-  const version = (() => {
-    try {
-      return `v${JSON.parse(readFileSync(join(pkgRoot, 'package.json'), 'utf8')).version}`;
-    } catch {
-      return '(unknown version)';
-    }
-  })();
-
-  console.log(`AiderDesk ${version}
-Usage: aiderdesk [command] [options]
-
-Commands:
-  start       Start the runner in foreground (headless mode)
-  tui         Start the interactive TUI (default when no command given)
-
-Options:
-  -p, --port <port>   Set the port to listen on (default: ${DEFAULT_PORT}, env: AIDER_DESK_PORT)
-  -h, --help          Show this help message
-  -v, --version       Show version number
-`);
-}
-
-function startForeground(port: number): void {
-  const env: Record<string, string> = {
-    ...(process.env as Record<string, string>),
-    NODE_ENV: process.env.NODE_ENV || 'production',
-    AIDER_DESK_HEADLESS: 'true',
-    AIDER_DESK_RESOURCES_DIR: resourcesDir,
-  };
-
-  if (port !== DEFAULT_PORT || process.env.AIDER_DESK_PORT) {
-    env.AIDER_DESK_PORT = String(port);
-  }
-
-  const child = spawn(process.execPath, [runnerPath], {
-    env,
-    stdio: 'inherit',
-  });
-
-  const forwardSignal = (signal: NodeJS.Signals) => {
-    child.kill(signal);
-  };
-
-  process.on('SIGINT', () => forwardSignal('SIGINT'));
-  process.on('SIGTERM', () => forwardSignal('SIGTERM'));
-
-  child.on('exit', (code) => {
-    process.exit(code ?? 0);
-  });
-
-  child.on('error', (err) => {
-    console.error(`Failed to start: ${err.message}`);
-    process.exit(1);
-  });
-}
+import {
+  c,
+  READY_PATTERN,
+  DEFAULT_PORT,
+  MAX_LOG_LINES,
+  resolvePort,
+} from '../constants';
+import { spawnRunnerProcess } from '../runner';
+import { Command } from 'commander';
 
 type AppState = 'idle' | 'starting' | 'running' | 'stopping';
 
@@ -201,7 +70,7 @@ class AiderDeskCli implements Component {
   private state: AppState = 'idle';
   private childProcess: ChildProcess | null = null;
   private detectedPort: number | null = null;
-  private configuredPort = getInitialPort();
+  private configuredPort: number;
   private logBuffer = new ScrollableLog();
   private selectedMenuIndex = 0;
   private portInputActive = false;
@@ -209,8 +78,9 @@ class AiderDeskCli implements Component {
   private cachedWidth?: number;
   private cachedLines?: string[];
 
-  constructor(tui: TUI) {
+  constructor(tui: TUI, port: number) {
     this.tui = tui;
+    this.configuredPort = port;
   }
 
   private getMenuItems(): { label: string; key: string; available: boolean }[] {
@@ -218,17 +88,11 @@ class AiderDeskCli implements Component {
 
     if (this.state === 'idle') {
       items.push({ label: '▶ Start', key: 's', available: true });
-    } else if (this.state === 'starting') {
-      items.push({ label: '⏳ Starting...', key: '', available: false });
+      items.push({ label: 'Set Port', key: 'p', available: !this.portInputActive });
+      items.push({ label: '✕ Exit', key: 'q', available: true });
     } else if (this.state === 'running') {
       items.push({ label: '■ Stop', key: 's', available: true });
-    } else {
-      items.push({ label: '⏳ Stopping...', key: '', available: false });
     }
-
-    items.push({ label: '⚙ Set Port', key: 'p', available: this.state === 'idle' && !this.portInputActive });
-
-    items.push({ label: '✕ Exit', key: 'q', available: this.state === 'idle' });
 
     return items;
   }
@@ -238,23 +102,10 @@ class AiderDeskCli implements Component {
     this.state = 'starting';
     this.detectedPort = null;
     this.logBuffer.clear();
+    this.selectedMenuIndex = 0;
     this.invalidate();
 
-    const env: Record<string, string> = {
-      ...(process.env as Record<string, string>),
-      NODE_ENV: process.env.NODE_ENV || 'production',
-      AIDER_DESK_HEADLESS: 'true',
-      AIDER_DESK_RESOURCES_DIR: resourcesDir,
-    };
-
-    if (this.configuredPort !== DEFAULT_PORT) {
-      env.AIDER_DESK_PORT = String(this.configuredPort);
-    }
-
-    this.childProcess = spawn(process.execPath, [runnerPath], {
-      env,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+    this.childProcess = spawnRunnerProcess(this.configuredPort, ['pipe', 'pipe', 'pipe']);
 
     const handleOutput = (data: Buffer) => {
       const text = data.toString();
@@ -283,6 +134,7 @@ class AiderDeskCli implements Component {
       this.childProcess = null;
       this.state = 'idle';
       this.detectedPort = null;
+      this.selectedMenuIndex = 0;
       this.invalidate();
       this.tui.requestRender();
     });
@@ -291,6 +143,7 @@ class AiderDeskCli implements Component {
       this.logBuffer.push(c.red(`Failed to start: ${err.message}`));
       this.state = 'idle';
       this.childProcess = null;
+      this.selectedMenuIndex = 0;
       this.invalidate();
       this.tui.requestRender();
     });
@@ -460,28 +313,35 @@ class AiderDeskCli implements Component {
 
     const lines: string[] = [];
 
-    lines.push(c.boldCyan('  ╔═══════════════════════════════╗'));
-    lines.push(c.boldCyan('  ║') + c.boldWhite('      A i d e r D e s k        ') + c.boldCyan('║'));
-    lines.push(c.boldCyan('  ╚═══════════════════════════════╝'));
+    for (const line of this.renderBanner(width)) {
+      lines.push(line);
+    }
     lines.push('');
 
-    lines.push(this.renderMenuBar(width));
-    lines.push('');
+    if (this.state === 'idle') {
+      lines.push(this.renderMenuBar(width));
+      lines.push('');
 
-    if (this.portInputActive) {
-      lines.push(c.gray('  Port: ') + this.portInputValue + c.blink + '▎' + c.reset);
+      if (this.portInputActive) {
+        lines.push(c.gray('  Port: ') + this.portInputValue + c.blink + '▎' + c.reset);
+        lines.push('');
+      }
+
+      lines.push(this.renderStatus(width));
+      lines.push('');
+    } else {
+      lines.push(this.renderStatusWithAction(width));
       lines.push('');
     }
-
-    lines.push(this.renderStatus(width));
-    lines.push('');
 
     lines.push(c.gray('─'.repeat(width)));
 
     const headerHeight = lines.length + 1;
     const logHeight = Math.max(3, process.stdout.rows - headerHeight);
     const logLines = this.logBuffer.getVisibleLines(logHeight);
-    for (const line of logLines) {
+    const wrappedLines = logLines.flatMap((line) => wrapTextWithAnsi(line, width));
+    const visibleWrapped = wrappedLines.slice(-logHeight);
+    for (const line of visibleWrapped) {
       lines.push(truncateToWidth(line, width));
     }
 
@@ -494,6 +354,55 @@ class AiderDeskCli implements Component {
 
     this.cachedWidth = width;
     this.cachedLines = lines;
+    return lines;
+  }
+
+  private renderBanner(width: number): string[] {
+    const A = [
+      '  ██████╗ ',
+      '██╔════██╗',
+      '█████████║',
+      '██╔════██║',
+      '██║    ██║',
+      '╚═╝    ╚═╝',
+    ];
+    const I = ['██╗', '██║', '██║', '██║', '██║', '╚═╝'];
+    const D = [
+      '████████╗ ',
+      '██╔════██╗',
+      '██║    ██║',
+      '██║    ██║',
+      '████████╔╝',
+      '╚═══════╝ ',
+    ];
+    const E = ['███████╗', '██╔════╝', '█████╗  ', '██╔══╝  ', '███████╗', '╚══════╝'];
+    const R = ['██████╗ ', '██╔══██╗', '██████╔╝', '██╔══██╗', '██║  ██║', '╚═╝  ╚═╝'];
+    const S = ['███████╗', '██╔════╝', '███████╗', '╚════██║', '███████║', '╚══════╝'];
+    const K = ['██╗  ██╗', '██║ ██╔╝', '█████╔╝ ', '██╔═██╗ ', '██║  ██╗', '╚═╝  ╚═╝'];
+
+    const letters = [
+      { rows: A, highlight: true },
+      { rows: I, highlight: false },
+      { rows: D, highlight: false },
+      { rows: E, highlight: false },
+      { rows: R, highlight: false },
+      { rows: D, highlight: true },
+      { rows: E, highlight: false },
+      { rows: S, highlight: false },
+      { rows: K, highlight: false },
+    ];
+
+    const lines: string[] = [];
+    for (let row = 0; row < 6; row++) {
+      const segments = letters.map(({ rows, highlight }) => {
+        const text = rows[row];
+        return highlight ? c.boldWhite(text) : c.gray(text);
+      });
+      const line = segments.join(' ');
+      const lineWidth = visibleWidth(line);
+      const padding = Math.max(0, Math.floor((width - lineWidth) / 2));
+      lines.push(truncateToWidth(' '.repeat(padding) + line, width));
+    }
     return lines;
   }
 
@@ -512,46 +421,54 @@ class AiderDeskCli implements Component {
   }
 
   private renderStatus(width: number): string {
+    return truncateToWidth(c.gray(`  Status: Stopped (port ${this.configuredPort})`), width);
+  }
+
+  private renderStatusWithAction(width: number): string {
     let status: string;
-    if (this.state === 'idle') {
-      status = c.gray(`  Status: Stopped (port ${this.configuredPort})`);
-    } else if (this.state === 'starting') {
-      status = c.yellow('  Status: Starting...');
+    if (this.state === 'starting') {
+      status = c.yellow('  ⏳ Starting...');
     } else if (this.state === 'running' && this.detectedPort !== null) {
       status = c.green(`  🟢 Running on http://localhost:${this.detectedPort}`);
     } else if (this.state === 'running') {
       status = c.green('  🟢 Running');
     } else {
-      status = c.yellow('  Status: Stopping...');
+      status = c.yellow('  ⏳ Stopping...');
     }
+
+    if (this.state === 'running') {
+      const items = this.getMenuItems().filter((i) => i.available);
+      const availIdx = items.findIndex((i) => i.key === 's');
+      const isSelected = availIdx === this.selectedMenuIndex;
+      const stopLabel = ' ■ Stop [s] ';
+      const stopText = isSelected ? c.bgCyanBlack(stopLabel) : c.cyan(stopLabel);
+      const statusWidth = visibleWidth(status);
+      const stopWidth = visibleWidth(stopText);
+      const padding = Math.max(1, width - statusWidth - stopWidth);
+      return truncateToWidth(status + ' '.repeat(padding) + stopText, width);
+    }
+
     return truncateToWidth(status, width);
   }
 }
 
-const { command, port, showHelp, showVersion } = parseArgs(process.argv);
-
-if (showHelp) {
-  printHelp();
-  process.exit(0);
-}
-
-if (showVersion) {
-  printVersion();
-  process.exit(0);
-}
-
-if (command === 'start') {
-  startForeground(port);
-} else if (command === '' || command === 'tui') {
+function runTui(port: number): void {
   const terminal = new ProcessTerminal();
   const tui = new TUI(terminal);
-  const cli = new AiderDeskCli(tui);
+  const cli = new AiderDeskCli(tui, port);
   tui.addChild(cli);
   tui.setFocus(cli);
   process.stdout.write('\x1b[2J\x1b[H');
   tui.start();
-} else {
-  console.error(`Unknown command: ${command}`);
-  console.error('Run "aiderdesk --help" for usage information.');
-  process.exit(1);
+}
+
+export function registerTuiCommand(program: Command): void {
+  program
+    .command('tui', { isDefault: true })
+    .description('Start the interactive TUI (default)')
+    .option('-p, --port <port>', `port to listen on (default: ${DEFAULT_PORT}, env: AIDER_DESK_PORT)`, parseInt)
+    .action((opts) => {
+      const port = resolvePort(opts.port);
+      runTui(port);
+    });
 }

@@ -13,13 +13,10 @@ export default defineConfig({
     lib: {
       entry: {
         runner: resolve(ROOT, 'src/main/server/runner.ts'),
-        cli: resolve(PKG, 'src/cli.ts'),
+        cli: resolve(PKG, 'src/cli/index.ts'),
       },
       formats: ['cjs'],
-      fileName: (_format, entryName) => {
-        if (entryName === 'runner') return 'server/runner.js';
-        return 'cli.js';
-      },
+      fileName: (_format, entryName) => `${entryName}.js`,
     },
     rollupOptions: {
       external: [
@@ -29,7 +26,7 @@ export default defineConfig({
         '@huggingface/transformers',
         '@lancedb/lancedb',
         '@mariozechner/pi-tui',
-        'chalk',
+        'commander',
       ],
     },
     emptyOutDir: true,
