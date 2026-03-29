@@ -391,7 +391,7 @@ export const AgentSelector = memo(
                     }
                     onClick={() => handleToggleProfileSetting('useSubagents', !activeTaskProfile.useSubagents)}
                     className="p-1.5 hover:bg-bg-secondary rounded-md"
-                    tooltip={t('settings.agent.canUseSubagents')}
+                    tooltip={t('settings.agent.subagent.canUseSubagents')}
                   />
                   <IconButton
                     icon={
