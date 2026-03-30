@@ -1,0 +1,18 @@
+{
+  "name": "seek",
+  "version": "1.0.0",
+  "description": "Fast ranked code search using seek (zoekt) — replaces the internal power---grep tool",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@aiderdesk/extensions": "^0.9.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.7.2"
+  }
+}
