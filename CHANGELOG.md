@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added settings to configure default working mode for tasks
+
 ## [0.59.0]
 
 - added support for multiple windows

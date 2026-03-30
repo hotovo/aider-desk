@@ -1,6 +1,8 @@
-import { SettingsData, ContextCompactionType, Model } from '@common/types';
+import { SettingsData, ContextCompactionType, Model, WorkingMode } from '@common/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AiFillFolderOpen } from 'react-icons/ai';
+import { IoGitBranch } from 'react-icons/io5';
 import { getProviderModelId } from '@common/agent';
 
 import { Chip } from '../common/Chip';
@@ -10,6 +12,22 @@ import { InfoIcon } from '../common/InfoIcon';
 import { Button } from '../common/Button';
 import { Slider } from '../common/Slider';
 import { ModelSelectorWrapper } from '../common/ModelSelectorWrapper';
+import { ItemConfig, ItemSelector } from '../common/ItemSelector';
+
+const WORKING_MODE_ITEMS: ItemConfig<WorkingMode>[] = [
+  {
+    value: 'local',
+    icon: AiFillFolderOpen,
+    labelKey: 'workingMode.local',
+    tooltipKey: 'workingModeTooltip.local',
+  },
+  {
+    value: 'worktree',
+    icon: IoGitBranch,
+    labelKey: 'workingMode.worktree',
+    tooltipKey: 'workingModeTooltip.worktree',
+  },
+];
 
 type Props = {
   settings: SettingsData;
@@ -134,6 +152,16 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const handleDefaultWorkingModeChange = (mode: WorkingMode) => {
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        defaultWorkingMode: mode,
+      },
+    });
+  };
+
   return (
     <div className="space-y-6 h-full flex flex-col">
       <Section title={t('settings.tasks.title')} className="px-4 py-5">
@@ -225,33 +253,48 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
 
       <Section id="worktree" title={t('settings.tasks.worktree')}>
         <div className="px-4 py-3 pt-4 space-y-3">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-1">
-              <label className="text-xs text-text-primary font-medium">{t('settings.tasks.worktreeSymlinkFoldersLabel')}</label>
-              <InfoIcon tooltip={t('settings.tasks.worktreeSymlinkFoldersTooltip')} />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1">
+                <label className="text-xs text-text-primary font-medium">{t('settings.tasks.defaultWorkingMode')}</label>
+                <InfoIcon tooltip={t('settings.tasks.defaultWorkingModeTooltip')} />
+              </div>
+              <ItemSelector
+                items={WORKING_MODE_ITEMS}
+                selectedValue={settings.taskSettings.defaultWorkingMode || 'local'}
+                onChange={handleDefaultWorkingModeChange}
+                minWidth={120}
+              />
             </div>
 
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={newFolder}
-                onChange={(e) => setNewFolder(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddSymlinkFolder();
-                  }
-                }}
-                placeholder={t('settings.tasks.symlinkFolderPlaceholder')}
-                className="w-64 bg-bg-secondary-light border border-border-default rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-border-light"
-              />
-              <Button variant="outline" size="xs" onClick={handleAddSymlinkFolder}>
-                {t('settings.tasks.addSymlinkFolder')}
-              </Button>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1">
+                <label className="text-xs text-text-primary font-medium">{t('settings.tasks.worktreeSymlinkFoldersLabel')}</label>
+                <InfoIcon tooltip={t('settings.tasks.worktreeSymlinkFoldersTooltip')} />
+              </div>
+
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={newFolder}
+                  onChange={(e) => setNewFolder(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddSymlinkFolder();
+                    }
+                  }}
+                  placeholder={t('settings.tasks.symlinkFolderPlaceholder')}
+                  className="w-64 bg-bg-secondary border border-border-default rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:border-border-light"
+                />
+                <Button variant="outline" size="xs" onClick={handleAddSymlinkFolder}>
+                  {t('settings.tasks.addSymlinkFolder')}
+                </Button>
+              </div>
             </div>
 
             {settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0 ? (
-              <div className="mt-1 flex flex-wrap gap-1 max-h-40 overflow-y-auto p-0.5 scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth w-full">
+              <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto p-0.5 scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth w-full">
                 {settings.taskSettings.worktreeSymlinkFolders.map((folder) => (
                   <Chip
                     key={folder}

@@ -592,7 +592,9 @@
       "taskStateModelTooltip": "Model used for determining task state (Ready for Review, More Info Needed, etc.)",
       "commitMessageModel": "Commit Message",
       "commitMessageModelTooltip": "Model used for generating commit messages",
-      "inheritModel": "Inherit"
+      "inheritModel": "Inherit",
+      "defaultWorkingMode": "Default Working Mode",
+      "defaultWorkingModeTooltip": "The default working mode for new tasks. Local works directly in the project directory, Worktree uses an isolated git worktree."
     },
     "language": "Language",
     "notifications": {

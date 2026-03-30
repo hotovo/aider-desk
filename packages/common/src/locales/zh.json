@@ -590,7 +590,9 @@
       "taskStateModelTooltip": "用于确定任务状态（准备审查、需要更多信息等）的模型",
       "commitMessageModel": "提交消息",
       "commitMessageModelTooltip": "用于生成提交消息的模型",
-      "inheritModel": "继承"
+      "inheritModel": "继承",
+      "defaultWorkingMode": "默认工作模式",
+      "defaultWorkingModeTooltip": "新任务的默认工作模式。本地模式直接在项目目录中工作，工作树模式使用隔离的 git 工作树。"
     },
     "language": "语言",
     "notifications": {

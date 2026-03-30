@@ -534,6 +534,7 @@ export interface TaskSettings {
   taskNameModel?: string | null;
   taskStateModel?: string | null;
   commitMessageModel?: string | null;
+  defaultWorkingMode: WorkingMode;
 }
 
 export interface MemoryConfig {

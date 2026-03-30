@@ -96,6 +96,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
     worktreeSymlinkFolders: ['node_modules', 'vendor', '__pycache__', '.venv', 'venv'],
     contextCompactingThreshold: 0,
     contextCompactionType: ContextCompactionType.Compact,
+    defaultWorkingMode: 'local',
   },
   extensions: {
     repositories: [AIDER_DESK_EXTENSIONS_REPO_URL],

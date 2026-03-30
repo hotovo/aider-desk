@@ -134,6 +134,7 @@ describe('Project - createNewTask', () => {
               worktreeSymlinkFolders: [],
               contextCompactingThreshold: 0,
               contextCompactionType: ContextCompactionType.Compact,
+              defaultWorkingMode: 'local',
             },
             aider: {
               options: '',

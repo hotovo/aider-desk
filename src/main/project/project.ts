@@ -87,6 +87,7 @@ export class Project {
     }
 
     const sourceTask = parentTask || this.getMostRecentTask();
+    const defaultWorkingMode = this.store.getSettings().taskSettings.defaultWorkingMode || 'local';
     let initialTaskData: Partial<TaskData>;
 
     if (sourceTask) {
@@ -101,6 +102,7 @@ export class Project {
         provider: parentTask?.task.provider,
         model: parentTask?.task.model,
         weakModelLocked: sourceTask.task.weakModelLocked,
+        workingMode: defaultWorkingMode,
         ...(parentTask
           ? {
               workingMode: parentTask.task.workingMode,
@@ -115,6 +117,7 @@ export class Project {
         mainModel: determineMainModel(this.store.getSettings(), this.store.getProviders(), providerModels.models || [], this.baseDir),
         weakModel: determineWeakModel(this.baseDir),
         currentMode: 'agent',
+        workingMode: defaultWorkingMode,
         ...normalizedParams,
       };
     }
