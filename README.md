@@ -337,3 +337,14 @@ For major changes, please open an issue first to discuss what you would like to 
 Chart](https://api.star-history.com/svg?repos=hotovo/aider-desk&type=Date)](https://star-history.com/#hotovo/aider-desk&Date)
 
 Thank you ❤️
+
+## Usage
+
+```python
+# Example usage
+```
+
+
+## Contributing
+
+Contributions are welcome! Please open an issue first.
