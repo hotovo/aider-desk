@@ -8,6 +8,7 @@
 - remembering state of Files sections in the sidebar when switching between them
 - correctly using the worktree directory in terminal in subtasks
 - using merge-base for diff calculations in worktree mode to show only changed files since rebase
+- updating rule files after the agent finishes
 
 ## [0.59.0]
 

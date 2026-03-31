@@ -823,9 +823,7 @@ export class Task {
       }
     }
 
-    void this.sendRequestContextInfo();
-    void this.sendWorktreeIntegrationStatusUpdated();
-    void this.sendUpdatedFilesUpdated();
+    this.sendStateUpdated();
 
     await this.hookManager.trigger('onAiderPromptFinished', { responses }, this, this.project);
     await this.hookManager.trigger('onPromptFinished', { responses }, this, this.project);
@@ -880,9 +878,7 @@ export class Task {
 
     await this.hookManager.trigger('onPromptFinished', { responses: [] }, this, this.project);
 
-    void this.sendRequestContextInfo();
-    void this.sendWorktreeIntegrationStatusUpdated();
-    void this.sendUpdatedFilesUpdated();
+    this.sendStateUpdated();
 
     this.resolveAgentRunPromises();
 
@@ -1501,6 +1497,13 @@ export class Task {
       const gitErrorMessage = gitError instanceof Error ? gitError.message : String(gitError);
       this.addLogMessage('warning', `Failed to add new file ${absolutePath} to git staging area: ${gitErrorMessage}`, false, promptContext);
     }
+  }
+
+  private sendStateUpdated() {
+    void this.sendRequestContextInfo();
+    void this.sendWorktreeIntegrationStatusUpdated();
+    void this.sendUpdatedFilesUpdated();
+    void this.sendContextFilesUpdated();
   }
 
   private async sendContextFilesUpdated() {
