@@ -476,7 +476,9 @@ export class EventsHandler {
 
   async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {
     try {
-      return await this.terminalManager.createTerminal(baseDir, taskId, cols, rows);
+      const task = this.projectManager.getProject(baseDir).getTask(taskId);
+      const taskDir = task?.getTaskDir() ?? baseDir;
+      return await this.terminalManager.createTerminal(baseDir, taskDir, taskId, cols, rows);
     } catch (error) {
       logger.error('Failed to create terminal:', { baseDir, error });
       throw error;

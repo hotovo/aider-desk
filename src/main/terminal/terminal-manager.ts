@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { WorktreeManager } from '@/worktrees/worktree-manager';
 
 export interface TerminalInstance {
   id: string;
@@ -22,7 +21,6 @@ export class TerminalManager {
 
   constructor(
     private readonly eventManager: EventManager,
-    private readonly worktreeManager: WorktreeManager,
     private readonly telemetryManager?: TelemetryManager,
   ) {}
 
@@ -52,12 +50,11 @@ export class TerminalManager {
     return [];
   }
 
-  public async createTerminal(baseDir: string, taskId: string, cols: number = 80, rows: number = 24): Promise<string> {
+  public async createTerminal(baseDir: string, taskDir: string, taskId: string, cols: number = 80, rows: number = 24): Promise<string> {
     const terminalId = uuidv4();
 
     try {
-      const worktree = await this.worktreeManager.getTaskWorktree(baseDir, taskId);
-      const cwd = worktree ? worktree.path : baseDir;
+      const cwd = taskDir;
       const shell = this.getShellCommand();
       const args = this.getShellArgs();
 

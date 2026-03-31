@@ -6,6 +6,7 @@
 - improved performance of expand/collapse of files in Updated Files modal
 - remembering state of Updated Files modal between opening/closing
 - remembering state of Files sections in the sidebar when switching between them
+- correctly using the worktree directory in terminal in subtasks
 
 ## [0.59.0]
 
