@@ -67,6 +67,7 @@ For comprehensive documentation on creating and using extensions, see the [Exten
 | **[providers-quota-extension/](./extensions/providers-quota-extension/)** | Displays API quota information for Synthetic and Z.AI providers in the task status bar | `ui` |
 | **[redact-secrets/](./extensions/redact-secrets/)** | Redacts secret values from `.env*` files in file read results | `security` |
 | **[rtk/](./extensions/rtk/)** | Transparently rewrites shell commands to RTK equivalents, reducing LLM token consumption by 60-90% | `optimization`, `commands` |
+| **[seek/](./extensions/seek/)** | Fast ranked code search using seek (zoekt) — replaces the internal grep tool | `tools`, `search` |
 | **[sandbox/](./extensions/sandbox/)** | OS-level sandboxing for bash commands using `@anthropic-ai/sandbox-runtime` | `security` |
 | **[sound-notification.ts](./extensions/sound-notification.ts)** | Plays a "Jobs Done" sound when a prompt finishes | `notifications` |
 | **[theme.ts](./extensions/theme.ts)** | Adds `/theme` command to switch AiderDesk themes | `commands` |

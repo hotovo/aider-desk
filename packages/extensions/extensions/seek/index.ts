@@ -9,7 +9,7 @@ export const metadata = {
   version: '1.0.0',
   description: 'Fast ranked code search using seek (zoekt) — replaces the internal grep tool',
   author: 'wladimiiir',
-  icon: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/experimental/seek/icon.png',
+  icon: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/seek/icon.png',
   capabilities: ['tools', 'search'],
 };
 
