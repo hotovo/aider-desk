@@ -1464,10 +1464,21 @@ export class WorktreeManager {
       // Build commit map for worktree mode
       const commitMap = new Map<string, { hash: string; message: string }>();
       let diffCommand = 'git diff --numstat -z HEAD';
+      // Merge-base commit for worktree mode diff comparisons
+      let mergeBase = '';
 
       if (workingMode === 'worktree' && mainBranch) {
-        // In worktree mode, get all files that differ from main branch (including uncommitted)
-        diffCommand = `git diff --numstat -z ${mainBranch}`;
+        // Use merge-base to compare against the branch point, not the current main tip.
+        // This avoids showing files that changed only in main since the worktree was created.
+        mergeBase = mainBranch;
+        try {
+          const { stdout: baseOutput } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
+          mergeBase = baseOutput.trim();
+        } catch (mergeBaseError) {
+          logger.warn('Failed to get merge-base, falling back to main branch:', mergeBaseError);
+        }
+
+        diffCommand = `git diff --numstat -z ${mergeBase}`;
 
         // Get commit information for files in the range
         try {
@@ -1544,11 +1555,10 @@ export class WorktreeManager {
               }
             }
 
-            // Escape file path for git command - use quotes and -- separator
             const escapedPath = filePath.replace(/"/g, '\\"');
             const gitDiffCmd =
               workingMode === 'worktree' && mainBranch
-                ? `git diff --unified=3 ${mainBranch} -- "${escapedPath}"`
+                ? `git diff --unified=3 ${mergeBase} -- "${escapedPath}"`
                 : `git diff --unified=3 HEAD -- "${escapedPath}"`;
 
             const { stdout: diffOutput } = await execWithShellPath(gitDiffCmd, {
