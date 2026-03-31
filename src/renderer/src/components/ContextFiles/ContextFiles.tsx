@@ -1194,6 +1194,7 @@ export const ContextFiles = ({
       {/* Diff Modal */}
       <Activity mode={diffModalOpen ? 'visible' : 'hidden'}>
         <UpdatedFilesDiffModal
+          key={diffModalFileIndex}
           files={sortedUpdatedFiles}
           initialFileIndex={diffModalFileIndex}
           onClose={handleCloseDiffModal}

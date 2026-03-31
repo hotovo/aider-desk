@@ -254,6 +254,12 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   useHotkeys('escape', resetLineState, { enabled: !!activeLineInfo });
 
   useEffect(() => {
+    if (isAllFilesView) {
+      scrollToFile(initialFileIndex);
+    }
+  }, [isAllFilesView, initialFileIndex, scrollToFile]);
+
+  useEffect(() => {
     resetLineState();
   }, [resetLineState, currentIndex]);
 
