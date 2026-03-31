@@ -1,6 +1,5 @@
 import { MouseEvent, startTransition, useCallback, useEffect, useMemo, useOptimistic, useState } from 'react';
-import { HiChevronDown, HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
-import { AnimatePresence, motion } from 'framer-motion';
+import { HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
 import { MdOutlineCommit, MdUndo } from 'react-icons/md';
 import { RiExpandWidthLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +17,7 @@ import { CompactSelect } from '@/components/common/CompactSelect';
 import { TextArea } from '@/components/common/TextArea';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
+import { DiffFileItem } from '@/components/ContextFiles/DiffFileItem';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 
@@ -50,7 +50,6 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   const [isCommitting, setIsCommitting] = useState(false);
   const [commitError, setCommitError] = useState<string | null>(null);
   const [isAllFilesView, setIsAllFilesView] = useLocalStorage('diff-modal-all-files-view', false);
-  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(() => new Set(files.map((f) => f.path)));
   const [isFullWidth, setIsFullWidth] = useLocalStorage('diff-modal-full-width', false);
 
   const currentFile = files[currentIndex];
@@ -206,18 +205,6 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
     setIsFullWidth((prev) => !prev);
   }, [setIsFullWidth]);
 
-  const handleToggleFileExpansion = useCallback((filePath: string) => {
-    setExpandedFiles((prev) => {
-      const next = new Set(prev);
-      if (next.has(filePath)) {
-        next.delete(filePath);
-      } else {
-        next.add(filePath);
-      }
-      return next;
-    });
-  }, []);
-
   const scrollToFile = useCallback(
     (index: number) => {
       const file = files[index];
@@ -358,64 +345,18 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
       <div className="flex-1 overflow-auto p-4 bg-bg-primary-light scrollbar scrollbar-thumb-bg-tertiary scrollbar-track-transparent">
         {isAllFilesView ? (
           <div className={clsx('mx-auto space-y-3', !isFullWidth && 'max-w-6xl')}>
-            {files.map((file, index) => {
-              const fileLanguage = file.path ? getLanguageFromPath(file.path) : 'text';
-              const isExpanded = expandedFiles.has(file.path);
-
-              return (
-                <div key={file.path} id={`diff-file-${index}`} className="select-text bg-bg-code-block rounded-lg text-xs relative overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleFileExpansion(file.path)}
-                    className="w-full flex items-center gap-2 p-3 hover:bg-bg-tertiary transition-colors"
-                  >
-                    <motion.div animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ duration: 0.2 }}>
-                      <HiChevronDown className="h-4 w-4 text-text-secondary" />
-                    </motion.div>
-                    <span className="text-xs font-medium text-text-primary truncate text-left flex-1" title={file.path}>
-                      {file.path}
-                    </span>
-                    {file.additions > 0 && <span className="text-xs font-medium text-success shrink-0">+{file.additions}</span>}
-                    {file.deletions > 0 && <span className="text-xs font-medium text-error shrink-0">-{file.deletions}</span>}
-                    {file.commitHash && (
-                      <span className="text-xs text-text-secondary shrink-0 flex items-center gap-1" title={file.commitMessage}>
-                        <MdOutlineCommit className="h-3 w-3" />
-                        {file.commitHash.substring(0, 7)}
-                      </span>
-                    )}
-                  </button>
-                  <AnimatePresence initial={false}>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeInOut' }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-3 pb-3 pt-0 border-t border-border-default relative">
-                          {diffViewMode === DiffViewMode.Compact ? (
-                            <CompactDiffViewer udiff={file.diff || ''} language={fileLanguage} showFilename={false} />
-                          ) : (
-                            <UDiffViewer
-                              udiff={file.diff || ''}
-                              language={fileLanguage}
-                              viewMode={diffViewMode}
-                              showFilename={false}
-                              onLineClick={(lineInfo, event) => handleLineClick(lineInfo, event, file.path)}
-                              activeLineKey={activeLineInfo?.filePath === file.path ? activeLineInfo.lineKey : undefined}
-                            />
-                          )}
-                          {activeLineInfo?.filePath === file.path && (
-                            <DiffLineCommentPanel onSubmit={handleCommentSubmit} onCancel={handleCommentCancel} position={activeLineInfo.position} />
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+            {files.map((file, index) => (
+              <DiffFileItem
+                key={file.path}
+                file={file}
+                index={index}
+                diffViewMode={diffViewMode}
+                activeLineInfo={activeLineInfo?.filePath === file.path ? activeLineInfo : null}
+                onLineClick={handleLineClick}
+                onCommentSubmit={handleCommentSubmit}
+                onCommentCancel={handleCommentCancel}
+              />
+            ))}
           </div>
         ) : (
           <div className={clsx('mx-auto select-text bg-bg-code-block rounded-lg p-4 text-xs relative', !isFullWidth && 'max-w-6xl')}>

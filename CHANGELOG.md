@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added settings to configure default working mode for tasks
+- improved performance of expand/collapse of files in Updated Files modal
 
 ## [0.59.0]
 
