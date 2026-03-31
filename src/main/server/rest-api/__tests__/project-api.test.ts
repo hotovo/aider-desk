@@ -1,6 +1,102 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+describe('ProjectApi - commit-changes endpoint', () => {
+  describe('CommitChangesSchema validation', () => {
+    const CommitChangesSchema = z
+      .object({
+        projectDir: z.string().min(1, 'Project directory is required'),
+        taskId: z.string().min(1, 'Task id is required'),
+        message: z.string(),
+        amend: z.boolean(),
+      })
+      .refine((data) => data.amend || data.message.trim().length > 0, {
+        message: 'Commit message is required',
+        path: ['message'],
+      });
+
+    it('should reject regular commit (amend: false) with empty message', () => {
+      const invalidData = {
+        projectDir: '/test/project',
+        taskId: 'task-123',
+        message: '',
+        amend: false,
+      };
+
+      const result = CommitChangesSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toContain('message');
+        expect(result.error.issues[0].message).toBe('Commit message is required');
+      }
+    });
+
+    it('should reject regular commit (amend: false) with whitespace-only message', () => {
+      const invalidData = {
+        projectDir: '/test/project',
+        taskId: 'task-123',
+        message: '   ',
+        amend: false,
+      };
+
+      const result = CommitChangesSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toContain('message');
+        expect(result.error.issues[0].message).toBe('Commit message is required');
+      }
+    });
+
+    it('should validate regular commit (amend: false) with non-empty message', () => {
+      const validData = {
+        projectDir: '/test/project',
+        taskId: 'task-123',
+        message: 'feat: add new feature',
+        amend: false,
+      };
+
+      const result = CommitChangesSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate amend commit (amend: true) with empty message', () => {
+      const validData = {
+        projectDir: '/test/project',
+        taskId: 'task-123',
+        message: '',
+        amend: true,
+      };
+
+      const result = CommitChangesSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate amend commit (amend: true) with whitespace-only message', () => {
+      const validData = {
+        projectDir: '/test/project',
+        taskId: 'task-123',
+        message: '   ',
+        amend: true,
+      };
+
+      const result = CommitChangesSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate amend commit (amend: true) with non-empty message', () => {
+      const validData = {
+        projectDir: '/test/project',
+        taskId: 'task-123',
+        message: 'fix: update existing commit',
+        amend: true,
+      };
+
+      const result = CommitChangesSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+  });
+});
+
 describe('ProjectApi - remove-message endpoint', () => {
   beforeEach(() => {
     // Setup block can be added here if needed for future tests

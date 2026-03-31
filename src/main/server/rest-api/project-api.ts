@@ -288,12 +288,14 @@ const GenerateCommitMessageSchema = z.object({
   taskId: z.string().min(1, 'Task id is required'),
 });
 
-const CommitChangesSchema = z.object({
-  projectDir: z.string().min(1, 'Project directory is required'),
-  taskId: z.string().min(1, 'Task id is required'),
-  message: z.string().min(1, 'Commit message is required'),
-  amend: z.boolean(),
-});
+const CommitChangesSchema = z
+  .object({
+    projectDir: z.string().min(1, 'Project directory is required'),
+    taskId: z.string().min(1, 'Task id is required'),
+    message: z.string(),
+    amend: z.boolean(),
+  })
+  .refine((data) => data.amend || data.message.trim().length > 0, { message: 'Commit message is required', path: ['message'] });
 
 const ListBranchesSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
