@@ -21,7 +21,45 @@ AiderDesk supercharges your coding workflow by combining the power of [aider](ht
    - **macOS**: Open the `.dmg` and drag AiderDesk to Applications
    - **Linux**: Extract the `.AppImage` and make it executable (`chmod +x`)
 
-#### Option 2: npm (Headless / Browser-Based)
+#### Option 2: Package Managers
+
+**Homebrew (macOS)**
+
+If you're on a Mac and prefer using [Homebrew](https://brew.sh/) for managing applications, you can install AiderDesk directly:
+
+```bash
+brew update
+brew install hotovo-aider-desk
+```
+
+Updates are handled from within the AiderDesk application itself. The `brew upgrade` command will not update your installation.
+
+To uninstall:
+
+```bash
+brew uninstall hotovo-aider-desk
+# optionally also remove all user-data:
+# brew uninstall --zap hotovo-aider-desk
+```
+
+**Scoop (Windows)**
+
+If you're on Windows and prefer using [Scoop](https://scoop.sh/) for managing applications, you can install AiderDesk directly:
+
+```bash
+scoop bucket add extras
+scoop install extras/aider-desk
+```
+
+Updates are handled from within the AiderDesk application itself. The `scoop update` command will not update your installation.
+
+To uninstall:
+
+```bash
+scoop uninstall aider-desk
+```
+
+#### Option 3: npm (Headless / Browser-Based)
 
 Install and run AiderDesk as a global npm package. This runs the AiderDesk backend service only — you access it through your web browser, similar to [using Docker](/docs/advanced/docker).
 
