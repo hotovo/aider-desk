@@ -374,11 +374,13 @@ export class Task {
         // Create a default worktree for this task
         const branchName = this.generateBranchName();
         this.task.worktree = await this.worktreeManager.createWorktree(this.project.baseDir, this.taskId, branchName);
+        void this.sendUpdatedFilesUpdated();
       }
     } else if (workingMode === 'local') {
       // Check if worktree exists and set worktreeEnabled accordingly
       if (existingWorktree) {
         await this.worktreeManager.removeWorktree(this.project.baseDir, existingWorktree);
+        void this.sendUpdatedFilesUpdated();
       }
     } else {
       logger.debug('Empty workingMode, setting to local', {
