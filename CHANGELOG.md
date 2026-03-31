@@ -5,6 +5,7 @@
 - added settings to configure default working mode for tasks
 - improved performance of expand/collapse of files in Updated Files modal
 - remembering state of Updated Files modal between opening/closing
+- remembering state of Files sections in the sidebar when switching between them
 
 ## [0.59.0]
 

@@ -1071,12 +1071,11 @@ export const ContextFiles = ({
     >
       {/* Context Files Section */}
       <motion.div
-        className={clsx('flex flex-col flex-grow overflow-hidden')}
+        className={clsx('flex flex-col flex-grow overflow-hidden min-h-[40px]')}
         initial={false}
         animate={{
           flexGrow: activeSection === 'context' ? 1 : 0,
           flexShrink: activeSection === 'context' ? 1 : 0,
-          minHeight: activeSection === 'context' ? 0 : 40,
         }}
         transition={{ duration: 0.3, ease: 'easeIn' }}
       >
@@ -1090,30 +1089,25 @@ export const ContextFiles = ({
           alwaysVisibleActions={collapseButton}
           onToggle={() => handleSectionToggle('context')}
         />
-        <AnimatePresence initial={false}>
-          {activeSection === 'context' && (
-            <Activity mode="visible">
-              <SectionContent
-                section="context"
-                treeData={contextTreeData}
-                expandedItems={contextExpandedItems}
-                setExpandedItems={setContextExpandedItems}
-                emptyContent={<EmptyContextInfo mode={mode} />}
-                {...commonContentProps}
-              />
-            </Activity>
-          )}
-        </AnimatePresence>
+        <Activity mode={activeSection === 'context' ? 'visible' : 'hidden'}>
+          <SectionContent
+            section="context"
+            treeData={contextTreeData}
+            expandedItems={contextExpandedItems}
+            setExpandedItems={setContextExpandedItems}
+            emptyContent={<EmptyContextInfo mode={mode} />}
+            {...commonContentProps}
+          />
+        </Activity>
       </motion.div>
 
       {/* Updated Files Section */}
       <motion.div
-        className={clsx('flex flex-col flex-grow overflow-hidden border-t border-border-dark-light')}
+        className={clsx('flex flex-col flex-grow overflow-hidden border-t border-border-dark-light min-h-[40px]')}
         initial={false}
         animate={{
           flexGrow: activeSection === 'updated' ? 1 : 0,
           flexShrink: activeSection === 'updated' ? 1 : 0,
-          minHeight: activeSection === 'updated' ? 0 : 40,
         }}
         transition={{ duration: 0.3, ease: 'easeIn' }}
       >
@@ -1126,29 +1120,24 @@ export const ContextFiles = ({
           actions={updatedActions}
           onToggle={() => handleSectionToggle('updated')}
         />
-        <AnimatePresence initial={false}>
-          {activeSection === 'updated' && (
-            <Activity mode="visible">
-              <SectionContent
-                section="updated"
-                treeData={updatedTreeData}
-                expandedItems={updatedExpandedItems}
-                setExpandedItems={setUpdatedExpandedItems}
-                {...commonContentProps}
-              />
-            </Activity>
-          )}
-        </AnimatePresence>
+        <Activity mode={activeSection === 'updated' ? 'visible' : 'hidden'}>
+          <SectionContent
+            section="updated"
+            treeData={updatedTreeData}
+            expandedItems={updatedExpandedItems}
+            setExpandedItems={setUpdatedExpandedItems}
+            {...commonContentProps}
+          />
+        </Activity>
       </motion.div>
 
       {/* Project Files Section */}
       <motion.div
-        className={clsx('flex flex-col flex-grow overflow-hidden border-t border-border-dark-light')}
+        className={clsx('flex flex-col flex-grow overflow-hidden border-t border-border-dark-light min-h-[40px]')}
         initial={false}
         animate={{
           flexGrow: activeSection === 'project' ? 1 : 0,
           flexShrink: activeSection === 'project' ? 1 : 0,
-          minHeight: activeSection === 'project' ? 0 : 40,
         }}
         transition={{ duration: 0.3, ease: 'easeIn' }}
       >
@@ -1161,30 +1150,25 @@ export const ContextFiles = ({
           actions={projectActions}
           onToggle={() => handleSectionToggle('project')}
         />
-        <AnimatePresence initial={false}>
-          {activeSection === 'project' && (
-            <Activity mode="visible">
-              <SectionContent
-                section="project"
-                treeData={projectTreeData}
-                expandedItems={projectExpandedItems}
-                setExpandedItems={setProjectExpandedItems}
-                searchField={searchField}
-                {...commonContentProps}
-              />
-            </Activity>
-          )}
-        </AnimatePresence>
+        <Activity mode={activeSection === 'project' ? 'visible' : 'hidden'}>
+          <SectionContent
+            section="project"
+            treeData={projectTreeData}
+            expandedItems={projectExpandedItems}
+            setExpandedItems={setProjectExpandedItems}
+            searchField={searchField}
+            {...commonContentProps}
+          />
+        </Activity>
       </motion.div>
 
       {/* Rules Section */}
       <motion.div
-        className={clsx('flex flex-col flex-grow overflow-hidden border-t border-border-dark-light')}
+        className={clsx('flex flex-col flex-grow overflow-hidden border-t border-border-dark-light min-h-[40px]')}
         initial={false}
         animate={{
           flexGrow: activeSection === 'rules' ? 1 : 0,
           flexShrink: activeSection === 'rules' ? 1 : 0,
-          minHeight: activeSection === 'rules' ? 0 : 40,
         }}
         transition={{ duration: 0.3, ease: 'easeIn' }}
       >
@@ -1196,23 +1180,19 @@ export const ContextFiles = ({
           totalStats={totalStats}
           onToggle={() => handleSectionToggle('rules')}
         />
-        <AnimatePresence initial={false}>
-          {activeSection === 'rules' && (
-            <Activity mode="visible">
-              <SectionContent
-                section="rules"
-                treeData={rulesTreeData}
-                expandedItems={rulesExpandedItems}
-                setExpandedItems={setRulesExpandedItems}
-                {...commonContentProps}
-              />
-            </Activity>
-          )}
-        </AnimatePresence>
+        <Activity mode={activeSection === 'rules' ? 'visible' : 'hidden'}>
+          <SectionContent
+            section="rules"
+            treeData={rulesTreeData}
+            expandedItems={rulesExpandedItems}
+            setExpandedItems={setRulesExpandedItems}
+            {...commonContentProps}
+          />
+        </Activity>
       </motion.div>
 
       {/* Diff Modal */}
-      <Activity mode={diffModalOpen ? 'visible' : 'hidden'}>
+      <Activity key={taskId} mode={diffModalOpen ? 'visible' : 'hidden'}>
         <UpdatedFilesDiffModal
           files={sortedUpdatedFiles}
           initialFileIndex={diffModalFileIndex}
