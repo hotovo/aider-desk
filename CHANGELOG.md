@@ -4,6 +4,7 @@
 
 - added settings to configure default working mode for tasks
 - improved performance of expand/collapse of files in Updated Files modal
+- remembering state of Updated Files modal between opening/closing
 
 ## [0.59.0]
 

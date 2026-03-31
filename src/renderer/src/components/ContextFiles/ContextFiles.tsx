@@ -1212,7 +1212,7 @@ export const ContextFiles = ({
       </motion.div>
 
       {/* Diff Modal */}
-      {diffModalOpen && (
+      <Activity mode={diffModalOpen ? 'visible' : 'hidden'}>
         <UpdatedFilesDiffModal
           files={sortedUpdatedFiles}
           initialFileIndex={diffModalFileIndex}
@@ -1220,7 +1220,7 @@ export const ContextFiles = ({
           baseDir={baseDir}
           taskId={taskId}
         />
-      )}
+      </Activity>
 
       {/* Revert Confirmation Dialog */}
       {fileToRevert && (
