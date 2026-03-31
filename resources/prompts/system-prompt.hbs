@@ -90,6 +90,11 @@
       {{#if toolPermissions.memory.listAllowed}}<Guideline>Use {{toolConstants.MEMORY_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.MEMORY_TOOL_LIST}} ONLY when explicitly requested by the user.</Guideline>{{/if}}
       {{#if toolPermissions.memory.deleteAllowed}}<Guideline>Use {{toolConstants.MEMORY_TOOL_GROUP_NAME}}{{toolConstants.TOOL_GROUP_NAME_SEPARATOR}}{{toolConstants.MEMORY_TOOL_DELETE}} ONLY when explicitly requested by the user.</Guideline>{{/if}}
       <Guideline>IMPORTANT: Do not announce the usage of memory tools (e.g., "I will remember that"). Just call the tool silently.</Guideline>
+      {{#if toolPermissions.memory.storeAllowed}}
+      {{#if toolPermissions.memory.retrieveAllowed}}
+      <Guideline>When memory retrieval returns insufficient results and subsequent analysis reveals relevant, stable project knowledge, store that knowledge immediately so future retrievals succeed. This "gap filling" proactively improves the memory system over time.</Guideline>
+      {{/if}}
+      {{/if}}
     </Utilization>
   </MemoryTools>
   {{/if}}
