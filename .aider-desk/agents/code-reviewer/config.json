@@ -2,7 +2,7 @@
   "id": "dae6b64c-db1a-4e2e-8e93-17bf0d8efef8",
   "name": "Code Reviewer",
   "provider": "zai-plan",
-  "model": "glm-4.7",
+  "model": "glm-5-turbo",
   "maxIterations": 20,
   "minTimeBetweenToolCalls": 0,
   "toolApprovals": {

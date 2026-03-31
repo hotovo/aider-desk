@@ -2,7 +2,7 @@
   "id": "9003e5d1-20a0-4d45-8a34-94d948d8469a",
   "name": "Code Checker",
   "provider": "zai-plan",
-  "model": "glm-4.7",
+  "model": "glm-5-turbo",
   "maxIterations": 100,
   "minTimeBetweenToolCalls": 0,
   "toolApprovals": {

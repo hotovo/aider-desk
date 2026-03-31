@@ -2,7 +2,7 @@
   "id": "75f3fabd-89dc-45f2-ac9d-2cf87116d7b3",
   "name": "Test Writer",
   "provider": "zai-plan",
-  "model": "glm-4.7",
+  "model": "glm-5-turbo",
   "maxIterations": 250,
   "minTimeBetweenToolCalls": 0,
   "toolApprovals": {
