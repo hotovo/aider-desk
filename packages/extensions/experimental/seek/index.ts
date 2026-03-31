@@ -41,12 +41,25 @@ const globToRegex = (glob: string): string | null => {
     return null;
   }
 
-  let regex = glob
+  // Extract brace expansions {a,b,c} before escaping and replace with placeholders
+  const bracePatterns: string[] = [];
+  const processed = glob.replace(/\{([^{}]+)\}/g, (_match, content: string) => {
+    bracePatterns.push(content);
+    return `__BRACE_${bracePatterns.length - 1}__`;
+  });
+
+  let regex = processed
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
     .replace(/\*\*/g, '{{GLOBSTAR}}')
     .replace(/\*/g, '[^/]*')
     .replace(/{{GLOBSTAR}}/g, '.*')
     .replace(/\?/g, '[^/]');
+
+  // Restore brace expansions as regex alternations (a|b|c)
+  bracePatterns.forEach((content, index) => {
+    const options = content.split(',').map((opt) => opt.replace(/[.+^${}()|[\]\\]/g, '\\$&'));
+    regex = regex.replace(`__BRACE_${index}__`, `(${options.join('|')})`);
+  });
 
   if (!regex.startsWith('.*')) {
     regex = '.*' + regex;
@@ -85,17 +98,23 @@ const parseSeekOutput = (output: string, searchTerm: string, caseSensitive: bool
 
   for (const block of fileBlocks) {
     const lines = block.split('\n');
-    if (lines.length === 0) continue;
+    if (lines.length === 0) {
+      continue;
+    }
 
     const headerMatch = lines[0]!.match(/^## (.+?)(?: \([^)]+\))?(?: \[uncommitted\])?$/);
-    if (!headerMatch) continue;
+    if (!headerMatch) {
+      continue;
+    }
 
     const filePath = headerMatch[1]!;
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i]!;
       const lineMatch = line.match(/^(\s*\d+) (.*)$/);
-      if (!lineMatch) continue;
+      if (!lineMatch) {
+        continue;
+      }
 
       const lineNumber = parseInt(lineMatch[1]!.trim(), 10);
       const lineContent = lineMatch[2]!;
@@ -124,11 +143,7 @@ const parseSeekOutput = (output: string, searchTerm: string, caseSensitive: bool
   return results;
 };
 
-const execSeek = (
-  query: string,
-  cwd: string,
-  signal?: AbortSignal,
-): Promise<{ stdout: string; stderr: string; exitCode: number | null }> => {
+const execSeek = (query: string, cwd: string, signal?: AbortSignal): Promise<{ stdout: string; stderr: string; exitCode: number | null }> => {
   return new Promise((resolve, reject) => {
     const child = spawn('seek', [query], {
       cwd,
@@ -257,11 +272,7 @@ const buildInstallErrorMessage = (): string => {
   ].join('\n');
 };
 
-const runSeekAndParse = async (
-  input: GrepInput,
-  projectDir: string,
-  signal?: AbortSignal,
-): Promise<string | GrepMatchResult[]> => {
+const runSeekAndParse = async (input: GrepInput, projectDir: string, signal?: AbortSignal): Promise<string | GrepMatchResult[]> => {
   const query = buildSeekQuery(input);
   const result = await execSeek(query, projectDir, signal);
 
