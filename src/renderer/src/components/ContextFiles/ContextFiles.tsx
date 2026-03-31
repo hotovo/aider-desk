@@ -1192,7 +1192,7 @@ export const ContextFiles = ({
       </motion.div>
 
       {/* Diff Modal */}
-      <Activity key={taskId} mode={diffModalOpen ? 'visible' : 'hidden'}>
+      <Activity mode={diffModalOpen ? 'visible' : 'hidden'}>
         <UpdatedFilesDiffModal
           files={sortedUpdatedFiles}
           initialFileIndex={diffModalFileIndex}
