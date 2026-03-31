@@ -5,7 +5,7 @@ import type { Extension, ExtensionContext, ToolDefinition, Tool } from '../../ex
 
 const metadata = {
   name: 'Programmatic Tool Calls',
-  version: '1.0.0',
+  version: '1.1.0',
   description: 'Execute JavaScript code in a sandbox with access to all tools as async functions',
   author: 'wladimiiir',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/programmatic-tool-calls/icon.png',
@@ -47,17 +47,23 @@ class ProgrammaticToolCallsExtension implements Extension {
         - power---bash becomes power_bash()
         - etc.
 
+        Important - the sandbox does NOT support array/object destructuring (including rest in destructuring).
+        Instead of: const [a, b] = await Promise.all([...])
+        Use: const r = await Promise.all([...]); const a = r[0]; const b = r[1];
+
         Example usage:
         \`\`\`javascript
         // Read a file and process its contents
         const content = await power_file_read({ filePath: 'src/index.ts' });
         console.log(content);
 
-        // Execute multiple operations in parallel
-        const [files, gitStatus] = await Promise.all([
+        // Execute multiple operations in parallel (no destructuring - use index access)
+        const results = await Promise.all([
           power_glob({ pattern: '**/*.ts' }),
-                                                     power_bash({ command: 'git status --short' })
+          power_bash({ command: 'git status --short' })
         ]);
+        const files = results[0];
+        const gitStatus = results[1];
 
         // Process results
         return { fileCount: files.length, gitStatus };
