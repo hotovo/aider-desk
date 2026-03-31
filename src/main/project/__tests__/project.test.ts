@@ -17,7 +17,6 @@ vi.mock('@/events');
 vi.mock('@/project/migrations');
 vi.mock('@/worktrees');
 vi.mock('@/memory/memory-manager');
-vi.mock('@/hooks/hook-manager');
 vi.mock('@/prompts');
 vi.mock('@/extensions/extension-manager');
 vi.mock('@/constants');
@@ -37,7 +36,6 @@ import { Project } from '../project';
 import { McpManager, AgentProfileManager } from '@/agent';
 import { DataManager } from '@/data-manager';
 import { EventManager } from '@/events';
-import { HookManager } from '@/hooks/hook-manager';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ModelManager } from '@/models';
 import { PromptsManager } from '@/prompts';
@@ -60,7 +58,6 @@ describe('Project - createNewTask', () => {
   let mockWorktreeManager: Partial<WorktreeManager>;
   let mockAgentProfileManager: Partial<AgentProfileManager>;
   let mockMemoryManager: Partial<MemoryManager>;
-  let mockHookManager: Partial<HookManager>;
   let mockPromptsManager: Partial<PromptsManager>;
   let mockExtensionManager: Partial<ExtensionManager>;
   let baseDir: string;
@@ -171,10 +168,6 @@ describe('Project - createNewTask', () => {
       removeProject: vi.fn(),
     };
     mockMemoryManager = {};
-    mockHookManager = {
-      trigger: vi.fn((_hookName, event) => Promise.resolve({ event, blocked: false })) as any,
-      stopWatchingProject: vi.fn(() => Promise.resolve()),
-    };
     mockPromptsManager = {
       watchProject: vi.fn(() => Promise.resolve()),
       unwatchProject: vi.fn(() => Promise.resolve()),
@@ -223,7 +216,6 @@ describe('Project - createNewTask', () => {
       mockWorktreeManager as WorktreeManager,
       mockAgentProfileManager as AgentProfileManager,
       mockMemoryManager as MemoryManager,
-      mockHookManager as HookManager,
       mockPromptsManager as PromptsManager,
       mockExtensionManager as ExtensionManager,
     );
@@ -427,7 +419,6 @@ describe('Project - deleteTask', () => {
   let mockModelManager: ModelManager;
   let mockWorktreeManager: WorktreeManager;
   let mockMemoryManager: MemoryManager;
-  let mockHookManager: HookManager;
   let mockPromptsManager: PromptsManager;
   let mockExtensionManager: ExtensionManager;
 
@@ -538,11 +529,6 @@ describe('Project - deleteTask', () => {
       removeProject: vi.fn(),
     } as unknown as AgentProfileManager;
 
-    mockHookManager = {
-      trigger: vi.fn((_hookName, event) => Promise.resolve({ event, blocked: false })) as any,
-      stopWatchingProject: vi.fn(() => Promise.resolve()),
-    } as unknown as HookManager;
-
     mockPromptsManager = {
       watchProject: vi.fn(() => Promise.resolve()),
       unwatchProject: vi.fn(() => Promise.resolve()),
@@ -585,7 +571,6 @@ describe('Project - deleteTask', () => {
       mockWorktreeManager,
       mockAgentProfileManager,
       mockMemoryManager,
-      mockHookManager,
       mockPromptsManager,
       mockExtensionManager,
     );

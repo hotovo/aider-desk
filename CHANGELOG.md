@@ -9,6 +9,7 @@
 - correctly using the worktree directory in terminal in subtasks
 - using merge-base for diff calculations in worktree mode to show only changed files since rebase
 - updating rule files after the agent finishes
+- removed deprecated hook manager
 
 ## [0.59.0]
 

@@ -65,7 +65,7 @@ The `~/.aider-desk` directory on your host machine contains global configuration
 - **Agent profiles** (`.aider-desk/agents/`) - Custom agent configurations
 - **Skills** (`.aider-desk/agents/`) - Reusable skills for agent mode
 - **Custom commands** (`.aider-desk/commands/`) - User-defined commands
-- **Hooks** (`.aider-desk/hooks/`) - Custom hooks for automation
+- **Extensions** (`.aider-desk/extensions/`) - Custom extensions for automation and integration
 - **Custom prompts** (`.aider-desk/prompts/`) - Custom prompt templates
 - **Rules** (`.aider-desk/rules/`) - Custom rules and guidelines
 

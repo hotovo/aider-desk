@@ -17,7 +17,6 @@ vi.mock('@/events');
 vi.mock('@/models');
 vi.mock('@/worktrees');
 vi.mock('@/memory/memory-manager');
-vi.mock('@/hooks/hook-manager');
 vi.mock('@/prompts');
 vi.mock('@/extensions/extension-manager');
 vi.mock('@/task/aider-manager');
@@ -85,7 +84,6 @@ describe('Project Inheritance', () => {
       mockWorktreeManager as any,
       { initializeForProject: vi.fn() } as any,
       {} as any,
-      { trigger: vi.fn().mockResolvedValue({ event: {}, blocked: false }) } as any,
       { watchProject: vi.fn() } as any,
       {
         reloadProjectExtensions: vi.fn(),
@@ -101,7 +99,6 @@ describe('Project Inheritance', () => {
     // Mock prepareTask to return a mock Task
     (project as any).prepareTask = vi.fn((id, data) => ({
       task: { id: id || 'test-task-id', ...data },
-      hookManager: { trigger: vi.fn().mockResolvedValue({}) },
       addFiles: vi.fn(),
       resetContext: vi.fn().mockResolvedValue(undefined),
     }));

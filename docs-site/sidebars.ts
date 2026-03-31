@@ -41,7 +41,6 @@ const sidebars: SidebarsConfig = {
         "features/custom-commands",
         "features/memory",
         "features/skills",
-        "features/hooks",
         "features/web-scraping",
         "features/voice-control",
         "features/handoff",

@@ -57,9 +57,6 @@ describe('Tasks Tools - search_parent_task', () => {
       task: {
         parentId: 'parent-task-id',
       },
-      hookManager: {
-        trigger: vi.fn().mockResolvedValue({ result: true, reason: undefined }),
-      },
     };
 
     mockPromptContext = { id: 'test-prompt-context' };

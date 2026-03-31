@@ -37,9 +37,7 @@ describe('Tasks Tools - search_task', () => {
       task: {
         parentId: null,
       },
-      hookManager: {
-        trigger: vi.fn().mockResolvedValue({ result: true, reason: undefined }),
-      },
+
       dispatchExtensionEvent: vi.fn().mockResolvedValue({ blocked: false, allowed: false }),
     };
 

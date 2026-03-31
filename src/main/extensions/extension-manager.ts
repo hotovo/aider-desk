@@ -1424,8 +1424,7 @@ export class ExtensionManager {
 
   /**
    * Dispatches an event to all loaded and initialized extensions.
-   * Runs in parallel with HookManager triggers, allowing extensions to respond
-   * to the same events as hooks. Events can be modified or blocked by extensions.
+   * Events can be modified or blocked by extensions.
    *
    * @param eventName - The name of the event to dispatch
    * @param event - The event payload

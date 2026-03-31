@@ -15,7 +15,6 @@ vi.mock('@/events');
 vi.mock('@/models');
 vi.mock('@/worktrees');
 vi.mock('@/memory/memory-manager');
-vi.mock('@/hooks/hook-manager');
 vi.mock('@/prompts');
 vi.mock('@/extensions/extension-manager');
 vi.mock('@/task/aider-manager');
@@ -78,7 +77,6 @@ describe('Project Duplicate Subtask Prevention', () => {
       mockWorktreeManager as any,
       { initializeForProject: vi.fn() } as any,
       {} as any,
-      { trigger: vi.fn().mockResolvedValue({ event: {}, blocked: false }) } as any,
       { watchProject: vi.fn() } as any,
       {
         reloadProjectExtensions: vi.fn(),
@@ -131,7 +129,6 @@ describe('Project Duplicate Subtask Prevention', () => {
     const newSubtaskId = 'new-subtask-id';
     vi.spyOn(project as any, 'prepareTask').mockReturnValue({
       task: { id: newSubtaskId, parentId },
-      hookManager: { trigger: vi.fn().mockResolvedValue({}) },
       addFiles: vi.fn(),
     });
 
@@ -167,7 +164,6 @@ describe('Project Duplicate Subtask Prevention', () => {
     const newSubtaskId = 'new-subtask-id';
     vi.spyOn(project as any, 'prepareTask').mockReturnValue({
       task: { id: newSubtaskId, parentId },
-      hookManager: { trigger: vi.fn().mockResolvedValue({}) },
       addFiles: vi.fn(),
     });
 
@@ -203,7 +199,6 @@ describe('Project Duplicate Subtask Prevention', () => {
     const newSubtaskId = 'new-subtask-id';
     vi.spyOn(project as any, 'prepareTask').mockReturnValue({
       task: { id: newSubtaskId, parentId },
-      hookManager: { trigger: vi.fn().mockResolvedValue({}) },
       addFiles: vi.fn(),
     });
 

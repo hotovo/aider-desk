@@ -476,12 +476,7 @@ export class Agent {
       wrappedToolSet[toolName] = {
         ...toolDef,
         execute: async (input: Record<string, unknown> | undefined, options: ToolCallOptions) => {
-          const hookResult = await task.hookManager.trigger('onToolCalled', { toolName, args: input }, task, task.project);
-          if (hookResult.blocked) {
-            logger.warn(`Tool execution blocked by hook: ${toolName}`);
-            return 'Tool execution blocked by hook.';
-          }
-          let effectiveInput = hookResult.event.args ?? (input as Record<string, unknown> | undefined);
+          let effectiveInput = input as Record<string, unknown> | undefined;
           const [serverName, messageToolName] = extractServerNameToolName(toolName);
 
           task.addToolMessage(options.toolCallId, serverName, messageToolName, effectiveInput, undefined, undefined, promptContext);
@@ -504,7 +499,6 @@ export class Agent {
           }
 
           const result = await toolDef.execute!(effectiveInput, options);
-          const toolFinishedHookResult = await task.hookManager.trigger('onToolFinished', { toolName, args: effectiveInput, result }, task, task.project);
           const toolFinishedExtensionResult = await this.extensionManager.dispatchEvent(
             'onToolFinished',
             { toolName, input: effectiveInput, output: result },
@@ -514,8 +508,6 @@ export class Agent {
 
           if (toolFinishedExtensionResult.output) {
             return toolFinishedExtensionResult.output;
-          } else if (toolFinishedHookResult.event.result) {
-            return toolFinishedHookResult.event.result;
           } else {
             return result;
           }
@@ -727,19 +719,6 @@ export class Agent {
   ): Promise<ContextMessage[]> {
     let contextMessages = initialContextMessages ?? (await task.getContextMessages());
     let contextFiles = initialContextFiles ?? (await task.getContextFiles());
-
-    const hookResult = await task.hookManager.trigger('onAgentStarted', { prompt, contextMessages, contextFiles }, task, task.project);
-    if (hookResult.blocked) {
-      logger.debug('Agent execution blocked by hook');
-      return [];
-    }
-    prompt = hookResult.event.prompt;
-    if (hookResult.event.contextMessages) {
-      contextMessages = hookResult.event.contextMessages;
-    }
-    if (hookResult.event.contextFiles) {
-      contextFiles = hookResult.event.contextFiles;
-    }
 
     if (!systemPrompt) {
       systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
@@ -1113,13 +1092,6 @@ export class Agent {
           }
 
           responseMessages = await this.processStep(currentResponseId, stepResult, task, provider, modelName, promptContext, abortSignal);
-          const hookResult = await task.hookManager.trigger('onAgentStepFinished', { stepResult, finishReason, responseMessages }, task, task.project);
-          if (hookResult?.event?.finishReason) {
-            finishReason = hookResult.event.finishReason;
-          }
-          if (hookResult?.event?.responseMessages) {
-            responseMessages = hookResult.event.responseMessages;
-          }
           const extensionResult = await this.extensionManager.dispatchEvent(
             'onAgentStepFinished',
             {
@@ -1360,10 +1332,6 @@ export class Agent {
         }
       }
 
-      const hookResult = await task.hookManager.trigger('onAgentFinished', { aborted: false, contextMessages, resultMessages }, task, task.project);
-      if (hookResult?.event?.resultMessages) {
-        resultMessages = hookResult.event.resultMessages;
-      }
       const extensionResult = await this.extensionManager.dispatchEvent(
         'onAgentFinished',
         {
@@ -1383,10 +1351,6 @@ export class Agent {
           this.removeUnfinishedStreamingMessages(task, streamingMessageIds);
         }
 
-        const hookResult = await task.hookManager.trigger('onAgentFinished', { aborted: true, contextMessages, resultMessages }, task, task.project);
-        if (hookResult?.event?.resultMessages) {
-          resultMessages = hookResult.event.resultMessages;
-        }
         const extensionResult = await this.extensionManager.dispatchEvent(
           'onAgentFinished',
           {

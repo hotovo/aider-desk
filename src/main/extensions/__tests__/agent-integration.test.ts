@@ -99,9 +99,6 @@ const createMockTask = (): Task => {
     project: {
       baseDir: '/test/project',
     } as Project,
-    hookManager: {
-      trigger: vi.fn().mockResolvedValue({ blocked: false, event: {} }),
-    },
     addToolMessage: vi.fn(),
     getProjectDir: () => '/test/project',
   } as unknown as Task;

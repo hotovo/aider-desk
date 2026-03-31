@@ -18,7 +18,6 @@ import { INTERNAL_TASK_ID, Task } from '@/task';
 import { migrateSessionsToTasks } from '@/project/migrations';
 import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
-import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
@@ -43,7 +42,6 @@ export class Project {
     private readonly worktreeManager: WorktreeManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
-    private readonly hookManager: HookManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
   ) {
@@ -166,14 +164,11 @@ export class Project {
       this.modelManager,
       this.worktreeManager,
       this.memoryManager,
-      this.hookManager,
       this.promptsManager,
       this.extensionManager,
       initialTaskData,
     );
     this.tasks.set(taskId, task);
-
-    void task.hookManager.trigger('onTaskCreated', { task: task.task }, task, this);
 
     // Allow extensions to modify task data after preparation
     const extResult = await this.extensionManager.dispatchEvent('onTaskPrepared', { task: task.task }, this, task);
@@ -480,7 +475,6 @@ export class Project {
 
     this.customCommandManager.dispose();
     this.agentProfileManager.removeProject(this.baseDir);
-    await this.hookManager.stopWatchingProject(this.baseDir);
     await this.promptsManager.unwatchProject(this.baseDir);
     this.extensionManager.stopProjectWatcher(this.baseDir);
     await Promise.all(Array.from(this.tasks.values()).map((task) => task.close()));

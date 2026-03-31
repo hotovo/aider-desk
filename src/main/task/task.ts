@@ -79,7 +79,6 @@ import { AiderManager } from '@/task/aider-manager';
 import { WorktreeManager, GitError } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
-import { HookManager } from '@/hooks/hook-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager, ExtensionEventMap } from '@/extensions/extension-manager';
 
@@ -154,7 +153,6 @@ export class Task {
     private readonly modelManager: ModelManager,
     private readonly worktreeManager: WorktreeManager,
     private readonly memoryManager: MemoryManager,
-    public readonly hookManager: HookManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
     initialTaskData?: Partial<TaskData>,
@@ -411,7 +409,6 @@ export class Task {
     this.eventManager.sendTaskInitialized(this.task);
 
     this.initialized = true;
-    await this.hookManager.trigger('onTaskInitialized', { task: this.task }, this, this.project);
     await this.extensionManager.dispatchEvent('onTaskInitialized', { task: this.task }, this.project, this);
   }
 
@@ -536,7 +533,6 @@ export class Task {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
     });
-    await this.hookManager.trigger('onTaskClosed', { task: this.task }, this, this.project);
     await this.extensionManager.dispatchEvent('onTaskClosed', { task: this.task }, this.project, this);
     if (clearContext) {
       this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, true);
@@ -641,14 +637,6 @@ export class Task {
       return [];
     }
 
-    const hookResult = await this.hookManager.trigger('onPromptSubmitted', { prompt, mode }, this, this.project);
-    if (hookResult.blocked) {
-      logger.debug('Prompt blocked by hook');
-      return [];
-    }
-    prompt = hookResult.event.prompt;
-    mode = hookResult.event.mode;
-
     let promptContext: PromptContext = {
       id: userMessageId,
     };
@@ -744,17 +732,6 @@ export class Task {
   public async runPromptInAider(mode: Mode, prompt: string, promptContext: PromptContext, sendNotification = true): Promise<ResponseCompletedData[]> {
     await this.waitForCurrentPromptToFinish();
 
-    await this.hookManager.trigger('onPromptStarted', { prompt, mode }, this, this.project);
-
-    const aiderHookResult = await this.hookManager.trigger('onAiderPromptStarted', { prompt, mode }, this, this.project);
-    if (aiderHookResult.blocked) {
-      logger.debug('Aider prompt blocked by hook');
-      return [];
-    }
-
-    prompt = aiderHookResult.event.prompt;
-    mode = aiderHookResult.event.mode;
-
     await this.saveTask({
       name: this.task.name || this.getTaskNameFromPrompt(prompt),
       startedAt: new Date().toISOString(),
@@ -825,9 +802,6 @@ export class Task {
 
     this.sendStateUpdated();
 
-    await this.hookManager.trigger('onAiderPromptFinished', { responses }, this, this.project);
-    await this.hookManager.trigger('onPromptFinished', { responses }, this, this.project);
-
     if (this.task.state === DefaultTaskState.InProgress) {
       await this.saveTask({
         completedAt: new Date().toISOString(),
@@ -856,8 +830,6 @@ export class Task {
     waitForCurrentAgentToFinish = true,
     sendNotification = true,
   ): Promise<ResponseCompletedData[]> {
-    await this.hookManager.trigger('onPromptStarted', { prompt, mode: 'agent' }, this, this.project);
-
     if (waitForCurrentAgentToFinish) {
       await this.waitForCurrentAgentToFinish();
     }
@@ -876,9 +848,9 @@ export class Task {
       });
     }
 
-    await this.hookManager.trigger('onPromptFinished', { responses: [] }, this, this.project);
-
-    this.sendStateUpdated();
+    void this.sendRequestContextInfo();
+    void this.sendWorktreeIntegrationStatusUpdated();
+    void this.sendUpdatedFilesUpdated();
 
     this.resolveAgentRunPromises();
 
@@ -1056,13 +1028,6 @@ export class Task {
     }
 
     try {
-      const hookResult = await this.hookManager.trigger('onSubagentStarted', { subagentId: profile.id, prompt }, this, this.project);
-      if (hookResult.blocked) {
-        logger.debug('Subagent execution blocked by hook');
-        return [];
-      }
-      prompt = hookResult.event.prompt;
-
       if (!contextMessages) {
         contextMessages = await this.getContextMessages();
       }
@@ -1105,12 +1070,6 @@ export class Task {
         false,
         abortController?.signal,
       );
-      const finishedHookResult = await this.hookManager.trigger('onSubagentFinished', { subagentId: profile.id, resultMessages }, this, this.project);
-
-      if (finishedHookResult.event.resultMessages) {
-        resultMessages = finishedHookResult.event.resultMessages;
-      }
-
       const subagentFinishedExtensionResult = await this.extensionManager.dispatchEvent(
         'onSubagentFinished',
         { subagentProfile: profile, resultMessages },
@@ -1177,11 +1136,6 @@ export class Task {
   }
 
   public async processResponseMessage(message: ResponseMessage, saveToDb = true) {
-    const hookResult = await this.hookManager.trigger('onResponseMessageProcessed', { message }, this, this.project);
-    if (hookResult.result) {
-      message = { ...message, ...hookResult.result };
-    }
-
     if (!message.finished) {
       const sendResponseChunk = async (chunk: string) => {
         let data: ResponseChunkData = {
@@ -1342,7 +1296,6 @@ export class Task {
       return false;
     }
 
-    void this.hookManager.trigger('onQuestionAnswered', { question: this.currentQuestion, answer, userInput }, this, this.project);
     const extensionResult = await this.extensionManager.dispatchEvent(
       'onQuestionAnswered',
       { question: this.currentQuestion, answer, userInput },
@@ -1410,13 +1363,6 @@ export class Task {
     const addedFiles: ContextFile[] = [];
 
     for (let contextFile of contextFiles) {
-      const hookResult = await this.hookManager.trigger('onFileAdded', { file: contextFile }, this, this.project);
-      if (hookResult.blocked) {
-        logger.debug('File addition blocked by hook');
-        return false;
-      }
-      contextFile = hookResult.event.file;
-
       // Extension event uses plural name
       const extensionResult = await this.extensionManager.dispatchEvent('onFilesAdded', { files: [contextFile] }, this.project, this);
       if (extensionResult.files.length === 0) {
@@ -1453,7 +1399,6 @@ export class Task {
   }
 
   public async dropFile(filePath: string) {
-    await this.hookManager.trigger('onFileDropped', { filePath }, this, this.project);
     // Extension event uses plural name and ContextFile array
     await this.extensionManager.dispatchEvent('onFilesDropped', { files: [{ path: filePath }] }, this.project, this);
     const normalizedPath = this.normalizeFilePath(filePath);
@@ -1514,13 +1459,6 @@ export class Task {
   }
 
   public async runCommand(command: string, addToHistory = true) {
-    const hookResult = await this.hookManager.trigger('onCommandExecuted', { command }, this, this.project);
-    if (hookResult.blocked) {
-      logger.debug('Command execution blocked by hook');
-      return;
-    }
-    command = hookResult.event.command;
-
     const extensionResult = await this.extensionManager.dispatchEvent('onCommandExecuted', { command }, this.project, this);
     if (extensionResult.blocked) {
       logger.debug('Command execution blocked by extension');
@@ -1616,15 +1554,6 @@ export class Task {
   }
 
   public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promise<[string, string | undefined]> {
-    const hookResult = await this.hookManager.trigger('onQuestionAsked', { question: questionData }, this, this.project);
-    if (hookResult.result && typeof hookResult.result === 'string') {
-      logger.info('Question answered by hook', {
-        question: questionData.text,
-        answer: hookResult.result,
-      });
-      return [hookResult.result, undefined];
-    }
-
     const extensionResult = await this.extensionManager.dispatchEvent('onQuestionAsked', { question: questionData }, this.project, this);
     if (extensionResult.answer) {
       logger.info('Question answered by extension', {
