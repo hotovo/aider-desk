@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
+import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { LuFileSearch } from 'react-icons/lu';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
@@ -7,6 +7,13 @@ import { ToolMessage } from '@common/types';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
+
+interface Match {
+  filePath: string;
+  lineNumber: number;
+  lineContent: string;
+  context?: string[];
+}
 
 type Props = {
   message: ToolMessage;
@@ -109,38 +116,50 @@ export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, on
       );
     }
 
-    const groupedMatches: Record<string, Array<{ lineNumber: number; lineContent: string; context?: string[] }>> = content.reduce(
-      (
-        acc: Record<string, Array<{ lineNumber: number; lineContent: string; context?: string[] }>>,
-        match: { filePath: string; lineNumber: number; lineContent: string; context?: string[] },
-      ) => {
-        const file = match.filePath;
-        if (!acc[file]) {
-          acc[file] = [];
-        }
-        acc[file].push(match);
-        return acc;
-      },
-      {},
-    );
+    const groupedMatches: Record<string, Array<Match>> = content.reduce((acc: Record<string, Array<Match>>, match: Match) => {
+      const file = match.filePath;
+      if (!acc[file]) {
+        acc[file] = [];
+      }
+      acc[file].push(match);
+      return acc;
+    }, {});
 
     return (
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="flex items-center gap-2 mb-2">
-          <span className="font-semibold text-text-secondary">{t('toolMessage.power.grep.foundMatches', { count: content.length })}</span>
-          {contextLines > 0 && <span className="text-text-muted">{t('toolMessage.power.grep.contextLines', { count: contextLines })}</span>}
+          <span className="font-semibold text-text-secondary">
+            {t('toolMessage.power.grep.foundMatches', {
+              count: content.length,
+            })}
+          </span>
+          {contextLines > 0 && (
+            <span className="text-text-muted">
+              {t('toolMessage.power.grep.contextLines', {
+                count: contextLines,
+              })}
+            </span>
+          )}
         </div>
         {Object.entries(groupedMatches).map(([filePath, matches]) => (
-          <div key={filePath} className="mb-2">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-text-secondary">{filePath}</span>
-              <span className="text-text-muted">{t('toolMessage.power.grep.matchesCount', { count: matches.length })}</span>
+          <div key={filePath} className="mb-2 border border-border-dark-light rounded py-2 px-1">
+            <div className="flex items-center gap-2 mb-1 ml-1">
+              <span className="font-medium text-text-primary">{filePath}</span>
+              <span className="text-text-muted">
+                {t('toolMessage.power.grep.matchesCount', {
+                  count: matches.length,
+                })}
+              </span>
             </div>
-            <div className="ml-0.5">
+            <div className="space-y-1">
               {matches.map((match, index) => (
                 <div key={index} className="border border-border-dark-light rounded bg-bg-primary-light px-2 py-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-text-muted">{t('toolMessage.power.grep.lineLabel', { lineNumber: match.lineNumber })}</span>
+                    <span className="text-text-muted">
+                      {t('toolMessage.power.grep.lineLabel', {
+                        lineNumber: match.lineNumber,
+                      })}
+                    </span>
                     <span className="font-mono text-text-secondary">{match.lineContent}</span>
                   </div>
                   {match.context && match.context.length > 0 && (
