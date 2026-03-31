@@ -191,7 +191,8 @@ export class BrowserApi implements ApplicationAPI {
       (response) => response,
       (error) => {
         if (error.response) {
-          throw new Error(`HTTP error! status: ${error.response.status}`);
+          const { status, data } = error.response;
+          throw new Error(data?.details || data?.error || `HTTP error! status: ${status}`);
         }
         throw error;
       },
