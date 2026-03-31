@@ -363,7 +363,7 @@ Updates application settings.
     ...
   }
   ```
-  For the complete `SettingsData` structure, see [src/common/types.ts](https://github.com/hotovo/aider-desk/blob/main/src/common/types.ts#L346).
+  For the complete `SettingsData` structure, see [packages/common/src/types/common.ts](https://github.com/hotovo/aider-desk/blob/main/packages/common/src/types/common.ts).
 - **Response**: `200 OK` (returns updated settings)
 
 #### Get Models Info

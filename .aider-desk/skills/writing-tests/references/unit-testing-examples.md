@@ -6,7 +6,7 @@ Detailed examples for writing unit tests in AiderDesk.
 
 ### Example: Date Formatting
 ```typescript
-// src/common/__tests__/utils/date.test.ts
+// packages/common/__tests__/utils/date.test.ts
 import { describe, it, expect } from 'vitest';
 import { formatDate } from '../../utils/date';
 

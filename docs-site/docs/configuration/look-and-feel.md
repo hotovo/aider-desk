@@ -178,7 +178,7 @@ Add your theme to the themes import file:
 
 Add your theme to the TypeScript types:
 ```typescript
-// src/common/types.ts
+// packages/common/src/types/common.ts
 export const THEMES = [
   'dark',
   'light',
@@ -192,7 +192,7 @@ export const THEMES = [
 
 Add your theme name to the translation files:
 ```json
-// src/common/locales/en.json
+// packages/common/src/locales/en.json
 {
   "settings": {
     "themeOptions": {
@@ -257,7 +257,7 @@ Add the font declaration to the fonts CSS file:
 
 Add your font to the TypeScript types:
 ```typescript
-// src/common/types.ts
+// packages/common/src/types/common.ts
 export const FONTS = [
   'Sono',
   'Poppins',
@@ -270,7 +270,7 @@ export const FONTS = [
 
 Add your font name to the translation files:
 ```json
-// src/common/locales/en.json
+// packages/common/src/locales/en.json
 {
   "settings": {
     "fontOptions": {

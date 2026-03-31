@@ -9,7 +9,7 @@ Write effective tests using Vitest and React Testing Library.
 
 ## Quick Start
 
-Create a unit test in `src/common/__tests__/utils/math.test.ts`:
+Create a unit test in `packages/common/__tests__/utils/math.test.ts`:
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -27,7 +27,7 @@ Run tests with `npm run test`.
 ## Core Patterns
 
 ### Unit Testing
-Focus on pure functions and logic in `src/main` or `src/common`. Use `vi.mock()` for dependencies.
+Focus on pure functions and logic in `src/main` or `packages/common`. Use `vi.mock()` for dependencies.
 - [references/unit-testing-examples.md](references/unit-testing-examples.md)
 
 ### Component Testing

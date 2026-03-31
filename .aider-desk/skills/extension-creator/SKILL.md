@@ -182,8 +182,7 @@ After completing this skill, verify:
 
 ## References
 
-- [packages/extensions/extensions.d.ts]({projectDir}/packages/extensions/extensions.d.ts) - Full Extension interface and types
-- [src/common/extensions.ts]({projectDir}/src/common/extensions.ts) - Extension types and interfaces
+- [packages/common/src/extensions.ts]({projectDir}/packages/common/src/extensions.ts) - Extension types and interfaces
 - [event-types.md](references/event-types.md) - All event types and payloads
 - [command-definition.md](references/command-definition.md) - Command structure
 - [ui-components.md](references/ui-components.md) - UI component system, placements, and available components

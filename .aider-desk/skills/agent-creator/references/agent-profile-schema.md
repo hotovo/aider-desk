@@ -1,6 +1,6 @@
 # Agent Profile Schema Reference
 
-Complete reference for the `AgentProfile` interface defined in `src/common/types.ts`.
+Complete reference for the `AgentProfile` interface defined in `packages/common/src/types/common.ts`.
 
 ## Required Properties
 

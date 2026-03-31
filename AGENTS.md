@@ -66,7 +66,7 @@ AiderDesk is an Electron-based desktop application that provides a GUI wrapper f
 - API definitions and IPC event listeners
 - Type-safe communication layer
 
-**src/common/api.ts** - Common API definitions
+**packages/common/src/api.ts** - Common API definitions
 - TypeScript interface for ApplicationAPI
 - Enumerations and types shared between main and renderer
 - Implementing classes are in **src/preload/index.ts** for main process and **src/renderer/api/browser-api.ts** for browser clients
@@ -75,7 +75,7 @@ AiderDesk is an Electron-based desktop application that provides a GUI wrapper f
 - Defined using Express.js and Zod for schema validation
 - Handle requests from browser-api.ts and external clients
 
-**src/common/** - Shared code between processes
+**packages/common/src/** - Shared code between processes (published as `@aiderdesk/common`)
 - TypeScript type definitions
 - Utility functions and constants
 - Localization files (en.json, zh.json)

@@ -13,12 +13,12 @@ AiderDesk themes are implemented as **SCSS files** that define a `.theme-<name>`
 
 - Theme files: `src/renderer/src/themes/theme-<name>.scss`
 - Theme aggregator (imports all themes): `src/renderer/src/themes/themes.scss`
-- Theme type registry: `src/common/types.ts` (`THEMES`)
+- Theme type registry: `packages/common/src/types/common.ts` (`THEMES`)
 - Theme selector UI: `src/renderer/src/components/settings/GeneralSettings.tsx`
 - Theme application: `src/renderer/src/App.tsx` (applies `theme-<name>` class to `document.body`)
 - Theme display names (i18n):
-  - `src/common/locales/en.json` (`themeOptions.<name>`)
-  - `src/common/locales/zh.json` (`themeOptions.<name>`)
+  - `packages/common/src/locales/en.json` (`themeOptions.<name>`)
+  - `packages/common/src/locales/zh.json` (`themeOptions.<name>`)
 
 ## Definition format
 
@@ -69,7 +69,7 @@ If the file is not imported here, it won’t be included in the built CSS.
 ### 4) Register the theme in TypeScript types
 
 Edit:
-- `src/common/types.ts`
+- `packages/common/src/types/common.ts`
 
 Add `'<name>'` to the exported `THEMES` array.
 
@@ -78,8 +78,8 @@ This makes the theme selectable and type-safe.
 ### 5) Add i18n display names
 
 Edit:
-- `src/common/locales/en.json`
-- `src/common/locales/zh.json`
+- `packages/common/src/locales/en.json`
+- `packages/common/src/locales/zh.json`
 
 Add entries under `themeOptions`:
 
@@ -116,7 +116,7 @@ Add entries under `themeOptions`:
 
 - Theme not showing up:
   - missing `@use` import in `src/renderer/src/themes/themes.scss`
-  - missing entry in `THEMES` array in `src/common/types.ts`
+  - missing entry in `THEMES` array in `packages/common/src/types/common.ts`
   - typo mismatch between `.theme-<name>` and the `<name>` stored in settings
 
 - Some UI areas look “unstyled”:
