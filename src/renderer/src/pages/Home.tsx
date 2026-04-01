@@ -1,6 +1,6 @@
 import { ProjectData } from '@common/types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useState, useTransition } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
 import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
@@ -62,6 +62,7 @@ export const Home = () => {
   const storeActiveProject = (optimisticOpenProjects.find((project) => project.active) || optimisticOpenProjects[0])?.baseDir;
   const activeProject = urlProjectBaseDir || storeActiveProject;
   const [optimisticActiveProject, setOptimisticActiveProject] = useOptimistic(activeProject);
+  const closingProjectRef = useRef<string | null>(null);
 
   const handleReorderProjects = useCallback(
     (reorderedProjects: ProjectData[]) => {
@@ -154,13 +155,27 @@ export const Home = () => {
 
   const handleCloseProject = useCallback(
     (projectBaseDir: string) => {
+      closingProjectRef.current = projectBaseDir;
       startTransition(async () => {
-        setOptimisticOpenProjects((prev) => prev.filter((project) => project.baseDir !== projectBaseDir));
-        const updatedProjects = await api.removeOpenProject(projectBaseDir);
-        setOpenProjects(updatedProjects);
+        try {
+          const removedIndex = optimisticOpenProjects.findIndex((project) => project.baseDir === projectBaseDir);
+          const remaining = optimisticOpenProjects.filter((project) => project.baseDir !== projectBaseDir);
+          if (remaining.length > 0) {
+            const nextProject = optimisticOpenProjects[removedIndex === optimisticOpenProjects.length - 1 ? removedIndex - 1 : removedIndex];
+            setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(nextProject.baseDir) }, { replace: true });
+          } else {
+            setSearchParams({}, { replace: true });
+          }
+
+          setOptimisticOpenProjects(remaining);
+          const updatedProjects = await api.removeOpenProject(projectBaseDir);
+          setOpenProjects(updatedProjects);
+        } finally {
+          closingProjectRef.current = null;
+        }
       });
     },
-    [api, setOptimisticOpenProjects],
+    [api, optimisticOpenProjects, setOptimisticOpenProjects, setSearchParams],
   );
 
   // Close current project tab
@@ -195,7 +210,11 @@ export const Home = () => {
         setInitialUrlNavigationDone(true);
       }
 
-      const existingProject = openProjects.find((p) => p.baseDir === projectBaseDir);
+      if (closingProjectRef.current === projectBaseDir) {
+        return;
+      }
+
+      const existingProject = optimisticOpenProjects.find((p) => p.baseDir === projectBaseDir);
 
       // Only update initial task ID on first navigation or when task changes
       if (taskId && (!initialUrlNavigationDone || taskId !== initialTaskId)) {
@@ -222,7 +241,17 @@ export const Home = () => {
     };
 
     void handleUrlNavigation();
-  }, [searchParams, projectsLoaded, openProjects, setActiveProject, initialUrlNavigationDone, api, activeProject, initialTaskId, setOptimisticActiveProject]);
+  }, [
+    searchParams,
+    projectsLoaded,
+    setActiveProject,
+    initialUrlNavigationDone,
+    api,
+    activeProject,
+    initialTaskId,
+    setOptimisticActiveProject,
+    optimisticOpenProjects,
+  ]);
 
   // Note: We no longer sync activeProject to URL here because setActiveProject now updates the URL directly
 

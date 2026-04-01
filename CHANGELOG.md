@@ -13,6 +13,7 @@
 - added tooltip for long task names in the sidebar
 - added support for updating extensions via UI
 - updated project /init system prompt and added support for additional instructions
+- properly closing the project when currently selected and closed
 
 ## [0.59.0]
 
