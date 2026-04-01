@@ -99,7 +99,7 @@ const api: ApplicationAPI = {
   runCommand: (baseDir, taskId, command) => ipcRenderer.send('run-command', baseDir, taskId, command),
   pasteImage: (baseDir, taskId) => ipcRenderer.send('paste-image', baseDir, taskId),
   scrapeWeb: (baseDir, taskId, url, filePath) => ipcRenderer.invoke('scrape-web', baseDir, taskId, url, filePath),
-  initProjectRulesFile: (baseDir, taskId) => ipcRenderer.invoke('init-project-rules-file', baseDir, taskId),
+  initProjectRulesFile: (baseDir, taskId, args) => ipcRenderer.invoke('init-project-rules-file', baseDir, taskId, args),
 
   getTodos: (baseDir, taskId) => ipcRenderer.invoke('get-todos', baseDir, taskId),
   addTodo: (baseDir, taskId, name) => ipcRenderer.invoke('add-todo', baseDir, taskId, name),

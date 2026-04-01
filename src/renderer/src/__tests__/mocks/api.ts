@@ -105,7 +105,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     runCommand: vi.fn((): void => undefined),
     pasteImage: vi.fn((): void => undefined),
     scrapeWeb: vi.fn((): Promise<void> => Promise.resolve()),
-    initProjectRulesFile: vi.fn((): Promise<void> => Promise.resolve()),
+    initProjectRulesFile: vi.fn((_baseDir?: string, _taskId?: string, _args?: string): Promise<void> => Promise.resolve()),
     readFile: vi.fn((): Promise<string> => Promise.resolve('')),
 
     // Todo operations

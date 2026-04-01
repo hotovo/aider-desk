@@ -411,7 +411,7 @@ export class PromptsManager {
     return ruleFilesContent.filter(Boolean).join('\n');
   };
 
-  public getInitProjectPrompt = async (task: Task) => {
+  public getInitProjectSystemPrompt = async (task: Task) => {
     const data: InitProjectPromptData = {};
     return await this.render('init-project', data, task.getProjectDir(), task);
   };

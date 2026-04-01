@@ -157,6 +157,7 @@ const RunCommandSchema = z.object({
 const InitProjectRulesFileSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
+  args: z.string().optional(),
 });
 
 const CreateNewTaskSchema = z.object({
@@ -494,8 +495,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId } = parsed;
-        await this.eventsHandler.initProjectRulesFile(projectDir, taskId);
+        const { projectDir, taskId, args } = parsed;
+        await this.eventsHandler.initProjectRulesFile(projectDir, taskId, args);
         res.status(200).json({ message: 'Project rules file initialized' });
       }),
     );

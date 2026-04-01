@@ -12,6 +12,7 @@
 - removed deprecated hook manager
 - added tooltip for long task names in the sidebar
 - added support for updating extensions via UI
+- updated project /init system prompt and added support for additional instructions
 
 ## [0.59.0]
 

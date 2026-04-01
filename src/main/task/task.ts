@@ -3,7 +3,6 @@ import path from 'path';
 import { homedir } from 'os';
 
 import { simpleGit } from 'simple-git';
-import YAML from 'yaml';
 import {
   AiderRunOptions,
   AIDER_MODES,
@@ -2988,7 +2987,7 @@ export class Task {
     return [];
   }
 
-  async initProjectAgentsFile(): Promise<void> {
+  async initProjectAgentsFile(args?: string): Promise<void> {
     logger.info('Initializing AGENTS.md file', {
       baseDir: this.project.baseDir,
     });
@@ -3014,8 +3013,11 @@ export class Task {
         model: activeProfile.model,
       };
 
-      // Run the agent with the modified profile
-      await this.runPromptInAgent(initProjectRulesAgentProfile, 'init-project-agents-file', await this.promptsManager.getInitProjectPrompt(this));
+      const systemPrompt = await this.promptsManager.getInitProjectSystemPrompt(this);
+      const userPrompt = args ? `/init ${args}` : '/init';
+
+      // Run the agent with the modified profile, using init-project template as system prompt
+      await this.runPromptInAgent(initProjectRulesAgentProfile, 'init-project-agents-file', userPrompt, { id: uuidv4() }, undefined, undefined, systemPrompt);
 
       // Check if the AGENTS.md file was created
       const projectAgentsPath = path.join(this.project.baseDir, 'AGENTS.md');
@@ -3025,20 +3027,6 @@ export class Task {
         logger.info('AGENTS.md file created successfully', {
           path: projectAgentsPath,
         });
-        this.addLogMessage('info', 'AGENTS.md has been successfully initialized.');
-
-        // Ask the user if they want to add this file to .aider.conf.yml
-        const [answer] = await this.askQuestion({
-          baseDir: this.project.baseDir,
-          taskId: this.taskId,
-          text: 'Do you want to add AGENTS.md as read-only file for Aider (in .aider.conf.yml)?',
-          defaultAnswer: 'y',
-          internal: false,
-        });
-
-        if (answer === 'y') {
-          await this.addProjectAgentsToAiderConfig();
-        }
       } else {
         logger.warn('AGENTS.md file was not created');
         this.addLogMessage('warning', 'AGENTS.md file was not created.');
@@ -3050,48 +3038,6 @@ export class Task {
     } finally {
       this.contextManager.setContextFiles(files, false);
       this.contextManager.setContextMessages(messages, false);
-    }
-  }
-
-  private async addProjectAgentsToAiderConfig(): Promise<void> {
-    const aiderConfigPath = path.join(this.project.baseDir, '.aider.conf.yml');
-    const projectAgentsRelativePath = 'AGENTS.md';
-
-    try {
-      let config: { read?: string | string[] } = {};
-
-      // Read existing config if it exists
-      if (await fileExists(aiderConfigPath)) {
-        const configContent = await fs.readFile(aiderConfigPath, 'utf8');
-        config = (YAML.parse(configContent) as { read?: string | string[] }) || {};
-      }
-
-      // Ensure read section exists and is an array
-      if (!config.read) {
-        config.read = [];
-      } else if (!Array.isArray(config.read)) {
-        config.read = [config.read];
-      }
-
-      // Add PROJECT.md to read section if not already present
-      if (!config.read.includes(projectAgentsRelativePath)) {
-        config.read.push(projectAgentsRelativePath);
-
-        // Write the updated config
-        const yamlContent = YAML.stringify(config);
-        await fs.writeFile(aiderConfigPath, yamlContent, 'utf8');
-
-        logger.info('Added AGENTS.md to .aider.conf.yml', {
-          path: aiderConfigPath,
-        });
-        this.addLogMessage('info', `Added ${projectAgentsRelativePath} to .aider.conf.yml`);
-      } else {
-        logger.info('AGENTS.md already exists in .aider.conf.yml');
-      }
-    } catch (error) {
-      logger.error('Error updating .aider.conf.yml:', error);
-      this.addLogMessage('error', `Failed to update .aider.conf.yml: ${error instanceof Error ? error.message : String(error)}`);
-      throw error;
     }
   }
 

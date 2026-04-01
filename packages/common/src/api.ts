@@ -120,7 +120,7 @@ export interface ApplicationAPI {
   runCommand: (baseDir: string, taskId: string, command: string) => void;
   pasteImage: (baseDir: string, taskId: string, imageBuffer?: ArrayBuffer) => void;
   scrapeWeb: (baseDir: string, taskId: string, url: string, filePath?: string) => Promise<void>;
-  initProjectRulesFile: (baseDir: string, taskId: string) => Promise<void>;
+  initProjectRulesFile: (baseDir: string, taskId: string, args?: string) => Promise<void>;
 
   // Todo operations
   getTodos: (baseDir: string, taskId: string) => Promise<TodoItem[]>;

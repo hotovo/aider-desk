@@ -71,12 +71,12 @@ describe('Prompts with Handlebars', () => {
     expect(prompt).toContain('<DefaultSystemPrompt version="1.0">');
   });
 
-  describe('getInitProjectPrompt', () => {
-    it('should render init-project prompt', async () => {
-      const prompt = await promptsManager.getInitProjectPrompt(mockTask);
+  describe('getInitProjectSystemPrompt', () => {
+    it('should render init-project system prompt', async () => {
+      const prompt = await promptsManager.getInitProjectSystemPrompt(mockTask);
 
-      expect(prompt).toContain('# Default Init Project');
-      expect(prompt).toContain('This is the default init-project template');
+      expect(prompt).toContain('<DefaultInitProjectSystemPrompt version="1.0">');
+      expect(prompt).toContain('This is the default init-project system prompt template');
     });
   });
 
@@ -223,7 +223,7 @@ describe('Prompts with Handlebars', () => {
       );
       await manager.init();
 
-      const result = await manager.getInitProjectPrompt(mockTask);
+      const result = await manager.getInitProjectSystemPrompt(mockTask);
 
       expect(result).toBe(customPrompt);
     });
@@ -239,7 +239,7 @@ describe('Prompts with Handlebars', () => {
 
       // Direct call to render without task (internal method, but testing the logic)
       // Since render is private, we test through a public method that uses it
-      await manager.getInitProjectPrompt(mockTask);
+      await manager.getInitProjectSystemPrompt(mockTask);
 
       // Event should be dispatched because task is provided
       expect(mockExtensionManager.dispatchEvent).toHaveBeenCalled();
@@ -309,11 +309,11 @@ describe('Prompts with Handlebars', () => {
     });
 
     it('should use global init-project template', async () => {
-      const prompt = await promptsManagerWithGlobal.getInitProjectPrompt(mockTask);
+      const prompt = await promptsManagerWithGlobal.getInitProjectSystemPrompt(mockTask);
 
       expect(prompt).toContain('This is the GLOBAL init-project template');
       expect(prompt).toContain('should override default');
-      expect(prompt).not.toContain('This is the default init-project template');
+      expect(prompt).not.toContain('This is the default init-project system prompt template');
     });
 
     it('should use global compact-conversation template', async () => {
@@ -383,9 +383,9 @@ describe('Prompts with Handlebars', () => {
     });
 
     it('should use default init-project template when global is not present', async () => {
-      const prompt = await promptsManagerNoGlobal.getInitProjectPrompt(mockTask);
+      const prompt = await promptsManagerNoGlobal.getInitProjectSystemPrompt(mockTask);
 
-      expect(prompt).toContain('# Default Init Project');
+      expect(prompt).toContain('<DefaultInitProjectSystemPrompt version="1.0">');
       expect(prompt).not.toContain('Global init-project');
     });
 

@@ -520,7 +520,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               return;
             }
             prepareForNextPrompt();
-            void api.initProjectRulesFile(baseDir, taskId);
+            void api.initProjectRulesFile(baseDir, taskId, args);
             break;
           }
           case '/clear-logs': {

@@ -963,8 +963,8 @@ export class EventsHandler {
     return (await this.projectManager.getProject(baseDir).getTask(taskId)?.clearAllTodos()) || [];
   }
 
-  async initProjectRulesFile(baseDir: string, taskId: string): Promise<void> {
-    return this.projectManager.getProject(baseDir).getTask(taskId)?.initProjectAgentsFile();
+  async initProjectRulesFile(baseDir: string, taskId: string, args?: string): Promise<void> {
+    return this.projectManager.getProject(baseDir).getTask(taskId)?.initProjectAgentsFile(args);
   }
 
   async enableServer(username?: string, password?: string): Promise<SettingsData> {

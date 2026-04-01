@@ -343,8 +343,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getOS();
   });
 
-  ipcMain.handle('init-project-rules-file', async (_, baseDir: string, taskId: string) => {
-    return await eventsHandler.initProjectRulesFile(baseDir, taskId);
+  ipcMain.handle('init-project-rules-file', async (_, baseDir: string, taskId: string, args?: string) => {
+    return await eventsHandler.initProjectRulesFile(baseDir, taskId, args);
   });
 
   ipcMain.handle('get-todos', async (_, baseDir: string, taskId: string) => {
