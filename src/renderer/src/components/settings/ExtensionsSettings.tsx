@@ -209,12 +209,18 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
 
   const handleUpdate = async (extension: AvailableExtension) => {
     const installedExtension = installedExtensions.find((inst) => {
-      if (inst.id !== extension.id) return false;
-      if (profileContext === 'global') return !inst.projectDir;
+      if (inst.id !== extension.id) {
+        return false;
+      }
+      if (profileContext === 'global') {
+        return !inst.projectDir;
+      }
       return inst.projectDir === profileContext;
     });
 
-    if (!installedExtension) return;
+    if (!installedExtension) {
+      return;
+    }
 
     setUpdatingExtensions((prev) => new Set(prev).add(installedExtension.filePath));
     try {
