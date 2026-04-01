@@ -481,16 +481,20 @@
       "hasDependencies": "Has dependencies",
       "install": "Install",
       "installing": "Installing...",
+      "update": "Update",
+      "updating": "Updating...",
       "uninstall": "Uninstall",
       "uninstalling": "Uninstalling...",
       "success": {
         "install": "Successfully installed {{name}}",
+        "update": "Successfully updated {{name}}",
         "uninstall": "Successfully uninstalled {{name}}"
       },
       "errors": {
         "loadInstalled": "Failed to load installed extensions",
         "loadAvailable": "Failed to load available extensions",
         "install": "Failed to install extension",
+        "update": "Failed to update extension",
         "uninstall": "Failed to uninstall extension",
         "repositoryExists": "This repository is already added",
         "cannotRemoveDefault": "Cannot remove the default repository"

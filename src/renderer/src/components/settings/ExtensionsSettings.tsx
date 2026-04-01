@@ -67,6 +67,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   const [loadingAvailable, setLoadingAvailable] = useState(false);
   const [installingExtensions, setInstallingExtensions] = useState<Set<string>>(new Set());
   const [uninstallingExtensions, setUninstallingExtensions] = useState<Set<string>>(new Set());
+  const [updatingExtensions, setUpdatingExtensions] = useState<Set<string>>(new Set());
   const [newRepositoryUrl, setNewRepositoryUrl] = useState('');
   const [expandedRepositories, setExpandedRepositories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -201,6 +202,36 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       setInstallingExtensions((prev) => {
         const next = new Set(prev);
         next.delete(extension.id);
+        return next;
+      });
+    }
+  };
+
+  const handleUpdate = async (extension: AvailableExtension) => {
+    const installedExtension = installedExtensions.find((inst) => {
+      if (inst.id !== extension.id) return false;
+      if (profileContext === 'global') return !inst.projectDir;
+      return inst.projectDir === profileContext;
+    });
+
+    if (!installedExtension) return;
+
+    setUpdatingExtensions((prev) => new Set(prev).add(installedExtension.filePath));
+    try {
+      const success = await api.updateExtension(installedExtension.filePath, extension.repositoryUrl, projectDir);
+      if (success) {
+        showSuccessNotification(t('settings.extensions.success.update', { name: extension.name }));
+        await loadInstalledExtensions();
+        await loadAvailableExtensions();
+      } else {
+        showErrorNotification(t('settings.extensions.errors.update'));
+      }
+    } catch {
+      showErrorNotification(t('settings.extensions.errors.update'));
+    } finally {
+      setUpdatingExtensions((prev) => {
+        const next = new Set(prev);
+        next.delete(installedExtension.filePath);
         return next;
       });
     }
@@ -350,16 +381,24 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
 
     return (
       <div className="space-y-2">
-        {filteredInstalledExtensions.map((extension) => (
-          <ExtensionCard
-            key={extension.filePath}
-            extension={extension}
-            isDisabled={disabledExtensions.includes(extension.metadata.name)}
-            isUninstalling={uninstallingExtensions.has(extension.filePath)}
-            onToggle={handleToggleDisabled}
-            onUninstall={handleUninstall}
-          />
-        ))}
+        {filteredInstalledExtensions.map((extension) => {
+          const availableExt = availableExtensions.find((avail) => avail.id === extension.id);
+          const extensionHasUpdate = availableExt ? availableExt.version !== extension.metadata.version : false;
+
+          return (
+            <ExtensionCard
+              key={extension.filePath}
+              extension={extension}
+              isDisabled={disabledExtensions.includes(extension.metadata.name)}
+              isUninstalling={uninstallingExtensions.has(extension.filePath)}
+              isUpdating={updatingExtensions.has(extension.filePath)}
+              hasUpdate={extensionHasUpdate}
+              onUpdate={availableExt ? () => handleUpdate(availableExt) : undefined}
+              onToggle={handleToggleDisabled}
+              onUninstall={handleUninstall}
+            />
+          );
+        })}
       </div>
     );
   };
@@ -414,6 +453,8 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
 
       // If installed, render with available extension data but installed controls
       if (installedExtension) {
+        const extensionHasUpdate = extension.version !== installedExtension.metadata.version;
+
         return (
           <ExtensionCard
             key={extension.id}
@@ -421,9 +462,12 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             isInstalled={true}
             isDisabled={disabledExtensions.includes(installedExtension.metadata.name)}
             isUninstalling={uninstallingExtensions.has(installedExtension.filePath)}
+            isUpdating={updatingExtensions.has(installedExtension.filePath)}
+            hasUpdate={extensionHasUpdate}
             installedFilePath={installedExtension.filePath}
             onToggle={handleToggleDisabled}
             onUninstall={handleUninstall}
+            onUpdate={() => handleUpdate(extension)}
           />
         );
       }

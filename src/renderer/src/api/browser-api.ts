@@ -1159,6 +1159,14 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean> {
+    return this.post('/extensions/update', {
+      extensionId,
+      repositoryUrl,
+      projectDir,
+    });
+  }
+
   getExtensionUIComponents(placement?: string, projectDir?: string, taskId?: string): Promise<ExtensionUIComponent[]> {
     return this.get('/extensions/ui-components', {
       projectDir,

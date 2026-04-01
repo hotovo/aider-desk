@@ -1423,6 +1423,106 @@ export class ExtensionManager {
   }
 
   /**
+   * Update an extension from a repository, overwriting existing files
+   * @param extensionId - Extension identifier (filePath of installed extension)
+   * @param repositoryUrl - Repository URL where the extension is located
+   * @param project - Optional project for project-level extension
+   * @returns true if update succeeded
+   */
+  async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean> {
+    const projectDir = project?.baseDir;
+    try {
+      logger.debug(`[Extensions] Updating extension '${extensionId}' from ${repositoryUrl}`);
+
+      const existingExtension = this.registry.getExtension(extensionId);
+      if (!existingExtension) {
+        throw new Error(`Extension '${extensionId}' not found`);
+      }
+
+      if (!existingExtension.filePath) {
+        throw new Error(`Extension '${extensionId}' has no file path`);
+      }
+
+      const targetDir = projectDir ? path.join(projectDir, AIDER_DESK_EXTENSIONS_DIR) : AIDER_DESK_GLOBAL_EXTENSIONS_DIR;
+
+      const availableExtensions = await this.getAvailableExtensions([repositoryUrl]);
+      const extension = availableExtensions.find((ext) => ext.id === existingExtension.id);
+
+      if (!extension) {
+        throw new Error(`Extension '${existingExtension.id}' not found in repository`);
+      }
+
+      const githubRawBase = this.fetcher.getRawUrl(repositoryUrl);
+      if (!githubRawBase) {
+        throw new Error('Invalid GitHub repository URL');
+      }
+
+      // Unload existing extension before overwriting files
+      await this.unloadExtensionsForDir(targetDir);
+
+      if (extension.type === 'single' && extension.file) {
+        const url = `${githubRawBase}/${extension.file}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`Failed to download: ${response.statusText}`);
+        }
+
+        const code = await response.text();
+        const targetPath = path.join(targetDir, extension.file);
+        await fs.writeFile(targetPath, code, 'utf-8');
+
+        logger.debug(`[Extensions] Updated single-file extension: ${extension.file}`);
+      } else if (extension.type === 'folder' && extension.folder) {
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ext-update-'));
+
+        try {
+          const cloneUrl = this.getCloneUrl(repositoryUrl);
+          if (!cloneUrl) {
+            throw new Error('Invalid repository URL for cloning');
+          }
+
+          logger.debug(`[Extensions] Cloning repository to ${tempDir}`);
+          await execWithShellPath(`git clone --depth 1 "${cloneUrl}" "${tempDir}"`);
+
+          const extensionsPath = this.getExtensionsPath(repositoryUrl, tempDir);
+          const sourcePath = path.join(extensionsPath, extension.folder);
+          const targetPath = path.join(targetDir, extension.folder);
+
+          if (!(await this.fileExists(sourcePath))) {
+            throw new Error(`Extension folder not found in repository: ${extension.folder}`);
+          }
+
+          await fs.cp(sourcePath, targetPath, { recursive: true });
+
+          // Check for package.json and run npm install if present
+          const packageJsonPath = path.join(targetPath, 'package.json');
+          if (await this.fileExists(packageJsonPath)) {
+            logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
+            await this.installDependencies(targetPath);
+          }
+
+          logger.debug(`[Extensions] Updated folder extension: ${extension.folder}`);
+        } finally {
+          try {
+            await fs.rm(tempDir, { recursive: true, force: true });
+          } catch (cleanupError) {
+            logger.warn(`[Extensions] Failed to cleanup temp directory ${tempDir}:`, cleanupError);
+          }
+        }
+      }
+
+      await this.loadExtensionsForDir(targetDir, project);
+
+      logger.info(`[Extensions] Successfully updated ${extension.name}`);
+      return true;
+    } catch (error) {
+      logger.error(`[Extensions] Failed to update extension '${extensionId}':`, error);
+      return false;
+    }
+  }
+
+  /**
    * Dispatches an event to all loaded and initialized extensions.
    * Events can be modified or blocked by extensions.
    *

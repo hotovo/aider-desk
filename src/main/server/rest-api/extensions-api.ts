@@ -26,6 +26,12 @@ const UninstallExtensionSchema = z.object({
   projectDir: z.string().optional(),
 });
 
+const UpdateExtensionSchema = z.object({
+  extensionId: z.string().min(1, 'Extension ID is required'),
+  repositoryUrl: z.string().url('Repository URL must be a valid URL'),
+  projectDir: z.string().optional(),
+});
+
 export class ExtensionsApi extends BaseApi {
   constructor(private readonly eventsHandler: EventsHandler) {
     super();
@@ -98,6 +104,26 @@ export class ExtensionsApi extends BaseApi {
           res.status(200).json({ message: 'Extension uninstalled successfully', success });
         } else {
           res.status(500).json({ message: 'Failed to uninstall extension', success });
+        }
+      }),
+    );
+
+    // Update extension
+    router.post(
+      '/extensions/update',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(UpdateExtensionSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { extensionId, repositoryUrl, projectDir } = parsed;
+        const success = await this.eventsHandler.updateExtension(extensionId, repositoryUrl, projectDir);
+
+        if (success) {
+          res.status(200).json({ message: 'Extension updated successfully', success });
+        } else {
+          res.status(500).json({ message: 'Failed to update extension', success });
         }
       }),
     );

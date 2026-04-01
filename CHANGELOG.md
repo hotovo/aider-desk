@@ -11,6 +11,7 @@
 - updating rule files after the agent finishes
 - removed deprecated hook manager
 - added tooltip for long task names in the sidebar
+- added support for updating extensions via UI
 
 ## [0.59.0]
 

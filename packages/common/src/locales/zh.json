@@ -479,16 +479,20 @@
       "hasDependencies": "有依赖",
       "install": "安装",
       "installing": "安装中...",
+      "update": "更新",
+      "updating": "更新中...",
       "uninstall": "卸载",
       "uninstalling": "卸载中...",
       "success": {
         "install": "成功安装 {{name}}",
+        "update": "成功更新 {{name}}",
         "uninstall": "成功卸载 {{name}}"
       },
       "errors": {
         "loadInstalled": "加载已安装扩展失败",
         "loadAvailable": "加载可用扩展失败",
         "install": "安装扩展失败",
+        "update": "更新扩展失败",
         "uninstall": "卸载扩展失败",
         "repositoryExists": "此仓库已添加",
         "cannotRemoveDefault": "无法移除默认仓库"

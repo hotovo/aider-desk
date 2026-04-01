@@ -1108,6 +1108,18 @@ export class EventsHandler {
     return await this.extensionManager.uninstallExtension(extensionId, projectDir);
   }
 
+  async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string) {
+    let project: Project | undefined = undefined;
+    if (projectDir) {
+      project = this.projectManager.getProject(projectDir);
+      if (!project) {
+        throw new Error('Project not found');
+      }
+    }
+
+    return await this.extensionManager.updateExtension(extensionId, repositoryUrl, project);
+  }
+
   getUIComponents(placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[] {
     const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
     const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;

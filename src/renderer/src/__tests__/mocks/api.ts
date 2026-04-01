@@ -247,6 +247,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     getAvailableExtensions: vi.fn((): Promise<AvailableExtension[]> => Promise.resolve([])),
     installExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     uninstallExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),
+    updateExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     getExtensionUIComponents: vi.fn((): Promise<ExtensionUIComponent[]> => Promise.resolve([])),
     getUIExtensionData: vi.fn((): Promise<unknown> => Promise.resolve({})),
     executeUIExtensionAction: vi.fn((): Promise<unknown> => Promise.resolve({})),

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
-import { FaChevronDown, FaDownload } from 'react-icons/fa';
+import { FaChevronDown, FaDownload, FaSync } from 'react-icons/fa';
 import { clsx } from 'clsx';
 
 import type { AvailableExtension, InstalledExtension } from '@common/types';
@@ -31,10 +31,13 @@ type Props = {
   isDisabled?: boolean;
   isUninstalling?: boolean;
   isInstalling?: boolean;
+  isUpdating?: boolean;
+  hasUpdate?: boolean;
   installedFilePath?: string;
   onToggle?: (extensionName: string, isDisabled: boolean) => void;
   onUninstall?: (exensionFilePath: string) => void;
   onInstall?: (extension: AvailableExtension) => void;
+  onUpdate?: () => void;
 };
 
 export const ExtensionCard = ({
@@ -43,10 +46,13 @@ export const ExtensionCard = ({
   isDisabled = false,
   isUninstalling = false,
   isInstalling = false,
+  isUpdating = false,
+  hasUpdate = false,
   installedFilePath,
   onToggle,
   onUninstall,
   onInstall,
+  onUpdate,
 }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -76,6 +82,10 @@ export const ExtensionCard = ({
     if (onInstall && !('metadata' in extension)) {
       onInstall(extension as AvailableExtension);
     }
+  };
+
+  const handleUpdate = () => {
+    onUpdate?.();
   };
 
   return (
@@ -133,6 +143,13 @@ export const ExtensionCard = ({
             {isInstalled ? (
               <>
                 <Toggle checked={!isDisabled} onChange={handleToggleDisabled} aria-label={t('settings.extensions.enabled')} />
+
+                {hasUpdate && (
+                  <Button onClick={handleUpdate} disabled={isUpdating} variant="contained" size="xs">
+                    <FaSync className={clsx('mr-1.5 w-3 h-3', isUpdating && 'animate-spin')} />
+                    {isUpdating ? t('settings.extensions.updating') : t('settings.extensions.update')}
+                  </Button>
+                )}
 
                 <Button onClick={handleUninstall} disabled={isUninstalling} variant="outline" size="xs" color="danger">
                   {isUninstalling ? t('settings.extensions.uninstalling') : t('settings.extensions.uninstall')}
