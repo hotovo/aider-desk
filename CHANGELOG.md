@@ -10,6 +10,7 @@
 - using merge-base for diff calculations in worktree mode to show only changed files since rebase
 - updating rule files after the agent finishes
 - removed deprecated hook manager
+- added tooltip for long task names in the sidebar
 
 ## [0.59.0]
 

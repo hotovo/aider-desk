@@ -84,6 +84,8 @@ export const TaskItem = memo(
     const subtasks = tasks.filter((t) => t.parentId === task.id);
     const isEditing = editingTaskId === task.id;
     const isSubtask = level > 0;
+    const taskName = task.name || t('taskSidebar.untitled');
+    const showNameTooltip = !!task.name && task.name.length > 30;
 
     const longPressProps = useLongPress(
       () => {
@@ -169,7 +171,13 @@ export const TaskItem = memo(
                       task.archived && activeTaskId !== task.id ? 'text-text-muted group-hover:text-text-primary' : 'text-text-primary',
                     )}
                   >
-                    {task.name || t('taskSidebar.untitled')}
+                    {showNameTooltip ? (
+                      <Tooltip content={taskName} delayDuration={1000}>
+                        <span>{taskName}</span>
+                      </Tooltip>
+                    ) : (
+                      taskName
+                    )}
                   </div>
                   {task.pinned && <MdPushPin className="w-3 h-3 text-text-muted shrink-0 ml-1 rotate-45 group-hover:hidden" />}
                 </div>
