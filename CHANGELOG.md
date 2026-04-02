@@ -14,6 +14,7 @@
 - added support for updating extensions via UI
 - updated project /init system prompt and added support for additional instructions
 - properly closing the project when currently selected and closed
+- added persistent caching for extension repositories
 
 ## [0.59.0]
 

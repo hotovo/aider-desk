@@ -41,6 +41,7 @@ export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');
 export const AIDER_DESK_WATCH_FILES_LOCK = path.join(AIDER_DESK_DIR, 'watch-files.lock');
 export const WORKTREE_BRANCH_PREFIX = 'aider-desk/task/';
 export const AIDER_DESK_MEMORY_FILE = path.join(AIDER_DESK_DATA_DIR, 'memory.db');
+export const EXTENSIONS_REPOS_CACHE_DIR = path.join(AIDER_DESK_CACHE_DIR, 'extensions');
 
 export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';

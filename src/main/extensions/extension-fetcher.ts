@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import os from 'os';
 
 import * as ts from 'typescript';
 import { AvailableExtension } from '@common/types';
@@ -8,6 +7,7 @@ import { ExtensionMetadata } from '@common/extensions';
 
 import logger from '@/logger';
 import { execWithShellPath } from '@/utils/shell';
+import { EXTENSIONS_REPOS_CACHE_DIR } from '@/constants';
 
 interface CacheEntry {
   timestamp: number;
@@ -60,7 +60,9 @@ export class ExtensionFetcher {
     }
 
     try {
-      const extensions = await this.fetchExtensionsViaGitClone(repoUrl);
+      const repoDir = await this.ensureRepoCloned(repoUrl);
+      const extensionsPath = this.getExtensionsPath(repoUrl, repoDir);
+      const extensions = await this.scanForExtensions(extensionsPath, repoUrl);
 
       this.cache.set(repoUrl, {
         timestamp: now,
@@ -78,42 +80,47 @@ export class ExtensionFetcher {
     }
   }
 
-  async fetchExtensionsViaGitClone(repoUrl: string): Promise<AvailableExtension[]> {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ext-repo-'));
-
+  private getRepoDirName(repoUrl: string): string {
     try {
-      const cloneUrl = this.getCloneUrl(repoUrl);
-      if (!cloneUrl) {
-        throw new Error(`Invalid repository URL: ${repoUrl}`);
+      const url = new URL(repoUrl);
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      if (pathParts.length >= 2) {
+        return `${pathParts[0]}-${pathParts[1]}`;
       }
+    } catch {
+      // fall through
+    }
+    return repoUrl.replace(/[^a-zA-Z0-9]/g, '-');
+  }
 
-      const extensionSubPath = this.getExtensionSubPath(repoUrl);
+  async ensureRepoCloned(repoUrl: string): Promise<string> {
+    const cloneUrl = this.getCloneUrl(repoUrl);
+    if (!cloneUrl) {
+      throw new Error(`Invalid repository URL: ${repoUrl}`);
+    }
 
-      if (extensionSubPath) {
-        logger.info(`[ExtensionFetcher] Sparse cloning repository to ${tempDir}, path: ${extensionSubPath}`);
-        await execWithShellPath(`git clone --depth 1 --sparse "${cloneUrl}" "${tempDir}"`, {
-          cwd: os.tmpdir(),
-        });
-        await execWithShellPath(`git -C "${tempDir}" sparse-checkout set "${extensionSubPath}"`, {
-          cwd: tempDir,
-        });
-      } else {
-        logger.info(`[ExtensionFetcher] Cloning repository to ${tempDir}`);
-        await execWithShellPath(`git clone --depth 1 "${cloneUrl}" "${tempDir}"`, {
-          cwd: os.tmpdir(),
-        });
-      }
+    const dirName = this.getRepoDirName(repoUrl);
+    const repoDir = path.join(EXTENSIONS_REPOS_CACHE_DIR, dirName);
 
-      const extensionsPath = this.getExtensionsPath(repoUrl, tempDir);
+    const dirExists = await this.fileExists(path.join(repoDir, '.git'));
 
-      return await this.scanForExtensions(extensionsPath, repoUrl);
-    } finally {
+    if (dirExists) {
       try {
-        await fs.rm(tempDir, { recursive: true, force: true });
-      } catch (cleanupError) {
-        logger.warn(`[ExtensionFetcher] Failed to cleanup temp directory ${tempDir}:`, cleanupError);
+        logger.debug(`[ExtensionFetcher] Pulling existing repository cache at ${repoDir}`);
+        await execWithShellPath(`git -C "${repoDir}" pull`, { cwd: repoDir });
+        return repoDir;
+      } catch (pullError) {
+        logger.warn(`[ExtensionFetcher] git pull failed for ${repoDir}, removing and re-cloning:`, pullError);
+        await fs.rm(repoDir, { recursive: true, force: true });
       }
     }
+
+    await fs.mkdir(EXTENSIONS_REPOS_CACHE_DIR, { recursive: true });
+
+    logger.info(`[ExtensionFetcher] Cloning repository to ${repoDir}`);
+    await execWithShellPath(`git clone "${cloneUrl}" "${repoDir}"`, { cwd: EXTENSIONS_REPOS_CACHE_DIR });
+
+    return repoDir;
   }
 
   private getCloneUrl(webUrl: string): string | null {
@@ -151,20 +158,12 @@ export class ExtensionFetcher {
     }
   }
 
-  private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string {
-    try {
-      const url = new URL(repoUrl);
-      const pathParts = url.pathname.split('/').filter(Boolean);
-
-      if (pathParts.length > 4 && pathParts[2] === 'tree') {
-        const extensionPath = pathParts.slice(4).join('/');
-        return path.join(clonedRepoPath, extensionPath);
-      }
-
-      return clonedRepoPath;
-    } catch {
-      return clonedRepoPath;
+  getExtensionsPath(repoUrl: string, clonedRepoPath: string): string {
+    const subPath = this.getExtensionSubPath(repoUrl);
+    if (subPath) {
+      return path.join(clonedRepoPath, subPath);
     }
+    return clonedRepoPath;
   }
 
   private async scanForExtensions(extensionsPath: string, repoUrl: string): Promise<AvailableExtension[]> {

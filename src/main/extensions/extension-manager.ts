@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import os from 'os';
 
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
@@ -60,7 +59,6 @@ import type { EventManager } from '@/events';
 import type { TelemetryManager } from '@/telemetry';
 import type { ToolCallOptions, ToolSet } from 'ai';
 
-import { execWithShellPath } from '@/utils/shell';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { Project } from '@/project';
@@ -1208,13 +1206,12 @@ export class ExtensionManager {
    * @returns Array of available extensions with metadata
    */
   async getAvailableExtensions(repositories: string[], forceRefresh = false, fetchOnly = false): Promise<AvailableExtension[]> {
-    // If fetchOnly is true, bypass all caching and fetch directly via git clone
     if (fetchOnly) {
       const allExtensions: AvailableExtension[] = [];
 
       for (const repoUrl of repositories) {
         try {
-          const extensions = await this.fetcher.fetchExtensionsViaGitClone(repoUrl);
+          const extensions = await this.fetcher.fetchExtensionsFromRepo(repoUrl, true);
           allExtensions.push(...extensions);
         } catch (error) {
           logger.error(`[ExtensionManager] Failed to fetch extensions from ${repoUrl}:`, error);
@@ -1269,40 +1266,24 @@ export class ExtensionManager {
 
         logger.debug(`[Extensions] Installed single-file extension: ${extension.file}`);
       } else if (extension.type === 'folder' && extension.folder) {
-        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ext-install-'));
+        const repoDir = await this.fetcher.ensureRepoCloned(repositoryUrl);
 
-        try {
-          const cloneUrl = this.getCloneUrl(repositoryUrl);
-          if (!cloneUrl) {
-            throw new Error('Invalid repository URL for cloning');
-          }
+        const extensionsPath = this.fetcher.getExtensionsPath(repositoryUrl, repoDir);
+        const sourcePath = path.join(extensionsPath, extension.folder);
+        const targetPath = path.join(targetDir, extension.folder);
 
-          logger.debug(`[Extensions] Cloning repository to ${tempDir}`);
-          await execWithShellPath(`git clone --depth 1 "${cloneUrl}" "${tempDir}"`);
-
-          const extensionsPath = this.getExtensionsPath(repositoryUrl, tempDir);
-          const sourcePath = path.join(extensionsPath, extension.folder);
-          const targetPath = path.join(targetDir, extension.folder);
-
-          if (!(await this.fileExists(sourcePath))) {
-            throw new Error(`Extension folder not found in repository: ${extension.folder}`);
-          }
-
-          await fs.cp(sourcePath, targetPath, { recursive: true });
-
-          if (extension.hasDependencies) {
-            logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
-            await this.installDependencies(targetPath);
-          }
-
-          logger.debug(`[Extensions] Installed folder extension: ${extension.folder}`);
-        } finally {
-          try {
-            await fs.rm(tempDir, { recursive: true, force: true });
-          } catch (cleanupError) {
-            logger.warn(`[Extensions] Failed to cleanup temp directory ${tempDir}:`, cleanupError);
-          }
+        if (!(await this.fileExists(sourcePath))) {
+          throw new Error(`Extension folder not found in repository: ${extension.folder}`);
         }
+
+        await fs.cp(sourcePath, targetPath, { recursive: true });
+
+        if (extension.hasDependencies) {
+          logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
+          await this.installDependencies(targetPath);
+        }
+
+        logger.debug(`[Extensions] Installed folder extension: ${extension.folder}`);
       }
 
       await this.loadExtensionsForDir(targetDir, project);
@@ -1338,42 +1319,6 @@ export class ExtensionManager {
 
       child.on('error', reject);
     });
-  }
-
-  private getCloneUrl(webUrl: string): string | null {
-    try {
-      const url = new URL(webUrl);
-      if (url.hostname !== 'github.com') {
-        return null;
-      }
-
-      const pathParts = url.pathname.split('/').filter(Boolean);
-      if (pathParts.length < 2) {
-        return null;
-      }
-
-      const owner = pathParts[0];
-      const repo = pathParts[1];
-      return `https://github.com/${owner}/${repo}.git`;
-    } catch {
-      return null;
-    }
-  }
-
-  private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string {
-    try {
-      const url = new URL(repoUrl);
-      const pathParts = url.pathname.split('/').filter(Boolean);
-
-      if (pathParts.length > 4 && pathParts[2] === 'tree') {
-        const extensionPath = pathParts.slice(4).join('/');
-        return path.join(clonedRepoPath, extensionPath);
-      }
-
-      return clonedRepoPath;
-    } catch {
-      return clonedRepoPath;
-    }
   }
 
   /**
@@ -1474,42 +1419,25 @@ export class ExtensionManager {
 
         logger.debug(`[Extensions] Updated single-file extension: ${extension.file}`);
       } else if (extension.type === 'folder' && extension.folder) {
-        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ext-update-'));
+        const repoDir = await this.fetcher.ensureRepoCloned(repositoryUrl);
 
-        try {
-          const cloneUrl = this.getCloneUrl(repositoryUrl);
-          if (!cloneUrl) {
-            throw new Error('Invalid repository URL for cloning');
-          }
+        const extensionsPath = this.fetcher.getExtensionsPath(repositoryUrl, repoDir);
+        const sourcePath = path.join(extensionsPath, extension.folder);
+        const targetPath = path.join(targetDir, extension.folder);
 
-          logger.debug(`[Extensions] Cloning repository to ${tempDir}`);
-          await execWithShellPath(`git clone --depth 1 "${cloneUrl}" "${tempDir}"`);
-
-          const extensionsPath = this.getExtensionsPath(repositoryUrl, tempDir);
-          const sourcePath = path.join(extensionsPath, extension.folder);
-          const targetPath = path.join(targetDir, extension.folder);
-
-          if (!(await this.fileExists(sourcePath))) {
-            throw new Error(`Extension folder not found in repository: ${extension.folder}`);
-          }
-
-          await fs.cp(sourcePath, targetPath, { recursive: true });
-
-          // Check for package.json and run npm install if present
-          const packageJsonPath = path.join(targetPath, 'package.json');
-          if (await this.fileExists(packageJsonPath)) {
-            logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
-            await this.installDependencies(targetPath);
-          }
-
-          logger.debug(`[Extensions] Updated folder extension: ${extension.folder}`);
-        } finally {
-          try {
-            await fs.rm(tempDir, { recursive: true, force: true });
-          } catch (cleanupError) {
-            logger.warn(`[Extensions] Failed to cleanup temp directory ${tempDir}:`, cleanupError);
-          }
+        if (!(await this.fileExists(sourcePath))) {
+          throw new Error(`Extension folder not found in repository: ${extension.folder}`);
         }
+
+        await fs.cp(sourcePath, targetPath, { recursive: true });
+
+        const packageJsonPath = path.join(targetPath, 'package.json');
+        if (await this.fileExists(packageJsonPath)) {
+          logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
+          await this.installDependencies(targetPath);
+        }
+
+        logger.debug(`[Extensions] Updated folder extension: ${extension.folder}`);
       }
 
       await this.loadExtensionsForDir(targetDir, project);
