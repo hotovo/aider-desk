@@ -3796,6 +3796,19 @@ private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string
 async uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean>
 ⋮----
 /**
+   * Update an extension from a repository, overwriting existing files
+   * @param extensionId - Extension identifier (filePath of installed extension)
+   * @param repositoryUrl - Repository URL where the extension is located
+   * @param project - Optional project for project-level extension
+   * @returns true if update succeeded
+   */
+async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean>
+⋮----
+// Unload existing extension before overwriting files
+⋮----
+// Check for package.json and run npm install if present
+⋮----
+/**
    * Dispatches an event to all loaded and initialized extensions.
    * Events can be modified or blocked by extensions.
    *
@@ -6872,6 +6885,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Uninstall extension
 ⋮----
+// Update extension
+⋮----
 // Get extension UI components
 ⋮----
 // Get extension UI component data
@@ -8120,7 +8135,6 @@ import path from 'path';
 import { homedir } from 'os';
 ⋮----
 import { simpleGit } from 'simple-git';
-import YAML from 'yaml';
 import {
   AiderRunOptions,
   AIDER_MODES,
@@ -8790,27 +8804,15 @@ public async deleteTodo(name: string): Promise<TodoItem[]>
 ⋮----
 public async clearAllTodos(): Promise<TodoItem[]>
 ⋮----
-async initProjectAgentsFile(): Promise<void>
+async initProjectAgentsFile(args?: string): Promise<void>
 ⋮----
 // clear context before execution
 ⋮----
 // Get the active agent profile
 ⋮----
-// Run the agent with the modified profile
+// Run the agent with the modified profile, using init-project template as system prompt
 ⋮----
 // Check if the AGENTS.md file was created
-⋮----
-// Ask the user if they want to add this file to .aider.conf.yml
-⋮----
-private async addProjectAgentsToAiderConfig(): Promise<void>
-⋮----
-// Read existing config if it exists
-⋮----
-// Ensure read section exists and is an array
-⋮----
-// Add PROJECT.md to read section if not already present
-⋮----
-// Write the updated config
 ⋮----
 private async runExtensionCommand(extensionCommand: RegisteredCommand, args: string[], mode: Mode): Promise<void>
 ⋮----
@@ -10655,7 +10657,7 @@ async deleteTodo(baseDir: string, taskId: string, name: string): Promise<TodoIte
 ⋮----
 async clearAllTodos(baseDir: string, taskId: string): Promise<TodoItem[]>
 ⋮----
-async initProjectRulesFile(baseDir: string, taskId: string): Promise<void>
+async initProjectRulesFile(baseDir: string, taskId: string, args?: string): Promise<void>
 ⋮----
 async enableServer(username?: string, password?: string): Promise<SettingsData>
 ⋮----
@@ -10700,6 +10702,8 @@ async getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fet
 async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string)
 ⋮----
 async uninstallExtension(extensionId: string, projectDir?: string)
+⋮----
+async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string)
 ⋮----
 getUIComponents(placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[]
 ⋮----
@@ -11745,7 +11749,7 @@ dropFile(baseDir: string, taskId: string, path: string): void
 runCommand(baseDir: string, taskId: string, command: string): void
 async pasteImage(baseDir: string, taskId: string, imageBuffer?: ArrayBuffer): Promise<void>
 scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void>
-initProjectRulesFile(baseDir: string, taskId: string): Promise<void>
+initProjectRulesFile(baseDir: string, taskId: string, args?: string): Promise<void>
 getTodos(baseDir: string, taskId: string): Promise<TodoItem[]>
 addTodo(baseDir: string, taskId: string, name: string): Promise<TodoItem[]>
 updateTodo(baseDir: string, taskId: string, name: string, updates: Partial<TodoItem>): Promise<TodoItem[]>
@@ -11952,6 +11956,8 @@ getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly
 installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean>
 ⋮----
 uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean>
+⋮----
+updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean>
 ⋮----
 getExtensionUIComponents(placement?: string, projectDir?: string, taskId?: string): Promise<ExtensionUIComponent[]>
 ⋮----
@@ -19290,7 +19296,7 @@ File: src/renderer/src/components/settings/ExtensionCard.tsx
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
-import { FaChevronDown, FaDownload } from 'react-icons/fa';
+import { FaChevronDown, FaDownload, FaSync } from 'react-icons/fa';
 import { clsx } from 'clsx';
 ⋮----
 import type { AvailableExtension, InstalledExtension } from '@common/types';
@@ -19308,10 +19314,13 @@ type Props = {
   isDisabled?: boolean;
   isUninstalling?: boolean;
   isInstalling?: boolean;
+  isUpdating?: boolean;
+  hasUpdate?: boolean;
   installedFilePath?: string;
   onToggle?: (extensionName: string, isDisabled: boolean) => void;
   onUninstall?: (exensionFilePath: string) => void;
   onInstall?: (extension: AvailableExtension) => void;
+  onUpdate?: () => void;
 };
 ⋮----
 const handleToggleExpand = () =>
@@ -19321,6 +19330,8 @@ const handleToggleDisabled = () =>
 const handleUninstall = () =>
 ⋮----
 const handleInstall = () =>
+⋮----
+const handleUpdate = () =>
 ⋮----
 className=
 ⋮----
@@ -19441,6 +19452,8 @@ const handleUninstall = async (extensionFilePath: string) =>
 ⋮----
 const handleInstall = async (extension: AvailableExtension) =>
 ⋮----
+const handleUpdate = async (extension: AvailableExtension) =>
+⋮----
 const handleAddRepository = async () =>
 ⋮----
 // Update settings first
@@ -19475,6 +19488,8 @@ isUninstalling=
 // In project context, only consider extensions for this specific project
 ⋮----
 // If installed, render with available extension data but installed controls
+⋮----
+onUpdate=
 ⋮----
 // If not installed, render with available extension (AvailableExtension)
 ⋮----
@@ -22126,7 +22141,7 @@ File: src/renderer/src/pages/Home.tsx
 ================
 import { ProjectData } from '@common/types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useState, useTransition } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
 import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
