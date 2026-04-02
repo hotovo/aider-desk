@@ -1599,28 +1599,28 @@ export class WorktreeManager {
       logger.info(`Restoring file: ${filePath}`, { worktreePath });
       const escapedPath = filePath.replace(/"/g, '\\"');
 
-      // Check if file is tracked in git
-      let isTracked = false;
+      // Check if file exists in HEAD (committed)
+      let existsInHead = false;
       try {
-        await execWithShellPath(`git ls-files --error-unmatch -- "${escapedPath}"`, { cwd: worktreePath });
-        isTracked = true;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const isUntrackedFileError = errorMessage.includes('did not match');
-
-        if (isUntrackedFileError) {
-          isTracked = false;
-        } else {
-          throw error;
-        }
+        await execWithShellPath(`git cat-file -e HEAD:"${escapedPath}"`, { cwd: worktreePath });
+        existsInHead = true;
+      } catch {
+        existsInHead = false;
       }
 
-      if (isTracked) {
-        // Tracked file - restore from HEAD
-        await execWithShellPath(`git restore -- "${escapedPath}"`, {
+      if (existsInHead) {
+        // File exists in HEAD - restore both staged area and working tree from HEAD
+        await execWithShellPath(`git restore --staged --worktree --source=HEAD -- "${escapedPath}"`, {
           cwd: worktreePath,
         });
       } else {
+        // New file not in HEAD - remove from index and delete working tree copy
+        try {
+          await execWithShellPath(`git rm --cached -f -- "${escapedPath}"`, { cwd: worktreePath });
+        } catch {
+          // File might not be in the index
+        }
+
         const absolutePath = join(worktreePath, filePath);
         try {
           const stats = await lstat(absolutePath);
