@@ -186,6 +186,8 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
     setCommitError(null);
     try {
       await api.commitChanges(baseDir, taskId, commitMessage, amend);
+      setCommitMessage('');
+      setAmend(false);
       onClose();
     } catch (error) {
       // eslint-disable-next-line no-console
