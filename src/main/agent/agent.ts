@@ -1389,23 +1389,49 @@ export class Agent {
   }
 
   private filterResultMessages(resultMessages: ContextMessage[]) {
-    return resultMessages.filter((message) => {
-      if (message.role === 'tool' && message.id.startsWith(`${HELPERS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}`)) {
-        return false;
-      }
-      if (message.role === 'assistant') {
-        if (
-          Array.isArray(message.content) &&
-          message.content.some(
-            (content) => content.type === 'tool-call' && content.toolName.startsWith(`${HELPERS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}`),
-          )
-        ) {
-          return false;
+    const helpersPrefix = `${HELPERS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}`;
+
+    return resultMessages.reduce<ContextMessage[]>((acc, message) => {
+      if (message.role === 'tool') {
+        const nonHelpersContent = message.content.filter((part) => !part.toolName.startsWith(helpersPrefix));
+        if (nonHelpersContent.length === 0) {
+          // All content parts are helpers — drop the message entirely
+          return acc;
         }
-        return true;
+        if (nonHelpersContent.length === message.content.length) {
+          // No helpers content — keep as-is
+          acc.push(message);
+        } else {
+          // Some helpers content — keep with non-helpers parts only
+          acc.push({ ...message, content: nonHelpersContent });
+        }
+        return acc;
       }
-      return true;
-    });
+
+      if (message.role === 'assistant') {
+        if (!Array.isArray(message.content)) {
+          acc.push(message);
+          return acc;
+        }
+        const hasHelpersToolCall = message.content.some((part) => part.type === 'tool-call' && part.toolName.startsWith(helpersPrefix));
+        if (!hasHelpersToolCall) {
+          acc.push(message);
+          return acc;
+        }
+        const nonHelpersContent = message.content.filter((part) => !(part.type === 'tool-call' && part.toolName.startsWith(helpersPrefix)));
+        if (nonHelpersContent.length === 0) {
+          // All parts are helpers tool calls — drop the message entirely
+          return acc;
+        }
+        // Keep with non-helpers parts only
+        acc.push({ ...message, content: nonHelpersContent });
+        return acc;
+      }
+
+      // User and other roles — pass through unchanged
+      acc.push(message);
+      return acc;
+    }, []);
   }
 
   private async getContextFilesAsToolCallMessages(task: Task, profile: AgentProfile, contextFiles: ContextFile[]): Promise<ModelMessage[]> {
