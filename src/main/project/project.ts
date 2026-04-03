@@ -112,7 +112,7 @@ export class Project {
     } else {
       const providerModels = await this.modelManager.getProviderModels();
       initialTaskData = {
-        mainModel: determineMainModel(this.store.getSettings(), this.store.getProviders(), providerModels.models || [], this.baseDir),
+        mainModel: determineMainModel(this.store.getSettings(), this.modelManager.getProviders(), providerModels.models || [], this.baseDir),
         weakModel: determineWeakModel(this.baseDir),
         currentMode: 'agent',
         workingMode: defaultWorkingMode,

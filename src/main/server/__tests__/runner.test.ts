@@ -57,6 +57,7 @@ describe('addProjectsFromEnv', () => {
     // Mock managers
     mockModelManager = {
       getProviderModels: vi.fn(() => Promise.resolve({ models: [] })),
+      getProviders: vi.fn(() => []),
     };
 
     mockAgentProfileManager = {
@@ -113,7 +114,7 @@ describe('addProjectsFromEnv', () => {
     expect(updatedProjects).toHaveLength(1);
     expect(updatedProjects[0].baseDir).toBe('/home/user/project1');
     expect(updatedProjects[0].active).toBe(true); // First project should be active
-    expect(getDefaultProjectSettings).toHaveBeenCalledWith(mockStore, [], '/home/user/project1', 'default-profile-id');
+    expect(getDefaultProjectSettings).toHaveBeenCalledWith(mockStore, [], '/home/user/project1', 'default-profile-id', []);
 
     expect(logger.info).toHaveBeenCalledWith('Creating project from AIDER_DESK_PROJECTS', {
       projectPath: '/home/user/project1',

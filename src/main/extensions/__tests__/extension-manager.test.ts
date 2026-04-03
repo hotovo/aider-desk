@@ -62,7 +62,11 @@ describe('ExtensionManager', () => {
   let mockLoader: unknown;
   let mockRegistry: unknown;
   let store: { getSettings: ReturnType<typeof vi.fn>; saveSettings: ReturnType<typeof vi.fn> };
-  let modelManager: { getProviderModels: ReturnType<typeof vi.fn> };
+  let modelManager: {
+    getProviderModels: ReturnType<typeof vi.fn>;
+    registerExtensionProviders: ReturnType<typeof vi.fn>;
+    unregisterExtensionProviders: ReturnType<typeof vi.fn>;
+  };
   let eventManager: { sendSettingsUpdated: ReturnType<typeof vi.fn> };
   let telemetryManager: Partial<TelemetryManager>;
 
@@ -91,6 +95,8 @@ describe('ExtensionManager', () => {
     };
     modelManager = {
       getProviderModels: vi.fn().mockResolvedValue({ models: [] }),
+      registerExtensionProviders: vi.fn(),
+      unregisterExtensionProviders: vi.fn(),
     };
     eventManager = {
       sendSettingsUpdated: vi.fn(),
@@ -1335,6 +1341,373 @@ describe('ExtensionManager', () => {
       const result = manager.getUIComponents();
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('getProviders', () => {
+    it('should collect providers from extensions implementing getProviders', () => {
+      const mockStrategy = {
+        createLlm: vi.fn(),
+        loadModels: vi.fn().mockResolvedValue({ models: [], success: true }),
+      };
+      const mockProviderDef = {
+        id: 'my-provider',
+        name: 'My Provider',
+        provider: { name: 'my-provider', apiKey: 'test-key' },
+        strategy: mockStrategy,
+      };
+
+      const ext1 = {
+        id: 'ext1',
+        instance: {
+          getProviders: vi.fn().mockReturnValue([mockProviderDef]),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getProviders();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        extensionId: 'ext1',
+        extensionName: 'ext1',
+        provider: mockProviderDef,
+      });
+    });
+
+    it('should validate provider definitions — reject missing name', () => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      const invalidProvider = {
+        id: '',
+        name: 'My Provider',
+        provider: { name: 'my-provider' },
+        strategy: { createLlm: vi.fn(), loadModels: vi.fn() },
+      };
+
+      const ext1 = {
+        id: 'ext1',
+        instance: {
+          getProviders: vi.fn().mockReturnValue([invalidProvider]),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getProviders();
+
+      expect(result).toHaveLength(0);
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid provider'));
+      loggerSpy.mockRestore();
+    });
+
+    it('should validate provider definitions — reject missing name', () => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      const invalidProvider = {
+        id: 'my-provider',
+        name: '',
+        provider: { name: 'my-provider' },
+        strategy: { createLlm: vi.fn(), loadModels: vi.fn() },
+      };
+
+      const ext1 = {
+        id: 'ext1',
+        instance: {
+          getProviders: vi.fn().mockReturnValue([invalidProvider]),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getProviders();
+
+      expect(result).toHaveLength(0);
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid provider'));
+      loggerSpy.mockRestore();
+    });
+
+    it('should validate provider definitions — reject missing strategy', () => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      const invalidProvider = {
+        id: 'my-provider',
+        name: 'My Provider',
+        provider: { name: 'my-provider' },
+        strategy: undefined,
+      };
+
+      const ext1 = {
+        id: 'ext1',
+        instance: {
+          getProviders: vi.fn().mockReturnValue([invalidProvider as any]),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getProviders();
+
+      expect(result).toHaveLength(0);
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid provider'));
+      loggerSpy.mockRestore();
+    });
+
+    it('should filter by enabled extensions', () => {
+      store.getSettings = vi.fn().mockReturnValue({
+        extensions: { disabled: ['ext2'] },
+      });
+
+      const mockStrategy = {
+        createLlm: vi.fn(),
+        loadModels: vi.fn().mockResolvedValue({ models: [], success: true }),
+      };
+      const mockProviderDef = {
+        id: 'my-provider',
+        name: 'My Provider',
+        provider: { name: 'my-provider' },
+        strategy: mockStrategy,
+      };
+
+      const ext1 = {
+        id: 'ext1',
+        instance: { getProviders: vi.fn().mockReturnValue([mockProviderDef]) },
+        metadata: { name: 'ext1', version: '1.0.0' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      const ext2 = {
+        id: 'ext2',
+        instance: { getProviders: vi.fn().mockReturnValue([mockProviderDef]) },
+        metadata: { name: 'ext2', version: '1.0.0' },
+        filePath: '/path/ext2.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1, ext2]);
+
+      const result = manager.getProviders();
+
+      // ext2 is disabled, so only ext1's providers should be returned
+      expect(result).toHaveLength(1);
+      expect(result[0].extensionName).toBe('ext1');
+    });
+
+    it('should handle errors from getProviders gracefully', () => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      const ext1 = {
+        id: 'ext1',
+        instance: {
+          getProviders: vi.fn().mockImplementation(() => {
+            throw new Error('Provider loading failed');
+          }),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      const mockStrategy = {
+        createLlm: vi.fn(),
+        loadModels: vi.fn().mockResolvedValue({ models: [], success: true }),
+      };
+      const mockProviderDef = {
+        id: 'good-provider',
+        name: 'Good Provider',
+        provider: { name: 'good-provider' },
+        strategy: mockStrategy,
+      };
+
+      const ext2 = {
+        id: 'ext2',
+        instance: { getProviders: vi.fn().mockReturnValue([mockProviderDef]) },
+        metadata: { name: 'ext2', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext2.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1, ext2]);
+
+      const result = manager.getProviders();
+
+      // ext1 throws but ext2 should still work
+      expect(result).toHaveLength(1);
+      expect(result[0].extensionName).toBe('ext2');
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to get providers'), expect.any(Error));
+      loggerSpy.mockRestore();
+    });
+
+    it('should handle getProviders returning non-array', () => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      const ext1 = {
+        id: 'ext1',
+        instance: {
+          getProviders: vi.fn().mockReturnValue('not-an-array' as any),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getProviders();
+
+      expect(result).toHaveLength(0);
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('did not return an array'));
+      loggerSpy.mockRestore();
+    });
+
+    it('should skip extensions without getProviders method', () => {
+      const ext1 = {
+        id: 'ext1',
+        instance: {},
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getProviders();
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should return empty array if no extensions loaded', () => {
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([]);
+
+      const result = manager.getProviders();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should filter out invalid providers and keep valid ones', () => {
+      const loggerSpy = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+
+      const validProvider = {
+        id: 'valid-provider',
+        name: 'Valid Provider',
+        provider: { name: 'valid-provider' },
+        strategy: { createLlm: vi.fn(), loadModels: vi.fn() },
+      };
+
+      const invalidProviderNoName = {
+        id: '',
+        name: 'No Name Provider',
+        provider: { name: 'no-name' },
+        strategy: { createLlm: vi.fn(), loadModels: vi.fn() },
+      };
+
+      const ext1 = {
+        id: 'ext1',
+        instance: {
+          getProviders: vi.fn().mockReturnValue([validProvider, invalidProviderNoName]),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const result = manager.getProviders();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].provider.id).toBe('valid-provider');
+      loggerSpy.mockRestore();
+    });
+
+    it('should pass ExtensionContext to getProviders', () => {
+      const mockStrategy = {
+        createLlm: vi.fn(),
+        loadModels: vi.fn().mockResolvedValue({ models: [], success: true }),
+      };
+      const mockProviderDef = {
+        id: 'my-provider',
+        name: 'My Provider',
+        provider: { name: 'my-provider' },
+        strategy: mockStrategy,
+      };
+
+      const ext1 = {
+        id: 'ext1',
+        instance: {
+          getProviders: vi.fn().mockReturnValue([mockProviderDef]),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      manager.getProviders();
+
+      expect(ext1.instance.getProviders).toHaveBeenCalledWith(expect.any(Object));
+    });
+
+    it('should collect providers from multiple extensions', () => {
+      const mockStrategy = {
+        createLlm: vi.fn(),
+        loadModels: vi.fn().mockResolvedValue({ models: [], success: true }),
+      };
+
+      const provider1 = {
+        id: 'provider-a',
+        name: 'Provider A',
+        provider: { name: 'provider-a' },
+        strategy: mockStrategy,
+      };
+
+      const provider2 = {
+        id: 'provider-b',
+        name: 'Provider B',
+        provider: { name: 'provider-b' },
+        strategy: mockStrategy,
+      };
+
+      const ext1 = {
+        id: 'ext1',
+        instance: { getProviders: vi.fn().mockReturnValue([provider1]) },
+        metadata: { name: 'ext1', version: '1.0.0' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      const ext2 = {
+        id: 'ext2',
+        instance: { getProviders: vi.fn().mockReturnValue([provider2]) },
+        metadata: { name: 'ext2', version: '1.0.0' },
+        filePath: '/path/ext2.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1, ext2]);
+
+      const result = manager.getProviders();
+
+      expect(result).toHaveLength(2);
+      expect(result[0].extensionName).toBe('ext1');
+      expect(result[0].provider.id).toBe('provider-a');
+      expect(result[1].extensionName).toBe('ext2');
+      expect(result[1].provider.id).toBe('provider-b');
     });
   });
 });

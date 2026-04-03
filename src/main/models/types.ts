@@ -1,5 +1,5 @@
 import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
-import { LlmProvider, LlmProviderName } from '@common/agent';
+import { LlmProvider } from '@common/agent';
 
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
@@ -112,4 +112,4 @@ export interface LlmProviderStrategy {
   isRetryable?: (error: unknown) => boolean;
 }
 
-export type LlmProviderRegistry = Record<LlmProviderName, LlmProviderStrategy>;
+export type LlmProviderRegistry = Record<string, LlmProviderStrategy>;

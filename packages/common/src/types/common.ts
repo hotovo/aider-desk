@@ -633,6 +633,7 @@ export interface ProviderProfile {
   provider: LlmProvider;
   headers?: Record<string, string>;
   disabled?: boolean;
+  extensionId?: string;
 }
 
 export interface ProvidersUpdatedData {

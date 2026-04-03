@@ -5,7 +5,7 @@ import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
 import { AvailableExtension, SettingsData, ToolApprovalState } from '@common/types';
-import { AIDER_DESK_EXTENSIONS_REPO_URL, Tool, UIComponentDefinition } from '@common/extensions';
+import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
@@ -96,6 +96,12 @@ export interface RegisteredUIComponent {
   extensionId: string;
   extensionName: string;
   component: UIComponentDefinition;
+}
+
+export interface RegisteredProvider {
+  extensionId: string;
+  extensionName: string;
+  provider: ProviderDefinition;
 }
 
 /**
@@ -375,6 +381,11 @@ export class ExtensionManager {
       });
     }
 
+    const providers = this.getProviders(project);
+    if (providers.length > 0) {
+      this.modelManager.registerExtensionProviders(providers);
+    }
+
     this.debouncedNotifyListeners();
   }
 
@@ -449,6 +460,7 @@ export class ExtensionManager {
     }
 
     this.registry.unregister(filePath);
+    this.modelManager.unregisterExtensionProviders(extension.id);
     logger.debug(`[Extensions] Unloaded extension: ${filePath}`);
   }
 
@@ -989,6 +1001,47 @@ export class ExtensionManager {
       isValid: errors.length === 0,
       errors,
     };
+  }
+
+  getProviders(project?: Project): RegisteredProvider[] {
+    const collectedProviders: RegisteredProvider[] = [];
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      const { instance, metadata } = loaded;
+
+      if (!instance.getProviders) {
+        continue;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const providers = instance.getProviders(context);
+
+        if (!Array.isArray(providers)) {
+          logger.error(`[Extensions] Extension '${metadata.name}' getProviders() did not return an array`);
+          continue;
+        }
+
+        for (const provider of providers) {
+          if (!provider.id || !provider.name || !provider.strategy) {
+            logger.error(`[Extensions] Invalid provider from extension '${metadata.name}': missing id, name or strategy`);
+            continue;
+          }
+
+          collectedProviders.push({
+            extensionId: loaded.id,
+            extensionName: metadata.name,
+            provider,
+          });
+        }
+      } catch (error) {
+        logger.error(`[Extensions] Failed to get providers from extension '${metadata.name}':`, error);
+      }
+    }
+
+    return collectedProviders;
   }
 
   getUIComponents(project?: Project, task?: Task): RegisteredUIComponent[] {

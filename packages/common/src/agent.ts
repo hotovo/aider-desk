@@ -59,7 +59,8 @@ export type LlmProviderName =
   | 'requesty'
   | 'synthetic'
   | 'vertex-ai'
-  | 'zai-plan';
+  | 'zai-plan'
+  | string;
 
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -320,6 +321,10 @@ export interface SyntheticProvider extends LlmProviderBase {
 }
 export const isSyntheticProvider = (provider: LlmProviderBase): provider is SyntheticProvider => provider.name === 'synthetic';
 
+export interface ExtensionLlmProvider extends LlmProviderBase {
+  [key: string]: unknown;
+}
+
 export type LlmProvider =
   | OpenAiProvider
   | AnthropicProvider
@@ -346,7 +351,8 @@ export type LlmProvider =
   | RequestyProvider
   | SyntheticProvider
   | ZaiPlanProvider
-  | MinimaxProvider;
+  | MinimaxProvider
+  | ExtensionLlmProvider;
 
 export const DEFAULT_MODEL_TEMPERATURE = 0.0;
 

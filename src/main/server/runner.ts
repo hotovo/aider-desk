@@ -42,7 +42,7 @@ export const addProjectsFromEnv = async (store: Store, modelManager: ModelManage
 
     const newProject: ProjectData = {
       baseDir: projectPath.endsWith('/') ? projectPath.slice(0, -1) : projectPath,
-      settings: getDefaultProjectSettings(store, providerModels.models || [], projectPath, defaultAgentProfileId),
+      settings: getDefaultProjectSettings(store, providerModels.models || [], projectPath, defaultAgentProfileId, modelManager.getProviders()),
       active: false,
     };
 

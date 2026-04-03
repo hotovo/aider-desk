@@ -737,7 +737,7 @@ export class Agent {
     const projectProfiles = this.agentProfileManager.getProjectProfiles(task.project);
     let resultMessages: ContextMessage[] = userRequestMessage ? [userRequestMessage] : [];
 
-    const providers = this.store.getProviders();
+    const providers = this.modelManager.getProviders();
     let provider = providers.find((p) => p.id === profile.provider);
     let modelName = profile.model;
 
@@ -1629,7 +1629,7 @@ export class Agent {
     abortSignal?: AbortSignal,
   ): Promise<string | undefined> {
     const [providerId, modelName] = extractProviderModel(modelId);
-    const providers = this.store.getProviders();
+    const providers = this.modelManager.getProviders();
     const provider = providers.find((p) => p.id === providerId);
     if (!provider) {
       throw new Error(`Provider ${providerId} not found`);
@@ -1689,7 +1689,7 @@ export class Agent {
 
   async estimateTokens(task: Task, profile: AgentProfile): Promise<number> {
     try {
-      const providers = this.store.getProviders();
+      const providers = this.modelManager.getProviders();
       const provider = providers.find((p) => p.id === profile.provider);
       if (!provider) {
         logger.warn(`Estimation failed: Provider ${profile.provider} not found`);

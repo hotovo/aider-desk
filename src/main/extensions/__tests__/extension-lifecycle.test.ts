@@ -54,6 +54,8 @@ const createMockDeps = () => ({
   store: {} as any,
   modelManager: {
     getAllModels: vi.fn().mockResolvedValue([]),
+    registerExtensionProviders: vi.fn(),
+    unregisterExtensionProviders: vi.fn(),
   } as any,
   telemetryManager: {} as any,
   registry: new ExtensionRegistry(),

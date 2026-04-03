@@ -3,10 +3,13 @@ import { ProviderProfile } from '@common/types';
 import { LlmProvider, LlmProviderName } from '@common/agent';
 
 export const migrateProvidersV13toV14 = (settings: { llmProviders: Partial<Record<LlmProviderName, LlmProvider>> }): any => {
-  const providers: ProviderProfile[] = Object.entries(settings.llmProviders).map(([name, provider]) => ({
-    id: name,
-    provider,
-  }));
+  const providers: ProviderProfile[] = Object.entries(settings.llmProviders).map(
+    ([name, provider]) =>
+      ({
+        id: name,
+        provider,
+      }) as unknown as ProviderProfile,
+  );
 
   return providers;
 };

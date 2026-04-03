@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
+import { ProviderDefinition } from '@common/extensions';
 import {
   AgentProfile,
   Model,
@@ -42,9 +43,11 @@ import { syntheticProviderStrategy } from './providers/synthetic';
 import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 
+import type { RegisteredProvider } from '@/extensions/extension-manager';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import type { JSONValue, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 
+import { getDefaultUsageReport } from '@/models/providers/default';
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
 import { Store } from '@/store';
@@ -115,6 +118,8 @@ export class ModelManager {
     'zai-plan': zaiPlanProviderStrategy,
   };
 
+  private extensionProviders: Map<string, { provider: ProviderDefinition; profile: ProviderProfile }> = new Map();
+
   constructor(
     private store: Store,
     private eventManager: EventManager,
@@ -130,7 +135,7 @@ export class ModelManager {
 
       await this.loadModelsInfo();
       await this.loadModelOverrides();
-      await this.loadProviderModels(this.store.getProviders().filter((p) => !p.disabled));
+      await this.loadProviderModels(this.getProviders().filter((p) => !p.disabled));
 
       logger.info('ModelInfoManager initialized successfully.', {
         modelCount: Object.keys(this.modelsInfo).length,
@@ -429,8 +434,9 @@ export class ModelManager {
         this.providerModels = {};
         this.providerErrors = {};
       }
-      // Load models from all enabled providers
-      await this.loadProviderModels(this.store.getProviders().filter((p) => !p.disabled));
+      // Load models from all enabled providers (including extension providers)
+      const allProviders = this.getProviders();
+      await this.loadProviderModels(allProviders.filter((p) => !p.disabled));
     }
 
     return {
@@ -500,7 +506,7 @@ export class ModelManager {
     }
 
     await this.saveModelOverrides();
-    await this.loadProviderModels(this.store.getProviders().filter((provider) => provider.id === providerId));
+    await this.loadProviderModels(this.getProviders().filter((provider) => provider.id === providerId));
   }
 
   async deleteModel(providerId: string, modelId: string): Promise<void> {
@@ -516,7 +522,7 @@ export class ModelManager {
     if (this.modelOverrides.length < initialLength) {
       await this.saveModelOverrides();
       logger.info(`Deleted model override: ${providerId}/${modelId}`);
-      await this.loadProviderModels(this.store.getProviders().filter((provider) => provider.id === providerId));
+      await this.loadProviderModels(this.getProviders().filter((provider) => provider.id === providerId));
     } else {
       logger.warn(`Model override not found for deletion: ${providerId}/${modelId}`);
     }
@@ -554,14 +560,14 @@ export class ModelManager {
     await this.saveModelOverrides();
 
     // Reload models for all affected providers at once
-    const affectedProviders = this.store.getProviders().filter((provider) => affectedProviderIds.has(provider.id));
+    const affectedProviders = this.getProviders().filter((provider) => affectedProviderIds.has(provider.id));
     await this.loadProviderModels(affectedProviders);
 
     logger.info(`Bulk updated ${modelUpdates.length} model overrides for ${affectedProviderIds.size} providers`);
   }
 
   getAiderModelMapping(modelName: string, projectDir: string): AiderModelMapping {
-    const providers = this.store.getProviders();
+    const providers = this.getProviders();
     const [providerId, modelId] = extractProviderModel(modelName);
     if (!providerId || !modelId) {
       logger.error('Invalid provider/model format:', modelName);
@@ -831,5 +837,89 @@ export class ModelManager {
     }
 
     return strategy.isRetryable(error);
+  }
+
+  registerExtensionProviders(providers: RegisteredProvider[]): void {
+    const newProfiles: ProviderProfile[] = [];
+
+    for (const registered of providers) {
+      const { provider } = registered;
+
+      const wrappedStrategy: LlmProviderStrategy = {
+        createLlm: (profile, model, settings, projectDir) =>
+          provider.strategy.createLlm(profile, model, settings, projectDir) as LanguageModelV2 | Promise<LanguageModelV2>,
+        loadModels: (profile, settings) => provider.strategy.loadModels(profile, settings),
+        getUsageReport: provider.strategy.getUsageReport
+          ? (task, providerProfile, model, usage, providerMetadata) => provider.strategy.getUsageReport!(task, providerProfile, model, usage, providerMetadata)
+          : (task, providerProfile, model, usage) => getDefaultUsageReport(task as Task, providerProfile, model, usage),
+        hasEnvVars: () => false,
+        getAiderMapping: provider.strategy.getAiderMapping
+          ? provider.strategy.getAiderMapping
+          : (_provider, modelId) => ({ modelName: modelId, environmentVariables: {} }),
+      };
+
+      this.providerRegistry[provider.provider.name] = wrappedStrategy;
+
+      const profile: ProviderProfile = {
+        id: provider.id,
+        name: provider.name,
+        provider: provider.provider as LlmProvider,
+        headers: provider.headers,
+        extensionId: registered.extensionId,
+      };
+
+      logger.info(`Registering extension provider: ${profile.name} (ID: ${profile.id}) from extension ${registered.extensionId}`);
+
+      this.extensionProviders.set(`${registered.extensionId}:${provider.id}`, { provider, profile });
+      newProfiles.push(profile);
+    }
+
+    if (newProfiles.length > 0) {
+      logger.info(`[Models] Registered ${newProfiles.length} extension provider(s)`);
+      void this.loadProviderModels(newProfiles);
+      this.eventManager.sendProvidersUpdated(this.getProviders());
+    }
+  }
+
+  unregisterExtensionProviders(extensionId: string): void {
+    const toRemove: string[] = [];
+
+    for (const [key, entry] of this.extensionProviders) {
+      if (entry.profile.extensionId === extensionId) {
+        toRemove.push(key);
+      }
+    }
+
+    if (toRemove.length === 0) {
+      return;
+    }
+
+    for (const key of toRemove) {
+      const entry = this.extensionProviders.get(key)!;
+
+      delete this.providerRegistry[entry.provider.provider.name];
+      delete this.providerModels[entry.profile.id];
+      delete this.providerErrors[entry.profile.id];
+
+      this.extensionProviders.delete(key);
+    }
+
+    logger.info(`[Models] Unregistered ${toRemove.length} extension provider(s) for extension ${extensionId}`);
+
+    this.eventManager.sendProviderModelsUpdated({
+      models: Object.values(this.providerModels).flat(),
+      loading: false,
+      errors: this.providerErrors,
+    });
+
+    this.eventManager.sendProvidersUpdated(this.getProviders());
+  }
+
+  getProviders(): ProviderProfile[] {
+    return [...this.store.getProviders(), ...this.getExtensionProviderProfiles()];
+  }
+
+  getExtensionProviderProfiles(): ProviderProfile[] {
+    return [...this.extensionProviders.values()].map((e) => e.profile);
   }
 }

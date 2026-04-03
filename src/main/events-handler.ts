@@ -846,7 +846,7 @@ export class EventsHandler {
   }
 
   getProviders(): ProviderProfile[] {
-    return this.store.getProviders();
+    return this.modelManager.getProviders();
   }
 
   async updateProviders(providers: ProviderProfile[]): Promise<void> {
@@ -857,7 +857,7 @@ export class EventsHandler {
     await this.modelManager.providersChanged(oldProviders, providers);
 
     this.projectManager.modelsUpdated();
-    this.eventManager.sendProvidersUpdated(providers);
+    this.eventManager.sendProvidersUpdated(this.modelManager.getProviders());
   }
 
   async upsertModel(providerId: string, modelId: string, model: Model): Promise<void> {

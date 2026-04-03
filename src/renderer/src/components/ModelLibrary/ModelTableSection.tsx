@@ -253,22 +253,27 @@ export const ModelTableSection = ({
     },
     {
       header: '',
-      cell: (_, row) => (
-        <div className="flex items-center justify-end space-x-2">
-          <IconButton icon={<FiEdit2 className="w-4 h-4" />} onClick={() => onEditModel(row)} />
-          <IconButton
-            icon={<FiEye className="w-4 h-4" />}
-            onClick={() => onToggleHidden(row)}
-            tooltip={row.isHidden ? t('modelLibrary.showModel') : t('modelLibrary.hideModel')}
-          />
-          {row.providerOverrides && Object.keys(row.providerOverrides).length > 0 && (
-            <IconButton icon={<FiSliders className="w-4 h-4 text-text-secondary" />} tooltip={t('modelLibrary.overrides.overridesProviderParameters')} />
-          )}
-          {row.isCustom && (
-            <IconButton icon={<FiTrash2 className="w-4 h-4" />} onClick={() => onDeleteModel(row)} className="text-error hover:text-error-light" />
-          )}
-        </div>
-      ),
+      cell: (_, row) => {
+        const provider = providers.find((p) => p.id === row.providerId);
+        const isExtension = !!provider?.extensionId;
+
+        return (
+          <div className="flex items-center justify-end space-x-2">
+            {!isExtension && <IconButton icon={<FiEdit2 className="w-4 h-4" />} onClick={() => onEditModel(row)} />}
+            <IconButton
+              icon={<FiEye className="w-4 h-4" />}
+              onClick={() => onToggleHidden(row)}
+              tooltip={row.isHidden ? t('modelLibrary.showModel') : t('modelLibrary.hideModel')}
+            />
+            {row.providerOverrides && Object.keys(row.providerOverrides).length > 0 && (
+              <IconButton icon={<FiSliders className="w-4 h-4 text-text-secondary" />} tooltip={t('modelLibrary.overrides.overridesProviderParameters')} />
+            )}
+            {!isExtension && row.isCustom && (
+              <IconButton icon={<FiTrash2 className="w-4 h-4" />} onClick={() => onDeleteModel(row)} className="text-error hover:text-error-light" />
+            )}
+          </div>
+        );
+      },
       align: 'left',
       maxWidth: 110,
     },

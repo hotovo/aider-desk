@@ -1,6 +1,6 @@
 import { useState, ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiEdit2, FiTrash2, FiMic } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiMic, FiCpu } from 'react-icons/fi';
 import { clsx } from 'clsx';
 import { ProviderProfile } from '@common/types';
 import { LlmProviderName } from '@common/agent';
@@ -82,8 +82,9 @@ export const ProviderProfileCard = ({ provider, error, isSelected, onToggleSelec
   const { isMobile } = useResponsive();
   const [showActions, setShowActions] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const IconComponent = PROVIDER_ICON_MAP[provider.provider.name];
+  const IconComponent = PROVIDER_ICON_MAP[provider.provider.name as keyof typeof PROVIDER_ICON_MAP];
   const name = provider.name || t(`providers.${provider.provider.name}`);
+  const isExtension = !!provider.extensionId;
 
   const handleCardClick = () => {
     if (isMobile) {
@@ -125,7 +126,7 @@ export const ProviderProfileCard = ({ provider, error, isSelected, onToggleSelec
       >
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           <div className="flex-shrink-0 relative">
-            {IconComponent && <IconComponent width={24} height={24} />}
+            {IconComponent ? <IconComponent width={24} height={24} /> : <FiCpu width={24} height={24} className="text-text-secondary" />}
             {error && (
               <div className="absolute -bottom-3 -right-3 bg-bg-secondary rounded-full p-0.5">
                 <Tooltip content={error}>
@@ -148,16 +149,18 @@ export const ProviderProfileCard = ({ provider, error, isSelected, onToggleSelec
         </div>
 
         {/* Action buttons - shown on hover (desktop) or when showActions is true (mobile) */}
-        <div
-          className={clsx(
-            'flex flex-col items-center h-full space-y-3 transition-all duration-200',
-            showActions ? 'opacity-100 translate-x-6' : 'opacity-0 translate-x-4 pointer-events-none',
-            'md:group-hover:opacity-100 md:group-hover:translate-x-4 md:group-hover:pointer-events-auto',
-          )}
-        >
-          <IconButton icon={<FiEdit2 />} onClick={handleEdit} />
-          <IconButton icon={<FiTrash2 />} onClick={handleDelete} className="text-error hover:text-error-light" />
-        </div>
+        {!isExtension && (
+          <div
+            className={clsx(
+              'flex flex-col items-center h-full space-y-3 transition-all duration-200',
+              showActions ? 'opacity-100 translate-x-6' : 'opacity-0 translate-x-4 pointer-events-none',
+              'md:group-hover:opacity-100 md:group-hover:translate-x-4 md:group-hover:pointer-events-auto',
+            )}
+          >
+            <IconButton icon={<FiEdit2 />} onClick={handleEdit} />
+            <IconButton icon={<FiTrash2 />} onClick={handleDelete} className="text-error hover:text-error-light" />
+          </div>
+        )}
       </div>
       {showDeleteConfirm && (
         <ConfirmDialog

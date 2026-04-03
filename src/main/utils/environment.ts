@@ -287,6 +287,7 @@ export const getDefaultProjectSettings = (
   providerModels: Model[],
   baseDir: string,
   defaultAgentProfileId = DEFAULT_AGENT_PROFILE.id,
+  providers?: ProviderProfile[],
 ): ProjectSettings => {
   const openProjects = store.getOpenProjects();
   const activeProject = openProjects.find((p) => p.active);
@@ -298,7 +299,7 @@ export const getDefaultProjectSettings = (
   }
 
   return {
-    mainModel: determineMainModel(store.getSettings(), store.getProviders(), providerModels, baseDir),
+    mainModel: determineMainModel(store.getSettings(), providers ?? store.getProviders(), providerModels, baseDir),
     weakModel: determineWeakModel(baseDir),
     modelEditFormats: {},
     currentMode: 'agent',
