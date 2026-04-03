@@ -3359,13 +3359,13 @@ File: src/main/extensions/extension-fetcher.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
-import os from 'os';
 ⋮----
 import { AvailableExtension } from '@common/types';
 import { ExtensionMetadata } from '@common/extensions';
 ⋮----
 import logger from '@/logger';
 import { execWithShellPath } from '@/utils/shell';
+import { EXTENSIONS_REPOS_CACHE_DIR } from '@/constants';
 ⋮----
 interface CacheEntry {
   timestamp: number;
@@ -3382,13 +3382,17 @@ private async getAvailableExtensionsInternal(repositories: string[], forceRefres
 ⋮----
 async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]>
 ⋮----
-async fetchExtensionsViaGitClone(repoUrl: string): Promise<AvailableExtension[]>
+private getRepoDirName(repoUrl: string): string
+⋮----
+// fall through
+⋮----
+async ensureRepoCloned(repoUrl: string): Promise<string>
 ⋮----
 private getCloneUrl(webUrl: string): string | null
 ⋮----
 private getExtensionSubPath(repoUrl: string): string | null
 ⋮----
-private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string
+getExtensionsPath(repoUrl: string, clonedRepoPath: string): string
 ⋮----
 private async scanForExtensions(extensionsPath: string, repoUrl: string): Promise<AvailableExtension[]>
 ⋮----
@@ -3476,7 +3480,6 @@ File: src/main/extensions/extension-manager.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
-import os from 'os';
 ⋮----
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
@@ -3536,7 +3539,6 @@ import type { EventManager } from '@/events';
 import type { TelemetryManager } from '@/telemetry';
 import type { ToolCallOptions, ToolSet } from 'ai';
 ⋮----
-import { execWithShellPath } from '@/utils/shell';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { Project } from '@/project';
@@ -3767,8 +3769,6 @@ async executeCommand(commandName: string, args: string[], project: Project, task
    */
 async getAvailableExtensions(repositories: string[], forceRefresh = false, fetchOnly = false): Promise<AvailableExtension[]>
 ⋮----
-// If fetchOnly is true, bypass all caching and fetch directly via git clone
-⋮----
 /**
    * Install an extension from a repository
    * @param extensionId - Extension identifier
@@ -3782,10 +3782,6 @@ async installExtension(extensionId: string, repositoryUrl: string, project?: Pro
    * Install npm dependencies for a folder extension
    */
 private async installDependencies(extensionPath: string): Promise<void>
-⋮----
-private getCloneUrl(webUrl: string): string | null
-⋮----
-private getExtensionsPath(repoUrl: string, clonedRepoPath: string): string
 ⋮----
 /**
    * Uninstall an extension
@@ -3805,8 +3801,6 @@ async uninstallExtension(extensionId: string, projectDir?: string): Promise<bool
 async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean>
 ⋮----
 // Unload existing extension before overwriting files
-⋮----
-// Check for package.json and run npm install if present
 ⋮----
 /**
    * Dispatches an event to all loaded and initialized extensions.
@@ -10223,9 +10217,13 @@ maxBuffer: 10 * 1024 * 1024, // 10 MB
 ⋮----
 async restoreFile(worktreePath: string, filePath: string): Promise<void>
 ⋮----
-// Check if file is tracked in git
+// Check if file exists in HEAD (committed)
 ⋮----
-// Tracked file - restore from HEAD
+// File exists in HEAD - restore both staged area and working tree from HEAD
+⋮----
+// New file not in HEAD - remove from index and delete working tree copy
+⋮----
+// File might not be in the index
 ⋮----
 async getUncommittedDiff(worktreePath: string): Promise<string | null>
 ⋮----
