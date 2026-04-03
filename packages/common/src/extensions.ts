@@ -10,6 +10,7 @@ import {
   CreateTaskParams,
   CustomCommand,
   InvocationMode,
+  JSONValue,
   Mode,
   ModeDefinition,
   Model,
@@ -26,7 +27,8 @@ import {
   ToolApprovalState,
   UpdatedFile,
   UsageReportData,
-} from '@common/types';
+  VoiceSession,
+} from "@common/types";
 
 export { ContextMemoryMode, InvocationMode, ToolApprovalState };
 
@@ -129,6 +131,11 @@ export interface AiderModelMapping {
   environmentVariables: Record<string, string>;
 }
 
+export interface CacheControl {
+  providerOptions: Record<string, Record<string, JSONValue>>;
+  placement?: 'message' | 'message-part';
+}
+
 /**
  * Simplified provider strategy for extensions.
  * Only `createLlm` and `loadModels` are required.
@@ -141,11 +148,16 @@ export interface ExtensionProviderStrategy {
     settings: SettingsData,
     projectDir: string,
   ) => unknown | Promise<unknown>;
-
   loadModels: (profile: ProviderProfile, settings: SettingsData) => Promise<LoadModelsResponse>;
 
   getAiderMapping?: (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string) => AiderModelMapping;
   getUsageReport?: (task: unknown, provider: ProviderProfile, model: Model, usage: unknown, providerMetadata?: unknown) => UsageReportData;
+  getProviderOptions?: (model: Model) => Record<string, Record<string, JSONValue>> | undefined;
+  getCacheControl?: (profile: AgentProfile) => CacheControl | undefined;
+  getProviderTools?: (model: Model) => Record<string, Tool> | Promise<Record<string, Tool>>;
+  getProviderParameters?: (model: Model) => Record<string, unknown>;
+  createVoiceSession?: (profile: ProviderProfile, settings: SettingsData) => Promise<VoiceSession>;
+  isRetryable?: (error: unknown) => boolean;
 }
 
 /**

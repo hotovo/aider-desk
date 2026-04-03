@@ -845,20 +845,25 @@ export class ModelManager {
     for (const registered of providers) {
       const { provider } = registered;
 
-      const wrappedStrategy: LlmProviderStrategy = {
+      this.providerRegistry[provider.provider.name] = {
+        ...provider.strategy,
         createLlm: (profile, model, settings, projectDir) =>
           provider.strategy.createLlm(profile, model, settings, projectDir) as LanguageModelV2 | Promise<LanguageModelV2>,
-        loadModels: (profile, settings) => provider.strategy.loadModels(profile, settings),
-        getUsageReport: provider.strategy.getUsageReport
-          ? (task, providerProfile, model, usage, providerMetadata) => provider.strategy.getUsageReport!(task, providerProfile, model, usage, providerMetadata)
-          : (task, providerProfile, model, usage) => getDefaultUsageReport(task as Task, providerProfile, model, usage),
+        getUsageReport: provider.strategy.getUsageReport || getDefaultUsageReport,
+        getProviderOptions: provider.strategy.getProviderOptions ? (_provider, model) => provider.strategy.getProviderOptions!(model) : undefined,
+        getProviderTools: provider.strategy.getProviderTools
+          ? (_provider, model) => provider.strategy.getProviderTools!(model) as ToolSet | Promise<ToolSet>
+          : undefined,
+        getProviderParameters: provider.strategy.getProviderParameters ? (_provider, model) => provider.strategy.getProviderParameters!(model) : undefined,
+        getCacheControl: provider.strategy.getCacheControl ? (profile) => provider.strategy.getCacheControl!(profile) : undefined,
         hasEnvVars: () => false,
         getAiderMapping: provider.strategy.getAiderMapping
           ? provider.strategy.getAiderMapping
-          : (_provider, modelId) => ({ modelName: modelId, environmentVariables: {} }),
+          : (_provider, modelId) => ({
+              modelName: modelId,
+              environmentVariables: {},
+            }),
       };
-
-      this.providerRegistry[provider.provider.name] = wrappedStrategy;
 
       const profile: ProviderProfile = {
         id: provider.id,
@@ -870,7 +875,10 @@ export class ModelManager {
 
       logger.info(`Registering extension provider: ${profile.name} (ID: ${profile.id}) from extension ${registered.extensionId}`);
 
-      this.extensionProviders.set(`${registered.extensionId}:${provider.id}`, { provider, profile });
+      this.extensionProviders.set(`${registered.extensionId}:${provider.id}`, {
+        provider,
+        profile,
+      });
       newProfiles.push(profile);
     }
 
