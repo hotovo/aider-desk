@@ -66,6 +66,8 @@ interface SyntheticApiResponse {
 interface ZaiQuotaData {
   hourlyPercentage: number;
   weeklyPercentage: number;
+  hourlyNextResetTime?: number;
+  weeklyNextResetTime?: number;
 }
 
 interface ZaiLimit {
@@ -169,6 +171,8 @@ const fetchZaiQuota = async (): Promise<ZaiQuotaData | null> => {
       return {
         hourlyPercentage: hourlyLimit?.percentage ?? 0,
         weeklyPercentage: weeklyLimit?.percentage ?? 0,
+        hourlyNextResetTime: hourlyLimit?.nextResetTime,
+        weeklyNextResetTime: weeklyLimit?.nextResetTime,
       };
     }
 
@@ -208,7 +212,7 @@ const STATUS_BAR_COMPONENT_ID = 'providers-quota-indicator';
 export default class ProvidersQuotaExtension implements Extension {
   static metadata = {
     name: 'Providers Quota',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Displays API quota information for Synthetic and Z.AI providers in the task status bar',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
