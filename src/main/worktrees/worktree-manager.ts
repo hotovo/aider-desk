@@ -75,6 +75,7 @@ export class WorktreeManager {
       await mkdir(worktreePath, { recursive: true });
     } catch (error) {
       logger.error('Failed to create worktree directory:', error);
+      throw error;
     }
   }
 
