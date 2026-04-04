@@ -2439,6 +2439,18 @@ const onStepFinish = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
 private filterResultMessages(resultMessages: ContextMessage[])
 ⋮----
+// All content parts are helpers — drop the message entirely
+⋮----
+// No helpers content — keep as-is
+⋮----
+// Some helpers content — keep with non-helpers parts only
+⋮----
+// All parts are helpers tool calls — drop the message entirely
+⋮----
+// Keep with non-helpers parts only
+⋮----
+// User and other roles — pass through unchanged
+⋮----
 private async getContextFilesAsToolCallMessages(task: Task, profile: AgentProfile, contextFiles: ContextFile[]): Promise<ModelMessage[]>
 ⋮----
 // Check if power file_read tool is available (not 'Never')
@@ -3485,7 +3497,7 @@ import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
 import { AvailableExtension, SettingsData, ToolApprovalState } from '@common/types';
-import { AIDER_DESK_EXTENSIONS_REPO_URL, Tool, UIComponentDefinition } from '@common/extensions';
+import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 ⋮----
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
@@ -3574,6 +3586,12 @@ export interface RegisteredUIComponent {
   extensionId: string;
   extensionName: string;
   component: UIComponentDefinition;
+}
+⋮----
+export interface RegisteredProvider {
+  extensionId: string;
+  extensionName: string;
+  provider: ProviderDefinition;
 }
 ⋮----
 /**
@@ -3745,6 +3763,8 @@ getAgentById(agentId: string, project?: Project): RegisteredAgent | undefined
 getModes(project: Project): RegisteredMode[]
 ⋮----
 validateModeDefinition(mode: ModeDefinition):
+⋮----
+getProviders(project?: Project): RegisteredProvider[]
 ⋮----
 getUIComponents(project?: Project, task?: Task): RegisteredUIComponent[]
 ⋮----
@@ -5818,6 +5838,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 ⋮----
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
+import { ProviderDefinition } from '@common/extensions';
 import {
   AgentProfile,
   Model,
@@ -5858,9 +5879,11 @@ import { syntheticProviderStrategy } from './providers/synthetic';
 import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 ⋮----
+import type { RegisteredProvider } from '@/extensions/extension-manager';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import type { JSONValue, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 ⋮----
+import { getDefaultUsageReport } from '@/models/providers/default';
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
 import { Store } from '@/store';
@@ -5962,7 +5985,7 @@ async getProviderModels(reload = false): Promise<ProviderModelsData>
 ⋮----
 // Clear cached models if reloading
 ⋮----
-// Load models from all enabled providers
+// Load models from all enabled providers (including extension providers)
 ⋮----
 private async loadModelOverrides(): Promise<void>
 ⋮----
@@ -6038,12 +6061,20 @@ normalizeMessages(provider: ProviderProfile, model: string | Model, messages: Mo
 isRetryable(provider: ProviderProfile, _modelId: string, error: unknown): boolean
 ⋮----
 // Default to retryable if provider doesn't implement this method
+⋮----
+registerExtensionProviders(providers: RegisteredProvider[]): void
+⋮----
+unregisterExtensionProviders(extensionId: string): void
+⋮----
+getProviders(): ProviderProfile[]
+⋮----
+getExtensionProviderProfiles(): ProviderProfile[]
 
 ================
 File: src/main/models/types.ts
 ================
 import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
-import { LlmProvider, LlmProviderName } from '@common/agent';
+import { LlmProvider } from '@common/agent';
 ⋮----
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
@@ -6214,7 +6245,7 @@ export interface LlmProviderStrategy {
    * Returns true for transient errors that may succeed on retry
    */
 ⋮----
-export type LlmProviderRegistry = Record<LlmProviderName, LlmProviderStrategy>;
+export type LlmProviderRegistry = Record<string, LlmProviderStrategy>;
 
 ================
 File: src/main/project/index.ts
@@ -9156,6 +9187,7 @@ export const getDefaultProjectSettings = (
   providerModels: Model[],
   baseDir: string,
   defaultAgentProfileId = DEFAULT_AGENT_PROFILE.id,
+  providers?: ProviderProfile[],
 ): ProjectSettings =>
 
 ================
@@ -16826,7 +16858,7 @@ File: src/renderer/src/components/ModelLibrary/ProviderProfileCard.tsx
 ================
 import { useState, ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiEdit2, FiTrash2, FiMic } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiMic, FiCpu } from 'react-icons/fi';
 import { clsx } from 'clsx';
 import { ProviderProfile } from '@common/types';
 import { LlmProviderName } from '@common/agent';
@@ -16887,21 +16919,6 @@ const handleDelete = () =>
 className=
 ⋮----
 {/* Action buttons - shown on hover (desktop) or when showActions is true (mobile) */}
-⋮----
-className={clsx(
-            'flex flex-col items-center h-full space-y-3 transition-all duration-200',
-            showActions ? 'opacity-100 translate-x-6' : 'opacity-0 translate-x-4 pointer-events-none',
-            'md:group-hover:opacity-100 md:group-hover:translate-x-4 md:group-hover:pointer-events-auto',
-          )}
-        >
-          <IconButton icon={<FiEdit2 />} onClick={handleEdit} />
-          <IconButton icon={<FiTrash2 />} onClick={handleDelete} className="text-error hover:text-error-light" />
-        </div>
-      </div>
-      {showDeleteConfirm && (
-        <ConfirmDialog
-          title={t('modelLibrary.deleteProfileTitle')}
-onConfirm=
 ⋮----
 title=
 ⋮----
