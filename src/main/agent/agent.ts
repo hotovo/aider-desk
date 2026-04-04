@@ -60,6 +60,7 @@ import {
   TASKS_TOOL_SEARCH_PARENT_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
+import { TextPart } from '@ai-sdk/provider-utils';
 
 import { createPowerToolset, readFileContent } from './tools/power';
 import { createTodoToolset } from './tools/todo';
@@ -106,9 +107,9 @@ export class Agent {
     private readonly extensionManager: ExtensionManager,
   ) {}
 
-  private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: ImagePart[] }> {
+  private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: (TextPart | ImagePart)[] }> {
     const textFileContents: string[] = [];
-    const imageParts: ImagePart[] = [];
+    const imageParts: (TextPart | ImagePart)[] = [];
 
     const fileInfos = await Promise.all(
       files.map(async (file) => {
@@ -170,8 +171,12 @@ export class Agent {
       if (file!.isImage && file!.imageBase64) {
         // Add to imageParts array
         imageParts.push({
+          type: 'text',
+          text: `Here is image ${path.basename(file!.path)} for your reference.`,
+        });
+        imageParts.push({
           type: 'image',
-          image: `data:${file!.mimeType};base64,${file!.imageBase64}`,
+          image: file!.imageBase64,
           mediaType: file!.mimeType,
         });
       } else if (!file!.isImage && file!.content) {
@@ -207,7 +212,7 @@ export class Agent {
         ([readOnly, editable], file) => (file.readOnly ? [[...readOnly, file], editable] : [readOnly, [...editable, file]]),
         [[], []] as [ContextFile[], ContextFile[]],
       );
-      const allImageParts: ImagePart[] = [];
+      const allImageParts: (TextPart | ImagePart)[] = [];
 
       // Process readonly files first
       if (readOnlyFiles.length > 0) {
@@ -274,7 +279,7 @@ export class Agent {
     const messages: ModelMessage[] = [];
 
     if (contextFiles.length > 0) {
-      const imageParts: ImagePart[] = [];
+      const imageParts: (TextPart | ImagePart)[] = [];
       const nonImageFiles: ContextFile[] = [];
 
       // Separate image files from non-image files
@@ -289,8 +294,12 @@ export class Agent {
               if (detected?.mime.startsWith('image/')) {
                 const imageBase64 = fileContentBuffer.toString('base64');
                 imageParts.push({
+                  type: 'text',
+                  text: `Here is image ${path.basename(file.path)} for your reference.`,
+                });
+                imageParts.push({
                   type: 'image',
-                  image: `data:${detected.mime};base64,${imageBase64}`,
+                  image: imageBase64,
                   mediaType: detected.mime,
                 });
                 continue;
@@ -1575,17 +1584,16 @@ export class Agent {
 
       // Process image files: keep current behavior
       for (const imageData of imageFiles) {
-        fileMessages.push({
-          role: 'assistant',
-          content: `Provide content of image file: ${imageData.relativePath}`,
-        });
-
         const imageMessage: ModelMessage = {
           role: 'user',
           content: [
             {
+              type: 'text',
+              text: `Here is content of image file ${path.basename(imageData.relativePath)}`,
+            },
+            {
               type: 'image',
-              image: `data:${imageData.mimeType};base64,${imageData.imageBase64}`,
+              image: imageData.imageBase64,
               mediaType: imageData.mimeType,
             },
           ],

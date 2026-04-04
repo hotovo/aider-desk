@@ -350,7 +350,7 @@ export class EventsHandler {
 
       await fs.writeFile(absoluteImagePath, buffer);
 
-      await task.addFiles({ path: imagePath, readOnly: true });
+      await task.addFiles({ path: absoluteImagePath, readOnly: true });
     } catch (error) {
       logger.error('Error pasting image:', error);
       task.addLogMessage('error', `Failed to paste image: ${error instanceof Error ? error.message : String(error)}`);
@@ -679,7 +679,7 @@ export class EventsHandler {
 
       await fs.writeFile(targetFilePath, `Scraped content of ${url}:\n\n${content}`);
       await task.addFiles({
-        path: path.relative(baseDir, targetFilePath),
+        path: targetFilePath,
         readOnly: true,
       });
       if (filePath) {

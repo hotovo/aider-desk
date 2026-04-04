@@ -493,14 +493,11 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       expect(mockIsBinary).toHaveBeenCalled();
       expect(mockFileTypeFromBuffer).toHaveBeenCalledWith(imageBuffer);
 
-      // Should have image-related messages: assistant + user with image
-      const assistantMessage = result.find(
-        (msg: any) => msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.includes('Provide content of image file'),
-      );
-      expect(assistantMessage).toBeDefined();
-
-      const imageUserMessage = result.find((msg: any) => msg.role === 'user' && Array.isArray(msg.content) && (msg.content as any)[0]?.type === 'image');
+      // Should have user message with text part (filename only) and image part
+      const imageUserMessage = result.find((msg: any) => msg.role === 'user' && Array.isArray(msg.content) && (msg.content as any)[0]?.type === 'text');
       expect(imageUserMessage).toBeDefined();
+      expect((imageUserMessage!.content as any)[0].text).toContain('image.png');
+      expect((imageUserMessage!.content as any)[1].type).toBe('image');
     });
 
     it('should return error in tool result for image files', async () => {
@@ -515,21 +512,18 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
 
       const result = await agent['getContextFilesAsToolCallMessages'](mockTask, mockProfile, contextFiles);
 
-      // Images don't generate tool-result messages anymore - they use assistant + user message pattern
+      // Images don't generate tool-result messages - they use user message with text + image parts
       const toolResultMessage = result.find((msg: any) => msg.role === 'tool');
       expect(toolResultMessage).toBeUndefined();
 
-      // Should have assistant message
-      const assistantMessage = result.find((msg: any) => msg.role === 'assistant' && typeof msg.content === 'string');
-      expect(assistantMessage).toBeDefined();
-      expect(assistantMessage?.content).toContain('Provide content of image file');
-
-      // And user message with image
-      const imageUserMessage = result.find((msg: any) => msg.role === 'user' && Array.isArray(msg.content) && (msg.content as any)[0]?.type === 'image');
+      // Should have user message with text part (filename only) and image part
+      const imageUserMessage = result.find((msg: any) => msg.role === 'user' && Array.isArray(msg.content) && (msg.content as any)[0]?.type === 'text');
       expect(imageUserMessage).toBeDefined();
+      expect((imageUserMessage!.content as any)[0].text).toContain('image.png');
+      expect((imageUserMessage!.content as any)[1].type).toBe('image');
     });
 
-    it('should create separate user and assistant messages for image part', async () => {
+    it('should create user message with text and image parts for image file', async () => {
       const imageBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
       mockIsBinary.mockReturnValue(true);
@@ -541,16 +535,14 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
 
       const result = await agent['getContextFilesAsToolCallMessages'](mockTask, mockProfile, contextFiles);
 
-      // Find user message with image
-      const imageUserMessage = result.filter((msg: any) => msg.role === 'user' && Array.isArray(msg.content) && msg.content[0]?.type === 'image');
+      // Find user message with text part (filename only) followed by image part
+      const imageUserMessage = result.filter((msg: any) => msg.role === 'user' && Array.isArray(msg.content) && msg.content[0]?.type === 'text');
       expect(imageUserMessage.length).toBe(1);
-      expect((imageUserMessage[0].content as any)[0].image).toContain('data:image/png;base64,');
-
-      // Find assistant message before the user message with image
-      const imageAssistantMessage = result.find(
-        (msg: any) => msg.role === 'assistant' && typeof msg.content === 'string' && msg.content.includes('Provide content of image file'),
-      );
-      expect(imageAssistantMessage).toBeDefined();
+      // Text part should contain only the filename, not a full path
+      expect((imageUserMessage[0].content as any)[0].text).toBe('Here is content of image file image.png');
+      // Image part should follow
+      expect((imageUserMessage[0].content as any)[1].type).toBe('image');
+      expect((imageUserMessage[0].content as any)[1].image).toBe('iVBORw==');
     });
 
     it('should skip non-image binary files', async () => {

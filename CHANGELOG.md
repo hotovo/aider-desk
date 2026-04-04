@@ -18,6 +18,7 @@
 - correctly reverting/deleting created file on revert action
 - added support for creating custom providers via extensions
 - updated response message filtering to correcly remove helper tool messages
+- correctly sending image data in the messages
 
 ## [0.59.0]
 
