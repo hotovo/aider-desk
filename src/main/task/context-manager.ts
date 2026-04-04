@@ -100,13 +100,21 @@ export class ContextManager {
   }
 
   async addContextFile(contextFile: ContextFile): Promise<ContextFile[]> {
-    const absolutePath = path.resolve(this.task.getTaskDir(), contextFile.path);
-    const isDir = await isDirectory(absolutePath);
-    const alreadyAdded = this.files.find((file) => path.resolve(this.task.getTaskDir(), file.path) === absolutePath);
+    const absolutePath = await this.resolveContextFilePath(contextFile.path);
 
-    if (alreadyAdded) {
+    if (!absolutePath) {
+      logger.debug('Skipping non-existing file for task:', {
+        taskId: this.taskId,
+        path: contextFile.path,
+      });
       return [];
     }
+
+    if (this.isContextFileAlreadyAdded(absolutePath)) {
+      return [];
+    }
+
+    const isDir = await isDirectory(absolutePath);
 
     if (isDir) {
       logger.debug('Recursively adding files in directory to task context:', {
@@ -136,14 +144,6 @@ export class ContextManager {
       }
       return addedFiles;
     } else {
-      if (!(await fileExists(absolutePath))) {
-        logger.debug('Skipping non-existing file for task:', {
-          taskId: this.taskId,
-          path: contextFile.path,
-          absolutePath,
-        });
-        return [];
-      }
       if (await this.isFileIgnored(contextFile)) {
         logger.debug('Skipping ignored file for task:', {
           taskId: this.taskId,
@@ -163,6 +163,26 @@ export class ContextManager {
       this.autosave();
       return [newContextFile];
     }
+  }
+
+  /**
+   * Resolves a relative file path by delegating to Task.resolveContextFilePath
+   * which tries taskDir first, then falls back to projectDir.
+   */
+  private async resolveContextFilePath(relativePath: string): Promise<string | null> {
+    return this.task.resolveContextFilePath(relativePath);
+  }
+
+  /**
+   * Checks whether a resolved absolute path matches any already-added context file.
+   * Accounts for files that may have been resolved from either taskDir or projectDir.
+   */
+  private isContextFileAlreadyAdded(absolutePath: string): boolean {
+    return this.files.some((file) => {
+      const taskDirResolved = path.resolve(this.task.getTaskDir(), file.path);
+      const projectDirResolved = path.resolve(this.task.getProjectDir(), file.path);
+      return taskDirResolved === absolutePath || projectDirResolved === absolutePath;
+    });
   }
 
   dropContextFile(filePath: string): ContextFile[] {

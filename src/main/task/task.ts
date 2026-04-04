@@ -71,7 +71,7 @@ import { ModelManager } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { getEnvironmentVariablesForAider, execWithShellPath } from '@/utils';
+import { getEnvironmentVariablesForAider, execWithShellPath, isDirectory } from '@/utils';
 import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
@@ -491,6 +491,35 @@ export class Task {
 
   public getTaskDir() {
     return this.task.worktree ? this.task.worktree.path : this.project.baseDir;
+  }
+
+  /**
+   * Resolves a relative file path against taskDir first, then falls back to projectDir.
+   * This handles git worktree cases where files may exist in the project directory
+   * but not in the worktree (taskDir).
+   *
+   * @param relativePath - Relative file path to resolve
+   * @returns The resolved absolute path if the file/dir exists in either location, or null otherwise
+   */
+  public async resolveContextFilePath(relativePath: string): Promise<string | null> {
+    const taskDirAbsolutePath = path.resolve(this.getTaskDir(), relativePath);
+
+    if ((await fileExists(taskDirAbsolutePath)) || (await isDirectory(taskDirAbsolutePath))) {
+      return taskDirAbsolutePath;
+    }
+
+    const projectDirAbsolutePath = path.resolve(this.getProjectDir(), relativePath);
+
+    if ((await fileExists(projectDirAbsolutePath)) || (await isDirectory(projectDirAbsolutePath))) {
+      logger.debug('File not found in taskDir, falling back to projectDir:', {
+        taskId: this.taskId,
+        relativePath,
+        projectDirAbsolutePath,
+      });
+      return projectDirAbsolutePath;
+    }
+
+    return null;
   }
 
   /**

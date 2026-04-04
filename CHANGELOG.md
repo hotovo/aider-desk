@@ -19,6 +19,7 @@
 - added support for creating custom providers via extensions
 - updated response message filtering to correcly remove helper tool messages
 - correctly sending image data in the messages
+- properly handling pasted images in case worktree mode
 
 ## [0.59.0]
 

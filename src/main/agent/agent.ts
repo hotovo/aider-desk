@@ -114,7 +114,15 @@ export class Agent {
     const fileInfos = await Promise.all(
       files.map(async (file) => {
         try {
-          const filePath = path.resolve(task.getTaskDir(), file.path);
+          const filePath = await task.resolveContextFilePath(file.path);
+
+          if (!filePath) {
+            logger.error('Could not resolve context file path:', {
+              path: file.path,
+            });
+            return null;
+          }
+
           const fileContentBuffer = await fs.readFile(filePath);
 
           // If binary, try to detect if it's an image using image-type and return base64
@@ -285,7 +293,16 @@ export class Agent {
       // Separate image files from non-image files
       for (const file of contextFiles) {
         try {
-          const filePath = path.resolve(task.getTaskDir(), file.path);
+          const filePath = await task.resolveContextFilePath(file.path);
+
+          if (!filePath) {
+            logger.error('Could not resolve context file path for working files:', {
+              path: file.path,
+            });
+            nonImageFiles.push(file);
+            continue;
+          }
+
           const fileContentBuffer = await fs.readFile(filePath);
 
           if (isBinary(filePath, fileContentBuffer)) {
