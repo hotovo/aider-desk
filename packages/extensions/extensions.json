@@ -206,6 +206,15 @@
       "capabilities": ["ui"]
     },
     {
+      "id": "fff",
+      "name": "FFF",
+      "description": "Fast file content search using FFF (Freakin Fast File Finder) — replaces the internal grep tool",
+      "folder": "fff",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["tools", "search"]
+    },
+    {
       "id": "seek",
       "name": "Seek",
       "description": "Fast ranked code search using seek (zoekt) — replaces the internal grep tool",
