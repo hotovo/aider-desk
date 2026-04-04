@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/extensions",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Type definitions and examples for AiderDesk extensions",
   "author": "Hotovo",
   "homepage": "https://aiderdesk.hotovo.com",
@@ -36,7 +36,9 @@
   "scripts": {
     "build": "dts-bundle-generator --external-imports zod node --project ../../tsconfig.node.json --no-check --no-banner -o extensions.d.ts ../../packages/common/src/extensions.ts && node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "publish:next": "node scripts/publish-next.mjs",
+    "release:latest": "node scripts/release-latest.mjs"
   },
   "keywords": [
     "aiderdesk",
