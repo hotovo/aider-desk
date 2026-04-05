@@ -2211,6 +2211,7 @@ import {
   TASKS_TOOL_SEARCH_PARENT_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
+import { TextPart } from '@ai-sdk/provider-utils';
 ⋮----
 import { createPowerToolset, readFileContent } from './tools/power';
 import { createTodoToolset } from './tools/todo';
@@ -7974,6 +7975,18 @@ private async isFileIgnored(contextFile: ContextFile): Promise<boolean>
 ⋮----
 async addContextFile(contextFile: ContextFile): Promise<ContextFile[]>
 ⋮----
+/**
+   * Resolves a relative file path by delegating to Task.resolveContextFilePath
+   * which tries taskDir first, then falls back to projectDir.
+   */
+private async resolveContextFilePath(relativePath: string): Promise<string | null>
+⋮----
+/**
+   * Checks whether a resolved absolute path matches any already-added context file.
+   * Accounts for files that may have been resolved from either taskDir or projectDir.
+   */
+private isContextFileAlreadyAdded(absolutePath: string): boolean
+⋮----
 dropContextFile(filePath: string): ContextFile[]
 ⋮----
 setContextFiles(contextFiles: ContextFile[], save = true)
@@ -8228,7 +8241,7 @@ import { ModelManager } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { getEnvironmentVariablesForAider, execWithShellPath } from '@/utils';
+import { getEnvironmentVariablesForAider, execWithShellPath, isDirectory } from '@/utils';
 import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
@@ -8330,6 +8343,16 @@ public removeConnector(connector: Connector)
 public getProjectDir()
 ⋮----
 public getTaskDir()
+⋮----
+/**
+   * Resolves a relative file path against taskDir first, then falls back to projectDir.
+   * This handles git worktree cases where files may exist in the project directory
+   * but not in the worktree (taskDir).
+   *
+   * @param relativePath - Relative file path to resolve
+   * @returns The resolved absolute path if the file/dir exists in either location, or null otherwise
+   */
+public async resolveContextFilePath(relativePath: string): Promise<string | null>
 ⋮----
 /**
    * Dispatches an extension event through the ExtensionManager.
