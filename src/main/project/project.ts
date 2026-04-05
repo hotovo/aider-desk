@@ -416,6 +416,7 @@ export class Project {
 
     const newTask = await this.prepareTask(undefined, {
       ...sourceTask.task,
+      lastAgentProviderMetadata: undefined,
       state: sourceTask.task.state === DefaultTaskState.InProgress ? DefaultTaskState.Todo : sourceTask.task.state,
     });
     await newTask.init();
@@ -433,6 +434,7 @@ export class Project {
 
     const newTask = await this.prepareTask(undefined, {
       ...sourceTask.task,
+      lastAgentProviderMetadata: undefined,
       parentId: sourceTask.task.parentId || sourceTask.task.id,
       state: sourceTask.task.state === DefaultTaskState.InProgress ? DefaultTaskState.Todo : sourceTask.task.state,
     });

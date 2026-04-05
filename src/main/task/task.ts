@@ -3896,6 +3896,7 @@ ${error.stderr}`,
     const sourceData = sourceTask.task;
     await this.saveTask({
       name: `${sourceData.name} (Copy)`,
+      lastAgentProviderMetadata: undefined,
     });
 
     // Copy context files
@@ -3927,6 +3928,7 @@ ${error.stderr}`,
     const sourceData = sourceTask.task;
     await this.saveTask({
       name: `${sourceData.name} (Fork)`,
+      lastAgentProviderMetadata: undefined,
     });
 
     // Copy ALL context files from source task (not just up to fork point)
