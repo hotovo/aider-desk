@@ -422,8 +422,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
 
     const prepareForNextPrompt = useCallback(() => {
       setTextWithDispatch('');
+      setSavedText('');
       setPendingCommand(null);
-    }, [setTextWithDispatch]);
+    }, [setTextWithDispatch, setSavedText]);
 
     const executeCommand = useCallback(
       (command: string, args?: string): void => {
@@ -645,7 +646,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     const onChange = useCallback(
       (newText: string) => {
         setText(newText);
-        setSavedText(newText);
         setPendingCommand(null);
 
         if (question) {
@@ -665,8 +665,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           }
         }
       },
-      [question, setSavedText],
+      [question],
     );
+
+    const handleBlur = useCallback(() => {
+      setSavedText(text);
+    }, [setSavedText, text]);
 
     const handleSubmit = useCallback(() => {
       scrollToBottom?.();
@@ -1142,6 +1146,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               editorRef.current = instance;
             }, [])}
             onChange={onChange}
+            onBlur={handleBlur}
             placeholder={question ? t('promptField.questionPlaceholder') : t(`promptField.placeholders.${placeholderIndex}`)}
             editable={!disabled}
             spellCheck={false}
