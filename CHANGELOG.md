@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.60.0]
 
 - added settings to configure default working mode for tasks
 - improved performance of expand/collapse of files in Updated Files modal
