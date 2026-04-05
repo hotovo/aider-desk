@@ -205,7 +205,7 @@ function getExtensionsPath(repoUrl: string): string | null {
     const url = new URL(repoUrl);
     const pathParts = url.pathname.split('/').filter(Boolean);
 
-    if (pathParts.length > 4 && pathParts[2] === 'tree') {
+    if (pathParts.length > 4 && (pathParts[2] === 'tree' || pathParts[2] === 'blob')) {
       const extensionPath = pathParts.slice(4).join('/');
       return extensionPath;
     }
@@ -390,37 +390,56 @@ async function installFromUrl(url: string, targetDir: string): Promise<void> {
           throw new Error('Invalid GitHub URL - could not extract repository URL');
         }
 
-        if (!extensionsPath) {
-          throw new Error('Invalid GitHub URL - could not extract extension path from URL');
-        }
-
         const extName = urlPath.split('/').pop() || 'extension';
         const tempDir = join(process.cwd(), `.temp-ext-${Date.now()}`);
 
         try {
-          // Clone with sparse checkout (fetches minimal metadata only)
-          spinner.text = 'Cloning repository with sparse checkout...';
-          await runCommand('git', ['clone', '--depth', '1', '--sparse', cloneUrl, tempDir]);
+          if (extensionsPath) {
+            // URL includes /tree/{branch}/{path} — use sparse checkout for efficiency
+            spinner.text = 'Cloning repository with sparse checkout...';
+            await runCommand('git', ['clone', '--depth', '1', '--sparse', cloneUrl, tempDir]);
 
-          // Set sparse-checkout to the target subdirectory
-          spinner.text = 'Configuring sparse checkout path...';
-          await runCommand('git', ['-C', tempDir, 'sparse-checkout', 'set', extensionsPath]);
+            spinner.text = 'Configuring sparse checkout path...';
+            await runCommand('git', ['-C', tempDir, 'sparse-checkout', 'set', extensionsPath]);
 
-          // Copy extension folder from sparse checkout
-          const sourceDir = join(tempDir, extensionsPath);
-          const targetPath = join(targetDir, extName);
+            const sourceDir = join(tempDir, extensionsPath);
+            const targetPath = join(targetDir, extName);
 
-          if (!existsSync(sourceDir)) {
-            throw new Error(`Extension folder not found in repository: ${extensionsPath}`);
-          }
+            if (!existsSync(sourceDir)) {
+              throw new Error(`Extension folder not found in repository: ${extensionsPath}`);
+            }
 
-          spinner.text = 'Copying extension files...';
-          cpSync(sourceDir, targetPath, { recursive: true });
-          spinner.succeed(chalk.green(`✓ Installed ${extName} to ${targetDir}`));
+            spinner.text = 'Copying extension files...';
+            cpSync(sourceDir, targetPath, { recursive: true });
+            spinner.succeed(chalk.green(`✓ Installed ${extName} to ${targetDir}`));
 
-          // Install dependencies if package.json exists
-          if (existsSync(join(targetPath, 'package.json'))) {
-            await installDependencies(targetPath);
+            // Install dependencies if package.json exists
+            if (existsSync(join(targetPath, 'package.json'))) {
+              await installDependencies(targetPath);
+            }
+          } else {
+            // Bare repo URL (e.g. https://github.com/owner/repo) — clone fully, copy entire repo as extension folder
+            spinner.text = 'Cloning repository...';
+            await runCommand('git', ['clone', '--depth', '1', cloneUrl, tempDir]);
+
+            // Use repo name as extension folder name
+            const targetPath = join(targetDir, extName);
+
+            spinner.text = `Installing ${extName}...`;
+            cpSync(tempDir, targetPath, { recursive: true });
+
+            // Remove .git directory from installed extension
+            const gitDir = join(targetPath, '.git');
+            if (existsSync(gitDir)) {
+              rmSync(gitDir, { recursive: true, force: true });
+            }
+
+            // Install dependencies if package.json exists
+            if (existsSync(join(targetPath, 'package.json'))) {
+              await installDependencies(targetPath);
+            }
+
+            spinner.succeed(chalk.green(`✓ Installed ${extName} to ${targetPath}`));
           }
         } finally {
           // Cleanup temp directory
