@@ -1069,7 +1069,7 @@
     "searchPlaceholderOrCustom": "Search models or enter custom name...",
     "removePreferred": "Remove from preferred models",
     "invalidModelSelection": "Invalid format of the model. Expected format is 'provider/model', e.g. 'openai/gpt-4'.",
-    "providerNotSupported": "Provider '{{provider}}' is not supported. Supported providers are: {{providers}}.",
+    "providerNotConfigured": "Provider '{{provider}}' not configured. Configured providers are: {{providers}}.",
     "selectModel": "Select model...",
     "weakModelLock": "Lock weak model",
     "weakModelUnlock": "Unlock weak model",

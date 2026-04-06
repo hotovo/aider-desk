@@ -7,7 +7,7 @@ import { IoMdClose } from 'react-icons/io';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
 import { RiMenuUnfold4Line, RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { AVAILABLE_PROVIDERS, getProviderModelId } from '@common/agent';
+import { getProviderModelId } from '@common/agent';
 import { clsx } from 'clsx';
 import { extractProviderModel } from '@common/utils';
 
@@ -127,9 +127,9 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
         const provider = providers.find((provider) => provider.id === providerId);
         if (!provider) {
           showErrorNotification(
-            t('modelSelector.providerNotSupported', {
+            t('modelSelector.providerNotConfigured', {
               provider: providerId,
-              providers: AVAILABLE_PROVIDERS.join(', '),
+              providers: providers.map((p) => p.id).join(', '),
             }),
           );
           return;

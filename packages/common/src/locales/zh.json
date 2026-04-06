@@ -1020,6 +1020,8 @@
     "searchPlaceholder": "搜索模型...",
     "searchPlaceholderOrCustom": "搜索模型或输入自定义名称...",
     "removePreferred": "从首选模型中移除",
+    "invalidModelSelection": "模型格式无效。期望的格式为 '提供商/模型'，例如 'openai/gpt-4'。",
+    "providerNotConfigured": "提供商 '{{provider}}' 未配置。已配置的提供商为：{{providers}}。",
     "selectModel": "选择模型...",
     "weakModelLock": "锁定弱模型",
     "weakModelUnlock": "解锁弱模型",
