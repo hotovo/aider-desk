@@ -13,6 +13,8 @@ const getStateTextClass = (state: string): string => {
   switch (state) {
     case DefaultTaskState.Interrupted:
       return 'text-button-danger';
+    case DefaultTaskState.Delegated:
+      return 'text-warning';
     case DefaultTaskState.Todo:
       return 'text-text-primary';
     case DefaultTaskState.Done:

@@ -925,6 +925,7 @@
     "taskReadyForImplementation": "Task Ready for Implementation",
     "taskDone": "Task Completed",
     "taskDoneArchived": "Task Completed and Archived",
+    "taskDelegated": "Task was delegated to a subtask. You can resume it if needed.",
     "proceed": "Proceed",
     "archive": "Archive",
     "unarchive": "Unarchive",
@@ -1597,13 +1598,14 @@
     "messageCount": "Message count"
   },
   "taskState": {
-    "TODO": "Todo",
+    "DELEGATED": "Delegated",
+    "DONE": "Done",
     "IN_PROGRESS": "In Progress",
     "INTERRUPTED": "Interrupted",
     "MORE_INFO_NEEDED": "More Info Needed",
     "READY_FOR_REVIEW": "Ready for Review",
     "READY_FOR_IMPLEMENTATION": "Ready for Implementation",
-    "DONE": "Done"
+    "TODO": "Todo"
   },
   "worktree": {
     "aheadCommits": "↑ {{count}} commits",

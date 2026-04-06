@@ -116,6 +116,19 @@ export const TaskStateActions = ({
     );
   }
 
+  if (state === DefaultTaskState.Delegated) {
+    return renderSection(
+      <RiAlertLine className="h-4 w-4 flex-shrink-0 text-warning" />,
+      t('messages.taskDelegated'),
+      <>
+        <Button key="resume" variant="outline" color="primary" size="xs" onClick={onResumeTask}>
+          <IoPlayOutline className="mr-1 w-3 h-3" />
+          {t('messages.resume')}
+        </Button>
+      </>,
+    );
+  }
+
   if (state === DefaultTaskState.ReadyForImplementation) {
     return renderSection(
       <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,

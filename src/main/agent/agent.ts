@@ -1174,7 +1174,7 @@ export class Agent {
         if (!shouldContinue) {
           logger.debug('Agent run aborted due to context compaction');
           await task.updateTask({
-            state: DefaultTaskState.Interrupted,
+            state: DefaultTaskState.Delegated,
           });
           break;
         }

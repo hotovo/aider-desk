@@ -4,6 +4,7 @@
 
 - updated project selection logic when closing or adding projects
 - replaced react-table library with custom implementation to avoid incompatibility with React Compiler
+- added Delegated task state when handing off the task to subtask
 
 ## [0.60.0]
 

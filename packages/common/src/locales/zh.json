@@ -877,6 +877,7 @@
     "taskReadyForImplementation": "任务准备就绪，待实施",
     "taskDone": "任务已完成",
     "taskDoneArchived": "任务已完成并已归档",
+    "taskDelegated": "任务已委派给子任务。如需要，您可以恢复该任务。",
     "proceed": "继续",
     "archive": "归档",
     "unarchive": "取消归档",
@@ -1603,13 +1604,14 @@
     "messageCount": "消息数量"
   },
   "taskState": {
-    "TODO": "待办",
+    "DELEGATED": "已委派",
+    "DONE": "已完成",
     "IN_PROGRESS": "进行中",
     "INTERRUPTED": "已中断",
     "MORE_INFO_NEEDED": "需要更多信息",
     "READY_FOR_REVIEW": "待审核",
     "READY_FOR_IMPLEMENTATION": "待实现",
-    "DONE": "已完成"
+    "TODO": "待办"
   },
   "worktree": {
     "aheadCommits": "↑ {{count}} 次提交",
