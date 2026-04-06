@@ -138,7 +138,7 @@ After completing each step, include [DONE:n] in your response where n is the ste
 export default class PlannotatorExtension implements Extension {
   static metadata = {
     name: 'Plannotator',
-    version: '1.2.0',
+    version: '1.2.1',
     description: 'Plan-based development workflow with planning mode and plan review utilizing plannotator.ai',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/plannotator/icon.png',
@@ -272,7 +272,7 @@ export default class PlannotatorExtension implements Extension {
   // ── Tools ─────────────────────────────────────────────────────────────
 
   getTools(context: ExtensionContext, mode: string, agentProfile: AgentProfile): ToolDefinition[] {
-    if (agentProfile.isSubagent) {
+    if (agentProfile.isSubagent || mode !== 'plannotator') {
       return [];
     }
     return [
@@ -382,10 +382,6 @@ export default class PlannotatorExtension implements Extension {
   }
 
   // ── Event Handlers ────────────────────────────────────────────────────
-
-  async onTaskInitialized(event: TaskInitializedEvent, context: ExtensionContext): Promise<void> {
-    context.log(`Task initialized: ${event.task.id}`, 'debug');
-  }
 
   async onTaskClosed(event: TaskClosedEvent, context: ExtensionContext): Promise<void> {
     // Clean up task state
