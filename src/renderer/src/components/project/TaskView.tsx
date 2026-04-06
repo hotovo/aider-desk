@@ -3,14 +3,12 @@ import {
   DefaultTaskState,
   isLoadingMessage,
   isLogMessage,
-  isTaskInfoMessage,
   isUserMessage,
   Message,
   Mode,
   Model,
   ModelsData,
   TaskData,
-  TaskInfoMessage,
   TodoItem,
   UserMessage,
 } from '@common/types';
@@ -54,6 +52,7 @@ import { useTaskMessages, useTaskState } from '@/stores/taskStore';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
+import { TaskInfoPanel } from '@/components/message/TaskInfoPanel';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -122,6 +121,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
     const [searchContainer, setSearchContainer] = useState<HTMLElement | null>(null);
     const [terminalVisible, setTerminalVisible] = useState(false);
+    const [showTaskInfoPanel, setShowTaskInfoPanel] = useState(false);
     const [showSidebar, setShowSidebar] = useState(isMobile);
     const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(projectDir, task.id);
     const [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed] = useLocalStorage(`files-sidebar-collapsed-${projectDir}-${task.id}`, false);
@@ -425,7 +425,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
         setMessages(task.id, (prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
 
-        if (isTaskInfoMessage(messageToRemove) || isLogMessage(messageToRemove)) {
+        if (isLogMessage(messageToRemove)) {
           return;
         }
 
@@ -530,16 +530,9 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       }
     }, [api, projectDir, task.id, setTodoItems]);
 
-    const handleShowTaskInfo = useCallback(() => {
-      const taskInfo: TaskInfoMessage = {
-        id: uuidv4(),
-        type: 'task-info',
-        content: '',
-        task: JSON.parse(JSON.stringify(task)) as TaskData,
-        messageCount: displayedMessages.length || 0,
-      };
-      setMessages(task.id, (prevMessages) => [...prevMessages, taskInfo]);
-    }, [task, displayedMessages, setMessages]);
+    const handleToggleTaskInfoPanel = useCallback(() => {
+      setShowTaskInfoPanel((prev) => !prev);
+    }, []);
 
     const handleTerminalViewResize = useCallback(() => {
       terminalViewRef.current?.resize();
@@ -708,6 +701,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               )}
             </div>
             <ExtensionComponentWrapper placement="task-messages-bottom" />
+            {showTaskInfoPanel && <TaskInfoPanel task={task} messageCount={displayedMessages.length || 0} onClose={() => setShowTaskInfoPanel(false)} />}
             {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
               <TaskStateActions
                 state={task.state}
@@ -797,7 +791,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   promptBehavior={settings.promptBehavior}
                   clearLogMessages={clearLogMessages}
                   scrollToBottom={handleScrollToBottom}
-                  showTaskInfo={handleShowTaskInfo}
+                  onToggleTaskInfoPanel={handleToggleTaskInfoPanel}
                   handoffConversation={handleHandoff}
                 />
                 <TaskControlBar
@@ -809,7 +803,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   clearMessages={clearMessages}
                   toggleTerminal={api.isTerminalSupported() ? toggleTerminal : undefined}
                   terminalVisible={terminalVisible}
-                  showTaskInfo={handleShowTaskInfo}
+                  showTaskInfoPanel={showTaskInfoPanel}
+                  onToggleTaskInfoPanel={handleToggleTaskInfoPanel}
                   onAutoApproveChanged={handleAutoApproveChanged}
                   showSettingsPage={showSettingsPage}
                 />

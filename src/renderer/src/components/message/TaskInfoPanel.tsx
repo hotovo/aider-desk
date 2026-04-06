@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { FaFolderOpen } from 'react-icons/fa';
 import { MdAssignment, MdClose } from 'react-icons/md';
-import { TaskInfoMessage as TaskInfoMessageType } from '@common/types';
+import { TaskData } from '@common/types';
 
 import { CodeInline } from '@/components/common/CodeInline';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
@@ -10,14 +10,14 @@ import { useApi } from '@/contexts/ApiContext';
 import { getTaskStateLabel } from '@/components/common/TaskStateChip';
 
 type Props = {
-  message: TaskInfoMessageType;
-  onRemove?: () => void;
+  task: TaskData;
+  messageCount: number;
+  onClose?: () => void;
 };
 
-export const TaskInfoMessage = ({ message, onRemove }: Props) => {
+export const TaskInfoPanel = ({ task, messageCount, onClose }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
-  const { task } = message;
 
   const handleOpenFolder = async (path: string) => {
     try {
@@ -36,16 +36,16 @@ export const TaskInfoMessage = ({ message, onRemove }: Props) => {
   };
 
   return (
-    <div className="rounded-md p-2.5 max-w-full break-words text-xs border border-border-dark-light relative group bg-bg-primary-light-strong">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <MdAssignment className="w-4 h-4 flex-shrink-0 text-text-tertiary" />
-          <span className="font-medium text-text-secondary">{task.name}</span>
-        </div>
-        {onRemove && <IconButton icon={<MdClose className="w-3 h-3" />} onClick={onRemove} className="p-1 flex-shrink-0" />}
-      </div>
-
+    <div className="pt-3 pb-2 px-4 max-w-full break-words text-xs border-t border-border-dark-light relative group bg-bg-primary-light-strong">
       <div className="space-y-1.5 text-text-secondary">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <MdAssignment className="w-4 h-4 flex-shrink-0 text-text-tertiary" />
+            <span className="font-medium text-text-secondary">{task.name}</span>
+          </div>
+          {onClose && <IconButton icon={<MdClose className="w-3 h-3" />} onClick={onClose} className="p-1 flex-shrink-0" />}
+        </div>
+
         <div className="flex items-center gap-2 text-2xs">
           <span className="text-2xs text-text-muted">{t('taskInfo.taskId')}:</span>
           <span className="text-text-secondary">{task.id}</span>
@@ -72,10 +72,10 @@ export const TaskInfoMessage = ({ message, onRemove }: Props) => {
           </div>
         )}
 
-        {message.messageCount !== undefined && (
+        {messageCount !== undefined && (
           <div className="text-2xs text-text-muted flex items-center gap-2">
             <span className="text-text-muted">{t('taskInfo.messageCount')}:</span>
-            <span className="text-text-secondary">{message.messageCount}</span>
+            <span className="text-text-secondary">{messageCount}</span>
           </div>
         )}
 

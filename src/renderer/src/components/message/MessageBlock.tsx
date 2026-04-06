@@ -38,7 +38,6 @@ import {
   isLogMessage,
   isReflectedMessage,
   isResponseMessage,
-  isTaskInfoMessage,
   isToolMessage,
   isUserMessage,
   LogMessage,
@@ -75,7 +74,6 @@ import { DeleteMemoryToolMessage } from './DeleteMemoryToolMessage';
 import { ListMemoriesToolMessage } from './ListMemoriesToolMessage';
 import { UpdateMemoryToolMessage } from './UpdateMemoryToolMessage';
 import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
-import { TaskInfoMessage } from './TaskInfoMessage';
 import { areMessagesEqual } from './utils';
 
 type Props = {
@@ -121,10 +119,6 @@ const MessageBlockComponent = ({
 
   if (isReflectedMessage(message)) {
     return <ReflectedMessageBlock baseDir={baseDir} message={message} allFiles={allFiles} compact={compact} />;
-  }
-
-  if (isTaskInfoMessage(message)) {
-    return <TaskInfoMessage message={message} onRemove={remove} />;
   }
 
   if (isCommandOutputMessage(message)) {

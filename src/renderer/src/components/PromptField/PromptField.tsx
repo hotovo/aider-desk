@@ -148,7 +148,7 @@ type Props = {
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
   scrollToBottom?: () => void;
-  showTaskInfo?: () => void;
+  onToggleTaskInfoPanel?: () => void;
   handoffConversation?: (focus?: string) => Promise<void>;
 };
 
@@ -186,7 +186,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       promptBehavior,
       clearLogMessages,
       scrollToBottom,
-      showTaskInfo,
+      onToggleTaskInfoPanel,
       handoffConversation,
     }: Props,
     ref,
@@ -465,7 +465,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             break;
           case '/task-info': {
             prepareForNextPrompt();
-            showTaskInfo?.();
+            onToggleTaskInfoPanel?.();
             break;
           }
           case '/web': {
@@ -561,7 +561,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         t,
         clearLogMessages,
         runCommand,
-        showTaskInfo,
+        onToggleTaskInfoPanel,
         setTextWithDispatch,
         handoffConversation,
       ],

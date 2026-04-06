@@ -23,7 +23,8 @@ type Props = {
   clearMessages: () => void;
   toggleTerminal?: () => void;
   terminalVisible?: boolean;
-  showTaskInfo?: () => void;
+  showTaskInfoPanel?: boolean;
+  onToggleTaskInfoPanel?: () => void;
   onAutoApproveChanged?: (autoApprove: boolean) => void;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
 };
@@ -37,7 +38,8 @@ export const TaskControlBar = ({
   clearMessages,
   toggleTerminal,
   terminalVisible = false,
-  showTaskInfo,
+  showTaskInfoPanel = false,
+  onToggleTaskInfoPanel,
   onAutoApproveChanged,
   showSettingsPage,
 }: Props) => {
@@ -82,10 +84,16 @@ export const TaskControlBar = ({
             <MdPlaylistRemove className="w-4 h-4" />
             <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
           </Button>
-          {showTaskInfo && (
+          {onToggleTaskInfoPanel && (
             <Tooltip content={t('promptField.taskInfo')}>
-              <Button variant="text" onClick={showTaskInfo} className="py-1.5" size="xs" color="tertiary">
-                <FaInfoCircle className="w-3.5 h-3.5 text-text-tertiary" />
+              <Button
+                variant="text"
+                onClick={onToggleTaskInfoPanel}
+                className={clsx('py-1.5', showTaskInfoPanel && 'bg-bg-secondary-light')}
+                size="xs"
+                color="tertiary"
+              >
+                <FaInfoCircle className={clsx('w-3.5 h-3.5', showTaskInfoPanel ? 'text-text-secondary' : 'text-text-tertiary')} />
               </Button>
             </Tooltip>
           )}
@@ -103,11 +111,17 @@ export const TaskControlBar = ({
           <span className="hidden sm:inline ml-1">{t('promptField.clearChat')}</span>
         </Button>
       )}
-      {!isMobile && showTaskInfo && (
+      {!isMobile && onToggleTaskInfoPanel && (
         <Tooltip content={t('promptField.taskInfo')}>
           <div>
-            <Button variant="text" onClick={showTaskInfo} className="py-1.5" size="xs" color="tertiary">
-              <FaInfoCircle className="w-3.5 h-3.5 text-text-tertiary" />
+            <Button
+              variant="text"
+              onClick={onToggleTaskInfoPanel}
+              className={clsx('py-1.5', showTaskInfoPanel && 'bg-bg-secondary-light')}
+              size="xs"
+              color="tertiary"
+            >
+              <FaInfoCircle className={clsx('w-3.5 h-3.5', showTaskInfoPanel ? 'text-text-secondary' : 'text-text-tertiary')} />
             </Button>
           </div>
         </Tooltip>
