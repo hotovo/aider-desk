@@ -352,6 +352,7 @@ src/
           MessageActions.tsx
           MessageBar.tsx
           MessageBlock.tsx
+          MessageBlockWrapper.tsx
           Messages.tsx
           ReflectedMessageBlock.tsx
           ResponseMessageBlock.tsx
@@ -14718,24 +14719,53 @@ const MessageBlockComponent = ({
 const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
 
 ================
-File: src/renderer/src/components/message/Messages.tsx
+File: src/renderer/src/components/message/MessageBlockWrapper.tsx
 ================
-import { forwardRef, memo, ReactNode, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
-import { toPng } from 'html-to-image';
-import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
-import { useTranslation } from 'react-i18next';
-import { DefaultTaskState, isAssistantGroupMessage, isGroupMessage, isUserMessage, Message, MessageViewMode, TaskData } from '@common/types';
+import { memo, useMemo, type ReactNode } from 'react';
+import { isGroupMessage, isAssistantGroupMessage, Message } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 ⋮----
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { includeMessageProperty } from '@/components/message/utils';
+⋮----
+type Props = {
+  baseDir: string;
+  taskId: string;
+  message: Message;
+  allFiles: string[];
+  renderMarkdown: boolean;
+  index: number;
+  lastUserMessageIndex: number;
+  inProgress: boolean;
+  removeMessage: (message: Message) => void;
+  redoLastUserPrompt: () => void;
+  editLastUserMessage: (content: string) => void;
+  onInterrupt?: () => void;
+  onForkFromMessage?: (message: Message) => void;
+  onRemoveUpToMessage?: (message: Message) => void;
+};
+⋮----
+onFork=
+
+================
+File: src/renderer/src/components/message/Messages.tsx
+================
+import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { toPng } from 'html-to-image';
+import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
+import { DefaultTaskState, isUserMessage, Message, MessageViewMode, TaskData } from '@common/types';
+⋮----
+import { MessageBlockWrapper } from './MessageBlockWrapper';
+⋮----
 import { IconButton } from '@/components/common/IconButton';
-import { groupAssistantMessages, groupMessagesByPromptContext, includeMessageProperty } from '@/components/message/utils';
+import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
-import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 export type MessagesRef = {
   exportToImage: () => void;
@@ -14765,8 +14795,6 @@ type Props = {
 const exportToImage = async () =>
 ⋮----
 // eslint-disable-next-line no-console
-⋮----
-onFork=
 ⋮----
 aria-label=
 
@@ -18775,14 +18803,11 @@ onCancel=
 ================
 File: src/renderer/src/components/PromptField/usePromptFieldText.ts
 ================
-import { useCallback, useEffect, useState } from 'react';
-import { useDebounceFn } from '@reactuses/core';
+import { useCallback } from 'react';
 ⋮----
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 ⋮----
 export const usePromptFieldText = (baseDir: string, taskId: string, onLoad?: (value: string) => void) =>
-⋮----
-// Sync immediate text with persisted text when it loads
 
 ================
 File: src/renderer/src/components/settings/agent/AgentProfileItem.tsx
