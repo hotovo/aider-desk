@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - updated project selection logic when closing or adding projects
+- replaced react-table library with custom implementation to avoid incompatibility with React Compiler
 
 ## [0.60.0]
 

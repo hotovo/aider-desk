@@ -1,4 +1,4 @@
-import { useState, ReactNode, useRef, useEffect, RefObject } from 'react';
+import { useState, ReactNode, useRef, useEffect, RefObject, useCallback, useMemo } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { FiEdit2, FiTrash2, FiPlus, FiEye, FiSliders, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
@@ -67,36 +67,38 @@ export const ModelTableSection = ({
     setIsBulkActionsOpen(false);
   });
 
-  const filteredModels = models.filter((model) => {
-    const matchesSearch = model.id.toLowerCase().includes(debouncedSearch.toLowerCase());
-    const matchesProvider = selectedProviderIds.length === 0 || selectedProviderIds.includes(model.providerId);
-    const matchesHidden = showHidden || !model.isHidden;
-    const provider = providers.find((p) => p.id === model.providerId);
-    const matchesDisabled = provider && provider.disabled;
-    return matchesSearch && matchesProvider && matchesHidden && !matchesDisabled;
-  });
+  const filteredModels = useMemo(() => {
+    return models.filter((model) => {
+      const matchesSearch = model.id.toLowerCase().includes(debouncedSearch.toLowerCase());
+      const matchesProvider = selectedProviderIds.length === 0 || selectedProviderIds.includes(model.providerId);
+      const matchesHidden = showHidden || !model.isHidden;
+      const provider = providers.find((p) => p.id === model.providerId);
+      const matchesDisabled = provider && provider.disabled;
+      return matchesSearch && matchesProvider && matchesHidden && !matchesDisabled;
+    });
+  }, [models, debouncedSearch, selectedProviderIds, showHidden, providers]);
 
   const visibleModelIds = filteredModels.map((model) => model.id);
 
   const allVisibleSelected = visibleModelIds.length > 0 && visibleModelIds.every((id) => selectedModelIds.includes(id));
 
-  const handleToggleSelectAll = () => {
-    setTableKey(tableKey + 1);
+  const handleToggleSelectAll = useCallback(() => {
+    setTableKey((prev) => prev + 1);
 
     if (allVisibleSelected) {
       setSelectedModelIds([]);
     } else {
       setSelectedModelIds(visibleModelIds);
     }
-  };
+  }, [allVisibleSelected, visibleModelIds]);
 
-  const handleSelectModel = (modelId: string, checked: boolean) => {
+  const handleSelectModel = useCallback((modelId: string, checked: boolean) => {
     if (checked) {
       setSelectedModelIds((prev) => [...prev, modelId]);
     } else {
       setSelectedModelIds((prev) => prev.filter((id) => id !== modelId));
     }
-  };
+  }, []);
 
   const handleClearSelection = () => {
     setSelectedModelIds([]);
@@ -127,157 +129,160 @@ export const ModelTableSection = ({
     },
   ];
 
-  const getRowClassName = (row: Model) => {
+  const getRowClassName = useCallback((row: Model) => {
     if (row.isHidden) {
       return 'text-text-muted-dark';
     }
     return undefined;
-  };
+  }, []);
 
-  const columns: Column<Model>[] = [
-    {
-      header: <Checkbox checked={allVisibleSelected} onChange={handleToggleSelectAll} size="sm" />,
-      cell: (_, row) => <Checkbox checked={selectedModelIds.includes(row.id)} onChange={(checked) => handleSelectModel(row.id, checked)} size="sm" />,
-      cellClassName: 'text-xs',
-      maxWidth: 40,
-    },
-    {
-      accessor: 'id',
-      header: t('modelLibrary.modelId'),
-      cell: (value) => value as ReactNode,
-      cellClassName: 'text-xs',
-    },
-    {
-      accessor: 'providerId',
-      header: t('modelLibrary.provider'),
-      cell: (value) => {
-        const provider = providers.find((p) => p.id === value);
-        return provider ? provider.name || t(`providers.${provider.provider.name}`) : (value as ReactNode);
+  const columns: Column<Model>[] = useMemo(
+    () => [
+      {
+        header: <Checkbox checked={allVisibleSelected} onChange={handleToggleSelectAll} size="sm" />,
+        cell: (_, row) => <Checkbox checked={selectedModelIds.includes(row.id)} onChange={(checked) => handleSelectModel(row.id, checked)} size="sm" />,
+        cellClassName: 'text-xs',
+        maxWidth: 40,
       },
-      cellClassName: 'text-xs',
-    },
-    {
-      accessor: 'maxInputTokens',
-      header: t('modelLibrary.maxInputTokens'),
-      align: 'center',
-      maxWidth: 150,
-      cellClassName: 'text-xs',
-      sort: (a, b) => (a.maxInputTokens || 0) - (b.maxInputTokens || 0),
-    },
-    {
-      accessor: 'inputCostPerToken',
-      header: t('modelLibrary.inputCost'),
-      cell: (value) => {
-        if (value === undefined || value === null) {
-          return '';
-        }
-        return `${(Number(value) * 1000000).toFixed(2)}`;
+      {
+        accessor: 'id',
+        header: t('modelLibrary.modelId'),
+        cell: (value) => value as ReactNode,
+        cellClassName: 'text-xs',
       },
-      align: 'center',
-      maxWidth: 150,
-      cellClassName: 'text-xs',
-      sort: (a, b) => (a.inputCostPerToken || 0) - (b.inputCostPerToken || 0),
-    },
-    {
-      accessor: 'cacheReadInputTokenCost',
-      header: t('modelLibrary.cachedInput'),
-      cell: (value) => {
-        if (value === undefined || value === null) {
-          return '';
-        }
-        return `${(Number(value) * 1000000).toFixed(2)}`;
+      {
+        accessor: 'providerId',
+        header: t('modelLibrary.provider'),
+        cell: (value) => {
+          const provider = providers.find((p) => p.id === value);
+          return provider ? provider.name || t(`providers.${provider.provider.name}`) : (value as ReactNode);
+        },
+        cellClassName: 'text-xs',
       },
-      align: 'center',
-      maxWidth: 150,
-      cellClassName: 'text-xs',
-      sort: (a, b) => (a.cacheReadInputTokenCost || 0) - (b.cacheReadInputTokenCost || 0),
-    },
-    {
-      accessor: 'cacheWriteInputTokenCost',
-      header: t('modelLibrary.cacheWrites'),
-      cell: (value) => {
-        if (value === undefined || value === null) {
-          return '';
-        }
-        return `${(Number(value) * 1000000).toFixed(2)}`;
+      {
+        accessor: 'maxInputTokens',
+        header: t('modelLibrary.maxInputTokens'),
+        align: 'center',
+        maxWidth: 150,
+        cellClassName: 'text-xs',
+        sort: (a, b) => (a.maxInputTokens || 0) - (b.maxInputTokens || 0),
       },
-      align: 'center',
-      maxWidth: 150,
-      cellClassName: 'text-xs',
-      sort: (a, b) => (a.cacheWriteInputTokenCost || 0) - (b.cacheWriteInputTokenCost || 0),
-    },
-    {
-      accessor: 'outputCostPerToken',
-      header: t('modelLibrary.outputCost'),
-      cell: (value) => {
-        if (value === undefined || value === null) {
-          return '';
-        }
-        return `${(Number(value) * 1000000).toFixed(2)}`;
+      {
+        accessor: 'inputCostPerToken',
+        header: t('modelLibrary.inputCost'),
+        cell: (value) => {
+          if (value === undefined || value === null) {
+            return '';
+          }
+          return `${(Number(value) * 1000000).toFixed(2)}`;
+        },
+        align: 'center',
+        maxWidth: 150,
+        cellClassName: 'text-xs',
+        sort: (a, b) => (a.inputCostPerToken || 0) - (b.inputCostPerToken || 0),
       },
-      align: 'center',
-      maxWidth: 150,
-      cellClassName: 'text-xs',
-      sort: (a, b) => (a.outputCostPerToken || 0) - (b.outputCostPerToken || 0),
-    },
-    {
-      accessor: 'maxOutputTokens',
-      header: t('modelLibrary.maxOutputTokens'),
-      align: 'center',
-      maxWidth: 180,
-      cellClassName: 'text-xs',
-      sort: (a, b) => (a.maxOutputTokens || 0) - (b.maxOutputTokens || 0),
-    },
-    {
-      accessor: 'temperature',
-      header: (
-        <Tooltip content={t('modelLibrary.temperature')}>
-          <MdThermostat className="w-4 h-4 text-text-secondary" />
-        </Tooltip>
-      ),
-      align: 'center',
-      maxWidth: 50,
-      cellClassName: 'text-xs',
-      sort: (a, b) => {
-        if (a.temperature === undefined && b.temperature === undefined) {
-          return 0;
-        }
-        if (a.temperature === undefined) {
-          return 1;
-        }
-        if (b.temperature === undefined) {
-          return -1;
-        }
-        return (a.temperature || 0) - (b.temperature || 0);
+      {
+        accessor: 'cacheReadInputTokenCost',
+        header: t('modelLibrary.cachedInput'),
+        cell: (value) => {
+          if (value === undefined || value === null) {
+            return '';
+          }
+          return `${(Number(value) * 1000000).toFixed(2)}`;
+        },
+        align: 'center',
+        maxWidth: 150,
+        cellClassName: 'text-xs',
+        sort: (a, b) => (a.cacheReadInputTokenCost || 0) - (b.cacheReadInputTokenCost || 0),
       },
-    },
-    {
-      header: '',
-      cell: (_, row) => {
-        const provider = providers.find((p) => p.id === row.providerId);
-        const isExtension = !!provider?.extensionId;
+      {
+        accessor: 'cacheWriteInputTokenCost',
+        header: t('modelLibrary.cacheWrites'),
+        cell: (value) => {
+          if (value === undefined || value === null) {
+            return '';
+          }
+          return `${(Number(value) * 1000000).toFixed(2)}`;
+        },
+        align: 'center',
+        maxWidth: 150,
+        cellClassName: 'text-xs',
+        sort: (a, b) => (a.cacheWriteInputTokenCost || 0) - (b.cacheWriteInputTokenCost || 0),
+      },
+      {
+        accessor: 'outputCostPerToken',
+        header: t('modelLibrary.outputCost'),
+        cell: (value) => {
+          if (value === undefined || value === null) {
+            return '';
+          }
+          return `${(Number(value) * 1000000).toFixed(2)}`;
+        },
+        align: 'center',
+        maxWidth: 150,
+        cellClassName: 'text-xs',
+        sort: (a, b) => (a.outputCostPerToken || 0) - (b.outputCostPerToken || 0),
+      },
+      {
+        accessor: 'maxOutputTokens',
+        header: t('modelLibrary.maxOutputTokens'),
+        align: 'center',
+        maxWidth: 180,
+        cellClassName: 'text-xs',
+        sort: (a, b) => (a.maxOutputTokens || 0) - (b.maxOutputTokens || 0),
+      },
+      {
+        accessor: 'temperature',
+        header: (
+          <Tooltip content={t('modelLibrary.temperature')}>
+            <MdThermostat className="w-4 h-4 text-text-secondary" />
+          </Tooltip>
+        ),
+        align: 'center',
+        maxWidth: 50,
+        cellClassName: 'text-xs',
+        sort: (a, b) => {
+          if (a.temperature === undefined && b.temperature === undefined) {
+            return 0;
+          }
+          if (a.temperature === undefined) {
+            return 1;
+          }
+          if (b.temperature === undefined) {
+            return -1;
+          }
+          return (a.temperature || 0) - (b.temperature || 0);
+        },
+      },
+      {
+        header: '',
+        cell: (_, row) => {
+          const provider = providers.find((p) => p.id === row.providerId);
+          const isExtension = !!provider?.extensionId;
 
-        return (
-          <div className="flex items-center justify-end space-x-2">
-            {!isExtension && <IconButton icon={<FiEdit2 className="w-4 h-4" />} onClick={() => onEditModel(row)} />}
-            <IconButton
-              icon={<FiEye className="w-4 h-4" />}
-              onClick={() => onToggleHidden(row)}
-              tooltip={row.isHidden ? t('modelLibrary.showModel') : t('modelLibrary.hideModel')}
-            />
-            {row.providerOverrides && Object.keys(row.providerOverrides).length > 0 && (
-              <IconButton icon={<FiSliders className="w-4 h-4 text-text-secondary" />} tooltip={t('modelLibrary.overrides.overridesProviderParameters')} />
-            )}
-            {!isExtension && row.isCustom && (
-              <IconButton icon={<FiTrash2 className="w-4 h-4" />} onClick={() => onDeleteModel(row)} className="text-error hover:text-error-light" />
-            )}
-          </div>
-        );
+          return (
+            <div className="flex items-center justify-end space-x-2">
+              {!isExtension && <IconButton icon={<FiEdit2 className="w-4 h-4" />} onClick={() => onEditModel(row)} />}
+              <IconButton
+                icon={<FiEye className="w-4 h-4" />}
+                onClick={() => onToggleHidden(row)}
+                tooltip={row.isHidden ? t('modelLibrary.showModel') : t('modelLibrary.hideModel')}
+              />
+              {row.providerOverrides && Object.keys(row.providerOverrides).length > 0 && (
+                <IconButton icon={<FiSliders className="w-4 h-4 text-text-secondary" />} tooltip={t('modelLibrary.overrides.overridesProviderParameters')} />
+              )}
+              {!isExtension && row.isCustom && (
+                <IconButton icon={<FiTrash2 className="w-4 h-4" />} onClick={() => onDeleteModel(row)} className="text-error hover:text-error-light" />
+              )}
+            </div>
+          );
+        },
+        align: 'left',
+        maxWidth: 110,
       },
-      align: 'left',
-      maxWidth: 110,
-    },
-  ];
+    ],
+    [allVisibleSelected, handleToggleSelectAll, selectedModelIds, handleSelectModel, t, providers, onEditModel, onToggleHidden, onDeleteModel],
+  );
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">

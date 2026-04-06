@@ -95,7 +95,6 @@
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",
     "@smithy/util-utf8": "^2.0.0",
-    "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "3.13.12",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.25",

@@ -1,11 +1,15 @@
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useMemo, useState, useCallback } from 'react';
 import * as React from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table';
 import { twMerge } from 'tailwind-merge';
 import { MdArrowUpward, MdArrowDownward } from 'react-icons/md';
 
 import { Column, FooterColumn } from './Table';
+
+type SortState = {
+  columnKey: string;
+  direction: 'asc' | 'desc' | null;
+};
 
 type Props<T> = {
   data: T[];
@@ -26,61 +30,45 @@ export const VirtualTable = <T extends object>({
   disableHeader = false,
   getRowClassName,
 }: Props<T>) => {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sortState, setSortState] = useState<SortState>({ columnKey: '', direction: null });
+
+  const handleSort = useCallback(
+    (column: Column<T>) => {
+      if (!column.sort || !column.accessor) {
+        return;
+      }
+
+      const accessorKey = String(column.accessor);
+      if (sortState.columnKey === accessorKey && sortState.direction === 'desc') {
+        setSortState({ columnKey: '', direction: null });
+        return;
+      }
+
+      const newDirection = sortState.columnKey === accessorKey && sortState.direction === 'asc' ? 'desc' : 'asc';
+      setSortState({ columnKey: accessorKey, direction: newDirection });
+    },
+    [sortState],
+  );
 
   // Apply manual sorting to data
   const sortedData = useMemo(() => {
-    if (!sorting.length) {
+    if (!sortState.columnKey || !sortState.direction) {
       return data;
     }
 
-    const sorted = [...data];
-    const sortColumn = sorting[0];
-
-    const column = columns.find((col) => col.accessor === sortColumn.id);
+    const column = columns.find((col) => String(col.accessor) === sortState.columnKey);
     if (!column?.sort) {
       return data;
     }
 
-    return sorted.sort((a, b) => {
+    return [...data].sort((a, b) => {
       const result = column.sort!(a, b);
-      return sortColumn.desc ? -result : result;
+      return sortState.direction === 'desc' ? -result : result;
     });
-  }, [data, columns, sorting]);
-  // Convert Column<T> to ColumnDef<T> for @tanstack/react-table
-  const tableColumns = useMemo<Array<ColumnDef<T>>>(() => {
-    return columns.map((column, index) => ({
-      id: (column.accessor as string) || `column-${index}`,
-      accessorKey: column.accessor as string,
-      header: () => column.header,
-      cell: (info) => {
-        const value = info.getValue() as T[keyof T] | null;
-        const row = info.row.original;
-        return column.cell ? column.cell(value, row) : (value as ReactNode);
-      },
-      size: column.maxWidth ? Number(column.maxWidth) : 200,
-      meta: {
-        originalColumn: column,
-        originalIndex: index,
-      },
-    }));
-  }, [columns]);
+  }, [data, columns, sortState]);
 
-  // Create table instance
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
-    data: sortedData,
-    columns: tableColumns,
-    getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
-    state: {
-      sorting,
-    },
-    manualSorting: true,
-    debugTable: false,
-  });
-
-  const { rows } = table.getRowModel();
+  // Generate row model for virtualizer
+  const rows = useMemo(() => sortedData.map((item, index) => ({ original: item, id: `${index}` })), [sortedData]);
 
   // Parent ref for virtualizer
   const parentRef = React.useRef<HTMLDivElement>(null);
@@ -99,48 +87,40 @@ export const VirtualTable = <T extends object>({
       {!disableHeader && (
         <div
           className="text-xs text-text-primary uppercase bg-bg-secondary-light border-b border-border-dark-light pr-[8px]"
-          key={sorting.map((sort) => `${sort.id}-${sort.desc}`).join(',')}
+          key={`${sortState.columnKey}-${sortState.direction}`}
         >
           <div className="flex">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <div key={headerGroup.id} className="flex w-full flex-nowrap items-stretch sticky top-0">
-                {headerGroup.headers.map((header) => {
-                  const headerMeta = header.column.columnDef.meta as { originalColumn: Column<T>; originalIndex: number } | undefined;
-                  const originalColumn = headerMeta?.originalColumn;
+            <div className="flex w-full flex-nowrap items-stretch sticky top-0">
+              {columns.map((column, index) => {
+                const isSortable = !!column.sort && !!column.accessor;
+                const isSorted = sortState.columnKey === column.accessor;
+                const sortDirection = isSorted ? sortState.direction : null;
 
-                  const isSortable = originalColumn?.sort && originalColumn?.accessor;
-                  const sortDirection = header.column.getIsSorted();
-
-                  return (
+                return (
+                  <div
+                    key={index}
+                    className={`px-4 py-2 flex items-center text-center flex-shrink-0 ${column.headerClassName || ''} ${
+                      column.align === 'center' ? 'justify-center' : column.align === 'right' ? 'justify-end' : 'justify-start'
+                    }`}
+                    style={{
+                      maxWidth: column.maxWidth,
+                      flex: '2',
+                      width: 1,
+                    }}
+                  >
                     <div
-                      key={header.id}
-                      className={`px-4 py-2 flex items-center text-center flex-shrink-0 ${originalColumn?.headerClassName || ''} ${
-                        originalColumn?.align === 'center' ? 'justify-center' : originalColumn?.align === 'right' ? 'justify-end' : 'justify-start'
-                      }`}
-                      style={{
-                        maxWidth: originalColumn?.maxWidth,
-                        flex: '2',
-                        width: 1,
-                      }}
+                      key={sortDirection || null}
+                      className={`flex items-center gap-1 ${isSortable ? 'cursor-pointer hover:text-text-primary' : ''}`}
+                      onClick={() => handleSort(column)}
                     >
-                      <div
-                        key={sortDirection || null}
-                        className={`flex items-center gap-1 ${isSortable ? 'cursor-pointer hover:text-text-primary' : ''}`}
-                        onClick={isSortable ? header.column.getToggleSortingHandler() : undefined}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {sortDirection === 'asc' && (
-                          <MdArrowUpward className={`w-3 h-3 ${sortDirection === 'asc' ? 'text-text-primary' : 'text-text-secondary'}`} />
-                        )}
-                        {sortDirection === 'desc' && (
-                          <MdArrowDownward className={`w-3 h-3 -mt-1 ${sortDirection === 'desc' ? 'text-text-primary' : 'text-text-secondary'}`} />
-                        )}
-                      </div>
+                      {column.header}
+                      {sortDirection === 'asc' && <MdArrowUpward className="w-3 h-3 text-text-primary" />}
+                      {sortDirection === 'desc' && <MdArrowDownward className="w-3 h-3 -mt-1 text-text-primary" />}
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -167,22 +147,21 @@ export const VirtualTable = <T extends object>({
                     width: '100%',
                   }}
                 >
-                  {row.getVisibleCells().map((cell) => {
-                    const columnMeta = cell.column.columnDef.meta as { originalColumn: Column<T>; originalIndex: number } | undefined;
-                    const column = columnMeta?.originalColumn;
+                  {columns.map((column, colIndex) => {
+                    const value = column.accessor ? row.original[column.accessor] : null;
                     return (
                       <div
-                        key={cell.id}
-                        className={`px-4 py-2 flex items-center flex-shrink-0 break-words text-ellipsis ${column?.cellClassName || ''} ${
-                          column?.align === 'center' ? 'justify-center' : column?.align === 'right' ? 'justify-end' : 'justify-start'
+                        key={colIndex}
+                        className={`px-4 py-2 flex items-center flex-shrink-0 break-words text-ellipsis ${column.cellClassName || ''} ${
+                          column.align === 'center' ? 'justify-center' : column.align === 'right' ? 'justify-end' : 'justify-start'
                         }`}
                         style={{
-                          maxWidth: column?.maxWidth,
+                          maxWidth: column.maxWidth,
                           flex: '2',
                           width: 1,
                         }}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {column.cell ? column.cell(value, row.original) : (value as ReactNode)}
                       </div>
                     );
                   })}
