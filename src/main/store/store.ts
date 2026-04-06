@@ -296,7 +296,7 @@ export class Store {
 
       this.store.set('settings', settings as SettingsData);
       this.store.set('openProjects', openProjects || []);
-      this.store.set('providers', providers);
+      this.store.set('providers', providers || []);
     }
 
     this.store.set('settingsVersion', CURRENT_SETTINGS_VERSION);
