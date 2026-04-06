@@ -160,12 +160,17 @@ export const Home = () => {
         try {
           const removedIndex = optimisticOpenProjects.findIndex((project) => project.baseDir === projectBaseDir);
           const remaining = optimisticOpenProjects.filter((project) => project.baseDir !== projectBaseDir);
-          if (remaining.length > 0) {
-            const nextProject = optimisticOpenProjects[removedIndex === optimisticOpenProjects.length - 1 ? removedIndex - 1 : removedIndex];
+
+          // Only change selection if we're closing the currently active project
+          if (projectBaseDir === optimisticActiveProject && remaining.length > 0) {
+            // Pick adjacent from remaining array (not original!) to avoid re-selecting the closed project
+            const nextIndex = removedIndex >= remaining.length ? removedIndex - 1 : removedIndex;
+            const nextProject = remaining[nextIndex];
             setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(nextProject.baseDir) }, { replace: true });
-          } else {
+          } else if (remaining.length === 0) {
             setSearchParams({}, { replace: true });
           }
+          // If closing non-active project: don't touch searchParams at all
 
           setOptimisticOpenProjects(remaining);
           const updatedProjects = await api.removeOpenProject(projectBaseDir);
@@ -175,7 +180,7 @@ export const Home = () => {
         }
       });
     },
-    [api, optimisticOpenProjects, setOptimisticOpenProjects, setSearchParams],
+    [api, optimisticOpenProjects, optimisticActiveProject, setOptimisticOpenProjects, setSearchParams],
   );
 
   // Close current project tab
@@ -438,6 +443,7 @@ export const Home = () => {
   const handleAddProject = async (baseDir: string) => {
     const projects = await api.addOpenProject(baseDir);
     setOpenProjects(projects);
+    void setActiveProject(baseDir);
   };
 
   const handleCloseOtherProjects = useCallback(

@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- updated project selection logic when closing or adding projects
+
 ## [0.60.0]
 
 - added settings to configure default working mode for tasks
