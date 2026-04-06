@@ -33,7 +33,7 @@ jobs:
           # Define the AI SDK packages to update
           packages=(
             "ai"
-            "@ai-sdk/provider"
+            "@ai-sdk/alibaba"
             "@ai-sdk/amazon-bedrock"
             "@ai-sdk/anthropic"
             "@ai-sdk/azure"
@@ -43,6 +43,8 @@ jobs:
             "@ai-sdk/google-vertex"
             "@ai-sdk/groq"
             "@ai-sdk/openai"
+            "@ai-sdk/openai-compatible"
+            "@ai-sdk/provider"
             "@openrouter/ai-sdk-provider"
             "@requesty/ai-sdk"
             "ollama-ai-provider-v2"
