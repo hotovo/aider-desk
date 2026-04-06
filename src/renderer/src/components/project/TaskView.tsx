@@ -716,8 +716,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 task={task}
                 projectDir={projectDir}
                 taskId={task.id}
-                onResumeTask={handleResumeTask}
-                onMarkAsDone={handleMarkAsDone}
+                onResumeTask={messages.length === 0 ? undefined : handleResumeTask}
+                onMarkAsDone={messages.length === 0 ? undefined : handleMarkAsDone}
                 onRunPrompt={handleRunPrompt}
                 onArchiveTask={onArchiveTask}
                 onUnarchiveTask={onUnarchiveTask}

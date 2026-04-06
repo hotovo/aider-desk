@@ -16,8 +16,8 @@ type Props = {
   mode?: Mode;
   isArchived: boolean | undefined;
   task?: TaskData | null;
-  onResumeTask: () => void;
-  onMarkAsDone: () => void;
+  onResumeTask?: () => void;
+  onMarkAsDone?: () => void;
   onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
@@ -90,7 +90,7 @@ export const TaskStateActions = ({
     );
   };
 
-  if (state === DefaultTaskState.Todo) {
+  if (state === DefaultTaskState.Todo && onResumeTask) {
     return renderSection(
       <RiPlayLine className="h-4 w-4 flex-shrink-0 text-text-tertiary" />,
       t('messages.taskTodoDescription'),
@@ -103,7 +103,7 @@ export const TaskStateActions = ({
     );
   }
 
-  if (state === DefaultTaskState.Interrupted) {
+  if (state === DefaultTaskState.Interrupted && onResumeTask) {
     return renderSection(
       <RiAlertLine className="h-4 w-4 flex-shrink-0 text-warning" />,
       t('messages.taskInterrupted'),
@@ -116,7 +116,7 @@ export const TaskStateActions = ({
     );
   }
 
-  if (state === DefaultTaskState.Delegated) {
+  if (state === DefaultTaskState.Delegated && onResumeTask) {
     return renderSection(
       <RiAlertLine className="h-4 w-4 flex-shrink-0 text-warning" />,
       t('messages.taskDelegated'),
@@ -142,7 +142,7 @@ export const TaskStateActions = ({
     );
   }
 
-  if (state === DefaultTaskState.ReadyForReview) {
+  if (state === DefaultTaskState.ReadyForReview && onMarkAsDone) {
     return renderSection(
       <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
       t('messages.taskReadyForReview'),
