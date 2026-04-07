@@ -43,7 +43,6 @@ echo ""
 
 # Step 5: Copy download scripts into package
 echo "--- Copying download scripts ---"
-cp "$ROOT_DIR/scripts/download-uv.mjs" "$SCRIPT_DIR/scripts/download-uv.mjs"
 cp "$ROOT_DIR/scripts/download-probe.mjs" "$SCRIPT_DIR/scripts/download-probe.mjs"
 echo "Download scripts copied."
 echo ""

@@ -199,6 +199,7 @@ describe('Task - findSkillActivationMessages', () => {
       mockMemoryManager,
       mockPromptsManager,
       mockExtensionManager,
+      {} as any,
     );
   });
 

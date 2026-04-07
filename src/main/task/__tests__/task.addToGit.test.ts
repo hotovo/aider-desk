@@ -210,6 +210,7 @@ describe('Task - addToGit', () => {
       mockMemoryManager,
       mockPromptsManager,
       mockExtensionManager,
+      {} as any,
     );
   });
 

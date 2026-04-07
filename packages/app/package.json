@@ -13,7 +13,7 @@
     "README.md"
   ],
   "scripts": {
-    "postinstall": "patch-package && RESOURCES_DIR=./out/resources node scripts/download-uv.mjs --current-platform-only && RESOURCES_DIR=./out/resources node scripts/download-probe.mjs --current-platform-only"
+    "postinstall": "patch-package && RESOURCES_DIR=./out/resources node scripts/download-probe.mjs --current-platform-only"
   },
   "keywords": [
     "ai",

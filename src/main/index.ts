@@ -7,13 +7,14 @@ import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron';
 
 import icon from '../../resources/icon.png?asset';
+import splashImage from '../../build/splash.mp4?asset';
 
 import { AIDER_DESK_DATA_DIR, HEADLESS_MODE } from '@/constants';
 import { ProgressWindow } from '@/progress-window';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { performStartUp, UpdateProgressData } from '@/start-up';
 import { Store } from '@/store';
-import logger from '@/logger';
+import logger, { eventTransport } from '@/logger';
 import { initManagers } from '@/managers';
 import { getDefaultProjectSettings } from '@/utils';
 import { WindowManager } from '@/window-manager';
@@ -302,11 +303,10 @@ app.whenReady().then(async () => {
 
     if (!HEADLESS_MODE) {
       progressBar = new ProgressWindow({
-        width: 400,
         icon,
+        splashImage,
       });
-      progressBar.title = 'Starting AiderDesk...';
-      progressBar.setDetail('Initializing core components...');
+      progressBar.setDetail('Launching AiderDesk...');
 
       await new Promise((resolve) => {
         progressBar?.on('ready', () => {
@@ -315,33 +315,18 @@ app.whenReady().then(async () => {
       });
       await delay(1000);
 
-      updateProgress = ({ step, message, info, progress }: UpdateProgressData) => {
-        progressBar!.title = step;
-        progressBar!.setDetail(message, info);
-        if (progress !== undefined) {
-          progressBar!.setProgress(progress);
-        }
+      updateProgress = ({ message }: UpdateProgressData) => {
+        progressBar!.setDetail(message);
       };
+
+      // Forward logger.info messages to splash screen
+      eventTransport.setSplashLogCallback((msg: string) => {
+        progressBar!.addLog(msg);
+      });
     } else {
       logger.info('Starting in headless mode...');
       // In headless mode, use a no-op updateProgress
       updateProgress = () => {};
-    }
-
-    try {
-      await performStartUp(updateProgress);
-      if (progressBar) {
-        progressBar.title = 'Startup complete';
-        progressBar.setDetail('Everything is ready! Have fun coding!', 'Booting up UI...');
-        progressBar.setCompleted();
-      }
-    } catch (error) {
-      if (progressBar) {
-        progressBar?.close();
-      }
-      dialog.showErrorBox('Setup Failed', error instanceof Error ? error.message : 'Unknown error occurred during setup');
-      app.quit();
-      return;
     }
 
     // Initialize store globally
@@ -350,8 +335,29 @@ app.whenReady().then(async () => {
     // Initialize window manager
     windowManager = new WindowManager();
 
-    // Initialize managers (shared across all windows)
+    // Initialize managers (shared across all windows) — creates pythonInstaller
     const managers = await initManagers(store, windowManager);
+
+    try {
+      // performStartUp is now non-blocking — it kicks off background installation
+      // and returns immediately. The progress bar acts as a splash screen.
+      await performStartUp(managers.pythonInstaller, updateProgress);
+
+      if (progressBar) {
+        progressBar.setDetail('Starting up...');
+      }
+    } catch (error) {
+      // performStartUp no longer throws for install errors (handled async)
+      // but guard against unexpected issues
+      logger.error('Unexpected error during startup', { error });
+      if (progressBar) {
+        eventTransport.clearSplashLogCallback();
+        progressBar?.close();
+      }
+      dialog.showErrorBox('Startup Error', error instanceof Error ? error.message : 'Unknown error occurred during startup');
+      app.quit();
+      return;
+    }
 
     // Setup global cleanup
     const globalCleanup = async () => {
@@ -390,11 +396,22 @@ app.whenReady().then(async () => {
     }
 
     // Initialize IPC handlers
-    setupIpcHandlers(managers.eventsHandler, managers.serverController);
+    setupIpcHandlers(managers.eventsHandler, managers.serverController, managers.pythonInstaller);
 
     if (!HEADLESS_MODE) {
       // Create the first window
+      // Create the first window
       await createNewWindow();
+
+      // Show ready state before closing
+      if (progressBar) {
+        progressBar.setDetail('Everything is ready. Happy coding!');
+        progressBar.setCompleted();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+
+      // Stop forwarding logs to splash before closing
+      eventTransport.clearSplashLogCallback();
       progressBar?.close();
 
       app.on('activate', function () {

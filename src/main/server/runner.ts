@@ -84,15 +84,15 @@ const main = async (): Promise<void> => {
     logger.info(`[${step}] ${message}${info ? ` (${info})` : ''}${progress !== undefined ? ` [${Math.round(progress)}%]` : ''}`);
   };
 
+  const store = new Store();
+  await store.init(AIDER_DESK_DATA_DIR);
+
+  // Initialize managers first (creates pythonInstaller)
+  const { modelManager, agentProfileManager, pythonInstaller } = await initManagers(store);
+
   try {
-    await performStartUp(updateProgress);
+    await performStartUp(pythonInstaller, updateProgress);
     logger.info('Startup complete');
-
-    const store = new Store();
-    await store.init(AIDER_DESK_DATA_DIR);
-
-    // Initialize managers first
-    const { modelManager, agentProfileManager } = await initManagers(store);
 
     // Check for AIDER_DESK_PROJECTS environment variable and add projects
     await addProjectsFromEnv(store, modelManager, agentProfileManager);

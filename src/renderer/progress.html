@@ -3,111 +3,260 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Starting AiderDesk...</title>
+  <title>Starting...</title>
   <style>
-    body {
+    @font-face {
+      font-family: 'Sono';
+      src: url('./src/fonts/Sono.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+  </style>
+  <style>
+    * {
       margin: 0;
-      padding: 20px;
-      background-color: #222431;
-      color: #f1f3f5;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+      padding: 0;
       box-sizing: border-box;
     }
-    .text {
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 8px;
+
+    body {
+      padding: 32px;
+      background: transparent;
+      color: #f1f3f5;
+      font-family: 'Sono', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      -webkit-app-region: drag;
     }
-    .subtitle {
-      font-size: 11px;
-      color: #999ba3;
-      margin-bottom: 4px;
-      display: none;
+
+    .container {
+      position: relative;
+      background: #222431;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: 1px solid #3d4166;
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      -webkit-app-region: no-drag;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(34, 36, 49, 0.7);
+      border-radius: 12px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #splash-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+      z-index: 0;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 14px;
+    }
+
+    .brand-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #f1f3f5;
+      letter-spacing: -0.3px;
     }
 
     .detail {
-      font-size: 12px;
-      color: #999ba3;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 13px;
+      font-weight: 400;
+      /*color: #999ba3;*/
+      text-align: center;
+      min-height: 20px;
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
     }
-    .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(88, 92, 117, 0.3);
-      border-top-color: #585c75;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      flex-shrink: 0;
-      display: none;
+
+    .detail-text {
+      opacity: 0;
+      animation: fadeIn 0.3s ease forwards;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
     }
+
+    .completed .detail {
+      color: #22c55edd;
+    }
+
     .progress-container {
-      height: 16px;
-      background-color: #191a22;
-      border-radius: 2px;
+      width: 100%;
+      height: 2px;
+      background: #333652;
+      border-radius: 1px;
       overflow: hidden;
-      margin-bottom: 8px;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
     }
+
     .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
       height: 100%;
-      width: 0;
-      background-color: #3d4166;
-      border-radius: 2px;
-      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+      background: #f1f3f588;
+      border-radius: 1px;
+      transition: width 0.3s ease;
     }
+
+    .progress-indeterminate {
+      width: 40%;
+      animation: indeterminate-slide 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes indeterminate-slide {
+      0% {
+        left: -40%;
+        right: 100%;
+      }
+      60% {
+        left: 100%;
+        right: -40%;
+      }
+      100% {
+        left: 100%;
+        right: -40%;
+      }
+    }
+
     .completed .progress-bar {
       width: 100% !important;
-      background-color: #3b82f6;
+      animation: none;
+      background: #22c55e;
+    }
+
+    .log-line {
+      width: 100%;
+      font-size: 11px;
+      /*color: #7b7d86;*/
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: 'Sono', monospace;
+      text-align: center;
+      opacity: 0.8;
+      min-height: 16px;
+      transition: opacity 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .log-line:not(:empty) {
+      opacity: 1;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(4px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .completed .detail {
+      color: #22c55e4c;
     }
   </style>
 </head>
 <body>
-  <div class="text" id="text">Starting AiderDesk...</div>
-  <div class="detail" id="detail">
-    <span id="detail-text">Initializing...</span>
-    <div class="spinner" id="spinner"></div>
-  </div>
-  <div class="subtitle" id="subtitle">This may take a while...</div>
-  <div class="progress-container">
-    <div class="progress-bar" id="progress-bar"></div>
+  <div class="container">
+    <video id="splash-video" autoplay muted loop></video>
+    <div class="brand">
+      <div class="brand-icon-wrapper">
+        <img class="brand-icon" id="brand-icon" src="" alt="AiderDesk">
+      </div>
+      <span class="brand-name">AiderDesk</span>
+    </div>
+
+    <div class="detail">
+      <span class="detail-text" id="detail-text">Initializing...</span>
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-bar progress-indeterminate" id="progress-bar"></div>
+    </div>
+
+    <div class="log-line" id="log-line"></div>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
 
-    ipcRenderer.on('set-title', (_, title) => {
-      document.getElementById('text').textContent = title;
+    ipcRenderer.on('set-icon-path', (_, iconPath) => {
+      document.getElementById('brand-icon').src = iconPath;
     });
 
-    ipcRenderer.on('set-detail', (_, value, subtitle) => {
-      const messageEl = document.getElementById('detail-text');
-      const spinnerEl = document.getElementById('spinner');
-      const infoEl = document.getElementById('subtitle');
+    ipcRenderer.on('set-splash-image', (_, imagePath) => {
+      const video = document.getElementById('splash-video');
+      video.src = imagePath;
+    });
 
-      messageEl.textContent = value;
-      const showSpinner = /installing|package|aider|connector|requirements|python|uv|venv/i.test(value.toLowerCase());
-      spinnerEl.style.display = showSpinner ? 'block' : 'none';
+    ipcRenderer.on('set-title', (_, title) => {
+      // Title is no longer displayed, but keep handler for compatibility
+    });
 
-      infoEl.textContent = subtitle || '';
-      infoEl.style.display = subtitle ? 'block' : 'none';
+    ipcRenderer.on('set-detail', (_, value) => {
+      const detailTextEl = document.getElementById('detail-text');
+
+      // Trigger fade-in animation by removing and re-adding the element
+      detailTextEl.style.animation = 'none';
+      setTimeout(() => {
+        detailTextEl.textContent = value;
+        detailTextEl.style.animation = 'fadeIn 0.4s ease forwards';
+      }, 10);
     });
 
     ipcRenderer.on('set-completed', () => {
       document.body.classList.add('completed');
+      const progressBar = document.getElementById('progress-bar');
+      progressBar.classList.remove('progress-indeterminate');
     });
 
-    const progressBar = document.getElementById('progress-bar');
+    const logLine = document.getElementById('log-line');
 
-    ipcRenderer.on('set-progress', (_, progress) => {
-      progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+    ipcRenderer.on('add-log', (_, message) => {
+      logLine.textContent = message;
     });
   </script>
 </body>

@@ -21,6 +21,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { determineMainModel, determineWeakModel } from '@/utils';
 
 export class Project {
@@ -44,6 +45,7 @@ export class Project {
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
   ) {
     this.customCommandManager = new CustomCommandManager(this, this.eventManager, this.extensionManager);
     this.tasksLoadingPromise = this.loadTasks();
@@ -166,6 +168,7 @@ export class Project {
       this.memoryManager,
       this.promptsManager,
       this.extensionManager,
+      this.pythonInstaller,
       initialTaskData,
     );
     this.tasks.set(taskId, task);

@@ -13,6 +13,7 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 
 export class ProjectManager {
   public readonly worktreeManager: WorktreeManager;
@@ -30,6 +31,7 @@ export class ProjectManager {
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
   ) {
     this.worktreeManager = worktreeManager;
   }
@@ -53,6 +55,7 @@ export class ProjectManager {
       this.memoryManager,
       this.promptsManager,
       this.extensionManager,
+      this.pythonInstaller,
     );
     this.projects.push(project);
     return project;

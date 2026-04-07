@@ -13,6 +13,7 @@ import { EventManager } from '@/events';
 export class EventTransport extends Transport {
   private logBuffer: LogBuffer;
   private eventManager: EventManager | null = null;
+  private splashLogCallback: ((message: string) => void) | null = null;
 
   constructor(opts?: Transport.TransportStreamOptions) {
     super(opts);
@@ -22,6 +23,14 @@ export class EventTransport extends Transport {
 
   setEventManager(eventManager: EventManager): void {
     this.eventManager = eventManager;
+  }
+
+  setSplashLogCallback(callback: (message: string) => void): void {
+    this.splashLogCallback = callback;
+  }
+
+  clearSplashLogCallback(): void {
+    this.splashLogCallback = null;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -55,6 +64,11 @@ export class EventTransport extends Transport {
     if (this.eventManager) {
       const data: SystemLogData = { entry };
       this.eventManager.sendSystemLog(data);
+    }
+
+    // Forward info-level messages to splash screen during startup
+    if (this.splashLogCallback && entry.level === 'info') {
+      this.splashLogCallback(entry.message);
     }
 
     callback();

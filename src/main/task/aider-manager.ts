@@ -17,6 +17,7 @@ import { ModelManager } from '@/models';
 import { EventManager } from '@/events';
 import { getEnvironmentVariablesForAider } from '@/utils';
 import { Task } from '@/task/task';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 
 export class AiderManager {
   private aiderProcess: ChildProcessWithoutNullStreams | null = null;
@@ -34,6 +35,7 @@ export class AiderManager {
     private readonly modelManager: ModelManager,
     private readonly eventManager: EventManager,
     private readonly getConnectors: () => Connector[],
+    private readonly pythonInstaller: PythonDependenciesInstaller,
   ) {}
 
   public async start(forceRestart = false): Promise<void> {
@@ -48,6 +50,7 @@ export class AiderManager {
 
     // Set aiderStarting to true when starting aider
     this.aiderStarting = true;
+    this.eventManager.sendAiderConnectorStatus({ state: 'starting-connector' }, this.task.getProjectDir(), this.task.taskId);
 
     const settings = this.store.getSettings();
     const projectSettings = this.store.getProjectSettings(this.task.getProjectDir());
@@ -79,6 +82,16 @@ export class AiderManager {
       reasoningEffort,
       thinkingTokens,
     });
+
+    // Ensure Python dependencies are installed before spawning
+    if (!this.pythonInstaller.isReady()) {
+      logger.info('Waiting for Python dependencies to be installed...', {
+        baseDir: this.task.getProjectDir(),
+        taskId: this.task.task.id,
+        status: this.pythonInstaller.getStatus(),
+      });
+      await this.pythonInstaller.waitForReady();
+    }
 
     const rawOptionsArgs = (settings.aider.options.match(/(?:[^\s"]+|"[^"]*")+/g) as string[]) || [];
     const optionsArgsSet = new Set(rawOptionsArgs);
@@ -340,6 +353,7 @@ export class AiderManager {
     // Set aiderStarting to false when a connector with source==='aider' is added
     if (connector.source === 'aider') {
       this.aiderStarting = false;
+      this.eventManager.sendAiderConnectorStatus({ state: 'ready' }, this.task.getProjectDir(), this.task.taskId);
       if (this.aiderStartResolve) {
         this.aiderStartResolve();
         this.aiderStartResolve = null;

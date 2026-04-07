@@ -62,6 +62,7 @@ import {
   AvailableExtension,
   ExtensionUIComponent,
   ModalOverlayUrlData,
+  AiderConnectorStatus,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -108,6 +109,7 @@ type EventDataMap = {
   'terminal-exit': TerminalExitData;
   'extension-ui-refresh': ExtensionUIRefreshData;
   'modal-overlay-url': ModalOverlayUrlData;
+  'aider-connector-status': { baseDir?: string; taskId?: string; status: AiderConnectorStatus };
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -180,6 +182,7 @@ export class BrowserApi implements ApplicationAPI {
       'queued-prompts-updated': new Map(),
       'extension-ui-refresh': new Map(),
       'modal-overlay-url': new Map(),
+      'aider-connector-status': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -1205,5 +1208,18 @@ export class BrowserApi implements ApplicationAPI {
 
   isWebViewSupported(): boolean {
     return false;
+  }
+
+  addAiderConnectorStatusListener(
+    callback: (data: { baseDir?: string; taskId?: string; status: AiderConnectorStatus }) => void,
+    baseDir?: string,
+    taskId?: string,
+  ): () => void {
+    return this.addListener('aider-connector-status', callback, baseDir, taskId);
+  }
+
+  async getAiderConnectorStatus(): Promise<AiderConnectorStatus> {
+    const response = await this.apiClient.get('/api/aider-connector-status');
+    return response.data;
   }
 }

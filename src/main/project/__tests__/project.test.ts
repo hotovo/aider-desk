@@ -218,6 +218,7 @@ describe('Project - createNewTask', () => {
       mockMemoryManager as MemoryManager,
       mockPromptsManager as PromptsManager,
       mockExtensionManager as ExtensionManager,
+      {} as any,
     );
 
     // Wait for tasks to load
@@ -573,6 +574,7 @@ describe('Project - deleteTask', () => {
       mockMemoryManager,
       mockPromptsManager,
       mockExtensionManager,
+      {} as any,
     );
 
     await (project as any).tasksLoadingPromise;

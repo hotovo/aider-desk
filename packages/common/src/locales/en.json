@@ -1406,6 +1406,15 @@
     "worktree": "Worktree",
     "worktreeTooltip": "Toggle worktree for this task"
   },
+  "pythonSetup": {
+    "checkingUv": "Checking uv installation...",
+    "downloadingUv": "Downloading uv...",
+    "creatingVenv": "Creating Python environment...",
+    "installingPackage": "Installing {{package}} ({{current}}/{{total}})...",
+    "settingUpConnector": "Setting up Aider connector...",
+    "settingUpMcp": "Setting up MCP server...",
+    "failed": "Python setup failed: {{error}}"
+  },
   "workingMode": {
     "local": "Local",
     "worktree": "Worktree",
@@ -1682,6 +1691,9 @@
       }
     },
     "selectMode": "Select"
+  },
+  "aiderConnector": {
+    "starting": "Aider connector is starting up..."
   },
   "showModelSelector": "Change model",
   "hideModelSelector": "Hide model selector",

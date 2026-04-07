@@ -20,6 +20,7 @@ import { SERVER_PORT } from '@/constants';
 import logger, { initEventLogging } from '@/logger';
 import { EventsHandler } from '@/events-handler';
 import { PromptsManager } from '@/prompts';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 
 export interface ManagersResult {
   eventsHandler: EventsHandler;
@@ -28,6 +29,7 @@ export interface ManagersResult {
   modelManager: ModelManager;
   agentProfileManager: AgentProfileManager;
   extensionManager: ExtensionManager;
+  pythonInstaller: PythonDependenciesInstaller;
 }
 
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> => {
@@ -48,6 +50,9 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
 
   // Initialize event-based logging (adds transport to logger)
   initEventLogging(eventManager);
+
+  // Create Python dependencies installer (self-wires status events via EventManager)
+  const pythonInstaller = new PythonDependenciesInstaller(eventManager);
 
   // Initialize model manager
   const modelManager = new ModelManager(store, eventManager);
@@ -95,6 +100,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     memoryManager,
     promptsManager,
     extensionManager,
+    pythonInstaller,
   );
 
   // Initialize terminal manager
@@ -188,5 +194,6 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     modelManager,
     agentProfileManager,
     extensionManager,
+    pythonInstaller,
   };
 };

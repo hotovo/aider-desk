@@ -453,4 +453,11 @@ export class EventManager {
     this.sendToWindows('modal-overlay-url', data);
     this.broadcastToEventConnectors('modal-overlay-url', data);
   }
+
+  // Aider connector status events (Python install + per-task connector lifecycle)
+  sendAiderConnectorStatus(status: import('@/python-dependencies-installer').PythonInstallStatus, baseDir?: string, taskId?: string): void {
+    const data = { baseDir, taskId, status };
+    this.sendToWindows('aider-connector-status', data);
+    this.broadcastToEventConnectors('aider-connector-status', data);
+  }
 }

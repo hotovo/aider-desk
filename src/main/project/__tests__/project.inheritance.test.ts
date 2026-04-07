@@ -94,6 +94,7 @@ describe('Project Inheritance', () => {
           removeListener: vi.fn(),
         })),
       } as any,
+      {} as any,
     );
 
     // Mock prepareTask to return a mock Task

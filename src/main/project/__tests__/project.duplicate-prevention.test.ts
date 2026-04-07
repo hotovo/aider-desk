@@ -87,6 +87,7 @@ describe('Project Duplicate Subtask Prevention', () => {
           removeListener: vi.fn(),
         })),
       } as any,
+      {} as any,
     );
 
     // Mock INTERNAL_TASK_ID

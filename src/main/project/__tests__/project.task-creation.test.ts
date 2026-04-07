@@ -242,6 +242,7 @@ describe('Project - createNewTask', () => {
       mockMemoryManager as MemoryManager,
       mockPromptsManager as PromptsManager,
       mockExtensionManager as ExtensionManager,
+      {} as any,
     );
 
     // Wait for tasks to load

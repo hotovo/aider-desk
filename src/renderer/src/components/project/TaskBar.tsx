@@ -22,6 +22,7 @@ import { useApi } from '@/contexts/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useAiderConnectorStatus } from '@/hooks/useAiderConnectorStatus';
 
 export type TaskBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -49,6 +50,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     const api = useApi();
     const { isMobile } = useResponsive();
     const [isMerging, setIsMerging] = useState(false);
+    const aiderConnectorStatus = useAiderConnectorStatus(baseDir, task.id);
 
     const updatePreferredModels = useCallback(
       (model: string) => {
@@ -393,74 +395,124 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
 
     const isTwoRowLayout = !AIDER_MODES.includes(mode) && showAiderInfo;
 
+    /** Format the Python installation status for display in the TaskBar. */
+    const getAiderConnectorStatusMessage = (): string | null => {
+      const s = aiderConnectorStatus;
+      if (s.state === 'ready' || s.state === 'idle') {
+        return null;
+      }
+      if (s.state === 'failed') {
+        return t('pythonSetup.failed', { error: s.error });
+      }
+      if (s.state === 'checking-uv') {
+        return t('pythonSetup.checkingUv');
+      }
+      if (s.state === 'downloading-uv') {
+        return t('pythonSetup.downloadingUv');
+      }
+      if (s.state === 'creating-venv') {
+        return t('pythonSetup.creatingVenv');
+      }
+      if (s.state === 'installing-packages') {
+        return t('pythonSetup.installingPackage', { package: s.package, current: s.current, total: s.total });
+      }
+      if (s.state === 'setting-up-connector') {
+        return t('pythonSetup.settingUpConnector');
+      }
+      if (s.state === 'setting-up-mcp') {
+        return t('pythonSetup.settingUpMcp');
+      }
+      if (s.state === 'starting-connector') {
+        return t('aiderConnector.starting');
+      }
+      return null;
+    };
+
+    const aiderConnectorMessage = getAiderConnectorStatusMessage();
+    const isAiderBusy = aiderConnectorMessage !== null && aiderConnectorStatus.state !== 'ready' && aiderConnectorStatus.state !== 'failed';
+
     const renderAiderInfo = (showLabel = false) => {
       return (
         <div className={clsx('flex flex-wrap gap-x-2 flex-shrink-0', isMobile ? 'flex-col items-start gap-y-1' : 'flex-row items-center gap-y-0.5')}>
           {showLabel && <span className="text-2xs font-semibold text-text-primary uppercase whitespace-nowrap">{t('projectBar.aider')}:</span>}
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            <Tooltip content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)}>
-              <CgTerminal className="w-4 h-4 text-text-primary mr-1" />
-            </Tooltip>
-            <ModelSelector
-              ref={mainModelSelectorRef}
-              models={aiderModels}
-              selectedModelId={modelsData?.mainModel}
-              onChange={updateMainModel}
-              preferredModelIds={settings?.preferredModels || []}
-              removePreferredModel={handleRemovePreferredModel}
-              providers={providers}
-            />
-          </div>
-          {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            <Tooltip content={t('modelSelector.weakModel')}>
-              <BsFilter className="w-4 h-4 text-text-primary mr-1" />
-            </Tooltip>
-            <ModelSelector
-              models={aiderModels}
-              selectedModelId={modelsData?.weakModel || modelsData?.mainModel}
-              onChange={updateWeakModel}
-              preferredModelIds={settings?.preferredModels || []}
-              removePreferredModel={handleRemovePreferredModel}
-              providers={providers}
-            />
-            {task.weakModel && (
-              <IconButton
-                icon={task.weakModelLocked ? <VscLock className="w-4 h-4" /> : <VscUnlock className="w-4 h-4" />}
-                onClick={toggleWeakModelLock}
-                tooltip={task.weakModelLocked ? t('modelSelector.weakModelUnlock') : t('modelSelector.weakModelLock')}
-              />
-            )}
-          </div>
-          {modelsData?.editFormat && (
+          {isAiderBusy ? (
+            <div className="flex items-center space-x-2 flex-shrink-0 text-xs text-text-secondary animate-pulse">
+              <CgTerminal className="w-4 h-4 mr-1" />
+              <span>{aiderConnectorMessage}</span>
+            </div>
+          ) : aiderConnectorStatus.state === 'failed' ? (
+            <div className="flex items-center space-x-2 flex-shrink-0 text-xs text-red-400">
+              <CgTerminal className="w-4 h-4 mr-1" />
+              <span>{aiderConnectorMessage}</span>
+            </div>
+          ) : (
             <>
-              {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
-              <div className="flex items-center space-x-1 flex-shrink-0">
-                <Tooltip content={t('projectBar.editFormatTooltip')}>
-                  <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" />
+              <div className="flex items-center space-x-2 flex-shrink-0">
+                <Tooltip content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)}>
+                  <CgTerminal className="w-4 h-4 text-text-primary mr-1" />
                 </Tooltip>
-                <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
+                <ModelSelector
+                  ref={mainModelSelectorRef}
+                  models={aiderModels}
+                  selectedModelId={modelsData?.mainModel}
+                  onChange={updateMainModel}
+                  preferredModelIds={settings?.preferredModels || []}
+                  removePreferredModel={handleRemovePreferredModel}
+                  providers={providers}
+                />
               </div>
-            </>
-          )}
-          {modelsData?.reasoningEffort && modelsData.reasoningEffort !== 'none' && (
-            <>
               {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
-              <div className="flex items-center space-x-1 group/reasoning flex-shrink-0">
-                <span className="text-2xs text-text-muted-light whitespace-nowrap">{t('modelSelector.reasoning')}:</span>
-                <span className="text-text-primary text-2xs whitespace-nowrap">{modelsData.reasoningEffort}</span>
-                <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('reasoning-effort none')} className="ml-0.5" />
+              <div className="flex items-center space-x-2 flex-shrink-0">
+                <Tooltip content={t('modelSelector.weakModel')}>
+                  <BsFilter className="w-4 h-4 text-text-primary mr-1" />
+                </Tooltip>
+                <ModelSelector
+                  models={aiderModels}
+                  selectedModelId={modelsData?.weakModel || modelsData?.mainModel}
+                  onChange={updateWeakModel}
+                  preferredModelIds={settings?.preferredModels || []}
+                  removePreferredModel={handleRemovePreferredModel}
+                  providers={providers}
+                />
+                {task.weakModel && (
+                  <IconButton
+                    icon={task.weakModelLocked ? <VscLock className="w-4 h-4" /> : <VscUnlock className="w-4 h-4" />}
+                    onClick={toggleWeakModelLock}
+                    tooltip={task.weakModelLocked ? t('modelSelector.weakModelUnlock') : t('modelSelector.weakModelLock')}
+                  />
+                )}
               </div>
-            </>
-          )}
-          {modelsData?.thinkingTokens && modelsData?.thinkingTokens !== '0' && (
-            <>
-              {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
-              <div className="flex items-center space-x-1 group/thinking flex-shrink-0">
-                <span className="text-2xs text-text-muted-light whitespace-nowrap">{t('modelSelector.thinkingTokens')}:</span>
-                <span className="text-text-primary text-2xs whitespace-nowrap">{modelsData.thinkingTokens}</span>
-                <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('think-tokens 0')} className="ml-0.5" />
-              </div>
+              {modelsData?.editFormat && (
+                <>
+                  {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
+                  <div className="flex items-center space-x-1 flex-shrink-0">
+                    <Tooltip content={t('projectBar.editFormatTooltip')}>
+                      <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" />
+                    </Tooltip>
+                    <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
+                  </div>
+                </>
+              )}
+              {modelsData?.reasoningEffort && modelsData.reasoningEffort !== 'none' && (
+                <>
+                  {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
+                  <div className="flex items-center space-x-1 group/reasoning flex-shrink-0">
+                    <span className="text-2xs text-text-muted-light whitespace-nowrap">{t('modelSelector.reasoning')}:</span>
+                    <span className="text-text-primary text-2xs whitespace-nowrap">{modelsData.reasoningEffort}</span>
+                    <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('reasoning-effort none')} className="ml-0.5" />
+                  </div>
+                </>
+              )}
+              {modelsData?.thinkingTokens && modelsData?.thinkingTokens !== '0' && (
+                <>
+                  {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
+                  <div className="flex items-center space-x-1 group/thinking flex-shrink-0">
+                    <span className="text-2xs text-text-muted-light whitespace-nowrap">{t('modelSelector.thinkingTokens')}:</span>
+                    <span className="text-text-primary text-2xs whitespace-nowrap">{modelsData.thinkingTokens}</span>
+                    <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('think-tokens 0')} className="ml-0.5" />
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

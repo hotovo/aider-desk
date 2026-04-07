@@ -64,6 +64,7 @@ import {
   ExtensionUIComponent,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
+  AiderConnectorStatus,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -283,4 +284,9 @@ export interface ApplicationAPI {
   getSystemLogs: (fromId?: number, limit?: number, levels?: SystemLogLevel[]) => Promise<SystemLogsResponse>;
   clearSystemLogs: () => Promise<void>;
   addSystemLogListener: (callback: (data: SystemLogData) => void) => () => void;
+
+  // Aider connector status (Python install + per-task connector lifecycle)
+  addAiderConnectorStatusListener: (callback: (data: { baseDir?: string; taskId?: string; status: AiderConnectorStatus }) => void, baseDir?: string, taskId?: string) => () => void;
+  getAiderConnectorStatus: () => Promise<AiderConnectorStatus>;
+
 }

@@ -1,6 +1,6 @@
 import { join } from 'path';
 
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow } from 'electron';
 
 import { isDev } from '@/app';
 
@@ -9,19 +9,19 @@ export class ProgressWindow {
   private readyPromise: Promise<void>;
   private resolveReady!: () => void;
 
-  constructor(options: { width?: number; height?: number; icon?: string }) {
+  constructor(options: { width?: number; height?: number; icon?: string; splashImage?: string }) {
     this.readyPromise = new Promise((resolve) => {
       this.resolveReady = resolve;
     });
 
     this.window = new BrowserWindow({
-      width: options.width ?? 400,
-      height: 150,
+      width: options.width ?? 540,
+      height: options.height ?? 400,
       resizable: false,
       frame: false,
-      show: false,
+      show: true,
+      transparent: true,
       icon: options.icon,
-      backgroundColor: '#1c2025',
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: false,
@@ -33,20 +33,14 @@ export class ProgressWindow {
       this.resolveReady();
     });
 
-    ipcMain.on('progress-window-set-title', (_, title: string) => {
-      this.window.webContents.send('set-title', title);
-    });
-
-    ipcMain.on('progress-window-set-message', (_, message: string) => {
-      this.window.webContents.send('set-message', message);
-    });
-
-    ipcMain.on('progress-window-set-completed', () => {
-      this.window.webContents.send('set-completed');
-    });
-
-    ipcMain.on('progress-window-set-progress', (_, progress: number) => {
-      this.window.webContents.send('set-progress', progress);
+    // Send icon path and splash image to renderer once loaded
+    this.window.webContents.on('did-finish-load', () => {
+      if (options.icon) {
+        this.window.webContents.send('set-icon-path', options.icon);
+      }
+      if (options.splashImage) {
+        this.window.webContents.send('set-splash-image', options.splashImage);
+      }
     });
 
     if (isDev()) {
@@ -62,20 +56,16 @@ export class ProgressWindow {
     }
   }
 
-  set title(value: string) {
-    this.window.webContents.send('set-title', value);
-  }
-
-  setDetail(value: string, subtitle?: string): void {
-    this.window.webContents.send('set-detail', value, subtitle);
+  setDetail(value: string): void {
+    this.window.webContents.send('set-detail', value);
   }
 
   setCompleted(): void {
     this.window.webContents.send('set-completed');
   }
 
-  setProgress(progress: number): void {
-    this.window.webContents.send('set-progress', Math.min(100, Math.max(0, progress)));
+  addLog(message: string): void {
+    this.window.webContents.send('add-log', message);
   }
 
   close(): void {

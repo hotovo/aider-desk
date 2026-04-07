@@ -80,6 +80,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager, ExtensionEventMap } from '@/extensions/extension-manager';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
@@ -154,6 +155,7 @@ export class Task {
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
     initialTaskData?: Partial<TaskData>,
   ) {
     this.task = {
@@ -183,7 +185,7 @@ export class Task {
       systemMessages: { cost: 0, tokens: 0 },
       agent: { cost: 0, tokens: 0 },
     };
-    this.aiderManager = new AiderManager(this, this.store, this.modelManager, this.eventManager, () => this.connectors);
+    this.aiderManager = new AiderManager(this, this.store, this.modelManager, this.eventManager, () => this.connectors, this.pythonInstaller);
 
     void this.loadTaskData();
   }
@@ -400,7 +402,7 @@ export class Task {
 
     await this.loadContext();
     if (await this.shouldStartAider()) {
-      await this.aiderManager.start();
+      void this.aiderManager.start();
     }
     await this.updateContextInfo();
     await this.updateAutocompletionData();

@@ -74,6 +74,7 @@ export const VirtualTable = <T extends object>({
   const parentRef = React.useRef<HTMLDivElement>(null);
 
   // Create virtualizer
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,

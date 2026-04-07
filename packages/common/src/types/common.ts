@@ -1030,3 +1030,29 @@ export interface ContextMenuParams {
 export interface ModalOverlayUrlData {
   url: string;
 }
+
+// Aider connector status (covers both Python installation and per-task connector lifecycle)
+export type AiderConnectorState =
+  | 'idle'
+  | 'checking-uv'
+  | 'downloading-uv'
+  | 'creating-venv'
+  | 'installing-packages'
+  | 'setting-up-connector'
+  | 'setting-up-mcp'
+  | 'starting-connector'
+  | 'ready'
+  | 'failed';
+
+export type AiderConnectorStatus =
+  | { state: 'idle' }
+  | { state: 'checking-uv' }
+  | { state: 'downloading-uv' }
+  | { state: 'creating-venv' }
+  | { state: 'installing-packages'; package: string; current: number; total: number }
+  | { state: 'setting-up-connector' }
+  | { state: 'setting-up-mcp' }
+  | { state: 'starting-connector' }
+  | { state: 'ready' }
+  | { state: 'failed'; error: string };
+

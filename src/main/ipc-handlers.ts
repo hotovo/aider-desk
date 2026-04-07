@@ -18,9 +18,10 @@ import { ipcMain, clipboard } from 'electron';
 
 import { EventsHandler } from './events-handler';
 
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { ServerController } from '@/server';
 
-export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) => {
+export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController, pythonInstaller: PythonDependenciesInstaller) => {
   // Voice handlers
   ipcMain.handle('create-voice-session', async (_, provider: ProviderProfile) => {
     return await eventsHandler.createVoiceSession(provider);
@@ -584,5 +585,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 
   ipcMain.handle('clear-system-logs', async () => {
     return eventsHandler.clearSystemLogs();
+  });
+
+  // Aider connector status (Python install + per-task connector lifecycle)
+  ipcMain.handle('get-aider-connector-status', async () => {
+    return pythonInstaller.getStatus();
   });
 };

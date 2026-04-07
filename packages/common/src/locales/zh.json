@@ -1377,6 +1377,15 @@
     "worktree": "工作树",
     "worktreeTooltip": "切换此任务的工作树"
   },
+  "pythonSetup": {
+    "checkingUv": "正在检查 uv 安装...",
+    "downloadingUv": "正在下载 uv...",
+    "creatingVenv": "正在创建 Python 环境...",
+    "installingPackage": "正在安装 {{package}} ({{current}}/{{total}})...",
+    "settingUpConnector": "正在设置 Aider 连接器...",
+    "settingUpMcp": "正在设置 MCP 服务器...",
+    "failed": "Python 设置失败: {{error}}"
+  },
   "workingMode": {
     "local": "本地",
     "worktree": "工作树",
@@ -1690,6 +1699,9 @@
       }
     },
     "selectMode": "选择"
+  },
+  "aiderConnector": {
+    "starting": "Aider 连接器正在启动..."
   },
   "showModelSelector": "更换模型",
   "hideModelSelector": "隐藏模型选择器",
