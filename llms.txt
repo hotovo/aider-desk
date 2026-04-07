@@ -362,7 +362,7 @@ src/
           SemanticSearchToolMessage.tsx
           StoreMemoryToolMessage.tsx
           SubagentToolMessage.tsx
-          TaskInfoMessage.tsx
+          TaskInfoPanel.tsx
           TaskStateActions.tsx
           ThinkingAnswerBlock.tsx
           ToolMessageBlock.tsx
@@ -13276,14 +13276,18 @@ onClick=
 ================
 File: src/renderer/src/components/common/VirtualTable.tsx
 ================
-import { ReactNode, useMemo, useState } from 'react';
+import { ReactNode, useMemo, useState, useCallback } from 'react';
 ⋮----
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table';
 import { twMerge } from 'tailwind-merge';
 import { MdArrowUpward, MdArrowDownward } from 'react-icons/md';
 ⋮----
 import { Column, FooterColumn } from './Table';
+⋮----
+type SortState = {
+  columnKey: string;
+  direction: 'asc' | 'desc' | null;
+};
 ⋮----
 type Props<T> = {
   data: T[];
@@ -13297,18 +13301,13 @@ type Props<T> = {
 ⋮----
 // Apply manual sorting to data
 ⋮----
-// Convert Column<T> to ColumnDef<T> for @tanstack/react-table
-⋮----
-// Create table instance
-// eslint-disable-next-line react-hooks/incompatible-library
+// Generate row model for virtualizer
 ⋮----
 // Parent ref for virtualizer
 ⋮----
 // Create virtualizer
 ⋮----
 {/* Header - Outside virtualized area */}
-⋮----
-
 ⋮----
 {/* Virtualized body */}
 ⋮----
@@ -14644,7 +14643,6 @@ import {
   isLogMessage,
   isReflectedMessage,
   isResponseMessage,
-  isTaskInfoMessage,
   isToolMessage,
   isUserMessage,
   LogMessage,
@@ -14681,7 +14679,6 @@ import { DeleteMemoryToolMessage } from './DeleteMemoryToolMessage';
 import { ListMemoriesToolMessage } from './ListMemoriesToolMessage';
 import { UpdateMemoryToolMessage } from './UpdateMemoryToolMessage';
 import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
-import { TaskInfoMessage } from './TaskInfoMessage';
 import { areMessagesEqual } from './utils';
 ⋮----
 type Props = {
@@ -14999,12 +14996,12 @@ type Props = {
 const getToolName = (): string =>
 
 ================
-File: src/renderer/src/components/message/TaskInfoMessage.tsx
+File: src/renderer/src/components/message/TaskInfoPanel.tsx
 ================
 import { useTranslation } from 'react-i18next';
 import { FaFolderOpen } from 'react-icons/fa';
 import { MdAssignment, MdClose } from 'react-icons/md';
-import { TaskInfoMessage as TaskInfoMessageType } from '@common/types';
+import { TaskData } from '@common/types';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
@@ -15013,8 +15010,9 @@ import { useApi } from '@/contexts/ApiContext';
 import { getTaskStateLabel } from '@/components/common/TaskStateChip';
 ⋮----
 type Props = {
-  message: TaskInfoMessageType;
-  onRemove?: () => void;
+  task: TaskData;
+  messageCount: number;
+  onClose?: () => void;
 };
 ⋮----
 const handleOpenFolder = async (path: string) =>
@@ -15046,8 +15044,8 @@ type Props = {
   mode?: Mode;
   isArchived: boolean | undefined;
   task?: TaskData | null;
-  onResumeTask: () => void;
-  onMarkAsDone: () => void;
+  onResumeTask?: () => void;
+  onMarkAsDone?: () => void;
   onRunPrompt?: (prompt: string) => void;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
@@ -16809,7 +16807,7 @@ const handleResetToDefaults = () =>
 ================
 File: src/renderer/src/components/ModelLibrary/ModelTableSection.tsx
 ================
-import { useState, ReactNode, useRef, useEffect, RefObject } from 'react';
+import { useState, ReactNode, useRef, useEffect, RefObject, useCallback, useMemo } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { FiEdit2, FiTrash2, FiPlus, FiEye, FiSliders, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
@@ -16842,17 +16840,11 @@ const useClickOutside = (refs: React.RefObject<HTMLElement>[], callback: () => v
 ⋮----
 const handleClickOutside = (event: MouseEvent) =>
 ⋮----
-const handleToggleSelectAll = () =>
-⋮----
-const handleSelectModel = (modelId: string, checked: boolean) =>
-⋮----
 const handleClearSelection = () =>
 ⋮----
 const handleBulkHide = () =>
 ⋮----
 const handleBulkUnhide = () =>
-⋮----
-const getRowClassName = (row: Model) =>
 ⋮----
 onClick=
 ⋮----
@@ -17930,7 +17922,7 @@ import { IoMdClose } from 'react-icons/io';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
 import { RiMenuUnfold4Line, RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { AVAILABLE_PROVIDERS, getProviderModelId } from '@common/agent';
+import { getProviderModelId } from '@common/agent';
 import { clsx } from 'clsx';
 import { extractProviderModel } from '@common/utils';
 ⋮----
@@ -18034,7 +18026,8 @@ type Props = {
   clearMessages: () => void;
   toggleTerminal?: () => void;
   terminalVisible?: boolean;
-  showTaskInfo?: () => void;
+  showTaskInfoPanel?: boolean;
+  onToggleTaskInfoPanel?: () => void;
   onAutoApproveChanged?: (autoApprove: boolean) => void;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
 };
@@ -18051,14 +18044,12 @@ import {
   DefaultTaskState,
   isLoadingMessage,
   isLogMessage,
-  isTaskInfoMessage,
   isUserMessage,
   Message,
   Mode,
   Model,
   ModelsData,
   TaskData,
-  TaskInfoMessage,
   TodoItem,
   UserMessage,
 } from '@common/types';
@@ -18102,6 +18093,7 @@ import { useTaskMessages, useTaskState } from '@/stores/taskStore';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
+import { TaskInfoPanel } from '@/components/message/TaskInfoPanel';
 ⋮----
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -18695,7 +18687,7 @@ type Props = {
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
   scrollToBottom?: () => void;
-  showTaskInfo?: () => void;
+  onToggleTaskInfoPanel?: () => void;
   handoffConversation?: (focus?: string) => Promise<void>;
 };
 ⋮----
@@ -18866,7 +18858,7 @@ import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
 import { MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdRepeat, MdThermostat, MdPsychology } from 'react-icons/md';
-import { DEFAULT_AGENT_PROFILE, DEFAULT_MODEL_TEMPERATURE, AVAILABLE_PROVIDERS, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_MODEL_TEMPERATURE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import { clsx } from 'clsx';
 import Sketch from '@uiw/react-color-sketch';
@@ -22250,6 +22242,12 @@ const checkReleaseNotes = async () =>
 // Update URL parameter instead of global store
 // This allows each window to have its own active project
 ⋮----
+// Only change selection if we're closing the currently active project
+⋮----
+// Pick adjacent from remaining array (not original!) to avoid re-selecting the closed project
+⋮----
+// If closing non-active project: don't touch searchParams at all
+⋮----
 // Close current project tab
 ⋮----
 // Handle URL parameters for direct project/task navigation
@@ -25264,7 +25262,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.60.0-dev",
+  "version": "0.61.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -25310,20 +25308,20 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test:web test:node"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "^0.0.3",
-    "@ai-sdk/amazon-bedrock": "^3.0.89",
-    "@ai-sdk/anthropic": "^2.0.71",
-    "@ai-sdk/azure": "^2.0.103",
-    "@ai-sdk/cerebras": "^1.0.39",
-    "@ai-sdk/deepseek": "^1.0.35",
-    "@ai-sdk/google": "^2.0.63",
-    "@ai-sdk/google-vertex": "^3.0.120",
-    "@ai-sdk/groq": "^2.0.36",
-    "@ai-sdk/openai": "^2.0.101",
-    "@ai-sdk/openai-compatible": "^1.0.34",
-    "@ai-sdk/provider": "^2.0.1",
+    "@ai-sdk/alibaba": "0.0.5",
+    "@ai-sdk/amazon-bedrock": "3.0.93",
+    "@ai-sdk/anthropic": "2.0.74",
+    "@ai-sdk/azure": "2.0.104",
+    "@ai-sdk/cerebras": "1.0.40",
+    "@ai-sdk/deepseek": "1.0.36",
+    "@ai-sdk/google": "2.0.67",
+    "@ai-sdk/google-vertex": "3.0.127",
+    "@ai-sdk/groq": "2.0.37",
+    "@ai-sdk/openai": "2.0.102",
+    "@ai-sdk/openai-compatible": "1.0.35",
+    "@ai-sdk/provider": "2.0.1",
     "@aiderdesk/extensions": "workspace:*",
-    "@augmentcode/auggie-sdk": "^0.1.15",
+    "@augmentcode/auggie-sdk": "0.1.15",
     "@aws-crypto/sha256-js": "^5.0.0",
     "@aws-sdk/client-bedrock": "^3.887.0",
     "@aws-sdk/credential-provider-node": "^3.772.0",
@@ -25359,7 +25357,6 @@ File: package.json
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",
     "@smithy/util-utf8": "^2.0.0",
-    "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "3.13.12",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.25",
@@ -25370,9 +25367,9 @@ File: package.json
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "ai": "^5.0.160",
+    "ai": "5.0.167",
     "ai-sdk-provider-claude-code": "2.3.0",
-    "ai-sdk-provider-gemini-cli": "^1.5.1",
+    "ai-sdk-provider-gemini-cli": "1.5.1",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
@@ -25405,11 +25402,11 @@ File: package.json
     "jiti": "^2.6.1",
     "js-tiktoken": "^1.0.20",
     "langfuse-vercel": "^3.38.4",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "lowlight": "^3.3.0",
     "mark.js": "^8.11.1",
     "match-sorter": "^8.0.0",
-    "mermaid": "^11.12.2",
+    "mermaid": "^11.14.0",
     "object-hash": "^3.0.0",
     "ollama-ai-provider-v2": "^1.5.5",
     "openai": "^6.9.1",
@@ -25515,7 +25512,7 @@ File: package.json
     "tar": "^7.5.13",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
-    "vite": "^7.1.10",
+    "vite": "^7.3.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.0.16"
   },
