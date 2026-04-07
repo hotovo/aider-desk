@@ -5,6 +5,9 @@
   "main": "index.js",
   "author": "AiderDesk",
   "license": "ISC",
+  "scripts": {
+    "postinstall": "cp -n .env.template .env || true"
+  },
   "dependencies": {
     "dotenv": "^16.4.5"
   }
