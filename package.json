@@ -150,7 +150,7 @@
     "openai": "^6.9.1",
     "os-name": "^6.0.0",
     "patch-package": "^8.0.0",
-    "posthog-node": "^4.18.0",
+    "posthog-node": "5.29.1",
     "prismjs": "^1.30.0",
     "react-complex-tree": "^2.4.5",
     "react-country-flag": "^3.1.0",
