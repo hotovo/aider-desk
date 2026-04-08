@@ -16,6 +16,7 @@ export default class ContextAutocompletionWordsExtension implements Extension {
     version: '1.1.0',
     description: 'Automatically extracts symbols from context files and adds them to autocompletion',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/context-autocompletion-words/icon.png',
     capabilities: ['context'],
   };
 
