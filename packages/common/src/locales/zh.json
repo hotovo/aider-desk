@@ -486,19 +486,27 @@
       "success": {
         "install": "成功安装 {{name}}",
         "update": "成功更新 {{name}}",
-        "uninstall": "成功卸载 {{name}}"
+        "uninstall": "成功卸载 {{name}}",
+        "saveSettings": "成功保存 {{name}} 的设置"
       },
       "errors": {
         "loadInstalled": "加载已安装扩展失败",
         "loadAvailable": "加载可用扩展失败",
+        "loadSettings": "加载扩展设置组件失败",
         "install": "安装扩展失败",
         "update": "更新扩展失败",
         "uninstall": "卸载扩展失败",
+        "saveSettings": "保存扩展设置失败",
+        "settingsNotAvailable": "扩展设置不可用",
         "repositoryExists": "此仓库已添加",
         "cannotRemoveDefault": "无法移除默认仓库"
       },
       "previousContext": "上一个上下文",
       "nextContext": "下一个上下文",
+      "openSettings": "打开扩展设置",
+      "settingsDialog": {
+        "title": "{{name}} 设置"
+      },
       "expandReadme": "展开 README",
       "collapseReadme": "收起 README"
     },

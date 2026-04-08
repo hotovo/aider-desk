@@ -10,14 +10,27 @@ import { useExtensionComponents, useExtensionUIStore } from '@/stores/extensionU
 type UseExtensionComponentsWrapperProps = {
   placement: string;
   additionalProps?: Record<string, unknown>;
+  projectDir?: string;
+  taskId?: string;
+  actionProjectDir?: string;
+  actionTaskId?: string;
 };
 
-export const useExtensionComponentsWrapper = ({ placement, additionalProps }: UseExtensionComponentsWrapperProps) => {
+export const useExtensionComponentsWrapper = ({
+  placement,
+  additionalProps,
+  projectDir,
+  taskId,
+  actionProjectDir,
+  actionTaskId,
+}: UseExtensionComponentsWrapperProps) => {
   const { componentProps } = useExtensions();
   const api = useApi();
   const store = useExtensionUIStore();
-  const currentProjectDir = componentProps.projectDir;
-  const currentTaskId = componentProps.task?.id;
+  const currentProjectDir = projectDir ?? componentProps.projectDir;
+  const currentTaskId = taskId ?? componentProps.task?.id;
+  const currentActionProjectDir = actionProjectDir ?? currentProjectDir;
+  const currentActionTaskId = actionTaskId ?? currentTaskId;
 
   const components = useExtensionComponents(placement, currentProjectDir, currentTaskId);
 
@@ -111,7 +124,7 @@ export const useExtensionComponentsWrapper = ({ placement, additionalProps }: Us
   const getComponentData = useCallback(
     (comp: ExtensionUIComponent) => {
       const executeExtensionAction = async (action: string, ...args: unknown[]) => {
-        return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, currentProjectDir, currentTaskId);
+        return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, currentActionProjectDir, currentActionTaskId);
       };
 
       return {
@@ -121,7 +134,7 @@ export const useExtensionComponentsWrapper = ({ placement, additionalProps }: Us
         data: store.getComponentData(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId),
       };
     },
-    [componentProps, additionalProps, store, currentProjectDir, currentTaskId, api],
+    [componentProps, additionalProps, store, currentProjectDir, currentTaskId, currentActionProjectDir, currentActionTaskId, api],
   );
 
   const renderComponents = useCallback(() => {

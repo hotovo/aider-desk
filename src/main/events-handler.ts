@@ -38,7 +38,7 @@ import { normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 
-import type { ModeDefinition, ExtensionUIComponent } from '@common/types';
+import type { ModeDefinition, ExtensionConfigComponent, ExtensionUIComponent } from '@common/types';
 import type { WindowManager } from '@/window-manager';
 
 import { McpManager, AgentProfileManager } from '@/agent';
@@ -1080,7 +1080,7 @@ export class EventsHandler {
     const extensions = this.extensionManager.getExtensions(projectDir);
     return extensions.map((ext: LoadedExtension) => ({
       id: ext.id,
-      metadata: ext.metadata,
+      metadata: { ...ext.metadata, hasConfig: this.extensionManager.extensionHasConfig(ext) },
       filePath: ext.filePath,
       initialized: ext.initialized,
       projectDir: ext.projectDir,
@@ -1165,5 +1165,20 @@ export class EventsHandler {
     const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
     const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;
     return await this.extensionManager.executeUIExtensionAction(extensionId, componentId, action, args, project, task);
+  }
+
+  getExtensionConfigComponent(extensionId: string, projectDir?: string): ExtensionConfigComponent | null {
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    return this.extensionManager.getExtensionConfigComponent(extensionId, project);
+  }
+
+  async getExtensionConfig(extensionId: string, projectDir?: string): Promise<unknown> {
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    return this.extensionManager.getExtensionConfig(extensionId, project);
+  }
+
+  async saveExtensionConfig(extensionId: string, configData: unknown, projectDir?: string): Promise<unknown> {
+    const project = projectDir ? this.projectManager.getProject(projectDir) : undefined;
+    return this.extensionManager.saveExtensionConfig(extensionId, configData, project);
   }
 }

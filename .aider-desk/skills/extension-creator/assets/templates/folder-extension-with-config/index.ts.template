@@ -1,0 +1,80 @@
+/**
+ * {EXTENSION_NAME} Extension
+ *
+ * {DESCRIPTION}
+ */
+
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import type { Extension, ExtensionContext } from '@aiderdesk/extensions';
+
+// Load config JSX at module level (read once, reused on every getConfigComponent call)
+const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx'), 'utf-8');
+
+interface {EXTENSION_NAME}Config {
+  // Add your config properties here
+  mySetting: string;
+  enabled: boolean;
+}
+
+const DEFAULT_CONFIG: {EXTENSION_NAME}Config = {
+  mySetting: '',
+  enabled: true,
+};
+
+export default class {CLASS_NAME} implements Extension {
+  static metadata = {
+    name: '{EXTENSION_NAME}',
+    version: '1.0.0',
+    description: '{DESCRIPTION}',
+    author: '{AUTHOR}',
+    capabilities: ['context'],
+    // iconUrl: 'https://...',
+  };
+
+  private configPath: string;
+
+  constructor() {
+    this.configPath = join(__dirname, 'config.json');
+  }
+
+  async onLoad(context: ExtensionContext): Promise<void> {
+    context.log('{EXTENSION_NAME} Extension loaded', 'info');
+  }
+
+  // --- Config Component API ---
+
+  getConfigComponent(_context: ExtensionContext): string {
+    return configComponentJsx;
+  }
+
+  async getConfigData(_context: ExtensionContext): Promise<{EXTENSION_NAME}Config> {
+    try {
+      if (existsSync(this.configPath)) {
+        const data = readFileSync(this.configPath, 'utf-8');
+        const parsed = JSON.parse(data);
+        return { ...DEFAULT_CONFIG, ...parsed };
+      }
+    } catch {
+      // Ignore errors, fall back to defaults
+    }
+    return { ...DEFAULT_CONFIG };
+  }
+
+  async saveConfigData(configData: unknown, _context: ExtensionContext): Promise<unknown> {
+    const merged: {EXTENSION_NAME}Config = {
+      ...DEFAULT_CONFIG,
+      ...configData as Partial<{EXTENSION_NAME}Config>,
+    };
+    writeFileSync(this.configPath, JSON.stringify(merged, null, 2), 'utf-8');
+    return merged;
+  }
+
+  // --- Event Handlers / Other Methods ---
+
+  // async onRuleFilesRetrieved(event: RuleFilesRetrievedEvent, context: ExtensionContext) {
+  //   const config = await this.getConfigData(context);
+  //   Use config values in your logic...
+  // }
+}

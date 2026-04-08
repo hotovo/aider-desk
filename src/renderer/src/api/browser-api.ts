@@ -60,6 +60,7 @@ import {
   QueuedPromptsUpdatedData,
   InstalledExtension,
   AvailableExtension,
+  ExtensionConfigComponent,
   ExtensionUIComponent,
   ModalOverlayUrlData,
   AiderConnectorStatus,
@@ -1196,6 +1197,19 @@ export class BrowserApi implements ApplicationAPI {
       projectDir,
       taskId,
     });
+  }
+
+  // Extension config operations (per-extension settings)
+  getExtensionConfigComponent(extensionId: string, projectDir?: string): Promise<ExtensionConfigComponent | null> {
+    return this.get<ExtensionConfigComponent | null>('/extensions/config-component', { extensionId, projectDir });
+  }
+
+  getExtensionConfig(extensionId: string, projectDir?: string): Promise<unknown> {
+    return this.get('/extensions/config', { extensionId, projectDir });
+  }
+
+  saveExtensionConfig(extensionId: string, configData: unknown, projectDir?: string): Promise<unknown> {
+    return this.post('/extensions/config', { extensionId, configData, projectDir });
   }
 
   onExtensionUIRefresh(callback: (data: ExtensionUIRefreshData) => void): () => void {

@@ -61,6 +61,7 @@ import {
   UpdatedFilesUpdatedData,
   InstalledExtension,
   AvailableExtension,
+  ExtensionConfigComponent,
   ExtensionUIComponent,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
@@ -150,6 +151,10 @@ export interface ApplicationAPI {
     projectDir?: string,
     taskId?: string,
   ) => Promise<unknown>;
+  // Extension config operations (per-extension settings UI)
+  getExtensionConfigComponent: (extensionId: string, projectDir?: string) => Promise<ExtensionConfigComponent | null>;
+  getExtensionConfig: (extensionId: string, projectDir?: string) => Promise<unknown>;
+  saveExtensionConfig: (extensionId: string, configData: unknown, projectDir?: string) => Promise<unknown>;
   onExtensionUIRefresh: (callback: (data: ExtensionUIRefreshData) => void) => () => void;
   onModalOverlayUrl: (callback: (data: ModalOverlayUrlData) => void) => () => void;
   isWebViewSupported: () => boolean;

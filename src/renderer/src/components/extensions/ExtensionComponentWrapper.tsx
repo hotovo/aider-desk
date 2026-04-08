@@ -9,10 +9,24 @@ type Props = {
   direction?: 'horizontal' | 'vertical';
   additionalProps?: Record<string, unknown>;
   renderNullOnEmpty?: boolean;
+  projectDir?: string;
+  taskId?: string;
+  actionProjectDir?: string;
+  actionTaskId?: string;
 };
 
-const ExtensionComponentWrapperInner = ({ placement, className, direction = 'horizontal', additionalProps, renderNullOnEmpty = false }: Props) => {
-  const { isEmpty, renderComponents } = useExtensionComponentsWrapper({ placement, additionalProps });
+const ExtensionComponentWrapperInner = ({
+  placement,
+  className,
+  direction = 'horizontal',
+  additionalProps,
+  renderNullOnEmpty = false,
+  projectDir,
+  taskId,
+  actionProjectDir,
+  actionTaskId,
+}: Props) => {
+  const { isEmpty, renderComponents } = useExtensionComponentsWrapper({ placement, additionalProps, projectDir, taskId, actionProjectDir, actionTaskId });
 
   if (isEmpty) {
     return renderNullOnEmpty ? null : <div></div>;

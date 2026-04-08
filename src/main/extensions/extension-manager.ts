@@ -4,7 +4,7 @@ import path from 'path';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, SettingsData, ToolApprovalState } from '@common/types';
+import { AvailableExtension, ExtensionConfigComponent, SettingsData, ToolApprovalState } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 
 import { ExtensionLoader } from './extension-loader';
@@ -1092,6 +1092,26 @@ export class ExtensionManager {
     return collectedComponents;
   }
 
+  /**
+   * Check if an extension provides a settings config component.
+   * Uses the dedicated getConfigComponent() method on the Extension interface.
+   */
+  extensionHasConfig(loadedExt: LoadedExtension): boolean {
+    const { instance, initialized } = loadedExt;
+
+    if (!initialized || !instance.getConfigComponent) {
+      return false;
+    }
+
+    try {
+      const context = new ExtensionContextImpl(loadedExt.id, loadedExt.metadata.name, this.store, this.modelManager, this.eventManager);
+      const jsx = instance.getConfigComponent(context);
+      return typeof jsx === 'string' && jsx.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
   async getUIExtensionData(extensionId: string, componentId: string, project?: Project, task?: Task): Promise<unknown> {
     const allExtensions = this.registry.getExtensions(project?.baseDir);
     const extensions = this.filterEnabledExtensions(allExtensions);
@@ -1154,6 +1174,99 @@ export class ExtensionManager {
       }
     }
     return undefined;
+  }
+
+  /**
+   * Get the config component JSX for a specific extension.
+   * Uses the dedicated getConfigComponent() method on the Extension interface.
+   */
+  getExtensionConfigComponent(extensionId: string, project?: Project): ExtensionConfigComponent | null {
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      if (!loaded.initialized || loaded.id !== extensionId) {
+        continue;
+      }
+
+      if (!loaded.instance.getConfigComponent) {
+        return null;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(loaded.id, loaded.metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const jsx = loaded.instance.getConfigComponent(context);
+
+        if (typeof jsx !== 'string' || jsx.length === 0) {
+          return null;
+        }
+
+        return { jsx };
+      } catch (error) {
+        logger.error(`[Extensions] Failed to get config component from extension '${extensionId}':`, error);
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get the current configuration data for an extension's settings.
+   * Delegates to the extension's getConfigData() method.
+   */
+  async getExtensionConfig(extensionId: string, project?: Project): Promise<unknown> {
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      if (!loaded.initialized || loaded.id !== extensionId) {
+        continue;
+      }
+
+      if (!loaded.instance.getConfigData) {
+        return null;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(loaded.id, loaded.metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        return await loaded.instance.getConfigData(context);
+      } catch (error) {
+        logger.error(`[Extensions] Failed to get config data from extension '${extensionId}':`, error);
+        throw error;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Save configuration data for an extension's settings.
+   * Delegates to the extension's saveConfigData() method.
+   */
+  async saveExtensionConfig(extensionId: string, configData: unknown, project?: Project): Promise<unknown> {
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      if (!loaded.initialized || loaded.id !== extensionId) {
+        continue;
+      }
+
+      if (!loaded.instance.saveConfigData) {
+        return null;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(loaded.id, loaded.metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        return await loaded.instance.saveConfigData(configData, context);
+      } catch (error) {
+        logger.error(`[Extensions] Failed to save config data for extension '${extensionId}':`, error);
+        throw error;
+      }
+    }
+
+    return null;
   }
 
   validateUIComponentDefinition(component: UIComponentDefinition): {

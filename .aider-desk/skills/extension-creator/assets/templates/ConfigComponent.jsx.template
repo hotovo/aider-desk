@@ -1,0 +1,38 @@
+/**
+ * Config Component for {{EXTENSION_NAME}}
+ *
+ * Renders a settings UI in the ExtensionSettingsDialog.
+ *
+ * Available props:
+ * - config: Current config data from getConfigData()
+ * - updateConfig: Callback to mutate in-memory config (does NOT persist)
+ * - ui: UI components (Button, Checkbox, Input, Select, TextArea, etc.) — prefer these over raw HTML
+ * - icons: React Icons organized by set (Fi, Hi, Cg, etc.)
+ * - models: Available models
+ * - providers: Available providers
+ * - projectDir: Project directory path
+ * - task: Current TaskData
+ * - mode: Current mode string
+ * - api: ApplicationAPI reference
+ *
+ * Note: React is globally available (use React.useState, React.useEffect, etc.)
+ * Note: Prefer ui.* components over raw HTML elements for consistent styling
+ */
+
+({ config, updateConfig, ui }) => {
+  const { Input } = ui;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Input
+        label="My Setting Label"
+        value={config?.mySetting || ''}
+        onChange={(value) => updateConfig({ ...config, mySetting: value })}
+        placeholder="Enter a value..."
+      />
+      <p className="text-xs text-text-secondary -mt-2">
+        Description of what this setting controls and how it affects the extension behavior.
+      </p>
+    </div>
+  );
+};

@@ -455,6 +455,122 @@ export default class MultiModelRunExtension implements Extension {
 }
 ```
 
+### External Rules (Config Component + Events)
+
+Extension with a **config component** (settings dialog) that lets users configure additional rule folders, plus an event handler that uses the loaded config.
+
+```
+external-rules/
+├── index.ts              # Main extension with 3 config methods + event handler
+├── ConfigComponent.jsx   # Settings UI (text input for comma-separated folders)
+└── config.json           # Persisted config: { "ruleFolders": "" }
+```
+
+**index.ts:**
+```typescript
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import type { Extension, ExtensionContext, RuleFilesRetrievedEvent } from '@aiderdesk/extensions';
+
+const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx'), 'utf-8');
+
+const DEFAULT_RULE_DIRECTORIES = ['.cursor/rules', '.roo/rules'];
+const DEFAULT_ROOT_RULE_FILES = ['CLAUDE.md'];
+
+interface ExternalRulesConfig {
+  ruleFolders: string;
+}
+
+const DEFAULT_CONFIG: ExternalRulesConfig = { ruleFolders: '' };
+
+export default class ExternalRulesExtension implements Extension {
+  static metadata = {
+    name: 'External Rules',
+    version: '1.0.0',
+    description: 'Includes rule files from Cursor, Claude Code, and Roo Code',
+    author: 'author-name',
+    capabilities: ['context'],
+  };
+
+  private configPath: string;
+
+  constructor() {
+    this.configPath = join(__dirname, 'config.json');
+  }
+
+  async onLoad(context: ExtensionContext): Promise<void> {
+    context.log('External Rules Extension loaded', 'info');
+  }
+
+  // --- Config Component API ---
+
+  getConfigComponent(_context: ExtensionContext): string {
+    return configComponentJsx;
+  }
+
+  async getConfigData(_context: ExtensionContext): Promise<ExternalRulesConfig> {
+    try {
+      if (existsSync(this.configPath)) {
+        const data = readFileSync(this.configPath, 'utf-8');
+        return { ...DEFAULT_CONFIG, ...JSON.parse(data) };
+      }
+    } catch { /* ignore */ }
+    return { ...DEFAULT_CONFIG };
+  }
+
+  async saveConfigData(configData: unknown, _context: ExtensionContext): Promise<unknown> {
+    const merged: ExternalRulesConfig = { ...DEFAULT_CONFIG, ...configData as Partial<ExternalRulesConfig> };
+    writeFileSync(this.configPath, JSON.stringify(merged, null, 2), 'utf-8');
+    return merged;
+  }
+
+  // --- Event Handler using loaded config ---
+
+  async onRuleFilesRetrieved(event: RuleFilesRetrievedEvent, context: ExtensionContext) {
+    const projectDir = context.getProjectDir();
+    if (!projectDir) return undefined;
+
+    // Load user-configured additional folders
+    const config = await this.getConfigData(context);
+    const additionalFolders = config.ruleFolders
+      ? config.ruleFolders.split(',').map((f) => f.trim()).filter(Boolean)
+      : [];
+
+    // Merge defaults with user folders
+    const allDirectories = [...DEFAULT_RULE_DIRECTORIES, ...additionalFolders];
+    // ... scan directories and return augmented files ...
+  }
+}
+```
+
+**ConfigComponent.jsx:**
+```jsx
+({ config, updateConfig, ui }) => {
+  const { Input } = ui;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Input
+        label="Additional Rule Folders"
+        value={config?.ruleFolders || ''}
+        onChange={(value) => updateConfig({ ...config, ruleFolders: value })}
+        placeholder=".custom-rules, .ai/rules"
+      />
+      <p className="text-xs text-text-secondary -mt-2">
+        Comma-separated folder paths relative to project root. Scanned in addition to built-in sources.
+      </p>
+    </div>
+  );
+};
+```
+
+**Key patterns shown:**
+- JSX loaded from external file via `readFileSync` at module level
+- Three-method config API: `getConfigComponent`, `getConfigData`, `saveConfigData`
+- **No inner state**: reads directly from `config` prop, uses `ui.Input` instead of raw HTML
+- Config used at runtime by event handlers (`onRuleFilesRetrieved` calls `this.getConfigData`)
+- Default merging ensures missing fields are handled gracefully
+
 ## Common Patterns Summary
 
 | Pattern | Extension | Use Case |
@@ -463,7 +579,8 @@ export default class MultiModelRunExtension implements Extension {
 | Modes | plan-mode.ts | Custom conversation modes |
 | Blocking | permission-gate.ts | Prevent operations |
 | Modifying | tree-sitter-repo-map | Change event data |
-| Config | tree-sitter-repo-map | Persistent settings |
+| Config | tree-sitter-repo-map | Persistent settings (internal) |
+| **Config Component** | **external-rules** | **Settings UI dialog with Save/Cancel** |
 | Agents | pirate.ts | Custom agent profiles |
 | Tools | chunkhound-search | Custom AI tools |
 | UI Display | tps-counter | Show information in UI |

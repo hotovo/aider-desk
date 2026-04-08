@@ -181,5 +181,51 @@ export class ExtensionsApi extends BaseApi {
         res.status(200).json(result);
       }),
     );
+
+    // Get extension config component (per-extension settings)
+    router.get(
+      '/extensions/config-component',
+      this.handleRequest(async (req, res) => {
+        const { extensionId, projectDir } = req.query as { extensionId?: string; projectDir?: string };
+        if (!extensionId) {
+          res.status(400).json({ message: 'extensionId is required' });
+          return;
+        }
+        const component = this.eventsHandler.getExtensionConfigComponent(extensionId, projectDir);
+        res.status(200).json(component);
+      }),
+    );
+
+    // Get extension config data
+    router.get(
+      '/extensions/config',
+      this.handleRequest(async (req, res) => {
+        const { extensionId, projectDir } = req.query as { extensionId?: string; projectDir?: string };
+        if (!extensionId) {
+          res.status(400).json({ message: 'extensionId is required' });
+          return;
+        }
+        const config = await this.eventsHandler.getExtensionConfig(extensionId, projectDir);
+        res.status(200).json(config);
+      }),
+    );
+
+    // Save extension config
+    router.post(
+      '/extensions/config',
+      this.handleRequest(async (req, res) => {
+        const { extensionId, configData, projectDir } = req.body as {
+          extensionId?: string;
+          configData: unknown;
+          projectDir?: string;
+        };
+        if (!extensionId) {
+          res.status(400).json({ message: 'extensionId is required' });
+          return;
+        }
+        const result = await this.eventsHandler.saveExtensionConfig(extensionId, configData, projectDir);
+        res.status(200).json(result);
+      }),
+    );
   }
 }

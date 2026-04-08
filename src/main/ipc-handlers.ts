@@ -316,6 +316,19 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     },
   );
 
+  // Extension config handlers (per-extension settings)
+  ipcMain.handle('get-extension-config-component', (_, extensionId: string, projectDir?: string) => {
+    return eventsHandler.getExtensionConfigComponent(extensionId, projectDir);
+  });
+
+  ipcMain.handle('get-extension-config', async (_, extensionId: string, projectDir?: string) => {
+    return await eventsHandler.getExtensionConfig(extensionId, projectDir);
+  });
+
+  ipcMain.handle('save-extension-config', async (_, extensionId: string, configData: unknown, projectDir?: string) => {
+    return await eventsHandler.saveExtensionConfig(extensionId, configData, projectDir);
+  });
+
   ipcMain.handle('export-task-to-markdown', async (_, baseDir: string, taskId: string, copyOnly: boolean = false) => {
     return await eventsHandler.exportTaskToMarkdown(baseDir, taskId, copyOnly);
   });

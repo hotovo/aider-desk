@@ -52,7 +52,7 @@ Do not use when:
 
 ### Rule: Add UI components when needed
 
-**When:** Extension needs to display UI elements
+**When:** Extension needs to display UI elements in task page placements
 
 **Then:** Implement `getUIComponents()` method
 
@@ -63,6 +63,24 @@ Do not use when:
 **If:** Component needs data, set `loadData: true` and implement `getUIExtensionData()`
 
 **If:** Component triggers actions, implement `executeUIExtensionAction()`
+
+### Rule: Add config component for extension settings
+
+**When:** Extension needs user-configurable settings (shown in gear icon dialog)
+
+**Then:** Implement three methods: `getConfigComponent()`, `getConfigData()`, `saveConfigData()`
+
+**Must:** Return JSX string from `getConfigComponent()` — use external .jsx file for components > 20 lines
+
+**Must:** Load/merge defaults in `getConfigData()`, persist merged data in `saveConfigData()`
+
+**Must:** Store config file in extension directory via `join(__dirname, 'config.json')`
+
+**Must:** Use `ui.*` components (`ui.Input`, `ui.Checkbox`, etc.) instead of raw HTML elements
+
+**Should:** Avoid inner state (`useState`/`useEffect`) for simple form fields — read directly from `config` prop, call `updateConfig` on change. Only use local state for derived values or transient UI state.
+
+**Never:** Use `'extension-settings'` placement — it was removed; use the dedicated config API instead
 
 ### Rule: Update extensions.json
 
@@ -110,10 +128,11 @@ Do not use when:
 
 **Between steps 3 and 4:**
 
-- If extension needs config storage, create config.ts
+- If extension needs config storage, create config.ts (or use inline getConfigData/saveConfigData)
+- If extension has a settings UI (config component), create ConfigComponent.jsx and implement the three config methods
 - If extension needs logging, create logger.ts
 - If extension needs constants, create constants.ts
-- If extension has UI components, create .jsx files for components (recommended for components > 20 lines)
+- If extension has placement-based UI components, create .jsx files for components (recommended for components > 20 lines)
 
 ## Preconditions
 
@@ -180,19 +199,32 @@ After completing this skill, verify:
 - If yes: Create config.ts with loadConfig and saveConfig functions
 - Store: Config files in extension directory
 
+**Situation:** Extension needs a settings UI (config component)
+
+**Pattern:**
+- When: Extension has user-configurable options that should appear in the Settings dialog
+- Then: Implement `getConfigComponent()`, `getConfigData()`, `saveConfigData()` methods
+- JSX: Return a `.jsx` file content via `readFileSync(join(__dirname, './ConfigComponent.jsx'), 'utf-8')`
+- Props: Component receives `{ config, updateConfig, ui, icons, models, providers, ... }`
+- Flow: Dialog opens → loads data via getConfigData → renders JSX with props → user edits → Save calls saveConfigData
+- Reference: [config-components.md](references/config-components.md) for full guide and examples
+
 ## References
 
 - [packages/common/src/extensions.ts]({projectDir}/packages/common/src/extensions.ts) - Extension types and interfaces
 - [event-types.md](references/event-types.md) - All event types and payloads
 - [command-definition.md](references/command-definition.md) - Command structure
 - [ui-components.md](references/ui-components.md) - UI component system, placements, and available components
+- [config-components.md](references/config-components.md) - Config component API (settings UI), methods, JSX format, and patterns
 - [examples-gallery.md](references/examples-gallery.md) - Real extension examples
 - [extension-types.md](references/extension-types.md) - Single-file vs folder extensions
 
 ## Assets
 
 - [templates/single-file.ts.template](assets/templates/single-file.ts.template) - Single-file template
-- [templates/folder-extension/](assets/templates/folder-extension/) - Folder template
+- [templates/folder-extension/](assets/templates/folder-extension/) - Folder template (basic)
+- [templates/folder-extension-with-config/index.ts.template](assets/templates/folder-extension-with-config/index.ts.template) - Folder template with config component API
 - [templates/ui-component.ts.template](assets/templates/ui-component.ts.template) - UI component inline template
 - [templates/ui-component-external.ts.template](assets/templates/ui-component-external.ts.template) - UI component with external JSX
-- [templates/Component.jsx.template](assets/templates/Component.jsx.template) - JSX component template
+- [templates/Component.jsx.template](assets/templates/Component.jsx.template) - Placement-based JSX component template
+- [templates/ConfigComponent.jsx.template](assets/templates/ConfigComponent.jsx.template) - Config/settings JSX component template

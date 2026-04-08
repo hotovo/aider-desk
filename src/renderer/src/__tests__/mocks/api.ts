@@ -25,6 +25,7 @@ import {
   ModeDefinition,
   InstalledExtension,
   AvailableExtension,
+  ExtensionConfigComponent,
   ExtensionUIComponent,
   OpenDialogResult,
   SystemLogsResponse,
@@ -252,6 +253,11 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     getExtensionUIComponents: vi.fn((): Promise<ExtensionUIComponent[]> => Promise.resolve([])),
     getUIExtensionData: vi.fn((): Promise<unknown> => Promise.resolve({})),
     executeUIExtensionAction: vi.fn((): Promise<unknown> => Promise.resolve({})),
+
+    // Extension config operations (per-extension settings)
+    getExtensionConfigComponent: vi.fn((): Promise<ExtensionConfigComponent | null> => Promise.resolve(null)),
+    getExtensionConfig: vi.fn((): Promise<unknown> => Promise.resolve({})),
+    saveExtensionConfig: vi.fn((): Promise<unknown> => Promise.resolve({})),
     onExtensionUIRefresh: vi.fn(() => vi.fn()),
 
     // Memory operations

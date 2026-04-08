@@ -968,6 +968,7 @@ export interface InstalledExtension {
     author?: string;
     capabilities?: string[];
     iconUrl?: string;
+    hasConfig?: boolean;
   };
   filePath: string;
   initialized: boolean;
@@ -998,6 +999,15 @@ export interface ExtensionUIComponent {
   jsx: string;
   loadData?: boolean;
   noDataCache?: boolean;
+}
+
+/**
+ * A single extension's configuration UI component.
+ * Returned by getConfigComponent() for a specific extension.
+ */
+export interface ExtensionConfigComponent {
+  /** JSX/TSX component as string to be parsed by string-to-react-component */
+  jsx: string;
 }
 
 export interface ExtensionUIRefreshData {

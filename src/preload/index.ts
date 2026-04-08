@@ -145,6 +145,11 @@ const api: ApplicationAPI = {
       ipcRenderer.removeListener('modal-overlay-url', listener);
     };
   },
+  // Extension config operations (per-extension settings)
+  getExtensionConfigComponent: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('get-extension-config-component', extensionId, projectDir),
+  getExtensionConfig: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('get-extension-config', extensionId, projectDir),
+  saveExtensionConfig: (extensionId: string, configData: unknown, projectDir?: string) =>
+    ipcRenderer.invoke('save-extension-config', extensionId, configData, projectDir),
   isWebViewSupported: () => true,
 
   createNewTask: (baseDir, params?: CreateTaskParams) => ipcRenderer.invoke('create-new-task', baseDir, params),

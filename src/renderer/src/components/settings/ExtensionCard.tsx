@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
-import { FaChevronDown, FaDownload, FaSync } from 'react-icons/fa';
+import { FaChevronDown, FaCog, FaDownload, FaSync } from 'react-icons/fa';
 import { clsx } from 'clsx';
 
 import type { AvailableExtension, InstalledExtension } from '@common/types';
 
 import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
 import { Toggle } from '@/components/common/Toggle';
 import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
+import { ExtensionSettingsDialog } from '@/components/settings/ExtensionSettingsDialog';
 
 // Helper to normalize extension data
 const getExtensionData = (extension: InstalledExtension | AvailableExtension) => {
@@ -56,10 +58,12 @@ export const ExtensionCard = ({
 }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const data = getExtensionData(extension);
   const hasReadme = data.readmeContent && data.readmeContent.trim().length > 0;
   const isInstalled = isInstalledProp || 'metadata' in extension;
+  const hasConfig = isInstalled && 'metadata' in extension ? ((extension as InstalledExtension).metadata.hasConfig ?? false) : false;
   const filePath = installedFilePath ?? data.filePath;
 
   const handleToggleExpand = () => {
@@ -86,6 +90,14 @@ export const ExtensionCard = ({
 
   const handleUpdate = () => {
     onUpdate?.();
+  };
+
+  const handleOpenSettings = () => {
+    setIsSettingsOpen(true);
+  };
+
+  const handleCloseSettings = () => {
+    setIsSettingsOpen(false);
   };
 
   return (
@@ -142,6 +154,15 @@ export const ExtensionCard = ({
           <div className="flex items-center gap-3 flex-shrink-0">
             {isInstalled ? (
               <>
+                {hasConfig && (
+                  <IconButton
+                    icon={<FaCog className="w-3.5 h-3.5" />}
+                    onClick={handleOpenSettings}
+                    tooltip={t('settings.extensions.openSettings')}
+                    className="p-1"
+                  />
+                )}
+
                 <Toggle checked={!isDisabled} onChange={handleToggleDisabled} aria-label={t('settings.extensions.enabled')} />
 
                 {hasUpdate && (
@@ -190,6 +211,15 @@ export const ExtensionCard = ({
             </div>
           )}
         </>
+      )}
+
+      {isSettingsOpen && (
+        <ExtensionSettingsDialog
+          extensionId={isInstalled ? (extension as InstalledExtension).id : ''}
+          extensionName={data.name}
+          projectDir={data.projectDir}
+          onClose={handleCloseSettings}
+        />
       )}
     </div>
   );

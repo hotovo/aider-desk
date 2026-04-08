@@ -906,6 +906,34 @@ export interface Extension {
    */
   executeUIExtensionAction?(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown>;
 
+  // Settings configuration (per-extension settings UI)
+
+  /**
+   * Return this extension's settings/config UI component.
+   * Only one config component per extension is supported.
+   * The returned JSX receives { config, updateConfig } props.
+   * @param context - Extension context
+   * @returns JSX string for the settings component, or undefined if no settings UI
+   */
+  getConfigComponent?(context: ExtensionContext): string | undefined;
+
+  /**
+   * Return the current configuration data for this extension's settings.
+   * Called by the settings dialog on mount to populate initial values.
+   * @param context - Extension context
+   * @returns Current config data (any serializable type)
+   */
+  getConfigData?(context: ExtensionContext): Promise<unknown>;
+
+  /**
+   * Save configuration data for this extension's settings.
+   * Called by the settings dialog when user clicks Save.
+   * @param configData - The config data to persist
+   * @param context - Extension context
+   * @returns Result of the save operation
+   */
+  saveConfigData?(configData: unknown, context: ExtensionContext): Promise<unknown>;
+
   // Task Events
 
   /**

@@ -21,6 +21,11 @@ interface Extension {
   getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
   executeUIExtensionAction?(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown>;
 
+  // Settings configuration (per-extension settings UI)
+  getConfigComponent?(context: ExtensionContext): string | undefined;
+  getConfigData?(context: ExtensionContext): Promise<unknown>;
+  saveConfigData?(configData: unknown, context: ExtensionContext): Promise<unknown>;
+
   // Task Events
   onTaskCreated?(event: TaskCreatedEvent, context: ExtensionContext): Promise<void | Partial<TaskCreatedEvent>>;
   onTaskInitialized?(event: TaskInitializedEvent, context: ExtensionContext): Promise<void>;

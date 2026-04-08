@@ -7,6 +7,7 @@
 - added Delegated task state when handing off the task to subtask
 - hide task state actions when no messages are present
 - converted task info message into a toggleable panel
+- added support for extension config
 
 ## [0.60.0]
 

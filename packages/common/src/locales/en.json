@@ -488,19 +488,27 @@
       "success": {
         "install": "Successfully installed {{name}}",
         "update": "Successfully updated {{name}}",
-        "uninstall": "Successfully uninstalled {{name}}"
+        "uninstall": "Successfully uninstalled {{name}}",
+        "saveSettings": "Successfully saved settings for {{name}}"
       },
       "errors": {
         "loadInstalled": "Failed to load installed extensions",
         "loadAvailable": "Failed to load available extensions",
+        "loadSettings": "Failed to load extension settings components",
         "install": "Failed to install extension",
         "update": "Failed to update extension",
         "uninstall": "Failed to uninstall extension",
+        "saveSettings": "Failed to save extension settings",
+        "settingsNotAvailable": "Extension settings are not available",
         "repositoryExists": "This repository is already added",
         "cannotRemoveDefault": "Cannot remove the default repository"
       },
       "previousContext": "Previous context",
       "nextContext": "Next context",
+      "openSettings": "Open extension settings",
+      "settingsDialog": {
+        "title": "{{name}} Settings"
+      },
       "expandReadme": "Expand README",
       "collapseReadme": "Collapse README"
     },
