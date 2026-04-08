@@ -6,34 +6,43 @@
 
 import { extractSymbols } from '@aiderdesk/tree-sitter-utils';
 
-import type { ContextFile, Extension, ExtensionContext, FilesAddedEvent, FilesDroppedEvent } from '@aiderdesk/extensions';
+import type { Extension, ExtensionContext, FilesAddedEvent, FilesDroppedEvent } from '@aiderdesk/extensions';
+
+const DEBOUNCE_MS = 2000;
 
 export default class ContextAutocompletionWordsExtension implements Extension {
   static metadata = {
     name: 'Context Autocompletion Words',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Automatically extracts symbols from context files and adds them to autocompletion',
     author: 'wladimiiir',
     capabilities: ['context'],
   };
 
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Context Autocompletion Words Extension loaded', 'info');
   }
 
-  async onFilesAdded(event: FilesAddedEvent, context: ExtensionContext): Promise<void> {
-    await this.processFiles(event.files, 'add', context);
+  async onFilesAdded(_event: FilesAddedEvent, context: ExtensionContext): Promise<void> {
+    this.scheduleProcess(context);
   }
 
-  async onFilesDropped(event: FilesDroppedEvent, context: ExtensionContext): Promise<void> {
-    await this.processFiles(event.files, 'drop', context);
+  async onFilesDropped(_event: FilesDroppedEvent, context: ExtensionContext): Promise<void> {
+    this.scheduleProcess(context);
   }
 
-  private async processFiles(
-    files: ContextFile[],
-    action: 'add' | 'drop',
-    context: ExtensionContext,
-  ): Promise<void> {
+  private scheduleProcess(context: ExtensionContext): void {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    this.debounceTimer = setTimeout(() => {
+      this.processFiles(context);
+    }, DEBOUNCE_MS);
+  }
+
+  private async processFiles(context: ExtensionContext): Promise<void> {
     const taskContext = context.getTaskContext();
     if (!taskContext) {
       context.log('No active task context available', 'debug');
@@ -41,15 +50,7 @@ export default class ContextAutocompletionWordsExtension implements Extension {
     }
 
     const allContextFiles = await taskContext.getContextFiles();
-    const existingPaths = new Set(allContextFiles.map((f) => f.path));
-    const eventPaths = new Set(files.map((f) => f.path));
-
-    let filePaths: string[];
-    if (action === 'add') {
-      filePaths = [...Array.from(existingPaths), ...Array.from(eventPaths)];
-    } else {
-      filePaths = Array.from(existingPaths).filter((path) => !eventPaths.has(path));
-    }
+    const filePaths = allContextFiles.map((f) => f.path);
 
     if (filePaths.length === 0) {
       await taskContext.updateAutocompletionWords([]);
