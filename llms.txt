@@ -54,7 +54,6 @@ resources/
 scripts/
   before-pack.js
   download-probe.mjs
-  download-uv.mjs
 src/
   main/
     agent/
@@ -244,6 +243,7 @@ src/
     messages.ts
     paths.ts
     progress-window.ts
+    python-dependencies-installer.ts
     start-up.ts
     window-manager.ts
   mcp-server/
@@ -493,6 +493,7 @@ src/
           AboutSettings.tsx
           AiderSettings.tsx
           ExtensionCard.tsx
+          ExtensionSettingsDialog.tsx
           ExtensionsSettings.tsx
           GeneralSettings.tsx
           HotkeyConfig.tsx
@@ -555,6 +556,7 @@ src/
         SpaceMono.ttf
         UbuntuMono.ttf
       hooks/
+        useAiderConnectorStatus.ts
         useAudioRecorder.ts
         useBooleanState.ts
         useClickOutside.ts
@@ -569,6 +571,7 @@ src/
         useOpenRouterModels.ts
         useOS.ts
         useParsedContent.ts
+        usePythonInstallStatus.ts
         useRequestyModels.ts
         useResponsive.ts
         useScrollingPaused.ts
@@ -1371,33 +1374,6 @@ zip.extractAllTo(extractPath, true); // Overwrite existing files
 // Clean up the temporary archive file
 ⋮----
 async function downloadAllProbes()
-⋮----
-// Ensure the base resources directory exists
-
-================
-File: scripts/download-uv.mjs
-================
-async function downloadAndExtractUVForPlatform(target)
-⋮----
-// Ensure the specific platform directory exists
-⋮----
-// Check if uv already exists for this platform
-⋮----
-strip: 0 // Do not strip any components from the file path initially
-⋮----
-// The uv executable might be inside a directory like uv-x86_64-unknown-linux-gnu/uv
-⋮----
-// Clean up the extracted directory
-⋮----
-// If not found in extractedDir, check the top level (for older releases or different structures)
-⋮----
-zip.extractAllTo(extractPath, true); // Overwrite existing files
-⋮----
-// Do not exit on error for one platform, try others.
-⋮----
-// Clean up the temporary archive file
-⋮----
-async function downloadAllUVs()
 ⋮----
 // Ensure the base resources directory exists
 
@@ -3304,6 +3280,9 @@ sendExtensionUIRefresh(options:
 ⋮----
 // Modal overlay URL events
 sendModalOverlayUrl(url: string): void
+⋮----
+// Aider connector status events (Python install + per-task connector lifecycle)
+sendAiderConnectorStatus(status: import('@/python-dependencies-installer').PythonInstallStatus, baseDir?: string, taskId?: string): void
 
 ================
 File: src/main/events/index.ts
@@ -3498,7 +3477,7 @@ import path from 'path';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, SettingsData, ToolApprovalState } from '@common/types';
+import { AvailableExtension, ExtensionConfigComponent, SettingsData, ToolApprovalState } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 ⋮----
 import { ExtensionLoader } from './extension-loader';
@@ -3772,9 +3751,33 @@ getUIComponents(project?: Project, task?: Task): RegisteredUIComponent[]
 ⋮----
 // Skip uninitialized extensions
 ⋮----
+/**
+   * Check if an extension provides a settings config component.
+   * Uses the dedicated getConfigComponent() method on the Extension interface.
+   */
+extensionHasConfig(loadedExt: LoadedExtension): boolean
+⋮----
 async getUIExtensionData(extensionId: string, componentId: string, project?: Project, task?: Task): Promise<unknown>
 ⋮----
 async executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], project?: Project, task?: Task): Promise<unknown>
+⋮----
+/**
+   * Get the config component JSX for a specific extension.
+   * Uses the dedicated getConfigComponent() method on the Extension interface.
+   */
+getExtensionConfigComponent(extensionId: string, project?: Project): ExtensionConfigComponent | null
+⋮----
+/**
+   * Get the current configuration data for an extension's settings.
+   * Delegates to the extension's getConfigData() method.
+   */
+async getExtensionConfig(extensionId: string, project?: Project): Promise<unknown>
+⋮----
+/**
+   * Save configuration data for an extension's settings.
+   * Delegates to the extension's saveConfigData() method.
+   */
+async saveExtensionConfig(extensionId: string, configData: unknown, project?: Project): Promise<unknown>
 ⋮----
 validateUIComponentDefinition(component: UIComponentDefinition):
 ⋮----
@@ -4145,6 +4148,10 @@ constructor(opts?: Transport.TransportStreamOptions)
 ⋮----
 setEventManager(eventManager: EventManager): void
 ⋮----
+setSplashLogCallback(callback: (message: string) => void): void
+⋮----
+clearSplashLogCallback(): void
+⋮----
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 log(info: any, callback: () => void): void
 ⋮----
@@ -4155,6 +4162,8 @@ log(info: any, callback: () => void): void
 // Add to buffer and get the assigned ID
 ⋮----
 // Emit to renderer (only if eventManager is available)
+⋮----
+// Forward info-level messages to splash screen during startup
 ⋮----
 /**
    * Get logs with pagination.
@@ -6337,6 +6346,7 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 ⋮----
 export class ProjectManager
 ⋮----
@@ -6352,6 +6362,7 @@ constructor(
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
 )
 ⋮----
 private findProject(baseDir: string): Project | undefined
@@ -6408,6 +6419,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { determineMainModel, determineWeakModel } from '@/utils';
 ⋮----
 export class Project
@@ -6425,6 +6437,7 @@ constructor(
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
 )
 ⋮----
 public async start()
@@ -6919,6 +6932,12 @@ registerRoutes(router: Router): void
 // Get extension UI component data
 ⋮----
 // Execute extension UI action
+⋮----
+// Get extension config component (per-extension settings)
+⋮----
+// Get extension config data
+⋮----
+// Save extension config
 
 ================
 File: src/main/server/rest-api/index.ts
@@ -7357,7 +7376,7 @@ const main = async (): Promise<void> =>
 ⋮----
 const updateProgress = (
 ⋮----
-// Initialize managers first
+// Initialize managers first (creates pythonInstaller)
 ⋮----
 // Check for AIDER_DESK_PROJECTS environment variable and add projects
 ⋮----
@@ -7856,6 +7875,7 @@ import { ModelManager } from '@/models';
 import { EventManager } from '@/events';
 import { getEnvironmentVariablesForAider } from '@/utils';
 import { Task } from '@/task/task';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 ⋮----
 export class AiderManager
 ⋮----
@@ -7864,6 +7884,8 @@ constructor(
 public async start(forceRestart = false): Promise<void>
 ⋮----
 // Set aiderStarting to true when starting aider
+⋮----
+// Ensure Python dependencies are installed before spawning
 ⋮----
 i++; // Skip the model value
 ⋮----
@@ -8251,6 +8273,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager, ExtensionEventMap } from '@/extensions/extension-manager';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 ⋮----
 const getTaskFinishedNotificationText = (task: TaskData) =>
 ⋮----
@@ -8271,6 +8294,7 @@ constructor(
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
     initialTaskData?: Partial<TaskData>,
 )
 ⋮----
@@ -9472,28 +9496,60 @@ export const search = async (options: ProbeSearchOptions): Promise<string | unkn
 ================
 File: src/main/utils/python.ts
 ================
-import path from 'path';
 import { exec } from 'child_process';
+⋮----
 import { promisify } from 'util';
 ⋮----
-import { PYTHON_COMMAND, PYTHON_VENV_DIR, UV_EXECUTABLE } from '@/constants';
+import { AIDER_DESK_BIN_DIR, PYTHON_COMMAND, PYTHON_VENV_DIR, UV_EXECUTABLE } from '@/constants';
 import logger from '@/logger';
+⋮----
+interface GetResolvedUvPathOptions {
+  onDownloadStarted?: () => void;
+}
+⋮----
+/**
+ * Resolves and returns the path to a working uv executable.
+ *
+ * Resolution order:
+ *  1. Previously cached result (immediate)
+ *  2. Local bin directory download (UV_EXECUTABLE)
+ *  3. System-installed uv (unless AIDER_DESK_DISABLE_SYSTEM_UV is set)
+ *  4. Download from GitHub releases
+ *
+ * The in-flight promise is cached so that concurrent callers share the same
+ * resolution — no duplicate downloads or checks.
+ */
+export const getResolvedUvPath = async (options?: GetResolvedUvPathOptions): Promise<string> =>
+⋮----
+// Return cached result immediately
+⋮----
+// If a resolution is already in flight, reuse its promise
+⋮----
+// Reset on failure so callers can retry
+⋮----
+const resolveUvPath = async (options?: GetResolvedUvPathOptions) =>
+⋮----
+// 1. Check local bin directory
+⋮----
+// 2. Check for system uv (unless disabled via env var)
+⋮----
+// 3. Download uv
+⋮----
+const findSystemUv = async (): Promise<string | null> =>
+⋮----
+const isUvWorking = async (uvPath: string): Promise<boolean> =>
+⋮----
+const downloadUv = async (): Promise<void> =>
 ⋮----
 export const getPythonVenvBinPath = (): string =>
 ⋮----
 /**
  * Gets the currently installed version of a Python library within the virtual environment.
- * @param library The name of the Python library.
- * @returns The version string or null if not found or an error occurs.
  */
 export const getCurrentPythonLibVersion = async (library: string): Promise<string | null> =>
 ⋮----
-// Log error but return null as expected for 'not found' or other issues
-⋮----
 /**
  * Gets the latest available version of a Python library from the pip index.
- * @param library The name of the Python library.
- * @returns The latest version string or null if not found or an error occurs.
  */
 export const getLatestPythonLibVersion = async (library: string): Promise<string | null> =>
 
@@ -10450,7 +10506,7 @@ import { normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 ⋮----
-import type { ModeDefinition, ExtensionUIComponent } from '@common/types';
+import type { ModeDefinition, ExtensionConfigComponent, ExtensionUIComponent } from '@common/types';
 import type { WindowManager } from '@/window-manager';
 ⋮----
 import { McpManager, AgentProfileManager } from '@/agent';
@@ -10771,6 +10827,12 @@ async executeUIExtensionAction(
     projectDir?: string,
     taskId?: string,
 ): Promise<unknown>
+⋮----
+getExtensionConfigComponent(extensionId: string, projectDir?: string): ExtensionConfigComponent | null
+⋮----
+async getExtensionConfig(extensionId: string, projectDir?: string): Promise<unknown>
+⋮----
+async saveExtensionConfig(extensionId: string, configData: unknown, projectDir?: string): Promise<unknown>
 
 ================
 File: src/main/index.ts
@@ -10784,13 +10846,14 @@ import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron';
 ⋮----
 import icon from '../../resources/icon.png?asset';
+import splashImage from '../../build/splash.mp4?asset';
 ⋮----
 import { AIDER_DESK_DATA_DIR, HEADLESS_MODE } from '@/constants';
 import { ProgressWindow } from '@/progress-window';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { performStartUp, UpdateProgressData } from '@/start-up';
 import { Store } from '@/store';
-import logger from '@/logger';
+import logger, { eventTransport } from '@/logger';
 import { initManagers } from '@/managers';
 import { getDefaultProjectSettings } from '@/utils';
 import { WindowManager } from '@/window-manager';
@@ -10840,6 +10903,8 @@ export const getCreateNewWindow = ()
 ⋮----
 updateProgress = (
 ⋮----
+// Forward logger.info messages to splash screen
+⋮----
 // In headless mode, use a no-op updateProgress
 updateProgress = () =>
 ⋮----
@@ -10847,7 +10912,13 @@ updateProgress = () =>
 ⋮----
 // Initialize window manager
 ⋮----
-// Initialize managers (shared across all windows)
+// Initialize managers (shared across all windows) — creates pythonInstaller
+⋮----
+// performStartUp is now non-blocking — it kicks off background installation
+// and returns immediately. The progress bar acts as a splash screen.
+⋮----
+// performStartUp no longer throws for install errors (handled async)
+// but guard against unexpected issues
 ⋮----
 // Setup global cleanup
 const globalCleanup = async () =>
@@ -10860,6 +10931,11 @@ const globalCleanup = async () =>
 // Initialize IPC handlers
 ⋮----
 // Create the first window
+// Create the first window
+⋮----
+// Show ready state before closing
+⋮----
+// Stop forwarding logs to splash before closing
 
 ================
 File: src/main/ipc-handlers.ts
@@ -10884,13 +10960,16 @@ import { ipcMain, clipboard } from 'electron';
 ⋮----
 import { EventsHandler } from './events-handler';
 ⋮----
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { ServerController } from '@/server';
 ⋮----
-export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) =>
+export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController, pythonInstaller: PythonDependenciesInstaller) =>
 ⋮----
 // Voice handlers
 ⋮----
 // Extension handlers
+⋮----
+// Extension config handlers (per-extension settings)
 ⋮----
 // Terminal handlers
 ⋮----
@@ -10905,6 +10984,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 // Memory handlers
 ⋮----
 // System logs handlers
+⋮----
+// Aider connector status (Python install + per-task connector lifecycle)
 
 ================
 File: src/main/logger.ts
@@ -10953,6 +11034,7 @@ import { SERVER_PORT } from '@/constants';
 import logger, { initEventLogging } from '@/logger';
 import { EventsHandler } from '@/events-handler';
 import { PromptsManager } from '@/prompts';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 ⋮----
 export interface ManagersResult {
   eventsHandler: EventsHandler;
@@ -10961,6 +11043,7 @@ export interface ManagersResult {
   modelManager: ModelManager;
   agentProfileManager: AgentProfileManager;
   extensionManager: ExtensionManager;
+  pythonInstaller: PythonDependenciesInstaller;
 }
 ⋮----
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> =>
@@ -10972,6 +11055,8 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
 // Initialize event manager with window manager
 ⋮----
 // Initialize event-based logging (adds transport to logger)
+⋮----
+// Create Python dependencies installer (self-wires status events via EventManager)
 ⋮----
 // Initialize model manager
 ⋮----
@@ -11283,7 +11368,7 @@ File: src/main/progress-window.ts
 ================
 import { join } from 'path';
 ⋮----
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow } from 'electron';
 ⋮----
 import { isDev } from '@/app';
 ⋮----
@@ -11291,85 +11376,159 @@ export class ProgressWindow
 ⋮----
 constructor(options:
 ⋮----
+// Send icon path and splash image to renderer once loaded
+⋮----
 on(event: 'ready', callback: () => void): void
 ⋮----
-set title(value: string)
-⋮----
-setDetail(value: string, subtitle?: string): void
+setDetail(value: string): void
 ⋮----
 setCompleted(): void
 ⋮----
-setProgress(progress: number): void
+addLog(message: string): void
 ⋮----
 close(): void
 
 ================
-File: src/main/start-up.ts
+File: src/main/python-dependencies-installer.ts
 ================
 import { exec } from 'child_process';
 ⋮----
 import { promisify } from 'util';
 ⋮----
-import { delay } from '@common/utils';
-⋮----
 import logger from '@/logger';
-import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBinPath } from '@/utils';
-import {
-  AIDER_DESK_DATA_DIR,
-  SETUP_COMPLETE_FILENAME,
-  PYTHON_VENV_DIR,
-  AIDER_DESK_CONNECTOR_DIR,
-  RESOURCES_DIR,
-  AIDER_DESK_MCP_SERVER_DIR,
-  UV_EXECUTABLE,
-} from '@/constants';
+import { EventManager } from '@/events';
+import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBinPath, getResolvedUvPath } from '@/utils';
+import { AIDER_DESK_DATA_DIR, SETUP_COMPLETE_FILENAME, PYTHON_VENV_DIR, AIDER_DESK_CONNECTOR_DIR, RESOURCES_DIR, AIDER_DESK_MCP_SERVER_DIR } from '@/constants';
 import { isDev } from '@/app';
 ⋮----
+export type PythonInstallStatus =
+  | { state: 'idle' }
+  | { state: 'checking-uv' }
+  | { state: 'downloading-uv' }
+  | { state: 'creating-venv' }
+  | { state: 'installing-packages'; package: string; current: number; total: number }
+  | { state: 'setting-up-connector' }
+  | { state: 'setting-up-mcp' }
+  | { state: 'starting-connector' }
+  | { state: 'ready' }
+  | { state: 'failed'; error: string };
+⋮----
+type StatusListener = (status: PythonInstallStatus) => void;
+⋮----
 /**
- * Checks if uv is available and accessible.
+ * Manages Python dependency installation in the background.
+ *
+ * Handles:
+ * - Creating the Python virtual environment
+ * - Installing aider-chat and connector dependencies
+ * - Setting up the MCP server
+ * - Exposing installation status to the UI via EventManager
+ *
+ * The installation runs asynchronously (fire-and-forget). Consumers call
+ * `waitForReady()` to gate on completion before spawning Python processes.
  */
-const checkUvAvailable = async (): Promise<void> =>
+export class PythonDependenciesInstaller
 ⋮----
-const createVirtualEnv = async (): Promise<void> =>
+constructor(private readonly eventManager: EventManager)
 ⋮----
-const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> =>
+/**
+   * Start the installation process in the background (fire-and-forget).
+   * Safe to call multiple times — only one install runs at a time.
+   */
+ensureInstalled(): void
+⋮----
+/**
+   * Wait until the installation is complete and the environment is ready.
+   * Resolves immediately if already ready. Rejects if installation failed.
+   */
+async waitForReady(): Promise<void>
+⋮----
+// Not started yet — kick off and wait
+⋮----
+/** Check if the environment is ready to use. */
+isReady(): boolean
+⋮----
+/** Get the current installation status. */
+getStatus(): PythonInstallStatus
+⋮----
+/**
+   * Subscribe to status changes. Returns an unsubscribe function.
+   */
+onStatusChange(listener: StatusListener): () => void
+⋮----
+// --- Private implementation ---
+⋮----
+private setStatus(status: PythonInstallStatus): void
+⋮----
+// Ignore listener errors
+⋮----
+private async runInstallation(): Promise<void>
+⋮----
+// If setup was previously completed and venv exists, do an update check
+⋮----
+// Full first-time setup
+⋮----
+// Create data dir if needed
+⋮----
+// Mark setup as complete
+⋮----
+private async performUpdateCheck(): Promise<void>
+⋮----
+// Run update check (install/upgrade packages)
+⋮----
+// Setup MCP server
+⋮----
+private async checkUvAvailableInternal(): Promise<void>
+⋮----
+private async createVirtualEnvInternal(): Promise<void>
+⋮----
+private async setupAiderConnectorInternal(cleanInstall: boolean): Promise<void>
 ⋮----
 // Copy connector.py from resources
 ⋮----
-const installAiderConnectorRequirements = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> =>
+private async installAiderConnectorRequirements(cleanInstall: boolean): Promise<void>
 ⋮----
-// Version-pinned package - check if matches required version
-⋮----
-// For non-version-pinned packages, check if newer version is available
-⋮----
-// If currentVersion is null, the package is not installed, so proceed with installation.
-⋮----
-const setupMcpServer = async () =>
+private async setupMcpServerInternal(): Promise<void>
 ⋮----
 // Copy all files from the MCP server directory
 ⋮----
-// Skip directories for now, only copy files
-⋮----
-const checkNetworkConnectivity = async (): Promise<boolean> =>
-⋮----
-const performUpdateCheck = async (updateProgress: UpdateProgressFunction): Promise<void> =>
+private async checkNetworkConnectivity(): Promise<boolean>
+
+================
+File: src/main/start-up.ts
+================
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
+import { AIDER_DESK_DATA_DIR, SETUP_COMPLETE_FILENAME, PYTHON_VENV_DIR } from '@/constants';
+import logger from '@/logger';
 ⋮----
 export type UpdateProgressData = {
   step: string;
   message: string;
   info?: string;
-  progress?: number; // 0-100
 };
-⋮----
-progress?: number; // 0-100
 ⋮----
 export type UpdateProgressFunction = (data: UpdateProgressData) => void;
 ⋮----
-export const performStartUp = async (updateProgress: UpdateProgressFunction): Promise<boolean> =>
+/**
+ * Performs a fast startup check and kicks off background Python dependency installation.
+ *
+ * This function no longer blocks on pip installs. It returns quickly after checking
+ * whether setup has been completed previously. The actual installation happens
+ * asynchronously in the PythonDependenciesInstaller singleton.
+ *
+ * @param pythonInstaller The singleton PythonDependenciesInstaller instance
+ * @param updateProgress Optional callback for progress UI (splash screen etc.)
+ * @returns true if the app should proceed (always true now — errors are handled async)
+ */
+export const performStartUp = async (pythonInstaller: PythonDependenciesInstaller, updateProgress?: UpdateProgressFunction): Promise<boolean> =>
 ⋮----
-// Create setup complete file
+// Kick off background update check — don't await it
 ⋮----
-// Clean up if setup fails
+// First-time setup needed — kick off in background
+⋮----
+// Ensure data dir exists (fast, synchronous)
+⋮----
+// Kick off full installation — fire and forget
 
 ================
 File: src/main/window-manager.ts
@@ -11513,6 +11672,7 @@ import {
   UserMessageData,
   VersionsInfo,
   WorktreeIntegrationStatusUpdatedData,
+  AiderConnectorStatus,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -11522,6 +11682,8 @@ import { compareBaseDirs } from '@common/utils';
 // Extension operations
 ⋮----
 const listener = (_: Electron.IpcRendererEvent, data: ExtensionUIRefreshData) =>
+⋮----
+// Extension config operations (per-extension settings)
 ⋮----
 // Voice API
 ⋮----
@@ -11538,6 +11700,8 @@ const listener = (_: Electron.IpcRendererEvent, data: ExtensionUIRefreshData) =>
 // System logs
 ⋮----
 // notifications in Electron app are handled by the main process
+⋮----
+// Aider connector status (Python install + per-task connector lifecycle)
 ⋮----
 // eslint-disable-next-line no-console
 
@@ -11661,8 +11825,10 @@ import {
   QueuedPromptsUpdatedData,
   InstalledExtension,
   AvailableExtension,
+  ExtensionConfigComponent,
   ExtensionUIComponent,
   ModalOverlayUrlData,
+  AiderConnectorStatus,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -11709,6 +11875,7 @@ type EventDataMap = {
   'terminal-exit': TerminalExitData;
   'extension-ui-refresh': ExtensionUIRefreshData;
   'modal-overlay-url': ModalOverlayUrlData;
+  'aider-connector-status': { baseDir?: string; taskId?: string; status: AiderConnectorStatus };
 };
 ⋮----
 type EventCallback<T> = (data: T) => void;
@@ -12019,11 +12186,26 @@ getUIExtensionData(extensionId: string, componentId: string, projectDir?: string
 ⋮----
 executeUIExtensionAction(extensionId: string, componentId: string, action: string, args: unknown[], projectDir?: string, taskId?: string): Promise<unknown>
 ⋮----
+// Extension config operations (per-extension settings)
+getExtensionConfigComponent(extensionId: string, projectDir?: string): Promise<ExtensionConfigComponent | null>
+⋮----
+getExtensionConfig(extensionId: string, projectDir?: string): Promise<unknown>
+⋮----
+saveExtensionConfig(extensionId: string, configData: unknown, projectDir?: string): Promise<unknown>
+⋮----
 onExtensionUIRefresh(callback: (data: ExtensionUIRefreshData) => void): () => void
 ⋮----
 onModalOverlayUrl(callback: (data: ModalOverlayUrlData) => void): () => void
 ⋮----
 isWebViewSupported(): boolean
+⋮----
+addAiderConnectorStatusListener(
+    callback: (data: { baseDir?: string; taskId?: string; status: AiderConnectorStatus }) => void,
+    baseDir?: string,
+    taskId?: string,
+): () => void
+⋮----
+async getAiderConnectorStatus(): Promise<AiderConnectorStatus>
 
 ================
 File: src/renderer/src/components/AgentSelector/AgentSelector.tsx
@@ -13306,6 +13488,7 @@ type Props<T> = {
 // Parent ref for virtualizer
 ⋮----
 // Create virtualizer
+// eslint-disable-next-line react-hooks/incompatible-library
 ⋮----
 {/* Header - Outside virtualized area */}
 ⋮----
@@ -13630,9 +13813,23 @@ type Props = {
   direction?: 'horizontal' | 'vertical';
   additionalProps?: Record<string, unknown>;
   renderNullOnEmpty?: boolean;
+  projectDir?: string;
+  taskId?: string;
+  actionProjectDir?: string;
+  actionTaskId?: string;
 };
 ⋮----
-const ExtensionComponentWrapperInner = (
+const ExtensionComponentWrapperInner = ({
+  placement,
+  className,
+  direction = 'horizontal',
+  additionalProps,
+  renderNullOnEmpty = false,
+  projectDir,
+  taskId,
+  actionProjectDir,
+  actionTaskId,
+}: Props) =>
 ⋮----
 return <div className=
 
@@ -13679,9 +13876,20 @@ import { useExtensionComponents, useExtensionUIStore } from '@/stores/extensionU
 type UseExtensionComponentsWrapperProps = {
   placement: string;
   additionalProps?: Record<string, unknown>;
+  projectDir?: string;
+  taskId?: string;
+  actionProjectDir?: string;
+  actionTaskId?: string;
 };
 ⋮----
-export const useExtensionComponentsWrapper = (
+export const useExtensionComponentsWrapper = ({
+  placement,
+  additionalProps,
+  projectDir,
+  taskId,
+  actionProjectDir,
+  actionTaskId,
+}: UseExtensionComponentsWrapperProps) =>
 ⋮----
 // Track which components have been loaded in this mount to prevent infinite loops with noDataCache
 ⋮----
@@ -17937,6 +18145,7 @@ import { useApi } from '@/contexts/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useAiderConnectorStatus } from '@/hooks/useAiderConnectorStatus';
 ⋮----
 export type TaskBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -17982,7 +18191,13 @@ if (!settings)
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+/** Format the Python installation status for display in the TaskBar. */
+⋮----
+return t('pythonSetup.failed',
+⋮----
 <div className=
+⋮----
+<Tooltip content=
 ⋮----
 {/* Task sidebar toggle for mobile */}
 ⋮----
@@ -17993,8 +18208,6 @@ if (!settings)
 {/* Row 2: AIDER */}
 ⋮----
 // Original horizontal layout for other modes
-⋮----
-<Tooltip content=
 ⋮----
 onSquash=
 
@@ -19351,14 +19564,16 @@ File: src/renderer/src/components/settings/ExtensionCard.tsx
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
-import { FaChevronDown, FaDownload, FaSync } from 'react-icons/fa';
+import { FaChevronDown, FaCog, FaDownload, FaSync } from 'react-icons/fa';
 import { clsx } from 'clsx';
 ⋮----
 import type { AvailableExtension, InstalledExtension } from '@common/types';
 ⋮----
 import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
 import { Toggle } from '@/components/common/Toggle';
 import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
+import { ExtensionSettingsDialog } from '@/components/settings/ExtensionSettingsDialog';
 ⋮----
 // Helper to normalize extension data
 const getExtensionData = (extension: InstalledExtension | AvailableExtension) =>
@@ -19388,6 +19603,10 @@ const handleInstall = () =>
 ⋮----
 const handleUpdate = () =>
 ⋮----
+const handleOpenSettings = () =>
+⋮----
+const handleCloseSettings = () =>
+⋮----
 className=
 ⋮----
 {/* Icon */}
@@ -19400,36 +19619,45 @@ className=
 ⋮----
 {/* Actions */}
 ⋮----
-<Toggle checked=
-⋮----
 {/* Expandable README section */}
 ⋮----
 {/* Chevron button at bottom center */}
 ⋮----
-aria-label={isExpanded ? t('settings.extensions.collapseReadme') : t('settings.extensions.expandReadme')}
-            >
-              <FaChevronDown className={clsx('w-3 h-3 text-text-muted transition-transform duration-200', isExpanded && 'rotate-180')} />
-            </button>
-          </div>
-
-          {/* README content */}
-          {isExpanded && (
-            <div className="border-t border-border-default p-6">
-              <div className="text-4xs text-text-primary max-w-none max-h-96 overflow-y-auto bg-bg-primary-light rounded-md p-4 scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
-                <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
-                  {data.readmeContent!}
-                </ReactMarkdown>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-⋮----
 <FaChevronDown className=
 ⋮----
 {/* README content */}
+
+================
+File: src/renderer/src/components/settings/ExtensionSettingsDialog.tsx
+================
+import { useCallback, useEffect, useState } from 'react';
+import StringToReactComponent from 'string-to-react-component';
+import { useTranslation } from 'react-i18next';
+⋮----
+import type { ExtensionConfigComponent } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+import { useExtensions } from '@/contexts/ExtensionsContext';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { LoadingOverlay } from '@/components/common/LoadingOverlay';
+import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
+⋮----
+type Props = {
+  extensionId: string;
+  extensionName: string;
+  projectDir?: string;
+  onClose: () => void;
+};
+⋮----
+export const ExtensionSettingsDialog = (
+⋮----
+// Load component definition and initial config on mount
+⋮----
+const loadConfig = async () =>
+⋮----
+title=
+⋮----
+cancelButtonText=
 
 ================
 File: src/renderer/src/components/settings/ExtensionsSettings.tsx
@@ -20939,6 +21167,34 @@ export interface TaskContextType {
 export const useTask = (): TaskContextType =>
 
 ================
+File: src/renderer/src/hooks/useAiderConnectorStatus.ts
+================
+import { useEffect, useMemo, useState } from 'react';
+import { AiderConnectorStatus } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+/**
+ * Hook to track Aider connector status.
+ *
+ * Covers both Python dependencies installation (global) and per-task connector
+ * lifecycle (starting-connector → ready). Pass baseDir/taskId to receive
+ * task-scoped connector events.
+ *
+ * Status merge strategy: Python installation progress always takes priority
+ * over connector startup, so users never lose visibility into install progress.
+ */
+export const useAiderConnectorStatus = (baseDir?: string, taskId?: string) =>
+⋮----
+// Fetch initial Python status
+⋮----
+// If IPC not available yet, stay idle
+⋮----
+// Listen for status changes — route to the correct state slot
+⋮----
+// Merge: Python install progress takes priority over connector startup
+
+================
 File: src/renderer/src/hooks/useAudioRecorder.ts
 ================
 import { useCallback, useRef, useState } from 'react';
@@ -21178,6 +21434,11 @@ export const useParsedContent = (
 // we use allFiles.length to re-evaluate if the array content might have changed
 // even if the array reference itself hasn't.
 // eslint-disable-next-line react-hooks/exhaustive-deps
+
+================
+File: src/renderer/src/hooks/usePythonInstallStatus.ts
+================
+// This file was removed — use useAiderConnectorStatus instead
 
 ================
 File: src/renderer/src/hooks/useRequestyModels.ts
@@ -25046,111 +25307,260 @@ File: src/renderer/progress.html
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Starting AiderDesk...</title>
+  <title>Starting...</title>
   <style>
-    body {
+    @font-face {
+      font-family: 'Sono';
+      src: url('./src/fonts/Sono.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+  </style>
+  <style>
+    * {
       margin: 0;
-      padding: 20px;
-      background-color: #222431;
-      color: #f1f3f5;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+      padding: 0;
       box-sizing: border-box;
     }
-    .text {
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 8px;
+
+    body {
+      padding: 32px;
+      background: transparent;
+      color: #f1f3f5;
+      font-family: 'Sono', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      -webkit-app-region: drag;
     }
-    .subtitle {
-      font-size: 11px;
-      color: #999ba3;
-      margin-bottom: 4px;
-      display: none;
+
+    .container {
+      position: relative;
+      background: #222431;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border: 1px solid #3d4166;
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      -webkit-app-region: no-drag;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(34, 36, 49, 0.7);
+      border-radius: 12px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #splash-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+      z-index: 0;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 14px;
+    }
+
+    .brand-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #f1f3f5;
+      letter-spacing: -0.3px;
     }
 
     .detail {
-      font-size: 12px;
-      color: #999ba3;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 13px;
+      font-weight: 400;
+      /*color: #999ba3;*/
+      text-align: center;
+      min-height: 20px;
+      margin-bottom: 28px;
+      position: relative;
+      z-index: 1;
     }
-    .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(88, 92, 117, 0.3);
-      border-top-color: #585c75;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      flex-shrink: 0;
-      display: none;
+
+    .detail-text {
+      opacity: 0;
+      animation: fadeIn 0.3s ease forwards;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
     }
+
+    .completed .detail {
+      color: #22c55edd;
+    }
+
     .progress-container {
-      height: 16px;
-      background-color: #191a22;
-      border-radius: 2px;
+      width: 100%;
+      height: 2px;
+      background: #333652;
+      border-radius: 1px;
       overflow: hidden;
-      margin-bottom: 8px;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
     }
+
     .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
       height: 100%;
-      width: 0;
-      background-color: #3d4166;
-      border-radius: 2px;
-      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+      background: #f1f3f588;
+      border-radius: 1px;
+      transition: width 0.3s ease;
     }
+
+    .progress-indeterminate {
+      width: 40%;
+      animation: indeterminate-slide 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes indeterminate-slide {
+      0% {
+        left: -40%;
+        right: 100%;
+      }
+      60% {
+        left: 100%;
+        right: -40%;
+      }
+      100% {
+        left: 100%;
+        right: -40%;
+      }
+    }
+
     .completed .progress-bar {
       width: 100% !important;
-      background-color: #3b82f6;
+      animation: none;
+      background: #22c55e;
+    }
+
+    .log-line {
+      width: 100%;
+      font-size: 11px;
+      /*color: #7b7d86;*/
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: 'Sono', monospace;
+      text-align: center;
+      opacity: 0.8;
+      min-height: 16px;
+      transition: opacity 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .log-line:not(:empty) {
+      opacity: 1;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(4px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .completed .detail {
+      color: #22c55e4c;
     }
   </style>
 </head>
 <body>
-  <div class="text" id="text">Starting AiderDesk...</div>
-  <div class="detail" id="detail">
-    <span id="detail-text">Initializing...</span>
-    <div class="spinner" id="spinner"></div>
-  </div>
-  <div class="subtitle" id="subtitle">This may take a while...</div>
-  <div class="progress-container">
-    <div class="progress-bar" id="progress-bar"></div>
+  <div class="container">
+    <video id="splash-video" autoplay muted loop></video>
+    <div class="brand">
+      <div class="brand-icon-wrapper">
+        <img class="brand-icon" id="brand-icon" src="" alt="AiderDesk">
+      </div>
+      <span class="brand-name">AiderDesk</span>
+    </div>
+
+    <div class="detail">
+      <span class="detail-text" id="detail-text">Initializing...</span>
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-bar progress-indeterminate" id="progress-bar"></div>
+    </div>
+
+    <div class="log-line" id="log-line"></div>
   </div>
 
   <script>
     const { ipcRenderer } = require('electron');
 
-    ipcRenderer.on('set-title', (_, title) => {
-      document.getElementById('text').textContent = title;
+    ipcRenderer.on('set-icon-path', (_, iconPath) => {
+      document.getElementById('brand-icon').src = iconPath;
     });
 
-    ipcRenderer.on('set-detail', (_, value, subtitle) => {
-      const messageEl = document.getElementById('detail-text');
-      const spinnerEl = document.getElementById('spinner');
-      const infoEl = document.getElementById('subtitle');
+    ipcRenderer.on('set-splash-image', (_, imagePath) => {
+      const video = document.getElementById('splash-video');
+      video.src = imagePath;
+    });
 
-      messageEl.textContent = value;
-      const showSpinner = /installing|package|aider|connector|requirements|python|uv|venv/i.test(value.toLowerCase());
-      spinnerEl.style.display = showSpinner ? 'block' : 'none';
+    ipcRenderer.on('set-title', (_, title) => {
+      // Title is no longer displayed, but keep handler for compatibility
+    });
 
-      infoEl.textContent = subtitle || '';
-      infoEl.style.display = subtitle ? 'block' : 'none';
+    ipcRenderer.on('set-detail', (_, value) => {
+      const detailTextEl = document.getElementById('detail-text');
+
+      // Trigger fade-in animation by removing and re-adding the element
+      detailTextEl.style.animation = 'none';
+      setTimeout(() => {
+        detailTextEl.textContent = value;
+        detailTextEl.style.animation = 'fadeIn 0.4s ease forwards';
+      }, 10);
     });
 
     ipcRenderer.on('set-completed', () => {
       document.body.classList.add('completed');
+      const progressBar = document.getElementById('progress-bar');
+      progressBar.classList.remove('progress-indeterminate');
     });
 
-    const progressBar = document.getElementById('progress-bar');
+    const logLine = document.getElementById('log-line');
 
-    ipcRenderer.on('set-progress', (_, progress) => {
-      progressBar.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+    ipcRenderer.on('add-log', (_, message) => {
+      logLine.textContent = message;
     });
   </script>
 </body>
@@ -25291,7 +25701,7 @@ File: package.json
     "build:server": "vite build --config vite.config.server.ts && mkdir -p out/resources && cp -r resources/* out/resources",
     "postbuild:server": "npm rebuild",
     "build": "npm run typecheck && electron-vite build && npm run build:mcp",
-    "postinstall": "electron-builder install-app-deps && node scripts/download-uv.mjs && node scripts/download-probe.mjs && patch-package && npm run build:extensions",
+    "postinstall": "electron-builder install-app-deps && node scripts/download-probe.mjs && patch-package && npm run build:extensions",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
@@ -25412,7 +25822,7 @@ File: package.json
     "openai": "^6.9.1",
     "os-name": "^6.0.0",
     "patch-package": "^8.0.0",
-    "posthog-node": "^4.18.0",
+    "posthog-node": "5.29.1",
     "prismjs": "^1.30.0",
     "react-complex-tree": "^2.4.5",
     "react-country-flag": "^3.1.0",
