@@ -1,5 +1,6 @@
-import { UsageReportData, UsageDataRow } from '@common/types';
 import { DatabaseSync } from 'node:sqlite';
+
+import { UsageReportData, UsageDataRow } from '@common/types';
 
 import logger from '@/logger';
 import { DB_FILE_PATH } from '@/constants';
