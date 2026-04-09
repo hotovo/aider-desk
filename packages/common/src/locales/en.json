@@ -1005,6 +1005,7 @@
   "contextFiles": {
     "title": "Context Files",
     "updatedFiles": "Updated Files",
+    "uncommittedChanges": "Uncommitted Changes",
     "updated": "Updated",
     "viewChanges": "View changes",
     "viewAllFiles": "View all files",
@@ -1051,6 +1052,8 @@
     "generatingMessage": "Generating...",
     "committing": "Committing...",
     "commitError": "Commit Error",
+    "uncommitted": "Uncommitted",
+    "group": "Group {{hash}}",
     "empty": {
       "title": "No Context Files",
       "aiderMode": {

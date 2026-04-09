@@ -1,13 +1,17 @@
 import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
 import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { HiChevronDown } from 'react-icons/hi';
 import { MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 
+import { createFileTree } from './types';
+import { SectionContent } from './SectionContent';
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
-import { ContextFilesSection } from './ContextFilesSection';
-import { normalizePath, createFileTree } from './types';
 
-import type { TreeItem } from './types';
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
+import type { TreeItem, SectionType } from './types';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -25,20 +29,67 @@ type Props = {
   onFilePreviewClick: (filePath: string) => void;
 };
 
+interface CommitGroup {
+  id: string;
+  commitHash?: string;
+  commitMessage?: string;
+  files: UpdatedFile[];
+  additions: number;
+  deletions: number;
+}
+
+const UNCOMMITTED_GROUP_ID = '__uncommitted__';
+
 export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, contextFilesMap, visitedSections, onToggle, onFilePreviewClick }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
 
   const [updatedFiles, setUpdatedFiles] = useState<UpdatedFile[]>([]);
-  const [updatedExpandedItems, setUpdatedExpandedItems] = useState<string[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [groupExpandedItems, setGroupExpandedItems] = useState<Record<string, string[]>>({});
   const [isRefreshingUpdated, setIsRefreshingUpdated] = useState(false);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
-  const [diffModalFileIndex, setDiffModalFileIndex] = useState(0);
+  const [diffModalSelectedFile, setDiffModalSelectedFile] = useState<UpdatedFile | null>(null);
   const [fileToRevert, setFileToRevert] = useState<string | null>(null);
   const [isRevertingFile, setIsRevertingFile] = useState(false);
 
-  const sortedUpdatedFiles = useMemo(() => {
-    return [...updatedFiles].sort((a, b) => a.path.localeCompare(b.path));
+  // Group files by commit hash; preserve commit order from backend (newest first in array),
+  // then reverse for display (oldest first). Uncommitted always last.
+  const commitGroups = useMemo((): CommitGroup[] => {
+    const groupMap = new Map<string, CommitGroup>();
+    const committedOrder: string[] = [];
+
+    for (const file of updatedFiles) {
+      const groupId = file.commitHash || UNCOMMITTED_GROUP_ID;
+
+      if (!groupMap.has(groupId)) {
+        if (file.commitHash) {
+          committedOrder.push(groupId);
+        }
+        groupMap.set(groupId, {
+          id: groupId,
+          commitHash: file.commitHash,
+          commitMessage: file.commitMessage,
+          files: [],
+          additions: 0,
+          deletions: 0,
+        });
+      }
+
+      const group = groupMap.get(groupId)!;
+      group.files.push(file);
+      group.additions += file.additions;
+      group.deletions += file.deletions;
+    }
+
+    // Oldest commits first (reverse of backend order), then uncommitted last
+    const groups: CommitGroup[] = [...committedOrder].reverse().map((id) => groupMap.get(id)!);
+    const uncommitted = groupMap.get(UNCOMMITTED_GROUP_ID);
+    if (uncommitted) {
+      groups.push(uncommitted);
+    }
+
+    return groups;
   }, [updatedFiles]);
 
   const totalStats = useMemo(() => {
@@ -50,6 +101,66 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
       { additions: 0, deletions: 0 },
     );
   }, [updatedFiles]);
+
+  // Convert commitGroups to DiffModalGroup format for the diff modal
+  const diffModalGroups: DiffModalGroup[] = useMemo(() => {
+    return commitGroups.map((group) => ({
+      id: group.id,
+      commitHash: group.commitHash,
+      commitMessage: group.commitMessage,
+      files: group.files,
+    }));
+  }, [commitGroups]);
+
+  // Build tree data for each group — use 'root' as root key since SectionContent expects it
+  const groupTreeData = useMemo(() => {
+    if (!visitedSections.has('updated')) {
+      return {};
+    }
+
+    const trees: Record<string, Record<string, TreeItem>> = {};
+
+    for (const group of commitGroups) {
+      const allFileObjects: ContextFile[] = group.files.map((f) => ({
+        path: f.path,
+      }));
+      trees[group.id] = createFileTree(allFileObjects, 'root');
+    }
+
+    return trees;
+  }, [commitGroups, visitedSections]);
+
+  // Auto-expand folder items in each group's tree when tree data changes
+  useEffect(() => {
+    setGroupExpandedItems((prev) => {
+      const next: Record<string, string[]> = {};
+
+      for (const group of commitGroups) {
+        const tree = groupTreeData[group.id];
+        if (!tree) {
+          continue;
+        }
+
+        const allFolders = Object.keys(tree).filter((key) => tree[key].isFolder);
+        const existing = prev[group.id] || [];
+        next[group.id] = Array.from(new Set([...existing, ...allFolders]));
+      }
+
+      return next;
+    });
+  }, [groupTreeData, commitGroups]);
+
+  // Default: only the bottom-most (last) group is expanded.
+  // Only re-run when group count changes, not on every file refresh,
+  // to preserve user's manual expand/collapse choices between refreshes.
+  useEffect(() => {
+    if (commitGroups.length > 0) {
+      setExpandedGroups([commitGroups[commitGroups.length - 1].id]);
+    } else {
+      setExpandedGroups([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commitGroups.length]);
 
   const fetchUpdatedFiles = useCallback(async () => {
     try {
@@ -86,16 +197,10 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
     }
   }, [fetchUpdatedFiles]);
 
-  const handleFileDiffClick = useCallback(
-    (file: UpdatedFile) => {
-      const index = sortedUpdatedFiles.findIndex((f) => normalizePath(f.path) === normalizePath(file.path));
-      if (index !== -1) {
-        setDiffModalFileIndex(index);
-        setDiffModalOpen(true);
-      }
-    },
-    [sortedUpdatedFiles],
-  );
+  const handleFileDiffClick = useCallback((file: UpdatedFile) => {
+    setDiffModalSelectedFile(file);
+    setDiffModalOpen(true);
+  }, []);
 
   const handleRevertFile = useCallback((filePath: string) => {
     setFileToRevert(filePath);
@@ -123,23 +228,9 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
     setFileToRevert(null);
   }, []);
 
-  const updatedTreeData = useMemo(() => {
-    if (!visitedSections.has('updated')) {
-      return { root: { index: 'root', children: [], isFolder: true, data: 'root' } as TreeItem };
-    }
-    const allFileObjects: ContextFile[] = updatedFiles.map((f) => ({
-      path: f.path,
-    }));
-    return createFileTree(allFileObjects, 'root');
-  }, [visitedSections, updatedFiles]);
-
-  useEffect(() => {
-    if (Object.keys(updatedTreeData).length > 1) {
-      const allFolders = Object.keys(updatedTreeData).filter((key) => updatedTreeData[key].isFolder);
-      setUpdatedExpandedItems(Array.from(new Set([...updatedExpandedItems, ...allFolders])));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [updatedTreeData]);
+  const toggleGroup = useCallback((groupId: string) => {
+    setExpandedGroups((prev) => (prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]));
+  }, []);
 
   const dropFile = useCallback(
     (_item: TreeItem) => (_e: React.MouseEvent<HTMLButtonElement>) => {
@@ -157,7 +248,7 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
           <button
             className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors disabled:opacity-50"
             onClick={() => {
-              setDiffModalFileIndex(0);
+              setDiffModalSelectedFile(updatedFiles[0] || null);
               setDiffModalOpen(true);
             }}
             disabled={updatedFiles.length === 0}
@@ -175,36 +266,132 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
     [t, updatedFiles.length, handleRefreshUpdatedFiles, isRefreshingUpdated],
   );
 
+  const renderCommitGroupHeader = useCallback(
+    (group: CommitGroup, isExpanded: boolean) => {
+      const isUncommitted = group.id === UNCOMMITTED_GROUP_ID;
+
+      return (
+        <div
+          className="flex items-center px-2 select-none h-[28px] shrink-0 bg-bg-primary-light cursor-pointer border-t border-border-dark-light sticky top-0 z-10"
+          onClick={() => toggleGroup(group.id)}
+        >
+          {isUncommitted ? (
+            <span className="text-2xs font-normal text-text-secondary truncate mr-2 flex-grow">UNCOMMITTED</span>
+          ) : (
+            <Tooltip content={group.commitMessage || ''}>
+              <span className="text-2xs font-normal text-text-secondary truncate mr-2 flex-grow">{group.commitHash?.slice(0, 7)}</span>
+            </Tooltip>
+          )}
+
+          <span className="text-4xs text-text-muted bg-bg-secondary-light px-1.5 rounded-full flex-shrink-0">{group.files.length}</span>
+
+          <span className="text-4xs ml-1.5 bg-bg-secondary-light px-1.5 rounded-full flex-shrink-0">
+            <span className="text-success">+{group.additions}</span>
+            <span className="ml-0.5 text-error">-{group.deletions}</span>
+          </span>
+
+          <motion.div initial={false} animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ duration: 0.1 }} className="ml-1 flex-shrink-0">
+            <HiChevronDown className="w-3 h-3 text-text-muted" />
+          </motion.div>
+        </div>
+      );
+    },
+    [toggleGroup],
+  );
+
+  const hasAnyContent = commitGroups.length > 0 && visitedSections.has('updated');
+
   return (
     <>
-      <ContextFilesSection
-        section="updated"
-        title={t('contextFiles.updatedFiles')}
-        count={updatedFiles.length}
-        isOpen={isOpen}
-        totalStats={totalStats}
-        treeData={updatedTreeData}
-        expandedItems={updatedExpandedItems}
-        setExpandedItems={setUpdatedExpandedItems}
-        contextFilesMap={contextFilesMap}
-        updatedFiles={updatedFiles}
-        tokensInfo={tokensInfo}
-        os={os}
-        actions={updatedActions}
-        showBorderTop
-        onToggle={onToggle}
-        onFileDiffClick={handleFileDiffClick}
-        onFilePreviewClick={onFilePreviewClick}
-        onRevertFile={handleRevertFile}
-        onDropFile={dropFile}
-        onAddFile={addFile}
-      />
+      <motion.div
+        className={clsx('flex flex-col flex-grow overflow-hidden min-h-[40px]', 'border-t border-border-dark-light')}
+        initial={false}
+        animate={{
+          flexGrow: isOpen ? 1 : 0,
+          flexShrink: isOpen ? 1 : 0,
+        }}
+        transition={{ duration: 0.3, ease: 'easeIn' }}
+      >
+        {/* Outer section header */}
+        <div
+          className={clsx(
+            'flex items-center px-2 select-none h-[40px] shrink-0 bg-bg-primary-light',
+            !isOpen && 'cursor-pointer',
+            isOpen && !updatedActions && 'border-b border-border-dark-light',
+          )}
+          onClick={onToggle}
+        >
+          <motion.div initial={false} animate={{ rotate: isOpen ? 0 : -90 }} transition={{ duration: 0.1 }} className="mr-1">
+            <HiChevronDown className="w-4 h-4 text-text-muted" />
+          </motion.div>
+
+          <span className="text-xs font-semibold uppercase flex-grow text-text-secondary">{t('contextFiles.updatedFiles')}</span>
+
+          <span className="text-2xs mr-2 bg-bg-secondary-light px-1.5 rounded-full">
+            <span className="text-success">+{totalStats.additions}</span>
+            <span className="ml-0.5 text-error">-{totalStats.deletions}</span>
+          </span>
+
+          <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+            {isOpen && updatedActions}
+          </div>
+        </div>
+
+        {/* Commit groups content */}
+        <Activity mode={isOpen ? 'visible' : 'hidden'}>
+          <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded bg-bg-primary-light-strong relative">
+            {hasAnyContent ? (
+              commitGroups.map((group) => {
+                const isGroupExpanded = expandedGroups.includes(group.id);
+                const tree = groupTreeData[group.id];
+                const expanded = groupExpandedItems[group.id] || [];
+                const isUncommitted = group.id === UNCOMMITTED_GROUP_ID;
+
+                return (
+                  <div key={group.id}>
+                    {renderCommitGroupHeader(group, isGroupExpanded)}
+
+                    {isGroupExpanded && tree && (
+                      <SectionContent
+                        section={'updated' as SectionType}
+                        treeData={tree}
+                        expandedItems={expanded}
+                        setExpandedItems={(items) =>
+                          setGroupExpandedItems((prev) => ({
+                            ...prev,
+                            [group.id]: typeof items === 'function' ? items(prev[group.id] || []) : items,
+                          }))
+                        }
+                        contextFilesMap={contextFilesMap}
+                        updatedFiles={group.files}
+                        tokensInfo={tokensInfo}
+                        os={os}
+                        onFileDiffClick={handleFileDiffClick}
+                        onFilePreviewClick={onFilePreviewClick}
+                        onRevertFile={(filePath) => {
+                          if (isUncommitted) {
+                            handleRevertFile(filePath);
+                          }
+                        }}
+                        onDropFile={dropFile}
+                        onAddFile={addFile}
+                      />
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-center text-text-muted text-2xs">{t('common.noFiles')}</div>
+            )}
+          </div>
+        </Activity>
+      </motion.div>
 
       <Activity mode={diffModalOpen ? 'visible' : 'hidden'}>
         <UpdatedFilesDiffModal
-          key={taskId}
-          files={sortedUpdatedFiles}
-          initialFileIndex={diffModalFileIndex}
+          key={`${taskId}-${diffModalSelectedFile?.path}-${diffModalSelectedFile?.commitHash}`}
+          groups={diffModalGroups}
+          initialFile={diffModalSelectedFile}
           onClose={() => setDiffModalOpen(false)}
           baseDir={baseDir}
           taskId={taskId}

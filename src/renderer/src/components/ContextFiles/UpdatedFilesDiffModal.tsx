@@ -17,23 +17,32 @@ import { CompactSelect } from '@/components/common/CompactSelect';
 import { TextArea } from '@/components/common/TextArea';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { DiffFileItem } from '@/components/ContextFiles/DiffFileItem';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 
-type Props = {
+export type DiffModalGroup = {
+  id: string | null;
+  commitHash?: string;
+  commitMessage?: string;
   files: UpdatedFile[];
-  initialFileIndex: number;
+};
+
+type Props = {
+  groups: DiffModalGroup[];
+  initialFile: UpdatedFile | null;
   onClose: () => void;
   baseDir: string;
   taskId: string;
 };
 
-export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDir, taskId }: Props) => {
+export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, taskId }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
   const { settings, saveSettings } = useSettings();
-  const [currentIndex, setCurrentIndex] = useState(initialFileIndex);
+
+  const [currentFile, setCurrentFile] = useState<UpdatedFile | null>(initialFile);
   const [diffViewMode, setDiffViewMode] = useOptimistic(settings?.diffViewMode || DiffViewMode.SideBySide);
   const [activeLineInfo, setActiveLineInfo] = useState<{
     lineKey: string;
@@ -52,7 +61,36 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   const [isAllFilesView, setIsAllFilesView] = useLocalStorage('diff-modal-all-files-view', false);
   const [isFullWidth, setIsFullWidth] = useLocalStorage('diff-modal-full-width', false);
 
-  const currentFile = files[currentIndex];
+  // Flatten groups into a single file list for navigation
+  const flatFiles = useMemo(() => {
+    return groups.flatMap((group) => group.files);
+  }, [groups]);
+
+  // Cumulative file counts per group for rendering offsets in all-files view
+  const groupFileOffsets = useMemo(() => {
+    const offsets: number[] = [];
+    let offset = 0;
+    for (const group of groups) {
+      offsets.push(offset);
+      offset += group.files.length;
+    }
+    return offsets;
+  }, [groups]);
+
+  // Find the position of a file in the flat list, matching by path and commitHash.
+  // When commitHash is undefined/null, the file belongs to the uncommitted group.
+  const findFilePosition = useCallback(
+    (file: UpdatedFile): number => {
+      return flatFiles.findIndex((f) => f.path === file.path && f.commitHash === file.commitHash);
+    },
+    [flatFiles],
+  );
+
+  // Derive current position from the active file object
+  const currentPosition = currentFile ? findFilePosition(currentFile) : -1;
+
+  // Derive current group by matching commitHash — uncommitted when commitHash is absent
+  const currentGroup = currentFile ? (groups.find((g) => (currentFile.commitHash ? g.commitHash === currentFile.commitHash : !g.commitHash)) ?? null) : null;
 
   const language = useMemo(() => {
     return currentFile?.path ? getLanguageFromPath(currentFile.path) : 'text';
@@ -63,14 +101,18 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   }, []);
 
   const handlePrevious = useCallback(() => {
-    setCurrentIndex((prev) => Math.max(0, prev - 1));
-    resetLineState();
-  }, [resetLineState]);
+    if (currentPosition > 0) {
+      setCurrentFile(flatFiles[currentPosition - 1]);
+      resetLineState();
+    }
+  }, [currentPosition, flatFiles, resetLineState]);
 
   const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => Math.min(files.length - 1, prev + 1));
-    resetLineState();
-  }, [files.length, resetLineState]);
+    if (currentPosition >= 0 && currentPosition < flatFiles.length - 1) {
+      setCurrentFile(flatFiles[currentPosition + 1]);
+      resetLineState();
+    }
+  }, [currentPosition, flatFiles, resetLineState]);
 
   const handleDiffViewModeChange = useCallback(
     (value: string) => {
@@ -208,35 +250,43 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
   }, [setIsFullWidth]);
 
   const scrollToFile = useCallback(
-    (index: number) => {
-      const file = files[index];
-      if (!file) {
+    (file: UpdatedFile) => {
+      const pos = findFilePosition(file);
+      if (pos === -1) {
         return;
       }
 
-      const fileId = `diff-file-${index}`;
+      const fileId = `diff-file-${pos}`;
       const element = document.getElementById(fileId);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setCurrentIndex(index);
+        if (isAllFilesView) {
+          const container = element.closest('.overflow-auto');
+          if (container) {
+            const header = container.querySelector<HTMLElement>('.sticky.top-0');
+            const headerHeight = header?.getBoundingClientRect().height ?? 0;
+            const targetTop = element.offsetTop - (container as HTMLElement).offsetTop - headerHeight - 8;
+            container.scrollTo({ top: targetTop, behavior: 'smooth' });
+          }
+        } else {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        setCurrentFile(flatFiles[pos]);
       }
     },
-    [files],
+    [flatFiles, findFilePosition, isAllFilesView],
   );
 
   const handlePreviousInAllFiles = useCallback(() => {
-    const newIndex = Math.max(0, currentIndex - 1);
-    if (newIndex !== currentIndex) {
-      scrollToFile(newIndex);
+    if (currentPosition > 0) {
+      scrollToFile(flatFiles[currentPosition - 1]);
     }
-  }, [currentIndex, scrollToFile]);
+  }, [currentPosition, flatFiles, scrollToFile]);
 
   const handleNextInAllFiles = useCallback(() => {
-    const newIndex = Math.min(files.length - 1, currentIndex + 1);
-    if (newIndex !== currentIndex) {
-      scrollToFile(newIndex);
+    if (currentPosition >= 0 && currentPosition < flatFiles.length - 1) {
+      scrollToFile(flatFiles[currentPosition + 1]);
     }
-  }, [currentIndex, files.length, scrollToFile]);
+  }, [currentPosition, flatFiles, scrollToFile]);
 
   const diffViewOptions = useMemo(
     () => [
@@ -247,23 +297,55 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
     [t],
   );
 
-  const canGoPrevious = currentIndex > 0;
-  const canGoNext = currentIndex < files.length - 1;
+  const canGoPrevious = currentPosition > 0;
+  const canGoNext = currentPosition >= 0 && currentPosition < flatFiles.length - 1;
 
   useHotkeys('left', handlePrevious, { enabled: canGoPrevious });
   useHotkeys('right', handleNext, { enabled: canGoNext });
 
   useHotkeys('escape', resetLineState, { enabled: !!activeLineInfo });
 
+  // Sync currentFile when initialFile prop changes (user clicks a different file)
   useEffect(() => {
-    if (isAllFilesView) {
-      scrollToFile(initialFileIndex);
+    if (initialFile) {
+      setCurrentFile(initialFile);
     }
-  }, [isAllFilesView, initialFileIndex, scrollToFile]);
+  }, [initialFile]);
+
+  // Scroll to the active file when in view-all mode
+  useEffect(() => {
+    if (isAllFilesView && currentFile) {
+      scrollToFile(currentFile);
+    }
+  }, [isAllFilesView, currentFile, scrollToFile]);
 
   useEffect(() => {
     resetLineState();
-  }, [resetLineState, currentIndex]);
+  }, [resetLineState, currentFile]);
+
+  // Render a group section header for the all-files view
+  const renderGroupHeader = useCallback(
+    (group: DiffModalGroup) => {
+      const isUncommitted = !group.commitHash;
+
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary-light border-b border-border-default sticky top-0 z-10">
+          <MdOutlineCommit className="h-3.5 w-3.5 text-text-muted shrink-0" />
+          {isUncommitted ? (
+            <span className="text-xs font-medium text-text-secondary uppercase">{t('contextFiles.uncommitted')}</span>
+          ) : (
+            <>
+              <Tooltip content={group.commitMessage || ''}>
+                <span className="text-xs font-medium text-text-secondary font-mono">{group.commitHash?.slice(0, 7)}</span>
+              </Tooltip>
+              {group.commitMessage && <span className="text-xs text-text-muted truncate">{group.commitMessage}</span>}
+            </>
+          )}
+        </div>
+      );
+    },
+    [t],
+  );
 
   if (!currentFile) {
     return null;
@@ -274,6 +356,17 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
       <div className="flex items-center border-b border-border-default justify-center bg-bg-secondary min-h-[44px] px-4">
         <div className={clsx('flex items-center justify-between w-full', !isFullWidth && 'max-w-6xl')}>
           <div className="flex items-center gap-3 min-w-0">
+            {/* Group badge in single-file mode */}
+            {!isAllFilesView && currentGroup && (
+              <span
+                className={clsx(
+                  'text-2xs font-medium px-1.5 py-0.5 rounded shrink-0',
+                  !currentGroup.commitHash ? 'bg-bg-tertiary text-text-secondary' : 'bg-accent-primary/10 text-accent-primary',
+                )}
+              >
+                {!currentGroup.commitHash ? t('contextFiles.uncommitted') : currentGroup.commitHash?.slice(0, 7)}
+              </span>
+            )}
             <span className="text-3xs sm:text-xs font-medium text-text-primary truncate" title={isAllFilesView ? t('contextFiles.allFiles') : currentFile.path}>
               {isAllFilesView ? t('contextFiles.allFiles') : currentFile.path}
             </span>
@@ -281,12 +374,6 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
               <>
                 {currentFile.additions > 0 && <span className="text-3xs sm:text-xs font-medium text-success shrink-0">+{currentFile.additions}</span>}
                 {currentFile.deletions > 0 && <span className="text-3xs sm:text-xs font-medium text-error shrink-0">-{currentFile.deletions}</span>}
-                {currentFile.commitHash && (
-                  <span className="text-3xs text-text-secondary shrink-0 flex items-center gap-1" title={currentFile.commitMessage}>
-                    <MdOutlineCommit className="h-3 w-3" />
-                    {currentFile.commitHash.substring(0, 7)}
-                  </span>
-                )}
               </>
             )}
           </div>
@@ -294,7 +381,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
             <div className="hidden sm:block">
               <CompactSelect options={diffViewOptions} value={diffViewMode} onChange={handleDiffViewModeChange} />
             </div>
-            {files.length > 1 && (
+            {flatFiles.length > 1 && (
               <div className="flex items-center gap-2">
                 <IconButton
                   icon={<HiChevronLeft className="h-5 w-5" />}
@@ -307,7 +394,7 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
                   )}
                 />
                 <span className="text-xs sm:text-sm text-text-secondary min-w-[60px] text-center">
-                  {currentIndex + 1} / {files.length}
+                  {currentPosition + 1} / {flatFiles.length}
                 </span>
                 <IconButton
                   icon={<HiChevronRight className="h-5 w-5" />}
@@ -350,20 +437,35 @@ export const UpdatedFilesDiffModal = ({ files, initialFileIndex, onClose, baseDi
           </div>
         </div>
       </div>
-      <div className="flex-1 overflow-auto p-4 bg-bg-primary-light scrollbar scrollbar-thumb-bg-tertiary scrollbar-track-transparent">
+      <div
+        className={clsx(
+          'flex-1 px-4 overflow-auto bg-bg-primary-light scrollbar scrollbar-thumb-bg-tertiary scrollbar-track-transparent',
+          isAllFilesView ? 'pb-4' : 'py-4',
+        )}
+      >
         {isAllFilesView ? (
-          <div className={clsx('mx-auto space-y-3', !isFullWidth && 'max-w-6xl')}>
-            {files.map((file, index) => (
-              <DiffFileItem
-                key={file.path}
-                file={file}
-                index={index}
-                diffViewMode={diffViewMode}
-                activeLineInfo={activeLineInfo?.filePath === file.path ? activeLineInfo : null}
-                onLineClick={handleLineClick}
-                onCommentSubmit={handleCommentSubmit}
-                onCommentCancel={handleCommentCancel}
-              />
+          <div className={clsx('mx-auto space-y-4', !isFullWidth && 'max-w-6xl')}>
+            {groups.map((group, gi) => (
+              <div key={group.id}>
+                {renderGroupHeader(group)}
+                <div className="space-y-3 mt-3">
+                  {group.files.map((file, fi) => {
+                    const flatIdx = groupFileOffsets[gi] + fi;
+                    return (
+                      <DiffFileItem
+                        key={file.path}
+                        file={file}
+                        index={flatIdx}
+                        diffViewMode={diffViewMode}
+                        activeLineInfo={activeLineInfo?.filePath === file.path ? activeLineInfo : null}
+                        onLineClick={handleLineClick}
+                        onCommentSubmit={handleCommentSubmit}
+                        onCommentCancel={handleCommentCancel}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         ) : (

@@ -4,6 +4,8 @@ import { UpdatedFile, DiffViewMode } from '@common/types';
 
 import { UpdatedFilesDiffModal } from '../UpdatedFilesDiffModal';
 
+import type { DiffModalGroup } from '../UpdatedFilesDiffModal';
+
 import { TooltipProvider } from '@/components/ui/Tooltip';
 
 const renderWithProviders = (ui: React.ReactElement) => {
@@ -97,10 +99,12 @@ const mockFiles: UpdatedFile[] = [
   },
 ];
 
+const mockGroups: DiffModalGroup[] = [{ id: '__uncommitted__', files: mockFiles }];
+
 describe('UpdatedFilesDiffModal - Line Comment Feature', () => {
   const defaultProps = {
-    files: mockFiles,
-    initialFileIndex: 0,
+    groups: mockGroups,
+    initialFile: mockFiles[0],
     onClose: vi.fn(),
     baseDir: '/project',
     taskId: 'test-task-id',
@@ -125,7 +129,7 @@ describe('UpdatedFilesDiffModal - Line Comment Feature', () => {
   });
 
   it('does not render navigation buttons when only one file', () => {
-    renderWithProviders(<UpdatedFilesDiffModal {...defaultProps} files={[mockFiles[0]]} />);
+    renderWithProviders(<UpdatedFilesDiffModal {...defaultProps} groups={[{ id: '__uncommitted__', files: [mockFiles[0]] }]} />);
 
     expect(screen.queryByRole('button', { name: /previous/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /next/i })).not.toBeInTheDocument();
@@ -155,7 +159,7 @@ describe('UpdatedFilesDiffModal - Line Comment Feature', () => {
   });
 
   it('shows additions and deletions count', () => {
-    renderWithProviders(<UpdatedFilesDiffModal {...defaultProps} files={mockFiles} initialFileIndex={1} />);
+    renderWithProviders(<UpdatedFilesDiffModal {...defaultProps} groups={mockGroups} initialFile={mockFiles[1]} />);
 
     expect(screen.getByText('-1')).toBeInTheDocument();
   });
@@ -169,8 +173,8 @@ describe('UpdatedFilesDiffModal - Line Comment Feature', () => {
 
 describe('UpdatedFilesDiffModal - API Integration', () => {
   const defaultProps = {
-    files: mockFiles,
-    initialFileIndex: 0,
+    groups: mockGroups,
+    initialFile: mockFiles[0],
     onClose: vi.fn(),
     baseDir: '/project',
     taskId: 'test-task-id',

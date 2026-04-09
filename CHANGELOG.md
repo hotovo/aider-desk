@@ -8,6 +8,7 @@
 - hide task state actions when no messages are present
 - converted task info message into a toggleable panel
 - added support for extension config
+- added commit grouping and uncommitted changes display for updated files
 
 ## [0.60.0]
 

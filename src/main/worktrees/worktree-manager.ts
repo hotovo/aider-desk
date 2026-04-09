@@ -1453,146 +1453,264 @@ export class WorktreeManager {
   }
 
   /**
-   * Get updated files with line diff stats from git
-   * Uses `git diff --numstat -z HEAD` to get additions and deletions per file
-   * Format: "additions\0deletions\0filepath\0"
-   * The -z flag uses NUL-separated output to handle filenames with special characters correctly
-   * Also fetches the full git diff for each file
-   * In worktree mode, shows files differing from main branch with commit info
+   * Get updated files with per-commit and uncommitted diffs.
+   *
+   * Worktree mode: returns files grouped by commit (with per-commit diffs)
+   * plus uncommitted files (with uncommitted diffs). A file can appear in multiple groups.
+   * Non-worktree mode: returns uncommitted files only (diff vs HEAD).
    */
   async getUpdatedFiles(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string): Promise<UpdatedFile[]> {
     try {
-      // Build commit map for worktree mode
-      const commitMap = new Map<string, { hash: string; message: string }>();
-      let diffCommand = 'git diff --numstat -z HEAD';
-      // Merge-base commit for worktree mode diff comparisons
-      let mergeBase = '';
-
       if (workingMode === 'worktree' && mainBranch) {
-        // Use merge-base to compare against the branch point, not the current main tip.
-        // This avoids showing files that changed only in main since the worktree was created.
-        mergeBase = mainBranch;
-        try {
-          const { stdout: baseOutput } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
-          mergeBase = baseOutput.trim();
-        } catch (mergeBaseError) {
-          logger.warn('Failed to get merge-base, falling back to main branch:', mergeBaseError);
+        return await this.getWorktreeUpdatedFiles(worktreePath, mainBranch);
+      }
+      return await this.getNonWorktreeUpdatedFiles(worktreePath);
+    } catch (error) {
+      logger.warn('Failed to get updated files:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Worktree mode: separate committed (per-commit) and uncommitted file diffs.
+   */
+  private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string): Promise<UpdatedFile[]> {
+    const files: UpdatedFile[] = [];
+
+    // 1. Get commits in order (oldest first) between mainBranch and HEAD
+    const commits: Array<{ hash: string; message: string }> = [];
+    try {
+      const { stdout: logOutput } = await execWithShellPath(`git log --reverse --pretty=format:'%H|%s' ${mainBranch}..HEAD`, { cwd: worktreePath });
+
+      for (const line of logOutput.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.includes('|')) {
+          continue;
         }
+        const [hash, message] = trimmed.split('|', 2);
+        commits.push({ hash, message });
+      }
+    } catch (logError) {
+      logger.warn('Failed to get commit list for worktree updated files:', logError);
+    }
 
-        diffCommand = `git diff --numstat -z ${mergeBase}`;
+    // 2. For each commit, get its files with per-commit diffs
+    for (const commit of commits) {
+      try {
+        // Get numstat for this specific commit
+        const { stdout: numstatOutput } = await execWithShellPath(`git diff-tree --no-commit-id -r --numstat ${commit.hash}`, { cwd: worktreePath });
 
-        // Get commit information for files in the range
-        try {
-          logger.debug('Getting commit information for worktree', { worktreePath, mainBranch });
-          const { stdout: logOutput } = await execWithShellPath(`git log --pretty=format:'%H|%s' --name-only ${mainBranch}..HEAD`, { cwd: worktreePath });
-
-          // Parse log output to build file -> commit mapping
-          let currentCommit: { hash: string; message: string } | null = null;
-          for (const line of logOutput.split('\n')) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine) {
-              continue;
-            }
-
-            // Check if this is a commit header (hash|message format)
-            if (trimmedLine.includes('|')) {
-              const [hash, message] = trimmedLine.split('|');
-              currentCommit = { hash, message };
-            } else if (currentCommit) {
-              // This is a file path
-              commitMap.set(trimmedLine, currentCommit);
+        // Build a map of filePath -> {additions, deletions} from numstat
+        const fileStats = new Map<string, { additions: number; deletions: number }>();
+        for (const line of numstatOutput.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            continue;
+          }
+          const parts = trimmed.split('\t');
+          if (parts.length >= 3) {
+            const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
+            const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
+            const filePath = parts.slice(2).join('\t');
+            if (filePath) {
+              fileStats.set(filePath, { additions, deletions });
             }
           }
-        } catch (logError) {
-          logger.warn('Failed to get commit information:', logError);
         }
-      }
 
-      const { stdout } = await execWithShellPath(diffCommand, {
-        cwd: worktreePath,
-      });
+        // Get full patch for this commit (all files at once for efficiency)
+        const { stdout: fullPatch } = await execWithShellPath(`git diff-tree -p -r --unified=3 ${commit.hash}`, {
+          cwd: worktreePath,
+          maxBuffer: 50 * 1024 * 1024,
+        });
 
-      const entries = stdout.split('\0').filter((entry) => entry.trim() !== '');
-      const files: UpdatedFile[] = [];
+        // Split unified diff into per-file diffs
+        const fileDiffs = this.parseCommitDiff(fullPatch);
 
-      for (const entry of entries) {
-        // Parse NUL-separated format: additions\tdeletions\tfilename
-        const parts = entry.split('\t');
-        if (parts.length >= 3) {
-          const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
-          const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
-          const filePath = parts.slice(2).join('\t'); // Handle paths with tabs
-
-          // Skip empty file paths
-          if (!filePath) {
+        // Emit one UpdatedFile per file in this commit
+        for (const [filePath, diff] of fileDiffs) {
+          const stats = fileStats.get(filePath);
+          if (!stats) {
             continue;
           }
 
           const absoluteFilePath = join(worktreePath, filePath);
 
-          // Check if file is binary and skip diff generation
-          let diff = '';
+          // Check binary - skip diff for binary files
+          let finalDiff = diff;
           try {
-            // Check if file exists (it may have been deleted)
             const fileExists = await fs
               .access(absoluteFilePath)
               .then(() => true)
               .catch(() => false);
-
             if (fileExists) {
-              const fileContentBuffer = await fs.readFile(absoluteFilePath);
-              if (isBinary(filePath, fileContentBuffer)) {
-                // Binary file - skip diff
-                const commitInfo = commitMap.get(filePath);
-                files.push({
-                  path: filePath,
-                  additions,
-                  deletions,
-                  diff,
-                  commitHash: commitInfo?.hash,
-                  commitMessage: commitInfo?.message,
-                });
-                continue;
+              const buf = await fs.readFile(absoluteFilePath);
+              if (isBinary(filePath, buf)) {
+                finalDiff = '';
               }
             }
-
-            const escapedPath = filePath.replace(/"/g, '\\"');
-            const gitDiffCmd =
-              workingMode === 'worktree' && mainBranch
-                ? `git diff --unified=3 ${mergeBase} -- "${escapedPath}"`
-                : `git diff --unified=3 HEAD -- "${escapedPath}"`;
-
-            const { stdout: diffOutput } = await execWithShellPath(gitDiffCmd, {
-              cwd: worktreePath,
-              maxBuffer: 10 * 1024 * 1024, // 10 MB
-            });
-            diff = diffOutput;
-          } catch (diffError) {
-            // If diff fetch fails (e.g., file not readable, git error), continue with empty diff
-            logger.warn(`Failed to get diff for file ${filePath}:`, {
-              error: diffError instanceof Error ? diffError.message : String(diffError),
-            });
-            diff = '';
+          } catch {
+            // If we can't check, keep the diff as-is
           }
 
-          const commitInfo = commitMap.get(filePath);
           files.push({
             path: filePath,
-            additions,
-            deletions,
-            diff,
-            commitHash: commitInfo?.hash,
-            commitMessage: commitInfo?.message,
+            additions: stats.additions,
+            deletions: stats.deletions,
+            diff: finalDiff,
+            commitHash: commit.hash,
+            commitMessage: commit.message,
           });
         }
+      } catch (commitError) {
+        logger.warn(`Failed to get files for commit ${commit.hash}:`, commitError);
+      }
+    }
+
+    // 3. Get uncommitted changes (diff against HEAD, not merge-base)
+    try {
+      const { stdout: uncommittedNumstat } = await execWithShellPath('git diff --numstat -z HEAD', {
+        cwd: worktreePath,
+      });
+
+      const entries = uncommittedNumstat.split('\0').filter((entry) => entry.trim() !== '');
+
+      for (const entry of entries) {
+        const parts = entry.split('\t');
+        if (parts.length < 3) {
+          continue;
+        }
+
+        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
+        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
+        const filePath = parts.slice(2).join('\t');
+        if (!filePath) {
+          continue;
+        }
+
+        const absoluteFilePath = join(worktreePath, filePath);
+
+        let diff = '';
+        try {
+          const fileExists = await fs
+            .access(absoluteFilePath)
+            .then(() => true)
+            .catch(() => false);
+
+          if (fileExists) {
+            const fileContentBuffer = await fs.readFile(absoluteFilePath);
+            if (isBinary(filePath, fileContentBuffer)) {
+              files.push({ path: filePath, additions, deletions, diff });
+              continue;
+            }
+          }
+
+          const escapedPath = filePath.replace(/"/g, '\\"');
+          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 HEAD -- "${escapedPath}"`, {
+            cwd: worktreePath,
+            maxBuffer: 10 * 1024 * 1024,
+          });
+          diff = diffOutput;
+        } catch (diffError) {
+          logger.warn(`Failed to get uncommitted diff for file ${filePath}:`, diffError);
+          diff = '';
+        }
+
+        files.push({ path: filePath, additions, deletions, diff });
+      }
+    } catch (uncommittedError) {
+      logger.warn('Failed to get uncommitted changes:', uncommittedError);
+    }
+
+    return files;
+  }
+
+  /**
+   * Non-worktree mode: simple uncommitted changes vs HEAD.
+   */
+  private async getNonWorktreeUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]> {
+    const { stdout } = await execWithShellPath('git diff --numstat -z HEAD', {
+      cwd: worktreePath,
+    });
+
+    const entries = stdout.split('\0').filter((entry) => entry.trim() !== '');
+    const files: UpdatedFile[] = [];
+
+    for (const entry of entries) {
+      const parts = entry.split('\t');
+      if (parts.length >= 3) {
+        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
+        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
+        const filePath = parts.slice(2).join('\t');
+
+        if (!filePath) {
+          continue;
+        }
+
+        const absoluteFilePath = join(worktreePath, filePath);
+
+        let diff = '';
+        try {
+          const fileExists = await fs
+            .access(absoluteFilePath)
+            .then(() => true)
+            .catch(() => false);
+
+          if (fileExists) {
+            const fileContentBuffer = await fs.readFile(absoluteFilePath);
+            if (isBinary(filePath, fileContentBuffer)) {
+              files.push({ path: filePath, additions, deletions, diff });
+              continue;
+            }
+          }
+
+          const escapedPath = filePath.replace(/"/g, '\\"');
+          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 HEAD -- "${escapedPath}"`, {
+            cwd: worktreePath,
+            maxBuffer: 10 * 1024 * 1024,
+          });
+          diff = diffOutput;
+        } catch (diffError) {
+          logger.warn(`Failed to get diff for file ${filePath}:`, {
+            error: diffError instanceof Error ? diffError.message : String(diffError),
+          });
+          diff = '';
+        }
+
+        files.push({ path: filePath, additions, deletions, diff });
+      }
+    }
+
+    return files;
+  }
+
+  /**
+   * Parse the output of `git diff-tree -p -r` into a map of filePath -> diff text.
+   * Splits on "diff --git" boundaries to isolate per-file patches.
+   */
+  private parseCommitDiff(patchOutput: string): Map<string, string> {
+    const fileDiffs = new Map<string, string>();
+
+    // Split into segments starting with "diff --git"
+    const segments = patchOutput.split(/(?=^diff --git )/m);
+
+    for (const segment of segments) {
+      const trimmed = segment.trim();
+      if (!trimmed.startsWith('diff --git ')) {
+        continue;
       }
 
-      return files;
-    } catch (error) {
-      // If git diff fails (e.g., no HEAD commit), return empty array
-      logger.warn('Failed to get updated files:', error);
-      return [];
+      // Extract file path from "diff --git a/path b/path"
+      const match = trimmed.match(/^diff --git a\/(\S+) b\/\S+/m);
+      if (!match) {
+        continue;
+      }
+      const filePath = match[1];
+
+      fileDiffs.set(filePath, trimmed);
     }
+
+    return fileDiffs;
   }
 
   async restoreFile(worktreePath: string, filePath: string): Promise<void> {
