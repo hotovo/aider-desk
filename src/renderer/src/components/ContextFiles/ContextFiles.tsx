@@ -53,6 +53,7 @@ export const ContextFiles = ({
 
   useEffect(() => {
     if (activeSection) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisitedSections((prev) => {
         if (prev.has(activeSection)) {
           return prev;

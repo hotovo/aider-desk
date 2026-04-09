@@ -117,8 +117,6 @@ export const ExtensionSettingsDialog = ({ extensionId, extensionName, projectDir
     updateConfig: setConfig,
   };
 
-  console.log(componentProps);
-
   return (
     <ConfirmDialog
       title={t('settings.extensions.settingsDialog.title', { name: extensionName })}

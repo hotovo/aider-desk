@@ -329,7 +329,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
       const isUncommitted = !group.commitHash;
 
       return (
-        <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary-light border-b border-border-default sticky top-0 z-10">
+        <div className="flex items-center gap-2 px-3 py-2 bg-bg-primary border border-border-dark sticky top-0 z-10">
           <MdOutlineCommit className="h-3.5 w-3.5 text-text-muted shrink-0" />
           {isUncommitted ? (
             <span className="text-xs font-medium text-text-secondary uppercase">{t('contextFiles.uncommitted')}</span>

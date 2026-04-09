@@ -263,7 +263,7 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
         </Tooltip>
       </>
     ),
-    [t, updatedFiles.length, handleRefreshUpdatedFiles, isRefreshingUpdated],
+    [t, updatedFiles, handleRefreshUpdatedFiles, isRefreshingUpdated],
   );
 
   const renderCommitGroupHeader = useCallback(
