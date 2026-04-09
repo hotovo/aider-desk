@@ -13,7 +13,7 @@ export default defineConfig({
       fileName: 'runner',
     },
     rollupOptions: {
-      external: [...builtins, 'better-sqlite3', '@homebridge/node-pty-prebuilt-multiarch', '@probelabs/probe', '@huggingface/transformers', '@lancedb/lancedb'],
+      external: [...builtins, '@homebridge/node-pty-prebuilt-multiarch', '@probelabs/probe', '@huggingface/transformers', '@lancedb/lancedb'],
       output: {
         entryFileNames: 'runner.js',
       },

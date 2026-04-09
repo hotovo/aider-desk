@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/aiderdesk",
-  "version": "0.60.0",
+  "version": "0.61.0-dev",
   "description": "AiderDesk - AI-Powered Development Platform",
   "bin": {
     "aiderdesk": "./bin/aiderdesk.js"
@@ -67,7 +67,6 @@
     "ai": "^5.0.160",
     "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "^1.5.1",
-    "better-sqlite3": "^12.0.0",
     "cheerio": "^1.0.0",
     "chokidar": "^4.0.3",
     "cloudflared": "^0.7.1",

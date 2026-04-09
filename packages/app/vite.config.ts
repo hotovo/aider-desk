@@ -21,7 +21,6 @@ export default defineConfig({
     rollupOptions: {
       external: [
         ...builtins,
-        'better-sqlite3',
         '@homebridge/node-pty-prebuilt-multiarch',
         '@huggingface/transformers',
         '@lancedb/lancedb',

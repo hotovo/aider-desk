@@ -27,9 +27,9 @@ type MockDatabase = {
   close: () => void;
 };
 
-vi.mock('better-sqlite3', () => {
+vi.mock('node:sqlite', () => {
   return {
-    default: class MockDatabaseImpl implements MockDatabase {
+    DatabaseSync: class MockDatabaseImpl implements MockDatabase {
       private tables = new Map<string, Map<string, Map<string, { value: string; updated_at: string }>>>();
 
       exec = (sql: string): void => {

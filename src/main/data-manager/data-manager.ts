@@ -1,5 +1,5 @@
 import { UsageReportData, UsageDataRow } from '@common/types';
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 
 import logger from '@/logger';
 import { DB_FILE_PATH } from '@/constants';
@@ -10,7 +10,7 @@ import { DB_FILE_PATH } from '@/constants';
  * and providing a method to close the connection.
  */
 export class DataManager {
-  private readonly db: Database.Database;
+  private readonly db: DatabaseSync;
 
   /**
    * Constructs a new DataManager instance, opening a database connection
@@ -19,7 +19,7 @@ export class DataManager {
   constructor() {
     // Initialize the database connection.
     // The verbose option logs all SQL statements to the console, which is useful for debugging.
-    this.db = new Database(DB_FILE_PATH);
+    this.db = new DatabaseSync(DB_FILE_PATH);
   }
 
   public init() {
@@ -94,11 +94,11 @@ export class DataManager {
           type,
           project,
           model,
-          usageReport?.sentTokens,
-          usageReport?.receivedTokens,
-          usageReport?.cacheWriteTokens,
-          usageReport?.cacheReadTokens,
-          usageReport?.messageCost,
+          usageReport?.sentTokens ?? null,
+          usageReport?.receivedTokens ?? null,
+          usageReport?.cacheWriteTokens ?? null,
+          usageReport?.cacheReadTokens ?? null,
+          usageReport?.messageCost ?? null,
           JSON.stringify(content),
         );
     } catch (error) {
@@ -137,7 +137,7 @@ export class DataManager {
 
       const stmt = this.db.prepare(sql);
       const rows = stmt.all(from.toISOString(), to.toISOString());
-      return rows as UsageDataRow[];
+      return rows as unknown as UsageDataRow[];
     } catch (error) {
       logger.error('Failed to query usage data:', error);
       return [];
