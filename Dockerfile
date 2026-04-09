@@ -36,8 +36,7 @@ RUN npm run build:extensions
 RUN node -e "const pkg = require('./package.json'); delete pkg.scripts.postinstall; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2))"
 
 # Download required binaries (uv and probe) before building
-RUN node scripts/download-uv.mjs && \
-    node scripts/download-probe.mjs
+RUN node scripts/download-probe.mjs
 
 # Build the server and MCP server (includes resources copy) - prebuild:server builds renderer
 RUN npm run build:server
