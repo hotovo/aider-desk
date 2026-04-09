@@ -17,9 +17,10 @@ import { useDebounce } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
-import { MdPlaylistRemove, MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
+import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { clsx } from 'clsx';
 
+import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
 
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
@@ -139,6 +140,8 @@ type Props = {
   queuedPrompts?: QueuedPromptData[];
   removeQueuedPrompt?: (id: string) => void;
   sendQueuedPromptNow?: (id: string) => void;
+  reorderQueuedPrompts?: (prompts: QueuedPromptData[]) => void;
+  editQueuedPrompt?: (id: string, newText: string) => void;
   interruptResponse: () => void;
   runCommand: (command: string) => void;
   runTests: (testCmd?: string) => void;
@@ -175,6 +178,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       queuedPrompts = [],
       removeQueuedPrompt,
       sendQueuedPromptNow,
+      reorderQueuedPrompts,
+      editQueuedPrompt,
       interruptResponse,
       runCommand,
       runTests,
@@ -1062,29 +1067,13 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     return (
       <div className="w-full relative">
         {queuedPrompts && queuedPrompts.length > 0 && (
-          <div className="mb-2 p-3 bg-bg-primary-light from-bg-primary to-bg-primary-light rounded-md border border-border-default-dark text-sm max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded">
-            <div className="text-text-primary text-xs mb-2">{t('promptField.queueTitle')}</div>
-            {queuedPrompts.map((queuedPrompt) => (
-              <div key={queuedPrompt.id} className="flex items-center gap-2 mb-2 last:mb-0 p-2 bg-bg-secondary rounded border border-border-default-dark">
-                <div className="flex-1 truncate text-text-muted-light text-xs">{queuedPrompt.text}</div>
-                <Tooltip content={t('promptField.removeQueuedPrompt')}>
-                  <button onClick={() => removeQueuedPrompt?.(queuedPrompt.id)} className="text-text-muted hover:text-text-primary transition-colors">
-                    <MdPlaylistRemove size={16} />
-                  </button>
-                </Tooltip>
-
-                <Tooltip content={t('promptField.sendQueuedPromptNow')}>
-                  <button
-                    onClick={() => sendQueuedPromptNow?.(queuedPrompt.id)}
-                    className="text-text-muted hover:text-text-primary transition-colors"
-                    title={t('promptField.sendQueuedPromptNow')}
-                  >
-                    <BiSend size={16} />
-                  </button>
-                </Tooltip>
-              </div>
-            ))}
-          </div>
+          <QueuedPromptsList
+            queuedPrompts={queuedPrompts}
+            onRemove={removeQueuedPrompt}
+            onSendNow={sendQueuedPromptNow}
+            onReorder={reorderQueuedPrompts}
+            onEdit={editQueuedPrompt}
+          />
         )}
         {question && (
           <div className="mb-2 p-3 bg-gradient-to-b from-bg-primary to-bg-primary-light rounded-md border border-border-default-dark text-sm">

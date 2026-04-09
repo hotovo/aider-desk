@@ -273,6 +273,14 @@ export class TaskContextImpl implements TaskContext {
     this.task.removeQueuedPrompt(promptId);
   }
 
+  reorderQueuedPrompts(prompts: QueuedPromptData[]): void {
+    this.task.reorderQueuedPrompts(prompts);
+  }
+
+  editQueuedPrompt(promptId: string, newText: string): void {
+    this.task.editQueuedPrompt(promptId, newText);
+  }
+
   // Advanced Operations
 
   async getTaskAgentProfile(): Promise<AgentProfile | null> {

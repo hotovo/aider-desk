@@ -1381,6 +1381,9 @@
     "queueMessage": "Queue message (Enter)",
     "removeQueuedPrompt": "Remove",
     "sendQueuedPromptNow": "Send immediately",
+    "editQueuedPrompt": "Edit",
+    "saveQueuedPrompt": "Save",
+    "cancelEditQueuedPrompt": "Cancel",
     "answers": {
       "yes": "(Y)es",
       "no": "(N)o",

@@ -2238,6 +2238,19 @@ export class Task {
     this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
   }
 
+  public reorderQueuedPrompts(prompts: QueuedPromptData[]): void {
+    this.queuedPrompts = prompts;
+    this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+  }
+
+  public editQueuedPrompt(promptId: string, newText: string): void {
+    const prompt = this.queuedPrompts.find((qp) => qp.id === promptId);
+    if (prompt) {
+      prompt.text = newText;
+      this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+    }
+  }
+
   public async sendQueuedPromptNow(promptId: string): Promise<void> {
     const queuedPromptIndex = this.queuedPrompts.findIndex((qp) => qp.id === promptId);
     if (queuedPromptIndex === -1) {

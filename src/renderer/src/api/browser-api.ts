@@ -35,6 +35,7 @@ import {
   ProvidersUpdatedData,
   QuestionAnsweredData,
   QuestionData,
+  QueuedPromptData,
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
@@ -355,6 +356,21 @@ export class BrowserApi implements ApplicationAPI {
       projectDir: baseDir,
       taskId,
       promptId,
+    });
+  }
+  reorderQueuedPrompts(baseDir: string, taskId: string, prompts: QueuedPromptData[]): void {
+    this.post('/project/reorder-queued-prompts', {
+      projectDir: baseDir,
+      taskId,
+      prompts,
+    });
+  }
+  editQueuedPrompt(baseDir: string, taskId: string, promptId: string, newText: string): void {
+    this.post('/project/edit-queued-prompt', {
+      projectDir: baseDir,
+      taskId,
+      promptId,
+      newText,
     });
   }
   loadInputHistory(baseDir: string): Promise<string[]> {

@@ -37,6 +37,7 @@ import {
   ProviderModelsData,
   ProviderProfile,
   ProvidersUpdatedData,
+  QueuedPromptData,
   QueuedPromptsUpdatedData,
   QuestionAnsweredData,
   QuestionData,
@@ -90,6 +91,8 @@ export interface ApplicationAPI {
   answerQuestion: (baseDir: string, taskId: string, answer: string) => void;
   removeQueuedPrompt: (baseDir: string, taskId: string, promptId: string) => void;
   sendQueuedPromptNow: (baseDir: string, taskId: string, promptId: string) => void;
+  reorderQueuedPrompts: (baseDir: string, taskId: string, prompts: QueuedPromptData[]) => void;
+  editQueuedPrompt: (baseDir: string, taskId: string, promptId: string, newText: string) => void;
   loadInputHistory: (baseDir: string) => Promise<string[]>;
   isOpenDialogSupported: () => boolean;
   showOpenDialog: (options: OpenDialogOptions) => Promise<OpenDialogResult>;

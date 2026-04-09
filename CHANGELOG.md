@@ -9,6 +9,7 @@
 - converted task info message into a toggleable panel
 - added support for extension config
 - added commit grouping and uncommitted changes display for updated files
+- added reordering and editing support for queued prompts
 
 ## [0.60.0]
 

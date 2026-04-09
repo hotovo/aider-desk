@@ -7,6 +7,7 @@ import {
   OpenDialogOptions,
   ProjectSettings,
   ProviderProfile,
+  QueuedPromptData,
   SettingsData,
   SystemLogLevel,
   TaskData,
@@ -53,6 +54,14 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 
   ipcMain.on('send-queued-prompt-now', async (_, baseDir: string, taskId: string, promptId: string) => {
     await eventsHandler.sendQueuedPromptNow(baseDir, taskId, promptId);
+  });
+
+  ipcMain.on('reorder-queued-prompts', (_, baseDir: string, taskId: string, prompts: QueuedPromptData[]) => {
+    eventsHandler.reorderQueuedPrompts(baseDir, taskId, prompts);
+  });
+
+  ipcMain.on('edit-queued-prompt', (_, baseDir: string, taskId: string, promptId: string, newText: string) => {
+    eventsHandler.editQueuedPrompt(baseDir, taskId, promptId, newText);
   });
 
   ipcMain.on('drop-file', (_, baseDir: string, taskId: string, filePath: string) => {

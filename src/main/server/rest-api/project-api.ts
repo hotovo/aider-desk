@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { CreateTaskParams, ProjectSettingsSchema, TaskDataSchema, ModeDefinition } from '@common/types';
+import { CreateTaskParams, ProjectSettingsSchema, TaskDataSchema, ModeDefinition, QueuedPromptData } from '@common/types';
 
 import { BaseApi } from './base-api';
 
@@ -51,6 +51,26 @@ const SendQueuedPromptNowSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
   promptId: z.string().min(1, 'Prompt id is required'),
+});
+
+const ReorderQueuedPromptsSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  prompts: z.array(
+    z.object({
+      id: z.string(),
+      text: z.string(),
+      mode: z.string(),
+      timestamp: z.number(),
+    }),
+  ),
+});
+
+const EditQueuedPromptSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  promptId: z.string().min(1, 'Prompt id is required'),
+  newText: z.string().min(1, 'New text is required'),
 });
 
 const UpdateMainModelSchema = z.object({
@@ -1142,6 +1162,36 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, promptId } = parsed;
         await this.eventsHandler.sendQueuedPromptNow(projectDir, taskId, promptId);
         res.status(200).json({ message: 'Queued prompt sent' });
+      }),
+    );
+
+    // Reorder queued prompts
+    router.post(
+      '/project/reorder-queued-prompts',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ReorderQueuedPromptsSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, prompts } = parsed;
+        this.eventsHandler.reorderQueuedPrompts(projectDir, taskId, prompts as QueuedPromptData[]);
+        res.status(200).json({ message: 'Queued prompts reordered' });
+      }),
+    );
+
+    // Edit queued prompt
+    router.post(
+      '/project/edit-queued-prompt',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(EditQueuedPromptSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, promptId, newText } = parsed;
+        this.eventsHandler.editQueuedPrompt(projectDir, taskId, promptId, newText);
+        res.status(200).json({ message: 'Queued prompt edited' });
       }),
     );
 

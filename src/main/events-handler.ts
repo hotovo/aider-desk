@@ -22,6 +22,7 @@ import {
   ProjectSettings,
   ProviderModelsData,
   ProviderProfile,
+  QueuedPromptData,
   ResponseCompletedData,
   SettingsData,
   SystemLogLevel,
@@ -375,6 +376,14 @@ export class EventsHandler {
 
   removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void {
     this.projectManager.getProject(baseDir).getTask(taskId)?.removeQueuedPrompt(promptId);
+  }
+
+  reorderQueuedPrompts(baseDir: string, taskId: string, prompts: QueuedPromptData[]): void {
+    this.projectManager.getProject(baseDir).getTask(taskId)?.reorderQueuedPrompts(prompts);
+  }
+
+  editQueuedPrompt(baseDir: string, taskId: string, promptId: string, newText: string): void {
+    this.projectManager.getProject(baseDir).getTask(taskId)?.editQueuedPrompt(promptId, newText);
   }
 
   async sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): Promise<void> {

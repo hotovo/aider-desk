@@ -8,6 +8,7 @@ import {
   Mode,
   Model,
   ModelsData,
+  QueuedPromptData,
   TaskData,
   TodoItem,
   UserMessage,
@@ -586,6 +587,20 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [api, projectDir, task.id],
     );
 
+    const handleReorderQueuedPrompts = useCallback(
+      (prompts: QueuedPromptData[]) => {
+        api.reorderQueuedPrompts(projectDir, task.id, prompts);
+      },
+      [api, projectDir, task.id],
+    );
+
+    const handleEditQueuedPrompt = useCallback(
+      (id: string, newText: string) => {
+        api.editQueuedPrompt(projectDir, task.id, id, newText);
+      },
+      [api, projectDir, task.id],
+    );
+
     const handleInterruptResponse = useCallback(
       (interruptId?: string) => {
         interruptResponse(task.id, interruptId);
@@ -782,6 +797,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   queuedPrompts={queuedPrompts}
                   removeQueuedPrompt={handleRemoveQueuedPrompt}
                   sendQueuedPromptNow={handleSendQueuedPromptNow}
+                  reorderQueuedPrompts={handleReorderQueuedPrompts}
+                  editQueuedPrompt={handleEditQueuedPrompt}
                   interruptResponse={handleInterruptResponse}
                   runCommand={runCommand}
                   runTests={runTests}

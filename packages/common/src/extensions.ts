@@ -649,6 +649,8 @@ export interface TaskContext {
   getQueuedPrompts(): QueuedPromptData[];
   sendQueuedPromptNow(promptId: string): Promise<void>;
   removeQueuedPrompt(promptId: string): void;
+  reorderQueuedPrompts(prompts: QueuedPromptData[]): void;
+  editQueuedPrompt(promptId: string, newText: string): void;
 
   // Advanced Operations
   getTaskAgentProfile(): Promise<AgentProfile | null>;

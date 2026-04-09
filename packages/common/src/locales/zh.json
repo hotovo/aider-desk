@@ -1352,6 +1352,9 @@
     "queueMessage": "队列消息(Enter)",
     "removeQueuedPrompt": "移除",
     "sendQueuedPromptNow": "立即发送",
+    "editQueuedPrompt": "编辑",
+    "saveQueuedPrompt": "保存",
+    "cancelEditQueuedPrompt": "取消",
     "answers": {
       "yes": "(Y)是",
       "no": "(N)否",
