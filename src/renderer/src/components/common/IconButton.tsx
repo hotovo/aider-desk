@@ -7,12 +7,13 @@ type Props = {
   icon: ReactNode;
   onClick?: () => void;
   tooltip?: ReactNode;
+  tooltipMaxWidth?: number | string;
   className?: string;
   disabled?: boolean;
   'data-testid'?: string;
 };
 
-export const IconButton = ({ icon, onClick, tooltip, className, disabled, 'data-testid': testId }: Props) => {
+export const IconButton = ({ icon, onClick, tooltip, tooltipMaxWidth, className, disabled, 'data-testid': testId }: Props) => {
   const combinedClassName = twMerge(
     'text-text-muted',
     'transition-opacity',
@@ -33,7 +34,11 @@ export const IconButton = ({ icon, onClick, tooltip, className, disabled, 'data-
   );
 
   if (tooltip) {
-    return <Tooltip content={tooltip}>{content}</Tooltip>;
+    return (
+      <Tooltip content={tooltip} maxWidth={tooltipMaxWidth}>
+        {content}
+      </Tooltip>
+    );
   }
 
   return content;

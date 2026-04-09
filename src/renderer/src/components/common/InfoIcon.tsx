@@ -9,9 +9,10 @@ type Props = {
   tooltip: ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  tooltipMaxWidth?: number | string;
 };
 
-export const InfoIcon = ({ tooltip, className = '', size = 'md' }: Props) => {
+export const InfoIcon = ({ tooltip, className = '', size = 'md', tooltipMaxWidth }: Props) => {
   return (
     <IconButton
       icon={
@@ -24,6 +25,7 @@ export const InfoIcon = ({ tooltip, className = '', size = 'md' }: Props) => {
         />
       }
       tooltip={tooltip}
+      tooltipMaxWidth={tooltipMaxWidth}
       className={twMerge('ml-2 text-text-muted', className)}
       onClick={() => {}}
     />
