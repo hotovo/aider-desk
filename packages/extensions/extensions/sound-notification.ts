@@ -23,7 +23,7 @@ const SOUND_FILE = join(CACHE_DIR, 'jobs_done.mp3');
 export default class SoundNotificationExtension implements Extension {
   static metadata = {
     name: 'Sound Notification',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Plays a "Jobs Done" sound when a prompt finishes',
     author: 'wladimiiir',
     capabilities: ['notifications'],
@@ -134,9 +134,9 @@ export default class SoundNotificationExtension implements Extension {
         command = `powershell -c "Add-Type -AssemblyName presentationCore; $player = New-Object System.Windows.Media.MediaPlayer; $player.Open('${SOUND_FILE.replace(/\\/g, '\\\\')}'); $player.Play(); Start-Sleep -Seconds 3"`;
         break;
       case 'linux':
-        // Try players that support MP3 decoding (paplay, mpv, ffplay)
+        // Try players that support MP3 decoding (paplay, mpg123, mpv, ffplay)
         // Note: aplay removed - it doesn't decode MP3, causing distortion
-        command = `paplay "${SOUND_FILE}" 2>/dev/null || mpv --no-video --really-quiet "${SOUND_FILE}" 2>/dev/null || ffplay -nodisp -autoexit -loglevel quiet "${SOUND_FILE}" 2>/dev/null`;
+        command = `paplay "${SOUND_FILE}" 2>/dev/null || mpg123 --quiet "${SOUND_FILE}" 2>/dev/null || mpv --no-video --really-quiet "${SOUND_FILE}" 2>/dev/null || ffplay -nodisp -autoexit -loglevel quiet "${SOUND_FILE}" 2>/dev/null`;
         break;
       default:
         context.log(`Unsupported platform: ${platform}`, 'warn');
@@ -147,9 +147,24 @@ export default class SoundNotificationExtension implements Extension {
       await execAsync(command, { timeout: 10000 });
       context.log('Sound played successfully', 'debug');
     } catch (error) {
-      // On Linux, try fallback options
+      // On Linux, try additional fallback players not in the primary chain
       if (platform === 'linux') {
         context.log('Primary audio player failed, trying fallback options', 'warn');
+        try {
+          await execAsync(`mpg123 --quiet "${SOUND_FILE}" 2>/dev/null`, { timeout: 10000 });
+          context.log('Sound played via fallback player', 'debug');
+          return;
+        } catch {
+          // mpg123 also failed
+        }
+        try {
+          await execAsync(`aplay "${SOUND_FILE}" 2>/dev/null`, { timeout: 10000 });
+          context.log('Sound played via aplay fallback (may be distorted)', 'warn');
+          return;
+        } catch {
+          // aplay also failed
+        }
+        throw error;
       } else {
         throw error;
       }
