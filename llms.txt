@@ -313,10 +313,21 @@ src/
         ContextFiles/
           ContextFiles.css
           ContextFiles.tsx
+          ContextFilesSection.tsx
+          ContextFilesSectionInner.tsx
           DiffFileItem.tsx
+          EmptyContextInfo.tsx
           FilePreviewModal.tsx
           index.ts
+          ProjectFilesSection.tsx
+          RulesSection.tsx
+          SectionContent.tsx
+          SectionHeader.tsx
+          TreeItemRenderer.tsx
+          types.ts
           UpdatedFilesDiffModal.tsx
+          UpdatedFilesSection.tsx
+          UserContextFilesSection.tsx
         extensions/
           ExtensionComponentWrapper.tsx
           ExtensionUIErrorBoundary.tsx
@@ -476,6 +487,7 @@ src/
           InputHistoryMenu.tsx
           ModeSelector.tsx
           PromptField.tsx
+          QueuedPromptsList.tsx
           TaskWorkingMode.tsx
           usePromptFieldText.ts
         settings/
@@ -3047,8 +3059,9 @@ File: src/main/custom-commands/index.ts
 ================
 File: src/main/data-manager/data-manager.ts
 ================
+import { DatabaseSync } from 'node:sqlite';
+⋮----
 import { UsageReportData, UsageDataRow } from '@common/types';
-import Database from 'better-sqlite3';
 ⋮----
 import logger from '@/logger';
 import { DB_FILE_PATH } from '@/constants';
@@ -4120,6 +4133,10 @@ getQueuedPrompts(): QueuedPromptData[]
 async sendQueuedPromptNow(promptId: string): Promise<void>
 ⋮----
 removeQueuedPrompt(promptId: string): void
+⋮----
+reorderQueuedPrompts(prompts: QueuedPromptData[]): void
+⋮----
+editQueuedPrompt(promptId: string, newText: string): void
 ⋮----
 // Advanced Operations
 ⋮----
@@ -6987,7 +7004,7 @@ File: src/main/server/rest-api/project-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
-import { CreateTaskParams, ProjectSettingsSchema, TaskDataSchema, ModeDefinition } from '@common/types';
+import { CreateTaskParams, ProjectSettingsSchema, TaskDataSchema, ModeDefinition, QueuedPromptData } from '@common/types';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
@@ -7104,6 +7121,10 @@ registerRoutes(router: Router): void
 // Remove queued prompt
 ⋮----
 // Send queued prompt immediately
+⋮----
+// Reorder queued prompts
+⋮----
+// Edit queued prompt
 ⋮----
 // Update main model
 ⋮----
@@ -8695,6 +8716,10 @@ public getQueuedPrompts(): QueuedPromptData[]
 ⋮----
 public removeQueuedPrompt(promptId: string): void
 ⋮----
+public reorderQueuedPrompts(prompts: QueuedPromptData[]): void
+⋮----
+public editQueuedPrompt(promptId: string, newText: string): void
+⋮----
 public async sendQueuedPromptNow(promptId: string): Promise<void>
 ⋮----
 // interrupting to allow the next queued prompt to be sent
@@ -10285,47 +10310,53 @@ async getAheadCommits(worktreePath: string, targetBranch: string): Promise<Workt
 async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles>
 ⋮----
 /**
-   * Get updated files with line diff stats from git
-   * Uses `git diff --numstat -z HEAD` to get additions and deletions per file
-   * Format: "additions\0deletions\0filepath\0"
-   * The -z flag uses NUL-separated output to handle filenames with special characters correctly
-   * Also fetches the full git diff for each file
-   * In worktree mode, shows files differing from main branch with commit info
+   * Get updated files with per-commit and uncommitted diffs.
+   *
+   * Worktree mode: returns files grouped by commit (with per-commit diffs)
+   * plus uncommitted files (with uncommitted diffs). A file can appear in multiple groups.
+   * Non-worktree mode: returns uncommitted files only (diff vs HEAD).
    */
 async getUpdatedFiles(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string): Promise<UpdatedFile[]>
 ⋮----
-// Build commit map for worktree mode
+/**
+   * Worktree mode: separate committed (per-commit) and uncommitted file diffs.
+   */
+private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string): Promise<UpdatedFile[]>
 ⋮----
-// Merge-base commit for worktree mode diff comparisons
+// 1. Get commits in order (oldest first) between mainBranch and HEAD
 ⋮----
-// Use merge-base to compare against the branch point, not the current main tip.
-// This avoids showing files that changed only in main since the worktree was created.
+// 2. For each commit, get its files with per-commit diffs
 ⋮----
-// Get commit information for files in the range
+// Get numstat for this specific commit
 ⋮----
-// Parse log output to build file -> commit mapping
+// Build a map of filePath -> {additions, deletions} from numstat
 ⋮----
-// Check if this is a commit header (hash|message format)
+// Get full patch for this commit (all files at once for efficiency)
 ⋮----
-// This is a file path
+// Split unified diff into per-file diffs
 ⋮----
-// Parse NUL-separated format: additions\tdeletions\tfilename
+// Emit one UpdatedFile per file in this commit
 ⋮----
-const filePath = parts.slice(2).join('\t'); // Handle paths with tabs
+// Check binary - skip diff for binary files
 ⋮----
-// Skip empty file paths
+// If we can't check, keep the diff as-is
 ⋮----
-// Check if file is binary and skip diff generation
+// 3. Get uncommitted changes (diff against HEAD, not merge-base)
 ⋮----
-// Check if file exists (it may have been deleted)
+/**
+   * Non-worktree mode: simple uncommitted changes vs HEAD.
+   */
+private async getNonWorktreeUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]>
 ⋮----
-// Binary file - skip diff
+/**
+   * Parse the output of `git diff-tree -p -r` into a map of filePath -> diff text.
+   * Splits on "diff --git" boundaries to isolate per-file patches.
+   */
+private parseCommitDiff(patchOutput: string): Map<string, string>
 ⋮----
-maxBuffer: 10 * 1024 * 1024, // 10 MB
+// Split into segments starting with "diff --git"
 ⋮----
-// If diff fetch fails (e.g., file not readable, git error), continue with empty diff
-⋮----
-// If git diff fails (e.g., no HEAD commit), return empty array
+// Extract file path from "diff --git a/path b/path"
 ⋮----
 async restoreFile(worktreePath: string, filePath: string): Promise<void>
 ⋮----
@@ -10490,6 +10521,7 @@ import {
   ProjectSettings,
   ProviderModelsData,
   ProviderProfile,
+  QueuedPromptData,
   ResponseCompletedData,
   SettingsData,
   SystemLogLevel,
@@ -10616,6 +10648,10 @@ async savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
 async answerQuestion(baseDir: string, taskId: string, answer: string): Promise<void>
 ⋮----
 removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void
+⋮----
+reorderQueuedPrompts(baseDir: string, taskId: string, prompts: QueuedPromptData[]): void
+⋮----
+editQueuedPrompt(baseDir: string, taskId: string, promptId: string, newText: string): void
 ⋮----
 async sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): Promise<void>
 ⋮----
@@ -10949,6 +10985,7 @@ import {
   OpenDialogOptions,
   ProjectSettings,
   ProviderProfile,
+  QueuedPromptData,
   SettingsData,
   SystemLogLevel,
   TaskData,
@@ -11800,6 +11837,7 @@ import {
   ProvidersUpdatedData,
   QuestionAnsweredData,
   QuestionData,
+  QueuedPromptData,
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
@@ -11934,6 +11972,8 @@ resumeTask(baseDir: string, taskId: string): void
 answerQuestion(baseDir: string, taskId: string, answer: string): void
 removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void
 sendQueuedPromptNow(baseDir: string, taskId: string, promptId: string): void
+reorderQueuedPrompts(baseDir: string, taskId: string, prompts: QueuedPromptData[]): void
+editQueuedPrompt(baseDir: string, taskId: string, promptId: string, newText: string): void
 loadInputHistory(baseDir: string): Promise<string[]>
 isOpenDialogSupported(): boolean
 showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult>
@@ -12930,6 +12970,7 @@ type Props = {
   icon: ReactNode;
   onClick?: () => void;
   tooltip?: ReactNode;
+  tooltipMaxWidth?: number | string;
   className?: string;
   disabled?: boolean;
   'data-testid'?: string;
@@ -12953,6 +12994,7 @@ type Props = {
   tooltip: ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  tooltipMaxWidth?: number | string;
 };
 ⋮----
 export const InfoIcon = (
@@ -13539,42 +13581,24 @@ body.theme-light .context-dimmed {
 ================
 File: src/renderer/src/components/ContextFiles/ContextFiles.tsx
 ================
-import { AIDER_MODES, ContextFile, Mode, OS, TokensInfoData, UpdatedFile } from '@common/types';
-import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
-import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
-import { HiChevronDown, HiChevronRight, HiOutlineTrash, HiPlus, HiX } from 'react-icons/hi';
-import { MdOutlineDifference, MdOutlinePublic, MdOutlineRefresh, MdOutlineSearch, MdUndo } from 'react-icons/md';
-import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
-import { TbPencilOff } from 'react-icons/tb';
-import { RiRobot2Line, RiMenuUnfold4Line } from 'react-icons/ri';
-import { VscFileCode } from 'react-icons/vsc';
-import { FaGitSquare } from 'react-icons/fa';
+import { ContextFile, Mode, TokensInfoData } from '@common/types';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDebounce, useLocalStorage } from '@reactuses/core';
-import { AnimatePresence, motion } from 'framer-motion';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { useLocalStorage } from '@reactuses/core';
+import { RiMenuUnfold4Line } from 'react-icons/ri';
 ⋮----
-import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
+import { UserContextFilesSection } from './UserContextFilesSection';
+import { UpdatedFilesSection } from './UpdatedFilesSection';
+import { ProjectFilesSection } from './ProjectFilesSection';
+import { RulesSection } from './RulesSection';
 import { FilePreviewModal } from './FilePreviewModal';
+import { normalizePath } from './types';
+⋮----
+import type { SectionType, TreeItem } from './types';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
-import { Input } from '@/components/common/Input';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useOS } from '@/hooks/useOS';
 import { useApi } from '@/contexts/ApiContext';
-⋮----
-interface TreeItem {
-  index: string | number;
-  isFolder?: boolean;
-  children?: (string | number)[];
-  data: string;
-  file?: ContextFile;
-}
-⋮----
-const normalizePath = (path: string): string =>
-⋮----
-const createFileTree = (files: ContextFile[], rootId = 'root') =>
 ⋮----
 type Props = {
   baseDir: string;
@@ -13588,87 +13612,79 @@ type Props = {
   onToggleFilesSidebarCollapse?: () => void;
 };
 ⋮----
-type EmptyContextInfoProps = {
-  mode: Mode;
+// eslint-disable-next-line react-hooks/set-state-in-effect
+
+================
+File: src/renderer/src/components/ContextFiles/ContextFilesSection.tsx
+================
+import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import React, { Activity } from 'react';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+⋮----
+import { SectionHeader } from './SectionHeader';
+import { SectionContent } from './SectionContent';
+⋮----
+import type { SectionType, TreeItem } from './types';
+⋮----
+type Props = {
+  section: SectionType;
+  title: string;
+  count: number;
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  treeData: Record<string, TreeItem>;
+  expandedItems: string[];
+  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  contextFilesMap: Map<string, ContextFile>;
+  updatedFiles: UpdatedFile[];
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  actions?: React.ReactNode;
+  alwaysVisibleActions?: React.ReactNode;
+  searchField?: React.ReactNode;
+  emptyContent?: React.ReactNode;
+  showBorderTop?: boolean;
+  onToggle: () => void;
+  onFileDiffClick: (file: UpdatedFile) => void;
+  onFilePreviewClick: (filePath: string) => void;
+  onRevertFile: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
 };
 ⋮----
-const renderChevron = () =>
-⋮----
-const renderTitle = () =>
-⋮----
-const renderFile = () =>
-⋮----
-<span className=
-⋮----
-
-⋮----
-<button onClick=
+export const ContextFilesSection = ({
+  section,
+  title,
+  count,
+  isOpen,
+  totalStats,
+  treeData,
+  expandedItems,
+  setExpandedItems,
+  contextFilesMap,
+  updatedFiles,
+  tokensInfo,
+  os,
+  actions,
+  alwaysVisibleActions,
+  searchField,
+  emptyContent,
+  showBorderTop = false,
+  onToggle,
+  onFileDiffClick,
+  onFilePreviewClick,
+  onRevertFile,
+  onDropFile,
+  onAddFile,
+}: Props) =>
 ⋮----
 className=
-⋮----
-// Track visited sections
-⋮----
-// Separate expanded items for each tree
-⋮----
-// Updated files state
-⋮----
-// O(1) lookup map for context files
-⋮----
-// Fetch updated files on mount and when baseDir/taskId changes
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// Listen for updated files updates
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// Lazy tree data computation - only compute for visited sections
-⋮----
-// Expand logic for Context Tree (auto-expand folders with files)
-⋮----
-const expandFolders = (treeData: Record<string, TreeItem>, files: ContextFile[], currentExpanded: string[], setExpanded: (items: string[]) => void) =>
-⋮----
-const checkChild = (childKey: string | number) =>
-⋮----
-// eslint-disable-next-line react-hooks/exhaustive-deps
-⋮----
-// Expand all folders in updated tree by default
-⋮----
-// eslint-disable-next-line react-hooks/exhaustive-deps
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// Section toggle handler
-⋮----
-// Expand/Collapse handlers for project section
-⋮----
-// Modal handlers
-⋮----
-// Search field component
-⋮----
-// Action button components
-⋮----
-<Tooltip content=
-⋮----
-<FaGitSquare className=
-⋮----
-{/* Context Files Section */}
-⋮----
-{/* Updated Files Section */}
-⋮----
-{/* Project Files Section */}
-⋮----
-{/* Rules Section */}
-⋮----
-{/* Diff Modal */}
-⋮----
-{/* Revert Confirmation Dialog */}
-⋮----
-title=
-⋮----
-{/* File Preview Modal */}
+
+================
+File: src/renderer/src/components/ContextFiles/ContextFilesSectionInner.tsx
+================
+// This file is deprecated. Use UserContextFilesSection.tsx instead.
 
 ================
 File: src/renderer/src/components/ContextFiles/DiffFileItem.tsx
@@ -13698,6 +13714,16 @@ type Props = {
 };
 ⋮----
 onLineClick=
+
+================
+File: src/renderer/src/components/ContextFiles/EmptyContextInfo.tsx
+================
+import { AIDER_MODES, Mode } from '@common/types';
+import { useTranslation } from 'react-i18next';
+⋮----
+type Props = {
+  mode: Mode;
+};
 
 ================
 File: src/renderer/src/components/ContextFiles/FilePreviewModal.tsx
@@ -13742,6 +13768,201 @@ File: src/renderer/src/components/ContextFiles/index.ts
 
 
 ================
+File: src/renderer/src/components/ContextFiles/ProjectFilesSection.tsx
+================
+import { ContextFile, OS, TokensInfoData } from '@common/types';
+import React, { useCallback, useMemo, useState } from 'react';
+import { HiX } from 'react-icons/hi';
+import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
+import { MdOutlineSearch, MdOutlineRefresh } from 'react-icons/md';
+import { FaGitSquare } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
+import { useDebounce, useLocalStorage } from '@reactuses/core';
+import { AnimatePresence, motion } from 'framer-motion';
+import { clsx } from 'clsx';
+⋮----
+import { ContextFilesSection } from './ContextFilesSection';
+import { normalizePath, createFileTree } from './types';
+⋮----
+import type { TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { Input } from '@/components/common/Input';
+⋮----
+type Props = {
+  baseDir: string;
+  allFiles: string[];
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  contextFilesMap: Map<string, ContextFile>;
+  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
+  refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  onToggle: () => void;
+  onFilePreviewClick: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+};
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+<FaGitSquare className=
+⋮----
+onFileDiffClick=
+
+================
+File: src/renderer/src/components/ContextFiles/RulesSection.tsx
+================
+import { ContextFile, OS, TokensInfoData } from '@common/types';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { ContextFilesSection } from './ContextFilesSection';
+import { createFileTree } from './types';
+⋮----
+import type { TreeItem } from './types';
+⋮----
+type Props = {
+  rulesFiles: ContextFile[];
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  contextFilesMap: Map<string, ContextFile>;
+  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
+  onToggle: () => void;
+};
+⋮----
+// Expand all folders in rules tree by default
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+onFileDiffClick=
+
+================
+File: src/renderer/src/components/ContextFiles/SectionContent.tsx
+================
+import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import React, { useCallback } from 'react';
+import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { TreeItemRenderer } from './TreeItemRenderer';
+⋮----
+import type { SectionType, TreeItem } from './types';
+⋮----
+type Props = {
+  section: SectionType;
+  treeData: Record<string, TreeItem>;
+  expandedItems: string[];
+  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  contextFilesMap: Map<string, ContextFile>;
+  updatedFiles: UpdatedFile[];
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  searchField?: React.ReactNode;
+  emptyContent?: React.ReactNode;
+  onFileDiffClick: (file: UpdatedFile) => void;
+  onFilePreviewClick: (filePath: string) => void;
+  onRevertFile: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+};
+
+================
+File: src/renderer/src/components/ContextFiles/SectionHeader.tsx
+================
+import { HiChevronDown } from 'react-icons/hi';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+⋮----
+import type { SectionType } from './types';
+⋮----
+type Props = {
+  section: SectionType;
+  title: string;
+  count: number;
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  actions?: React.ReactNode;
+  alwaysVisibleActions?: React.ReactNode;
+  onToggle: () => void;
+};
+⋮----
+className=
+
+================
+File: src/renderer/src/components/ContextFiles/TreeItemRenderer.tsx
+================
+import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { useCallback } from 'react';
+import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
+import { MdUndo, MdOutlinePublic } from 'react-icons/md';
+import { TbPencilOff } from 'react-icons/tb';
+import { RiRobot2Line } from 'react-icons/ri';
+import { VscFileCode } from 'react-icons/vsc';
+import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
+⋮----
+import { normalizePath } from './types';
+⋮----
+import type { SectionType, TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  item: TreeItem;
+  title: React.ReactNode;
+  children: React.ReactNode;
+  type: SectionType;
+  treeData: Record<string, TreeItem>;
+  expandedItems: string[];
+  setExpandedItems: (items: string[]) => void;
+  contextFilesMap: Map<string, ContextFile>;
+  updatedFiles: UpdatedFile[];
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  onFileDiffClick: (file: UpdatedFile) => void;
+  onFilePreviewClick: (filePath: string) => void;
+  onRevertFile: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+};
+⋮----
+const renderChevron = () =>
+⋮----
+const renderTitle = () =>
+⋮----
+const renderFile = () =>
+⋮----
+<span className=
+⋮----
+
+⋮----
+<button onClick=
+
+================
+File: src/renderer/src/components/ContextFiles/types.ts
+================
+import { ContextFile } from '@common/types';
+⋮----
+export interface TreeItem {
+  index: string | number;
+  isFolder?: boolean;
+  children?: (string | number)[];
+  data: string;
+  file?: ContextFile;
+}
+⋮----
+export type SectionType = 'updated' | 'project' | 'context' | 'rules';
+⋮----
+export const normalizePath = (path: string): string =>
+⋮----
+export const createFileTree = (files: ContextFile[], rootId = 'root') =>
+
+================
 File: src/renderer/src/components/ContextFiles/UpdatedFilesDiffModal.tsx
 ================
 import { MouseEvent, startTransition, useCallback, useEffect, useMemo, useOptimistic, useState } from 'react';
@@ -13763,17 +13984,36 @@ import { CompactSelect } from '@/components/common/CompactSelect';
 import { TextArea } from '@/components/common/TextArea';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { DiffFileItem } from '@/components/ContextFiles/DiffFileItem';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
-type Props = {
+export type DiffModalGroup = {
+  id: string | null;
+  commitHash?: string;
+  commitMessage?: string;
   files: UpdatedFile[];
-  initialFileIndex: number;
+};
+⋮----
+type Props = {
+  groups: DiffModalGroup[];
+  initialFile: UpdatedFile | null;
   onClose: () => void;
   baseDir: string;
   taskId: string;
 };
+⋮----
+// Flatten groups into a single file list for navigation
+⋮----
+// Cumulative file counts per group for rendering offsets in all-files view
+⋮----
+// Find the position of a file in the flat list, matching by path and commitHash.
+// When commitHash is undefined/null, the file belongs to the uncommitted group.
+⋮----
+// Derive current position from the active file object
+⋮----
+// Derive current group by matching commitHash — uncommitted when commitHash is absent
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -13785,9 +14025,19 @@ type Props = {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// Sync currentFile when initialFile prop changes (user clicks a different file)
+⋮----
+// Scroll to the active file when in view-all mode
+⋮----
+// Render a group section header for the all-files view
+⋮----
 <ModalOverlayLayout title=
 ⋮----
 <div className=
+⋮----
+{/* Group badge in single-file mode */}
+⋮----
+className=
 ⋮----
 onLineClick=
 ⋮----
@@ -13798,6 +14048,140 @@ onLineClick=
 isGeneratingMessage
 ⋮----
 title=
+
+================
+File: src/renderer/src/components/ContextFiles/UpdatedFilesSection.tsx
+================
+import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { HiChevronDown } from 'react-icons/hi';
+import { MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { createFileTree } from './types';
+import { SectionContent } from './SectionContent';
+import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
+⋮----
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
+import type { TreeItem, SectionType } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type Props = {
+  baseDir: string;
+  taskId: string;
+  isOpen: boolean;
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  contextFilesMap: Map<string, ContextFile>;
+  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
+  onToggle: () => void;
+  onFilePreviewClick: (filePath: string) => void;
+};
+⋮----
+interface CommitGroup {
+  id: string;
+  commitHash?: string;
+  commitMessage?: string;
+  files: UpdatedFile[];
+  additions: number;
+  deletions: number;
+}
+⋮----
+// Group files by commit hash; preserve commit order from backend (newest first in array),
+// then reverse for display (oldest first). Uncommitted always last.
+⋮----
+// Oldest commits first (reverse of backend order), then uncommitted last
+⋮----
+// Convert commitGroups to DiffModalGroup format for the diff modal
+⋮----
+// Build tree data for each group — use 'root' as root key since SectionContent expects it
+⋮----
+// Auto-expand folder items in each group's tree when tree data changes
+⋮----
+// Default: only the bottom-most (last) group is expanded.
+// Only re-run when group count changes, not on every file refresh,
+// to preserve user's manual expand/collapse choices between refreshes.
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+<Tooltip content=
+⋮----
+setDiffModalSelectedFile(updatedFiles[0] || null);
+setDiffModalOpen(true);
+⋮----
+className=
+⋮----
+{/* Outer section header */}
+⋮----
+{/* Commit groups content */}
+⋮----
+{renderCommitGroupHeader(group, isGroupExpanded)}
+
+                    {isGroupExpanded && tree && (
+                      <SectionContent
+                        section={'updated' as SectionType}
+                        treeData={tree}
+                        expandedItems={expanded}
+setExpandedItems=
+⋮----
+setExpandedItems=
+⋮----
+onClose=
+⋮----
+title=
+
+================
+File: src/renderer/src/components/ContextFiles/UserContextFilesSection.tsx
+================
+import { ContextFile, Mode, OS, TokensInfoData } from '@common/types';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { ContextFilesSection } from './ContextFilesSection';
+import { EmptyContextInfo } from './EmptyContextInfo';
+import { createFileTree } from './types';
+⋮----
+import type { TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  mode: Mode;
+  userContextFiles: ContextFile[];
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  contextFilesMap: Map<string, ContextFile>;
+  showFileDialog: () => void;
+  onDropAllFiles: () => void;
+  collapseButton?: React.ReactNode;
+  onToggle: () => void;
+  onFilePreviewClick: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+};
+⋮----
+const expandFolders = (treeData: Record<string, TreeItem>, files: ContextFile[], currentExpanded: string[]) =>
+⋮----
+const checkChild = (childKey: string | number) =>
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+<Tooltip content=
+⋮----
+onFileDiffClick=
 
 ================
 File: src/renderer/src/components/extensions/ExtensionComponentWrapper.tsx
@@ -18262,6 +18646,7 @@ import {
   Mode,
   Model,
   ModelsData,
+  QueuedPromptData,
   TaskData,
   TodoItem,
   UserMessage,
@@ -18844,9 +19229,10 @@ import { useDebounce } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
-import { MdPlaylistRemove, MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
+import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { clsx } from 'clsx';
 ⋮----
+import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
 ⋮----
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
@@ -18891,6 +19277,8 @@ type Props = {
   queuedPrompts?: QueuedPromptData[];
   removeQueuedPrompt?: (id: string) => void;
   sendQueuedPromptNow?: (id: string) => void;
+  reorderQueuedPrompts?: (prompts: QueuedPromptData[]) => void;
+  editQueuedPrompt?: (id: string, newText: string) => void;
   interruptResponse: () => void;
   runCommand: (command: string) => void;
   runTests: (testCmd?: string) => void;
@@ -18949,8 +19337,6 @@ return false; // Allow default behavior (new line)
 ⋮----
 // Desktop behavior: submit or handle special cases
 ⋮----
-<button onClick=
-⋮----
 onClick=
 ⋮----
 ref=
@@ -18958,6 +19344,44 @@ ref=
 className=
 ⋮----
 onClose=
+
+================
+File: src/renderer/src/components/PromptField/QueuedPromptsList.tsx
+================
+import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { BiSend } from 'react-icons/bi';
+import { MdDragIndicator, MdEdit, MdPlaylistRemove, MdSave } from 'react-icons/md';
+import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { QueuedPromptData } from '@common/types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type QueuedPromptsListProps = {
+  queuedPrompts: QueuedPromptData[];
+  onRemove?: (id: string) => void;
+  onSendNow?: (id: string) => void;
+  onReorder?: (prompts: QueuedPromptData[]) => void;
+  onEdit?: (id: string, newText: string) => void;
+};
+⋮----
+const handleStartEdit = () =>
+⋮----
+const handleSave = () =>
+⋮----
+const handleCancel = () =>
+⋮----
+const handleKeyDown = (e: React.KeyboardEvent) =>
+⋮----
+<Tooltip content=
+⋮----
+<button onClick=
+⋮----
+onClick=
+⋮----
+const handleDragEnd = (event: DragEndEvent) =>
 
 ================
 File: src/renderer/src/components/PromptField/TaskWorkingMode.tsx
@@ -25783,7 +26207,6 @@ File: package.json
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
-    "better-sqlite3": "^12.0.0",
     "cheerio": "^1.0.0",
     "chokidar": "^4.0.3",
     "cloudflared": "^0.7.1",
@@ -25875,7 +26298,6 @@ File: package.json
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/handlebars": "^4.0.40",
     "@types/lodash": "^4.17.17",
     "@types/node": "^22.16.5",
