@@ -6,8 +6,7 @@ import { promisify } from 'util';
 import logger from '@/logger';
 import { EventManager } from '@/events';
 import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBinPath, getResolvedUvPath } from '@/utils';
-import { AIDER_DESK_DATA_DIR, SETUP_COMPLETE_FILENAME, PYTHON_VENV_DIR, AIDER_DESK_CONNECTOR_DIR, RESOURCES_DIR, AIDER_DESK_MCP_SERVER_DIR } from '@/constants';
-import { isDev } from '@/app';
+import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_DATA_DIR, PYTHON_VENV_DIR, RESOURCES_DIR, SETUP_COMPLETE_FILENAME } from '@/constants';
 
 const execAsync = promisify(exec);
 
@@ -16,9 +15,13 @@ export type PythonInstallStatus =
   | { state: 'checking-uv' }
   | { state: 'downloading-uv' }
   | { state: 'creating-venv' }
-  | { state: 'installing-packages'; package: string; current: number; total: number }
+  | {
+      state: 'installing-packages';
+      package: string;
+      current: number;
+      total: number;
+    }
   | { state: 'setting-up-connector' }
-  | { state: 'setting-up-mcp' }
   | { state: 'starting-connector' }
   | { state: 'ready' }
   | { state: 'failed'; error: string };
@@ -31,7 +34,6 @@ type StatusListener = (status: PythonInstallStatus) => void;
  * Handles:
  * - Creating the Python virtual environment
  * - Installing aider-chat and connector dependencies
- * - Setting up the MCP server
  * - Exposing installation status to the UI via EventManager
  *
  * The installation runs asynchronously (fire-and-forget). Consumers call
@@ -67,7 +69,10 @@ export class PythonDependenciesInstaller {
 
     void this.runInstallation().catch((error) => {
       logger.error('Python dependencies installation failed', { error });
-      this.setStatus({ state: 'failed', error: error instanceof Error ? error.message : String(error) });
+      this.setStatus({
+        state: 'failed',
+        error: error instanceof Error ? error.message : String(error),
+      });
       this.readyReject?.(error instanceof Error ? error : new Error(String(error)));
       this.installing = false;
     });
@@ -152,8 +157,6 @@ export class PythonDependenciesInstaller {
 
     await this.setupAiderConnectorInternal(true);
 
-    await this.setupMcpServerInternal();
-
     // Mark setup as complete
     logger.info(`Creating setup complete file: ${SETUP_COMPLETE_FILENAME}`);
     fs.writeFileSync(SETUP_COMPLETE_FILENAME, new Date().toISOString());
@@ -183,9 +186,6 @@ export class PythonDependenciesInstaller {
 
     // Run update check (install/upgrade packages)
     await this.setupAiderConnectorInternal(false);
-
-    // Setup MCP server
-    await this.setupMcpServerInternal();
 
     this.setStatus({ state: 'ready' });
     this.readyResolve?.();
@@ -256,7 +256,9 @@ export class PythonDependenciesInstaller {
       ...extraPackages,
     ];
 
-    logger.info('Starting Aider connector requirements installation', { packages });
+    logger.info('Starting Aider connector requirements installation', {
+      packages,
+    });
 
     for (let currentPackage = 0; currentPackage < packages.length; currentPackage++) {
       const pkg = packages[currentPackage];
@@ -304,10 +306,14 @@ export class PythonDependenciesInstaller {
         });
 
         if (stdout.trim()) {
-          logger.debug(`Package ${pkg} installation output`, { stdout: stdout.trim() });
+          logger.debug(`Package ${pkg} installation output`, {
+            stdout: stdout.trim(),
+          });
         }
         if (stderr.trim()) {
-          logger.warn(`Package ${pkg} installation warnings`, { stderr: stderr.trim() });
+          logger.warn(`Package ${pkg} installation warnings`, {
+            stderr: stderr.trim(),
+          });
         }
       } catch (error) {
         if (error instanceof Error && error.message.trim().endsWith('No module named pip') && !cleanInstall) {
@@ -325,37 +331,6 @@ export class PythonDependenciesInstaller {
     }
 
     logger.info('Completed Aider connector requirements installation');
-  }
-
-  private async setupMcpServerInternal(): Promise<void> {
-    this.setStatus({ state: 'setting-up-mcp' });
-
-    if (isDev()) {
-      logger.info('Skipping AiderDesk MCP server setup in dev mode');
-      return;
-    }
-
-    if (!fs.existsSync(AIDER_DESK_MCP_SERVER_DIR)) {
-      fs.mkdirSync(AIDER_DESK_MCP_SERVER_DIR, { recursive: true });
-    }
-
-    // Copy all files from the MCP server directory
-    const sourceMcpServerDir = path.join(RESOURCES_DIR, 'mcp-server');
-
-    if (fs.existsSync(sourceMcpServerDir)) {
-      const files = fs.readdirSync(sourceMcpServerDir);
-
-      for (const file of files) {
-        const sourceFilePath = path.join(sourceMcpServerDir, file);
-        const destFilePath = path.join(AIDER_DESK_MCP_SERVER_DIR, file);
-
-        if (fs.statSync(sourceFilePath).isFile()) {
-          fs.copyFileSync(sourceFilePath, destFilePath);
-        }
-      }
-    } else {
-      logger.error(`MCP server directory not found: ${sourceMcpServerDir}`);
-    }
   }
 
   private async checkNetworkConnectivity(): Promise<boolean> {

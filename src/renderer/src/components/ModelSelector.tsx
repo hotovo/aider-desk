@@ -224,7 +224,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
               </div>
             </div>
           ) : (
-            <span>{t('common.loading')}</span>
+            <span className="text-2xs text-text-muted">{t('common.loading')}</span>
           )}
         </button>
         {isOpen && (

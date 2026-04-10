@@ -2,6 +2,8 @@ import path from 'path';
 
 import { VersionsInfo } from '@common/types';
 
+import type { PythonDependenciesInstaller } from '@/python-dependencies-installer';
+
 import { getCurrentPythonLibVersion, getLatestPythonLibVersion } from '@/utils';
 import logger from '@/logger';
 import { Store } from '@/store';
@@ -16,6 +18,7 @@ export class VersionsManager {
   constructor(
     private readonly eventManager: EventManager,
     private readonly store: Store,
+    private readonly pythonInstaller?: PythonDependenciesInstaller,
   ) {
     this.init().catch((error) => {
       logger.error('Failed to initialize VersionsManager', { error });
@@ -40,6 +43,15 @@ export class VersionsManager {
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const autoUpdater = require('electron-updater').autoUpdater;
+
+    // Wait for Python venv to be ready before checking library versions
+    if (this.pythonInstaller) {
+      try {
+        await this.pythonInstaller.waitForReady();
+      } catch (error) {
+        logger.warn('Python dependencies not available, skipping version checks until ready', { error });
+      }
+    }
 
     // Get current and available Aider versions using utility functions
     const aiderCurrentVersion = await getCurrentPythonLibVersion('aider-chat');
@@ -98,6 +110,16 @@ export class VersionsManager {
     if (!app) {
       logger.info('Skipping versions manager initialization in non-Electron environment');
       return;
+    }
+
+    // Wait for Python venv to be ready before checking library versions
+    if (this.pythonInstaller) {
+      try {
+        await this.pythonInstaller.waitForReady();
+      } catch (error) {
+        logger.warn('Python dependencies not available, skipping version checks until ready', { error });
+        return;
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports

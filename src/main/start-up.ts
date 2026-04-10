@@ -1,8 +1,10 @@
 import * as fs from 'fs';
+import path from 'path';
 
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
-import { AIDER_DESK_DATA_DIR, SETUP_COMPLETE_FILENAME, PYTHON_VENV_DIR } from '@/constants';
+import { AIDER_DESK_DATA_DIR, SETUP_COMPLETE_FILENAME, PYTHON_VENV_DIR, AIDER_DESK_MCP_SERVER_DIR, RESOURCES_DIR } from '@/constants';
 import logger from '@/logger';
+import { isDev } from '@/app';
 
 export type UpdateProgressData = {
   step: string;
@@ -25,6 +27,13 @@ export type UpdateProgressFunction = (data: UpdateProgressData) => void;
  */
 export const performStartUp = async (pythonInstaller: PythonDependenciesInstaller, updateProgress?: UpdateProgressFunction): Promise<boolean> => {
   logger.info('Starting AiderDesk setup process (fast path)');
+
+  // Setup MCP server
+  updateProgress?.({
+    step: 'Setting up MCP server',
+    message: 'Setting up MCP server...',
+  });
+  await setupMcpServerInternal();
 
   if (fs.existsSync(SETUP_COMPLETE_FILENAME) && fs.existsSync(PYTHON_VENV_DIR)) {
     logger.info('Setup previously completed, will run update check in background');
@@ -54,4 +63,33 @@ export const performStartUp = async (pythonInstaller: PythonDependenciesInstalle
   pythonInstaller.ensureInstalled();
 
   return true;
+};
+
+const setupMcpServerInternal = async (): Promise<void> => {
+  if (isDev()) {
+    logger.info('Skipping AiderDesk MCP server setup in dev mode');
+    return;
+  }
+
+  if (!fs.existsSync(AIDER_DESK_MCP_SERVER_DIR)) {
+    fs.mkdirSync(AIDER_DESK_MCP_SERVER_DIR, { recursive: true });
+  }
+
+  // Copy all files from the MCP server directory
+  const sourceMcpServerDir = path.join(RESOURCES_DIR, 'mcp-server');
+
+  if (fs.existsSync(sourceMcpServerDir)) {
+    const files = fs.readdirSync(sourceMcpServerDir);
+
+    for (const file of files) {
+      const sourceFilePath = path.join(sourceMcpServerDir, file);
+      const destFilePath = path.join(AIDER_DESK_MCP_SERVER_DIR, file);
+
+      if (fs.statSync(sourceFilePath).isFile()) {
+        fs.copyFileSync(sourceFilePath, destFilePath);
+      }
+    }
+  } else {
+    logger.error(`MCP server directory not found: ${sourceMcpServerDir}`);
+  }
 };

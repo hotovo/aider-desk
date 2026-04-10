@@ -107,7 +107,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   const terminalManager = new TerminalManager(eventManager, telemetryManager);
 
   // Initialize Versions Manager
-  const versionsManager = new VersionsManager(eventManager, store);
+  const versionsManager = new VersionsManager(eventManager, store, pythonInstaller);
 
   // Create HTTP server
   const httpServer = createServer();
