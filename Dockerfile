@@ -68,8 +68,12 @@ RUN apt-get update && \
     make \
     && apt-get purge -y --auto-remove gnupg curl && rm -rf /var/lib/apt/lists/*
 
-# Install uv via the official installer
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# Reinstall curl (was purged above) and install uv via the official installer (to /usr/local/bin)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    export UV_INSTALL_DIR=/usr/local/bin && \
+    curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    apt-get purge -y --auto-remove curl && rm -rf /var/lib/apt/lists/*
 
 # Set Python 3.12 as default
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 \
