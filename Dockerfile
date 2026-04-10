@@ -68,6 +68,9 @@ RUN apt-get update && \
     make \
     && apt-get purge -y --auto-remove gnupg curl && rm -rf /var/lib/apt/lists/*
 
+# Install uv via the official installer
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Set Python 3.12 as default
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
@@ -93,10 +96,10 @@ ENV AIDER_DESK_DATA_DIR=/app/data
 
 # Create data directory and Python virtual environment
 RUN mkdir -p ${AIDER_DESK_DATA_DIR} && \
-    ./out/resources/linux/uv venv ${AIDER_DESK_DATA_DIR}/python-venv --python 3.12
+    uv venv ${AIDER_DESK_DATA_DIR}/python-venv --python 3.12
 
 # Install Python packages into the virtual environment
-RUN ./out/resources/linux/uv pip install --upgrade --no-progress --no-cache-dir --link-mode=copy \
+RUN uv pip install --upgrade --no-progress --no-cache-dir --link-mode=copy \
         --python ${AIDER_DESK_DATA_DIR}/python-venv/bin/python \
         pip \
         aider-chat \
