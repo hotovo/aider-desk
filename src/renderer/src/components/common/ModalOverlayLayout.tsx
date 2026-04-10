@@ -13,9 +13,10 @@ type Props = {
   onClose?: () => void;
   closeOnEscape?: boolean;
   openInWindowUrl?: string;
+  openInWindowTitle?: string;
 };
 
-export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = false, openInWindowUrl }: Props) => {
+export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = false, openInWindowUrl, openInWindowTitle }: Props) => {
   const api = useApi();
 
   useHotkeys(
@@ -34,7 +35,7 @@ export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = f
 
   const handleOpenUrl = async () => {
     if (openInWindowUrl) {
-      await api.openUrlInWindow(openInWindowUrl);
+      await api.openUrlInWindow(openInWindowUrl, openInWindowTitle);
       onClose?.();
     }
   };

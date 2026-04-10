@@ -930,8 +930,8 @@ export class EventsHandler {
     }
   }
 
-  async openUrlInWindow(url: string): Promise<void> {
-    const win = await openUrl(url, 'window');
+  async openUrlInWindow(url: string, title?: string): Promise<void> {
+    const win = await openUrl(url, 'window', title);
     if (win && this.windowManager) {
       this.windowManager.addWindow(win);
       win.on('closed', () => {

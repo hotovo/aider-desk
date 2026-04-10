@@ -35,9 +35,11 @@ type Props = {
   onClose: () => void;
   baseDir: string;
   taskId: string;
+  openInWindowUrl?: string;
+  openInWindowTitle?: string;
 };
 
-export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, taskId }: Props) => {
+export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, taskId, openInWindowUrl, openInWindowTitle }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
   const { settings, saveSettings } = useSettings();
@@ -352,7 +354,13 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
   }
 
   return (
-    <ModalOverlayLayout title={t('contextFiles.updatedFiles')} onClose={onClose} closeOnEscape={true}>
+    <ModalOverlayLayout
+      title={t('contextFiles.updatedFiles')}
+      onClose={onClose}
+      closeOnEscape={true}
+      openInWindowUrl={openInWindowUrl}
+      openInWindowTitle={openInWindowTitle}
+    >
       <div className="flex items-center border-b border-border-default justify-center bg-bg-secondary min-h-[44px] px-4">
         <div className={clsx('flex items-center justify-between w-full', !isFullWidth && 'max-w-6xl')}>
           <div className="flex items-center gap-3 min-w-0">

@@ -1095,8 +1095,8 @@ export class BrowserApi implements ApplicationAPI {
     return false;
   }
 
-  async openUrlInWindow(url: string): Promise<void> {
-    window.open(url, '_blank');
+  async openUrlInWindow(_url: string, _title?: string): Promise<void> {
+    window.open(_url, '_blank');
   }
 
   // Agent profile operations

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { createFileTree } from './types';
 import { SectionContent } from './SectionContent';
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
+import { groupFilesByCommit, UNCOMMITTED_GROUP_ID } from './group-files';
 
 import type { DiffModalGroup } from './UpdatedFilesDiffModal';
 import type { TreeItem, SectionType } from './types';
@@ -16,6 +17,16 @@ import type { TreeItem, SectionType } from './types';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
+import { ROUTES, URL_PARAMS, encodeBaseDir } from '@/utils/routes';
+
+interface CommitGroup {
+  id: string;
+  commitHash?: string;
+  commitMessage?: string;
+  files: UpdatedFile[];
+  additions: number;
+  deletions: number;
+}
 
 type Props = {
   baseDir: string;
@@ -27,20 +38,21 @@ type Props = {
   visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
   onToggle: () => void;
   onFilePreviewClick: (filePath: string) => void;
+  taskName?: string;
 };
 
-interface CommitGroup {
-  id: string;
-  commitHash?: string;
-  commitMessage?: string;
-  files: UpdatedFile[];
-  additions: number;
-  deletions: number;
-}
-
-const UNCOMMITTED_GROUP_ID = '__uncommitted__';
-
-export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, contextFilesMap, visitedSections, onToggle, onFilePreviewClick }: Props) => {
+export const UpdatedFilesSection = ({
+  baseDir,
+  taskId,
+  isOpen,
+  tokensInfo,
+  os,
+  contextFilesMap,
+  visitedSections,
+  onToggle,
+  onFilePreviewClick,
+  taskName,
+}: Props) => {
   const { t } = useTranslation();
   const api = useApi();
 
@@ -55,42 +67,19 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
 
   // Group files by commit hash; preserve commit order from backend (newest first in array),
   // then reverse for display (oldest first). Uncommitted always last.
+  const diffModalGroups: DiffModalGroup[] = useMemo(() => groupFilesByCommit(updatedFiles), [updatedFiles]);
+
+  // Extend DiffModalGroup with per-group stats for the section's tree/header UI
   const commitGroups = useMemo((): CommitGroup[] => {
-    const groupMap = new Map<string, CommitGroup>();
-    const committedOrder: string[] = [];
-
-    for (const file of updatedFiles) {
-      const groupId = file.commitHash || UNCOMMITTED_GROUP_ID;
-
-      if (!groupMap.has(groupId)) {
-        if (file.commitHash) {
-          committedOrder.push(groupId);
-        }
-        groupMap.set(groupId, {
-          id: groupId,
-          commitHash: file.commitHash,
-          commitMessage: file.commitMessage,
-          files: [],
-          additions: 0,
-          deletions: 0,
-        });
-      }
-
-      const group = groupMap.get(groupId)!;
-      group.files.push(file);
-      group.additions += file.additions;
-      group.deletions += file.deletions;
-    }
-
-    // Oldest commits first (reverse of backend order), then uncommitted last
-    const groups: CommitGroup[] = [...committedOrder].reverse().map((id) => groupMap.get(id)!);
-    const uncommitted = groupMap.get(UNCOMMITTED_GROUP_ID);
-    if (uncommitted) {
-      groups.push(uncommitted);
-    }
-
-    return groups;
-  }, [updatedFiles]);
+    return diffModalGroups.map((group) => ({
+      id: group.id ?? UNCOMMITTED_GROUP_ID,
+      commitHash: group.commitHash,
+      commitMessage: group.commitMessage,
+      files: group.files,
+      additions: group.files.reduce((sum, f) => sum + f.additions, 0),
+      deletions: group.files.reduce((sum, f) => sum + f.deletions, 0),
+    }));
+  }, [diffModalGroups]);
 
   const totalStats = useMemo(() => {
     return updatedFiles.reduce(
@@ -101,16 +90,6 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
       { additions: 0, deletions: 0 },
     );
   }, [updatedFiles]);
-
-  // Convert commitGroups to DiffModalGroup format for the diff modal
-  const diffModalGroups: DiffModalGroup[] = useMemo(() => {
-    return commitGroups.map((group) => ({
-      id: group.id,
-      commitHash: group.commitHash,
-      commitMessage: group.commitMessage,
-      files: group.files,
-    }));
-  }, [commitGroups]);
 
   // Build tree data for each group — use 'root' as root key since SectionContent expects it
   const groupTreeData = useMemo(() => {
@@ -395,6 +374,8 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
           onClose={() => setDiffModalOpen(false)}
           baseDir={baseDir}
           taskId={taskId}
+          openInWindowUrl={`#${ROUTES.Diff}?${URL_PARAMS.PROJECT}=${encodeBaseDir(baseDir)}&${URL_PARAMS.TASK}=${taskId}`}
+          openInWindowTitle={taskName ? t('contextFiles.updatedFilesWindowTitle', { name: taskName }) : undefined}
         />
       </Activity>
 

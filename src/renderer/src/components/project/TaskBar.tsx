@@ -436,20 +436,20 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
         <div className={clsx('flex flex-wrap gap-x-2 flex-shrink-0', isMobile ? 'flex-col items-start gap-y-1' : 'flex-row items-center gap-y-0.5')}>
           {showLabel && <span className="text-2xs font-semibold text-text-primary uppercase whitespace-nowrap">{t('projectBar.aider')}:</span>}
           {isAiderBusy ? (
-            <div className="flex items-center space-x-2 flex-shrink-0 text-xs text-text-secondary animate-pulse">
-              <CgTerminal className="w-4 h-4 mr-1" />
+            <div className="flex items-center space-x-2 flex-shrink-0 text-2xs text-text-secondary animate-pulse">
+              <CgTerminal className="w-3.5 h-3.5" />
               <span>{aiderConnectorMessage}</span>
             </div>
           ) : aiderConnectorStatus.state === 'failed' ? (
-            <div className="flex items-center space-x-2 flex-shrink-0 text-xs text-red-400">
-              <CgTerminal className="w-4 h-4 mr-1" />
+            <div className="flex items-center space-x-2 flex-shrink-0 text-xs text-text-error">
+              <CgTerminal className="w-3.5 h-3.5" />
               <span>{aiderConnectorMessage}</span>
             </div>
           ) : (
             <>
               <div className="flex items-center space-x-2 flex-shrink-0">
                 <Tooltip content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)}>
-                  <CgTerminal className="w-4 h-4 text-text-primary mr-1" />
+                  <CgTerminal className="w-3.5 h-3.5 text-text-primary mr-1 flex-shrink-0" />
                 </Tooltip>
                 <ModelSelector
                   ref={mainModelSelectorRef}
@@ -464,7 +464,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
               {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
               <div className="flex items-center space-x-2 flex-shrink-0">
                 <Tooltip content={t('modelSelector.weakModel')}>
-                  <BsFilter className="w-4 h-4 text-text-primary mr-1" />
+                  <BsFilter className="w-3.5 h-3.5 text-text-primary mr-1 flex-shrink-0" />
                 </Tooltip>
                 <ModelSelector
                   models={aiderModels}
@@ -487,7 +487,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                   {!isMobile && <div className="h-3 w-px bg-bg-fourth flex-shrink-0"></div>}
                   <div className="flex items-center space-x-1 flex-shrink-0">
                     <Tooltip content={t('projectBar.editFormatTooltip')}>
-                      <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" />
+                      <BsCodeSlash className="w-3.5 h-3.5 text-text-primary mr-1 flex-shrink-0" />
                     </Tooltip>
                     <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
                   </div>
@@ -534,7 +534,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                 <div className="flex items-center space-x-2 flex-shrink-0">
                   <div className="flex items-center space-x-2 flex-shrink-0">
                     <Tooltip content={t('modelSelector.agentModel')}>
-                      <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" />
+                      <RiRobot2Line className="w-3.5 h-3.5 text-text-primary mr-1 flex-shrink-0" />
                     </Tooltip>
                     {!currentTaskModelId ? (
                       <div className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.noModelSelected')}</div>
@@ -563,7 +563,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                   <>
                     <div className="flex items-center space-x-2 flex-shrink-0">
                       <Tooltip content={t('modelSelector.agentModel')}>
-                        <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" />
+                        <RiRobot2Line className="w-3.5 h-3.5 text-text-primary mr-1 flex-shrink-0" />
                       </Tooltip>
                       {!currentTaskModelId ? (
                         <div className="text-xs text-text-muted-light whitespace-nowrap">{t('modelSelector.noModelSelected')}</div>
@@ -587,7 +587,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                       <>
                         <div className="flex items-center space-x-2 flex-shrink-0">
                           <Tooltip content={t('modelSelector.architectModel')}>
-                            <GoProjectRoadmap className="w-4 h-4 text-text-primary mr-1" />
+                            <GoProjectRoadmap className="w-3.5 h-3.5 text-text-primary mr-1 flex-shrink-0" />
                           </Tooltip>
                           <ModelSelector
                             ref={architectModelSelectorRef}

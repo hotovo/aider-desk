@@ -11,6 +11,7 @@
 - added commit grouping and uncommitted changes display for updated files
 - added reordering and editing support for queued prompts
 - increased width of the tooltip in MPC tool description for better readability
+- added support for opening updated files diff in a new window
 
 ## [0.60.0]
 

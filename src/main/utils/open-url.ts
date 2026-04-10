@@ -2,6 +2,8 @@ import { execSync } from 'child_process';
 import { join } from 'path';
 import os from 'os';
 
+import icon from '../../../resources/icon.png?asset';
+
 import { isElectron } from '@/app';
 import logger from '@/logger';
 
@@ -11,8 +13,9 @@ import logger from '@/logger';
  *
  * @param url - URL to open
  * @param target - Where to open: 'external' (system browser) or 'window' (new Electron window)
+ * @param title - Window title (only used when opening in a new window)
  */
-export const openUrl = async (url: string, target: 'external' | 'window' = 'window'): Promise<Electron.BrowserWindow | null> => {
+export const openUrl = async (url: string, target: 'external' | 'window' = 'window', title?: string): Promise<Electron.BrowserWindow | null> => {
   logger.debug(`[openUrl] Opening URL: ${url} (position: ${target})`);
 
   if (isElectron()) {
@@ -23,6 +26,8 @@ export const openUrl = async (url: string, target: 'external' | 'window' = 'wind
         const win = new BrowserWindow({
           width: 1200,
           height: 800,
+          title: title || 'AiderDesk',
+          icon,
           webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

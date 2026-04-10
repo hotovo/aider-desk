@@ -1054,6 +1054,7 @@
     "commitError": "Commit Error",
     "uncommitted": "Uncommitted",
     "group": "Group {{hash}}",
+    "updatedFilesWindowTitle": "Updated Files - {{name}}",
     "empty": {
       "title": "No Context Files",
       "aiderMode": {

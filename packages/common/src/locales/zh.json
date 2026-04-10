@@ -1006,6 +1006,7 @@
     "commitError": "提交错误",
     "uncommitted": "未提交",
     "group": "分组 {{hash}}",
+    "updatedFilesWindowTitle": "已更新文件 - {{name}}",
     "empty": {
       "title": "没有上下文文件",
       "aiderMode": {

@@ -20,6 +20,7 @@ import { ApiProvider, useApi } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
+import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 
 const ICON_CONTEXT_DEFAULT_VALUE: IconContext = {};
@@ -95,6 +96,7 @@ const AnimatedRoutes = () => {
               <Route path={ROUTES.Onboarding} element={<Onboarding />} />
               <Route path={ROUTES.Home} element={<Home />} />
               <Route path={ROUTES.Logs} element={<Logs />} />
+              <Route path={ROUTES.Diff} element={<UpdatedFilesDiff />} />
               <Route path="/" element={settings.onboardingFinished ? <Navigate to={ROUTES.Home} replace /> : <Navigate to={ROUTES.Onboarding} replace />} />
             </Routes>
           )}

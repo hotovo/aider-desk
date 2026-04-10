@@ -2,6 +2,7 @@ export const ROUTES = {
   Onboarding: '/onboarding',
   Home: '/home',
   Logs: '/logs',
+  Diff: '/diff',
 } as const;
 
 // URL parameter utilities for direct project/task navigation

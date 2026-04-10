@@ -8,7 +8,6 @@ import { UserContextFilesSection } from './UserContextFilesSection';
 import { UpdatedFilesSection } from './UpdatedFilesSection';
 import { ProjectFilesSection } from './ProjectFilesSection';
 import { RulesSection } from './RulesSection';
-import { FilePreviewModal } from './FilePreviewModal';
 import { normalizePath } from './types';
 
 import type { SectionType, TreeItem } from './types';
@@ -29,6 +28,7 @@ type Props = {
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   mode: Mode;
   onToggleFilesSidebarCollapse?: () => void;
+  taskName?: string;
 };
 
 export const ContextFiles = ({
@@ -41,6 +41,7 @@ export const ContextFiles = ({
   refreshAllFiles,
   mode,
   onToggleFilesSidebarCollapse,
+  taskName,
 }: Props) => {
   const { t } = useTranslation();
   const os = useOS();
@@ -49,7 +50,6 @@ export const ContextFiles = ({
   const [activeSection, setActiveSection] = useLocalStorage<SectionType>(`context-files-active-section-${baseDir}`, 'context');
   const [visitedSections, setVisitedSections] = useState<Set<SectionType>>(new Set(['context']));
   const [isDragging, setIsDragging] = useState(false);
-  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeSection) {
@@ -90,12 +90,8 @@ export const ContextFiles = ({
     api.runCommand(baseDir, taskId, 'drop');
   }, [api, baseDir, taskId]);
 
-  const handleFilePreviewClick = useCallback((filePath: string) => {
-    setPreviewFilePath(filePath);
-  }, []);
-
-  const handleClosePreviewModal = useCallback(() => {
-    setPreviewFilePath(null);
+  const handleFilePreviewClick = useCallback((_filePath: string) => {
+    // Preview is handled by child sections
   }, []);
 
   const dropFile = useCallback(
@@ -210,6 +206,7 @@ export const ContextFiles = ({
         visitedSections={visitedSections}
         onToggle={() => setActiveSection('updated')}
         onFilePreviewClick={handleFilePreviewClick}
+        taskName={taskName}
       />
 
       <ProjectFilesSection
@@ -238,8 +235,6 @@ export const ContextFiles = ({
         visitedSections={visitedSections}
         onToggle={() => setActiveSection('rules')}
       />
-
-      {previewFilePath && <FilePreviewModal filePath={previewFilePath} baseDir={baseDir} onClose={handleClosePreviewModal} />}
     </div>
   );
 };

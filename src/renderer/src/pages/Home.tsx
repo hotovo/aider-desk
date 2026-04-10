@@ -25,7 +25,7 @@ import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
 import { useApi } from '@/contexts/ApiContext';
 import { ModelLibrary } from '@/components/ModelLibrary';
-import { URL_PARAMS, encodeBaseDir, decodeBaseDir } from '@/utils/routes';
+import { URL_PARAMS, encodeBaseDir, decodeBaseDir, ROUTES } from '@/utils/routes';
 import { useBooleanState } from '@/hooks/useBooleanState';
 
 let hasShownUpdateNotification = false;
@@ -601,7 +601,7 @@ export const Home = () => {
           <ModelLibrary onClose={hideModelLibrary} />
         </Activity>
         <Activity mode={isLogsVisible ? 'visible' : 'hidden'}>
-          <LogsPage onClose={hideLogs} openInWindowUrl="#/logs" />
+          <LogsPage onClose={hideLogs} openInWindowUrl={`#${ROUTES.Logs}`} />
         </Activity>
         {releaseNotesContent && versions && (
           <HtmlInfoDialog

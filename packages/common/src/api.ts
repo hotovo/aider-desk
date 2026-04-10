@@ -284,7 +284,7 @@ export interface ApplicationAPI {
   // Clipboard operations
   writeToClipboard: (text: string) => Promise<void>;
   openPath: (path: string) => Promise<boolean>;
-  openUrlInWindow: (url: string) => Promise<void>;
+  openUrlInWindow: (url: string, title?: string) => Promise<void>;
 
   addNotificationListener: (baseDir: string, callback: (data: NotificationData) => void) => () => void;
 

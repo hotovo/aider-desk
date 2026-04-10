@@ -269,7 +269,7 @@ export const LogsPage = ({ openInWindowUrl, onClose }: Props) => {
   };
 
   return (
-    <ModalOverlayLayout title={t('logs.title')} onClose={onClose} closeOnEscape openInWindowUrl={openInWindowUrl}>
+    <ModalOverlayLayout title={t('logs.title')} onClose={onClose} closeOnEscape openInWindowUrl={openInWindowUrl} openInWindowTitle={t('logs.title')}>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Filters and Controls */}
         <div className="p-4 border-b-2 border-border-default space-y-2">

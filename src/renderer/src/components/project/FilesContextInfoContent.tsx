@@ -53,6 +53,7 @@ export const FilesContextInfoContent = ({
           refreshAllFiles={refreshAllFiles}
           mode={mode}
           onToggleFilesSidebarCollapse={onToggleFilesSidebarCollapse}
+          taskName={task.name}
         />
       </div>
       <CostInfo
