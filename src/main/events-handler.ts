@@ -861,7 +861,8 @@ export class EventsHandler {
   async updateProviders(providers: ProviderProfile[]): Promise<void> {
     const oldProviders = this.store.getProviders();
 
-    this.store.setProviders(providers);
+    const nonExtensionProviders = providers.filter((p) => !p.extensionId);
+    this.store.setProviders(nonExtensionProviders);
 
     await this.modelManager.providersChanged(oldProviders, providers);
 
