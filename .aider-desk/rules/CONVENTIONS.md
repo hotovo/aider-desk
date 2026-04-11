@@ -101,3 +101,22 @@ const handleShowModalB = () => {
   setIsModalBVisible(true);
 };
 ```
+
+- do not include unused function parameters (prefixed with `_`) in function signatures if they are not used in the body and there is no used parameter after them. Omit them entirely. Example:
+
+```typescript
+// bad - unused parameters kept with underscore prefix
+async openUrlInWindow(_url: string, _title?: string): Promise<void> {
+  window.open('_blank');
+}
+
+// bad - _url is unused but needed for positional correctness before a used param
+async openUrlInWindow(_url: string, title?: string): Promise<void> {
+  console.log(title);
+}
+
+// good - unused parameters omitted
+async openUrlInWindow(): Promise<void> {
+  window.open('_blank');
+}
+```
