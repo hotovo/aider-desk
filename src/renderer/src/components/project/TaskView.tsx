@@ -749,7 +749,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 taskId={task.id}
                 visible={terminalVisible}
                 className="border-t border-border-dark-light flex-grow"
-                onVisibilityChange={setTerminalVisible}
+                onClose={() => setTerminalVisible(false)}
                 onCopyOutput={handleCopyTerminalOutput}
               />
             </ResizableBox>

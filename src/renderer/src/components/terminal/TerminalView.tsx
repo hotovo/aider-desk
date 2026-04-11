@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { IoMdAdd, IoMdClose, IoMdRemove } from 'react-icons/io';
 import { BiCopy } from 'react-icons/bi';
 import { clsx } from 'clsx';
@@ -17,23 +17,19 @@ type TerminalTab = {
   terminalId: string | null;
 };
 
-const DEFAULT_TAB = {
-  id: 'default',
-  terminalId: null,
-};
-
 type Props = {
   baseDir: string;
   taskId: string;
   visible: boolean;
   className?: string;
-  onVisibilityChange: (visible: boolean) => void;
+  onClose: () => void;
   onCopyOutput?: (output: string) => void;
 };
-export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskId, visible, className, onVisibilityChange, onCopyOutput }, ref) => {
+
+export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskId, visible, className, onClose, onCopyOutput }, ref) => {
   const { t } = useTranslation();
-  const [tabs, setTabs] = useState<TerminalTab[]>([DEFAULT_TAB]);
-  const [activeTabId, setActiveTabId] = useState<string>('default');
+  const [tabs, setTabs] = useState<TerminalTab[]>([]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const terminalRefs = useRef<Record<string, TerminalRef | null>>({});
 
   useImperativeHandle(ref, () => ({
@@ -46,7 +42,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
   }));
 
   // Create a new terminal tab
-  const addTerminalTab = () => {
+  const addTerminalTab = useCallback(() => {
     const newTabId = uuidv4();
     const newTab: TerminalTab = {
       id: newTabId,
@@ -55,58 +51,47 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
 
     setTabs((prev) => [...prev, newTab]);
     setActiveTabId(newTabId);
-  };
+  }, []);
 
   // Close a terminal tab
   const closeTerminalTab = (tabId: string) => {
     setTabs((prev) => {
       const newTabs = prev.filter((tab) => tab.id !== tabId);
 
+      delete terminalRefs.current[tabId];
       // If we're closing the active tab, activate the previous one
       if (activeTabId === tabId && newTabs.length > 0) {
         setActiveTabId(newTabs[newTabs.length - 1].id);
       } else if (newTabs.length === 0) {
-        const id = uuidv4();
-        newTabs.push({
-          ...DEFAULT_TAB,
-          id: id,
-        });
-        setActiveTabId(id);
-        // If we're closing the last tab, minimize the terminal
-        onVisibilityChange(false);
+        setActiveTabId(null);
+        onClose();
       }
 
       return newTabs;
     });
   };
 
-  // Focus the active terminal when it changes
-  useEffect(() => {
-    const activeRef = terminalRefs.current[activeTabId];
-    if (activeRef) {
-      // Small delay to ensure terminal is rendered
-      setTimeout(() => {
-        activeRef.focus();
-      }, 100);
-    }
-  }, [activeTabId]);
-
   // Focus the active terminal when the terminal view becomes visible
   useEffect(() => {
     if (visible) {
-      const activeRef = terminalRefs.current[activeTabId];
-      if (activeRef) {
-        // Small delay to ensure terminal is rendered
-        setTimeout(() => {
-          activeRef.focus();
-        }, 100);
+      if (activeTabId) {
+        const activeRef = terminalRefs.current[activeTabId];
+        if (activeRef) {
+          // Small delay to ensure terminal is rendered
+          setTimeout(() => {
+            activeRef.focus();
+          }, 100);
+        }
+      } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        addTerminalTab();
       }
     }
-  }, [visible, activeTabId]);
+  }, [visible, activeTabId, addTerminalTab]);
 
   // Handle copying terminal output
   const handleCopyOutput = () => {
-    const activeRef = terminalRefs.current[activeTabId];
+    const activeRef = activeTabId && terminalRefs.current[activeTabId];
     if (activeRef && onCopyOutput) {
       const output = activeRef.getOutput();
       onCopyOutput(output);
@@ -145,7 +130,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
         </div>
         <div className="flex items-center space-x-3">
           <IconButton icon={<BiCopy size={16} />} onClick={handleCopyOutput} tooltip={t('terminal.copyOutput')} />
-          <IconButton icon={<IoMdRemove size={16} />} onClick={() => onVisibilityChange(false)} tooltip={t('terminal.minimize')} />
+          <IconButton icon={<IoMdRemove size={16} />} onClick={onClose} tooltip={t('terminal.minimize')} />
         </div>
       </div>
 
@@ -161,6 +146,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
               baseDir={baseDir}
               taskId={taskId}
               visible={activeTabId === tab.id && visible}
+              onExit={() => closeTerminalTab(tab.id)}
             />
           </div>
         ))}

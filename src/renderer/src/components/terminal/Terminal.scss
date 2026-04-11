@@ -1,7 +1,24 @@
-.xterm-viewport {
+.ghostty-terminal-container {
   @apply scrollbar-thin scrollbar-track-bg-primary scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary;
-}
 
-.xterm-screen {
-  @apply px-3;
+  canvas {
+    @apply px-3;
+  }
+
+  textarea {
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    opacity: 0 !important;
+    resize: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    outline: none !important;
+    color: transparent !important;
+    background: transparent !important;
+    caret-color: transparent !important;
+    text-shadow: none !important;
+    -webkit-text-fill-color: transparent !important;
+  }
 }

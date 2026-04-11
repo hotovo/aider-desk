@@ -1,11 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Terminal as XTerm } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import { WebLinksAddon } from '@xterm/addon-web-links';
+import { Ghostty, Terminal as GhosttyTerminal, FitAddon } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
 
-import '@xterm/xterm/css/xterm.css';
 import './Terminal.scss';
 import { useApi } from '@/contexts/ApiContext';
 
@@ -21,32 +18,38 @@ type Props = {
   taskId: string;
   visible: boolean;
   className?: string;
+  onExit?: () => void;
 };
 
-export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visible, className }, ref) => {
-  const terminalRef = useRef<HTMLDivElement>(null);
-  const xtermRef = useRef<XTerm | null>(null);
+export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visible, className, onExit }, ref) => {
+  const terminalContainerRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<GhosttyTerminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const [terminalId, setTerminalId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const ghosttyInstanceRef = useRef<InstanceType<typeof Ghostty> | null>(null);
   const api = useApi();
+
+  // Show connecting overlay when WASM is ready but no PTY process exists yet
+  const isConnecting = isInitialized && visible && !terminalId;
 
   useImperativeHandle(ref, () => ({
     focus: () => {
-      xtermRef.current?.focus();
+      terminalRef.current?.focus();
     },
     clear: () => {
-      xtermRef.current?.clear();
+      terminalRef.current?.clear();
     },
     resize: () => {
       fitAddonRef.current?.fit();
     },
     getOutput: () => {
-      if (!xtermRef.current) {
+      if (!terminalRef.current) {
         return '';
       }
 
-      const buffer = xtermRef.current.buffer.active;
+      const buffer = terminalRef.current.buffer.active;
       let output = '';
 
       for (let i = 0; i < buffer.length; i++) {
@@ -60,13 +63,42 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
     },
   }));
 
+  // Initialize ghostty-web WASM once
+  useEffect(() => {
+    let cancelled = false;
+    let ghosttyInitPromise: Promise<InstanceType<typeof Ghostty>> | null = null;
+
+    const getGhosttyInit = (): Promise<InstanceType<typeof Ghostty>> => {
+      if (!ghosttyInitPromise) {
+        ghosttyInitPromise = Ghostty.load('/ghostty-vt.wasm');
+      }
+      return ghosttyInitPromise;
+    };
+
+    getGhosttyInit()
+      .then((instance) => {
+        if (!cancelled) {
+          ghosttyInstanceRef.current = instance;
+          setIsInitialized(true);
+        }
+      })
+      .catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error('Failed to initialize ghostty-web:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Initialize terminal
   useEffect(() => {
-    if (!terminalRef.current) {
+    if (!isInitialized || !terminalContainerRef.current) {
       return;
     }
 
-    const xterm = new XTerm({
+    const terminal = new GhosttyTerminal({
       theme: {
         background: '#0a0a0a',
         foreground: '#e5e5e5',
@@ -92,71 +124,68 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       },
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       fontSize: 12,
-      lineHeight: 1,
       cursorBlink: true,
       cursorStyle: 'block',
       scrollback: 1000,
-      tabStopWidth: 4,
+      ghostty: ghosttyInstanceRef.current!,
     });
 
     const fitAddon = new FitAddon();
-    const webLinksAddon = new WebLinksAddon();
 
-    xterm.loadAddon(fitAddon);
-    xterm.loadAddon(webLinksAddon);
+    terminal.loadAddon(fitAddon);
 
-    xterm.open(terminalRef.current);
+    terminal.open(terminalContainerRef.current);
     fitAddon.fit();
 
     // Handle terminal input
-    xterm.onData((data) => {
+    terminal.onData((data) => {
       if (terminalId) {
         void api.writeToTerminal(terminalId, data);
       }
     });
 
     // Handle terminal resize
-    xterm.onResize(({ cols, rows }) => {
+    terminal.onResize(({ cols, rows }) => {
       if (terminalId) {
         void api.resizeTerminal(terminalId, cols, rows);
       }
     });
 
-    xtermRef.current = xterm;
+    terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
     return () => {
-      xterm.dispose();
-      xtermRef.current = null;
+      terminal.dispose();
+      terminalRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [terminalId, api]);
+  }, [terminalId, api, isInitialized]);
 
   // Create terminal process
   useEffect(() => {
-    if (!visible || terminalId) {
+    if (!visible || terminalId || !isInitialized) {
       return;
     }
 
     const createTerminal = async () => {
-      const xterm = xtermRef.current;
+      const term = terminalRef.current;
 
-      if (!xterm) {
+      if (!term) {
         return;
       }
+
       try {
-        // Always create a new terminal for each Terminal component instance
-        const cols = xtermRef.current?.cols || 160;
-        const rows = xtermRef.current?.rows || 10;
+        const cols = term.cols || 160;
+        const rows = term.rows || 10;
         const id = await api.createTerminal(baseDir, taskId, cols, rows);
 
         // Handle terminal input
-        xterm.onData((data) => {
+        term.onData((data) => {
           void api.writeToTerminal(id, data);
         });
 
         // Handle terminal resize
-        xterm.onResize(({ cols, rows }) => {
+        term.onResize(({ cols, rows }) => {
           void api.resizeTerminal(id, cols, rows);
         });
 
@@ -165,32 +194,29 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to create terminal:', error);
-        xtermRef.current?.writeln('\\x1b[31mFailed to create terminal process\\x1b[0m');
+        terminalRef.current?.writeln('\x1b[31mFailed to create terminal process\x1b[0m');
       }
     };
 
     void createTerminal();
-  }, [baseDir, terminalId, visible, api, taskId]);
+  }, [baseDir, terminalId, visible, api, taskId, isInitialized]);
 
-  // Handle terminal data
+  // Handle terminal data and exit/restart
   useEffect(() => {
     if (!terminalId) {
       return;
     }
 
     const handleTerminalData = (data: TerminalData) => {
-      if (data.terminalId === terminalId && xtermRef.current) {
-        xtermRef.current.write(data.data);
+      if (data.terminalId === terminalId && terminalRef.current) {
+        terminalRef.current.write(data.data);
       }
     };
 
     const handleTerminalExit = (data: TerminalExitData) => {
       if (data.terminalId === terminalId) {
         setIsConnected(false);
-        if (xtermRef.current) {
-          xtermRef.current.writeln(`\\x1b[33m\\r\\nProcess exited with code ${data.exitCode}\\x1b[0m`);
-          xtermRef.current.writeln('\\x1b[90mPress any key to restart...\\x1b[0m');
-        }
+        onExit?.();
       }
     };
 
@@ -201,12 +227,31 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       removeTerminalDataListener();
       removeTerminalExitListener();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [terminalId, baseDir, api]);
+
+  // Handle restart on keypress after exit
+  useEffect(() => {
+    if (isConnected || !terminalRef.current) {
+      return undefined;
+    }
+
+    const handleRestartInput = (_data: string) => {
+      // Clear terminalId to trigger re-creation via the createTerminal effect
+      terminalRef.current?.clear();
+      setTerminalId(null);
+    };
+
+    const disposable = terminalRef.current.onData(handleRestartInput);
+
+    return () => {
+      disposable.dispose();
+    };
+  }, [isConnected, terminalId]);
 
   // Handle resize when visibility changes
   useEffect(() => {
     if (visible && fitAddonRef.current) {
-      // Small delay to ensure the container is properly sized
       const timer = setTimeout(() => {
         fitAddonRef.current?.fit();
       }, 100);
@@ -224,10 +269,29 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
     };
   }, [terminalId, api]);
 
+  const handleTerminalFocus = () => {
+    terminalRef.current?.renderer?.setCursorStyle('block');
+    setTimeout(() => {
+      terminalRef.current?.renderer?.setCursorBlink(true);
+    }, 100);
+  };
+
+  const handleTerminalBlur = () => {
+    terminalRef.current?.renderer?.setCursorStyle('underline');
+    setTimeout(() => {
+      terminalRef.current?.renderer?.setCursorBlink(false);
+    }, 100);
+  };
+
   return (
-    <div key={terminalId} className={clsx('absolute inset-0 overflow-hidden bg-[#0a0a0a]', visible ? 'block' : 'hidden', className)}>
-      <div ref={terminalRef} className="absolute top-2 left-0 right-0 bottom-2" />
-      {!isConnected && (
+    <div key={terminalId} className={clsx('absolute inset-0 overflow-hidden bg-[#0a0a0a]', visible ? 'block z-20' : 'hidden', className)}>
+      <div
+        ref={terminalContainerRef}
+        className="ghostty-terminal-container absolute top-2 left-0 right-0 bottom-2"
+        onBlur={handleTerminalBlur}
+        onFocus={handleTerminalFocus}
+      />
+      {isConnecting && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-text-muted-light text-xs">Connecting to terminal...</div>
         </div>

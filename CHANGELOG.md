@@ -14,6 +14,7 @@
 - added support for opening updated files diff in a new window
 - filter extension providers when saving them in store
 - correctly loading OpenAI-compatible models when API key is left empty
+- using ghostty-web for terminal instead of xterm.js
 
 ## [0.60.0]
 

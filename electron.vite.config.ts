@@ -21,6 +21,10 @@ export default defineConfig({
   },
   renderer: {
     publicDir: resolve(__dirname, 'src/renderer/public'),
+    optimizeDeps: {
+      include: ['ghostty-web'],
+      exclude: [],
+    },
     build: {
       rollupOptions: {
         input: {
