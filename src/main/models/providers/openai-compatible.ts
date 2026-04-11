@@ -24,14 +24,19 @@ const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: Se
   const effectiveApiKey = apiKey || apiKeyEnv?.value;
   const effectiveBaseUrl = baseUrl || baseUrlEnv?.value;
 
-  if (!(effectiveApiKey && effectiveBaseUrl)) {
+  if (!effectiveBaseUrl) {
     return { models: [], success: false };
   }
 
   try {
-    const response = await fetch(`${effectiveBaseUrl}/models`, {
-      headers: { Authorization: `Bearer ${effectiveApiKey}` },
-    });
+    const response = await fetch(
+      `${effectiveBaseUrl}/models`,
+      effectiveApiKey
+        ? {
+            headers: { Authorization: `Bearer ${effectiveApiKey}` },
+          }
+        : {},
+    );
     if (!response.ok) {
       const errorMsg = `OpenAI-compatible models API response failed: ${response.status} ${response.statusText} ${await response.text()}`;
       logger.debug(errorMsg);
@@ -93,10 +98,6 @@ const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, setti
       apiKey = effectiveVar.value;
       logger.debug(`Loaded OPENAI_API_KEY from ${effectiveVar.source}`);
     }
-  }
-
-  if (!apiKey) {
-    throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (OPENAI_API_KEY).`);
   }
 
   if (!baseUrl) {
