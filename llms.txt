@@ -318,6 +318,7 @@ src/
           DiffFileItem.tsx
           EmptyContextInfo.tsx
           FilePreviewModal.tsx
+          group-files.ts
           index.ts
           ProjectFilesSection.tsx
           RulesSection.tsx
@@ -637,6 +638,7 @@ src/
         Logs.tsx
         Onboarding.tsx
         Settings.tsx
+        UpdatedFilesDiff.tsx
       stores/
         extensionUIStore.ts
         projectStore.ts
@@ -9467,6 +9469,8 @@ import { execSync } from 'child_process';
 import { join } from 'path';
 import os from 'os';
 ⋮----
+import icon from '../../../resources/icon.png?asset';
+⋮----
 import { isElectron } from '@/app';
 import logger from '@/logger';
 ⋮----
@@ -9476,8 +9480,9 @@ import logger from '@/logger';
  *
  * @param url - URL to open
  * @param target - Where to open: 'external' (system browser) or 'window' (new Electron window)
+ * @param title - Window title (only used when opening in a new window)
  */
-export const openUrl = async (url: string, target: 'external' | 'window' = 'window'): Promise<Electron.BrowserWindow | null> =>
+export const openUrl = async (url: string, target: 'external' | 'window' = 'window', title?: string): Promise<Electron.BrowserWindow | null> =>
 ⋮----
 // If URL starts with #/, it's an internal app route
 ⋮----
@@ -9860,6 +9865,8 @@ import path from 'path';
 ⋮----
 import { VersionsInfo } from '@common/types';
 ⋮----
+import type { PythonDependenciesInstaller } from '@/python-dependencies-installer';
+⋮----
 import { getCurrentPythonLibVersion, getLatestPythonLibVersion } from '@/utils';
 import logger from '@/logger';
 import { Store } from '@/store';
@@ -9873,6 +9880,7 @@ private readonly checkInterval = 10 * 60 * 1000; // 10 minutes
 constructor(
     private readonly eventManager: EventManager,
     private readonly store: Store,
+    private readonly pythonInstaller?: PythonDependenciesInstaller,
 )
 ⋮----
 async getVersions(forceRefresh = false): Promise<VersionsInfo>
@@ -9880,6 +9888,8 @@ async getVersions(forceRefresh = false): Promise<VersionsInfo>
 // Get AiderDesk version using app.getVersion()
 ⋮----
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+⋮----
+// Wait for Python venv to be ready before checking library versions
 ⋮----
 // Get current and available Aider versions using utility functions
 ⋮----
@@ -9892,6 +9902,8 @@ return this.versionsInfo!; // versionsInfo is guaranteed to be non-null after up
 private updateVersionsInfo(partialInfo: Partial<VersionsInfo>): void
 ⋮----
 private async init(): Promise<void>
+⋮----
+// Wait for Python venv to be ready before checking library versions
 ⋮----
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 ⋮----
@@ -10785,7 +10797,7 @@ clearSystemLogs(): void
 ⋮----
 async openPath(path: string): Promise<boolean>
 ⋮----
-async openUrlInWindow(url: string): Promise<void>
+async openUrlInWindow(url: string, title?: string): Promise<void>
 ⋮----
 async isProjectPath(path: string): Promise<boolean>
 ⋮----
@@ -11435,17 +11447,20 @@ import { promisify } from 'util';
 import logger from '@/logger';
 import { EventManager } from '@/events';
 import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBinPath, getResolvedUvPath } from '@/utils';
-import { AIDER_DESK_DATA_DIR, SETUP_COMPLETE_FILENAME, PYTHON_VENV_DIR, AIDER_DESK_CONNECTOR_DIR, RESOURCES_DIR, AIDER_DESK_MCP_SERVER_DIR } from '@/constants';
-import { isDev } from '@/app';
+import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_DATA_DIR, PYTHON_VENV_DIR, RESOURCES_DIR, SETUP_COMPLETE_FILENAME } from '@/constants';
 ⋮----
 export type PythonInstallStatus =
   | { state: 'idle' }
   | { state: 'checking-uv' }
   | { state: 'downloading-uv' }
   | { state: 'creating-venv' }
-  | { state: 'installing-packages'; package: string; current: number; total: number }
+  | {
+      state: 'installing-packages';
+      package: string;
+      current: number;
+      total: number;
+    }
   | { state: 'setting-up-connector' }
-  | { state: 'setting-up-mcp' }
   | { state: 'starting-connector' }
   | { state: 'ready' }
   | { state: 'failed'; error: string };
@@ -11458,7 +11473,6 @@ type StatusListener = (status: PythonInstallStatus) => void;
  * Handles:
  * - Creating the Python virtual environment
  * - Installing aider-chat and connector dependencies
- * - Setting up the MCP server
  * - Exposing installation status to the UI via EventManager
  *
  * The installation runs asynchronously (fire-and-forget). Consumers call
@@ -11513,8 +11527,6 @@ private async performUpdateCheck(): Promise<void>
 ⋮----
 // Run update check (install/upgrade packages)
 ⋮----
-// Setup MCP server
-⋮----
 private async checkUvAvailableInternal(): Promise<void>
 ⋮----
 private async createVirtualEnvInternal(): Promise<void>
@@ -11525,18 +11537,17 @@ private async setupAiderConnectorInternal(cleanInstall: boolean): Promise<void>
 ⋮----
 private async installAiderConnectorRequirements(cleanInstall: boolean): Promise<void>
 ⋮----
-private async setupMcpServerInternal(): Promise<void>
-⋮----
-// Copy all files from the MCP server directory
-⋮----
 private async checkNetworkConnectivity(): Promise<boolean>
 
 ================
 File: src/main/start-up.ts
 ================
+import path from 'path';
+⋮----
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
-import { AIDER_DESK_DATA_DIR, SETUP_COMPLETE_FILENAME, PYTHON_VENV_DIR } from '@/constants';
+import { AIDER_DESK_DATA_DIR, SETUP_COMPLETE_FILENAME, PYTHON_VENV_DIR, AIDER_DESK_MCP_SERVER_DIR, RESOURCES_DIR } from '@/constants';
 import logger from '@/logger';
+import { isDev } from '@/app';
 ⋮----
 export type UpdateProgressData = {
   step: string;
@@ -11559,6 +11570,8 @@ export type UpdateProgressFunction = (data: UpdateProgressData) => void;
  */
 export const performStartUp = async (pythonInstaller: PythonDependenciesInstaller, updateProgress?: UpdateProgressFunction): Promise<boolean> =>
 ⋮----
+// Setup MCP server
+⋮----
 // Kick off background update check — don't await it
 ⋮----
 // First-time setup needed — kick off in background
@@ -11566,6 +11579,10 @@ export const performStartUp = async (pythonInstaller: PythonDependenciesInstalle
 // Ensure data dir exists (fast, synchronous)
 ⋮----
 // Kick off full installation — fire and forget
+⋮----
+const setupMcpServerInternal = async (): Promise<void> =>
+⋮----
+// Copy all files from the MCP server directory
 
 ================
 File: src/main/window-manager.ts
@@ -12188,7 +12205,7 @@ async openPath(): Promise<boolean>
 ⋮----
 // Not available in browser context
 ⋮----
-async openUrlInWindow(url: string): Promise<void>
+async openUrlInWindow(_url: string, _title?: string): Promise<void>
 ⋮----
 // Agent profile operations
 getAllAgentProfiles(baseDir?: string): Promise<AgentProfile[]>
@@ -13149,6 +13166,7 @@ type Props = {
   onClose?: () => void;
   closeOnEscape?: boolean;
   openInWindowUrl?: string;
+  openInWindowTitle?: string;
 };
 ⋮----
 export const ModalOverlayLayout = (
@@ -13591,7 +13609,6 @@ import { UserContextFilesSection } from './UserContextFilesSection';
 import { UpdatedFilesSection } from './UpdatedFilesSection';
 import { ProjectFilesSection } from './ProjectFilesSection';
 import { RulesSection } from './RulesSection';
-import { FilePreviewModal } from './FilePreviewModal';
 import { normalizePath } from './types';
 ⋮----
 import type { SectionType, TreeItem } from './types';
@@ -13610,9 +13627,12 @@ type Props = {
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   mode: Mode;
   onToggleFilesSidebarCollapse?: () => void;
+  taskName?: string;
 };
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
+// Preview is handled by child sections
 
 ================
 File: src/renderer/src/components/ContextFiles/ContextFilesSection.tsx
@@ -13761,6 +13781,17 @@ const renderLoading = () => (
   );
 ⋮----
 <div className=
+
+================
+File: src/renderer/src/components/ContextFiles/group-files.ts
+================
+import { UpdatedFile } from '@common/types';
+⋮----
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
+⋮----
+export const groupFilesByCommit = (files: UpdatedFile[]): DiffModalGroup[] =>
+⋮----
+// Oldest commits first (reverse of backend order), then uncommitted last
 
 ================
 File: src/renderer/src/components/ContextFiles/index.ts
@@ -14002,6 +14033,8 @@ type Props = {
   onClose: () => void;
   baseDir: string;
   taskId: string;
+  openInWindowUrl?: string;
+  openInWindowTitle?: string;
 };
 ⋮----
 // Flatten groups into a single file list for navigation
@@ -14031,7 +14064,7 @@ type Props = {
 ⋮----
 // Render a group section header for the all-files view
 ⋮----
-<ModalOverlayLayout title=
+title=
 ⋮----
 <div className=
 ⋮----
@@ -14046,8 +14079,6 @@ onLineClick=
 {/* Error Display */}
 ⋮----
 isGeneratingMessage
-⋮----
-title=
 
 ================
 File: src/renderer/src/components/ContextFiles/UpdatedFilesSection.tsx
@@ -14063,6 +14094,7 @@ import { useTranslation } from 'react-i18next';
 import { createFileTree } from './types';
 import { SectionContent } from './SectionContent';
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
+import { groupFilesByCommit, UNCOMMITTED_GROUP_ID } from './group-files';
 ⋮----
 import type { DiffModalGroup } from './UpdatedFilesDiffModal';
 import type { TreeItem, SectionType } from './types';
@@ -14070,6 +14102,16 @@ import type { TreeItem, SectionType } from './types';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
+import { ROUTES, URL_PARAMS, encodeBaseDir } from '@/utils/routes';
+⋮----
+interface CommitGroup {
+  id: string;
+  commitHash?: string;
+  commitMessage?: string;
+  files: UpdatedFile[];
+  additions: number;
+  deletions: number;
+}
 ⋮----
 type Props = {
   baseDir: string;
@@ -14081,23 +14123,13 @@ type Props = {
   visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
   onToggle: () => void;
   onFilePreviewClick: (filePath: string) => void;
+  taskName?: string;
 };
-⋮----
-interface CommitGroup {
-  id: string;
-  commitHash?: string;
-  commitMessage?: string;
-  files: UpdatedFile[];
-  additions: number;
-  deletions: number;
-}
 ⋮----
 // Group files by commit hash; preserve commit order from backend (newest first in array),
 // then reverse for display (oldest first). Uncommitted always last.
 ⋮----
-// Oldest commits first (reverse of backend order), then uncommitted last
-⋮----
-// Convert commitGroups to DiffModalGroup format for the diff modal
+// Extend DiffModalGroup with per-group stats for the section's tree/header UI
 ⋮----
 // Build tree data for each group — use 'root' as root key since SectionContent expects it
 ⋮----
@@ -14138,6 +14170,8 @@ setExpandedItems=
 setExpandedItems=
 ⋮----
 onClose=
+⋮----
+openInWindowTitle=
 ⋮----
 title=
 
@@ -22906,7 +22940,7 @@ import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
 import { useApi } from '@/contexts/ApiContext';
 import { ModelLibrary } from '@/components/ModelLibrary';
-import { URL_PARAMS, encodeBaseDir, decodeBaseDir } from '@/utils/routes';
+import { URL_PARAMS, encodeBaseDir, decodeBaseDir, ROUTES } from '@/utils/routes';
 import { useBooleanState } from '@/hooks/useBooleanState';
 ⋮----
 type ShowSettingsInfo = {
@@ -23147,6 +23181,23 @@ e.stopPropagation();
 {/* Children */}
 ⋮----
 {/* Content */}
+
+================
+File: src/renderer/src/pages/UpdatedFilesDiff.tsx
+================
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
+import { UpdatedFile } from '@common/types';
+⋮----
+import { groupFilesByCommit } from '@/components/ContextFiles/group-files';
+import { UpdatedFilesDiffModal } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+import { useApi } from '@/contexts/ApiContext';
+import { URL_PARAMS, decodeBaseDir } from '@/utils/routes';
+⋮----
+const loadFiles = async () =>
+⋮----
+// eslint-disable-next-line no-console
 
 ================
 File: src/renderer/src/stores/extensionUIStore.ts
@@ -25588,6 +25639,7 @@ import { ApiProvider, useApi } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
+import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 ⋮----
 const ModalOverlayUrlHandler = () =>
