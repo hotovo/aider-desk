@@ -20731,21 +20731,36 @@ label=
 ================
 File: src/renderer/src/components/terminal/Terminal.scss
 ================
-.xterm-viewport {
+.ghostty-terminal-container {
   @apply scrollbar-thin scrollbar-track-bg-primary scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary;
-}
 
-.xterm-screen {
-  @apply px-3;
+  canvas {
+    @apply px-3;
+  }
+
+  textarea {
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    opacity: 0 !important;
+    resize: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    outline: none !important;
+    color: transparent !important;
+    background: transparent !important;
+    caret-color: transparent !important;
+    text-shadow: none !important;
+    -webkit-text-fill-color: transparent !important;
+  }
 }
 
 ================
 File: src/renderer/src/components/terminal/Terminal.tsx
 ================
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Terminal as XTerm } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import { WebLinksAddon } from '@xterm/addon-web-links';
+import { Ghostty, Terminal as GhosttyTerminal, FitAddon } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
 ⋮----
@@ -20763,7 +20778,16 @@ type Props = {
   taskId: string;
   visible: boolean;
   className?: string;
+  onExit?: () => void;
 };
+⋮----
+// Show connecting overlay when WASM is ready but no PTY process exists yet
+⋮----
+// Initialize ghostty-web WASM once
+⋮----
+const getGhosttyInit = (): Promise<InstanceType<typeof Ghostty>> =>
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 // Initialize terminal
 ⋮----
@@ -20775,30 +20799,38 @@ type Props = {
 ⋮----
 const createTerminal = async () =>
 ⋮----
-// Always create a new terminal for each Terminal component instance
-⋮----
 // Handle terminal input
 ⋮----
 // Handle terminal resize
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-// Handle terminal data
+// Handle terminal data and exit/restart
 ⋮----
 const handleTerminalData = (data: TerminalData) =>
 ⋮----
 const handleTerminalExit = (data: TerminalExitData) =>
 ⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+// Handle restart on keypress after exit
+⋮----
+const handleRestartInput = (_data: string) =>
+⋮----
+// Clear terminalId to trigger re-creation via the createTerminal effect
+⋮----
 // Handle resize when visibility changes
 ⋮----
-// Small delay to ensure the container is properly sized
-⋮----
 // Cleanup on unmount
+⋮----
+const handleTerminalFocus = () =>
+⋮----
+const handleTerminalBlur = () =>
 
 ================
 File: src/renderer/src/components/terminal/TerminalView.tsx
 ================
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { IoMdAdd, IoMdClose, IoMdRemove } from 'react-icons/io';
 import { BiCopy } from 'react-icons/bi';
 import { clsx } from 'clsx';
@@ -20822,29 +20854,24 @@ type Props = {
   taskId: string;
   visible: boolean;
   className?: string;
-  onVisibilityChange: (visible: boolean) => void;
+  onClose: () => void;
   onCopyOutput?: (output: string) => void;
 };
 ⋮----
 // Resize all terminal instances
 ⋮----
 // Create a new terminal tab
-const addTerminalTab = () =>
 ⋮----
 // Close a terminal tab
 const closeTerminalTab = (tabId: string) =>
 ⋮----
 // If we're closing the active tab, activate the previous one
 ⋮----
-// If we're closing the last tab, minimize the terminal
-⋮----
-// Focus the active terminal when it changes
-⋮----
-// Small delay to ensure terminal is rendered
-⋮----
 // Focus the active terminal when the terminal view becomes visible
 ⋮----
 // Small delay to ensure terminal is rendered
+⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect
 ⋮----
 // Handle copying terminal output
 const handleCopyOutput = () =>
@@ -20855,6 +20882,8 @@ const handleCopyOutput = () =>
 onClick=
 ⋮----
 {/* Terminal content */}
+⋮----
+onExit=
 
 ================
 File: src/renderer/src/components/ui/Tooltip.tsx
@@ -25747,7 +25776,7 @@ File: src/renderer/index.html
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' blob: https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:; frame-src http: https:;"
+      content="default-src 'self'; script-src 'self' blob: 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:; frame-src http: https:;"
     />
     <link rel="stylesheet" href="/src/fonts.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -26250,9 +26279,6 @@ File: package.json
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "^2.8.0",
-    "@xterm/addon-fit": "^0.10.0",
-    "@xterm/addon-web-links": "^0.11.0",
-    "@xterm/xterm": "^5.5.0",
     "ai": "5.0.167",
     "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "1.5.1",
@@ -26274,6 +26300,7 @@ File: package.json
     "fix-path": "^4.0.0",
     "focus-trap-react": "^11.0.3",
     "framer-motion": "^11.18.2",
+    "ghostty-web": "^0.4.0",
     "gitdiff-parser": "^0.3.1",
     "glob": "^11.0.2",
     "google-auth-library": "^10.3.0",
