@@ -70,7 +70,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
 
     const getGhosttyInit = (): Promise<InstanceType<typeof Ghostty>> => {
       if (!ghosttyInitPromise) {
-        ghosttyInitPromise = Ghostty.load('/ghostty-vt.wasm');
+        ghosttyInitPromise = Ghostty.load('./ghostty-vt.wasm');
       }
       return ghosttyInitPromise;
     };

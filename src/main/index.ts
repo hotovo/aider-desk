@@ -6,7 +6,7 @@ import { ContextMenuParams } from '@common/types';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron';
 
-import icon from '../../resources/icon.png?asset';
+import icon from '../../build/icon.png?asset';
 import splashImage from '../../build/splash.mp4?asset';
 
 import { AIDER_DESK_DATA_DIR, HEADLESS_MODE } from '@/constants';
