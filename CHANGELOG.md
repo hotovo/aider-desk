@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.61.0]
 
 - updated project selection logic when closing or adding projects
 - replaced react-table library with custom implementation to avoid incompatibility with React Compiler
