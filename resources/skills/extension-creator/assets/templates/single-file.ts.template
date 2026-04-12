@@ -6,7 +6,15 @@
 
 import type { Extension, ExtensionContext } from '@aiderdesk/extensions';
 
-class {CLASS_NAME} implements Extension {
+export default class {CLASS_NAME} implements Extension {
+  static metadata = {
+    name: '{EXTENSION_NAME}',
+    version: '1.0.0',
+    description: '{DESCRIPTION}',
+    author: '{AUTHOR}',
+    capabilities: ['{CAPABILITY}'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('{EXTENSION_NAME} Extension loaded', 'info');
   }
@@ -20,13 +28,3 @@ class {CLASS_NAME} implements Extension {
   // - onToolCalled()
   // etc.
 }
-
-export const metadata = {
-  name: '{EXTENSION_NAME}',
-  version: '1.0.0',
-  description: '{DESCRIPTION}',
-  author: '{AUTHOR}',
-  capabilities: ['{CAPABILITY}'],
-};
-
-export default {CLASS_NAME};

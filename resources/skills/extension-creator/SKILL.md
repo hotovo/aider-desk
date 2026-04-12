@@ -24,19 +24,67 @@ Do not use when:
 
 ## Rules
 
-### Rule: Determine extension type first
+### Rule: Choose installation target first
 
 **When:** Starting extension creation
+
+**Then:** Ask the user where to install the extension
+
+**If:** Working inside the AiderDesk project (the current project is the aider-desk repository)
+
+**Then:** Offer three options:
+1. **Current Project** — Install to `.aider-desk/extensions/` in the current project (project-scoped)
+2. **Global** — Install to `~/.aider-desk/extensions/` (available in all projects)
+3. **In-Repo** — Create inside `packages/extensions/extensions/` (ships with AiderDesk app)
+
+**If:** Working outside the AiderDesk project
+
+**Then:** Offer two options:
+1. **Current Project** — Install to `.aider-desk/extensions/` in the current project (project-scoped)
+2. **Global** — Install to `~/.aider-desk/extensions/` (available in all projects)
+
+**Must:** Wait for user's choice before proceeding. The chosen target determines the entire workflow.
+
+**Reference:** [references/install-targets.md](references/install-targets.md) for full details on each target.
+
+### Rule: Follow the correct flow for the chosen target
+
+**When:** User has chosen an installation target
+
+**If:** Target is **Current Project** or **Global**
+
+**Then:** Follow the [Project / Global Flow](references/project-global-flow.md):
+1. Determine extension type (single-file or folder)
+2. Create extension file(s) in the target directory (`.aider-desk/extensions/` or `~/.aider-desk/extensions/`)
+3. Implement Extension interface methods
+4. Export metadata and default class
+5. Verify the extension loads (auto-discovered, no registry needed)
+
+**If:** Target is **In-Repo**
+
+**Then:** Follow the [In-Repo Flow](references/in-repo-flow.md):
+1. Determine extension type (single-file or folder)
+2. Create extension file(s) in `packages/extensions/extensions/`
+3. Implement Extension interface methods
+4. Export metadata and default class
+5. **Register in `packages/extensions/extensions.json`**
+6. **Document in `docs-site/docs/extensions/examples.md`**
+7. Install npm dependencies if folder extension
+8. Verify with type checking
+
+### Rule: Determine extension type
+
+**When:** Creating extension files (after target is chosen)
 
 **Then:** Check if extension needs npm dependencies or multiple files
 
 **If:** Extension needs dependencies or multiple files
 
-**Then:** Create folder extension in `packages/extensions/extensions/my-extension/`
+**Then:** Create folder extension
 
 **If:** Extension is simple with no dependencies
 
-**Then:** Create single-file extension in `packages/extensions/extensions/my-extension.ts`
+**Then:** Create single-file extension
 
 ### Rule: Implement Extension interface
 
@@ -44,9 +92,9 @@ Do not use when:
 
 **Then:** Implement required methods from Extension interface
 
-**Must:** Export `metadata` object with name, version, description, author, capabilities
+**Must:** Define `static metadata` property on the class with name, version, description, author, capabilities
 
-**Must:** Export class as `default`
+**Must:** Export class as `default` (e.g., `export default class MyExtension implements Extension`)
 
 **Never:** Use `@/` imports in extension files
 
@@ -82,9 +130,9 @@ Do not use when:
 
 **Never:** Use `'extension-settings'` placement — it was removed; use the dedicated config API instead
 
-### Rule: Update extensions.json
+### Rule: Update registry and docs (In-Repo only)
 
-**When:** Extension file created
+**When:** Target is In-Repo and extension file is created
 
 **Then:** Add entry to `packages/extensions/extensions.json`
 
@@ -92,13 +140,13 @@ Do not use when:
 
 **Must:** Set `hasDependencies: true` for folder extensions
 
-### Rule: Update documentation
-
-**When:** Extension is complete
-
 **Then:** Add entry to `docs-site/docs/extensions/examples.md` table
 
 **Must:** Include extension name, description, capabilities, and type
+
+**When:** Target is Project or Global
+
+**Then:** Do NOT modify `extensions.json` or `examples.md` — these are only for built-in extensions
 
 ### Rule: Use proper TypeScript config for folders
 
@@ -116,35 +164,52 @@ Do not use when:
 
 **Never:** Store config outside extension directory
 
-## Process
+## Process Overview
 
-1. Determine extension type (single-file or folder)
-2. Create extension file or directory structure
-3. Implement Extension interface methods
-4. Export metadata and default class
-5. Update extensions.json
-6. Update docs-site/docs/extensions/examples.md
-7. Verify with code-checker
+### For Project / Global targets:
 
-**Between steps 3 and 4:**
+1. Ask user: Current Project or Global?
+2. Determine extension type (single-file or folder)
+3. Create extension file or directory structure in target dir
+4. Implement Extension interface methods
+5. Export metadata and default class
+6. Verify extension loads (auto-discovered)
 
+**Between steps 3 and 5:**
 - If extension needs config storage, create config.ts (or use inline getConfigData/saveConfigData)
 - If extension has a settings UI (config component), create ConfigComponent.jsx and implement the three config methods
 - If extension needs logging, create logger.ts
 - If extension needs constants, create constants.ts
 - If extension has placement-based UI components, create .jsx files for components (recommended for components > 20 lines)
 
+### For In-Repo target:
+
+1. Confirm user wants In-Repo (only available in aider-desk project)
+2. Determine extension type (single-file or folder)
+3. Create extension file or directory structure in `packages/extensions/extensions/`
+4. Implement Extension interface methods
+5. Export metadata and default class
+6. **Register in `packages/extensions/extensions.json`**
+7. **Document in `docs-site/docs/extensions/examples.md`**
+8. Run `npm install` in `packages/extensions/` (folder extensions)
+9. Verify with type checking
+
+**Between steps 3 and 5:**
+- Same optional files as Project/Global flow above
+
 ## Preconditions
 
 Before using this skill, verify:
 
+- Installation target has been chosen by the user
 - Extension purpose and required capabilities are clear
 - Extension type (single-file or folder) is determined
 - Extension interface and types are understood
 
 If any precondition fails:
 
-- Review [packages/extensions/extensions.d.ts]({projectDir}/packages/extensions/extensions.d.ts)
+- Review [packages/common/src/extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) for types
+- Check [references/install-targets.md](references/install-targets.md) for target options
 - Check [references/event-types.md](references/event-types.md) for event types
 - Check [references/command-definition.md](references/command-definition.md) for command structure
 
@@ -153,12 +218,15 @@ If any precondition fails:
 After completing this skill, verify:
 
 - Extension implements Extension interface correctly
-- Metadata export includes all required fields
+- Static `metadata` property on the class includes all required fields (name, version)
 - Default export is the extension class
 - No `@/` imports used
-- extensions.json updated correctly
-- docs-site/docs/extensions/examples.md updated
-- Passes code-checker verification
+- **If In-Repo:** extensions.json updated correctly
+- **If In-Repo:** docs-site/docs/extensions/examples.md updated
+- **If In-Repo:** Type checking passes
+- Extension loads without errors
+- Extension appears in extensions list
+- Extension capabilities work as expected
 
 **Success metrics:**
 
@@ -192,6 +260,16 @@ After completing this skill, verify:
 - Load data: Implement getUIExtensionData() if component needs data
 - Handle actions: Implement executeUIExtensionAction() for user interactions
 
+**Situation:** Extension needs to log messages
+
+**Pattern:**
+- If: Debug/internal logging (developer diagnostics, not shown to users)
+- Then: Use `context.log(message, type)` — logs to backend console only
+- If: User-visible output (showing results, status, timing info in the chat)
+- Then: Use `context.getTaskContext()?.addLogMessage(level, message)` — displays in task's chat UI
+- When ambiguous: If the user says "log", "show", "display", or "report" something, default to `addLogMessage` (user-visible). Use `context.log` only for internal diagnostics.
+- Note: `context.log` is always available; `getTaskContext()` returns `null` outside a task, so always use optional chaining (`?.`)
+
 **Situation:** Extension needs config storage
 
 **Pattern:**
@@ -211,13 +289,25 @@ After completing this skill, verify:
 
 ## References
 
-- [packages/common/src/extensions.ts]({projectDir}/packages/common/src/extensions.ts) - Extension types and interfaces
+### Target Selection
+
+- [install-targets.md](references/install-targets.md) - All three installation targets, when to use each, key differences
+
+### Flows
+
+- [project-global-flow.md](references/project-global-flow.md) - Step-by-step for Project and Global installations
+- [in-repo-flow.md](references/in-repo-flow.md) - Step-by-step for In-Repo (packages/extensions/) installations
+
+### Technical Reference (all targets)
+
+- [packages/common/src/extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) - Extension types and interfaces
+- [extension-interface.md](references/extension-interface.md) - Full Extension interface, ExtensionContext, TaskContext, Metadata
+- [extension-types.md](references/extension-types.md) - Single-file vs folder extensions, examples, extensions.json format
 - [event-types.md](references/event-types.md) - All event types and payloads
 - [command-definition.md](references/command-definition.md) - Command structure
 - [ui-components.md](references/ui-components.md) - UI component system, placements, and available components
 - [config-components.md](references/config-components.md) - Config component API (settings UI), methods, JSX format, and patterns
 - [examples-gallery.md](references/examples-gallery.md) - Real extension examples
-- [extension-types.md](references/extension-types.md) - Single-file vs folder extensions
 
 ## Assets
 

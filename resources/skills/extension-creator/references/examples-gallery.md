@@ -25,8 +25,17 @@ const THEME_COMMAND: CommandDefinition = {
   }
 };
 
-class ThemeExtension implements Extension {
+export default class ThemeExtension implements Extension {
+  static metadata = {
+    name: 'Theme Extension',
+    version: '1.0.0',
+    description: 'Adds /theme command',
+    author: 'my_git_name',
+    capabilities: ['commands'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
+    // context.log() outputs to backend console only; for user-visible messages use context.getTaskContext()?.addLogMessage()
     context.log('Theme Extension loaded', 'info');
   }
 
@@ -34,16 +43,6 @@ class ThemeExtension implements Extension {
     return [THEME_COMMAND];
   }
 }
-
-export const metadata = {
-  name: 'Theme Extension',
-  version: '1.0.0',
-  description: 'Adds /theme command',
-  author: 'my_git_name',
-  capabilities: ['commands']
-};
-
-export default ThemeExtension;
 ```
 
 ### Plan Mode (Modes + Events)
@@ -54,7 +53,15 @@ import type { Extension, ExtensionContext, ModeDefinition, AgentStartedEvent } f
 
 const PLAN_USER_MESSAGE = 'Create a plan before coding...';
 
-class PlanModeExtension implements Extension {
+export default class PlanModeExtension implements Extension {
+  static metadata = {
+    name: 'Plan Mode',
+    version: '1.0.0',
+    description: 'Adds Plan mode',
+    author: 'my_git_name',
+    capabilities: ['modes', 'events'],
+  };
+
   getModes(): ModeDefinition[] {
     return [{ name: 'plan', label: 'Plan', description: 'Plan first', icon: 'GoProjectRoadmap' }];
   }
@@ -71,16 +78,6 @@ class PlanModeExtension implements Extension {
     };
   }
 }
-
-export const metadata = {
-  name: 'Plan Mode',
-  version: '1.0.0',
-  description: 'Adds Plan mode',
-  author: 'my_git_name',
-  capabilities: ['modes', 'events']
-};
-
-export default PlanModeExtension;
 ```
 
 ### Permission Gate (Blocking)
@@ -91,7 +88,15 @@ import type { Extension, ExtensionContext, ToolCalledEvent } from '@aiderdesk/ex
 
 const DANGEROUS_PATTERNS = ['rm -rf', 'sudo', 'chmod 777'];
 
-class PermissionGateExtension implements Extension {
+export default class PermissionGateExtension implements Extension {
+  static metadata = {
+    name: 'Permission Gate',
+    version: '1.0.0',
+    description: 'Prompts for dangerous commands',
+    author: 'my_git_name',
+    capabilities: ['events'],
+  };
+
   async onToolCalled(event: ToolCalledEvent, context: ExtensionContext): Promise<Partial<ToolCalledEvent>> {
     if (event.tool !== 'power---bash') return {};
 
@@ -109,16 +114,6 @@ class PermissionGateExtension implements Extension {
     return {};
   }
 }
-
-export const metadata = {
-  name: 'Permission Gate',
-  version: '1.0.0',
-  description: 'Prompts for dangerous commands',
-  author: 'my_git_name',
-  capabilities: ['events']
-};
-
-export default PermissionGateExtension;
 ```
 
 ## Folder Examples
@@ -499,6 +494,7 @@ export default class ExternalRulesExtension implements Extension {
   }
 
   async onLoad(context: ExtensionContext): Promise<void> {
+    // context.log() outputs to backend console only; for user-visible messages use context.getTaskContext()?.addLogMessage()
     context.log('External Rules Extension loaded', 'info');
   }
 

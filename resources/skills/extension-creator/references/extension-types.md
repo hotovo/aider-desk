@@ -12,21 +12,19 @@ AiderDesk supports two types of extensions: single-file and folder extensions.
 ```typescript
 import type { Extension, ExtensionContext } from '@aiderdesk/extensions';
 
-class MyExtension implements Extension {
+export default class MyExtension implements Extension {
+  static metadata = {
+    name: 'My Extension',
+    version: '1.0.0',
+    description: 'What this extension does',
+    author: 'Author Name',
+    capabilities: ['events', 'commands'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Extension loaded', 'info');
   }
 }
-
-export const metadata = {
-  name: 'My Extension',
-  version: '1.0.0',
-  description: 'What this extension does',
-  author: 'Author Name',
-  capabilities: ['events', 'commands'],
-};
-
-export default MyExtension;
 ```
 
 **Advantages:**
@@ -119,7 +117,15 @@ packages/extensions/extensions/my-extension/
 ```typescript
 import type { Extension, ExtensionContext, AgentStartedEvent } from '@aiderdesk/extensions';
 
-class SimpleExtension implements Extension {
+export default class SimpleExtension implements Extension {
+  static metadata = {
+    name: 'Simple Extension',
+    version: '1.0.0',
+    description: 'Simple event handler',
+    author: 'Author Name',
+    capabilities: ['events'],
+  };
+
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Simple extension loaded', 'info');
   }
@@ -132,16 +138,6 @@ class SimpleExtension implements Extension {
     return { contextMessages: [...event.contextMessages] };
   }
 }
-
-export const metadata = {
-  name: 'Simple Extension',
-  version: '1.0.0',
-  description: 'Simple event handler',
-  author: 'Author Name',
-  capabilities: ['events'],
-};
-
-export default SimpleExtension;
 ```
 
 ### Folder: Extension with Config and Dependencies

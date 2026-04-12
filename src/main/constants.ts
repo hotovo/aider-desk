@@ -31,6 +31,7 @@ export const AIDER_DESK_EXTENSIONS_DIR = path.join(AIDER_DESK_DIR, 'extensions')
 export const AIDER_DESK_GLOBAL_EXTENSIONS_DIR = path.join(homedir(), AIDER_DESK_DIR, 'extensions');
 export const AIDER_DESK_PROMPTS_DIR = path.join(AIDER_DESK_DIR, 'prompts');
 export const AIDER_DESK_DEFAULT_PROMPTS_DIR = path.join(RESOURCES_DIR, 'prompts');
+export const AIDER_DESK_BUILTIN_SKILLS_DIR = path.join(RESOURCES_DIR, 'skills');
 export const AIDER_DESK_GLOBAL_PROMPTS_DIR = path.join(homedir(), AIDER_DESK_DIR, 'prompts');
 export const AIDER_DESK_AGENTS_DIR = path.join(AIDER_DESK_DIR, 'agents');
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');

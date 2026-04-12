@@ -13,7 +13,15 @@ const DEFAULT_CONFIG: {EXTENSION_NAME}Config = {
   // Add default config values
 };
 
-class {CLASS_NAME} implements Extension {
+export default class {CLASS_NAME} implements Extension {
+  static metadata = {
+    name: '{EXTENSION_NAME}',
+    version: '1.0.0',
+    description: '{DESCRIPTION}',
+    author: '{AUTHOR}',
+    capabilities: ['events', 'commands'],
+  };
+
   private config: {EXTENSION_NAME}Config = DEFAULT_CONFIG;
 
   async onLoad(context: ExtensionContext): Promise<void> {
@@ -32,13 +40,3 @@ class {CLASS_NAME} implements Extension {
     return undefined;
   }
 }
-
-export const metadata = {
-  name: '{EXTENSION_NAME}',
-  version: '1.0.0',
-  description: '{DESCRIPTION}',
-  author: '{AUTHOR}',
-  capabilities: ['events', 'commands'],
-};
-
-export default {CLASS_NAME};

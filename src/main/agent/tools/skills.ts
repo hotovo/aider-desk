@@ -10,10 +10,10 @@ import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
 
 import { ApprovalManager } from './approval-manager';
 
-import { AIDER_DESK_DIR } from '@/constants';
+import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR } from '@/constants';
 import { Task } from '@/task';
 
-type SkillLocation = 'global' | 'project';
+type SkillLocation = 'global' | 'project' | 'builtin';
 
 type Skill = {
   name: string;
@@ -113,9 +113,13 @@ export const createSkillsToolset = async (task: Task, profile: AgentProfile, pro
     const globalSkillsDir = path.join(homedir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
     const projectSkillsDir = path.join(task.getProjectDir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
 
-    const [globalSkills, projectSkills] = await Promise.all([loadSkillsFromDir(globalSkillsDir, 'global'), loadSkillsFromDir(projectSkillsDir, 'project')]);
+    const [globalSkills, projectSkills, builtinSkills] = await Promise.all([
+      loadSkillsFromDir(globalSkillsDir, 'global'),
+      loadSkillsFromDir(projectSkillsDir, 'project'),
+      loadSkillsFromDir(AIDER_DESK_BUILTIN_SKILLS_DIR, 'builtin'),
+    ]);
 
-    return getActivateSkillDescription([...projectSkills, ...globalSkills]);
+    return getActivateSkillDescription([...projectSkills, ...globalSkills, ...builtinSkills]);
   };
 
   const activateSkillTool = tool({
@@ -140,9 +144,13 @@ export const createSkillsToolset = async (task: Task, profile: AgentProfile, pro
       const globalSkillsDir = path.join(homedir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
       const projectSkillsDir = path.join(task.getProjectDir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
 
-      const [globalSkills, projectSkills] = await Promise.all([loadSkillsFromDir(globalSkillsDir, 'global'), loadSkillsFromDir(projectSkillsDir, 'project')]);
+      const [globalSkills, projectSkills, builtinSkills] = await Promise.all([
+        loadSkillsFromDir(globalSkillsDir, 'global'),
+        loadSkillsFromDir(projectSkillsDir, 'project'),
+        loadSkillsFromDir(AIDER_DESK_BUILTIN_SKILLS_DIR, 'builtin'),
+      ]);
 
-      const allSkills = [...projectSkills, ...globalSkills];
+      const allSkills = [...projectSkills, ...globalSkills, ...builtinSkills];
 
       const requested = allSkills.find((s) => s.name === skill);
       if (!requested) {

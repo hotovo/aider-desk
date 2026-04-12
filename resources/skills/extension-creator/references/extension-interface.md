@@ -69,7 +69,7 @@ interface Extension {
 
 ```typescript
 interface ExtensionContext {
-  // Logging
+  // Logging (backend/dev console only — NOT visible to users in chat UI)
   log(message: string, type: 'info' | 'error' | 'warn' | 'debug'): void;
 
   // Project access
@@ -98,7 +98,7 @@ interface ExtensionContext {
 
 ```typescript
 interface TaskContext {
-  // Logging to chat
+  // Logging to chat (visible to users in the task's chat UI)
   addLogMessage(level: 'info' | 'error' | 'warning', message?: string): void;
   addLoadingMessage(message?: string, finished?: boolean): void;
 
@@ -212,23 +212,29 @@ interface UIComponents {
 
 ## Metadata
 
+Metadata is defined as a **static property** on the extension class:
+
+```typescript
+export default class MyExtension implements Extension {
+  static metadata = {
+    name: 'My Extension',
+    version: '1.0.0',
+    description: 'What this extension does',
+    author: 'Author Name',
+    capabilities: ['events', 'commands'],
+  };
+}
+```
+
+**Important:** Metadata must be a `static` property on the class. Do NOT use a separate `export const metadata = { ... }` — the extension loader reads it from `ExtensionClass.metadata`.
+
 ```typescript
 interface ExtensionMetadata {
   name: string;
   version: string;
-  description: string;
-  author: string;
-  capabilities: (
-    | 'events'
-    | 'commands'
-    | 'tools'
-    | 'agents'
-    | 'modes'
-    | 'ui'
-    | 'onLoad'
-    | 'onAgentStarted'
-    | 'onToolCalled'
-    // ... other specific capabilities
-  )[];
+  description?: string;
+  author?: string;
+  capabilities?: string[];
+  iconUrl?: string;
 }
 ```
