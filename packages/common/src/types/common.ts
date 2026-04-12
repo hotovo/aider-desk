@@ -116,6 +116,11 @@ export enum DiffViewMode {
   Compact = 'compact',
 }
 
+export enum UpdatedFilesGroupMode {
+  Grouped = 'grouped',
+  Flat = 'flat',
+}
+
 export enum MessageViewMode {
   Full = 'full',
   Compact = 'compact',
@@ -316,6 +321,7 @@ export const ProjectSettingsSchema = z.object({
   contextCompactingThreshold: z.number().optional(),
   weakModelLocked: z.boolean().optional(),
   autoApproveLocked: z.boolean().optional(),
+  updatedFilesGroupMode: z.enum(['grouped', 'flat']).default('flat'),
 });
 
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;

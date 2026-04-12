@@ -52,6 +52,7 @@ describe('addProjectsFromEnv', () => {
       agentProfileId: 'default-profile-id',
       modelEditFormats: {},
       currentMode: 'agent' as const,
+      updatedFilesGroupMode: 'flat',
     });
 
     // Mock managers

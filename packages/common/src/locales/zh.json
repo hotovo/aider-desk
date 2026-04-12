@@ -1004,6 +1004,8 @@
     "generatingMessage": "生成中...",
     "committing": "提交中...",
     "commitError": "提交错误",
+    "groupByCommit": "按提交分组",
+    "flatView": "平铺视图（与基线的差异）",
     "uncommitted": "未提交",
     "group": "分组 {{hash}}",
     "updatedFilesWindowTitle": "已更新文件 - {{name}}",

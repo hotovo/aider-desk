@@ -1,10 +1,11 @@
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { ContextFile, OS, TokensInfoData, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
 import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
 
 import { createFileTree } from './types';
 import { SectionContent } from './SectionContent';
@@ -12,12 +13,12 @@ import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
 import { groupFilesByCommit, UNCOMMITTED_GROUP_ID } from './group-files';
 
 import type { DiffModalGroup } from './UpdatedFilesDiffModal';
-import type { TreeItem, SectionType } from './types';
+import type { SectionType, TreeItem } from './types';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
-import { ROUTES, URL_PARAMS, encodeBaseDir } from '@/utils/routes';
+import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 
 interface CommitGroup {
   id: string;
@@ -57,20 +58,43 @@ export const UpdatedFilesSection = ({
   const api = useApi();
 
   const [updatedFiles, setUpdatedFiles] = useState<UpdatedFile[]>([]);
+  const [groupMode, setGroupMode] = useState<UpdatedFilesGroupMode>(UpdatedFilesGroupMode.Grouped);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [groupExpandedItems, setGroupExpandedItems] = useState<Record<string, string[]>>({});
+  const [flatExpandedItems, setFlatExpandedItems] = useState<string[]>([]);
   const [isRefreshingUpdated, setIsRefreshingUpdated] = useState(false);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [diffModalSelectedFile, setDiffModalSelectedFile] = useState<UpdatedFile | null>(null);
   const [fileToRevert, setFileToRevert] = useState<string | null>(null);
   const [isRevertingFile, setIsRevertingFile] = useState(false);
 
+  // Read group mode from project settings on mount
+  useEffect(() => {
+    api.getProjectSettings(baseDir).then((settings) => {
+      const mode = settings.updatedFilesGroupMode as UpdatedFilesGroupMode;
+      if (mode === UpdatedFilesGroupMode.Flat || mode === UpdatedFilesGroupMode.Grouped) {
+        setGroupMode(mode);
+      }
+    });
+  }, [api, baseDir]);
+
+  const isGrouped = groupMode === UpdatedFilesGroupMode.Grouped;
+
   // Group files by commit hash; preserve commit order from backend (newest first in array),
   // then reverse for display (oldest first). Uncommitted always last.
-  const diffModalGroups: DiffModalGroup[] = useMemo(() => groupFilesByCommit(updatedFiles), [updatedFiles]);
+  const diffModalGroups: DiffModalGroup[] = useMemo(() => {
+    if (isGrouped) {
+      return groupFilesByCommit(updatedFiles);
+    }
+    return [{ id: '__flat__', files: updatedFiles }];
+  }, [updatedFiles, isGrouped]);
 
   // Extend DiffModalGroup with per-group stats for the section's tree/header UI
   const commitGroups = useMemo((): CommitGroup[] => {
+    if (!isGrouped) {
+      return [];
+    }
+
     return diffModalGroups.map((group) => ({
       id: group.id ?? UNCOMMITTED_GROUP_ID,
       commitHash: group.commitHash,
@@ -79,7 +103,7 @@ export const UpdatedFilesSection = ({
       additions: group.files.reduce((sum, f) => sum + f.additions, 0),
       deletions: group.files.reduce((sum, f) => sum + f.deletions, 0),
     }));
-  }, [diffModalGroups]);
+  }, [diffModalGroups, isGrouped]);
 
   const totalStats = useMemo(() => {
     return updatedFiles.reduce(
@@ -109,6 +133,17 @@ export const UpdatedFilesSection = ({
     return trees;
   }, [commitGroups, visitedSections]);
 
+  // Build tree data for flat mode
+  const flatTreeData = useMemo(() => {
+    if (!visitedSections.has('updated') || isGrouped) {
+      return undefined;
+    }
+    const allFileObjects: ContextFile[] = updatedFiles.map((f) => ({
+      path: f.path,
+    }));
+    return createFileTree(allFileObjects, 'root');
+  }, [updatedFiles, visitedSections, isGrouped]);
+
   // Auto-expand folder items in each group's tree when tree data changes
   useEffect(() => {
     setGroupExpandedItems((prev) => {
@@ -128,6 +163,16 @@ export const UpdatedFilesSection = ({
       return next;
     });
   }, [groupTreeData, commitGroups]);
+
+  // Auto-expand folders in flat tree when tree data changes
+  useEffect(() => {
+    if (!flatTreeData) {
+      return;
+    }
+
+    const allFolders = Object.keys(flatTreeData).filter((key) => flatTreeData[key].isFolder);
+    setFlatExpandedItems((prev) => Array.from(new Set([...prev, ...allFolders])));
+  }, [flatTreeData]);
 
   // Default: only the bottom-most (last) group is expanded.
   // Only re-run when group count changes, not on every file refresh,
@@ -176,6 +221,20 @@ export const UpdatedFilesSection = ({
     }
   }, [fetchUpdatedFiles]);
 
+  const handleToggleGroupMode = useCallback(async () => {
+    const newMode = isGrouped ? UpdatedFilesGroupMode.Flat : UpdatedFilesGroupMode.Grouped;
+    setGroupMode(newMode);
+    try {
+      await api.patchProjectSettings(baseDir, {
+        updatedFilesGroupMode: newMode,
+      });
+      await fetchUpdatedFiles();
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to update group mode:', error);
+    }
+  }, [api, baseDir, isGrouped, fetchUpdatedFiles]);
+
   const handleFileDiffClick = useCallback((file: UpdatedFile) => {
     setDiffModalSelectedFile(file);
     setDiffModalOpen(true);
@@ -223,6 +282,11 @@ export const UpdatedFilesSection = ({
   const updatedActions = useMemo(
     () => (
       <>
+        <Tooltip content={isGrouped ? t('contextFiles.flatView') : t('contextFiles.groupByCommit')}>
+          <button className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors" onClick={handleToggleGroupMode}>
+            {isGrouped ? <TbGitPullRequestDraft className="w-4 h-4" /> : <TbGitCommit className="w-4 h-4" />}
+          </button>
+        </Tooltip>
         <Tooltip content={t('contextFiles.viewChanges')}>
           <button
             className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors disabled:opacity-50"
@@ -242,7 +306,7 @@ export const UpdatedFilesSection = ({
         </Tooltip>
       </>
     ),
-    [t, updatedFiles, handleRefreshUpdatedFiles, isRefreshingUpdated],
+    [isGrouped, t, handleToggleGroupMode, updatedFiles, handleRefreshUpdatedFiles, isRefreshingUpdated],
   );
 
   const renderCommitGroupHeader = useCallback(
@@ -262,9 +326,9 @@ export const UpdatedFilesSection = ({
             </Tooltip>
           )}
 
-          <span className="text-4xs text-text-muted bg-bg-secondary-light px-1.5 rounded-full flex-shrink-0">{group.files.length}</span>
+          <span className="text-4xs text-text-muted bg-bg-secondary-light px-1.5 pt-0.5 rounded-full flex-shrink-0">{group.files.length}</span>
 
-          <span className="text-4xs ml-1.5 bg-bg-secondary-light px-1.5 rounded-full flex-shrink-0">
+          <span className="text-4xs ml-1.5 bg-bg-secondary-light pl-1 pr-1.5 rounded-full flex-shrink-0 pt-0.5">
             <span className="text-success">+{group.additions}</span>
             <span className="ml-0.5 text-error">-{group.deletions}</span>
           </span>
@@ -278,7 +342,7 @@ export const UpdatedFilesSection = ({
     [toggleGroup],
   );
 
-  const hasAnyContent = commitGroups.length > 0 && visitedSections.has('updated');
+  const hasAnyContent = (isGrouped ? commitGroups.length > 0 : updatedFiles.length > 0) && visitedSections.has('updated');
 
   return (
     <>
@@ -316,49 +380,69 @@ export const UpdatedFilesSection = ({
           </div>
         </div>
 
-        {/* Commit groups content */}
+        {/* Content area */}
         <Activity mode={isOpen ? 'visible' : 'hidden'}>
           <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded bg-bg-primary-light-strong relative">
             {hasAnyContent ? (
-              commitGroups.map((group) => {
-                const isGroupExpanded = expandedGroups.includes(group.id);
-                const tree = groupTreeData[group.id];
-                const expanded = groupExpandedItems[group.id] || [];
-                const isUncommitted = group.id === UNCOMMITTED_GROUP_ID;
+              <>
+                {isGrouped
+                  ? commitGroups.map((group) => {
+                      const isGroupExpanded = expandedGroups.includes(group.id);
+                      const tree = groupTreeData[group.id];
+                      const expanded = groupExpandedItems[group.id] || [];
+                      const isUncommitted = group.id === UNCOMMITTED_GROUP_ID;
 
-                return (
-                  <div key={group.id}>
-                    {renderCommitGroupHeader(group, isGroupExpanded)}
+                      return (
+                        <div key={group.id}>
+                          {renderCommitGroupHeader(group, isGroupExpanded)}
 
-                    {isGroupExpanded && tree && (
+                          {isGroupExpanded && tree && (
+                            <SectionContent
+                              section={'updated' as SectionType}
+                              treeData={tree}
+                              expandedItems={expanded}
+                              setExpandedItems={(items) =>
+                                setGroupExpandedItems((prev) => ({
+                                  ...prev,
+                                  [group.id]: typeof items === 'function' ? items(prev[group.id] || []) : items,
+                                }))
+                              }
+                              contextFilesMap={contextFilesMap}
+                              updatedFiles={group.files}
+                              tokensInfo={tokensInfo}
+                              os={os}
+                              onFileDiffClick={handleFileDiffClick}
+                              onFilePreviewClick={onFilePreviewClick}
+                              onRevertFile={(filePath) => {
+                                if (isUncommitted) {
+                                  handleRevertFile(filePath);
+                                }
+                              }}
+                              onDropFile={dropFile}
+                              onAddFile={addFile}
+                            />
+                          )}
+                        </div>
+                      );
+                    })
+                  : flatTreeData && (
                       <SectionContent
                         section={'updated' as SectionType}
-                        treeData={tree}
-                        expandedItems={expanded}
-                        setExpandedItems={(items) =>
-                          setGroupExpandedItems((prev) => ({
-                            ...prev,
-                            [group.id]: typeof items === 'function' ? items(prev[group.id] || []) : items,
-                          }))
-                        }
+                        treeData={flatTreeData}
+                        expandedItems={flatExpandedItems}
+                        setExpandedItems={(items) => setFlatExpandedItems(typeof items === 'function' ? items(flatExpandedItems) : items)}
                         contextFilesMap={contextFilesMap}
-                        updatedFiles={group.files}
+                        updatedFiles={updatedFiles}
                         tokensInfo={tokensInfo}
                         os={os}
                         onFileDiffClick={handleFileDiffClick}
                         onFilePreviewClick={onFilePreviewClick}
-                        onRevertFile={(filePath) => {
-                          if (isUncommitted) {
-                            handleRevertFile(filePath);
-                          }
-                        }}
+                        onRevertFile={handleRevertFile}
                         onDropFile={dropFile}
                         onAddFile={addFile}
                       />
                     )}
-                  </div>
-                );
-              })
+              </>
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-center text-text-muted text-2xs">{t('common.noFiles')}</div>
             )}

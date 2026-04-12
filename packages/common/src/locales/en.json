@@ -1052,6 +1052,8 @@
     "generatingMessage": "Generating...",
     "committing": "Committing...",
     "commitError": "Commit Error",
+    "groupByCommit": "Switch to group by commit view",
+    "flatView": "Switch to flat view (diff from base)",
     "uncommitted": "Uncommitted",
     "group": "Group {{hash}}",
     "updatedFilesWindowTitle": "Updated Files - {{name}}",

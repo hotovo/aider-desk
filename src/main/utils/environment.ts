@@ -305,5 +305,6 @@ export const getDefaultProjectSettings = (
     currentMode: 'agent',
     agentProfileId: defaultAgentProfileId,
     autoApproveLocked: false,
+    updatedFilesGroupMode: 'flat',
   };
 };

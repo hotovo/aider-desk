@@ -35,6 +35,7 @@ import {
   TokensInfoData,
   ToolData,
   UpdatedFile,
+  UpdatedFilesGroupMode,
   UsageReportData,
   UserMessageData,
   WorkingMode,
@@ -1901,7 +1902,9 @@ export class Task {
 
   public async getUpdatedFiles(): Promise<UpdatedFile[]> {
     const mainBranch = this.task.worktree ? await this.worktreeManager.getProjectMainBranch(this.project.baseDir) : undefined;
-    return await this.worktreeManager.getUpdatedFiles(this.getTaskDir(), this.task.workingMode, mainBranch);
+    const projectSettings = this.project.getProjectSettings();
+    const groupMode = (projectSettings.updatedFilesGroupMode as UpdatedFilesGroupMode) || UpdatedFilesGroupMode.Grouped;
+    return await this.worktreeManager.getUpdatedFiles(this.getTaskDir(), this.task.workingMode, mainBranch, groupMode);
   }
 
   public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]> {

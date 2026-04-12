@@ -325,10 +325,17 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
     resetLineState();
   }, [resetLineState, currentFile]);
 
+  // Whether data is in flat mode (single group with no commit hashes)
+  const isFlatMode = groups.length === 1 && !groups[0].commitHash;
+
   // Render a group section header for the all-files view
   const renderGroupHeader = useCallback(
     (group: DiffModalGroup) => {
       const isUncommitted = !group.commitHash;
+      // Skip rendering header for flat mode single group
+      if (isFlatMode) {
+        return null;
+      }
 
       return (
         <div className="flex items-center gap-2 px-3 py-2 bg-bg-primary border border-border-dark sticky top-0 z-10">
@@ -346,7 +353,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
         </div>
       );
     },
-    [t],
+    [t, isFlatMode],
   );
 
   if (!currentFile) {
@@ -434,7 +441,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
                 isFullWidth ? 'bg-bg-tertiary text-text-primary' : 'hover:bg-bg-tertiary text-text-secondary',
               )}
             />
-            {!isAllFilesView && !currentFile.commitHash && (
+            {!isAllFilesView && (!currentFile.commitHash || isFlatMode) && (
               <IconButton
                 icon={<MdUndo className="h-5 w-5" />}
                 onClick={handleRevertClick}
@@ -456,12 +463,12 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
             {groups.map((group, gi) => (
               <div key={group.id}>
                 {renderGroupHeader(group)}
-                <div className="space-y-3 mt-3">
+                <div className={isFlatMode ? 'space-y-3' : 'space-y-3 mt-3'}>
                   {group.files.map((file, fi) => {
                     const flatIdx = groupFileOffsets[gi] + fi;
                     return (
                       <DiffFileItem
-                        key={file.path}
+                        key={`${file.path}-${gi}`}
                         file={file}
                         index={flatIdx}
                         diffViewMode={diffViewMode}

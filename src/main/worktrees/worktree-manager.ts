@@ -7,6 +7,7 @@ import {
   MergeState,
   RebaseState,
   UpdatedFile,
+  UpdatedFilesGroupMode,
   WorkingMode,
   Worktree,
   WorktreeAheadCommits,
@@ -1455,13 +1456,23 @@ export class WorktreeManager {
   /**
    * Get updated files with per-commit and uncommitted diffs.
    *
-   * Worktree mode: returns files grouped by commit (with per-commit diffs)
+   * Worktree mode grouped: returns files grouped by commit (with per-commit diffs)
    * plus uncommitted files (with uncommitted diffs). A file can appear in multiple groups.
+   * Worktree mode flat: returns all changed files with cumulative diff from base,
+   * plus uncommitted changes vs HEAD. Each file appears once.
    * Non-worktree mode: returns uncommitted files only (diff vs HEAD).
    */
-  async getUpdatedFiles(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string): Promise<UpdatedFile[]> {
+  async getUpdatedFiles(
+    worktreePath: string,
+    workingMode?: WorkingMode,
+    mainBranch?: string,
+    groupMode: UpdatedFilesGroupMode = UpdatedFilesGroupMode.Grouped,
+  ): Promise<UpdatedFile[]> {
     try {
       if (workingMode === 'worktree' && mainBranch) {
+        if (groupMode === UpdatedFilesGroupMode.Flat) {
+          return await this.getWorktreeFlatUpdatedFiles(worktreePath, mainBranch);
+        }
         return await this.getWorktreeUpdatedFiles(worktreePath, mainBranch);
       }
       return await this.getNonWorktreeUpdatedFiles(worktreePath);
@@ -1620,6 +1631,72 @@ export class WorktreeManager {
       }
     } catch (uncommittedError) {
       logger.warn('Failed to get uncommitted changes:', uncommittedError);
+    }
+
+    return files;
+  }
+
+  /**
+   * Worktree flat mode: all changed files with diff from base to working tree,
+   * covering both committed and uncommitted changes in a single pass.
+   */
+  private async getWorktreeFlatUpdatedFiles(worktreePath: string, mainBranch: string): Promise<UpdatedFile[]> {
+    const files: UpdatedFile[] = [];
+
+    try {
+      // git diff (without ...) compares mainBranch directly to the working tree,
+      // including both committed and uncommitted changes.
+      const { stdout: numstatOutput } = await execWithShellPath(`git diff --numstat -z ${mainBranch}`, {
+        cwd: worktreePath,
+      });
+
+      const entries = numstatOutput.split('\0').filter((entry) => entry.trim() !== '');
+
+      for (const entry of entries) {
+        const parts = entry.split('\t');
+        if (parts.length < 3) {
+          continue;
+        }
+
+        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
+        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
+        const filePath = parts.slice(2).join('\t');
+        if (!filePath) {
+          continue;
+        }
+
+        const absoluteFilePath = join(worktreePath, filePath);
+
+        let diff = '';
+        try {
+          const fileExists = await fs
+            .access(absoluteFilePath)
+            .then(() => true)
+            .catch(() => false);
+
+          if (fileExists) {
+            const fileContentBuffer = await fs.readFile(absoluteFilePath);
+            if (isBinary(filePath, fileContentBuffer)) {
+              files.push({ path: filePath, additions, deletions, diff });
+              continue;
+            }
+          }
+
+          const escapedPath = filePath.replace(/"/g, '\\"');
+          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 ${mainBranch} -- "${escapedPath}"`, {
+            cwd: worktreePath,
+            maxBuffer: 10 * 1024 * 1024,
+          });
+          diff = diffOutput;
+        } catch (diffError) {
+          logger.warn(`Failed to get base diff for file ${filePath}:`, diffError);
+          diff = '';
+        }
+
+        files.push({ path: filePath, additions, deletions, diff });
+      }
+    } catch (baseDiffError) {
+      logger.warn('Failed to get base diff for worktree:', baseDiffError);
     }
 
     return files;
