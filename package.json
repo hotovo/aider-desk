@@ -223,6 +223,7 @@
     "electron": "^39.8.5",
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
+    "encoding": "^0.1.13",
     "esbuild": "^0.25.9",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^9.1.0",
