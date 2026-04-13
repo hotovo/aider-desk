@@ -1712,10 +1712,10 @@ import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
-import { AIDER_DESK_DIR } from '@/constants';
+import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR } from '@/constants';
 import { Task } from '@/task';
 ⋮----
-type SkillLocation = 'global' | 'project';
+type SkillLocation = 'global' | 'project' | 'builtin';
 ⋮----
 type Skill = {
   name: string;
@@ -8251,6 +8251,7 @@ import {
   TokensInfoData,
   ToolData,
   UpdatedFile,
+  UpdatedFilesGroupMode,
   UsageReportData,
   UserMessageData,
   WorkingMode,
@@ -9954,6 +9955,7 @@ import {
   MergeState,
   RebaseState,
   UpdatedFile,
+  UpdatedFilesGroupMode,
   WorkingMode,
   Worktree,
   WorktreeAheadCommits,
@@ -10324,11 +10326,18 @@ async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFile
 /**
    * Get updated files with per-commit and uncommitted diffs.
    *
-   * Worktree mode: returns files grouped by commit (with per-commit diffs)
+   * Worktree mode grouped: returns files grouped by commit (with per-commit diffs)
    * plus uncommitted files (with uncommitted diffs). A file can appear in multiple groups.
+   * Worktree mode flat: returns all changed files with cumulative diff from base,
+   * plus uncommitted changes vs HEAD. Each file appears once.
    * Non-worktree mode: returns uncommitted files only (diff vs HEAD).
    */
-async getUpdatedFiles(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string): Promise<UpdatedFile[]>
+async getUpdatedFiles(
+    worktreePath: string,
+    workingMode?: WorkingMode,
+    mainBranch?: string,
+    groupMode: UpdatedFilesGroupMode = UpdatedFilesGroupMode.Grouped,
+): Promise<UpdatedFile[]>
 ⋮----
 /**
    * Worktree mode: separate committed (per-commit) and uncommitted file diffs.
@@ -10354,6 +10363,15 @@ private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string):
 // If we can't check, keep the diff as-is
 ⋮----
 // 3. Get uncommitted changes (diff against HEAD, not merge-base)
+⋮----
+/**
+   * Worktree flat mode: all changed files with diff from base to working tree,
+   * covering both committed and uncommitted changes in a single pass.
+   */
+private async getWorktreeFlatUpdatedFiles(worktreePath: string, mainBranch: string): Promise<UpdatedFile[]>
+⋮----
+// git diff (without ...) compares mainBranch directly to the working tree,
+// including both committed and uncommitted changes.
 ⋮----
 /**
    * Non-worktree mode: simple uncommitted changes vs HEAD.
@@ -10893,7 +10911,7 @@ import { ContextMenuParams } from '@common/types';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron';
 ⋮----
-import icon from '../../resources/icon.png?asset';
+import icon from '../../build/icon.png?asset';
 import splashImage from '../../build/splash.mp4?asset';
 ⋮----
 import { AIDER_DESK_DATA_DIR, HEADLESS_MODE } from '@/constants';
@@ -14062,7 +14080,11 @@ type Props = {
 ⋮----
 // Scroll to the active file when in view-all mode
 ⋮----
+// Whether data is in flat mode (single group with no commit hashes)
+⋮----
 // Render a group section header for the all-files view
+⋮----
+// Skip rendering header for flat mode single group
 ⋮----
 title=
 ⋮----
@@ -14083,13 +14105,14 @@ isGeneratingMessage
 ================
 File: src/renderer/src/components/ContextFiles/UpdatedFilesSection.tsx
 ================
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { ContextFile, OS, TokensInfoData, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
 import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
 ⋮----
 import { createFileTree } from './types';
 import { SectionContent } from './SectionContent';
@@ -14097,12 +14120,12 @@ import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
 import { groupFilesByCommit, UNCOMMITTED_GROUP_ID } from './group-files';
 ⋮----
 import type { DiffModalGroup } from './UpdatedFilesDiffModal';
-import type { TreeItem, SectionType } from './types';
+import type { SectionType, TreeItem } from './types';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
-import { ROUTES, URL_PARAMS, encodeBaseDir } from '@/utils/routes';
+import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 ⋮----
 interface CommitGroup {
   id: string;
@@ -14126,6 +14149,8 @@ type Props = {
   taskName?: string;
 };
 ⋮----
+// Read group mode from project settings on mount
+⋮----
 // Group files by commit hash; preserve commit order from backend (newest first in array),
 // then reverse for display (oldest first). Uncommitted always last.
 ⋮----
@@ -14133,7 +14158,11 @@ type Props = {
 ⋮----
 // Build tree data for each group — use 'root' as root key since SectionContent expects it
 ⋮----
+// Build tree data for flat mode
+⋮----
 // Auto-expand folder items in each group's tree when tree data changes
+⋮----
+// Auto-expand folders in flat tree when tree data changes
 ⋮----
 // Default: only the bottom-most (last) group is expanded.
 // Only re-run when group count changes, not on every file refresh,
@@ -14147,24 +14176,21 @@ type Props = {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-<Tooltip content=
-⋮----
-setDiffModalSelectedFile(updatedFiles[0] || null);
-setDiffModalOpen(true);
+// eslint-disable-next-line no-console
 ⋮----
 className=
 ⋮----
 {/* Outer section header */}
 ⋮----
-{/* Commit groups content */}
+{/* Content area */}
 ⋮----
 {renderCommitGroupHeader(group, isGroupExpanded)}
 
-                    {isGroupExpanded && tree && (
-                      <SectionContent
-                        section={'updated' as SectionType}
-                        treeData={tree}
-                        expandedItems={expanded}
+                          {isGroupExpanded && tree && (
+                            <SectionContent
+                              section={'updated' as SectionType}
+                              treeData={tree}
+                              expandedItems={expanded}
 setExpandedItems=
 ⋮----
 setExpandedItems=
@@ -25776,7 +25802,7 @@ File: src/renderer/index.html
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' blob: 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http: https: ws: wss:; frame-src http: https:;"
+      content="default-src 'self'; script-src 'self' blob: 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' data: http: https: ws: wss:; frame-src http: https:;"
     />
     <link rel="stylesheet" href="/src/fonts.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -26400,6 +26426,7 @@ File: package.json
     "electron": "^39.8.5",
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
+    "encoding": "^0.1.13",
     "esbuild": "^0.25.9",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^9.1.0",
