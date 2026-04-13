@@ -27,6 +27,10 @@ extraResources:
     to: prompts
     filter:
       - '**/*'
+  - from: ./resources/skills
+    to: skills
+    filter:
+      - '**/*'
 asarUnpack:
   - '**/node_modules/sharp/**/*'
   - '**/node_modules/@img/**/*'
