@@ -437,6 +437,7 @@
       "hotkeys": "快捷键",
       "extensions": "扩展",
       "server": "服务器",
+      "network": "网络",
       "memory": "记忆",
       "tasks": "任务",
       "voice": "语音",
@@ -1477,6 +1478,14 @@
     "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)",
     "modeAtSign": "@ 提及模式"
   },
+  "network": {
+    "proxy": "代理",
+    "enableProxy": "启用代理",
+    "enableProxyDescription": "通过代理服务器路由所有 HTTP/HTTPS 流量。影响 LLM API 调用、扩展获取、更新检查和所有其他出站请求。",
+    "proxyUrl": "代理 URL",
+    "proxyUrlPlaceholder": "http://127.0.0.1:8888",
+    "proxyUrlDescription": "HTTP 或 SOCKS5 代理服务器地址"
+  },
   "server": {
     "description": "启用 服务器，允许您通过浏览器在端口 24337 访问 AiderDesk",
     "serverStatus": "服务器状态",
@@ -1497,8 +1506,6 @@
     "tunnelStarting": "正在启动...",
     "tunnelStopping": "正在停止...",
     "copyUrl": "复制 URL",
-    "authentication": "身份验证",
-    "serverControl": "服务器控制",
     "tunnelManagement": "隧道管理",
     "tunnelDescription": "创建 Cloudflare 隧道以安全地从外部网络访问您的服务器。当对外暴露服务器时，请务必使用身份验证。"
   },

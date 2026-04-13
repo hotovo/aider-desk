@@ -1,8 +1,8 @@
-import { Font, ProjectData, SettingsData, Theme, AgentProfile, ProviderProfile } from '@common/types';
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { AgentProfile, Font, ProjectData, ProviderProfile, SettingsData, Theme } from '@common/types';
+import { ReactNode, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone, FaKeyboard, FaPuzzlePiece } from 'react-icons/fa';
+import { FaBrain, FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaKeyboard, FaMicrophone, FaPuzzlePiece, FaRobot, FaServer } from 'react-icons/fa';
 import { MdTerminal } from 'react-icons/md';
 import { LuClipboardList } from 'react-icons/lu';
 
@@ -12,14 +12,14 @@ import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
-import { ServerSettings } from '@/components/settings/ServerSettings';
+import { NetworkSettings } from '@/components/settings/NetworkSettings';
 import { MemorySettings } from '@/components/settings/MemorySettings';
 import { VoiceSettings } from '@/components/settings/VoiceSettings';
 import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
 import { TaskSettings } from '@/components/settings/TaskSettings';
 import { ExtensionsSettings } from '@/components/settings/ExtensionsSettings';
 
-type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
+type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'network' | 'extensions' | 'about';
 
 interface SidebarItem {
   id: string;
@@ -66,15 +66,10 @@ export const Settings = ({
 }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
-  const [isServerManagementSupported, setIsServerManagementSupported] = useState(false);
 
   const [activePage, setActivePage] = useState<PageId>((initialPageId as PageId) || 'general');
   const [selectedProfileContext, setSelectedProfileContext] = useState<string>('global');
   const contentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setIsServerManagementSupported(api.isManageServerSupported());
-  }, [api]);
 
   const sidebarItems: SidebarItem[] = [
     {
@@ -155,27 +150,23 @@ export const Settings = ({
         })),
       ],
     },
-    ...(isServerManagementSupported
-      ? [
-          {
-            id: 'server',
-            pageId: 'server' as PageId,
-            label: t('settings.tabs.server'),
-            icon: <FaServer className="w-4 h-4" />,
-            children: [
-              { id: 'server-auth', label: t('settings.server.authentication') },
-              {
-                id: 'server-control',
-                label: t('settings.server.serverControl'),
-              },
-              {
-                id: 'server-tunnel',
-                label: t('settings.server.tunnelManagement'),
-              },
-            ],
-          },
-        ]
-      : []),
+    api.isManageServerSupported()
+      ? {
+          id: 'network',
+          pageId: 'network' as PageId,
+          label: t('settings.tabs.network'),
+          icon: <FaServer className="w-4 h-4" />,
+          children: [
+            { id: 'network-proxy', label: t('settings.network.proxy') },
+            { id: 'network-server', label: t('settings.tabs.server') },
+          ],
+        }
+      : {
+          id: 'network',
+          pageId: 'network' as PageId,
+          label: t('settings.tabs.network'),
+          icon: <FaServer className="w-4 h-4" />,
+        },
     {
       id: 'about',
       pageId: 'about',
@@ -255,8 +246,8 @@ export const Settings = ({
         return (
           <ExtensionsSettings settings={settings} setSettings={updateSettings} openProjects={openProjects} selectedProjectContext={selectedProfileContext} />
         );
-      case 'server':
-        return <ServerSettings settings={settings} setSettings={updateSettings} />;
+      case 'network':
+        return <NetworkSettings settings={settings} setSettings={updateSettings} />;
       case 'about':
         return <AboutSettings settings={settings} setSettings={updateSettings} onShowLogs={onShowLogs} />;
       default:

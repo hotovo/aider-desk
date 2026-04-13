@@ -82,6 +82,7 @@ import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager, ExtensionEventMap } from '@/extensions/extension-manager';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
+import { getProxyEnvVars } from '@/proxy-manager';
 
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
@@ -2913,6 +2914,7 @@ export class Task {
     const aiderWatchFilesChanged = oldSettings.aider.watchFiles !== newSettings?.aider.watchFiles;
     const aiderCachingEnabledChanged = oldSettings.aider.cachingEnabled !== newSettings?.aider.cachingEnabled;
     const aiderConfirmBeforeEditChanged = oldSettings.aider.confirmBeforeEdit !== newSettings?.aider.confirmBeforeEdit;
+    const proxyChanged = oldSettings.proxy?.enabled !== newSettings.proxy?.enabled || oldSettings.proxy?.url !== newSettings.proxy?.url;
 
     if (
       (aiderOptionsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged || aiderCachingEnabledChanged || aiderConfirmBeforeEditChanged) &&
@@ -2920,9 +2922,12 @@ export class Task {
     ) {
       logger.debug('Aider options changed, restarting Aider.');
       void this.aiderManager.start(true);
-    } else if (aiderEnvVarsChanged) {
+    } else if (aiderEnvVarsChanged || proxyChanged) {
       logger.debug('Aider environment variables changed, updating connectors.');
-      const updatedEnvironmentVariables = getEnvironmentVariablesForAider(newSettings, this.project.baseDir);
+      const updatedEnvironmentVariables = {
+        ...getEnvironmentVariablesForAider(newSettings, this.project.baseDir),
+        ...getProxyEnvVars(newSettings),
+      };
       this.sendUpdateEnvVars(updatedEnvironmentVariables);
     }
   }

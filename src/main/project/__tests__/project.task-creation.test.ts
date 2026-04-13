@@ -146,6 +146,10 @@ describe('Project - createNewTask', () => {
             mcpServers: {},
             llmProviders: {},
             telemetryEnabled: true,
+            proxy: {
+              enabled: false,
+              url: '',
+            },
           }) as SettingsData,
       ),
       getProviders: vi.fn(() => []),

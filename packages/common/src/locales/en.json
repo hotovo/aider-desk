@@ -442,6 +442,7 @@
       "hotkeys": "Hotkeys",
       "extensions": "Extensions",
       "server": "Server",
+      "network": "Network",
       "about": "About"
     },
     "extensions": {
@@ -833,6 +834,14 @@
       "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field.",
       "modeAtSign": "@ mention mode"
     },
+    "network": {
+      "proxy": "Proxy",
+      "enableProxy": "Enable Proxy",
+      "enableProxyDescription": "Route all HTTP/HTTPS traffic through a proxy server. Affects LLM API calls, extension fetching, update checks, and all other outbound requests.",
+      "proxyUrl": "Proxy URL",
+      "proxyUrlPlaceholder": "http://127.0.0.1:8888",
+      "proxyUrlDescription": "HTTP or SOCKS5 proxy server address"
+    },
     "server": {
       "description": "Enable server on port 24337 to access AiderDesk from external applications",
       "status": "Status",
@@ -848,8 +857,6 @@
       "stop": "Stop",
       "stopped": "Stopped",
       "copyUrl": "Copy URL",
-      "authentication": "Authentication",
-      "serverControl": "Server Control",
       "tunnelManagement": "Tunnel Management",
       "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally."
     },

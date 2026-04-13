@@ -631,6 +631,10 @@ export interface SettingsData {
   taskSettings: TaskSettings;
   hotkeyConfig?: HotkeyConfig;
   extensions?: ExtensionsConfig;
+  proxy: {
+    enabled: boolean;
+    url: string;
+  };
 }
 
 export interface ProviderProfile {

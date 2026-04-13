@@ -123,6 +123,10 @@ describe('Project - createNewTask', () => {
             mcpServers: {},
             llmProviders: {},
             telemetryEnabled: true,
+            proxy: {
+              enabled: false,
+              url: '',
+            },
           }) as SettingsData,
       ),
       getProviders: vi.fn(() => []),
@@ -487,6 +491,10 @@ describe('Project - deleteTask', () => {
             mcpServers: {},
             llmProviders: {},
             telemetryEnabled: true,
+            proxy: {
+              enabled: false,
+              url: '',
+            },
           }) as SettingsData,
       ),
       getProjectSettings: vi.fn(

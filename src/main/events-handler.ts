@@ -58,6 +58,7 @@ import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePath
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
 import { isElectron } from '@/app';
+import { ProxyManager } from '@/proxy-manager';
 
 export class EventsHandler {
   constructor(
@@ -74,6 +75,7 @@ export class EventsHandler {
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly proxyManager: ProxyManager,
     private readonly windowManager?: WindowManager,
   ) {}
 
@@ -84,6 +86,9 @@ export class EventsHandler {
   async saveSettings(newSettings: SettingsData): Promise<SettingsData> {
     const oldSettings = this.store.getSettings();
     this.store.saveSettings(newSettings);
+
+    // Re-initialize proxy if settings changed
+    this.proxyManager.settingsChanged(oldSettings, newSettings);
 
     void this.projectManager.settingsChanged(oldSettings, newSettings);
     this.telemetryManager.settingsChanged(oldSettings, newSettings);

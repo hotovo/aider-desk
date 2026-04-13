@@ -18,6 +18,7 @@ import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
 import logger, { initEventLogging } from '@/logger';
+import { ProxyManager } from '@/proxy-manager';
 import { EventsHandler } from '@/events-handler';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
@@ -33,6 +34,10 @@ export interface ManagersResult {
 }
 
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> => {
+  // Initialize proxy manager FIRST — must be before any network calls
+  const proxyManager = new ProxyManager();
+  proxyManager.init(store.getSettings());
+
   // Initialize telemetry manager (non-blocking - analytics not critical for startup)
   const telemetryManager = new TelemetryManager(store);
   telemetryManager.init().catch((error) => {
@@ -130,6 +135,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     agentProfileManager,
     memoryManager,
     extensionManager,
+    proxyManager,
     windowManager,
   );
 

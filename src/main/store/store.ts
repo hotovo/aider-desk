@@ -102,6 +102,10 @@ export const DEFAULT_SETTINGS: SettingsData = {
     repositories: [AIDER_DESK_EXTENSIONS_REPO_URL],
     disabled: [],
   },
+  proxy: {
+    enabled: false,
+    url: '',
+  },
 };
 
 const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean => {

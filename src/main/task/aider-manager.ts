@@ -18,6 +18,7 @@ import { EventManager } from '@/events';
 import { getEnvironmentVariablesForAider } from '@/utils';
 import { Task } from '@/task/task';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
+import { getProxyEnvVars } from '@/proxy-manager';
 
 export class AiderManager {
   private aiderProcess: ChildProcessWithoutNullStreams | null = null;
@@ -154,11 +155,14 @@ export class AiderManager {
       args,
     });
 
+    const proxyEnvVars = getProxyEnvVars(settings);
+
     const env = {
       ...process.env,
       ...environmentVariables,
       ...envFromMain,
       ...envFromWeak,
+      ...proxyEnvVars,
       PYTHONPATH: AIDER_DESK_CONNECTOR_DIR,
       PYTHONUTF8: process.env.AIDER_DESK_OMIT_PYTHONUTF8 ? undefined : '1',
       BASE_DIR: this.task.getProjectDir(),
