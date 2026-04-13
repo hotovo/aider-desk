@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.61.1]
 
 - correctly adding the built-in skills to apps
 
