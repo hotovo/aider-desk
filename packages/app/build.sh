@@ -29,6 +29,7 @@ echo "--- Copying resources ---"
 mkdir -p "$SCRIPT_DIR/out/resources"
 cp -r "$ROOT_DIR/resources/connector" "$SCRIPT_DIR/out/resources/connector"
 cp -r "$ROOT_DIR/resources/prompts" "$SCRIPT_DIR/out/resources/prompts"
+cp -r "$ROOT_DIR/resources/skills" "$SCRIPT_DIR/out/resources/skills"
 echo "Resources copied successfully."
 echo ""
 

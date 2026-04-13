@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- correctly adding the built-in skills to apps
+
 ## [0.61.0]
 
 - updated project selection logic when closing or adding projects
