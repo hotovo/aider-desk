@@ -26,20 +26,13 @@ export const WorktreeStatusBadges = ({ status, onRefresh }: Props) => {
   const { t } = useTranslation();
 
   const aheadCommits = status.aheadCommits.count;
-  const uncommittedFiles = status.uncommittedFiles.count;
 
   const showCommits = aheadCommits > 0;
-  const showFiles = !showCommits && uncommittedFiles > 0;
 
   const commitsTooltip = useMemo(() => {
     const commits = formatTruncatedList(status.aheadCommits.commits);
     return `${commits.join('\n')}${commits.length > 0 ? '\n\n' : ''}${t('common.clickToRefresh')}`;
   }, [status.aheadCommits.commits, t]);
-
-  const filesTooltip = useMemo(() => {
-    const files = formatTruncatedList(status.uncommittedFiles.files);
-    return `${files.join('\n')}${files.length > 0 ? '\n\n' : ''}${t('common.clickToRefresh')}`;
-  }, [status.uncommittedFiles.files, t]);
 
   const conflictsTooltip = useMemo(() => {
     if (status.rebaseState.hasUnmergedPaths) {
@@ -56,10 +49,9 @@ export const WorktreeStatusBadges = ({ status, onRefresh }: Props) => {
   }, [status.predictedConflicts, status.rebaseState, t]);
 
   const showConflicts = status.rebaseState.hasUnmergedPaths || status.predictedConflicts.hasConflicts;
-  const showNoChanges = !showConflicts && !showCommits && !showFiles;
 
   const renderBadge = (tooltipContent: React.ReactNode, onClick: () => void, children: React.ReactNode) => (
-    <Tooltip content={tooltipContent}>
+    <Tooltip content={tooltipContent} maxWidth="none">
       <span
         className="px-1.5 py-0.5 rounded bg-bg-secondary text-text-primary text-2xs cursor-pointer hover:bg-bg-secondary-light transition-colors"
         onClick={onClick}
@@ -69,28 +61,14 @@ export const WorktreeStatusBadges = ({ status, onRefresh }: Props) => {
     </Tooltip>
   );
 
-  const renderButtonBadge = (tooltipContent: string, onClick: () => void, children: React.ReactNode) => (
-    <Tooltip content={tooltipContent}>
-      <button
-        type="button"
-        className="px-1.5 py-0.5 rounded bg-bg-secondary text-text-muted-light text-2xs cursor-pointer hover:bg-bg-secondary-light transition-colors"
-        onClick={onClick}
-      >
-        {children}
-      </button>
-    </Tooltip>
-  );
-
   return (
     <div className="flex items-center gap-1">
       {showConflicts && (
-        <Tooltip content={conflictsTooltip}>
+        <Tooltip content={conflictsTooltip} maxWidth="none">
           <TiWarning className="text-text-error w-4.5 h-4.5 mr-1 focus:outline-none" />
         </Tooltip>
       )}
       {showCommits && renderBadge(commitsTooltip, onRefresh, t('worktree.aheadCommits', { count: aheadCommits }))}
-      {showFiles && renderBadge(filesTooltip, onRefresh, t('worktree.uncommittedFiles', { count: uncommittedFiles }))}
-      {showNoChanges && renderButtonBadge(t('common.clickToRefresh'), onRefresh, t('worktree.noChanges'))}
     </div>
   );
 };

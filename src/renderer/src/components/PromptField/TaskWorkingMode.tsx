@@ -1,18 +1,17 @@
 import { TaskData, WorkingMode } from '@common/types';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
-
-import type { WorktreeIntegrationStatus } from '@common/types';
 
 import { ItemConfig, ItemSelector } from '@/components/common/ItemSelector';
 import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
-import { useApi } from '@/contexts/ApiContext';
-import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
+import { useApi } from '@/contexts/ApiContext';
+import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
 
 const WORKING_MODE_ITEMS: ItemConfig<WorkingMode>[] = [
   {
@@ -59,47 +58,8 @@ export const TaskWorkingMode = ({
   const api = useApi();
   const [isSwitching, setIsSwitching] = useState(false);
   const [showConfirmLocal, setShowConfirmLocal] = useState(false);
-  const [worktreeStatus, setWorktreeStatus] = useState<WorktreeIntegrationStatus | null>(null);
-  const currentLoadId = useRef(0);
-
-  const loadStatus = useCallback(
-    async (loadId: number) => {
-      try {
-        const status = await api.getWorktreeIntegrationStatus(task.baseDir, task.id);
-        if (loadId === currentLoadId.current) {
-          setWorktreeStatus(status);
-        }
-      } catch {
-        if (loadId === currentLoadId.current) {
-          setWorktreeStatus(null);
-        }
-      }
-    },
-    [api, task.baseDir, task.id],
-  );
-
-  const handleRefresh = () => {
-    currentLoadId.current += 1;
-    void loadStatus(currentLoadId.current);
-  };
-
-  useEffect(() => {
-    if (task.workingMode !== 'worktree') {
-      setWorktreeStatus(null);
-      return;
-    }
-
-    currentLoadId.current += 1;
-    void loadStatus(currentLoadId.current);
-
-    const unsubscribe = api.addWorktreeIntegrationStatusUpdatedListener(task.baseDir, task.id, ({ status }) => {
-      setWorktreeStatus(status);
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [api, loadStatus, task.baseDir, task.id, task.workingMode]);
+  const isWorktree = task.workingMode === 'worktree';
+  const { worktreeStatus, refreshStatus: handleRefresh } = useWorktreeIntegrationStatus(task.baseDir, task.id, isWorktree);
 
   const handleWorkingModeChanged = async (mode: WorkingMode) => {
     if (mode === 'local' && task.workingMode === 'worktree' && worktreeStatus) {

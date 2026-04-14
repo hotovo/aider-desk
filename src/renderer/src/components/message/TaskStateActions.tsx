@@ -1,13 +1,16 @@
 import { IoPlayOutline } from 'react-icons/io5';
 import { RiAlertLine, RiCheckLine, RiPlayLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { DefaultTaskState, Mode, TaskData } from '@common/types';
 
 import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 
 import { Button } from '@/components/common/Button';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
+import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
+import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
 
 type Props = {
   projectDir: string;
@@ -25,6 +28,7 @@ type Props = {
 };
 
 export const TaskStateActions = ({
+  projectDir,
   taskId,
   state,
   isArchived,
@@ -39,6 +43,19 @@ export const TaskStateActions = ({
   const { t } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const isWorktree = task?.workingMode === 'worktree';
+  const { worktreeStatus } = useWorktreeIntegrationStatus(projectDir, taskId, isWorktree);
+
+  const hasRebaseConflicts = useMemo(
+    () => worktreeStatus?.rebaseState.hasUnmergedPaths === true && (worktreeStatus.rebaseState.unmergedFiles?.length ?? 0) > 0,
+    [worktreeStatus],
+  );
+
+  const hasRebaseResolved = useMemo(
+    () => worktreeStatus?.rebaseState.inProgress === true && worktreeStatus.rebaseState.hasUnmergedPaths === false,
+    [worktreeStatus],
+  );
+
   const { isEmpty: isEmptyTaskActions, renderComponents: renderTaskActionsComponents } = useExtensionComponentsWrapper({
     placement: 'task-state-actions-all',
     additionalProps: {
@@ -47,10 +64,6 @@ export const TaskStateActions = ({
       onRunPrompt,
     },
   });
-
-  if (!isEmptyTaskActions) {
-    return renderTaskActionsComponents();
-  }
 
   const handleDeleteClick = () => {
     setIsDeleting(true);
@@ -89,6 +102,18 @@ export const TaskStateActions = ({
       </div>
     );
   };
+
+  if (isWorktree && hasRebaseConflicts && worktreeStatus) {
+    return <RebaseConflictsActions projectDir={projectDir} taskId={taskId} worktreeStatus={worktreeStatus} />;
+  }
+
+  if (isWorktree && hasRebaseResolved && worktreeStatus) {
+    return <RebaseResolvedActions projectDir={projectDir} taskId={taskId} worktreeStatus={worktreeStatus} />;
+  }
+
+  if (!isEmptyTaskActions) {
+    return renderTaskActionsComponents();
+  }
 
   if (state === DefaultTaskState.Todo && onResumeTask) {
     return renderSection(

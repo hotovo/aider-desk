@@ -3668,15 +3668,12 @@ ${error.stderr}`,
       }
 
       if (error) {
-        const isConflict = error.gitOutput?.includes('Resolve all conflicts');
-
-        this.addLogMessage(
-          'error',
-          isConflict ? 'worktree.rebaseConflicts' : error.getErrorDetails(),
-          true,
-          undefined,
-          isConflict ? ['abort-rebase', 'resolve-conflicts-with-agent'] : undefined,
-        );
+        if (error) {
+          const isConflict = error.gitOutput?.includes('Resolve all conflicts');
+          if (!isConflict) {
+            this.addLogMessage('error', error.getErrorDetails(), true);
+          }
+        }
       }
     } catch (error) {
       logger.error('Failed to rebase worktree:', {
@@ -3717,6 +3714,9 @@ ${error.stderr}`,
     if (!activeProfile) {
       throw new Error('No active agent profile found');
     }
+
+    const previousTaskState = this.task.state;
+    await this.saveTask({ state: DefaultTaskState.InProgress });
 
     try {
       this.addLogMessage('loading', `Resolving conflicts in ${directoryName}...`);
@@ -3822,13 +3822,8 @@ ${error.stderr}`,
 
       await Promise.all(resolutionPromises);
 
-      if (interruptedCount === 0) {
-        this.addLogMessage('info', 'Conflicts resolved and staged. You can now continue the rebase.', true, undefined, ['continue-rebase', 'abort-rebase']);
-      } else if (interruptedCount < files.length) {
-        this.addLogMessage('warning', 'Some conflicts were resolved, but some were interrupted. You can continue the rebase.', true, undefined, [
-          'continue-rebase',
-          'abort-rebase',
-        ]);
+      if (interruptedCount > 0 && interruptedCount < files.length) {
+        this.addLogMessage('warning', 'Some conflicts were resolved, but some were interrupted. You can continue the rebase.', true, undefined, []);
       }
     } catch (error) {
       logger.error('Failed to resolve conflicts with agent:', error);
@@ -3839,6 +3834,8 @@ ${error.stderr}`,
           : `Failed to resolve conflicts with agent: ${error instanceof Error ? error.message : String(error)}`,
         true,
       );
+    } finally {
+      await this.saveTask({ state: previousTaskState });
     }
 
     await this.sendWorktreeIntegrationStatusUpdated();
@@ -3891,23 +3888,19 @@ ${error.stderr}`,
       // Clear any remaining merge state after successful rebase continuation
       await this.saveTask({ lastMergeState: undefined });
 
-      this.addLogMessage('info', 'Rebase continued', true);
+      this.addLogMessage('info', 'Rebase completed', true);
     } catch (error) {
       logger.error('Failed to continue rebase:', error);
 
       const isConflict = error instanceof GitError && error.gitOutput?.includes('Resolve all conflicts manually');
 
-      this.addLogMessage(
-        'error',
-        isConflict
-          ? 'worktree.rebaseConflicts'
-          : error instanceof GitError
-            ? error.getErrorDetails()
-            : `Failed to continue rebase: ${error instanceof Error ? error.message : String(error)}`,
-        true,
-        undefined,
-        isConflict ? ['abort-rebase', 'resolve-conflicts-with-agent'] : undefined,
-      );
+      if (!isConflict) {
+        this.addLogMessage(
+          'error',
+          error instanceof GitError ? error.getErrorDetails() : `Failed to continue rebase: ${error instanceof Error ? error.message : String(error)}`,
+          true,
+        );
+      }
     }
 
     await this.sendUpdatedFilesUpdated();

@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added support for setting up proxy
+- added sticky state panel for worktree rebase conflict resolution
 
 ## [0.61.1]
 
