@@ -243,6 +243,7 @@ src/
     messages.ts
     paths.ts
     progress-window.ts
+    proxy-manager.ts
     python-dependencies-installer.ts
     start-up.ts
     window-manager.ts
@@ -513,7 +514,7 @@ src/
           HotkeysSettings.tsx
           LanguageSelector.tsx
           MemorySettings.tsx
-          ServerSettings.tsx
+          NetworkSettings.tsx
           SettingsDialog.tsx
           SettingsPage.tsx
           TaskSettings.tsx
@@ -2145,13 +2146,6 @@ File: src/main/agent/agent.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
-⋮----
-// eslint-disable-next-line import/order
-import { Agent as UndiciAgent, setGlobalDispatcher } from 'undici';
-⋮----
-headersTimeout: 30 * 60 * 1000, // 30 minutes
-bodyTimeout: 30 * 60 * 1000, // 30 minutes
-connectTimeout: 30 * 1000, // 30 seconds
 ⋮----
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -7899,6 +7893,7 @@ import { EventManager } from '@/events';
 import { getEnvironmentVariablesForAider } from '@/utils';
 import { Task } from '@/task/task';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
+import { getProxyEnvVars } from '@/proxy-manager';
 ⋮----
 export class AiderManager
 ⋮----
@@ -8298,6 +8293,7 @@ import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager, ExtensionEventMap } from '@/extensions/extension-manager';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
+import { getProxyEnvVars } from '@/proxy-manager';
 ⋮----
 const getTaskFinishedNotificationText = (task: TaskData) =>
 ⋮----
@@ -10587,6 +10583,7 @@ import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePath
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
 import { isElectron } from '@/app';
+import { ProxyManager } from '@/proxy-manager';
 ⋮----
 export class EventsHandler
 ⋮----
@@ -10595,6 +10592,8 @@ constructor(
 loadSettings(): SettingsData
 ⋮----
 async saveSettings(newSettings: SettingsData): Promise<SettingsData>
+⋮----
+// Re-initialize proxy if settings changed
 ⋮----
 getProjectSettings(baseDir: string): ProjectSettings
 ⋮----
@@ -11099,6 +11098,7 @@ import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
 import logger, { initEventLogging } from '@/logger';
+import { ProxyManager } from '@/proxy-manager';
 import { EventsHandler } from '@/events-handler';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
@@ -11114,6 +11114,8 @@ export interface ManagersResult {
 }
 ⋮----
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> =>
+⋮----
+// Initialize proxy manager FIRST — must be before any network calls
 ⋮----
 // Initialize telemetry manager (non-blocking - analytics not critical for startup)
 ⋮----
@@ -11454,6 +11456,43 @@ setCompleted(): void
 addLog(message: string): void
 ⋮----
 close(): void
+
+================
+File: src/main/proxy-manager.ts
+================
+import { setGlobalDispatcher, ProxyAgent, Agent as UndiciAgent } from 'undici';
+import { bootstrap } from 'global-agent';
+⋮----
+import type { SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+⋮----
+export const getProxyEnvVars = (settings: SettingsData): Record<string, string> =>
+⋮----
+export class ProxyManager
+⋮----
+/**
+   * Initialize proxy from settings. Called once during app startup (first in managers init).
+   */
+init(settings: SettingsData): void
+⋮----
+/**
+   * React to settings changes. Called on every saveSettings().
+   * Re-initializes the proxy if the config changed.
+   */
+settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void
+⋮----
+private applyProxy(url: string): void
+⋮----
+// Cover Axios, Got, and legacy HTTP libs via global-agent
+⋮----
+// Cover native fetch via undici
+⋮----
+private clearProxy(): void
+⋮----
+headersTimeout: 30 * 60 * 1000, // 30 minutes
+bodyTimeout: 30 * 60 * 1000, // 30 minutes
+connectTimeout: 30 * 1000, // 30 seconds
 
 ================
 File: src/main/python-dependencies-installer.ts
@@ -20492,7 +20531,7 @@ title=
 confirmButtonText=
 
 ================
-File: src/renderer/src/components/settings/ServerSettings.tsx
+File: src/renderer/src/components/settings/NetworkSettings.tsx
 ================
 import { ChangeEvent, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20512,6 +20551,10 @@ type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
 };
+⋮----
+const handleProxyEnabledChange = (checked: boolean) =>
+⋮----
+const handleProxyUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const loadTunnelStatus = async () =>
 ⋮----
@@ -20545,9 +20588,9 @@ const getButtonText = () =>
 ⋮----
 const getTunnelButtonText = () =>
 ⋮----
-label=
+<Checkbox label=
 ⋮----
-{/* Collapsible Authentication Inputs */}
+label=
 ⋮----
 <span className=
 ⋮----
@@ -23144,11 +23187,11 @@ const handleFinish = async () =>
 ================
 File: src/renderer/src/pages/Settings.tsx
 ================
-import { Font, ProjectData, SettingsData, Theme, AgentProfile, ProviderProfile } from '@common/types';
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { AgentProfile, Font, ProjectData, ProviderProfile, SettingsData, Theme } from '@common/types';
+import { ReactNode, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaRobot, FaServer, FaBrain, FaMicrophone, FaKeyboard, FaPuzzlePiece } from 'react-icons/fa';
+import { FaBrain, FaChevronDown, FaChevronRight, FaCog, FaInfoCircle, FaKeyboard, FaMicrophone, FaPuzzlePiece, FaRobot, FaServer } from 'react-icons/fa';
 import { MdTerminal } from 'react-icons/md';
 import { LuClipboardList } from 'react-icons/lu';
 ⋮----
@@ -23158,14 +23201,14 @@ import { AiderSettings } from '@/components/settings/AiderSettings';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { AboutSettings } from '@/components/settings/AboutSettings';
-import { ServerSettings } from '@/components/settings/ServerSettings';
+import { NetworkSettings } from '@/components/settings/NetworkSettings';
 import { MemorySettings } from '@/components/settings/MemorySettings';
 import { VoiceSettings } from '@/components/settings/VoiceSettings';
 import { HotkeysSettings } from '@/components/settings/HotkeysSettings';
 import { TaskSettings } from '@/components/settings/TaskSettings';
 import { ExtensionsSettings } from '@/components/settings/ExtensionsSettings';
 ⋮----
-type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'server' | 'extensions' | 'about';
+type PageId = 'general' | 'aider' | 'agents' | 'tasks' | 'memory' | 'voice' | 'hotkeys' | 'network' | 'extensions' | 'about';
 ⋮----
 interface SidebarItem {
   id: string;
@@ -26129,6 +26172,10 @@ extraResources:
     to: prompts
     filter:
       - '**/*'
+  - from: ./resources/skills
+    to: skills
+    filter:
+      - '**/*'
 asarUnpack:
   - '**/node_modules/sharp/**/*'
   - '**/node_modules/@img/**/*'
@@ -26203,7 +26250,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.61.0-dev",
+  "version": "0.62.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -26305,7 +26352,7 @@ File: package.json
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "^2.8.0",
-    "ai": "5.0.167",
+    "ai": "5.0.172",
     "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "1.5.1",
     "apache-arrow": "18.1.0",
@@ -26321,6 +26368,8 @@ File: package.json
     "electron-updater": "^6.8.3",
     "env-paths": "^3.0.0",
     "express": "^4.21.2",
+    "global-agent": "4.1.3",
+    "undici": "8.1.0",
     "file-type": "^21.0.0",
     "filenamify": "^7.0.1",
     "fix-path": "^4.0.0",
