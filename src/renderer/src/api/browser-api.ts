@@ -65,6 +65,7 @@ import {
   ExtensionUIComponent,
   ModalOverlayUrlData,
   AiderConnectorStatus,
+  ChangeRequestItem,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -671,13 +672,11 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string, createNewTask?: boolean): void {
-    this.post('/project/run-code-inline-request', {
+  runCodeChangeRequests(baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean): void {
+    this.post('/project/run-code-change-requests', {
       projectDir: baseDir,
       taskId,
-      filename,
-      lineNumber,
-      userComment,
+      requests,
       createNewTask,
     });
   }

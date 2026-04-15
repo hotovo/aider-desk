@@ -835,7 +835,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
         </div>
         {!isMobile && (
           <div
-            className="border-l border-border-dark-light flex flex-col flex-shrink-0 select-none relative group"
+            className="border-l border-border-dark-light flex flex-col flex-shrink-0 select-none relative"
             style={{
               width: isFilesSidebarCollapsed ? FILES_COLLAPSED_WIDTH : sidebarWidth,
             }}

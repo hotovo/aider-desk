@@ -258,12 +258,16 @@ const HandoffConversationSchema = z.object({
   focus: z.string().optional(),
 });
 
-const RunCodeInlineRequestSchema = z.object({
-  projectDir: z.string().min(1, 'Project directory is required'),
-  taskId: z.string().min(1, 'Task id is required'),
+const ChangeRequestItemSchema = z.object({
   filename: z.string().min(1, 'Filename is required'),
   lineNumber: z.number().int().min(1, 'Line number is required'),
   userComment: z.string().min(1, 'User comment is required'),
+});
+
+const RunCodeChangeRequestsSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  requests: z.array(ChangeRequestItemSchema).min(1, 'At least one request is required'),
   createNewTask: z.boolean().optional(),
 });
 
@@ -760,18 +764,18 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
-    // Run code inline request
+    // Run code change requests
     router.post(
-      '/project/run-code-inline-request',
+      '/project/run-code-change-requests',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(RunCodeInlineRequestSchema, req.body, res);
+        const parsed = this.validateRequest(RunCodeChangeRequestsSchema, req.body, res);
         if (!parsed) {
           return;
         }
 
-        const { projectDir, taskId, filename, lineNumber, userComment, createNewTask } = parsed;
-        await this.eventsHandler.runCodeInlineRequest(projectDir, taskId, filename, lineNumber, userComment, createNewTask);
-        res.status(200).json({ message: 'Code inline request initiated' });
+        const { projectDir, taskId, requests, createNewTask } = parsed;
+        await this.eventsHandler.runCodeChangeRequests(projectDir, taskId, requests, createNewTask);
+        res.status(200).json({ message: 'Code change requests initiated' });
       }),
     );
 

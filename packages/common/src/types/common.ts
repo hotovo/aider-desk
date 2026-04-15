@@ -460,6 +460,20 @@ export const THEMES = [
 ] as const;
 export type Theme = (typeof THEMES)[number];
 
+export const isCodeEditorDarkTheme = (theme: Theme) => [
+  'aurora',
+  'botanical-garden',
+  'botanical-garden-dark',
+  'charcoal',
+  'dark',
+  'forest',
+  'lavender',
+  'midnight',
+  'neon',
+  'neopunk',
+  'ocean',
+].includes(theme)
+
 export const FONTS = [
   'Sono',
   'Poppins',
@@ -1075,4 +1089,10 @@ export type AiderConnectorStatus =
   | { state: 'starting-connector' }
   | { state: 'ready' }
   | { state: 'failed'; error: string };
+
+export interface ChangeRequestItem {
+  filename: string;
+  lineNumber: number;
+  userComment: string;
+}
 

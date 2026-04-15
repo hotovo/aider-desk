@@ -992,8 +992,6 @@
     "confirmRevertTitle": "恢复文件更改？",
     "confirmRevertMessage": "这将丢弃此文件的所有更改。此操作无法撤销。",
     "revert": "恢复",
-    "expandWidth": "展开至全宽",
-    "collapseWidth": "收起宽度",
     "commitSection": "提交更改",
     "commitMessage": "提交信息",
     "commitMessagePlaceholder": "输入提交信息...",
@@ -1010,6 +1008,14 @@
     "uncommitted": "未提交",
     "group": "分组 {{hash}}",
     "updatedFilesWindowTitle": "已更新文件 - {{name}}",
+    "commentsPanel": "变更请求",
+    "noComments": "暂无变更请求。点击差异查看器中的行以添加请求。",
+    "editComment": "编辑",
+    "removeComment": "移除",
+    "submitAllRequests": "请求更改",
+    "submittingRequests": "提交中...",
+    "collapseComments": "收起面板",
+    "expandComments": "展开面板",
     "empty": {
       "title": "没有上下文文件",
       "aiderMode": {

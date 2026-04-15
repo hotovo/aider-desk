@@ -1,20 +1,20 @@
 import { useState, useRef, KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/common/Button';
-import { Checkbox } from '@/components/common/Checkbox';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 type Props = {
-  onSubmit: (comment: string, createNewTask: boolean) => void;
+  onSubmit: (comment: string) => void;
   onCancel: () => void;
-  position: { top: number; left: number };
+  anchorRect: { top: number; left: number };
+  initialText?: string;
 };
 
-export const DiffLineCommentPanel = ({ onSubmit, onCancel, position }: Props) => {
+export const DiffLineCommentPanel = ({ onSubmit, onCancel, anchorRect, initialText = '' }: Props) => {
   const { t } = useTranslation();
-  const [comment, setComment] = useState('');
-  const [createNewTask, setCreateNewTask] = useState(false);
+  const [comment, setComment] = useState(initialText);
   const panelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -22,7 +22,7 @@ export const DiffLineCommentPanel = ({ onSubmit, onCancel, position }: Props) =>
 
   const handleSubmit = () => {
     if (comment.trim()) {
-      onSubmit(comment.trim(), createNewTask);
+      onSubmit(comment.trim());
     }
   };
 
@@ -36,11 +36,11 @@ export const DiffLineCommentPanel = ({ onSubmit, onCancel, position }: Props) =>
     }
   };
 
-  return (
+  return createPortal(
     <div
       ref={panelRef}
-      className="absolute z-20 left-5 right-5 bg-bg-primary-light border border-border-default rounded-md shadow-lg p-3"
-      style={{ top: position.top }}
+      className="fixed z-50 w-72 bg-bg-primary-light border border-border-default rounded-md shadow-lg p-3"
+      style={{ top: anchorRect.top, left: anchorRect.left }}
     >
       <textarea
         ref={textareaRef}
@@ -52,17 +52,15 @@ export const DiffLineCommentPanel = ({ onSubmit, onCancel, position }: Props) =>
         autoFocus
       />
 
-      <div className="flex items-center justify-between mt-2">
-        <Checkbox label={t('diffViewer.lineComment.createNewTask')} checked={createNewTask} onChange={setCreateNewTask} size="xs" />
-        <div className="flex gap-2">
-          <Button onClick={onCancel} variant="text" color="tertiary" size="xs">
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={handleSubmit} disabled={!comment.trim()} size="xs">
-            {t('common.submit')}
-          </Button>
-        </div>
+      <div className="flex items-center justify-end mt-2 gap-2">
+        <Button onClick={onCancel} variant="text" color="tertiary" size="xs">
+          {t('common.cancel')}
+        </Button>
+        <Button onClick={handleSubmit} disabled={!comment.trim()} size="xs">
+          {t('common.submit')}
+        </Button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

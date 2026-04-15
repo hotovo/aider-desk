@@ -1046,8 +1046,6 @@
     "confirmRevertTitle": "Revert file changes?",
     "confirmRevertMessage": "This will discard all changes to this file. This action cannot be undone.",
     "revert": "Revert",
-    "expandWidth": "Expand to full width",
-    "collapseWidth": "Collapse width",
     "commitSection": "Commit Changes",
     "commitMessage": "Commit message",
     "commitMessagePlaceholder": "Enter commit message...",
@@ -1064,6 +1062,14 @@
     "uncommitted": "Uncommitted",
     "group": "Group {{hash}}",
     "updatedFilesWindowTitle": "Updated Files - {{name}}",
+    "commentsPanel": "Change Requests",
+    "noComments": "No change requests yet. Click on a line in the diff viewer to add one.",
+    "editComment": "Edit",
+    "removeComment": "Remove",
+    "submitAllRequests": "Request Changes",
+    "submittingRequests": "Submitting...",
+    "collapseComments": "Collapse panel",
+    "expandComments": "Expand panel",
     "empty": {
       "title": "No Context Files",
       "aiderMode": {

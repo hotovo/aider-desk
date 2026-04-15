@@ -146,7 +146,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     removeMessagesUpTo: vi.fn((): Promise<void> => Promise.resolve()),
     compactConversation: vi.fn((): void => undefined),
     handoffConversation: vi.fn((): Promise<void> => Promise.resolve()),
-    runCodeInlineRequest: vi.fn((): void => undefined),
+    runCodeChangeRequests: vi.fn((): void => undefined),
 
     // UI operations
     setZoomLevel: vi.fn((): Promise<void> => Promise.resolve()),

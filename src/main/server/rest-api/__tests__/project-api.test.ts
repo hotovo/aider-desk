@@ -199,278 +199,137 @@ describe('ProjectApi - remove-message endpoint', () => {
   });
 });
 
-describe('ProjectApi - run-code-inline-request endpoint', () => {
-  describe('RunCodeInlineRequestSchema validation', () => {
-    it('should validate valid request data', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
+describe('ProjectApi - run-code-change-requests endpoint', () => {
+  const ChangeRequestItemSchema = z.object({
+    filename: z.string().min(1, 'Filename is required'),
+    lineNumber: z.number().int().min(1, 'Line number is required'),
+    userComment: z.string().min(1, 'User comment is required'),
+  });
 
+  const RunCodeChangeRequestsSchema = z.object({
+    projectDir: z.string().min(1, 'Project directory is required'),
+    taskId: z.string().min(1, 'Task id is required'),
+    requests: z.array(ChangeRequestItemSchema).min(1, 'At least one request is required'),
+    createNewTask: z.boolean().optional(),
+  });
+
+  describe('RunCodeChangeRequestsSchema validation', () => {
+    it('should validate valid request data', () => {
       const validData = {
         projectDir: '/test/project',
-        filename: 'src/utils/example.ts',
-        lineNumber: 42,
-        userComment: 'Fix the bug here',
+        taskId: 'task-123',
+        requests: [{ filename: 'src/utils/example.ts', lineNumber: 42, userComment: 'Fix the bug here' }],
       };
 
-      const result = RunCodeInlineRequestSchema.safeParse(validData);
+      const result = RunCodeChangeRequestsSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate valid request data with multiple requests', () => {
+      const validData = {
+        projectDir: '/test/project',
+        taskId: 'task-123',
+        requests: [
+          { filename: 'src/utils/example.ts', lineNumber: 42, userComment: 'Fix the bug here' },
+          { filename: 'src/utils/other.ts', lineNumber: 10, userComment: 'Add error handling' },
+        ],
+      };
+
+      const result = RunCodeChangeRequestsSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
 
     it('should reject data with missing projectDir', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
       const invalidData = {
-        filename: 'src/utils/example.ts',
-        lineNumber: 42,
-        userComment: 'Fix the bug here',
+        taskId: 'task-123',
+        requests: [{ filename: 'src/utils/example.ts', lineNumber: 42, userComment: 'Fix the bug here' }],
       };
 
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
+      const result = RunCodeChangeRequestsSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues[0].path).toContain('projectDir');
       }
     });
 
-    it('should reject data with missing filename', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
+    it('should reject data with missing taskId', () => {
       const invalidData = {
         projectDir: '/test/project',
-        lineNumber: 42,
-        userComment: 'Fix the bug here',
+        requests: [{ filename: 'src/utils/example.ts', lineNumber: 42, userComment: 'Fix the bug here' }],
       };
 
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
+      const result = RunCodeChangeRequestsSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('filename');
+        expect(result.error.issues[0].path).toContain('taskId');
       }
     });
 
-    it('should reject data with missing lineNumber', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
+    it('should reject data with empty requests array', () => {
       const invalidData = {
         projectDir: '/test/project',
-        filename: 'src/utils/example.ts',
-        userComment: 'Fix the bug here',
+        taskId: 'task-123',
+        requests: [],
       };
 
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
+      const result = RunCodeChangeRequestsSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('lineNumber');
+        expect(result.error.issues[0].path).toContain('requests');
       }
     });
 
-    it('should reject data with missing userComment', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
+    it('should reject request item with missing filename', () => {
       const invalidData = {
         projectDir: '/test/project',
-        filename: 'src/utils/example.ts',
-        lineNumber: 42,
+        taskId: 'task-123',
+        requests: [{ lineNumber: 42, userComment: 'Fix the bug here' }],
       };
 
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
+      const result = RunCodeChangeRequestsSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].path).toContain('userComment');
+        expect(result.error.issues[0].path).toEqual(expect.arrayContaining(['requests', 0, 'filename']));
       }
     });
 
-    it('should reject data with empty projectDir', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
-      const invalidData = {
-        projectDir: '',
-        filename: 'src/utils/example.ts',
-        lineNumber: 42,
-        userComment: 'Fix the bug here',
-      };
-
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].message).toContain('Project directory is required');
-      }
-    });
-
-    it('should reject data with empty filename', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
+    it('should reject request item with missing userComment', () => {
       const invalidData = {
         projectDir: '/test/project',
-        filename: '',
-        lineNumber: 42,
-        userComment: 'Fix the bug here',
+        taskId: 'task-123',
+        requests: [{ filename: 'src/utils/example.ts', lineNumber: 42 }],
       };
 
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
+      const result = RunCodeChangeRequestsSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('Filename is required');
+        expect(result.error.issues[0].path).toEqual(expect.arrayContaining(['requests', 0, 'userComment']));
       }
     });
 
-    it('should reject data with empty userComment', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
+    it('should reject request item with invalid lineNumber', () => {
       const invalidData = {
         projectDir: '/test/project',
-        filename: 'src/utils/example.ts',
-        lineNumber: 42,
-        userComment: '',
+        taskId: 'task-123',
+        requests: [{ filename: 'src/utils/example.ts', lineNumber: 0, userComment: 'Fix the bug here' }],
       };
 
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
+      const result = RunCodeChangeRequestsSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('User comment is required');
+        expect(result.error.issues[0].path).toEqual(expect.arrayContaining(['requests', 0, 'lineNumber']));
       }
     });
 
-    it('should reject data with lineNumber as 0', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
-      const invalidData = {
-        projectDir: '/test/project',
-        filename: 'src/utils/example.ts',
-        lineNumber: 0,
-        userComment: 'Fix the bug here',
-      };
-
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toContain('lineNumber');
-      }
-    });
-
-    it('should reject data with negative lineNumber', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
-      const invalidData = {
-        projectDir: '/test/project',
-        filename: 'src/utils/example.ts',
-        lineNumber: -1,
-        userComment: 'Fix the bug here',
-      };
-
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toContain('lineNumber');
-      }
-    });
-
-    it('should reject data with decimal lineNumber', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
-      const invalidData = {
-        projectDir: '/test/project',
-        filename: 'src/utils/example.ts',
-        lineNumber: 42.5,
-        userComment: 'Fix the bug here',
-      };
-
-      const result = RunCodeInlineRequestSchema.safeParse(invalidData);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toContain('lineNumber');
-      }
-    });
-
-    it('should accept data with valid absolute filename', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
+    it('should accept request with createNewTask boolean at top level', () => {
       const validData = {
         projectDir: '/test/project',
-        filename: '/absolute/path/to/file.ts',
-        lineNumber: 10,
-        userComment: 'Add error handling',
+        taskId: 'task-123',
+        requests: [{ filename: 'src/utils/example.ts', lineNumber: 42, userComment: 'Fix the bug here' }],
+        createNewTask: true,
       };
 
-      const result = RunCodeInlineRequestSchema.safeParse(validData);
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept data with valid relative filename', () => {
-      const RunCodeInlineRequestSchema = z.object({
-        projectDir: z.string().min(1, 'Project directory is required'),
-        filename: z.string().min(1, 'Filename is required'),
-        lineNumber: z.number().int().min(1, 'Line number is required'),
-        userComment: z.string().min(1, 'User comment is required'),
-      });
-
-      const validData = {
-        projectDir: '/test/project',
-        filename: 'src/components/Button.tsx',
-        lineNumber: 15,
-        userComment: 'Add styling',
-      };
-
-      const result = RunCodeInlineRequestSchema.safeParse(validData);
+      const result = RunCodeChangeRequestsSchema.safeParse(validData);
       expect(result.success).toBe(true);
     });
   });

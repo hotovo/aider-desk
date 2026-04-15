@@ -18,6 +18,7 @@ import type { SectionType, TreeItem } from './types';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 
 interface CommitGroup {
@@ -56,9 +57,9 @@ export const UpdatedFilesSection = ({
 }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
+  const { projectSettings, saveProjectSettings } = useProjectSettings();
 
   const [updatedFiles, setUpdatedFiles] = useState<UpdatedFile[]>([]);
-  const [groupMode, setGroupMode] = useState<UpdatedFilesGroupMode>(UpdatedFilesGroupMode.Grouped);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [groupExpandedItems, setGroupExpandedItems] = useState<Record<string, string[]>>({});
   const [flatExpandedItems, setFlatExpandedItems] = useState<string[]>([]);
@@ -68,16 +69,7 @@ export const UpdatedFilesSection = ({
   const [fileToRevert, setFileToRevert] = useState<string | null>(null);
   const [isRevertingFile, setIsRevertingFile] = useState(false);
 
-  // Read group mode from project settings on mount
-  useEffect(() => {
-    api.getProjectSettings(baseDir).then((settings) => {
-      const mode = settings.updatedFilesGroupMode as UpdatedFilesGroupMode;
-      if (mode === UpdatedFilesGroupMode.Flat || mode === UpdatedFilesGroupMode.Grouped) {
-        setGroupMode(mode);
-      }
-    });
-  }, [api, baseDir]);
-
+  const groupMode = projectSettings?.updatedFilesGroupMode ?? UpdatedFilesGroupMode.Flat;
   const isGrouped = groupMode === UpdatedFilesGroupMode.Grouped;
 
   // Group files by commit hash; preserve commit order from backend (newest first in array),
@@ -223,17 +215,14 @@ export const UpdatedFilesSection = ({
 
   const handleToggleGroupMode = useCallback(async () => {
     const newMode = isGrouped ? UpdatedFilesGroupMode.Flat : UpdatedFilesGroupMode.Grouped;
-    setGroupMode(newMode);
     try {
-      await api.patchProjectSettings(baseDir, {
-        updatedFilesGroupMode: newMode,
-      });
+      await saveProjectSettings({ updatedFilesGroupMode: newMode });
       await fetchUpdatedFiles();
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to update group mode:', error);
     }
-  }, [api, baseDir, isGrouped, fetchUpdatedFiles]);
+  }, [saveProjectSettings, isGrouped, fetchUpdatedFiles]);
 
   const handleFileDiffClick = useCallback((file: UpdatedFile) => {
     setDiffModalSelectedFile(file);

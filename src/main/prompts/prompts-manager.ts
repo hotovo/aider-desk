@@ -39,7 +39,7 @@ import {
 
 import { registerAllHelpers } from './helpers';
 import {
-  CodeInlineRequestPromptData,
+  CodeChangeRequestsPromptData,
   CommitMessagePromptData,
   CompactConversationPromptData,
   ConflictResolutionPromptData,
@@ -122,7 +122,7 @@ export class PromptsManager {
       'conflict-resolution-system',
       'update-task-state',
       'handoff',
-      'code-inline-request',
+      'code-change-requests',
     ];
   }
 
@@ -472,7 +472,7 @@ export class PromptsManager {
     return await this.render('handoff', data, task.getProjectDir(), task);
   };
 
-  public getCodeInlineRequestPrompt = async (task: Task, data: CodeInlineRequestPromptData) => {
-    return await this.render('code-inline-request', data, task.getProjectDir(), task);
+  public getCodeChangeRequestsPrompt = async (task: Task, data: CodeChangeRequestsPromptData) => {
+    return await this.render('code-change-requests', data, task.getProjectDir(), task);
   };
 }

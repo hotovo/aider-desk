@@ -34,6 +34,7 @@ import {
   UsageDataRow,
   VersionsInfo,
   VoiceSession,
+  ChangeRequestItem,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
@@ -269,15 +270,8 @@ export class EventsHandler {
     await task.handoffConversation(mode, focus);
   }
 
-  async runCodeInlineRequest(
-    baseDir: string,
-    taskId: string,
-    filename: string,
-    lineNumber: number,
-    userComment: string,
-    createNewTask?: boolean,
-  ): Promise<void> {
-    await this.projectManager.getProject(baseDir).getTask(taskId)?.runCodeInlineRequest(filename, lineNumber, userComment, createNewTask);
+  async runCodeChangeRequests(baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.runCodeChangeRequests(requests, 5, createNewTask);
   }
 
   async loadInputHistory(baseDir: string): Promise<string[]> {

@@ -1,0 +1,21 @@
+You are tasked with making specific code changes based on inline feedback. Review all the requested changes and implement them. Focus on the specific areas mentioned and ensure each change integrates well with the surrounding code.
+
+{{#each requests}}
+---
+
+File: `{{filename}}`
+
+Target Line: {{lineNumber}}
+
+Context (lines around the target):
+```{{fileExtension}}
+{{#each contextLines}}
+{{lineNumber}}: {{content}}
+{{/each}}
+```
+
+Requested Change:
+
+{{userComment}}
+
+{{/each}}

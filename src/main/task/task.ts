@@ -41,6 +41,7 @@ import {
   WorkingMode,
   AIDER_COMMANDS,
   ConnectorMessage,
+  ChangeRequestItem,
 } from '@common/types';
 import { extractProviderModel, extractTextContent, extractServerNameToolName, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
@@ -3994,42 +3995,52 @@ ${error.stderr}`,
     return this.agent.generateText(modelId, systemPrompt, prompt, this.getProjectDir());
   }
 
-  async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, createNewTask?: boolean, contextSize: number = 5): Promise<void> {
-    const filePath = path.isAbsolute(filename) ? filename : path.join(this.getTaskDir(), filename);
-    const fileExtension = path.extname(filename).slice(1) || '';
-
-    let contextLines: { lineNumber: number; content: string }[] = [];
-    try {
-      const fileContent = await fs.readFile(filePath, 'utf-8');
-      const lines = fileContent.split('\n');
-      const startLine = Math.max(0, lineNumber - contextSize - 1);
-      const endLine = Math.min(lines.length, lineNumber + contextSize);
-
-      contextLines = lines.slice(startLine, endLine).map((content, index) => ({
-        lineNumber: startLine + index + 1,
-        content,
-      }));
-    } catch (error) {
-      logger.warn('Failed to read file for context extraction', {
-        filePath,
-        error,
-      });
-    }
-
-    const prompt = await this.promptsManager.getCodeInlineRequestPrompt(this, {
-      filename,
-      lineNumber,
-      fileExtension,
-      contextLines,
-      userComment,
-    });
+  async runCodeChangeRequests(requests: ChangeRequestItem[], contextSize: number = 5, createNewTask?: boolean): Promise<void> {
     const mode = this.getCurrentMode();
 
+    const promptRequests = await Promise.all(
+      requests.map(async (request) => {
+        const filePath = path.isAbsolute(request.filename) ? request.filename : path.join(this.getTaskDir(), request.filename);
+        const fileExtension = path.extname(request.filename).slice(1) || '';
+
+        let contextLines: { lineNumber: number; content: string }[] = [];
+        try {
+          const fileContent = await fs.readFile(filePath, 'utf-8');
+          const lines = fileContent.split('\n');
+          const startLine = Math.max(0, request.lineNumber - contextSize - 1);
+          const endLine = Math.min(lines.length, request.lineNumber + contextSize);
+
+          contextLines = lines.slice(startLine, endLine).map((content, index) => ({
+            lineNumber: startLine + index + 1,
+            content,
+          }));
+        } catch (error) {
+          logger.warn('Failed to read file for context extraction', {
+            filePath,
+            error,
+          });
+        }
+
+        return {
+          filename: request.filename,
+          lineNumber: request.lineNumber,
+          fileExtension,
+          contextLines,
+          userComment: request.userComment,
+        };
+      }),
+    );
+
+    const prompt = await this.promptsManager.getCodeChangeRequestsPrompt(this, {
+      requests: promptRequests,
+    });
+
     if (!createNewTask) {
+      const uniqueFiles = [...new Set(requests.map((r) => r.filename))];
       if (AIDER_MODES.includes(mode)) {
-        await this.addFiles({
-          path: filename,
-        });
+        for (const filename of uniqueFiles) {
+          await this.addFiles({ path: filename });
+        }
       }
 
       void this.runPrompt(prompt, mode, false);
@@ -4040,11 +4051,13 @@ ${error.stderr}`,
       baseDir: this.project.baseDir,
       taskId: INTERNAL_TASK_ID,
       level: 'loading',
-      message: 'Creating task for inline code request...',
+      message: 'Creating task for code change requests...',
     });
 
+    const taskName = requests.length === 1 ? `${requests[0].filename}:${requests[0].lineNumber}` : `${requests.length} change requests`;
+
     const newTaskData = await this.project.createNewTask({
-      name: `${filename}:${lineNumber}`,
+      name: taskName,
       sendEvent: false,
       autoApprove: true,
       activate: true,
@@ -4060,9 +4073,10 @@ ${error.stderr}`,
 
     await newTask.init();
     if (AIDER_MODES.includes(mode)) {
-      await newTask.addFiles({
-        path: filename,
-      });
+      const uniqueFiles = [...new Set(requests.map((r) => r.filename))];
+      for (const filename of uniqueFiles) {
+        await newTask.addFiles({ path: filename });
+      }
     }
 
     this.eventManager.sendTaskCreated(newTask.task, true);

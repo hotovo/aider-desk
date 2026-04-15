@@ -1,0 +1,12 @@
+diffs-container {
+  --diffs-bg: var(--color-bg-code-block);
+  --diffs-bg-separator: var(--color-bg-primary);
+  --diffs-fg-number: var(--color-text-muted);
+  --diffs-font-family:'Sono', monospace;
+  --diffs-header-font-family: 'Sono', monospace;
+  --diffs-modified-base: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 16px;
+
+  background-color: transparent !important;
+}

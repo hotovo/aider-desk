@@ -67,6 +67,7 @@ import {
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
   AiderConnectorStatus,
+  ChangeRequestItem,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -181,7 +182,7 @@ export interface ApplicationAPI {
   removeMessagesUpTo: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
   compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
   handoffConversation: (baseDir: string, taskId: string, focus?: string) => Promise<void>;
-  runCodeInlineRequest: (baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string, createNewTask?: boolean) => void;
+  runCodeChangeRequests: (baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
   getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
