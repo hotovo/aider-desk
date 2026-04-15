@@ -367,6 +367,8 @@ src/
           MessageBlock.tsx
           MessageBlockWrapper.tsx
           Messages.tsx
+          RebaseConflictsActions.tsx
+          RebaseResolvedActions.tsx
           ReflectedMessageBlock.tsx
           ResponseMessageBlock.tsx
           RetrieveMemoryToolMessage.tsx
@@ -601,6 +603,7 @@ src/
         useTypingAnimation.ts
         useUserMessageNavigation.tsx
         useVersions.ts
+        useWorktreeIntegrationStatus.ts
       i18n/
         index.ts
       icons/
@@ -15487,6 +15490,48 @@ const exportToImage = async () =>
 aria-label=
 
 ================
+File: src/renderer/src/components/message/RebaseConflictsActions.tsx
+================
+import { TiWarning } from 'react-icons/ti';
+import { useTranslation } from 'react-i18next';
+import { WorktreeIntegrationStatus } from '@common/types';
+⋮----
+import { Button } from '@/components/common/Button';
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type Props = {
+  projectDir: string;
+  taskId: string;
+  worktreeStatus: WorktreeIntegrationStatus;
+};
+⋮----
+const handleContinueRebase = () =>
+⋮----
+const handleResolveConflictsWithAgent = () =>
+⋮----
+const handleAbortRebase = () =>
+
+================
+File: src/renderer/src/components/message/RebaseResolvedActions.tsx
+================
+import { TiInfo } from 'react-icons/ti';
+import { useTranslation } from 'react-i18next';
+import { WorktreeIntegrationStatus } from '@common/types';
+⋮----
+import { Button } from '@/components/common/Button';
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type Props = {
+  projectDir: string;
+  taskId: string;
+  worktreeStatus: WorktreeIntegrationStatus;
+};
+⋮----
+const handleContinueRebase = () =>
+⋮----
+const handleAbortRebase = () =>
+
+================
 File: src/renderer/src/components/message/ReflectedMessageBlock.tsx
 ================
 import { useState } from 'react';
@@ -15720,13 +15765,16 @@ File: src/renderer/src/components/message/TaskStateActions.tsx
 import { IoPlayOutline } from 'react-icons/io5';
 import { RiAlertLine, RiCheckLine, RiPlayLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { DefaultTaskState, Mode, TaskData } from '@common/types';
 ⋮----
 import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 ⋮----
 import { Button } from '@/components/common/Button';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
+import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
+import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
 ⋮----
 type Props = {
   projectDir: string;
@@ -19130,25 +19178,13 @@ type Props = {
 };
 ⋮----
 const renderBadge = (tooltipContent: React.ReactNode, onClick: () => void, children: React.ReactNode) => (
-    <Tooltip content={tooltipContent}>
+    <Tooltip content={tooltipContent} maxWidth="none">
       <span
         className="px-1.5 py-0.5 rounded bg-bg-secondary text-text-primary text-2xs cursor-pointer hover:bg-bg-secondary-light transition-colors"
         onClick={onClick}
       >
         {children}
       </span>
-    </Tooltip>
-  );
-⋮----
-const renderButtonBadge = (tooltipContent: string, onClick: () => void, children: React.ReactNode) => (
-    <Tooltip content={tooltipContent}>
-      <button
-        type="button"
-        className="px-1.5 py-0.5 rounded bg-bg-secondary text-text-muted-light text-2xs cursor-pointer hover:bg-bg-secondary-light transition-colors"
-        onClick={onClick}
-      >
-        {children}
-      </button>
     </Tooltip>
   );
 
@@ -19486,20 +19522,19 @@ const handleDragEnd = (event: DragEndEvent) =>
 File: src/renderer/src/components/PromptField/TaskWorkingMode.tsx
 ================
 import { TaskData, WorkingMode } from '@common/types';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
-⋮----
-import type { WorktreeIntegrationStatus } from '@common/types';
 ⋮----
 import { ItemConfig, ItemSelector } from '@/components/common/ItemSelector';
 import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
-import { useApi } from '@/contexts/ApiContext';
-import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
+import { useApi } from '@/contexts/ApiContext';
+import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
 ⋮----
 type Props = {
   task: TaskData;
@@ -19513,8 +19548,6 @@ type Props = {
   onRevert: () => void;
   isMerging: boolean;
 };
-⋮----
-const handleRefresh = () =>
 ⋮----
 const handleWorkingModeChanged = async (mode: WorkingMode) =>
 ⋮----
@@ -22303,6 +22336,21 @@ export const useVersions = () =>
 // Optionally set versions to indicate an error or keep them null
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
+
+================
+File: src/renderer/src/hooks/useWorktreeIntegrationStatus.ts
+================
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { WorktreeIntegrationStatus } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type UseWorktreeIntegrationStatus = {
+  worktreeStatus: WorktreeIntegrationStatus | null;
+  refreshStatus: () => void;
+};
+⋮----
+export const useWorktreeIntegrationStatus = (projectDir: string, taskId: string, isWorktree: boolean): UseWorktreeIntegrationStatus =>
 
 ================
 File: src/renderer/src/i18n/index.ts
