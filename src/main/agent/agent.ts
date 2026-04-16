@@ -1128,9 +1128,13 @@ export class Agent {
           responseMessageIndex = 0;
           hasReasoning = false;
           streamingMessageIds.clear();
+
+          if (responseMessages.length > 0) {
+            // Reset retry count when we get a response
+            retryCount = 0;
+          }
         };
 
-        // Trigger onAgentStepStarted event
         const extensionStepStartedResult = await this.extensionManager.dispatchEvent(
           'onAgentStepStarted',
           {

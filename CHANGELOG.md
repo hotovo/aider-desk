@@ -6,6 +6,7 @@
 - added sticky state panel for worktree rebase conflict resolution
 - added support for multiple code change requests in Updated Files modal
 - added file sidebar in the Updated Files modal
+- improved handling of 'unknown' finish reason of some models when using Agent
 
 ## [0.61.1]
 
