@@ -275,7 +275,7 @@ The `code-change-requests.hbs` template is used when submitting batch inline cod
 
 Here is the default template:
 
-```handlebars
+````handlebars
 You are tasked with making specific code changes based on inline feedback. Review all the requested changes and implement them. Focus on the specific areas mentioned and ensure each change integrates well with the surrounding code.
 
 {{#each requests}}
@@ -297,7 +297,7 @@ Requested Change:
 {{userComment}}
 
 {{/each}}
-```
+````
 
 ## Live Reloading
 
