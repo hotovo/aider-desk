@@ -267,7 +267,6 @@ export interface ApplicationAPI {
   abortWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
   continueWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
   resolveWorktreeConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
-  resolveConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
 
   // Agent profile operations
   getAllAgentProfiles: () => Promise<AgentProfile[]>;

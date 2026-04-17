@@ -7,7 +7,6 @@ import { DiffViewMode, UpdatedFile } from '@common/types';
 import { useTranslation } from 'react-i18next';
 
 import { Tooltip } from '@/components/ui/Tooltip';
-
 import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
 
 type Props = {

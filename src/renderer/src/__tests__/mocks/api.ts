@@ -235,7 +235,6 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     abortWorktreeRebase: vi.fn((): Promise<void> => Promise.resolve()),
     continueWorktreeRebase: vi.fn((): Promise<void> => Promise.resolve()),
     resolveWorktreeConflictsWithAgent: vi.fn((): Promise<void> => Promise.resolve()),
-    resolveConflictsWithAgent: vi.fn((): Promise<void> => Promise.resolve()),
 
     // Agent profile operations
     getAllAgentProfiles: vi.fn((): Promise<AgentProfile[]> => Promise.resolve([])),

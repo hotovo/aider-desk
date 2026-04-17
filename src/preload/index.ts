@@ -664,7 +664,6 @@ const api: ApplicationAPI = {
   abortWorktreeRebase: (baseDir, taskId) => ipcRenderer.invoke('abort-worktree-rebase', baseDir, taskId),
   continueWorktreeRebase: (baseDir, taskId) => ipcRenderer.invoke('continue-worktree-rebase', baseDir, taskId),
   resolveWorktreeConflictsWithAgent: (baseDir, taskId) => ipcRenderer.invoke('resolve-worktree-conflicts-with-agent', baseDir, taskId),
-  resolveConflictsWithAgent: (baseDir, taskId) => ipcRenderer.invoke('resolve-worktree-conflicts-with-agent', baseDir, taskId),
 
   // Agent profile operations
   getAllAgentProfiles: () => ipcRenderer.invoke('get-agent-profiles'),

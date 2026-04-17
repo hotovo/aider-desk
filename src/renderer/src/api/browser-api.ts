@@ -1037,13 +1037,6 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
-    return this.post('/project/resolve-conflicts-with-agent', {
-      projectDir: baseDir,
-      taskId,
-    });
-  }
-
   // Memory operations
   listAllMemories(): Promise<MemoryEntry[]> {
     return this.get('/memories');
