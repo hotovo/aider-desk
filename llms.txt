@@ -271,6 +271,8 @@ src/
             DiffViewer.scss
             DiffViewer.tsx
             index.tsx
+            PierreDiffViewer.scss
+            PierreDiffViewer.tsx
             UDiffViewer.tsx
             utils.ts
           Accordion.tsx
@@ -312,11 +314,13 @@ src/
           VirtualTable.tsx
           WarningIcon.tsx
         ContextFiles/
+          CommentsPanel.tsx
           ContextFiles.css
           ContextFiles.tsx
           ContextFilesSection.tsx
           ContextFilesSectionInner.tsx
           DiffFileItem.tsx
+          DiffFilesSidebar.tsx
           EmptyContextInfo.tsx
           FilePreviewModal.tsx
           group-files.ts
@@ -2410,7 +2414,7 @@ const getOptimizedMessages = async () =>
 ⋮----
 const onStepFinish = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
-// Trigger onAgentStepStarted event
+// Reset retry count when we get a response
 ⋮----
 // @ts-expect-error checking keys in error
 ⋮----
@@ -6619,7 +6623,7 @@ import {
 ⋮----
 import { registerAllHelpers } from './helpers';
 import {
-  CodeInlineRequestPromptData,
+  CodeChangeRequestsPromptData,
   CommitMessagePromptData,
   CompactConversationPromptData,
   ConflictResolutionPromptData,
@@ -6745,12 +6749,16 @@ export interface HandoffPromptData {
   contextFiles?: ContextFile[];
 }
 ⋮----
-export interface CodeInlineRequestPromptData {
+export interface ChangeRequestItem {
   filename: string;
   lineNumber: number;
   fileExtension: string;
   contextLines: { lineNumber: number; content: string }[];
   userComment: string;
+}
+⋮----
+export interface CodeChangeRequestsPromptData {
+  requests: ChangeRequestItem[];
 }
 ⋮----
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -6798,7 +6806,7 @@ export type PromptTemplateName =
   | 'conflict-resolution-system'
   | 'update-task-state'
   | 'handoff'
-  | 'code-inline-request';
+  | 'code-change-requests';
 
 ================
 File: src/main/server/rest-api/agent-api.ts
@@ -7067,7 +7075,7 @@ registerRoutes(router: Router): void
 ⋮----
 // Handoff conversation
 ⋮----
-// Run code inline request
+// Run code change requests
 ⋮----
 // Scrape web
 ⋮----
@@ -8255,6 +8263,7 @@ import {
   WorkingMode,
   AIDER_COMMANDS,
   ConnectorMessage,
+  ChangeRequestItem,
 } from '@common/types';
 import { extractProviderModel, extractTextContent, extractServerNameToolName, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
@@ -9048,7 +9057,7 @@ public isInitialized()
 ⋮----
 public async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>
 ⋮----
-async runCodeInlineRequest(filename: string, lineNumber: number, userComment: string, createNewTask?: boolean, contextSize: number = 5): Promise<void>
+async runCodeChangeRequests(requests: ChangeRequestItem[], contextSize: number = 5, createNewTask?: boolean): Promise<void>
 
 ================
 File: src/main/telemetry/index.ts
@@ -10562,6 +10571,7 @@ import {
   UsageDataRow,
   VersionsInfo,
   VoiceSession,
+  ChangeRequestItem,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
@@ -10648,14 +10658,7 @@ async compactConversation(baseDir: string, taskId: string, mode: Mode, customIns
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
-async runCodeInlineRequest(
-    baseDir: string,
-    taskId: string,
-    filename: string,
-    lineNumber: number,
-    userComment: string,
-    createNewTask?: boolean,
-): Promise<void>
+async runCodeChangeRequests(baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean): Promise<void>
 ⋮----
 async loadInputHistory(baseDir: string): Promise<string[]>
 ⋮----
@@ -11024,6 +11027,7 @@ import {
   CreateTaskParams,
   TodoItem,
   AgentProfile,
+  ChangeRequestItem,
 } from '@common/types';
 import { ipcMain, clipboard } from 'electron';
 ⋮----
@@ -11944,6 +11948,7 @@ import {
   ExtensionUIComponent,
   ModalOverlayUrlData,
   AiderConnectorStatus,
+  ChangeRequestItem,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -12122,7 +12127,7 @@ compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructi
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
-runCodeInlineRequest(baseDir: string, taskId: string, filename: string, lineNumber: number, userComment: string, createNewTask?: boolean): void
+runCodeChangeRequests(baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean): void
 ⋮----
 setZoomLevel(level: number): Promise<void>
 ⋮----
@@ -12450,23 +12455,22 @@ className=
 File: src/renderer/src/components/common/DiffViewer/DiffLineCommentPanel.tsx
 ================
 import { useState, useRef, KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { Button } from '@/components/common/Button';
-import { Checkbox } from '@/components/common/Checkbox';
 import { useClickOutside } from '@/hooks/useClickOutside';
 ⋮----
 type Props = {
-  onSubmit: (comment: string, createNewTask: boolean) => void;
+  onSubmit: (comment: string) => void;
   onCancel: () => void;
-  position: { top: number; left: number };
+  anchorRect: { top: number; left: number };
+  initialText?: string;
 };
 ⋮----
 const handleSubmit = () =>
 ⋮----
 const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) =>
-⋮----
-<Checkbox label=
 
 ================
 File: src/renderer/src/components/common/DiffViewer/DiffViewer.scss
@@ -12571,6 +12575,65 @@ Please report an issue in https://github.com/hotovo/aider-desk/issues.
 File: src/renderer/src/components/common/DiffViewer/index.tsx
 ================
 
+
+================
+File: src/renderer/src/components/common/DiffViewer/PierreDiffViewer.scss
+================
+diffs-container {
+  --diffs-bg: var(--color-bg-code-block);
+  --diffs-bg-separator: var(--color-bg-primary);
+  --diffs-fg-number: var(--color-text-muted);
+  --diffs-font-family:'Sono', monospace;
+  --diffs-header-font-family: 'Sono', monospace;
+  --diffs-modified-base: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 16px;
+
+  background-color: transparent !important;
+}
+
+================
+File: src/renderer/src/components/common/DiffViewer/PierreDiffViewer.tsx
+================
+import { type MouseEvent, useCallback, useMemo } from 'react';
+import { HiPencil, HiTrash } from 'react-icons/hi';
+import { DiffViewMode, isCodeEditorDarkTheme } from '@common/types';
+import { MultiFileDiff, type MultiFileDiffProps, PatchDiff } from '@pierre/diffs/react';
+⋮----
+import type { DiffLineAnnotation, OnDiffLineClickProps, SelectedLineRange } from '@pierre/diffs';
+⋮----
+import { useSettings } from '@/contexts/SettingsContext';
+⋮----
+export type PierreLineClickInfo = {
+  lineNumber: number;
+  side: 'deletions' | 'additions';
+  viewportRect: { top: number; left: number };
+};
+⋮----
+export type DiffComment = {
+  id: string;
+  lineNumber: number;
+  comment: string;
+};
+⋮----
+type Props = {
+  oldValue?: string;
+  newValue?: string;
+  udiff?: string;
+  fileName?: string;
+  showFilename?: boolean;
+  viewMode?: DiffViewMode;
+  selectedLineNumber?: number | null;
+  onLineClick?: (lineInfo: PierreLineClickInfo) => void;
+  comments?: DiffComment[];
+  onEditComment?: (info: { commentId: string; viewportRect: { top: number; left: number } }) => void;
+  onRemoveComment?: (commentId: string) => void;
+};
+⋮----
+const handleEdit = (e: MouseEvent<HTMLButtonElement>) =>
+const handleRemove = ()
+⋮----
+const ensureTrailingNewline = (s: string)
 
 ================
 File: src/renderer/src/components/common/DiffViewer/UDiffViewer.tsx
@@ -13636,6 +13699,52 @@ export const WarningIcon = (
 className=
 
 ================
+File: src/renderer/src/components/ContextFiles/CommentsPanel.tsx
+================
+import { memo, useCallback, useState } from 'react';
+import { HiPencil, HiTrash } from 'react-icons/hi';
+import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { useTranslation } from 'react-i18next';
+import { useLocalStorage } from '@reactuses/core';
+import { clsx } from 'clsx';
+⋮----
+import { IconButton } from '@/components/common/IconButton';
+import { TextArea } from '@/components/common/TextArea';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Button } from '@/components/common/Button';
+⋮----
+type PendingComment = {
+  id: string;
+  filePath: string;
+  lineNumber: number;
+  comment: string;
+};
+⋮----
+type Props = {
+  pendingComments: PendingComment[];
+  onRemoveComment: (id: string) => void;
+  onUpdateComment: (id: string, comment: string) => void;
+  onSubmitAll: () => void;
+  isSubmitting: boolean;
+  createNewTask: boolean;
+  onCreateNewTaskChange: (value: boolean) => void;
+};
+⋮----
+onClick=
+⋮----
+<div className=
+⋮----
+{/* Panel header */}
+⋮----
+icon=
+⋮----
+onStartEdit=
+⋮----
+{/* Submit change requests */}
+⋮----
+<Checkbox label=
+
+================
 File: src/renderer/src/components/ContextFiles/ContextFiles.css
 ================
 .rct-tree-items-container {
@@ -13769,31 +13878,69 @@ File: src/renderer/src/components/ContextFiles/ContextFilesSectionInner.tsx
 ================
 File: src/renderer/src/components/ContextFiles/DiffFileItem.tsx
 ================
-import { MouseEvent, useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MdOutlineCommit } from 'react-icons/md';
 import { DiffViewMode, UpdatedFile } from '@common/types';
-import { getLanguageFromPath } from '@common/utils';
 ⋮----
-import { CompactDiffViewer, DiffLineCommentPanel, LineClickInfo, UDiffViewer } from '@/components/common/DiffViewer';
+import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
 ⋮----
 type Props = {
   file: UpdatedFile;
   index: number;
   diffViewMode: DiffViewMode;
-  activeLineInfo: {
-    lineKey: string;
-    lineInfo: LineClickInfo;
-    position: { top: number; left: number };
-    filePath: string;
-  } | null;
-  onLineClick: (lineInfo: LineClickInfo, event: MouseEvent, filePath: string) => void;
-  onCommentSubmit: (comment: string, createNewTask: boolean) => void;
-  onCommentCancel: () => void;
+  selectedLineNumber?: number | null;
+  onLineClick: (lineInfo: PierreLineClickInfo, filePath: string) => void;
+  comments?: DiffComment[];
+  onEditComment?: (info: { commentId: string; viewportRect: { top: number; left: number } }) => void;
+  onRemoveComment?: (commentId: string) => void;
+};
+
+================
+File: src/renderer/src/components/ContextFiles/DiffFilesSidebar.tsx
+================
+import { ContextFile, UpdatedFile } from '@common/types';
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
+import { MdOutlineCommit } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
+import { useDebounce, useLocalStorage } from '@reactuses/core';
+import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
+import { ResizableBox } from 'react-resizable';
+import { clsx } from 'clsx';
+⋮----
+import { createFileTree, normalizePath } from './types';
+import { UNCOMMITTED_GROUP_ID } from './group-files';
+⋮----
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
+import type { TreeItem } from './types';
+⋮----
+import { Input } from '@/components/common/Input';
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type GroupTree = {
+  group: DiffModalGroup;
+  treeData: Record<string, TreeItem>;
+  files: UpdatedFile[];
 };
 ⋮----
-onLineClick=
+type Props = {
+  groups: DiffModalGroup[];
+  currentFile: UpdatedFile | null;
+  onFileSelect: (file: UpdatedFile) => void;
+};
+⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
+const handleExpandItem = (item: TreeItem) =>
+⋮----
+const handleCollapseItem = (item: TreeItem) =>
+⋮----
+const handleClick = () =>
+⋮----
+const renderChevron = () =>
+⋮----
 
 ================
 File: src/renderer/src/components/ContextFiles/EmptyContextInfo.tsx
@@ -14056,29 +14203,36 @@ export const createFileTree = (files: ContextFile[], rootId = 'root') =>
 ================
 File: src/renderer/src/components/ContextFiles/UpdatedFilesDiffModal.tsx
 ================
-import { MouseEvent, startTransition, useCallback, useEffect, useMemo, useOptimistic, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
 import { MdOutlineCommit, MdUndo } from 'react-icons/md';
-import { RiExpandWidthLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useLocalStorage } from '@reactuses/core';
 import { DiffViewMode, UpdatedFile } from '@common/types';
-import { getLanguageFromPath } from '@common/utils';
 import { clsx } from 'clsx';
 ⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { CompactDiffViewer, DiffLineCommentPanel, LineClickInfo, UDiffViewer } from '@/components/common/DiffViewer';
+import { DiffLineCommentPanel, PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
 import { CompactSelect } from '@/components/common/CompactSelect';
 import { TextArea } from '@/components/common/TextArea';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { DiffFileItem } from '@/components/ContextFiles/DiffFileItem';
-import { useSettings } from '@/contexts/SettingsContext';
+import { DiffFilesSidebar } from '@/components/ContextFiles/DiffFilesSidebar';
+import { CommentsPanel } from '@/components/ContextFiles/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
+⋮----
+type PendingComment = {
+  id: string;
+  filePath: string;
+  lineNumber: number;
+  lineKey: string;
+  comment: string;
+};
 ⋮----
 export type DiffModalGroup = {
   id: string | null;
@@ -14122,6 +14276,10 @@ type Props = {
 ⋮----
 // Scroll to the active file when in view-all mode
 ⋮----
+// Scroll spy: update currentFile based on scroll position in all-files view
+⋮----
+const handleScroll = () =>
+⋮----
 // Whether data is in flat mode (single group with no commit hashes)
 ⋮----
 // Render a group section header for the all-files view
@@ -14130,17 +14288,21 @@ type Props = {
 ⋮----
 title=
 ⋮----
-<div className=
-⋮----
 {/* Group badge in single-file mode */}
 ⋮----
 className=
 ⋮----
-onLineClick=
+{/* Main content area: file sidebar on left, diff viewer center, comments panel right */}
 ⋮----
-{/* Footer with Commit Section */}
+{/* Diff viewer with its own scroll - scrollbar right next to the file */}
 ⋮----
-{/* Error Display */}
+comments=
+⋮----
+{/* Right side: Comments panel */}
+⋮----
+{/* Footer */}
+⋮----
+{/* Commit section */}
 ⋮----
 isGeneratingMessage
 
@@ -14167,6 +14329,7 @@ import type { SectionType, TreeItem } from './types';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 ⋮----
 interface CommitGroup {
@@ -14190,8 +14353,6 @@ type Props = {
   onFilePreviewClick: (filePath: string) => void;
   taskName?: string;
 };
-⋮----
-// Read group mode from project settings on mount
 ⋮----
 // Group files by commit hash; preserve commit order from backend (newest first in array),
 // then reverse for display (oldest first). Uncommitted always last.
@@ -26385,6 +26546,7 @@ File: package.json
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
+    "@pierre/diffs": "^1.1.15",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
@@ -26416,8 +26578,6 @@ File: package.json
     "electron-updater": "^6.8.3",
     "env-paths": "^3.0.0",
     "express": "^4.21.2",
-    "global-agent": "4.1.3",
-    "undici": "8.1.0",
     "file-type": "^21.0.0",
     "filenamify": "^7.0.1",
     "fix-path": "^4.0.0",
@@ -26426,6 +26586,7 @@ File: package.json
     "ghostty-web": "^0.4.0",
     "gitdiff-parser": "^0.3.1",
     "glob": "^11.0.2",
+    "global-agent": "4.1.3",
     "google-auth-library": "^10.3.0",
     "gpt-tokenizer": "^2.9.0",
     "handlebars": "^4.7.8",
@@ -26477,6 +26638,7 @@ File: package.json
     "tmp": "^0.2.3",
     "tree-kill": "^1.2.2",
     "turndown": "^7.2.1",
+    "undici": "8.1.0",
     "unidiff": "^1.0.4",
     "unist-util-map": "^4.0.0",
     "use-sync-external-store": "^1.6.0",
