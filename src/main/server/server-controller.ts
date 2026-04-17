@@ -27,6 +27,7 @@ import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
 import { isDev, isElectron } from '@/app';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -39,6 +40,7 @@ export class ServerController {
     private readonly projectManager: ProjectManager,
     private readonly eventsHandler: EventsHandler,
     private readonly store: Store,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
   ) {
     this.init();
   }
@@ -108,7 +110,7 @@ export class ServerController {
     new ProjectApi(this.eventsHandler).registerRoutes(apiRouter);
     new CommandsApi(this.eventsHandler).registerRoutes(apiRouter);
     new UsageApi(this.eventsHandler).registerRoutes(apiRouter);
-    new SystemApi(this.eventsHandler).registerRoutes(apiRouter);
+    new SystemApi(this.eventsHandler, this.pythonInstaller).registerRoutes(apiRouter);
     new TodoApi(this.eventsHandler).registerRoutes(apiRouter);
     new McpApi(this.eventsHandler).registerRoutes(apiRouter);
     new ProvidersApi(this.eventsHandler).registerRoutes(apiRouter);

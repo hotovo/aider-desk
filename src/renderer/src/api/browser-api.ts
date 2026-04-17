@@ -1241,7 +1241,6 @@ export class BrowserApi implements ApplicationAPI {
   }
 
   async getAiderConnectorStatus(): Promise<AiderConnectorStatus> {
-    const response = await this.apiClient.get('/api/aider-connector-status');
-    return response.data;
+    return this.get('/system/aider-connector-status');
   }
 }

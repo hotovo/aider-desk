@@ -140,7 +140,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   );
 
   // Create and initialize REST API controller with the server
-  const serverController = new ServerController(httpServer, projectManager, eventsHandler, store);
+  const serverController = new ServerController(httpServer, projectManager, eventsHandler, store, pythonInstaller);
 
   // Initialize connector manager with the server
   const connectorManager = new ConnectorManager(httpServer, projectManager, eventManager);

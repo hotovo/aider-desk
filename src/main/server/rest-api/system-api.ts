@@ -5,6 +5,7 @@ import { SystemLogLevel } from '@common/types';
 import { BaseApi } from './base-api';
 
 import { EventsHandler } from '@/events-handler';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 
 const GetEffectiveEnvironmentVariableSchema = z.object({
   key: z.string().min(1, 'Key is required'),
@@ -18,7 +19,10 @@ const GetSystemLogsSchema = z.object({
 });
 
 export class SystemApi extends BaseApi {
-  constructor(private readonly eventsHandler: EventsHandler) {
+  constructor(
+    private readonly eventsHandler: EventsHandler,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
+  ) {
     super();
   }
 
@@ -58,6 +62,15 @@ export class SystemApi extends BaseApi {
       this.handleRequest(async (_req, res) => {
         this.eventsHandler.clearSystemLogs();
         res.status(200).json({ success: true });
+      }),
+    );
+
+    // Get aider connector status
+    router.get(
+      '/system/aider-connector-status',
+      this.handleRequest(async (_req, res) => {
+        const status = this.pythonInstaller.getStatus();
+        res.status(200).json(status);
       }),
     );
   }
