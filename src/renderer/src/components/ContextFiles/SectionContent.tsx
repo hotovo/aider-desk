@@ -20,7 +20,7 @@ type Props = {
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
   onFileDiffClick: (file: UpdatedFile) => void;
-  onFilePreviewClick: (filePath: string) => void;
+  onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;

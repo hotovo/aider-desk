@@ -90,10 +90,6 @@ export const ContextFiles = ({
     api.runCommand(baseDir, taskId, 'drop');
   }, [api, baseDir, taskId]);
 
-  const handleFilePreviewClick = useCallback((_filePath: string) => {
-    // Preview is handled by child sections
-  }, []);
-
   const dropFile = useCallback(
     (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
@@ -192,7 +188,6 @@ export const ContextFiles = ({
         onDropAllFiles={handleDropAllFiles}
         collapseButton={collapseButton}
         onToggle={() => setActiveSection('context')}
-        onFilePreviewClick={handleFilePreviewClick}
         onDropFile={dropFile}
       />
 
@@ -205,12 +200,12 @@ export const ContextFiles = ({
         contextFilesMap={contextFilesMap}
         visitedSections={visitedSections}
         onToggle={() => setActiveSection('updated')}
-        onFilePreviewClick={handleFilePreviewClick}
         taskName={taskName}
       />
 
       <ProjectFilesSection
         baseDir={baseDir}
+        taskId={taskId}
         allFiles={allFiles}
         isOpen={activeSection === 'project'}
         totalStats={totalStats}
@@ -220,7 +215,6 @@ export const ContextFiles = ({
         visitedSections={visitedSections}
         refreshAllFiles={refreshAllFiles}
         onToggle={() => setActiveSection('project')}
-        onFilePreviewClick={handleFilePreviewClick}
         onDropFile={dropFile}
         onAddFile={addFile}
       />

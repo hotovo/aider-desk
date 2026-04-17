@@ -39,22 +39,10 @@ type Props = {
   contextFilesMap: Map<string, ContextFile>;
   visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
   onToggle: () => void;
-  onFilePreviewClick: (filePath: string) => void;
   taskName?: string;
 };
 
-export const UpdatedFilesSection = ({
-  baseDir,
-  taskId,
-  isOpen,
-  tokensInfo,
-  os,
-  contextFilesMap,
-  visitedSections,
-  onToggle,
-  onFilePreviewClick,
-  taskName,
-}: Props) => {
+export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, contextFilesMap, visitedSections, onToggle, taskName }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
@@ -401,7 +389,6 @@ export const UpdatedFilesSection = ({
                               tokensInfo={tokensInfo}
                               os={os}
                               onFileDiffClick={handleFileDiffClick}
-                              onFilePreviewClick={onFilePreviewClick}
                               onRevertFile={(filePath) => {
                                 if (isUncommitted) {
                                   handleRevertFile(filePath);
@@ -425,7 +412,6 @@ export const UpdatedFilesSection = ({
                         tokensInfo={tokensInfo}
                         os={os}
                         onFileDiffClick={handleFileDiffClick}
-                        onFilePreviewClick={onFilePreviewClick}
                         onRevertFile={handleRevertFile}
                         onDropFile={dropFile}
                         onAddFile={addFile}

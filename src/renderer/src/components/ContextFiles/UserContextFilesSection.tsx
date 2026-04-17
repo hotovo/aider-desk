@@ -23,7 +23,7 @@ type Props = {
   onDropAllFiles: () => void;
   collapseButton?: React.ReactNode;
   onToggle: () => void;
-  onFilePreviewClick: (filePath: string) => void;
+  onFilePreviewClick?: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
 };
 

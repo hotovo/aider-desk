@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
+import { FileViewerModal } from 'src/renderer/src/components/ContextFiles/FileViewerModal';
 
 import { ContextFilesSection } from './ContextFilesSection';
 import { normalizePath, createFileTree } from './types';
@@ -19,6 +20,7 @@ import { Input } from '@/components/common/Input';
 
 type Props = {
   baseDir: string;
+  taskId: string;
   allFiles: string[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
@@ -28,13 +30,13 @@ type Props = {
   visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   onToggle: () => void;
-  onFilePreviewClick: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
 export const ProjectFilesSection = ({
   baseDir,
+  taskId,
   allFiles,
   isOpen,
   totalStats,
@@ -44,13 +46,13 @@ export const ProjectFilesSection = ({
   visitedSections,
   refreshAllFiles,
   onToggle,
-  onFilePreviewClick,
   onDropFile,
   onAddFile,
 }: Props) => {
   const { t } = useTranslation();
 
   const [projectExpandedItems, setProjectExpandedItems] = useState<string[]>([]);
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 50);
@@ -196,28 +198,32 @@ export const ProjectFilesSection = ({
   );
 
   return (
-    <ContextFilesSection
-      section="project"
-      title={t('contextFiles.projectFiles')}
-      count={allFiles.length}
-      isOpen={isOpen}
-      totalStats={totalStats}
-      treeData={projectTreeData}
-      expandedItems={projectExpandedItems}
-      setExpandedItems={setProjectExpandedItems}
-      contextFilesMap={contextFilesMap}
-      updatedFiles={[]}
-      tokensInfo={tokensInfo}
-      os={os}
-      actions={projectActions}
-      searchField={searchField}
-      showBorderTop
-      onToggle={onToggle}
-      onFileDiffClick={() => {}}
-      onFilePreviewClick={onFilePreviewClick}
-      onRevertFile={() => {}}
-      onDropFile={onDropFile}
-      onAddFile={onAddFile}
-    />
+    <>
+      <ContextFilesSection
+        section="project"
+        title={t('contextFiles.projectFiles')}
+        count={allFiles.length}
+        isOpen={isOpen}
+        totalStats={totalStats}
+        treeData={projectTreeData}
+        expandedItems={projectExpandedItems}
+        setExpandedItems={setProjectExpandedItems}
+        contextFilesMap={contextFilesMap}
+        updatedFiles={[]}
+        tokensInfo={tokensInfo}
+        os={os}
+        actions={projectActions}
+        searchField={searchField}
+        showBorderTop
+        onToggle={onToggle}
+        onFileDiffClick={() => {}}
+        onFilePreviewClick={setPreviewFilePath}
+        onRevertFile={() => {}}
+        onDropFile={onDropFile}
+        onAddFile={onAddFile}
+      />
+
+      {previewFilePath && <FileViewerModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
+    </>
   );
 };

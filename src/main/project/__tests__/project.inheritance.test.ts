@@ -125,6 +125,7 @@ describe('Project Inheritance', () => {
         worktree: parentWorktree,
         mainModel: 'parent-model',
       } as TaskData,
+      saveTask: vi.fn().mockResolvedValue(undefined),
     };
 
     const internalTask = (project as any).getTask(INTERNAL_TASK_ID);

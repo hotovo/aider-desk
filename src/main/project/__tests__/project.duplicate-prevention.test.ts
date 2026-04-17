@@ -109,6 +109,7 @@ describe('Project Duplicate Subtask Prevention', () => {
         id: parentId,
         mainModel: 'test-model',
       } as TaskData,
+      saveTask: vi.fn().mockResolvedValue(undefined),
     };
 
     (project as any).tasks.set(parentId, parentTask);
@@ -145,6 +146,7 @@ describe('Project Duplicate Subtask Prevention', () => {
         id: parentId,
         mainModel: 'test-model',
       } as TaskData,
+      saveTask: vi.fn().mockResolvedValue(undefined),
     };
 
     (project as any).tasks.set(parentId, parentTask);
@@ -180,6 +182,7 @@ describe('Project Duplicate Subtask Prevention', () => {
         id: parentId,
         mainModel: 'test-model',
       } as TaskData,
+      saveTask: vi.fn().mockResolvedValue(undefined),
     };
 
     (project as any).tasks.set(parentId, parentTask);

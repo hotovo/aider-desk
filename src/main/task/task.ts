@@ -3669,14 +3669,14 @@ ${error.stderr}`,
       }
 
       if (error) {
-        if (error) {
-          const isConflict = error.gitOutput?.includes('Resolve all conflicts');
-          if (!isConflict) {
-            this.addLogMessage('error', error.getErrorDetails(), true);
-          }
+        this.addLogMessage('loading', undefined, true);
+        const isConflict = error.gitOutput?.includes('Resolve all conflicts');
+        if (!isConflict) {
+          this.addLogMessage('error', error.getErrorDetails(), true);
         }
       }
     } catch (error) {
+      this.addLogMessage('loading', undefined, true);
       logger.error('Failed to rebase worktree:', {
         error: error instanceof Error ? error.message : String(error),
       });
@@ -4046,13 +4046,6 @@ ${error.stderr}`,
       void this.runPrompt(prompt, mode, false);
       return;
     }
-
-    this.eventManager.sendLog({
-      baseDir: this.project.baseDir,
-      taskId: INTERNAL_TASK_ID,
-      level: 'loading',
-      message: 'Creating task for code change requests...',
-    });
 
     const taskName = requests.length === 1 ? `${requests[0].filename}:${requests[0].lineNumber}` : `${requests.length} change requests`;
 

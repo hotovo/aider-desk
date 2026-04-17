@@ -84,6 +84,11 @@ export class Project {
       if (!parentTask) {
         throw new Error(`Parent task with id ${normalizedParams.parentId} not found`);
       }
+
+      if (!parentTask.task.createdAt) {
+        // when a subtask for non-saved task is created we need to save the parent task first
+        await parentTask.saveTask();
+      }
     }
 
     const sourceTask = parentTask || this.getMostRecentTask();

@@ -27,7 +27,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
   onFileDiffClick: (file: UpdatedFile) => void;
-  onFilePreviewClick: (filePath: string) => void;
+  onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -85,7 +85,7 @@ export const TreeItemRenderer = ({
   const handleTitleClick = useCallback(() => {
     if (item.isFolder) {
       toggleFolder();
-    } else if (type === 'project' && filePath) {
+    } else if (type === 'project' && filePath && onFilePreviewClick) {
       onFilePreviewClick(filePath);
     }
   }, [item.isFolder, toggleFolder, type, filePath, onFilePreviewClick]);
