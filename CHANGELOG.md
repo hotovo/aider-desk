@@ -8,6 +8,7 @@
 - added file sidebar in the Updated Files modal
 - improved handling of 'unknown' finish reason of some models when using Agent
 - added file viewer modal for Project Files
+- using no-verify during the rebase to avoid failure
 
 ## [0.61.1]
 

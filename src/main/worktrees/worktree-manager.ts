@@ -613,7 +613,7 @@ export class WorktreeManager {
           await execWithShellPath(addCommand, { cwd: worktreePath });
 
           // Create temporary commit with unique timestamp
-          const commitCommand = `git commit -m "TEMP_UNCOMMITTED_${Date.now()}"`;
+          const commitCommand = `git commit --no-verify -m "TEMP_UNCOMMITTED_${Date.now()}"`;
           executedCommands.push(`${commitCommand} (in ${worktreePath})`);
           await execWithShellPath(commitCommand, {
             cwd: worktreePath,
