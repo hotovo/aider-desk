@@ -1043,6 +1043,7 @@
     "useGitEnabled": "Git enabled - Click to use filesystem",
     "useGitDisabled": "Filesystem enabled - Click to use Git",
     "revertFile": "Revert changes",
+    "fileHasConflicts": "File has merge conflicts",
     "confirmRevertTitle": "Revert file changes?",
     "confirmRevertMessage": "This will discard all changes to this file. This action cannot be undone.",
     "revert": "Revert",

@@ -2,6 +2,7 @@ import { ContextFile, UpdatedFile } from '@common/types';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
 import { MdOutlineCommit } from 'react-icons/md';
+import { RiAlertLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
@@ -207,6 +208,11 @@ export const DiffFilesSidebar = ({ groups, currentFile, onFileSelect }: Props) =
                 {matchedFile.additions > 0 && <span className="text-success">+{matchedFile.additions}</span>}
                 {matchedFile.deletions > 0 && <span className="text-error">-{matchedFile.deletions}</span>}
               </span>
+            )}
+            {!isFolder && matchedFile?.hasConflicts && (
+              <Tooltip content={t('contextFiles.fileHasConflicts')}>
+                <RiAlertLine className="w-3.5 h-3.5 text-warning flex-shrink-0 ml-1" />
+              </Tooltip>
             )}
           </div>
           {props.children}

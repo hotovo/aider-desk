@@ -2,7 +2,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MdOutlineCommit } from 'react-icons/md';
+import { RiAlertLine } from 'react-icons/ri';
 import { DiffViewMode, UpdatedFile } from '@common/types';
+import { useTranslation } from 'react-i18next';
+
+import { Tooltip } from '@/components/ui/Tooltip';
 
 import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
 
@@ -18,6 +22,7 @@ type Props = {
 };
 
 export const DiffFileItem = ({ file, index, diffViewMode, selectedLineNumber, onLineClick, comments, onEditComment, onRemoveComment }: Props) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
 
   const handleToggle = useCallback(() => {
@@ -47,6 +52,11 @@ export const DiffFileItem = ({ file, index, diffViewMode, selectedLineNumber, on
             <MdOutlineCommit className="h-3 w-3" />
             {file.commitHash.substring(0, 7)}
           </span>
+        )}
+        {file.hasConflicts && (
+          <Tooltip content={t('contextFiles.fileHasConflicts')}>
+            <RiAlertLine className="h-4 w-4 text-warning shrink-0" />
+          </Tooltip>
         )}
       </button>
       <AnimatePresence initial={false}>

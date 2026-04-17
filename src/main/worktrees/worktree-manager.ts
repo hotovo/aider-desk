@@ -1469,13 +1469,18 @@ export class WorktreeManager {
     groupMode: UpdatedFilesGroupMode = UpdatedFilesGroupMode.Grouped,
   ): Promise<UpdatedFile[]> {
     try {
+      let files: UpdatedFile[];
       if (workingMode === 'worktree' && mainBranch) {
         if (groupMode === UpdatedFilesGroupMode.Flat) {
-          return await this.getWorktreeFlatUpdatedFiles(worktreePath, mainBranch);
+          files = await this.getWorktreeFlatUpdatedFiles(worktreePath, mainBranch);
+        } else {
+          files = await this.getWorktreeUpdatedFiles(worktreePath, mainBranch);
         }
-        return await this.getWorktreeUpdatedFiles(worktreePath, mainBranch);
+      } else {
+        files = await this.getNonWorktreeUpdatedFiles(worktreePath);
       }
-      return await this.getNonWorktreeUpdatedFiles(worktreePath);
+
+      return await this.markConflictingFiles(worktreePath, files);
     } catch (error) {
       logger.warn('Failed to get updated files:', error);
       return [];
@@ -1788,6 +1793,26 @@ export class WorktreeManager {
     }
 
     return fileDiffs;
+  }
+
+  private async markConflictingFiles(worktreePath: string, files: UpdatedFile[]): Promise<UpdatedFile[]> {
+    try {
+      const { stdout } = await execWithShellPath('git diff --name-only --diff-filter=U', { cwd: worktreePath });
+      const unmergedFiles = new Set(
+        stdout
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0),
+      );
+
+      if (unmergedFiles.size === 0) {
+        return files;
+      }
+
+      return files.map((f) => (unmergedFiles.has(f.path) ? { ...f, hasConflicts: true } : f));
+    } catch {
+      return files;
+    }
   }
 
   async restoreFile(worktreePath: string, filePath: string): Promise<void> {

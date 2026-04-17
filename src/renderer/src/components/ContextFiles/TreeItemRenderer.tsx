@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
 import { MdUndo, MdOutlinePublic } from 'react-icons/md';
 import { TbPencilOff } from 'react-icons/tb';
-import { RiRobot2Line } from 'react-icons/ri';
+import { RiAlertLine, RiRobot2Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
@@ -61,6 +61,7 @@ export const TreeItemRenderer = ({
   const showAdd = type === 'project' && !isContextFile && !isRuleFile;
   const showRemove = (type === 'context' || (type === 'project' && isContextFile)) && !isRuleFile;
   const showRevert = type === 'updated' && updatedFile && !item.isFolder && !updatedFile.commitHash;
+  const showConflictWarning = type === 'updated' && updatedFile?.hasConflicts && !item.isFolder;
 
   const fileTokenInfo = tokensInfo?.files?.[item.index];
   const fileTokenTooltip = fileTokenInfo ? `${fileTokenInfo.tokens || 0} ${t('usageDashboard.charts.tokens')}, $${(fileTokenInfo.cost || 0).toFixed(5)}` : '';
@@ -193,6 +194,11 @@ export const TreeItemRenderer = ({
                 </Tooltip>
               )}
             </>
+          )}
+          {showConflictWarning && (
+            <Tooltip content={t('contextFiles.fileHasConflicts')}>
+              <RiAlertLine className="w-4 h-4 text-warning" />
+            </Tooltip>
           )}
           {item.file?.readOnly && !isRuleFile && (
             <Tooltip content={t('contextFiles.readOnly')}>

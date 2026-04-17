@@ -227,6 +227,7 @@ export interface UpdatedFile {
   diff?: string;
   commitHash?: string;
   commitMessage?: string;
+  hasConflicts?: boolean;
 }
 
 export interface UpdatedFilesUpdatedData {

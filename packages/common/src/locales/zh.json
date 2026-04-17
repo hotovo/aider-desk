@@ -989,6 +989,7 @@
     "useGitEnabled": "Git 已启用 - 点击使用文件系统",
     "useGitDisabled": "文件系统已启用 - 点击使用 Git",
     "revertFile": "恢复更改",
+    "fileHasConflicts": "文件存在合并冲突",
     "confirmRevertTitle": "恢复文件更改？",
     "confirmRevertMessage": "这将丢弃此文件的所有更改。此操作无法撤销。",
     "revert": "恢复",
