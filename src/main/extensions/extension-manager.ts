@@ -56,6 +56,7 @@ import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
 import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
+import type { MemoryManager } from '@/memory/memory-manager';
 import type { TelemetryManager } from '@/telemetry';
 import type { ToolCallOptions, ToolSet } from 'ai';
 
@@ -156,6 +157,7 @@ export class ExtensionManager {
     private readonly modelManager: ModelManager,
     private readonly eventManager: EventManager,
     private readonly telemetryManager: TelemetryManager,
+    private readonly memoryManager: MemoryManager,
     private readonly registry: ExtensionRegistry = new ExtensionRegistry(),
   ) {
     this.loader = new ExtensionLoader();
@@ -287,7 +289,7 @@ export class ExtensionManager {
     }
 
     try {
-      const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+      const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project);
       await instance.onLoad(context);
       this.registry.setInitialized(filePath, true);
       this.eventManager.sendExtensionUIRefresh({
@@ -704,7 +706,16 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, task.project, task);
+        const context = new ExtensionContextImpl(
+          loaded.id,
+          metadata.name,
+          this.store,
+          this.modelManager,
+          this.eventManager,
+          this.memoryManager,
+          task.project,
+          task,
+        );
         const tools = instance.getTools(context, mode, profile);
 
         if (!Array.isArray(tools)) {
@@ -751,7 +762,16 @@ export class ExtensionManager {
 
     for (const { extensionId, extensionName, tool } of registeredTools) {
       const toolId = tool.name;
-      const context = new ExtensionContextImpl(extensionId, extensionName, this.store, this.modelManager, this.eventManager, task.project, task);
+      const context = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        this.store,
+        this.modelManager,
+        this.eventManager,
+        this.memoryManager,
+        task.project,
+        task,
+      );
 
       // Skip if tool is marked as Never approved
       if (profile.toolApprovals?.[toolId] === ToolApprovalState.Never) {
@@ -852,7 +872,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project);
         const commands = instance.getCommands(context);
 
         if (!Array.isArray(commands)) {
@@ -895,7 +915,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project);
         const agents = instance.getAgents(context);
 
         if (!Array.isArray(agents)) {
@@ -945,7 +965,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project);
         const modes = instance.getModes(context);
 
         if (!Array.isArray(modes)) {
@@ -1016,7 +1036,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project);
         const providers = instance.getProviders(context);
 
         if (!Array.isArray(providers)) {
@@ -1062,7 +1082,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project, task);
         const components = instance.getUIComponents(context);
 
         if (!Array.isArray(components)) {
@@ -1104,7 +1124,7 @@ export class ExtensionManager {
     }
 
     try {
-      const context = new ExtensionContextImpl(loadedExt.id, loadedExt.metadata.name, this.store, this.modelManager, this.eventManager);
+      const context = new ExtensionContextImpl(loadedExt.id, loadedExt.metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager);
       const jsx = instance.getConfigComponent(context);
       return typeof jsx === 'string' && jsx.length > 0;
     } catch {
@@ -1134,7 +1154,7 @@ export class ExtensionManager {
 
       try {
         logger.debug(`[Extensions] Getting UI extension data from '${id}' for component '${componentId}'`);
-        const context = new ExtensionContextImpl(id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
+        const context = new ExtensionContextImpl(id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project, task);
         return await instance.getUIExtensionData(componentId, context);
       } catch (error) {
         logger.error(`[Extensions] Failed to get UI extension data from '${id}' for component '${componentId}':`, error);
@@ -1167,7 +1187,7 @@ export class ExtensionManager {
 
       try {
         logger.debug(`[Extensions] Executing UI extension action '${action}' from '${id}' for component '${componentId}'`);
-        const context = new ExtensionContextImpl(id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
+        const context = new ExtensionContextImpl(id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project, task);
         return await instance.executeUIExtensionAction(componentId, action, args, context);
       } catch (error) {
         logger.error(`[Extensions] Failed to execute UI extension action '${action}' from '${id}' for component '${componentId}':`, error);
@@ -1194,7 +1214,15 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, loaded.metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(
+          loaded.id,
+          loaded.metadata.name,
+          this.store,
+          this.modelManager,
+          this.eventManager,
+          this.memoryManager,
+          project,
+        );
         const jsx = loaded.instance.getConfigComponent(context);
 
         if (typeof jsx !== 'string' || jsx.length === 0) {
@@ -1229,7 +1257,15 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, loaded.metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(
+          loaded.id,
+          loaded.metadata.name,
+          this.store,
+          this.modelManager,
+          this.eventManager,
+          this.memoryManager,
+          project,
+        );
         return await loaded.instance.getConfigData(context);
       } catch (error) {
         logger.error(`[Extensions] Failed to get config data from extension '${extensionId}':`, error);
@@ -1258,7 +1294,15 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, loaded.metadata.name, this.store, this.modelManager, this.eventManager, project, undefined);
+        const context = new ExtensionContextImpl(
+          loaded.id,
+          loaded.metadata.name,
+          this.store,
+          this.modelManager,
+          this.eventManager,
+          this.memoryManager,
+          project,
+        );
         return await loaded.instance.saveConfigData(configData, context);
       } catch (error) {
         logger.error(`[Extensions] Failed to save config data for extension '${extensionId}':`, error);
@@ -1304,7 +1348,7 @@ export class ExtensionManager {
       }
 
       try {
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, undefined, undefined);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager);
         const agents = instance.getAgents(context);
 
         if (!Array.isArray(agents)) {
@@ -1351,7 +1395,7 @@ export class ExtensionManager {
     const { extensionId, extensionName, command } = registered;
 
     try {
-      const context = new ExtensionContextImpl(extensionId, extensionName, this.store, this.modelManager, this.eventManager, project, task);
+      const context = new ExtensionContextImpl(extensionId, extensionName, this.store, this.modelManager, this.eventManager, this.memoryManager, project, task);
 
       logger.debug(`[Extensions] Executing command '${commandName}' from extension '${extensionName}'`);
       await command.execute(args, context);
@@ -1665,7 +1709,7 @@ export class ExtensionManager {
       logger.debug(`[Extensions] Dispatching event '${String(eventName)}' to extension '${metadata.name}'`);
       try {
         // Create ExtensionContext for this extension
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, project, task);
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project, task);
 
         // Call the extension handler
         // Using type assertion to handle dynamic dispatch across different event types

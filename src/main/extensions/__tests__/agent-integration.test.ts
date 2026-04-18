@@ -70,6 +70,7 @@ const createMockDeps = () => ({
     sendSettingsUpdated: vi.fn(),
   } as any,
   telemetryManager: {} as any,
+  memoryManager: {} as any,
 });
 
 const createValidTool = (overrides: Partial<ToolDefinition> = {}): ToolDefinition => ({
@@ -150,7 +151,7 @@ describe('Extension Tool Integration with Agent', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeps = createMockDeps();
-    manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
+    manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager, mockDeps.memoryManager);
   });
 
   afterEach(() => {
@@ -518,6 +519,7 @@ describe('Extension Tool Integration with Agent', () => {
           getProjects: vi.fn().mockReturnValue([]),
         } as any,
         mockDeps.telemetryManager,
+        mockDeps.memoryManager,
       );
       (manager as any).registry = registry;
 
@@ -557,6 +559,7 @@ describe('Extension Tool Integration with Agent', () => {
           getProjects: vi.fn().mockReturnValue([]),
         } as any,
         mockDeps.telemetryManager,
+        mockDeps.memoryManager,
       );
       (manager as any).registry = registry;
 

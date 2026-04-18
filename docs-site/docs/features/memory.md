@@ -92,3 +92,31 @@ In `Settings → Memory → Memories`, you can:
 - Delete individual memories or clear a project’s memories
 
 This is useful if you want to reset what the agent has learned or remove outdated information.
+
+## Using Memory from Extensions
+
+Extensions can access the memory system programmatically via the [`MemoryContext`](../extensions/api-reference.md#memorycontext) API. This enables:
+
+- **Auto-extraction**: Store insights automatically when tasks finish (e.g., in `onAgentFinished`)
+- **Context enrichment**: Retrieve relevant memories at the start of tasks to provide better context
+- **Consolidation**: Periodically merge or clean up similar memories
+
+### Quick example
+
+```typescript
+async onAgentFinished(event: AgentFinishedEvent, context: ExtensionContext) {
+  const memory = context.getMemoryContext();
+  if (!memory.isMemoryEnabled()) return;
+
+  const projectId = context.getProjectDir();
+  const taskId = context.getTaskContext()?.data.id ?? '';
+
+  // Store an insight
+  await memory.storeMemory(projectId, taskId, 'code-pattern', 'Always use clsx for conditional classes');
+
+  // Retrieve relevant context
+  const memories = await memory.retrieveMemories(projectId, 'React patterns');
+}
+```
+
+See the [Extension API Reference → MemoryContext](../extensions/api-reference.md#memorycontext) for the full API documentation and the [Creating Extensions → Memory Integration](../extensions/creating-extensions.md#extension-with-memory-integration) page for practical examples including LLM-powered auto-extraction and consolidation patterns.

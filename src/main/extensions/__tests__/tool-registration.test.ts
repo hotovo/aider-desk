@@ -68,6 +68,7 @@ const createMockDeps = () => ({
     sendSettingsUpdated: vi.fn(),
   } as any,
   telemetryManager: {} as any,
+  memoryManager: {} as any,
 });
 
 const createValidTool = (overrides: Partial<ToolDefinition> = {}): ToolDefinition => ({
@@ -106,7 +107,7 @@ describe('Tool Registration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeps = createMockDeps();
-    manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager);
+    manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager, mockDeps.memoryManager);
   });
 
   afterEach(() => {

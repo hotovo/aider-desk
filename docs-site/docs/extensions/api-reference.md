@@ -50,6 +50,9 @@ interface ExtensionContext {
   // Task access
   getTaskContext(): TaskContext | null;
 
+  // Memory access
+  getMemoryContext(): MemoryContext;
+
   // Model access
   getModelConfigs(): Promise<Model[]>;
 
@@ -75,6 +78,7 @@ interface ExtensionContext {
 | `getProjectDir()` | Get the current project directory path |
 | `getTaskContext()` | Get the current task context (null if no task active) |
 | `getProjectContext()` | Get the project context for project operations |
+| `getMemoryContext()` | Get the memory context for store/retrieve/delete memory operations |
 | `getModelConfigs()` | Get all available model configurations |
 | `getSetting(key)` | Get a setting value (supports dot-notation) |
 | `updateSettings(updates)` | Update multiple settings at once |
@@ -516,5 +520,88 @@ interface ToolResult {
   >;
   details?: Record<string, unknown>;
   isError?: boolean;
+}
+```
+
+## MemoryContext
+
+Provides access to AiderDesk's memory system — the same underlying vector store used by the built-in memory MCP tools. Available via `context.getMemoryContext()` in any extension lifecycle hook or method.
+
+```typescript
+interface MemoryContext {
+  storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
+  retrieveMemories(projectId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
+  getMemory(id: string): Promise<MemoryEntry | null>;
+  deleteMemory(id: string): Promise<boolean>;
+  updateMemory(id: string, content: string): Promise<boolean>;
+  getAllMemories(): Promise<MemoryEntry[]>;
+  isMemoryEnabled(): boolean;
+  setMemoryEnabled(enabled: boolean): void;
+}
+```
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `storeMemory(projectId, taskId, type, content)` | `Promise<string>` | Store a new memory entry. Returns the created memory ID. |
+| `retrieveMemories(projectId, query, limit?)` | `Promise<MemoryEntry[]>` | Retrieve memories by semantic similarity, ranked by relevance. |
+| `getMemory(id)` | `Promise<MemoryEntry \| null>` | Get a single memory by ID. |
+| `deleteMemory(id)` | `Promise<boolean>` | Delete a specific memory by ID. Returns `true` if successful. |
+| `updateMemory(id, content)` | `Promise<boolean>` | Update the content of an existing memory. Returns `true` if successful. |
+| `getAllMemories()` | `Promise<MemoryEntry[]>` | Get all stored memories. |
+| `isMemoryEnabled()` | `boolean` | Check if the memory system is enabled and initialized. |
+| `setMemoryEnabled(enabled)` | `void` | Enable or disable the memory system. Persists the setting. |
+
+### MemoryEntryType
+
+Memory entries are categorized by type:
+
+```typescript
+enum MemoryEntryType {
+  Task = 'task',                          // Task-specific outcomes and observations
+  UserPreference = 'user-preference',     // Durable user preferences and conventions
+  CodePattern = 'code-pattern',           // Reusable codebase patterns and practices
+}
+```
+
+### MemoryEntry
+
+```typescript
+interface MemoryEntry {
+  id: string;            // Unique memory identifier
+  content: string;       // Memory content text
+  type: MemoryEntryType; // Category of memory
+  taskId?: string;       // Associated task ID (if applicable)
+  projectId?: string;    // Associated project directory path
+  timestamp: number;     // Creation timestamp
+}
+```
+
+### Example
+
+```typescript
+import type { Extension, ExtensionContext, AgentFinishedEvent } from '@aiderdesk/extensions';
+
+export default class MemoryExtension implements Extension {
+  async onAgentFinished(event: AgentFinishedEvent, context: ExtensionContext) {
+    const memory = context.getMemoryContext();
+    if (!memory.isMemoryEnabled()) return;
+
+    const projectId = context.getProjectDir();
+    const taskId = context.getTaskContext()?.data.id ?? '';
+
+    // Store a code pattern discovered during the task
+    await memory.storeMemory(
+      projectId,
+      taskId,
+      'code-pattern',
+      'Always use clsx for conditional class names in React components',
+    );
+
+    // Retrieve relevant memories
+    const memories = await memory.retrieveMemories(projectId, 'React class naming conventions');
+    context.log(`Found ${memories.length} relevant memories`, 'info');
+  }
 }
 ```

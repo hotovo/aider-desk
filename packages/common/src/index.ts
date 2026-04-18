@@ -25,6 +25,7 @@ export type {
   FilesDroppedEvent,
   HandleApprovalEvent,
   ImportantRemindersEvent,
+  MemoryContext,
   ModeDefinition,
   OptimizeMessagesEvent,
   ProjectContext,

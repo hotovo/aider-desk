@@ -73,7 +73,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   });
 
   // Initialize extension manager (non-blocking - errors should not crash app)
-  const extensionManager = new ExtensionManager(store, modelManager, eventManager, telemetryManager);
+  const extensionManager = new ExtensionManager(store, modelManager, eventManager, telemetryManager, memoryManager);
   extensionManager.init().catch((error) => {
     logger.error('[Extensions] Extension system initialization failed, continuing without extensions:', error);
   });

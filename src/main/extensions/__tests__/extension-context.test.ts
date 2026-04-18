@@ -60,7 +60,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should create context with project', () => {
       const mockProject = createMockProject();
-      const contextWithProject = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, mockProject);
+      const contextWithProject = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, undefined, mockProject);
       expect(contextWithProject.getProjectDir()).toBe('/project/path');
     });
   });
@@ -104,7 +104,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should return project path when set', () => {
       const mockProject = createMockProject();
-      const contextWithProject = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, mockProject);
+      const contextWithProject = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, undefined, mockProject);
       expect(contextWithProject.getProjectDir()).toBe('/project/path');
     });
   });
@@ -250,8 +250,8 @@ describe('ExtensionContextImpl', () => {
         undefined,
         undefined,
         mockEventManager as any,
-        mockProject as any,
         undefined,
+        mockProject as any,
       );
 
       contextWithEventManager.triggerUIDataRefresh();
@@ -279,8 +279,8 @@ describe('ExtensionContextImpl', () => {
         undefined,
         undefined,
         mockEventManager as any,
-        mockProject as any,
         undefined,
+        mockProject as any,
       );
 
       contextWithEventManager.triggerUIDataRefresh('status-bar');
@@ -308,8 +308,8 @@ describe('ExtensionContextImpl', () => {
         undefined,
         undefined,
         mockEventManager as any,
-        mockProject as any,
         undefined,
+        mockProject as any,
       );
 
       contextWithEventManager.triggerUIDataRefresh('status-bar', 'task-123');
@@ -349,8 +349,8 @@ describe('ExtensionContextImpl', () => {
         undefined,
         undefined,
         mockEventManager as any,
-        mockProject as any,
         undefined,
+        mockProject as any,
       );
 
       contextWithEventManager.triggerUIComponentsReload();
@@ -370,6 +370,25 @@ describe('ExtensionContextImpl', () => {
       }).not.toThrow();
 
       expect(logger.warn).toHaveBeenCalled();
+    });
+  });
+
+  describe('getMemoryContext', () => {
+    it('should throw error when memoryManager is not available', () => {
+      const contextWithoutMemory = new ExtensionContextImpl(extensionId, extensionName);
+
+      expect(() => contextWithoutMemory.getMemoryContext()).toThrow('MemoryManager not available');
+    });
+
+    it('should return memoryManager when available', () => {
+      const mockMemoryManager = {
+        isMemoryEnabled: vi.fn().mockReturnValue(true),
+      };
+
+      const contextWithMemory = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, mockMemoryManager as any);
+
+      const memoryContext = contextWithMemory.getMemoryContext();
+      expect(memoryContext).toBe(mockMemoryManager);
     });
   });
 });

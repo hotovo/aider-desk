@@ -11,6 +11,8 @@ import {
   CustomCommand,
   InvocationMode,
   JSONValue,
+  MemoryEntry,
+  MemoryEntryType,
   Mode,
   ModeDefinition,
   Model,
@@ -775,6 +777,63 @@ export interface ExtensionContext {
    * @returns Promise that resolves to true if successful, false otherwise
    */
   openPath(path: string): Promise<boolean>;
+
+  /**
+   * Get the memory context for memory operations
+   * MemoryContext provides store, retrieve, list, update, and delete operations
+   * using the same underlying vector store as the built-in memory tools.
+   * @returns MemoryContext instance
+   */
+  getMemoryContext(): MemoryContext;
+}
+
+/**
+ * Memory context providing access to AiderDesk's memory system.
+ * Uses the same underlying vector store as the built-in memory MCP tools.
+ */
+export interface MemoryContext {
+  /**
+   * Store a new memory entry
+   * @returns The ID of the created memory
+   */
+  storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
+
+  /**
+   * Retrieve memories by semantic similarity
+   * @returns Array of matching memory entries, ranked by relevance
+   */
+  retrieveMemories(projectId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
+
+  /**
+   * Get a single memory by ID
+   */
+  getMemory(id: string): Promise<MemoryEntry | null>;
+
+  /**
+   * Delete a specific memory by ID
+   */
+  deleteMemory(id: string): Promise<boolean>;
+
+  /**
+   * Update the content of an existing memory
+   */
+  updateMemory(id: string, content: string): Promise<boolean>;
+
+  /**
+   * Get all stored memories
+   */
+  getAllMemories(): Promise<MemoryEntry[]>;
+
+  /**
+   * Check if the memory system is enabled and initialized
+   */
+  isMemoryEnabled(): boolean;
+
+  /**
+   * Enable or disable the memory system
+   * Persists the setting to the store
+   */
+  setMemoryEnabled(enabled: boolean): void;
 }
 
 /**

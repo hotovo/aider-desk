@@ -507,6 +507,120 @@ export default class ProtectedPathsExtension implements Extension {
 }
 ```
 
+### Extension with Memory Integration
+
+Extensions can access AiderDesk's built-in memory system via `context.getMemoryContext()`. This enables storing and retrieving knowledge across tasks — useful for auto-extracting insights from agent interactions or building context-aware extensions.
+
+```typescript
+// memory-insights.ts
+import type { Extension, ExtensionContext, AgentFinishedEvent } from '@aiderdesk/extensions';
+
+export default class MemoryInsightsExtension implements Extension {
+  static metadata = {
+    name: 'Memory Insights',
+    version: '1.0.0',
+    description: 'Auto-extracts insights from agent interactions and stores them as memories',
+  };
+
+  async onAgentFinished(event: AgentFinishedEvent, context: ExtensionContext) {
+    const memory = context.getMemoryContext();
+    if (!memory.isMemoryEnabled()) return;
+
+    const projectId = context.getProjectDir();
+    const taskContext = context.getTaskContext();
+    const taskId = taskContext?.data.id ?? '';
+
+    // Retrieve relevant context from previous tasks
+    const memories = await memory.retrieveMemories(projectId, 'project conventions');
+    context.log(`Loaded ${memories.length} memories for context`, 'info');
+
+    // Store a pattern observed during this task
+    await memory.storeMemory(
+      projectId,
+      taskId,
+      'code-pattern',
+      'Use Zod schemas for all runtime input validation',
+    );
+  }
+}
+```
+
+#### Auto-extraction with LLM
+
+For smarter memory extraction, combine the Memory API with `taskContext.generateText()` to have a cheap model analyze the conversation and extract insights automatically:
+
+```typescript
+import type { Extension, ExtensionContext, AgentFinishedEvent } from '@aiderdesk/extensions';
+
+export default class SmartMemoryExtension implements Extension {
+  static metadata = {
+    name: 'Smart Memory',
+    version: '1.0.0',
+    description: 'Auto-extracts and consolidates memories using an LLM',
+  };
+
+  async onAgentFinished(event: AgentFinishedEvent, context: ExtensionContext) {
+    const memory = context.getMemoryContext();
+    if (!memory.isMemoryEnabled()) return;
+
+    const taskContext = context.getTaskContext();
+    if (!taskContext) return;
+
+    const projectId = context.getProjectDir();
+    const taskId = taskContext.data.id;
+
+    // Use a cheap model to extract insights from the conversation
+    const extractionResult = await taskContext.generateText(
+      'gpt-4o-mini',
+      'You are a memory extraction assistant. Extract reusable knowledge from the conversation.',
+      `Analyze this conversation and extract 1-3 reusable insights as JSON array of objects with "type" (task|user-preference|code-pattern) and "content" fields. Only extract stable, reusable knowledge. Return ONLY the JSON array, no explanation.`,
+    );
+
+    if (!extractionResult) return;
+
+    try {
+      const insights = JSON.parse(extractionResult);
+      for (const insight of insights) {
+        await memory.storeMemory(projectId, taskId, insight.type, insight.content);
+      }
+      context.log(`Stored ${insights.length} extracted memories`, 'info');
+    } catch {
+      context.log('Failed to parse extraction result', 'warn');
+    }
+  }
+}
+```
+
+#### Memory consolidation
+
+You can periodically consolidate similar memories to keep the memory store clean:
+
+```typescript
+async consolidateMemories(context: ExtensionContext) {
+  const memory = context.getMemoryContext();
+  const allMemories = await memory.getAllMemories();
+
+  // Group by type for consolidation
+  const byType = new Map<string, typeof allMemories>();
+  for (const m of allMemories) {
+    const existing = byType.get(m.type) ?? [];
+    existing.push(m);
+    byType.set(m.type, existing);
+  }
+
+  // Delete duplicates or outdated entries
+  for (const [, entries] of byType) {
+    if (entries.length > 1) {
+      // Keep the most recent, delete older duplicates
+      entries.sort((a, b) => b.timestamp - a.timestamp);
+      for (let i = 1; i < entries.length; i++) {
+        await memory.deleteMemory(entries[i].id);
+      }
+    }
+  }
+}
+```
+
 ## Folder-Based Extensions
 
 For more complex extensions that require external dependencies, use a folder structure with a `package.json`.

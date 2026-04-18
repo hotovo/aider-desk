@@ -64,6 +64,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
       modelManager as unknown as ModelManager,
       eventManager as unknown as EventManager,
       telemetryManager as any,
+      {} as any,
       mockRegistry as any,
     );
   });

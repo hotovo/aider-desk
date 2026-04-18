@@ -1,9 +1,10 @@
 import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 
-import type { ExtensionContext, ProjectContext, TaskContext } from '@common/extensions';
+import type { ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
 import type { Model, SettingsData } from '@common/types';
 import type { EventManager } from '@/events';
+import type { MemoryManager } from '@/memory/memory-manager';
 import type { ModelManager } from '@/models';
 import type { Project } from '@/project';
 import type { Store } from '@/store';
@@ -19,6 +20,7 @@ export class ExtensionContextImpl implements ExtensionContext {
     private readonly store?: Store,
     private readonly modelManager?: ModelManager,
     private readonly eventManager?: EventManager,
+    private readonly memoryManager?: MemoryManager,
     private readonly project?: Project,
     private readonly task?: Task,
   ) {}
@@ -145,5 +147,12 @@ export class ExtensionContextImpl implements ExtensionContext {
       this.log(`Failed to open path: ${error}`, 'error');
       return false;
     }
+  }
+
+  getMemoryContext(): MemoryContext {
+    if (!this.memoryManager) {
+      throw new Error('MemoryManager not available');
+    }
+    return this.memoryManager;
   }
 }

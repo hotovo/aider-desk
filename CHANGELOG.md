@@ -12,6 +12,7 @@
 - added merge conflict indicators for updated files
 - using correct API endpoint for /resolve-conflicts from browser client
 - added API endpoint for getting Aider connector installation status from browser client
+- added Memory API for extensions
 
 ## [0.61.1]
 

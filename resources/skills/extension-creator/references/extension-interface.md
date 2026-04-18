@@ -77,6 +77,9 @@ interface ExtensionContext {
   getTaskContext(): TaskContext | null;
   getProjectContext(): ProjectContext;
 
+  // Memory access
+  getMemoryContext(): MemoryContext;
+
   // Settings
   getSetting(key: string): Promise<unknown>;
   updateSettings(updates: Record<string, unknown>): Promise<void>;
@@ -91,6 +94,69 @@ interface ExtensionContext {
   // Navigation
   openUrl(url: string, target?: 'external' | 'window' | 'modal-overlay'): Promise<void>;
   openPath(path: string): Promise<boolean>;
+}
+```
+
+## MemoryContext
+
+Provides access to AiderDesk's memory system — the same underlying vector store used by the built-in memory tools. Available via `context.getMemoryContext()` in any extension method.
+
+```typescript
+interface MemoryContext {
+  storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
+  retrieveMemories(projectId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
+  getMemory(id: string): Promise<MemoryEntry | null>;
+  deleteMemory(id: string): Promise<boolean>;
+  updateMemory(id: string, content: string): Promise<boolean>;
+  getAllMemories(): Promise<MemoryEntry[]>;
+  isMemoryEnabled(): boolean;
+  setMemoryEnabled(enabled: boolean): void;
+}
+```
+
+### MemoryEntryType
+
+```typescript
+enum MemoryEntryType {
+  Task = 'task',
+  UserPreference = 'user-preference',
+  CodePattern = 'code-pattern',
+}
+```
+
+### MemoryEntry
+
+```typescript
+interface MemoryEntry {
+  id: string;
+  content: string;
+  type: MemoryEntryType;
+  taskId?: string;
+  projectId?: string;
+  timestamp: number;
+}
+```
+
+### Usage example
+
+```typescript
+async onAgentFinished(event: AgentFinishedEvent, context: ExtensionContext) {
+  const memory = context.getMemoryContext();
+  if (!memory.isMemoryEnabled()) return;
+
+  const projectId = context.getProjectDir();
+  const taskContext = context.getTaskContext();
+  const taskId = taskContext?.data.id ?? '';
+
+  await memory.storeMemory(
+    projectId,
+    taskId,
+    'code-pattern',
+    'Always use clsx for conditional class names in React components',
+  );
+
+  const memories = await memory.retrieveMemories(projectId, 'React class names');
+  context.log(`Found ${memories.length} relevant memories`, 'info');
 }
 ```
 

@@ -109,6 +109,7 @@ describe('ExtensionManager', () => {
       modelManager as unknown as ModelManager,
       eventManager as unknown as EventManager,
       telemetryManager as any,
+      {} as any,
       mockRegistry as any,
     );
     (manager as unknown as Record<string, unknown>).loader = mockLoader;

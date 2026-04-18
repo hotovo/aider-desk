@@ -270,6 +270,31 @@ After completing this skill, verify:
 - When ambiguous: If the user says "log", "show", "display", or "report" something, default to `addLogMessage` (user-visible). Use `context.log` only for internal diagnostics.
 - Note: `context.log` is always available; `getTaskContext()` returns `null` outside a task, so always use optional chaining (`?.`)
 
+**Situation:** Extension needs to store or retrieve memories
+
+**Pattern:**
+- When: Extension wants to persist knowledge across tasks (user preferences, code patterns, architectural decisions)
+- Then: Use `context.getMemoryContext()` to access the Memory API
+- Check: Always call `isMemoryEnabled()` before using memory operations
+- Store: `memory.storeMemory(projectId, taskId, type, content)` — returns the created memory ID
+- Retrieve: `memory.retrieveMemories(projectId, query, limit?)` — returns semantically similar memories
+- Types: Use `MemoryEntryType` enum ('task', 'user-preference', 'code-pattern')
+- Note: Works outside of project/task scope — pass empty strings for `projectId`/`taskId` if not applicable
+- Example:
+  ```typescript
+  async onAgentFinished(event: AgentFinishedEvent, context: ExtensionContext) {
+    const memory = context.getMemoryContext();
+    if (!memory.isMemoryEnabled()) return;
+
+    const projectId = context.getProjectDir();
+    const taskId = context.getTaskContext()?.data.id ?? '';
+
+    await memory.storeMemory(projectId, taskId, 'code-pattern', 'Always use clsx for conditional classes');
+    const memories = await memory.retrieveMemories(projectId, 'React class naming');
+    context.log(`Found ${memories.length} relevant memories`, 'info');
+  }
+  ```
+
 **Situation:** Extension needs config storage
 
 **Pattern:**

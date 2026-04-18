@@ -466,16 +466,17 @@ export class MemoryManager {
   /**
    * Creates and stores a new memory for a specific project.
    */
-  async storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string) {
+  async storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string> {
     if (!(await this.waitForInit()) || !this.isMemoryEnabled() || !this.db) {
-      return;
+      return '';
     }
 
     try {
       const embedding = await this.getEmbedding(content);
 
+      const id = uuidv4();
       const memoryWithVector = {
-        id: uuidv4(),
+        id,
         type,
         content,
         taskid: taskId,
@@ -499,8 +500,11 @@ export class MemoryManager {
         taskId: memoryWithVector.taskid,
         content: memoryWithVector.content.substring(0, 100),
       });
+
+      return id;
     } catch (error) {
       logger.error('Failed to store memory:', error);
+      return '';
     }
   }
 
@@ -696,5 +700,16 @@ export class MemoryManager {
 
   isMemoryEnabled(): boolean {
     return (this.isInitialized && this.store.getSettings().memory.enabled) || false;
+  }
+
+  setMemoryEnabled(enabled: boolean): void {
+    const settings = this.store.getSettings();
+    this.store.saveSettings({
+      ...settings,
+      memory: {
+        ...settings.memory,
+        enabled,
+      },
+    });
   }
 }

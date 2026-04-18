@@ -58,6 +58,7 @@ const createMockDeps = () => ({
     unregisterExtensionProviders: vi.fn(),
   } as any,
   telemetryManager: {} as any,
+  memoryManager: {} as any,
   registry: new ExtensionRegistry(),
   eventManager: {
     sendSettingsUpdated: vi.fn(),
@@ -72,7 +73,14 @@ describe('Extension Lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeps = createMockDeps();
-    manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager, mockDeps.registry);
+    manager = new ExtensionManager(
+      mockDeps.store,
+      mockDeps.modelManager,
+      mockDeps.eventManager,
+      mockDeps.telemetryManager,
+      mockDeps.memoryManager,
+      mockDeps.registry,
+    );
   });
 
   afterEach(() => {
