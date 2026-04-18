@@ -63,6 +63,7 @@ const readApiKeyFromConfFile = (filePath: string, envVarName: string): string | 
           OPENCODE_API_KEY: ['opencode'],
           REQUESTY_API_KEY: ['requesty'],
           SYNTHETIC_API_KEY: ['synthetic'],
+          MISTRAL_API_KEY: ['mistral'],
         };
 
         const providerNames = envVarToProviderName[envVarName] || [envVarName.replace(/_API_KEY$/, '').toLowerCase()];

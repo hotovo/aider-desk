@@ -312,6 +312,9 @@
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. moonshotai/kimi-k2-instruct"
   },
+  "mistral": {
+    "apiKey": "API Key"
+  },
   "kimiPlan": {
     "apiKey": "API Key"
   },
@@ -416,6 +419,7 @@
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
     "minimax": "MiniMax",
+    "mistral": "Mistral",
     "ollama": "Ollama",
     "openai": "OpenAI",
     "opencode": "OpenCode ZEN",

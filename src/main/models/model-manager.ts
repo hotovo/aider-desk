@@ -33,6 +33,7 @@ import { kimiPlanProviderStrategy } from './providers/kimi-plan';
 import { litellmProviderStrategy } from './providers/litellm';
 import { lmStudioProviderStrategy } from './providers/lm-studio';
 import { minimaxProviderStrategy } from './providers/minimax';
+import { mistralProviderStrategy } from './providers/mistral';
 import { ollamaProviderStrategy } from './providers/ollama';
 import { openaiProviderStrategy } from './providers/openai';
 import { openaiCompatibleProviderStrategy } from './providers/openai-compatible';
@@ -107,6 +108,7 @@ export class ModelManager {
     litellm: litellmProviderStrategy,
     lmstudio: lmStudioProviderStrategy,
     minimax: minimaxProviderStrategy,
+    mistral: mistralProviderStrategy,
     ollama: ollamaProviderStrategy,
     openai: openaiProviderStrategy,
     'openai-compatible': openaiCompatibleProviderStrategy,

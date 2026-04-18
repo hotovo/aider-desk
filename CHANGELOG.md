@@ -14,6 +14,7 @@
 - added API endpoint for getting Aider connector installation status from browser client
 - added Memory API for extensions
 - improved task date grouping logic to use most recent task/subtask
+- added direct support for Mistral provider
 
 ## [0.61.1]
 

@@ -47,6 +47,7 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   LitellmParameters: () => <div>Litellm Parameters</div>,
   LmStudioParameters: () => <div>LmStudio Parameters</div>,
   MinimaxParameters: () => <div>Minimax Parameters</div>,
+  MistralParameters: () => <div>Mistral Parameters</div>,
   OllamaParameters: () => <div>Ollama Parameters</div>,
   OpenAiParameters: () => <div data-testid="openai-params">OpenAI Parameters</div>,
   OpenAiCompatibleParameters: () => <div>OpenAI Compatible Parameters</div>,

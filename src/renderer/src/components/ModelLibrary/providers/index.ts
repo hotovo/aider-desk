@@ -14,6 +14,7 @@ export * from './AlibabaPlanParameters';
 export * from './KimiPlanParameters';
 export * from './LitellmParameters';
 export * from './MinimaxParameters';
+export * from './MistralParameters';
 export * from './LmStudioParameters';
 export * from './OllamaParameters';
 export * from './OpenAiParameters';

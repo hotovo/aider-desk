@@ -22,6 +22,7 @@ AiderDesk supports multiple Large Language Model (LLM) providers to power your A
 - [OpenAI Compatible](#openai-compatible)
 - [Ollama](#ollama)
 - [LM Studio](#lm-studio)
+- [Mistral](#mistral)
 - [OpenRouter](#openrouter)
 - [Requesty](#requesty)
 
@@ -408,6 +409,27 @@ LM Studio provides a user-friendly interface for running local language models.
 
 ---
 
+## Mistral
+
+Mistral AI provides powerful open and commercial models optimized for a variety of tasks including coding, reasoning, and multilingual support.
+
+### Configuration Parameters
+
+- **API Key**: Your Mistral API key for authentication
+  - Environment variable: `MISTRAL_API_KEY`
+  - Get your API key from [Mistral Platform](https://console.mistral.ai/api-keys)
+- **Models**: List of available models (auto-populated when API key is provided)
+
+### Setup
+
+1. Go to [Mistral Platform](https://console.mistral.ai/api-keys)
+2. Create a new API key
+3. Enter the API key in the Model Library Mistral configuration
+4. Select your preferred models from the auto-populated list
+5. Or set the `MISTRAL_API_KEY` environment variable
+
+---
+
 ## OpenRouter
 
 OpenRouter provides access to multiple models from various providers through a single API.
@@ -507,6 +529,7 @@ AiderDesk now uses a unified model prefix system across all modes (Agent, Code, 
 | OpenCode ZEN | `opencode/` |
 | Ollama | `ollama/` |
 | LM Studio | `lmstudio/` |
+| Mistral | `mistral/` |
 | OpenRouter | `openrouter/` |
 | Requesty | `requesty/` |
 

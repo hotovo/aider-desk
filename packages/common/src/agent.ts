@@ -51,6 +51,7 @@ export type LlmProviderName =
   | 'litellm'
   | 'lmstudio'
   | 'minimax'
+  | 'mistral'
   | 'ollama'
   | 'openai'
   | 'openai-compatible'
@@ -98,6 +99,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'litellm',
   'lmstudio',
   'minimax',
+  'mistral',
   'ollama',
   'openai',
   'openai-compatible',
@@ -315,6 +317,12 @@ export interface MinimaxProvider extends LlmProviderBase {
 }
 export const isMinimaxProvider = (provider: LlmProviderBase): provider is MinimaxProvider => provider.name === 'minimax';
 
+export interface MistralProvider extends LlmProviderBase {
+  name: 'mistral';
+  apiKey: string;
+}
+export const isMistralProvider = (provider: LlmProviderBase): provider is MistralProvider => provider.name === 'mistral';
+
 export interface SyntheticProvider extends LlmProviderBase {
   name: 'synthetic';
   apiKey: string;
@@ -352,6 +360,7 @@ export type LlmProvider =
   | SyntheticProvider
   | ZaiPlanProvider
   | MinimaxProvider
+  | MistralProvider
   | ExtensionLlmProvider;
 
 export const DEFAULT_MODEL_TEMPERATURE = 0.0;
@@ -372,6 +381,7 @@ export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> =
   synthetic: 'hf:zai-org/GLM-4.7',
   'zai-plan': 'glm-5',
   minimax: 'MiniMax-M2',
+  mistral: 'mistral-large-latest',
 };
 
 export const DEFAULT_AIDER_MAIN_MODEL = `anthropic/${DEFAULT_PROVIDER_MODELS.anthropic}`;
@@ -796,6 +806,12 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         name: 'minimax',
         apiKey: '',
       } satisfies MinimaxProvider;
+      break;
+    case 'mistral':
+      provider = {
+        name: 'mistral',
+        apiKey: '',
+      } satisfies MistralProvider;
       break;
     case 'gemini-cli':
       provider = {

@@ -55,6 +55,7 @@
     "@ai-sdk/google": "2.0.67",
     "@ai-sdk/google-vertex": "3.0.127",
     "@ai-sdk/groq": "2.0.37",
+    "@ai-sdk/mistral": "2.0.30",
     "@ai-sdk/openai": "2.0.102",
     "@ai-sdk/openai-compatible": "1.0.35",
     "@ai-sdk/provider": "2.0.1",

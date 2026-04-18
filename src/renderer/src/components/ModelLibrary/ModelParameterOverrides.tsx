@@ -42,6 +42,7 @@ const PROVIDER_OVERRIDES_MAP: Partial<Record<LlmProviderName, ComponentType<Prov
   groq: DefaultModelOverrides,
   lmstudio: DefaultModelOverrides,
   minimax: DefaultModelOverrides,
+  mistral: DefaultModelOverrides,
   ollama: DefaultModelOverrides,
   synthetic: DefaultModelOverrides,
   'zai-plan': ZaiPlanModelOverrides,
