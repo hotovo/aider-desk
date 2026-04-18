@@ -322,7 +322,7 @@ src/
           DiffFileItem.tsx
           DiffFilesSidebar.tsx
           EmptyContextInfo.tsx
-          FilePreviewModal.tsx
+          FileViewerModal.tsx
           group-files.ts
           index.ts
           ProjectFilesSection.tsx
@@ -6466,6 +6466,8 @@ private async prepareInternalTask()
 ⋮----
 public async createNewTask(params?: CreateTaskParams)
 ⋮----
+// when a subtask for non-saved task is created we need to save the parent task first
+⋮----
 // Allow extensions to modify initial task data before task is created
 ⋮----
 // Apply modifications from extension
@@ -7245,16 +7247,22 @@ import { SystemLogLevel } from '@common/types';
 import { BaseApi } from './base-api';
 ⋮----
 import { EventsHandler } from '@/events-handler';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 ⋮----
 export class SystemApi extends BaseApi
 ⋮----
-constructor(private readonly eventsHandler: EventsHandler)
+constructor(
+    private readonly eventsHandler: EventsHandler,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
+)
 ⋮----
 registerRoutes(router: Router): void
 ⋮----
 // Get system logs
 ⋮----
 // Clear system logs
+⋮----
+// Get aider connector status
 
 ================
 File: src/main/server/rest-api/terminal-api.ts
@@ -7442,6 +7450,7 @@ import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
 import { isDev, isElectron } from '@/app';
+import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 ⋮----
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 ⋮----
@@ -7452,6 +7461,7 @@ constructor(
     private readonly projectManager: ProjectManager,
     private readonly eventsHandler: EventsHandler,
     private readonly store: Store,
+    private readonly pythonInstaller: PythonDependenciesInstaller,
 )
 ⋮----
 private serverGuardMiddleware(_: Request, res: Response, next: NextFunction): void
@@ -10396,6 +10406,8 @@ private parseCommitDiff(patchOutput: string): Map<string, string>
 ⋮----
 // Extract file path from "diff --git a/path b/path"
 ⋮----
+private async markConflictingFiles(worktreePath: string, files: UpdatedFile[]): Promise<UpdatedFile[]>
+⋮----
 async restoreFile(worktreePath: string, filePath: string): Promise<void>
 ⋮----
 // Check if file exists in HEAD (committed)
@@ -12251,8 +12263,6 @@ continueWorktreeRebase(baseDir: string, taskId: string): Promise<void>
 ⋮----
 resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
 ⋮----
-resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
-⋮----
 // Memory operations
 listAllMemories(): Promise<MemoryEntry[]>
 ⋮----
@@ -13800,8 +13810,6 @@ type Props = {
 };
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
-⋮----
-// Preview is handled by child sections
 
 ================
 File: src/renderer/src/components/ContextFiles/ContextFilesSection.tsx
@@ -13836,7 +13844,7 @@ type Props = {
   showBorderTop?: boolean;
   onToggle: () => void;
   onFileDiffClick: (file: UpdatedFile) => void;
-  onFilePreviewClick: (filePath: string) => void;
+  onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -13882,8 +13890,11 @@ import { useCallback, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MdOutlineCommit } from 'react-icons/md';
+import { RiAlertLine } from 'react-icons/ri';
 import { DiffViewMode, UpdatedFile } from '@common/types';
+import { useTranslation } from 'react-i18next';
 ⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
 import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
 ⋮----
 type Props = {
@@ -13904,6 +13915,7 @@ import { ContextFile, UpdatedFile } from '@common/types';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
 import { MdOutlineCommit } from 'react-icons/md';
+import { RiAlertLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
@@ -13953,33 +13965,50 @@ type Props = {
 };
 
 ================
-File: src/renderer/src/components/ContextFiles/FilePreviewModal.tsx
+File: src/renderer/src/components/ContextFiles/FileViewerModal.tsx
 ================
-import { useEffect, useMemo, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
-import { HiOutlineExclamation } from 'react-icons/hi';
-import CodeMirror from '@uiw/react-codemirror';
-import { EditorView } from '@codemirror/view';
-import { githubDarkInit } from '@uiw/codemirror-theme-github';
-import { LanguageSupport } from '@codemirror/language';
-import { languages } from '@codemirror/language-data';
-import { clsx } from 'clsx';
+import { HiOutlineExclamation, HiPencil, HiTrash } from 'react-icons/hi';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { File, type FileProps, type LineAnnotation, type LineEventBaseProps } from '@pierre/diffs/react';
+import { isCodeEditorDarkTheme } from '@common/types';
 ⋮----
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
+import { CommentsPanel } from '@/components/ContextFiles/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
+import { useSettings } from '@/contexts/SettingsContext';
+⋮----
+type PendingComment = {
+  id: string;
+  filePath: string;
+  lineNumber: number;
+  comment: string;
+};
+⋮----
+type ActiveLineInfo = {
+  lineKey: string;
+  lineNumber: number;
+  viewportRect: { top: number; left: number };
+};
 ⋮----
 type Props = {
   filePath: string;
   baseDir: string;
+  taskId: string;
   onClose: () => void;
 };
 ⋮----
-const getLanguageDescription = (filePath: string) =>
-⋮----
-const loadLanguage = async () =>
-⋮----
 const fetchFileContent = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const handleEdit = (e: MouseEvent<HTMLButtonElement>) =>
+const handleRemove = ()
+⋮----
+onMouseDown=
 ⋮----
 const renderLoading = () => (
     <div className="flex items-center justify-center h-full">
@@ -13987,7 +14016,7 @@ const renderLoading = () => (
     </div>
   );
 ⋮----
-<div className=
+<ModalOverlayLayout title=
 
 ================
 File: src/renderer/src/components/ContextFiles/group-files.ts
@@ -14018,6 +14047,7 @@ import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
+import { FileViewerModal } from 'src/renderer/src/components/ContextFiles/FileViewerModal';
 ⋮----
 import { ContextFilesSection } from './ContextFilesSection';
 import { normalizePath, createFileTree } from './types';
@@ -14029,6 +14059,7 @@ import { Input } from '@/components/common/Input';
 ⋮----
 type Props = {
   baseDir: string;
+  taskId: string;
   allFiles: string[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
@@ -14038,7 +14069,6 @@ type Props = {
   visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   onToggle: () => void;
-  onFilePreviewClick: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
 };
@@ -14103,7 +14133,7 @@ type Props = {
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
   onFileDiffClick: (file: UpdatedFile) => void;
-  onFilePreviewClick: (filePath: string) => void;
+  onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -14139,7 +14169,7 @@ import { useCallback } from 'react';
 import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
 import { MdUndo, MdOutlinePublic } from 'react-icons/md';
 import { TbPencilOff } from 'react-icons/tb';
-import { RiRobot2Line } from 'react-icons/ri';
+import { RiAlertLine, RiRobot2Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
@@ -14163,7 +14193,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
   onFileDiffClick: (file: UpdatedFile) => void;
-  onFilePreviewClick: (filePath: string) => void;
+  onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -14350,7 +14380,6 @@ type Props = {
   contextFilesMap: Map<string, ContextFile>;
   visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
   onToggle: () => void;
-  onFilePreviewClick: (filePath: string) => void;
   taskName?: string;
 };
 ⋮----
@@ -14432,7 +14461,7 @@ type Props = {
   onDropAllFiles: () => void;
   collapseButton?: React.ReactNode;
   onToggle: () => void;
-  onFilePreviewClick: (filePath: string) => void;
+  onFilePreviewClick?: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
 };
 ⋮----
