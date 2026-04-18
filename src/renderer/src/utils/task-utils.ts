@@ -111,7 +111,8 @@ export const flattenTasksForVirtualization = (
 
   const groupedTasks = new Map<string, TaskData[]>();
   nonPinnedTasks.forEach((task) => {
-    const group = getTaskDateGroup(task);
+    const mostRecent = getMostRecentUpdatedAt(task, sortedTasks);
+    const group = mostRecent ? getTaskDateGroup({ ...task, updatedAt: mostRecent }) : getTaskDateGroup(task);
     if (!groupedTasks.has(group)) {
       groupedTasks.set(group, []);
     }

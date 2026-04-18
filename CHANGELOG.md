@@ -13,6 +13,7 @@
 - using correct API endpoint for /resolve-conflicts from browser client
 - added API endpoint for getting Aider connector installation status from browser client
 - added Memory API for extensions
+- improved task date grouping logic to use most recent task/subtask
 
 ## [0.61.1]
 
