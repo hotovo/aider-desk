@@ -9,22 +9,56 @@ AiderDesk supports multiple Large Language Model (LLM) providers to power your A
 
 ## Table of Contents
 
+- [Alibaba Plan](#alibaba-plan)
 - [Anthropic](#anthropic)
-- [OpenAI](#openai)
+- [Anthropic Compatible](#anthropic-compatible)
+- [Auggie](#auggie)
 - [Azure](#azure)
-- [Gemini](#gemini)
-- [Vertex AI](#vertex-ai)
+- [Bedrock](#bedrock)
+- [Cerebras](#cerebras)
+- [Claude Agent SDK](#claude-agent-sdk)
 - [Deepseek](#deepseek)
+- [Gemini](#gemini)
+- [Gemini CLI](#gemini-cli)
 - [GPUStack](#gpustack)
 - [Groq](#groq)
-- [Bedrock](#bedrock)
-- [Claude Agent SDK](#claude-agent-sdk)
-- [OpenAI Compatible](#openai-compatible)
-- [Ollama](#ollama)
+- [Kimi Plan](#kimi-plan)
+- [LiteLLM](#litellm)
 - [LM Studio](#lm-studio)
+- [Minimax](#minimax)
 - [Mistral](#mistral)
+- [Ollama](#ollama)
+- [OpenAI](#openai)
+- [OpenAI Compatible](#openai-compatible)
+- [OpenCode](#opencode)
 - [OpenRouter](#openrouter)
 - [Requesty](#requesty)
+- [Synthetic](#synthetic)
+- [Vertex AI](#vertex-ai)
+- [ZAI Plan](#zai-plan)
+
+---
+
+## Alibaba Plan
+
+Alibaba Plan provides access to models from Alibaba's coding-focused plan, including Qwen and other partner models via an OpenAI-compatible API.
+
+### Configuration Parameters
+
+- **API Key**: Your Alibaba Plan API key for authentication
+  - Environment variable: `ALIBABA_PLAN_API_KEY`
+- **Models**: Hardcoded list of available models (e.g., `qwen3.5-plus`, `qwen3-coder-plus`, `MiniMax-M2.5`, `glm-5`, `kimi-k2.5`)
+
+### Setup
+
+1. Obtain your API key from your Alibaba Plan subscription
+2. Enter the API key in the Model Library Alibaba Plan configuration
+3. Or set the `ALIBABA_PLAN_API_KEY` environment variable
+
+### Important Notes
+
+- **Thinking Support**: Supports extended thinking with configurable budget
+- **Aider Prefix**: Uses `openai/` prefix for Aider mode
 
 ---
 
@@ -44,6 +78,54 @@ Anthropic provides powerful AI models like Claude that excel at coding and reaso
 2. Create a new API key
 3. Enter the API key in the Model Library Anthropic configuration
 4. Or set the `ANTHROPIC_API_KEY` environment variable
+
+---
+
+## Anthropic Compatible
+
+Use any Anthropic-compatible API endpoint (e.g., third-party proxies, self-hosted solutions) with the standard Anthropic SDK.
+
+### Configuration Parameters
+
+- **API Key**: Your API key for authentication
+  - Environment variable: `ANTHROPIC_API_KEY`
+- **Base URL**: The base URL of the Anthropic-compatible API endpoint
+  - Environment variable: `ANTHROPIC_API_BASE`
+
+### Setup
+
+1. Enter the API key and base URL in the Model Library Anthropic Compatible configuration
+2. Or set the `ANTHROPIC_API_KEY` and `ANTHROPIC_API_BASE` environment variables
+
+### Important Notes
+
+- **Model Discovery**: Models are auto-discovered from the `/v1/models` endpoint
+- **Aider Prefix**: Uses `anthropic/` prefix for Aider mode
+
+---
+
+## Auggie
+
+Auggie provides access to models through the Augment platform, supporting Claude and GPT models via the Auggie SDK.
+
+### Configuration Parameters
+
+- **API Key**: Your Augment API token for authentication
+  - Environment variable: `AUGMENT_API_TOKEN`
+- **API URL**: The Augment API URL endpoint
+  - Environment variable: `AUGMENT_API_URL`
+
+### Setup
+
+1. Install the Auggie CLI (`auggie`) and authenticate, or provide API token and URL manually
+2. Enter the API key and API URL in the Model Library Auggie configuration
+3. Or set the `AUGMENT_API_TOKEN` and `AUGMENT_API_URL` environment variables
+
+### Important Notes
+
+- **Auto-Discovery**: If no API key is provided, Auggie will attempt to use the local CLI session (`~/.augment/session.json`)
+- **Available Models**: Includes Claude and GPT model variants (e.g., `claude-sonnet-4-5`, `gpt-5-1`)
+- **Aider Prefix**: Uses `auggie/` prefix for Aider mode
 
 ---
 
@@ -136,6 +218,28 @@ Google's Gemini models offer versatile AI capabilities with advanced features li
 3. Enter the API key in the Model Library Gemini configuration
 4. Configure optional parameters based on your needs
 5. Or set appropriate environment variables
+
+---
+
+## Gemini CLI
+
+Gemini CLI uses the locally installed Gemini CLI tool for authentication, providing free access to Gemini models via your Google account.
+
+### Configuration Parameters
+
+- **Project ID**: Optional Google Cloud project ID (required for organization/enterprise accounts)
+
+### Setup
+
+1. Install the [Gemini CLI](https://github.com/google-gemini/gemini-cli)
+2. Authenticate with your Google account (`gemini` command will prompt you)
+3. Models are automatically available in AiderDesk when the Gemini CLI is detected in your PATH
+
+### Important Notes
+
+- **No API Key Required**: Authentication is handled by the Gemini CLI via OAuth
+- **Auto-Detection**: AiderDesk automatically detects the Gemini CLI installation
+- **Available Models**: Includes Gemini 2.5 and 3.x variants (e.g., `gemini-2.5-pro`, `gemini-3.1-pro-preview`)
 
 ---
 
@@ -238,6 +342,29 @@ Groq offers ultra-fast inference with specialized hardware acceleration.
 
 ---
 
+## Kimi Plan
+
+Kimi Plan provides access to Kimi's coding models through an Anthropic-compatible API.
+
+### Configuration Parameters
+
+- **API Key**: Your Kimi Plan API key for authentication
+  - Environment variable: `KIMI_PLAN_API_KEY`
+
+### Setup
+
+1. Obtain your API key from your Kimi Plan subscription
+2. Enter the API key in the Model Library Kimi Plan configuration
+3. Or set the `KIMI_PLAN_API_KEY` environment variable
+
+### Important Notes
+
+- **Anthropic-Compatible**: Uses the Anthropic SDK with Kimi's endpoint
+- **Available Models**: Includes `k2p5` model
+- **Aider Prefix**: Uses `anthropic/` prefix for Aider mode
+
+---
+
 ## Bedrock
 
 Amazon Bedrock provides access to foundation models from leading AI companies through AWS.
@@ -261,6 +388,26 @@ Amazon Bedrock provides access to foundation models from leading AI companies th
 3. Create an IAM user with Bedrock access permissions
 4. Enter the AWS credentials in the Model Library Bedrock configuration
 5. Or set the appropriate AWS environment variables
+
+---
+
+## Cerebras
+
+Cerebras provides ultra-fast inference using purpose-built wafer-scale AI processors.
+
+### Configuration Parameters
+
+- **API Key**: Your Cerebras API key for authentication
+  - Environment variable: `CEREBRAS_API_KEY`
+  - Get your API key from [Cerebras Cloud](https://cloud.cerebras.ai/)
+- **Models**: List of available models (auto-populated when API key is provided)
+
+### Setup
+
+1. Go to [Cerebras Cloud](https://cloud.cerebras.ai/)
+2. Create a new API key
+3. Enter the API key in the Model Library Cerebras configuration
+4. Or set the `CEREBRAS_API_KEY` environment variable
 
 ---
 
@@ -371,6 +518,29 @@ Configure any OpenAI-compatible API endpoint to use custom models or self-hosted
 
 ---
 
+## OpenCode
+
+OpenCode ZEN provides access to multiple provider models (OpenAI, Anthropic, Gemini, and more) through a single unified endpoint.
+
+### Configuration Parameters
+
+- **API Key**: Your OpenCode API key for authentication
+  - Environment variable: `OPENCODE_API_KEY`
+
+### Setup
+
+1. Get your API key from [OpenCode](https://opencode.ai/)
+2. Enter the API key in the Model Library OpenCode configuration
+3. Or set the `OPENCODE_API_KEY` environment variable
+
+### Important Notes
+
+- **Multi-Provider**: Automatically routes to the correct SDK (OpenAI, Anthropic, Gemini) based on model name
+- **Available Models**: Includes models from multiple providers (e.g., `gpt-5`, `claude-sonnet-4-5`, `gemini-2.5-pro`)
+- **Aider Prefix**: Uses `openai/` prefix for Aider mode
+
+---
+
 ## Ollama
 
 Ollama allows you to run open-source models locally on your machine.
@@ -406,6 +576,56 @@ LM Studio provides a user-friendly interface for running local language models.
 2. Start a local server in LM Studio
 3. Enter the base URL in the Model Library LM Studio configuration
 4. Or set the `LMSTUDIO_API_BASE` environment variable
+
+---
+
+## LiteLLM
+
+LiteLLM provides a unified API proxy that translates requests to over 100+ LLM providers using a consistent OpenAI-compatible interface.
+
+### Configuration Parameters
+
+- **API Key**: Your LiteLLM API key for authentication (optional, depends on your setup)
+  - Environment variable: `LITELLM_API_KEY`
+- **Base URL**: Your LiteLLM proxy server endpoint (required)
+  - Environment variable: `LITELLM_API_BASE`
+
+### Setup
+
+1. Set up your [LiteLLM Proxy Server](https://docs.litellm.ai/docs/proxy)
+2. Enter the base URL of your LiteLLM proxy in the Model Library LiteLLM configuration
+3. Optionally enter the API key if your proxy requires authentication
+4. Or set the `LITELLM_API_BASE` and `LITELLM_API_KEY` environment variables
+
+### Important Notes
+
+- **Model Discovery**: Models are loaded from the `/model/info` endpoint
+- **Cost Tracking**: LiteLLM provides pricing info per model when configured in the proxy
+- **Load Balancing**: Supports multiple backends per model name (uses the most conservative limits)
+
+---
+
+## Minimax
+
+Minimax provides AI models with Anthropic-compatible API support, including caching capabilities for cost optimization.
+
+### Configuration Parameters
+
+- **API Key**: Your Minimax API key for authentication
+  - Environment variable: `MINIMAX_API_KEY`
+
+### Setup
+
+1. Obtain your API key from [Minimax](https://platform.minimaxi.com/)
+2. Enter the API key in the Model Library Minimax configuration
+3. Or set the `MINIMAX_API_KEY` environment variable
+
+### Important Notes
+
+- **Anthropic-Compatible**: Uses the Anthropic SDK with Minimax's endpoint
+- **Available Models**: Includes `MiniMax-M2` and `MiniMax-M2-Stable`
+- **Cache Support**: Supports prompt caching for cost optimization
+- **Aider Prefix**: Uses `openai/` prefix for Aider mode
 
 ---
 
@@ -497,6 +717,50 @@ Requesty provides optimized model routing and caching for improved performance a
 
 ---
 
+## Synthetic
+
+Synthetic provides AI models through an OpenAI-compatible API endpoint.
+
+### Configuration Parameters
+
+- **API Key**: Your Synthetic API key for authentication
+  - Environment variable: `SYNTHETIC_API_KEY`
+
+### Setup
+
+1. Get your API key from [Synthetic](https://synthetic.new/)
+2. Enter the API key in the Model Library Synthetic configuration
+3. Or set the `SYNTHETIC_API_KEY` environment variable
+
+### Important Notes
+
+- **OpenAI-Compatible**: Uses the OpenAI-compatible SDK
+- **Aider Prefix**: Uses `openai/` prefix for Aider mode
+
+---
+
+## ZAI Plan
+
+ZAI Plan provides access to ZAI's coding models with thinking support through an OpenAI-compatible API.
+
+### Configuration Parameters
+
+- **API Key**: Your ZAI API key for authentication
+  - Environment variable: `ZAI_API_KEY`
+
+### Setup
+
+1. Obtain your API key from your ZAI Plan subscription
+2. Enter the API key in the Model Library ZAI Plan configuration
+3. Or set the `ZAI_API_KEY` environment variable
+
+### Important Notes
+
+- **Thinking Support**: Supports extended thinking (enabled by default, can be disabled per model)
+- **Aider Prefix**: Uses `openai/` prefix for Aider mode
+
+---
+
 ## Model Library Integration
 
 The **Model Library** provides advanced provider and model management capabilities beyond basic provider configuration:
@@ -515,23 +779,33 @@ AiderDesk now uses a unified model prefix system across all modes (Agent, Code, 
 
 | Provider | Model Prefix |
 |----------|--------------|
+| Alibaba Plan | `openai/` |
 | Anthropic | `anthropic/` |
+| Anthropic Compatible | `anthropic/` |
+| Auggie | `auggie/` |
 | OpenAI | `openai/` |
 | Azure | `azure/` |
-| Gemini | `gemini/` |
-| Vertex AI | `vertex_ai/` |
+| Bedrock | `bedrock/` |
+| Cerebras | `cerebras/` |
+| Claude Agent SDK | `claude-agent-sdk/` |
 | Deepseek | `deepseek/` |
+| Gemini | `gemini/` |
+| Gemini CLI | `gemini-cli/` |
 | GPUStack | `openai/` |
 | Groq | `groq/` |
-| Bedrock | `bedrock/` |
-| Claude Agent SDK | `claude-agent-sdk/` |
+| Kimi Plan | `anthropic/` |
+| LiteLLM | `litellm/` |
+| LM Studio | `lmstudio/` |
+| Minimax | `openai/` |
+| Mistral | `mistral/` |
+| Ollama | `ollama/` |
 | OpenAI Compatible | `openai-compatible/` |
 | OpenCode ZEN | `opencode/` |
-| Ollama | `ollama/` |
-| LM Studio | `lmstudio/` |
-| Mistral | `mistral/` |
 | OpenRouter | `openrouter/` |
 | Requesty | `requesty/` |
+| Synthetic | `openai/` |
+| Vertex AI | `vertex_ai/` |
+| ZAI Plan | `openai/` |
 
 ### Important Notes
 
