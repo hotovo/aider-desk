@@ -2,12 +2,8 @@ import { type MouseEvent, useCallback, useMemo } from 'react';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { DiffViewMode, isCodeEditorDarkTheme } from '@common/types';
 import { MultiFileDiff, type MultiFileDiffProps, PatchDiff } from '@pierre/diffs/react';
-import { AttachedLanguages } from '@pierre/diffs';
 
 import type { DiffLineAnnotation, OnDiffLineClickProps, SelectedLineRange } from '@pierre/diffs';
-
-// add text language to avoid bug in @pierre/diffs causing infinite loop
-AttachedLanguages.add('text');
 
 import { useSettings } from '@/contexts/SettingsContext';
 import './PierreDiffViewer.scss';
