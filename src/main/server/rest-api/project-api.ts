@@ -305,6 +305,7 @@ const RestoreFileSchema = z.object({
 
 const ReadFileSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
   filePath: z.string().min(1, 'File path is required'),
 });
 
@@ -863,8 +864,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, filePath } = parsed;
-        const content = await this.eventsHandler.readFile(projectDir, filePath);
+        const { projectDir, taskId, filePath } = parsed;
+        const content = await this.eventsHandler.readFile(projectDir, taskId, filePath);
         res.status(200).json({ content });
       }),
     );

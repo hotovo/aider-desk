@@ -116,7 +116,7 @@ export interface ApplicationAPI {
   getAllFiles: (baseDir: string, taskId: string, useGit?: boolean) => Promise<string[]>;
   getUpdatedFiles: (baseDir: string, taskId: string) => Promise<UpdatedFile[]>;
   restoreFile: (baseDir: string, taskId: string, filePath: string) => Promise<void>;
-  readFile: (baseDir: string, filePath: string) => Promise<string>;
+  readFile: (baseDir: string, taskId: string, filePath: string) => Promise<string>;
   generateCommitMessage: (baseDir: string, taskId: string) => Promise<string>;
   commitChanges: (baseDir: string, taskId: string, message: string, amend: boolean) => Promise<void>;
   addFile: (baseDir: string, taskId: string, filePath: string, readOnly?: boolean) => void;

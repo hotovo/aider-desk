@@ -92,7 +92,7 @@ const api: ApplicationAPI = {
   getAllFiles: (baseDir, taskId, useGit = true) => ipcRenderer.invoke('get-all-files', baseDir, taskId, useGit),
   getUpdatedFiles: (baseDir, taskId) => ipcRenderer.invoke('get-updated-files', baseDir, taskId),
   restoreFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('restore-file', baseDir, taskId, filePath),
-  readFile: (baseDir, filePath) => ipcRenderer.invoke('read-file', baseDir, filePath),
+  readFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('read-file', baseDir, taskId, filePath),
   generateCommitMessage: (baseDir, taskId) => ipcRenderer.invoke('generate-commit-message', baseDir, taskId),
   commitChanges: (baseDir, taskId, message, amend) => ipcRenderer.invoke('commit-changes', baseDir, taskId, message, amend),
   addFile: (baseDir, taskId, filePath, readOnly = false) => ipcRenderer.send('add-file', baseDir, taskId, filePath, readOnly),

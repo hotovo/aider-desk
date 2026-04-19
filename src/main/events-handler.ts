@@ -563,8 +563,13 @@ export class EventsHandler {
     await task.restoreFile(filePath);
   }
 
-  async readFile(baseDir: string, filePath: string): Promise<string> {
-    const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(baseDir, filePath);
+  async readFile(baseDir: string, taskId: string, filePath: string): Promise<string> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    const absolutePath = path.isAbsolute(filePath)
+      ? filePath
+      : task
+        ? ((await task.resolveContextFilePath(filePath)) ?? path.join(baseDir, filePath))
+        : path.join(baseDir, filePath);
     const fileContentBuffer = await fs.readFile(absolutePath);
 
     if (isBinary(filePath, fileContentBuffer)) {

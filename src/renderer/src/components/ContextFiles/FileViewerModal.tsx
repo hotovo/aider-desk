@@ -57,7 +57,7 @@ export const FileViewerModal = ({ filePath, baseDir, taskId, onClose }: Props) =
       setIsLoading(true);
       setError(null);
       try {
-        const fileContent = await api.readFile(baseDir, filePath);
+        const fileContent = await api.readFile(baseDir, taskId, filePath);
         setContent(fileContent);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
@@ -68,7 +68,7 @@ export const FileViewerModal = ({ filePath, baseDir, taskId, onClose }: Props) =
     };
 
     void fetchFileContent();
-  }, [api, baseDir, filePath]);
+  }, [api, baseDir, filePath, taskId]);
 
   const resetLineState = useCallback(() => {
     setActiveLineInfo(null);

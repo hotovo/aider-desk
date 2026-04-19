@@ -986,9 +986,10 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  async readFile(baseDir: string, filePath: string): Promise<string> {
-    const response = await this.post<{ projectDir: string; filePath: string }, { content: string }>('/project/read-file', {
+  async readFile(baseDir: string, taskId: string, filePath: string): Promise<string> {
+    const response = await this.post<{ projectDir: string; taskId: string; filePath: string }, { content: string }>('/project/read-file', {
       projectDir: baseDir,
+      taskId,
       filePath,
     });
     return response.content;
