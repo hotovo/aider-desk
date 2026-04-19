@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 import { FileFinder, type GrepResult } from '@ff-labs/fff-node';
 
-import type { Extension, ExtensionContext, ProjectStartedEvent, ToolDefinition } from '@aiderdesk/extensions';
+import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/extensions';
 
 export const metadata = {
   name: 'fff',
-  version: '1.0.0',
+  version: '1.1.0',
   description: 'Fast file content search using FFF (Freakin Fast File Finder) — replaces the internal grep tool',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/fff/icon.png',
   author: 'wladimiiir',
@@ -116,7 +116,7 @@ const convertGrepResults = (
 export default class FffExtension implements Extension {
   static metadata = metadata;
 
-  private finder: FileFinder | null = null;
+  private finders = new Map<string, FileFinder>();
 
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('[fff] extension loaded', 'info');
@@ -127,18 +127,10 @@ export default class FffExtension implements Extension {
   }
 
   async onUnload(): Promise<void> {
-    if (this.finder) {
-      this.finder.destroy();
-      this.finder = null;
+    for (const finder of this.finders.values()) {
+      finder.destroy();
     }
-  }
-
-  async onProjectStarted(event: ProjectStartedEvent, context: ExtensionContext): Promise<void> {
-    context.log(`[fff] project started: ${event.baseDir}`, 'info');
-
-    if (!FileFinder.isAvailable()) {
-      context.log('[fff] native library not available — fff will be disabled', 'error');
-    }
+    this.finders.clear();
   }
 
   getTools(_context: ExtensionContext): ToolDefinition[] {
@@ -165,9 +157,10 @@ export default class FffExtension implements Extension {
       return 'Error: FFF native library not available.';
     }
 
-    if (!this.finder) {
+    let finder = this.finders.get(projectDir);
+    if (!finder) {
       try {
-        context.log('[fff] initializing finder on first use', 'info');
+        context.log(`[fff] initializing finder for project: ${projectDir}`, 'info');
         const createResult = await FileFinder.create({ basePath: projectDir, aiMode: true });
 
         if (!createResult.ok || !createResult.value) {
@@ -180,8 +173,9 @@ export default class FffExtension implements Extension {
           return `Error: FFF file scan did not complete in time — try again later`;
         }
 
-        this.finder = createResult.value;
-        context.log('[fff] project indexed successfully', 'info');
+        finder = createResult.value;
+        this.finders.set(projectDir, finder);
+        context.log(`[fff] project indexed successfully: ${projectDir}`, 'info');
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         return `Error: Failed to initialize FFF finder: ${errorMsg}`;
@@ -197,7 +191,7 @@ export default class FffExtension implements Extension {
       // bug that causes contextBefore/contextAfter to return garbage (U+FFFD
       // replacement chars, random memory fragments). We read context from disk
       // ourselves in convertGrepResults() instead.
-      const grepResult = await this.finder.grep(query, {
+      const grepResult = await finder.grep(query, {
         mode: 'regex',
         beforeContext: 0,
         afterContext: 0,
