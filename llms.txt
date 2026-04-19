@@ -126,6 +126,7 @@ src/
         litellm.ts
         lm-studio.ts
         minimax.ts
+        mistral.ts
         ollama.ts
         openai-compatible.ts
         openai.ts
@@ -418,6 +419,7 @@ src/
             LitellmParameters.tsx
             LmStudioParameters.tsx
             MinimaxParameters.tsx
+            MistralParameters.tsx
             OllamaParameters.tsx
             OpenAiAdvancedSettings.tsx
             OpenAiCompatibleAdvancedSettings.tsx
@@ -631,6 +633,7 @@ src/
         LitellmIcon.tsx
         LmStudioIcon.tsx
         MinimaxIcon.tsx
+        MistralIcon.tsx
         OllamaIcon.tsx
         OpenAiCompatibleIcon.tsx
         OpenAiIcon.tsx
@@ -3326,9 +3329,10 @@ File: src/main/extensions/extension-context.ts
 import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 ⋮----
-import type { ExtensionContext, ProjectContext, TaskContext } from '@common/extensions';
+import type { ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
 import type { Model, SettingsData } from '@common/types';
 import type { EventManager } from '@/events';
+import type { MemoryManager } from '@/memory/memory-manager';
 import type { ModelManager } from '@/models';
 import type { Project } from '@/project';
 import type { Store } from '@/store';
@@ -3362,6 +3366,8 @@ triggerUIComponentsReload(): void
 async openUrl(url: string, target: 'external' | 'window' | 'modal-overlay' = 'window'): Promise<void>
 ⋮----
 async openPath(path: string): Promise<boolean>
+⋮----
+getMemoryContext(): MemoryContext
 
 ================
 File: src/main/extensions/extension-fetcher.ts
@@ -3545,6 +3551,7 @@ import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
 import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
+import type { MemoryManager } from '@/memory/memory-manager';
 import type { TelemetryManager } from '@/telemetry';
 import type { ToolCallOptions, ToolSet } from 'ai';
 ⋮----
@@ -3637,6 +3644,7 @@ constructor(
     private readonly modelManager: ModelManager,
     private readonly eventManager: EventManager,
     private readonly telemetryManager: TelemetryManager,
+    private readonly memoryManager: MemoryManager,
     private readonly registry: ExtensionRegistry = new ExtensionRegistry(),
 )
 ⋮----
@@ -4337,7 +4345,7 @@ private async getEmbedding(text: string): Promise<number[]>
 /**
    * Creates and stores a new memory for a specific project.
    */
-async storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string)
+async storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>
 ⋮----
 // Create the table if it doesn't exist yet
 ⋮----
@@ -4379,6 +4387,8 @@ async deleteMemoriesForProject(projectId: string): Promise<number>
 async clearAllMemories(): Promise<boolean>
 ⋮----
 isMemoryEnabled(): boolean
+⋮----
+setMemoryEnabled(enabled: boolean): void
 
 ================
 File: src/main/models/providers/alibaba-plan.ts
@@ -5312,6 +5322,43 @@ export const getMinimaxCacheControl = (): CacheControl | undefined =>
 // Configuration helpers
 
 ================
+File: src/main/models/providers/mistral.ts
+================
+import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { DEFAULT_MODEL_TEMPERATURE, MistralProvider, isMistralProvider } from '@common/agent';
+import { createMistral } from '@ai-sdk/mistral';
+⋮----
+import type { LanguageModelV2 } from '@ai-sdk/provider';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
+⋮----
+interface MistralModel {
+  id: string;
+}
+⋮----
+interface MistralApiResponse {
+  data: MistralModel[];
+}
+⋮----
+export const loadMistralModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
+⋮----
+export const hasMistralEnvVars = (settings: SettingsData): boolean =>
+⋮----
+export const getMistralAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createMistralLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
+
+================
 File: src/main/models/providers/ollama.ts
 ================
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
@@ -5900,6 +5947,7 @@ import { kimiPlanProviderStrategy } from './providers/kimi-plan';
 import { litellmProviderStrategy } from './providers/litellm';
 import { lmStudioProviderStrategy } from './providers/lm-studio';
 import { minimaxProviderStrategy } from './providers/minimax';
+import { mistralProviderStrategy } from './providers/mistral';
 import { ollamaProviderStrategy } from './providers/ollama';
 import { openaiProviderStrategy } from './providers/openai';
 import { openaiCompatibleProviderStrategy } from './providers/openai-compatible';
@@ -12609,8 +12657,11 @@ import { type MouseEvent, useCallback, useMemo } from 'react';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { DiffViewMode, isCodeEditorDarkTheme } from '@common/types';
 import { MultiFileDiff, type MultiFileDiffProps, PatchDiff } from '@pierre/diffs/react';
+import { AttachedLanguages } from '@pierre/diffs';
 ⋮----
 import type { DiffLineAnnotation, OnDiffLineClickProps, SelectedLineRange } from '@pierre/diffs';
+⋮----
+// add text language to avoid bug in @pierre/diffs causing infinite loop
 ⋮----
 import { useSettings } from '@/contexts/SettingsContext';
 ⋮----
@@ -16948,6 +16999,27 @@ type Props = {
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 
 ================
+File: src/renderer/src/components/ModelLibrary/providers/MistralParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { MistralProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: MistralProvider;
+  onChange: (updated: MistralProvider) => void;
+};
+⋮----
+export const MistralParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+
+================
 File: src/renderer/src/components/ModelLibrary/providers/OllamaParameters.tsx
 ================
 import { ChangeEvent } from 'react';
@@ -17854,6 +17926,7 @@ import {
   LitellmIcon,
   LmStudioIcon,
   MinimaxIcon,
+  MistralIcon,
   OllamaIcon,
   OpenAiCompatibleIcon,
   OpenAiIcon,
@@ -17959,6 +18032,7 @@ import {
   LitellmParameters,
   LmStudioParameters,
   MinimaxParameters,
+  MistralParameters,
   OllamaParameters,
   OpenAiCompatibleParameters,
   OpenAiParameters,
@@ -18050,6 +18124,7 @@ import {
   LitellmIcon,
   LmStudioIcon,
   MinimaxIcon,
+  MistralIcon,
   OllamaIcon,
   OpenAiCompatibleIcon,
   OpenAiIcon,
@@ -22985,6 +23060,36 @@ export const MinimaxIcon = ({ width = 64, height = 64, className }: Props) => (
 );
 
 ================
+File: src/renderer/src/icons/MistralIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const MistralIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="Mistral"
+    className={`flex items-center justify-center rounded-full ${className || ''}`}
+    style={{
+      backgroundColor: 'rgb(250, 82, 15)',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.75} height={height * 0.75} xmlns="http://www.w3.org/2000/svg">
+      <title>Mistral</title>
+      <path
+        d="M3.428 3.4h3.429v3.428h3.429v3.429h-.002 3.431V6.828h3.427V3.4h3.43v13.714H24v3.429H13.714v-3.428h-3.428v-3.429h-3.43v3.428h3.43v3.429H0v-3.429h3.428V3.4zm10.286 13.715h3.428v-3.429h-3.427v3.429z"
+        clipRule="evenodd"
+      />
+    </svg>
+  </div>
+);
+
+================
 File: src/renderer/src/icons/OllamaIcon.tsx
 ================
 type Props = {
@@ -26543,6 +26648,7 @@ File: package.json
     "@ai-sdk/google": "2.0.67",
     "@ai-sdk/google-vertex": "3.0.127",
     "@ai-sdk/groq": "2.0.37",
+    "@ai-sdk/mistral": "2.0.30",
     "@ai-sdk/openai": "2.0.102",
     "@ai-sdk/openai-compatible": "1.0.35",
     "@ai-sdk/provider": "2.0.1",
