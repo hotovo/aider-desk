@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.62.0]
 
 - added support for setting up proxy
 - added sticky state panel for worktree rebase conflict resolution
