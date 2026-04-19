@@ -1,5 +1,5 @@
 import { AgentProfile, Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isOpenRouterProvider, LlmProvider, OpenRouterProvider } from '@common/agent';
+import { isOpenRouterProvider, LlmProvider, OpenRouterProvider } from '@common/agent';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 import type { LanguageModelUsage } from 'ai';
@@ -52,7 +52,7 @@ const getDefaultModelTemperature = (modelId: string) => {
   if (modelId.includes('qwen')) {
     return 0.55;
   }
-  return DEFAULT_MODEL_TEMPERATURE;
+  return undefined;
 };
 
 const loadOpenrouterModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {

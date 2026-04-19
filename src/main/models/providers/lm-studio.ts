@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isLmStudioProvider, LmStudioProvider } from '@common/agent';
+import { isLmStudioProvider, LmStudioProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import type { LanguageModelUsage } from 'ai';
@@ -43,7 +43,6 @@ export const loadLmStudioModels = async (profile: ProviderProfile, settings: Set
           id: model.id,
           providerId: profile.id,
           maxInputTokens: model.max_context_length,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
     logger.info(`Loaded ${models.length} LM Studio models from ${effectiveBaseUrl} for profile ${profile.id}`);

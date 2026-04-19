@@ -1,5 +1,5 @@
 import { AgentProfile, ContextUserMessage, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
+import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -46,7 +46,7 @@ const getDefaultModelTemperature = (modelId: string) => {
   if (modelId.includes('qwen')) {
     return 0.55;
   }
-  return DEFAULT_MODEL_TEMPERATURE;
+  return undefined;
 };
 
 const loadRequestyModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {

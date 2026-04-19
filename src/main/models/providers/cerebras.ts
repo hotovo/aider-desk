@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { CerebrasProvider, DEFAULT_MODEL_TEMPERATURE, isCerebrasProvider } from '@common/agent';
+import { CerebrasProvider, isCerebrasProvider } from '@common/agent';
 import { createCerebras } from '@ai-sdk/cerebras';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -52,7 +52,6 @@ export const loadCerebrasModels = async (profile: ProviderProfile, settings: Set
           id: model.id,
           providerId: profile.id,
           maxInputTokens: model.max_context_length,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
 

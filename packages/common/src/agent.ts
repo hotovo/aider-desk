@@ -363,7 +363,6 @@ export type LlmProvider =
   | MistralProvider
   | ExtensionLlmProvider;
 
-export const DEFAULT_MODEL_TEMPERATURE = 0.0;
 
 export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> = {
   'alibaba-plan': 'qwen3-coder-plus',

@@ -1,7 +1,6 @@
 import { startTransition, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Model, ProviderProfile } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE } from '@common/agent';
 
 import { ModelParameterOverrides } from './ModelParameterOverrides';
 
@@ -181,7 +180,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
   const handleTemperatureToggle = (enabled: boolean) => {
     setTemperatureEnabled(enabled);
     if (enabled) {
-      handleInputChange('temperature', DEFAULT_MODEL_TEMPERATURE);
+      handleInputChange('temperature', 0.0);
     } else {
       handleInputChange('temperature', undefined);
     }
@@ -331,13 +330,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
               {temperatureEnabled && <span className="text-sm font-medium text-text-primary">{formData.temperature}</span>}
             </div>
             {temperatureEnabled && (
-              <Slider
-                min={0}
-                max={2}
-                step={0.05}
-                value={formData.temperature ?? DEFAULT_MODEL_TEMPERATURE}
-                onChange={(value) => handleInputChange('temperature', value)}
-              />
+              <Slider min={0} max={2} step={0.05} value={formData.temperature ?? 0.0} onChange={(value) => handleInputChange('temperature', value)} />
             )}
             {errors.temperature && <p className="text-error text-2xs mt-1">{errors.temperature}</p>}
           </div>

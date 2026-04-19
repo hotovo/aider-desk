@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isOllamaProvider, OllamaProvider } from '@common/agent';
+import { isOllamaProvider, OllamaProvider } from '@common/agent';
 import { createOllama } from 'ollama-ai-provider-v2';
 import { simulateStreamingMiddleware, wrapLanguageModel } from 'ai';
 
@@ -43,7 +43,6 @@ export const loadOllamaModels = async (profile: ProviderProfile, settings: Setti
         return {
           id: m.name,
           providerId: profile.id,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
     logger.info(`Loaded ${models.length} Ollama models from ${effectiveBaseUrl} for profile ${profile.id}`);

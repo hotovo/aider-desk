@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
+import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
@@ -49,7 +49,6 @@ const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: Se
         return {
           id: model.id,
           providerId: profile.id,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
 

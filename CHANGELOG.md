@@ -17,6 +17,7 @@
 - added direct support for Mistral provider
 - updated Minimax models and added m2.7, m2.5 and m2.1 variants
 - updated Auggie models and added Opus 4.7
+- removed default temperature setting from model metadata for better compatibility with all providers
 
 ## [0.61.1]
 

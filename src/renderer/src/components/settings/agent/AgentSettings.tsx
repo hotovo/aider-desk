@@ -13,7 +13,7 @@ import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
 import { MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdRepeat, MdThermostat, MdPsychology } from 'react-icons/md';
-import { DEFAULT_AGENT_PROFILE, DEFAULT_MODEL_TEMPERATURE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
+import { DEFAULT_AGENT_PROFILE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import { clsx } from 'clsx';
 import Sketch from '@uiw/react-color-sketch';
@@ -996,7 +996,7 @@ export const AgentSettings = ({
                             <span>{t('settings.agent.temperature')}</span>
                             <InfoIcon tooltip={t('settings.agent.temperatureTooltip')} className="ml-1" />
                             <div className="flex items-center justify-end w-full">
-                              <Button variant="text" size="xs" onClick={() => handleProfileSettingChange('temperature', DEFAULT_MODEL_TEMPERATURE)}>
+                              <Button variant="text" size="xs" onClick={() => handleProfileSettingChange('temperature', 0.0)}>
                                 {t('settings.agent.override')}
                               </Button>
                             </div>

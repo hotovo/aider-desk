@@ -1,5 +1,5 @@
 import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isSyntheticProvider, SyntheticProvider } from '@common/agent';
+import { isSyntheticProvider, SyntheticProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { getDefaultUsageReport } from './default';
@@ -42,7 +42,6 @@ const loadSyntheticModels = async (profile: ProviderProfile, settings: SettingsD
         return {
           id: model.id,
           providerId: profile.id,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
 

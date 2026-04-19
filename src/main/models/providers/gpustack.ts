@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, GpustackProvider, isGpustackProvider } from '@common/agent';
+import { GpustackProvider, isGpustackProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import type { LanguageModelUsage } from 'ai';
@@ -56,7 +56,6 @@ const loadGpustackModels = async (profile: ProviderProfile, settings: SettingsDa
           providerId: profile.id,
           // Extract max_model_len from meta if available
           maxInputTokens: model.meta?.max_model_len,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
 

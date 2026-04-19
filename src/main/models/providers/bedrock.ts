@@ -1,7 +1,7 @@
 import { BedrockClient, GetFoundationModelAvailabilityCommand, type InferenceProfileSummary, ListInferenceProfilesCommand } from '@aws-sdk/client-bedrock';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
-import { BedrockProvider, DEFAULT_MODEL_TEMPERATURE, isBedrockProvider } from '@common/agent';
+import { BedrockProvider, isBedrockProvider } from '@common/agent';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -121,7 +121,6 @@ export const loadBedrockModels = async (profile: ProviderProfile, settings: Sett
         availableModels.push({
           id: inferenceProfile.inferenceProfileId!,
           providerId: profile.id,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         });
         logger.debug(`Profile ${inferenceProfile.inferenceProfileId!} with model ${modelId!} is available and authorized`);
       } else {

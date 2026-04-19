@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, GroqProvider, isGroqProvider } from '@common/agent';
+import { GroqProvider, isGroqProvider } from '@common/agent';
 import { createGroq } from '@ai-sdk/groq';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -53,7 +53,6 @@ export const loadGroqModels = async (profile: ProviderProfile, settings: Setting
         return {
           id: model.id,
           providerId: profile.id,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
 

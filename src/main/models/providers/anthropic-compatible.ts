@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isAnthropicCompatibleProvider, AnthropicCompatibleProvider } from '@common/agent';
+import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -47,7 +47,6 @@ const loadAnthropicCompatibleModels = async (profile: ProviderProfile, settings:
         return {
           id: model.id,
           providerId: profile.id,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
 

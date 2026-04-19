@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DeepseekProvider, DEFAULT_MODEL_TEMPERATURE, isDeepseekProvider } from '@common/agent';
+import { DeepseekProvider, isDeepseekProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -38,7 +38,6 @@ export const loadDeepseekModels = async (profile: ProviderProfile, settings: Set
         return {
           id: m.id,
           providerId: profile.id,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
         } satisfies Model;
       }) || [];
 

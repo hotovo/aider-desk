@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isOpenCodeProvider, OpenCodeProvider } from '@common/agent';
+import { isOpenCodeProvider, OpenCodeProvider } from '@common/agent';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
@@ -57,7 +57,7 @@ const getDefaultModelTemperature = (modelId: string) => {
   if (modelId.includes('glm-')) {
     return 0.7;
   }
-  return DEFAULT_MODEL_TEMPERATURE;
+  return undefined;
 };
 
 const loadOpencodeModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {

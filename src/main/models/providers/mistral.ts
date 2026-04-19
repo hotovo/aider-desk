@@ -1,5 +1,5 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, MistralProvider, isMistralProvider } from '@common/agent';
+import { MistralProvider, isMistralProvider } from '@common/agent';
 import { createMistral } from '@ai-sdk/mistral';
 
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -53,7 +53,7 @@ export const loadMistralModels = async (profile: ProviderProfile, settings: Sett
         return {
           id: model.id,
           providerId: profile.id,
-          temperature: DEFAULT_MODEL_TEMPERATURE,
+          temperature: 0.7,
         } satisfies Model;
       }) || [];
 
