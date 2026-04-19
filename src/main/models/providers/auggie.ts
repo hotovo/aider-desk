@@ -45,6 +45,11 @@ const AUGGIE_MODELS = [
     maxInputTokens: 200000,
     maxOutputTokensLimit: 32768,
   },
+  {
+    id: 'claude-opus-4-7',
+    maxInputTokens: 200000,
+    maxOutputTokensLimit: 32768,
+  },
   { id: 'gpt-5-1', maxInputTokens: 200000, maxOutputTokensLimit: 16384 },
   { id: 'gpt-5-2', maxInputTokens: 200000, maxOutputTokensLimit: 16384 },
   { id: 'gpt-5-4', maxInputTokens: 200000, maxOutputTokensLimit: 16384 },
