@@ -15,6 +15,7 @@
 - added Memory API for extensions
 - improved task date grouping logic to use most recent task/subtask
 - added direct support for Mistral provider
+- updated Minimax models and added m2.7, m2.5 and m2.1 variants
 
 ## [0.61.1]
 
