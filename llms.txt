@@ -4418,7 +4418,7 @@ const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): 
 File: src/main/models/providers/anthropic-compatible.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isAnthropicCompatibleProvider, AnthropicCompatibleProvider } from '@common/agent';
+import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 ⋮----
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -4621,7 +4621,7 @@ File: src/main/models/providers/bedrock.ts
 import { BedrockClient, GetFoundationModelAvailabilityCommand, type InferenceProfileSummary, ListInferenceProfilesCommand } from '@aws-sdk/client-bedrock';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
-import { BedrockProvider, DEFAULT_MODEL_TEMPERATURE, isBedrockProvider } from '@common/agent';
+import { BedrockProvider, isBedrockProvider } from '@common/agent';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 ⋮----
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -4670,7 +4670,7 @@ const getBedrockModelInfo = (_provider: ProviderProfile, modelId: string, allMod
 File: src/main/models/providers/cerebras.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { CerebrasProvider, DEFAULT_MODEL_TEMPERATURE, isCerebrasProvider } from '@common/agent';
+import { CerebrasProvider, isCerebrasProvider } from '@common/agent';
 import { createCerebras } from '@ai-sdk/cerebras';
 ⋮----
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -4813,7 +4813,7 @@ const getClaudeAgentSdkProviderParameters = (): Record<string, unknown> =>
 File: src/main/models/providers/deepseek.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DeepseekProvider, DEFAULT_MODEL_TEMPERATURE, isDeepseekProvider } from '@common/agent';
+import { DeepseekProvider, isDeepseekProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 ⋮----
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -5008,7 +5008,7 @@ const isGeminiRetryable = (error: unknown): boolean =>
 File: src/main/models/providers/gpustack.ts
 ================
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, GpustackProvider, isGpustackProvider } from '@common/agent';
+import { GpustackProvider, isGpustackProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
 import type { LanguageModelUsage } from 'ai';
@@ -5058,7 +5058,7 @@ const getGpustackUsageReport = (task: Task, provider: ProviderProfile, model: Mo
 File: src/main/models/providers/groq.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, GroqProvider, isGroqProvider } from '@common/agent';
+import { GroqProvider, isGroqProvider } from '@common/agent';
 import { createGroq } from '@ai-sdk/groq';
 ⋮----
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -5211,7 +5211,7 @@ apiKey = 'sk-dummy'; // Dummy key for OpenAI-compatible client which expects a k
 File: src/main/models/providers/lm-studio.ts
 ================
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isLmStudioProvider, LmStudioProvider } from '@common/agent';
+import { isLmStudioProvider, LmStudioProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
 import type { LanguageModelUsage } from 'ai';
@@ -5265,13 +5265,38 @@ export const loadMinimaxModels = async (profile: ProviderProfile): Promise<LoadM
 ⋮----
 inputCostPerToken: 0.0000003, // 0.3 per 1M tokens
 outputCostPerToken: 0.0000012, // 1.2 per 1M tokens
-cacheReadInputTokenCost: 0.00000003, // 0.03 per 1M tokens
-cacheWriteInputTokenCost: 0.00000004, // 0.04 per 1M tokens
+cacheReadInputTokenCost: 0.00000006, // 0.06 per 1M tokens
+cacheWriteInputTokenCost: 0.000000375, // 0.375 per 1M tokens
+⋮----
+inputCostPerToken: 0.0000006, // 0.6 per 1M tokens
+outputCostPerToken: 0.0000024, // 2.4 per 1M tokens
+cacheReadInputTokenCost: 0.00000006, // 0.06 per 1M tokens
+cacheWriteInputTokenCost: 0.000000375, // 0.375 per 1M tokens
 ⋮----
 inputCostPerToken: 0.0000003, // 0.3 per 1M tokens
 outputCostPerToken: 0.0000012, // 1.2 per 1M tokens
 cacheReadInputTokenCost: 0.00000003, // 0.03 per 1M tokens
-cacheWriteInputTokenCost: 0.00000004, // 0.04 per 1M tokens
+cacheWriteInputTokenCost: 0.000000375, // 0.375 per 1M tokens
+⋮----
+inputCostPerToken: 0.0000006, // 0.6 per 1M tokens
+outputCostPerToken: 0.0000024, // 2.4 per 1M tokens
+cacheReadInputTokenCost: 0.00000003, // 0.03 per 1M tokens
+cacheWriteInputTokenCost: 0.000000375, // 0.375 per 1M tokens
+⋮----
+inputCostPerToken: 0.0000003, // 0.3 per 1M tokens
+outputCostPerToken: 0.0000012, // 1.2 per 1M tokens
+cacheReadInputTokenCost: 0.00000003, // 0.03 per 1M tokens
+cacheWriteInputTokenCost: 0.000000375, // 0.375 per 1M tokens
+⋮----
+inputCostPerToken: 0.0000006, // 0.6 per 1M tokens
+outputCostPerToken: 0.0000024, // 2.4 per 1M tokens
+cacheReadInputTokenCost: 0.00000003, // 0.03 per 1M tokens
+cacheWriteInputTokenCost: 0.000000375, // 0.375 per 1M tokens
+⋮----
+inputCostPerToken: 0.0000003, // 0.3 per 1M tokens
+outputCostPerToken: 0.0000012, // 1.2 per 1M tokens
+cacheReadInputTokenCost: 0.00000003, // 0.03 per 1M tokens
+cacheWriteInputTokenCost: 0.000000375, // 0.375 per 1M tokens
 ⋮----
 export const hasMinimaxEnvVars = (settings: SettingsData): boolean =>
 ⋮----
@@ -5325,7 +5350,7 @@ export const getMinimaxCacheControl = (): CacheControl | undefined =>
 File: src/main/models/providers/mistral.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, MistralProvider, isMistralProvider } from '@common/agent';
+import { MistralProvider, isMistralProvider } from '@common/agent';
 import { createMistral } from '@ai-sdk/mistral';
 ⋮----
 import type { LanguageModelV2 } from '@ai-sdk/provider';
@@ -5362,7 +5387,7 @@ export const createMistralLlm = (profile: ProviderProfile, model: Model, setting
 File: src/main/models/providers/ollama.ts
 ================
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isOllamaProvider, OllamaProvider } from '@common/agent';
+import { isOllamaProvider, OllamaProvider } from '@common/agent';
 import { createOllama } from 'ollama-ai-provider-v2';
 import { simulateStreamingMiddleware, wrapLanguageModel } from 'ai';
 ⋮----
@@ -5401,7 +5426,7 @@ export const getOllamaUsageReport = (task: Task, provider: ProviderProfile, mode
 File: src/main/models/providers/openai-compatible.ts
 ================
 import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
+import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
@@ -5518,7 +5543,7 @@ const createOpenAIVoiceSession = async (profile: ProviderProfile, settings: Sett
 File: src/main/models/providers/opencode.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isOpenCodeProvider, OpenCodeProvider } from '@common/agent';
+import { isOpenCodeProvider, OpenCodeProvider } from '@common/agent';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
@@ -5570,7 +5595,7 @@ export const createOpencodeLlm = (profile: ProviderProfile, model: Model, settin
 File: src/main/models/providers/openrouter.ts
 ================
 import { AgentProfile, Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isOpenRouterProvider, LlmProvider, OpenRouterProvider } from '@common/agent';
+import { isOpenRouterProvider, LlmProvider, OpenRouterProvider } from '@common/agent';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 ⋮----
 import type { LanguageModelUsage } from 'ai';
@@ -5667,7 +5692,7 @@ export const getOpenRouterCacheControl = (profile: AgentProfile, llmProvider: Ll
 File: src/main/models/providers/requesty.ts
 ================
 import { AgentProfile, ContextUserMessage, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
+import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 import { v4 as uuidv4 } from 'uuid';
 ⋮----
@@ -5759,7 +5784,7 @@ export const getRequestyCacheControl = (profile: AgentProfile, llmProvider: LlmP
 File: src/main/models/providers/synthetic.ts
 ================
 import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE, isSyntheticProvider, SyntheticProvider } from '@common/agent';
+import { isSyntheticProvider, SyntheticProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
 import { getDefaultUsageReport } from './default';
@@ -10794,7 +10819,7 @@ async revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
-async readFile(baseDir: string, filePath: string): Promise<string>
+async readFile(baseDir: string, taskId: string, filePath: string): Promise<string>
 ⋮----
 async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
 ⋮----
@@ -12297,7 +12322,7 @@ revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
 restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
-async readFile(baseDir: string, filePath: string): Promise<string>
+async readFile(baseDir: string, taskId: string, filePath: string): Promise<string>
 ⋮----
 listBranches(baseDir: string): Promise<Array<
 ⋮----
@@ -12657,11 +12682,8 @@ import { type MouseEvent, useCallback, useMemo } from 'react';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { DiffViewMode, isCodeEditorDarkTheme } from '@common/types';
 import { MultiFileDiff, type MultiFileDiffProps, PatchDiff } from '@pierre/diffs/react';
-import { AttachedLanguages } from '@pierre/diffs';
 ⋮----
 import type { DiffLineAnnotation, OnDiffLineClickProps, SelectedLineRange } from '@pierre/diffs';
-⋮----
-// add text language to avoid bug in @pierre/diffs causing infinite loop
 ⋮----
 import { useSettings } from '@/contexts/SettingsContext';
 ⋮----
@@ -17653,7 +17675,6 @@ File: src/renderer/src/components/ModelLibrary/ModelDialog.tsx
 import { startTransition, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Model, ProviderProfile } from '@common/types';
-import { DEFAULT_MODEL_TEMPERATURE } from '@common/agent';
 ⋮----
 import { ModelParameterOverrides } from './ModelParameterOverrides';
 ⋮----
@@ -17698,6 +17719,8 @@ disabled={!!model} // Don't allow changing ID for existing models
 onBlur=
 ⋮----
 <span>
+⋮----
+<Slider min=
 ⋮----
 {/* Advanced Settings - Provider Overrides */}
 ⋮----
@@ -19892,7 +19915,7 @@ import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
 import { MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdRepeat, MdThermostat, MdPsychology } from 'react-icons/md';
-import { DEFAULT_AGENT_PROFILE, DEFAULT_MODEL_TEMPERATURE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
+import { DEFAULT_AGENT_PROFILE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import { clsx } from 'clsx';
 import Sketch from '@uiw/react-color-sketch';
@@ -26681,7 +26704,7 @@ File: package.json
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
-    "@pierre/diffs": "^1.1.15",
+    "@pierre/diffs": "^1.1.16",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
