@@ -515,6 +515,11 @@ export class Agent {
           }
 
           const result = await toolDef.execute!(effectiveInput, options);
+
+          if (options.abortSignal?.aborted) {
+            return result;
+          }
+
           const toolFinishedExtensionResult = await this.extensionManager.dispatchEvent(
             'onToolFinished',
             { toolName, input: effectiveInput, output: result },

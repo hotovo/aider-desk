@@ -812,7 +812,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           }
 
           if (childProcess?.pid) {
-            treeKill(childProcess.pid, 'SIGTERM');
+            treeKill(childProcess.pid, 'SIGKILL');
           }
 
           // Use the standard resolution method with proper type
@@ -840,7 +840,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             }
 
             if (childProcess?.pid) {
-              treeKill(childProcess.pid, 'SIGTERM');
+              treeKill(childProcess.pid, 'SIGKILL');
             }
             stderr = `Error: Command timed out after ${timeout}ms. Consider increasing the timeout parameter.`;
             exitCode = 124;
@@ -848,6 +848,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           }, timeout);
 
           childProcess.stdout?.on('data', (data: Buffer) => {
+            if (isResolved) {
+              return;
+            }
+
             const chunk = data.toString('utf-8');
             stdout += chunk;
 
@@ -866,6 +870,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           });
 
           childProcess.stderr?.on('data', (data: Buffer) => {
+            if (isResolved) {
+              return;
+            }
+
             const chunk = data.toString('utf-8');
             stderr += chunk;
 
