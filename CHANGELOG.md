@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- correctly executing the probe semantic search tool in case of edge cases
+
 ## [0.62.0]
 
 - added support for setting up proxy

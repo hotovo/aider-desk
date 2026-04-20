@@ -61,6 +61,7 @@ export const search = async (options: ProbeSearchOptions): Promise<string | unkn
     }
   }
 
+  args.push('--');
   args.push(`"${options.query}"`);
 
   if (options.path) {
