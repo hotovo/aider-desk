@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - correctly executing the probe semantic search tool in case of edge cases
+- added tool output truncation for bash, file_read, and grep power tools (50KB byte limit, 2000 line limit)
 
 ## [0.62.0]
 

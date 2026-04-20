@@ -3,6 +3,9 @@ import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
 import { ChildProcess } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { createWriteStream } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
@@ -29,6 +32,7 @@ import { isURL } from '@common/utils';
 import { ApprovalManager } from './approval-manager';
 
 import { search } from '@/utils/probe';
+import { DEFAULT_MAX_BYTES, GREP_MAX_LINE_LENGTH, formatSize, truncateHead, truncateLine, truncateTail } from '@/utils/truncate';
 import { Task } from '@/task';
 import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
@@ -70,6 +74,11 @@ const expandTilde = (filePath: string): string => {
     return filePath.replace('~', os.homedir());
   }
   return filePath;
+};
+
+const getTempFilePath = (): string => {
+  const id = randomBytes(8).toString('hex');
+  return path.join(tmpdir(), `aider-desk-bash-${id}.log`);
 };
 
 /**
@@ -284,7 +293,64 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
 
       const absolutePath = path.resolve(task.getTaskDir(), expandedPath);
       try {
-        return await readFileContent(absolutePath, withLines, lineOffset, lineLimit);
+        const fileContentBuffer = await fs.readFile(absolutePath);
+
+        if (isBinary(absolutePath, fileContentBuffer)) {
+          return 'Error: Binary files cannot be read.';
+        }
+
+        const fileContent = fileContentBuffer.toString('utf8');
+        const allLines = fileContent.split('\n');
+        const totalFileLines = allLines.length;
+        const startLine = lineOffset;
+        const startLineDisplay = startLine + 1; // 1-indexed for display
+
+        if (startLine >= allLines.length) {
+          return `Error: Offset ${startLineDisplay} is beyond end of file (${totalFileLines} lines total).`;
+        }
+
+        // Apply user offset and limit first
+        const endLine = Math.min(startLine + lineLimit, allLines.length);
+        const selectedLines = allLines.slice(startLine, endLine);
+        const userLimitedLines = endLine - startLine;
+        const selectedContent = selectedLines.join('\n');
+
+        // Apply head truncation
+        const truncation = truncateHead(selectedContent);
+
+        if (truncation.firstLineExceedsLimit) {
+          const firstLineSize = formatSize(Buffer.byteLength(allLines[startLine], 'utf-8'));
+          return `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit. Use bash: sed -n '${startLineDisplay}p' ${filePath} | head -c ${DEFAULT_MAX_BYTES}]`;
+        }
+
+        let outputLines = truncation.content.split('\n');
+
+        // Add line numbers if requested
+        if (withLines) {
+          outputLines = outputLines.map((line, index) => `${startLine + index + 1}|${line}`);
+        }
+
+        let outputText = outputLines.join('\n');
+
+        if (truncation.truncated) {
+          const endLineDisplay = startLineDisplay + truncation.outputLines - 1;
+          const nextOffset = endLineDisplay + 1;
+
+          if (truncation.truncatedBy === 'lines') {
+            outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}. Use offset=${nextOffset} to continue.]`;
+          } else {
+            outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines} (${formatSize(DEFAULT_MAX_BYTES)} limit). Use offset=${nextOffset} to continue.]`;
+          }
+        } else if (userLimitedLines < allLines.length - startLine) {
+          const remaining = allLines.length - (startLine + userLimitedLines);
+          const nextOffset = startLine + userLimitedLines + 1;
+          outputText += `\n\n[${remaining} more lines in file. Use offset=${nextOffset} to continue.]`;
+        } else if (endLine < totalFileLines) {
+          outputText += '\n...';
+          outputText += `\nTotal lines in the file: ${totalFileLines}`;
+        }
+
+        return outputText;
       } catch (error) {
         if (isAbortError(error)) {
           return 'Operation was cancelled by user.';
@@ -552,7 +618,48 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         if (results.length === 0) {
           return `No matches found for pattern '${searchTerm}' in files matching '${filePattern}'.`;
         }
-        return results;
+
+        // Build text output with per-line truncation
+        let hadLineTruncation = false;
+        const outputLines: string[] = [];
+        for (const result of results) {
+          const { text: truncatedContent, wasTruncated } = truncateLine(result.lineContent);
+          if (wasTruncated) {
+            hadLineTruncation = true;
+          }
+          outputLines.push(`${result.filePath}:${result.lineNumber}: ${truncatedContent}`);
+
+          if (result.context) {
+            for (const ctxLine of result.context) {
+              const { text: truncatedCtx, wasTruncated: ctxTruncated } = truncateLine(ctxLine);
+              if (ctxTruncated) {
+                hadLineTruncation = true;
+              }
+              outputLines.push(`  ${truncatedCtx}`);
+            }
+          }
+        }
+
+        const rawOutput = outputLines.join('\n');
+        // Apply byte truncation only (no line limit — match count already caps rows)
+        const truncation = truncateHead(rawOutput, { maxLines: Number.MAX_SAFE_INTEGER });
+
+        let output = truncation.content;
+        const notices: string[] = [];
+        if (results.length >= maxResults) {
+          notices.push(`${maxResults} matches limit reached. Use maxResults=${maxResults * 2} for more, or refine pattern`);
+        }
+        if (truncation.truncated) {
+          notices.push(`${formatSize(DEFAULT_MAX_BYTES)} limit reached`);
+        }
+        if (hadLineTruncation) {
+          notices.push(`Some lines truncated to ${GREP_MAX_LINE_LENGTH} chars. Use read tool to see full lines`);
+        }
+        if (notices.length > 0) {
+          output += `\n\n[${notices.join('. ')}]`;
+        }
+
+        return output;
       } catch (error) {
         if (isAbortError(error)) {
           return 'Operation was cancelled by user.';
@@ -628,15 +735,31 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         let isResolved = false;
         let childProcess: ChildProcess | null = null;
         let abortListener: (() => void) | null = null;
+        let tempFilePath: string | undefined;
+        let tempFileStream: ReturnType<typeof createWriteStream> | undefined;
+
+        const ensureTempFile = () => {
+          if (tempFilePath) {
+            return;
+          }
+          tempFilePath = getTempFilePath();
+          tempFileStream = createWriteStream(tempFilePath);
+        };
 
         const cleanup = () => {
           if (timeoutHandle) {
             clearTimeout(timeoutHandle);
             timeoutHandle = null;
           }
-          // Remove abort listener to prevent memory leaks
           if (abortListener) {
             abortSignal?.removeEventListener('abort', abortListener);
+          }
+        };
+
+        const closeTempFile = () => {
+          if (tempFileStream) {
+            tempFileStream.end();
+            tempFileStream = undefined;
           }
         };
 
@@ -647,7 +770,40 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           isResolved = true;
           cleanup();
 
-          resolve({ stdout, stderr, exitCode });
+          const combinedOutput = stdout + (stderr ? `\n${stderr}` : '');
+          const truncation = truncateTail(combinedOutput);
+
+          if (truncation.truncated) {
+            ensureTempFile();
+          }
+
+          // Write full output to temp file if one was created
+          if (tempFileStream && tempFilePath) {
+            tempFileStream.write(combinedOutput);
+          }
+          closeTempFile();
+
+          let outputText = truncation.content || '(no output)';
+
+          if (truncation.truncated && tempFilePath) {
+            const startLine = truncation.totalLines - truncation.outputLines + 1;
+            const endLine = truncation.totalLines;
+
+            if (truncation.lastLinePartial) {
+              const lastLineSize = formatSize(Buffer.byteLength(combinedOutput.split('\n').pop() || '', 'utf-8'));
+              outputText += `\n\n[Showing last ${formatSize(truncation.outputBytes)} of line ${endLine} (line is ${lastLineSize}). Full output: ${tempFilePath}]`;
+            } else if (truncation.truncatedBy === 'lines') {
+              outputText += `\n\n[Showing lines ${startLine}-${endLine} of ${truncation.totalLines}. Full output: ${tempFilePath}]`;
+            } else {
+              outputText += `\n\n[Showing lines ${startLine}-${endLine} of ${truncation.totalLines} (${formatSize(DEFAULT_MAX_BYTES)} limit). Full output: ${tempFilePath}]`;
+            }
+          }
+
+          if (exitCode !== 0) {
+            outputText += `\n\nCommand exited with code ${exitCode}`;
+          }
+
+          resolve({ stdout: outputText, stderr: '', exitCode });
         };
 
         abortListener = () => {
