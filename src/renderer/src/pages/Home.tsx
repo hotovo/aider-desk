@@ -225,24 +225,25 @@ export const Home = () => {
       if (taskId && (!initialUrlNavigationDone || taskId !== initialTaskId)) {
         setInitialTaskId(taskId);
       }
-
-      if (existingProject) {
-        // Project exists, just update optimistic state (URL is already set)
-        if (activeProject !== projectBaseDir) {
-          setOptimisticActiveProject(projectBaseDir);
+      startProjectTransition(async () => {
+        if (existingProject) {
+          // Project exists, just update optimistic state (URL is already set)
+          if (activeProject !== projectBaseDir) {
+            setOptimisticActiveProject(projectBaseDir);
+          }
+        } else {
+          // Project doesn't exist, add it and update optimistic state
+          try {
+            await api.addOpenProject(projectBaseDir);
+            const updatedProjects = await api.getOpenProjects();
+            setOpenProjects(updatedProjects);
+            setOptimisticActiveProject(projectBaseDir);
+          } catch (error) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to open project from URL:', error);
+          }
         }
-      } else {
-        // Project doesn't exist, add it and update optimistic state
-        try {
-          await api.addOpenProject(projectBaseDir);
-          const updatedProjects = await api.getOpenProjects();
-          setOpenProjects(updatedProjects);
-          setOptimisticActiveProject(projectBaseDir);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('Failed to open project from URL:', error);
-        }
-      }
+      });
     };
 
     void handleUrlNavigation();
