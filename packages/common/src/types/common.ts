@@ -68,6 +68,7 @@ export interface ConflictResolutionFileContext {
 }
 
 export interface WorktreeIntegrationStatus {
+  currentBranch: string;
   targetBranch: string;
   aheadCommits: WorktreeAheadCommits;
   uncommittedFiles: WorktreeUncommittedFiles;
@@ -556,6 +557,8 @@ export interface TaskSettings {
   taskStateModel?: string | null;
   commitMessageModel?: string | null;
   defaultWorkingMode: WorkingMode;
+  worktreeBranchPrefix: string;
+  renameBranchOnNameGeneration: boolean;
 }
 
 export interface MemoryConfig {
@@ -848,6 +851,7 @@ export interface CreateTaskParams {
   provider?: string;
   model?: string;
   mode?: Mode;
+  workingMode?: WorkingMode;
   addInitialContextFiles?: boolean;
 }
 

@@ -498,6 +498,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.resolveConflictsWithAgent(baseDir, taskId);
   });
 
+  ipcMain.handle('rename-worktree-branch', async (_, baseDir: string, taskId: string, newBranchName: string) => {
+    await eventsHandler.renameWorktreeBranch(baseDir, taskId, newBranchName);
+  });
+
   // Server control handlers
   ipcMain.handle('start-server', async (_, username?: string, password?: string) => {
     const started = await serverController.startServer();

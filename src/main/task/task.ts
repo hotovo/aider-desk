@@ -260,6 +260,9 @@ export class Task {
    * Generate a branch name from task name (first 7 words, separated by '-')
    */
   private generateBranchName(): string {
+    const settings = this.store.getSettings();
+    const branchPrefix = settings.taskSettings.worktreeBranchPrefix || WORKTREE_BRANCH_PREFIX;
+
     // Split into words, filter out empty strings, and take first 7
     const words = this.task.name
       .toLowerCase()
@@ -278,7 +281,27 @@ export class Task {
       .replace(/-$/, ''); // Remove trailing dash
 
     // If result is empty, use taskId
-    return `${WORKTREE_BRANCH_PREFIX}${cleanBranchName || this.taskId}`;
+    return `${branchPrefix}${cleanBranchName || this.taskId}`;
+  }
+
+  private async renameWorktreeBranchIfNeeded(): Promise<void> {
+    if (this.task.workingMode !== 'worktree' || !this.task.worktree?.baseBranch) {
+      return;
+    }
+
+    const settings = this.store.getSettings();
+    if (!settings.taskSettings.renameBranchOnNameGeneration) {
+      return;
+    }
+
+    const oldBranch = this.task.worktree.baseBranch;
+    const newBranch = this.generateBranchName();
+
+    if (oldBranch === newBranch) {
+      return;
+    }
+
+    await this.renameWorktreeBranch(newBranch);
   }
 
   private isInternal() {
@@ -377,12 +400,14 @@ export class Task {
         const branchName = this.generateBranchName();
         this.task.worktree = await this.worktreeManager.createWorktree(this.project.baseDir, this.taskId, branchName);
         void this.sendUpdatedFilesUpdated();
+        void this.sendWorktreeIntegrationStatusUpdated();
       }
     } else if (workingMode === 'local') {
       // Check if worktree exists and set worktreeEnabled accordingly
       if (existingWorktree) {
         await this.worktreeManager.removeWorktree(this.project.baseDir, existingWorktree);
         void this.sendUpdatedFilesUpdated();
+        void this.sendWorktreeIntegrationStatusUpdated();
       }
     } else {
       logger.debug('Empty workingMode, setting to local', {
@@ -927,15 +952,12 @@ export class Task {
     if (settings.taskSettings.autoGenerateTaskName) {
       this.generateTaskNameInBackground(prompt)
         .then((taskName) => {
-          if (taskName) {
-            void this.saveTask({ name: taskName });
-          } else {
-            void this.saveTask({ name: fallbackName });
-          }
+          const newName = taskName || fallbackName;
+          void this.saveTask({ name: newName }).then(() => this.renameWorktreeBranchIfNeeded());
         })
         .catch((error) => {
           logger.warn('Failed to generate task name:', error);
-          void this.saveTask({ name: fallbackName });
+          void this.saveTask({ name: fallbackName }).then(() => this.renameWorktreeBranchIfNeeded());
         });
       return '<<generating>>';
     } else {
@@ -3630,6 +3652,7 @@ ${error.stderr}`,
     ]);
 
     return {
+      currentBranch: this.task.worktree.baseBranch || '',
       targetBranch: effectiveTargetBranch,
       aheadCommits: {
         count: unmergedWork.unmergedCommitCount,
@@ -3708,6 +3731,22 @@ ${error.stderr}`,
 
     await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  public async renameWorktreeBranch(newBranchName: string): Promise<void> {
+    if (!this.task.worktree) {
+      throw new Error('No worktree exists for this task');
+    }
+
+    const oldBranchName = this.task.worktree.baseBranch;
+    if (!oldBranchName) {
+      throw new Error('Cannot determine current branch name');
+    }
+
+    const actualBranchName = await this.worktreeManager.renameBranch(this.project.baseDir, oldBranchName, newBranchName);
+    this.task.worktree.baseBranch = actualBranchName;
+    await this.saveTask({ worktree: this.task.worktree });
+    void this.sendWorktreeIntegrationStatusUpdated();
   }
 
   private async executeConflictResolution(directoryPath: string, directoryName: string): Promise<void> {

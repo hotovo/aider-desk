@@ -646,6 +646,15 @@ export class EventsHandler {
     await task.resolveConflictsWithAgent();
   }
 
+  async renameWorktreeBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.renameWorktreeBranch(newBranchName);
+  }
+
   async scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void> {
     const content = await scrapeWeb(url);
     const project = this.projectManager.getProject(baseDir);

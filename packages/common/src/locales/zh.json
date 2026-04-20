@@ -599,6 +599,11 @@
       "symlinkFolderPlaceholder": "文件夹名称（例如 node_modules）",
       "addSymlinkFolder": "添加",
       "removeSymlinkFolder": "移除文件夹",
+      "worktreeBranchPrefix": "分支前缀",
+      "worktreeBranchPrefixTooltip": "创建工作树分支名称时使用的前缀。例如，'aider-desk/task/' 将创建类似 'aider-desk/task/my-feature' 的分支。",
+      "worktreeBranchPrefixPlaceholder": "例如 aider-desk/task/",
+      "renameBranchOnNameGeneration": "任务名称生成时重命名分支",
+      "renameBranchOnNameGenerationTooltip": "启用后，工作树分支将自动重命名以匹配生成的任务名称。禁用此选项可保留原始分支名称。",
       "auxiliaryModelsTitle": "辅助模型",
       "auxiliaryModelsDescription": "配置后台 AI 操作的模型。设置为 '继承' 以使用主代理模型。",
       "taskNameModel": "任务名称模型",
@@ -1704,7 +1709,9 @@
     "confirmRevertTitle": "确认撤销",
     "confirmRevertMessage": "您确定要撤销最后一次合并吗？这将撤销从工作树合并回主分支的更改。",
     "revert": "撤销",
-    "noChanges": "没有更改"
+    "noChanges": "没有更改",
+    "renameBranch": "重命名分支",
+    "branchNamePlaceholder": "输入分支名称..."
   },
   "welcomeMessage": {
     "title": "AiderDesk",

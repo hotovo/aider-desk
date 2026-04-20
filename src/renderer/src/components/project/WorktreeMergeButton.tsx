@@ -1,11 +1,14 @@
 import { useState, useRef } from 'react';
 import { FaArrowsRotate, FaBan, FaCodeMerge, FaCompress, FaDownload, FaFileLines, FaPlay, FaRobot } from 'react-icons/fa6';
+import { FaPencilAlt } from 'react-icons/fa';
+import { IoGitBranch } from 'react-icons/io5';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { WorktreeIntegrationStatus } from '@common/types';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 import { Tooltip } from '@/components/ui/Tooltip';
 
@@ -19,6 +22,7 @@ type Props = {
   onAbortRebase: () => void;
   onContinueRebase: () => void;
   onResolveConflictsWithAgent: () => void;
+  onRenameBranch: (newBranchName: string) => Promise<void>;
   disabled?: boolean;
   canAbortRebase?: boolean;
   canContinueRebase?: boolean;
@@ -37,6 +41,7 @@ export const WorktreeMergeButton = ({
   onAbortRebase,
   onContinueRebase,
   onResolveConflictsWithAgent,
+  onRenameBranch,
   disabled,
   canAbortRebase,
   canContinueRebase,
@@ -54,6 +59,9 @@ export const WorktreeMergeButton = ({
   const [showSquashDialog, setShowSquashDialog] = useState(false);
   const [showOnlyUncommittedDialog, setShowOnlyUncommittedDialog] = useState(false);
   const [showRebaseDialog, setShowRebaseDialog] = useState(false);
+
+  const [isEditingBranch, setIsEditingBranch] = useState(false);
+  const [editBranchName, setEditBranchName] = useState('');
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +123,22 @@ export const WorktreeMergeButton = ({
     onResolveConflictsWithAgent();
   };
 
+  const handleEditBranch = () => {
+    setEditBranchName(status?.currentBranch || '');
+    setIsEditingBranch(true);
+  };
+
+  const handleBranchEditConfirm = async () => {
+    if (editBranchName.trim() && editBranchName.trim() !== status?.currentBranch) {
+      await onRenameBranch(editBranchName.trim());
+    }
+    setIsEditingBranch(false);
+  };
+
+  const handleBranchEditCancel = () => {
+    setIsEditingBranch(false);
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <Tooltip content={t('worktree.mergeTooltip')}>
@@ -130,6 +154,30 @@ export const WorktreeMergeButton = ({
 
       {isOpen && (
         <div className="absolute top-full right-0 mt-1 bg-bg-primary-light border border-border-default-dark rounded shadow-lg z-50 min-w-[200px]">
+          <div className="group/header px-3 py-1.5 flex items-center justify-between gap-1 border-b border-border-default-dark">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <IoGitBranch className="w-3 h-3 text-text-muted shrink-0" />
+              <span className="text-xs text-text-muted truncate">{status?.currentBranch || ''}</span>
+            </div>
+            <Tooltip content={t('worktree.renameBranch')}>
+              <button
+                onClick={handleEditBranch}
+                className="ml-1 p-1 rounded hover:bg-bg-tertiary text-text-muted hover:text-text-primary flex shrink-0"
+                disabled={isEditingBranch || disabled}
+              >
+                <FaPencilAlt className="w-2.5 h-2.5" />
+              </button>
+            </Tooltip>
+          </div>
+          {isEditingBranch && (
+            <InlineEditPanel
+              value={editBranchName}
+              onChange={setEditBranchName}
+              onConfirm={() => void handleBranchEditConfirm()}
+              onCancel={handleBranchEditCancel}
+              placeholder={t('worktree.branchNamePlaceholder')}
+            />
+          )}
           <button
             onClick={handleMergeClick}
             className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2"

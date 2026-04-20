@@ -6,6 +6,8 @@
 - added tool output truncation for bash, file_read, and grep power tools (50KB byte limit, 2000 line limit)
 - added cache and retry mechanism to model loading
 - updated bash tool execution abortion handling and process termination logic
+- added support for renaming worktree branches either manually or automatically
+- added worktree branch prefix setting
 
 ## [0.62.0]
 

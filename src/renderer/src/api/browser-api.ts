@@ -1038,6 +1038,14 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  renameWorktreeBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void> {
+    return this.post('/project/worktree/rename-branch', {
+      projectDir: baseDir,
+      taskId,
+      newBranchName,
+    });
+  }
+
   // Memory operations
   listAllMemories(): Promise<MemoryEntry[]> {
     return this.get('/memories');

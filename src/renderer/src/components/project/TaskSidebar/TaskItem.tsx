@@ -1,6 +1,6 @@
 import { TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { KeyboardEvent, MouseEvent, memo, useState } from 'react';
+import { MouseEvent, memo, useState } from 'react';
 import { HiPlus, HiCheck, HiSparkles } from 'react-icons/hi';
 import { IoGitBranch } from 'react-icons/io5';
 import { MdPushPin, MdChevronRight } from 'react-icons/md';
@@ -10,7 +10,7 @@ import { useLongPress } from '@reactuses/core';
 import { TaskStatusIcon } from './TaskStatusIcon';
 import { TaskMenuButton } from './TaskMenuButton';
 
-import { Input } from '@/components/common/Input';
+import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { Button } from '@/components/common/Button';
 import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
@@ -106,15 +106,6 @@ export const TaskItem = memo(
       e.stopPropagation();
       if (createNewTask) {
         createNewTask(task.id);
-      }
-    };
-
-    const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        void onEditConfirm(task.id, editTaskName);
-      } else if (e.key === 'Escape') {
-        onEditCancel();
       }
     };
 
@@ -242,26 +233,13 @@ export const TaskItem = memo(
         </div>
 
         {isEditing && (
-          <div className="m-2 p-2 bg-bg-primary border border-border-default rounded-md">
-            <Input
-              value={editTaskName}
-              onChange={(e) => setEditTaskName(e.target.value)}
-              onKeyDown={handleEditKeyDown}
-              placeholder={t('taskSidebar.taskNamePlaceholder')}
-              className="mb-2"
-              size="sm"
-              autoFocus
-              onFocus={(e) => e.target.select()}
-            />
-            <div className="flex gap-2 justify-end">
-              <Button variant="text" size="xs" color="tertiary" onClick={onEditCancel}>
-                {t('common.cancel')}
-              </Button>
-              <Button variant="contained" color="primary" size="xs" onClick={() => void onEditConfirm(task.id, editTaskName)}>
-                {t('common.confirm')}
-              </Button>
-            </div>
-          </div>
+          <InlineEditPanel
+            value={editTaskName}
+            onChange={setEditTaskName}
+            onConfirm={() => void onEditConfirm(task.id, editTaskName)}
+            onCancel={onEditCancel}
+            placeholder={t('taskSidebar.taskNamePlaceholder')}
+          />
         )}
 
         {deleteConfirmTaskId === task.id && (

@@ -38,6 +38,7 @@ type Props = {
   onContinueRebase: () => void;
   onResolveConflictsWithAgent: () => void;
   onRevert: () => void;
+  onRenameBranch: (newBranchName: string) => Promise<void>;
   isMerging: boolean;
 };
 
@@ -51,6 +52,7 @@ export const TaskWorkingMode = ({
   onContinueRebase,
   onResolveConflictsWithAgent,
   onRevert,
+  onRenameBranch,
   isMerging,
 }: Props) => {
   const { isMobile } = useResponsive();
@@ -127,6 +129,7 @@ export const TaskWorkingMode = ({
                 onAbortRebase={onAbortRebase}
                 onContinueRebase={onContinueRebase}
                 onResolveConflictsWithAgent={onResolveConflictsWithAgent}
+                onRenameBranch={onRenameBranch}
                 canAbortRebase={worktreeStatus?.rebaseState.inProgress}
                 canContinueRebase={worktreeStatus?.rebaseState.inProgress}
                 canResolveConflictsWithAgent={worktreeStatus?.rebaseState.hasUnmergedPaths}

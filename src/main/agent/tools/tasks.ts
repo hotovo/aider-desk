@@ -277,6 +277,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           parentId: parentTaskId || null,
           name: name || '',
           autoApprove,
+          workingMode: worktree ? 'worktree' : 'local',
         });
         const updates: Partial<TaskData> = {};
 
@@ -290,10 +291,6 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           updates.provider = provider;
           updates.model = modelParts.join('/');
           updates.mainModel = modelId;
-        }
-
-        if (worktree) {
-          updates.workingMode = 'worktree';
         }
 
         // createNewTask returns TaskData, not Task instance

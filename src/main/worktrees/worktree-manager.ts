@@ -214,6 +214,33 @@ export class WorktreeManager {
     });
   }
 
+  async renameBranch(projectPath: string, oldBranch: string, newBranch: string): Promise<string> {
+    try {
+      const finalBranchName = await this.findUniqueBranchName(projectPath, newBranch);
+      await execWithShellPath(`git branch -m ${oldBranch} ${finalBranchName}`, { cwd: projectPath });
+      logger.info(`Renamed branch: ${oldBranch} -> ${finalBranchName}`);
+      return finalBranchName;
+    } catch (error) {
+      logger.warn(`Failed to rename branch ${oldBranch} to ${newBranch}:`, error);
+      return newBranch;
+    }
+  }
+
+  private async findUniqueBranchName(projectPath: string, baseName: string): Promise<string> {
+    const existingBranches = await this.listBranches(projectPath);
+    const branchNames = new Set(existingBranches.map((b) => b.name));
+
+    if (!branchNames.has(baseName)) {
+      return baseName;
+    }
+
+    let suffix = 2;
+    while (branchNames.has(`${baseName}-${suffix}`)) {
+      suffix++;
+    }
+    return `${baseName}-${suffix}`;
+  }
+
   async createSymlinks(projectPath: string, worktreePath: string, folderNames: string[]): Promise<void> {
     if (folderNames.length === 0) {
       logger.debug('No symlink folders configured, skipping symlink creation');

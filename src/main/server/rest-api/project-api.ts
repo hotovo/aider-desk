@@ -354,6 +354,12 @@ const ResolveWorktreeConflictsWithAgentSchema = z.object({
   taskId: z.string().min(1, 'Task id is required'),
 });
 
+const RenameWorktreeBranchSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  newBranchName: z.string().min(1, 'New branch name is required'),
+});
+
 export class ProjectApi extends BaseApi {
   constructor(private readonly eventsHandler: EventsHandler) {
     super();
@@ -987,6 +993,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId } = parsed;
         await this.eventsHandler.resolveConflictsWithAgent(projectDir, taskId);
         res.status(200).json({ message: 'Conflicts resolved' });
+      }),
+    );
+
+    // Rename worktree branch
+    router.post(
+      '/project/worktree/rename-branch',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RenameWorktreeBranchSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, newBranchName } = parsed;
+        await this.eventsHandler.renameWorktreeBranch(projectDir, taskId, newBranchName);
+        res.status(200).json({ message: 'Branch renamed' });
       }),
     );
 

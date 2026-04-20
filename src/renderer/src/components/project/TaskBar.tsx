@@ -393,6 +393,13 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
       }
     }, [api, baseDir, task.id]);
 
+    const handleRenameBranch = useCallback(
+      async (newBranchName: string) => {
+        await api.renameWorktreeBranch(baseDir, task.id, newBranchName);
+      },
+      [api, baseDir, task.id],
+    );
+
     const isTwoRowLayout = !AIDER_MODES.includes(mode) && showAiderInfo;
 
     /** Format the Python installation status for display in the TaskBar. */
@@ -621,6 +628,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
               onContinueRebase={handleContinueRebase}
               onResolveConflictsWithAgent={handleResolveConflictsWithAgent}
               onRevert={handleRevert}
+              onRenameBranch={handleRenameBranch}
               isMerging={isMerging}
             />
             {isMobile && (

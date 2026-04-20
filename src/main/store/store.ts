@@ -97,6 +97,8 @@ export const DEFAULT_SETTINGS: SettingsData = {
     contextCompactingThreshold: 0,
     contextCompactionType: ContextCompactionType.Compact,
     defaultWorkingMode: 'local',
+    worktreeBranchPrefix: 'aider-desk/task/',
+    renameBranchOnNameGeneration: true,
   },
   extensions: {
     repositories: [AIDER_DESK_EXTENSIONS_REPO_URL],

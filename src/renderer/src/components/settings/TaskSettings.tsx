@@ -14,6 +14,8 @@ import { Slider } from '../common/Slider';
 import { ModelSelectorWrapper } from '../common/ModelSelectorWrapper';
 import { ItemConfig, ItemSelector } from '../common/ItemSelector';
 
+import { Input } from '@/components/common/Input';
+
 const WORKING_MODE_ITEMS: ItemConfig<WorkingMode>[] = [
   {
     value: 'local',
@@ -162,6 +164,26 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const handleWorktreeBranchPrefixChange = (value: string) => {
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        worktreeBranchPrefix: value,
+      },
+    });
+  };
+
+  const handleRenameBranchOnNameGenerationChange = (checked: boolean) => {
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        renameBranchOnNameGeneration: checked,
+      },
+    });
+  };
+
   return (
     <div className="space-y-6 h-full flex flex-col">
       <Section title={t('settings.tasks.title')} className="px-4 py-5">
@@ -267,11 +289,53 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
               />
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 items-start">
+              <Input
+                value={settings.taskSettings.worktreeBranchPrefix ?? 'aider-desk/task/'}
+                label={
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-text-primary font-medium">{t('settings.tasks.worktreeBranchPrefix')}</label>
+                    <InfoIcon tooltip={t('settings.tasks.worktreeBranchPrefixTooltip')} />
+                  </div>
+                }
+                onChange={(e) => handleWorktreeBranchPrefixChange(e.target.value)}
+                placeholder={t('settings.tasks.worktreeBranchPrefixPlaceholder')}
+                size="sm"
+                wrapperClassName="w-64"
+              />
+            </div>
+
+            <div className="flex items-start gap-1">
+              <Checkbox
+                id="rename-branch-on-name-generation"
+                checked={settings.taskSettings?.renameBranchOnNameGeneration ?? true}
+                onChange={handleRenameBranchOnNameGenerationChange}
+                label={t('settings.tasks.renameBranchOnNameGeneration')}
+              />
+              <InfoIcon tooltip={t('settings.tasks.renameBranchOnNameGenerationTooltip')} />
+            </div>
+
+            <div className="flex flex-col gap-1 mt-2">
               <div className="flex items-center gap-1">
                 <label className="text-xs text-text-primary font-medium">{t('settings.tasks.worktreeSymlinkFoldersLabel')}</label>
                 <InfoIcon tooltip={t('settings.tasks.worktreeSymlinkFoldersTooltip')} />
               </div>
+
+              {settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0 ? (
+                <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto p-0.5 scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth w-full">
+                  {settings.taskSettings.worktreeSymlinkFolders.map((folder) => (
+                    <Chip
+                      key={folder}
+                      label={folder}
+                      onRemove={() => handleRemoveSymlinkFolder(folder)}
+                      removeTooltip={t('settings.tasks.removeSymlinkFolder')}
+                      className="bg-bg-secondary"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-2xs text-text-muted">{t('settings.tasks.noSymlinkFolders')}</div>
+              )}
 
               <div className="flex gap-2 items-center">
                 <input
@@ -292,22 +356,6 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
                 </Button>
               </div>
             </div>
-
-            {settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0 ? (
-              <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto p-0.5 scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth w-full">
-                {settings.taskSettings.worktreeSymlinkFolders.map((folder) => (
-                  <Chip
-                    key={folder}
-                    label={folder}
-                    onRemove={() => handleRemoveSymlinkFolder(folder)}
-                    removeTooltip={t('settings.tasks.removeSymlinkFolder')}
-                    className="bg-bg-secondary"
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-2xs text-text-muted">{t('settings.tasks.noSymlinkFolders')}</div>
-            )}
           </div>
         </div>
       </Section>
