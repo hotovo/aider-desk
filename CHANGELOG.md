@@ -4,6 +4,7 @@
 
 - correctly executing the probe semantic search tool in case of edge cases
 - added tool output truncation for bash, file_read, and grep power tools (50KB byte limit, 2000 line limit)
+- added cache and retry mechanism to model loading
 
 ## [0.62.0]
 

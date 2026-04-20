@@ -54,10 +54,18 @@ import logger from '@/logger';
 import { Store } from '@/store';
 import { EventManager } from '@/events';
 import { Task } from '@/task/task';
-import { AiderModelMapping, CacheControl, LlmProviderRegistry, LlmProviderStrategy } from '@/models/types';
+import { AiderModelMapping, CacheControl, LoadModelsResponse, LlmProviderRegistry, LlmProviderStrategy } from '@/models/types';
 
 const MODELS_META_URL = 'https://models.dev/api.json';
 const MODELS_FILE = path.join(AIDER_DESK_DATA_DIR, 'models.json');
+const PROVIDER_MODELS_CACHE_FILE = path.join(AIDER_DESK_CACHE_DIR, 'provider-models.json');
+const PROVIDER_MODELS_CACHE_VERSION = 1;
+
+type ProviderModelsCache = {
+  version: number;
+  providerModels: Record<string, Model[]>;
+  providerErrors: Record<string, string>;
+};
 
 type ModelsMetaResponse = Record<
   string,
@@ -137,10 +145,24 @@ export class ModelManager {
 
       await this.loadModelsInfo();
       await this.loadModelOverrides();
-      await this.loadProviderModels(this.getProviders().filter((p) => !p.disabled));
+
+      const cacheLoaded = await this.loadProviderModelsFromCache();
+
+      if (cacheLoaded) {
+        this.eventManager.sendProviderModelsUpdated({
+          models: Object.values(this.providerModels).flat(),
+          loading: true,
+          errors: this.providerErrors,
+        });
+
+        this.loadProviderModelsInBackground(this.getProviders().filter((p) => !p.disabled));
+      } else {
+        await this.loadProviderModels(this.getProviders().filter((p) => !p.disabled));
+      }
 
       logger.info('ModelInfoManager initialized successfully.', {
         modelCount: Object.keys(this.modelsInfo).length,
+        cacheLoaded,
       });
     } catch (error) {
       logger.error('Error initializing ModelInfoManager:', error);
@@ -198,6 +220,50 @@ export class ModelManager {
     }
   }
 
+  private async loadProviderModelsFromCache(): Promise<boolean> {
+    try {
+      const cacheData = await fs.readFile(PROVIDER_MODELS_CACHE_FILE, 'utf-8');
+      const cache = JSON.parse(cacheData) as ProviderModelsCache;
+
+      if (cache.version !== PROVIDER_MODELS_CACHE_VERSION) {
+        logger.info('Provider models cache version mismatch, ignoring cache');
+        return false;
+      }
+
+      this.providerModels = cache.providerModels;
+      this.providerErrors = cache.providerErrors;
+      logger.info('Loaded provider models from cache', {
+        providerCount: Object.keys(cache.providerModels).length,
+      });
+      return true;
+    } catch {
+      logger.info('Provider models cache not found or invalid');
+      return false;
+    }
+  }
+
+  private async saveProviderModelsToCache(): Promise<void> {
+    try {
+      const cache: ProviderModelsCache = {
+        version: PROVIDER_MODELS_CACHE_VERSION,
+        providerModels: this.providerModels,
+        providerErrors: this.providerErrors,
+      };
+
+      await fs.mkdir(AIDER_DESK_CACHE_DIR, { recursive: true });
+      await fs.writeFile(PROVIDER_MODELS_CACHE_FILE, JSON.stringify(cache));
+      logger.info('Saved provider models to cache');
+    } catch (error) {
+      logger.error('Failed to save provider models to cache:', error);
+    }
+  }
+
+  private loadProviderModelsInBackground(providers: ProviderProfile[]): void {
+    this.loadProviderModels(providers).catch((error) => {
+      logger.error('Background loading of provider models failed:', error);
+    });
+  }
+
   private processModelsMeta(data: ModelsMetaResponse) {
     for (const providerId in data) {
       const providerData = data[providerId];
@@ -246,6 +312,25 @@ export class ModelManager {
     }
 
     return Array.from(changed);
+  }
+
+  private async loadModelsWithRetry(strategy: LlmProviderStrategy, profile: ProviderProfile, retryCount = 3): Promise<LoadModelsResponse> {
+    let lastResponse: LoadModelsResponse | undefined;
+
+    for (let attempt = 0; attempt <= retryCount; attempt++) {
+      if (attempt > 0) {
+        const delayMs = Math.pow(2, attempt - 1) * 1000;
+        logger.info(`Retrying load models for provider profile ${profile.id} in ${delayMs}ms (attempt ${attempt + 1}/${retryCount + 1})`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+
+      lastResponse = await strategy.loadModels(profile, this.store.getSettings());
+      if (lastResponse.success) {
+        return lastResponse;
+      }
+    }
+
+    return lastResponse!;
   }
 
   async providersChanged(oldProviders: ProviderProfile[], newProviders: ProviderProfile[]) {
@@ -304,7 +389,7 @@ export class ModelManager {
             }
 
             let providerModels: Model[] = [];
-            const response = await strategy.loadModels(profile, this.store.getSettings());
+            const response = await this.loadModelsWithRetry(strategy, profile);
 
             delete this.providerErrors[profile.id];
             if (response.success) {
@@ -343,6 +428,8 @@ export class ModelManager {
     // Update agent profiles with the new models
     // Note: agent profiles are now file-based, so this update is handled differently
     this.eventManager.sendSettingsUpdated(this.store.getSettings());
+
+    await this.saveProviderModelsToCache();
   }
 
   private enrichWithModelInfo(models: Model[], profile: ProviderProfile, strategy: LlmProviderStrategy): Model[] {
