@@ -224,6 +224,7 @@ src/
       probe.ts
       python.ts
       shell.ts
+      truncate.ts
       web-scrapper.ts
     versions/
       index.ts
@@ -1569,6 +1570,9 @@ import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
 import { ChildProcess } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { createWriteStream } from 'node:fs';
+import { tmpdir } from 'node:os';
 ⋮----
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
@@ -1595,6 +1599,7 @@ import { isURL } from '@common/utils';
 import { ApprovalManager } from './approval-manager';
 ⋮----
 import { search } from '@/utils/probe';
+import { DEFAULT_MAX_BYTES, GREP_MAX_LINE_LENGTH, formatSize, truncateHead, truncateLine, truncateTail } from '@/utils/truncate';
 import { Task } from '@/task';
 import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
@@ -1619,6 +1624,8 @@ const withFileLock = <T>(filePath: string, operation: () => Promise<T>): Promise
  * @returns The expanded path with ~ replaced by the home directory
  */
 const expandTilde = (filePath: string): string =>
+⋮----
+const getTempFilePath = (): string =>
 ⋮----
 /**
  * Reads a file and returns its content with optional line numbering and line range.
@@ -1648,6 +1655,14 @@ const sanitize = (str: string) =>
 ⋮----
 // Use replacer function to avoid special replacement patterns ($&, $`, '$', $$)
 ⋮----
+const startLineDisplay = startLine + 1; // 1-indexed for display
+⋮----
+// Apply user offset and limit first
+⋮----
+// Apply head truncation
+⋮----
+// Add line numbers if requested
+⋮----
 absolute: false, // Keep paths relative to cwd for easier processing
 ⋮----
 // Convert to absolute paths for filtering, then back to relative
@@ -1658,6 +1673,10 @@ absolute: false, // Keep paths relative to cwd for easier processing
 ⋮----
 const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // Simpler for line-by-line test
 ⋮----
+// Build text output with per-line truncation
+⋮----
+// Apply byte truncation only (no line limit — match count already caps rows)
+⋮----
 false, // not finished yet
 ⋮----
 // Pattern validation
@@ -1666,11 +1685,15 @@ false, // not finished yet
 ⋮----
 // Check allowed patterns - if matches, skip approval and execute directly
 ⋮----
+const ensureTempFile = () =>
+⋮----
 const cleanup = () =>
 ⋮----
-// Remove abort listener to prevent memory leaks
+const closeTempFile = () =>
 ⋮----
 const resolveWithResult = () =>
+⋮----
+// Write full output to temp file if one was created
 ⋮----
 abortListener = () =>
 ⋮----
@@ -5993,7 +6016,13 @@ import logger from '@/logger';
 import { Store } from '@/store';
 import { EventManager } from '@/events';
 import { Task } from '@/task/task';
-import { AiderModelMapping, CacheControl, LlmProviderRegistry, LlmProviderStrategy } from '@/models/types';
+import { AiderModelMapping, CacheControl, LoadModelsResponse, LlmProviderRegistry, LlmProviderStrategy } from '@/models/types';
+⋮----
+type ProviderModelsCache = {
+  version: number;
+  providerModels: Record<string, Model[]>;
+  providerErrors: Record<string, string>;
+};
 ⋮----
 type ModelsMetaResponse = Record<
   string,
@@ -6041,6 +6070,12 @@ const fetchFreshDataAndCache = async (cacheFile: string): Promise<void> =>
 ⋮----
 // Fetch fresh data in background if cache was loaded, otherwise await it
 ⋮----
+private async loadProviderModelsFromCache(): Promise<boolean>
+⋮----
+private async saveProviderModelsToCache(): Promise<void>
+⋮----
+private loadProviderModelsInBackground(providers: ProviderProfile[]): void
+⋮----
 private processModelsMeta(data: ModelsMetaResponse)
 ⋮----
 getModelInfo(modelName: string): ModelInfo | undefined
@@ -6050,6 +6085,8 @@ private createEnvVarProvider(providerName: LlmProviderName): ProviderProfile
 private getChangedProviders(oldProviders: ProviderProfile[], newProviders: ProviderProfile[]): ProviderProfile[]
 ⋮----
 // Check for added/modified providers
+⋮----
+private async loadModelsWithRetry(strategy: LlmProviderStrategy, profile: ProviderProfile, retryCount = 3): Promise<LoadModelsResponse>
 ⋮----
 async providersChanged(oldProviders: ProviderProfile[], newProviders: ProviderProfile[])
 ⋮----
@@ -9875,6 +9912,55 @@ export const execWithShellPath = async (
   command: string,
   options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number },
 ): Promise<
+
+================
+File: src/main/utils/truncate.ts
+================
+import { Buffer } from 'node:buffer';
+⋮----
+export const DEFAULT_MAX_BYTES = 50 * 1024; // 50KB
+export const GREP_MAX_LINE_LENGTH = 500; // Max chars per grep match line
+⋮----
+export interface TruncationResult {
+  content: string;
+  truncated: boolean;
+  truncatedBy: 'lines' | 'bytes' | null;
+  totalLines: number;
+  totalBytes: number;
+  outputLines: number;
+  outputBytes: number;
+  lastLinePartial: boolean;
+  firstLineExceedsLimit: boolean;
+  maxLines: number;
+  maxBytes: number;
+}
+⋮----
+export interface TruncationOptions {
+  maxLines?: number;
+  maxBytes?: number;
+}
+⋮----
+export const formatSize = (bytes: number): string =>
+⋮----
+/**
+ * Truncate content from the head (keep first N lines/bytes).
+ * Never returns partial lines. If first line exceeds byte limit,
+ * returns empty content with firstLineExceedsLimit=true.
+ */
+export const truncateHead = (content: string, options: TruncationOptions =
+⋮----
+/**
+ * Truncate content from the tail (keep last N lines/bytes).
+ * May return partial first line if the last line alone exceeds byte limit.
+ */
+export const truncateTail = (content: string, options: TruncationOptions =
+⋮----
+const truncateStringToBytesFromEnd = (str: string, maxBytes: number): string =>
+⋮----
+/**
+ * Truncate a single line to max characters, adding [truncated] suffix.
+ */
+export const truncateLine = (line: string, maxChars: number = GREP_MAX_LINE_LENGTH):
 
 ================
 File: src/main/utils/web-scrapper.ts
@@ -26616,7 +26702,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.62.0-dev",
+  "version": "0.63.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
