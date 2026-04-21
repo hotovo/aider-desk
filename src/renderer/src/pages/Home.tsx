@@ -6,6 +6,7 @@ import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useSearchParams } from 'react-router-dom';
+import { compareBaseDirs } from '@common/utils';
 
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
@@ -219,7 +220,7 @@ export const Home = () => {
         return;
       }
 
-      const existingProject = optimisticOpenProjects.find((p) => p.baseDir === projectBaseDir);
+      const existingProject = optimisticOpenProjects.find((p) => compareBaseDirs(p.baseDir, projectBaseDir));
 
       // Only update initial task ID on first navigation or when task changes
       if (taskId && (!initialUrlNavigationDone || taskId !== initialTaskId)) {
@@ -228,7 +229,7 @@ export const Home = () => {
       startProjectTransition(async () => {
         if (existingProject) {
           // Project exists, just update optimistic state (URL is already set)
-          if (activeProject !== projectBaseDir) {
+          if (!compareBaseDirs(activeProject, projectBaseDir)) {
             setOptimisticActiveProject(projectBaseDir);
           }
         } else {

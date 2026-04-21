@@ -36,7 +36,7 @@ import {
   VoiceSession,
   ChangeRequestItem,
 } from '@common/types';
-import { normalizeBaseDir } from '@common/utils';
+import { compareBaseDirs, normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 
@@ -158,7 +158,7 @@ export class EventsHandler {
 
   async addOpenProject(baseDir: string): Promise<ProjectData[]> {
     const projects = this.store.getOpenProjects();
-    const existingProject = projects.find((p) => normalizeBaseDir(p.baseDir) === normalizeBaseDir(baseDir));
+    const existingProject = projects.find((p) => compareBaseDirs(p.baseDir, baseDir));
 
     if (!existingProject) {
       logger.info('EventsHandler: addOpenProject', { baseDir });
@@ -178,7 +178,7 @@ export class EventsHandler {
 
   removeOpenProject(baseDir: string): ProjectData[] {
     const projects = this.store.getOpenProjects();
-    const updatedProjects = projects.filter((project) => normalizeBaseDir(project.baseDir) !== normalizeBaseDir(baseDir));
+    const updatedProjects = projects.filter((project) => !compareBaseDirs(project.baseDir, baseDir));
 
     if (updatedProjects.length > 0) {
       // Set the last project as active if the current active project was removed

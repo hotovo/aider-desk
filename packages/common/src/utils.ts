@@ -75,7 +75,7 @@ export const normalizeBaseDir = (
 ): string => {
   if (os === OS.Windows) {
     // On Windows, paths are case-insensitive so we normalize to lowercase
-    return baseDir.toLowerCase();
+    return baseDir.toLowerCase().replace(/\\+$/, '');
   } else {
     // Handle WSL paths like \\wsl.localhost\Ubuntu\home\user\...
     const wslPrefix = '\\\\wsl.localhost\\';
@@ -86,11 +86,11 @@ export const normalizeBaseDir = (
         // Extract the path after \\wsl.localhost\<distro_name>\
         const actualPath = baseDir.substring(thirdBackslashIndex + 1);
         // Replace backslashes with forward slashes
-        return '/' + actualPath.replace(/\\/g, '/');
+        return ('/' + actualPath.replace(/\\/g, '/')).replace(/\/+$/, '');
       }
     }
     // Otherwise, return the path as is
-    return baseDir;
+    return baseDir.replace(/\/+$/, '');
   }
 };
 

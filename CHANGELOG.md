@@ -8,6 +8,7 @@
 - updated bash tool execution abortion handling and process termination logic
 - added support for renaming worktree branches either manually or automatically
 - added worktree branch prefix setting
+- updated project dir normalization for comparing to avoid infinite projects
 
 ## [0.62.0]
 
