@@ -12,6 +12,7 @@
 - added support for setting CORS allowed origins
 - added obsidian theme made by GLM-5.1's taste
 - updated generate text function to properly use cache control
+- updated branch name fallback to use shortened taskId
 
 ## [0.62.0]
 

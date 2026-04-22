@@ -280,8 +280,9 @@ export class Task {
       .replace(/-+/g, '-') // Replace multiple dashes with single dash
       .replace(/-$/, ''); // Remove trailing dash
 
-    // If result is empty, use taskId
-    return `${branchPrefix}${cleanBranchName || this.taskId}`;
+    // If result is empty, use shortened taskId (first segment of UUID)
+    const fallbackId = /^[0-9a-f]{8}-/i.test(this.taskId) ? this.taskId.split('-')[0] : this.taskId;
+    return `${branchPrefix}${cleanBranchName || fallbackId}`;
   }
 
   private async renameWorktreeBranchIfNeeded(): Promise<void> {
