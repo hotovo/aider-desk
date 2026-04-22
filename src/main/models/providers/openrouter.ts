@@ -1,4 +1,4 @@
-import { AgentProfile, Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 import { isOpenRouterProvider, LlmProvider, OpenRouterProvider } from '@common/agent';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
@@ -227,9 +227,9 @@ export const getOpenRouterUsageReport = (
 };
 
 // === Configuration Helper Functions ===
-export const getOpenRouterCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl | undefined => {
+export const getOpenRouterCacheControl = (llmProvider: LlmProvider, model: Model): CacheControl | undefined => {
   if (isOpenRouterProvider(llmProvider)) {
-    if (profile.model?.startsWith('anthropic/')) {
+    if (model.id?.startsWith('anthropic/')) {
       return {
         providerOptions: {
           openrouter: {

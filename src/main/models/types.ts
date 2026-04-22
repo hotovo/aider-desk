@@ -1,4 +1,4 @@
-import { AgentProfile, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
 
 import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
@@ -72,7 +72,7 @@ export interface LlmProviderStrategy {
   /**
    * Returns provider-specific cache control configuration
    */
-  getCacheControl?: (profile: AgentProfile, provider: LlmProvider) => CacheControl | undefined;
+  getCacheControl?: (provider: LlmProvider, model: Model) => CacheControl | undefined;
 
   /**
    * Returns provider-specific options for model instantiation

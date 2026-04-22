@@ -832,7 +832,7 @@ export class Agent {
     }
     const effectiveAbortSignal = abortSignal || (controllerId ? this.abortControllers.get(controllerId)?.signal : undefined);
 
-    const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
+    const cacheControl = this.modelManager.getCacheControl(provider, modelName);
     const providerOptions = this.modelManager.getProviderOptions(provider, modelName);
     const providerParameters = this.modelManager.getProviderParameters(provider, modelName);
 
@@ -1687,6 +1687,7 @@ export class Agent {
 
     const settings = this.store.getSettings();
     const model = await this.modelManager.createLlm(provider, modelName, settings, projectDir, undefined, systemPrompt, undefined);
+    const cacheControl = this.modelManager.getCacheControl(provider, modelName);
     const providerOptions = this.modelManager.getProviderOptions(provider, modelName);
     const providerParameters = this.modelManager.getProviderParameters(provider, modelName);
 
@@ -1715,7 +1716,7 @@ export class Agent {
       const result = await generateText({
         model,
         system: systemPrompt,
-        messages: await optimizeMessages(messages),
+        messages: await optimizeMessages(messages, cacheControl),
         abortSignal: effectiveAbortSignal,
         providerOptions,
         ...providerParameters,
@@ -1750,7 +1751,7 @@ export class Agent {
       const toolSet = await this.getAvailableTools(task, 'agent', profile, provider, profile.model);
       const systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
 
-      const cacheControl = this.modelManager.getCacheControl(profile, provider.provider);
+      const cacheControl = this.modelManager.getCacheControl(provider, profile.model);
 
       const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
       const userRequestMessageIndex = lastUserIndex >= 0 ? lastUserIndex : 0;

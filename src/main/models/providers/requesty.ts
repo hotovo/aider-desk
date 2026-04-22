@@ -1,4 +1,4 @@
-import { AgentProfile, ContextUserMessage, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
+import { ContextUserMessage, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
 import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 import { v4 as uuidv4 } from 'uuid';
@@ -249,9 +249,9 @@ export const normalizeRequestyMessages = (_provider: LlmProvider, model: Model, 
 };
 
 // === Configuration Helper Functions ===
-export const getRequestyCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl | undefined => {
+export const getRequestyCacheControl = (llmProvider: LlmProvider, model: Model): CacheControl | undefined => {
   if (isRequestyProvider(llmProvider) && !llmProvider.useAutoCache) {
-    if (profile.model?.startsWith('anthropic/')) {
+    if (model.id?.startsWith('anthropic/')) {
       return {
         providerOptions: {
           requesty: {

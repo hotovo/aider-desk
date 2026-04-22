@@ -3,17 +3,7 @@ import path from 'path';
 
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
 import { ProviderDefinition } from '@common/extensions';
-import {
-  AgentProfile,
-  Model,
-  ModelInfo,
-  ModelOverrides,
-  ProviderModelsData,
-  ProviderProfile,
-  SettingsData,
-  UsageReportData,
-  VoiceSession,
-} from '@common/types';
+import { Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { extractProviderModel } from '@common/utils';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
@@ -768,12 +758,25 @@ export class ModelManager {
     return strategy.getUsageReport(task, provider, modelObj, usage, providerMetadata);
   }
 
-  getCacheControl(profile: AgentProfile, llmProvider: LlmProvider): CacheControl | undefined {
+  getCacheControl(provider: ProviderProfile, modelId: string): CacheControl | undefined {
+    const llmProvider = provider.provider;
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getCacheControl) {
       return undefined;
     }
-    return strategy.getCacheControl(profile, llmProvider);
+
+    const models = this.providerModels[provider.id] || [];
+    const modelObj = models.find((m) => m.id === modelId);
+
+    if (!modelObj) {
+      const fallbackModel: Model = {
+        id: modelId,
+        providerId: provider.id,
+      };
+      return strategy.getCacheControl(llmProvider, fallbackModel);
+    }
+
+    return strategy.getCacheControl(llmProvider, modelObj);
   }
 
   isStreamingDisabled(provider: ProviderProfile, modelId: string): boolean {
@@ -944,7 +947,7 @@ export class ModelManager {
           ? (_provider, model) => provider.strategy.getProviderTools!(model) as ToolSet | Promise<ToolSet>
           : undefined,
         getProviderParameters: provider.strategy.getProviderParameters ? (_provider, model) => provider.strategy.getProviderParameters!(model) : undefined,
-        getCacheControl: provider.strategy.getCacheControl ? (profile) => provider.strategy.getCacheControl!(profile) : undefined,
+        getCacheControl: provider.strategy.getCacheControl ? (_provider, model) => provider.strategy.getCacheControl!(model) : undefined,
         hasEnvVars: () => false,
         getAiderMapping: provider.strategy.getAiderMapping
           ? provider.strategy.getAiderMapping

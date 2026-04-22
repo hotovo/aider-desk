@@ -155,7 +155,7 @@ export interface ExtensionProviderStrategy {
   getAiderMapping?: (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string) => AiderModelMapping;
   getUsageReport?: (task: unknown, provider: ProviderProfile, model: Model, usage: unknown, providerMetadata?: unknown) => UsageReportData;
   getProviderOptions?: (model: Model) => Record<string, Record<string, JSONValue>> | undefined;
-  getCacheControl?: (profile: AgentProfile) => CacheControl | undefined;
+  getCacheControl?: (model: Model) => CacheControl | undefined;
   getProviderTools?: (model: Model) => Record<string, Tool> | Promise<Record<string, Tool>>;
   getProviderParameters?: (model: Model) => Record<string, unknown>;
   createVoiceSession?: (profile: ProviderProfile, settings: SettingsData) => Promise<VoiceSession>;
