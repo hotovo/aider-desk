@@ -117,6 +117,10 @@ describe('Project - createNewTask', () => {
                 username: '',
                 password: '',
               },
+              cors: {
+                enabled: false,
+                origins: [],
+              },
             },
             memory: {
               enabled: false,

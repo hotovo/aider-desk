@@ -644,6 +644,10 @@ export interface SettingsData {
       username: string;
       password: string;
     };
+    cors: {
+      enabled: boolean;
+      origins: string[];
+    };
   };
   memory: MemoryConfig;
   taskSettings: TaskSettings;

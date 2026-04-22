@@ -26,6 +26,8 @@ import {
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
 import { EventManager } from '@/events';
+import { Store } from '@/store';
+import { createCorsOriginValidator } from '@/server/cors';
 
 export class ConnectorManager {
   private io: Server | null = null;
@@ -35,15 +37,15 @@ export class ConnectorManager {
     httpServer: HttpServer,
     private readonly projectManager: ProjectManager,
     private readonly eventManager: EventManager,
+    private readonly store: Store,
   ) {
     this.init(httpServer);
   }
 
   public init(httpServer: HttpServer): void {
-    // Create Socket.IO server
     this.io = new Server(httpServer, {
       cors: {
-        origin: '*',
+        origin: createCorsOriginValidator(this.store),
         methods: ['GET', 'POST'],
       },
       pingTimeout: 600_000, // 10 minutes

@@ -94,6 +94,10 @@ describe('Project - createNewTask', () => {
                 username: '',
                 password: '',
               },
+              cors: {
+                enabled: false,
+                origins: [],
+              },
             },
             memory: {
               enabled: false,
@@ -463,6 +467,10 @@ describe('Project - deleteTask', () => {
                 enabled: false,
                 username: '',
                 password: '',
+              },
+              cors: {
+                enabled: false,
+                origins: [],
               },
             },
             memory: {

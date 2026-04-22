@@ -1523,7 +1523,14 @@
     "tunnelStopping": "正在停止...",
     "copyUrl": "复制 URL",
     "tunnelManagement": "隧道管理",
-    "tunnelDescription": "创建 Cloudflare 隧道以安全地从外部网络访问您的服务器。当对外暴露服务器时，请务必使用身份验证。"
+    "tunnelDescription": "创建 Cloudflare 隧道以安全地从外部网络访问您的服务器。当对外暴露服务器时，请务必使用身份验证。",
+    "cors": "CORS",
+    "enableCors": "启用 CORS",
+    "enableCorsDescription": "允许来自外部网站的跨域请求。默认情况下，仅允许来自 AiderDesk UI 的同源请求。",
+    "corsOrigins": "允许的来源",
+    "corsOriginPlaceholder": "https://example.com",
+    "addCorsOrigin": "添加来源",
+    "corsOriginsDescription": "允许访问 API 的来源列表（例如 https://your-dashboard.example.com）。"
   },
   "multiselect": {
     "noneSelected": "未选择",

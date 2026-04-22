@@ -28,6 +28,7 @@ import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
 import { isDev, isElectron } from '@/app';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
+import { createCorsOriginValidator } from '@/server/cors';
 
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -124,10 +125,14 @@ export class ServerController {
     this.app.use('/api', apiRouter);
   }
 
+  private setupCors(): void {
+    this.app.use(cors({ origin: createCorsOriginValidator(this.store) }));
+  }
+
   private init() {
     // Configure Express
     this.app.use(express.json({ limit: '50mb' }));
-    this.app.use(cors());
+    this.setupCors();
 
     // Add server guard middleware as the first middleware
     this.app.use(this.serverGuardMiddleware.bind(this));

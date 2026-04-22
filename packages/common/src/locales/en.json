@@ -867,7 +867,14 @@
       "stopped": "Stopped",
       "copyUrl": "Copy URL",
       "tunnelManagement": "Tunnel Management",
-      "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally."
+      "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally.",
+      "cors": "CORS",
+      "enableCors": "Enable CORS",
+      "enableCorsDescription": "Allow cross-origin requests from external websites. By default, only same-origin requests from the AiderDesk UI are permitted.",
+      "corsOrigins": "Allowed Origins",
+      "corsOriginPlaceholder": "https://example.com",
+      "addCorsOrigin": "Add origin",
+      "corsOriginsDescription": "List of origins allowed to access the API (e.g., https://your-dashboard.example.com)."
     },
     "messages": {
       "title": "Message Display",

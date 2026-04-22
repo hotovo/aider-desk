@@ -8,9 +8,11 @@ import { Input } from '../common/Input';
 import { Section } from '../common/Section';
 import { Button } from '../common/Button';
 import { Checkbox } from '../common/Checkbox';
+import { ChipListInput } from '../common/ChipListInput';
 
 import { useApi } from '@/contexts/ApiContext';
 import { IconButton } from '@/components/common/IconButton';
+import { InfoIcon } from '@/components/common/InfoIcon';
 
 type Props = {
   settings: SettingsData;
@@ -146,6 +148,45 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const handleCorsEnabledChange = (checked: boolean) => {
+    setSettings({
+      ...settings,
+      server: {
+        ...settings.server,
+        cors: {
+          ...settings.server.cors,
+          enabled: checked,
+        },
+      },
+    });
+  };
+
+  const handleAddCorsOrigin = (origin: string) => {
+    setSettings({
+      ...settings,
+      server: {
+        ...settings.server,
+        cors: {
+          ...settings.server.cors,
+          origins: [...settings.server.cors.origins, origin],
+        },
+      },
+    });
+  };
+
+  const handleRemoveCorsOrigin = (origin: string) => {
+    setSettings({
+      ...settings,
+      server: {
+        ...settings.server,
+        cors: {
+          ...settings.server.cors,
+          origins: settings.server.cors.origins.filter((o) => o !== origin),
+        },
+      },
+    });
+  };
+
   const handleTunnelToggle = async () => {
     if (tunnelLoading) {
       return;
@@ -199,25 +240,56 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
     return tunnelStatus?.isRunning ? t('settings.server.stop') : t('settings.server.start');
   };
 
+  const renderProxySection = () => (
+    <Section id="network-proxy" title={t('settings.network.proxy')}>
+      <div className="p-4 space-y-4">
+        <div>
+          <Checkbox label={t('settings.network.enableProxy')} checked={settings.proxy.enabled} onChange={handleProxyEnabledChange} />
+          <p className="text-xs text-text-muted mt-2">{t('settings.network.enableProxyDescription')}</p>
+        </div>
+        {settings.proxy.enabled && (
+          <Input
+            label={<div className="text-xs">{t('settings.network.proxyUrl')}</div>}
+            value={settings.proxy.url}
+            onChange={handleProxyUrlChange}
+            type="text"
+            placeholder={t('settings.network.proxyUrlPlaceholder')}
+          />
+        )}
+      </div>
+    </Section>
+  );
+
+  const renderCorsSection = () => (
+    <div className="space-y-2">
+      <div className="flex items-center">
+        <Checkbox
+          label={t('settings.server.enableCors')}
+          checked={settings.server.cors.enabled}
+          onChange={handleCorsEnabledChange}
+          disabled={isServerRunning}
+        />
+        <InfoIcon tooltip={t('settings.server.enableCorsDescription')} />
+      </div>
+      {settings.server.cors.enabled && (
+        <ChipListInput
+          label={t('settings.server.corsOrigins')}
+          items={settings.server.cors.origins}
+          onAdd={handleAddCorsOrigin}
+          onRemove={handleRemoveCorsOrigin}
+          placeholder={t('settings.server.corsOriginPlaceholder')}
+          addLabel={t('settings.server.addCorsOrigin')}
+        />
+      )}
+    </div>
+  );
+
   if (!api.isManageServerSupported()) {
     return (
       <div className="space-y-6">
-        <Section id="network-proxy" title={t('settings.network.proxy')}>
-          <div className="p-4 space-y-4">
-            <div>
-              <Checkbox label={t('settings.network.enableProxy')} checked={settings.proxy.enabled} onChange={handleProxyEnabledChange} />
-              <p className="text-xs text-text-muted mt-2">{t('settings.network.enableProxyDescription')}</p>
-            </div>
-            {settings.proxy.enabled && (
-              <Input
-                label={<div className="text-xs">{t('settings.network.proxyUrl')}</div>}
-                value={settings.proxy.url}
-                onChange={handleProxyUrlChange}
-                type="text"
-                placeholder={t('settings.network.proxyUrlPlaceholder')}
-              />
-            )}
-          </div>
+        {renderProxySection()}
+        <Section id="network-cors" title={t('settings.server.cors')}>
+          <div className="p-4">{renderCorsSection()}</div>
         </Section>
       </div>
     );
@@ -225,35 +297,19 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
 
   return (
     <div className="space-y-6">
-      <Section id="network-proxy" title={t('settings.network.proxy')}>
-        <div className="p-4 space-y-4">
-          <div>
-            <Checkbox label={t('settings.network.enableProxy')} checked={settings.proxy.enabled} onChange={handleProxyEnabledChange} />
-            <p className="text-xs text-text-muted mt-2">{t('settings.network.enableProxyDescription')}</p>
-          </div>
-          {settings.proxy.enabled && (
-            <Input
-              label={<div className="text-xs">{t('settings.network.proxyUrl')}</div>}
-              value={settings.proxy.url}
-              onChange={handleProxyUrlChange}
-              type="text"
-              placeholder={t('settings.network.proxyUrlPlaceholder')}
-            />
-          )}
-        </div>
-      </Section>
+      {renderProxySection()}
 
       <Section id="network-server" title={t('settings.tabs.server')}>
         <div className="p-4 space-y-6">
           <div className="space-y-4">
-            <div>
+            <div className="flex items-center">
               <Checkbox
                 label={t('settings.server.enableBasicAuth')}
                 checked={settings.server.basicAuth.enabled}
                 onChange={handleBasicAuthEnabledChange}
                 disabled={isServerRunning}
               />
-              <p className="text-xs text-text-muted mt-2">{t('settings.server.enableBasicAuthDescription')}</p>
+              <InfoIcon tooltip={t('settings.server.enableBasicAuthDescription')} />
             </div>
             {settings.server.basicAuth.enabled && (
               <div className="grid grid-cols-2 gap-4">
@@ -291,45 +347,49 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
             </div>
             <p className="text-xs text-text-muted">{t('settings.server.description')}</p>
           </div>
-
           {isServerRunning && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">{t('settings.server.tunnelManagement')}</h4>
-              <p className="text-xs text-text-muted">{t('settings.server.tunnelDescription')}</p>
-              <div className="flex items-center justify-between p-3 bg-bg-secondary rounded-md">
-                <div className="flex-1">
-                  <p className="text-sm text-text-muted">
-                    {t('settings.server.status')}:{' '}
-                    <span className={clsx('font-medium', tunnelStatus?.isRunning ? 'text-success' : 'text-error')}>
-                      {tunnelStatus?.isRunning ? t('settings.server.running') : t('settings.server.stopped')}
-                    </span>
-                  </p>
+            <div className="space-y-6">
+              {renderCorsSection()}
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <h4 className="text-sm font-medium">{t('settings.server.tunnelManagement')}</h4>
+                  <InfoIcon tooltip={t('settings.server.tunnelDescription')} />
                 </div>
-                <div className="ml-4">
-                  <Button variant="contained" size="sm" onClick={handleTunnelToggle} disabled={tunnelLoading}>
-                    {getTunnelButtonText()}
-                  </Button>
+                <div className="flex items-center justify-between p-3 bg-bg-secondary rounded-md">
+                  <div className="flex-1">
+                    <p className="text-sm text-text-muted">
+                      {t('settings.server.status')}:{' '}
+                      <span className={clsx('font-medium', tunnelStatus?.isRunning ? 'text-success' : 'text-error')}>
+                        {tunnelStatus?.isRunning ? t('settings.server.running') : t('settings.server.stopped')}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="ml-4">
+                    <Button variant="contained" size="sm" onClick={handleTunnelToggle} disabled={tunnelLoading}>
+                      {getTunnelButtonText()}
+                    </Button>
+                  </div>
                 </div>
+                {tunnelStatus?.url && (
+                  <div className="pt-2 pb-4 flex items-center space-x-2 justify-center">
+                    <a href={tunnelStatus.url} target="_blank" rel="noopener noreferrer" className="text-info-light underline text-xs">
+                      {tunnelStatus.url}
+                    </a>
+                    <IconButton
+                      icon={<BiCopy className="h-5 w-5" />}
+                      onClick={async () => {
+                        try {
+                          await api.writeToClipboard(tunnelStatus.url!);
+                        } catch (error) {
+                          // eslint-disable-next-line no-console
+                          console.error('Failed to copy URL:', error);
+                        }
+                      }}
+                      tooltip={t('settings.server.copyUrl')}
+                    />
+                  </div>
+                )}
               </div>
-              {tunnelStatus?.url && (
-                <div className="pt-2 pb-4 flex items-center space-x-2 justify-center">
-                  <a href={tunnelStatus.url} target="_blank" rel="noopener noreferrer" className="text-info-light underline text-xs">
-                    {tunnelStatus.url}
-                  </a>
-                  <IconButton
-                    icon={<BiCopy className="h-5 w-5" />}
-                    onClick={async () => {
-                      try {
-                        await api.writeToClipboard(tunnelStatus.url!);
-                      } catch (error) {
-                        // eslint-disable-next-line no-console
-                        console.error('Failed to copy URL:', error);
-                      }
-                    }}
-                    tooltip={t('settings.server.copyUrl')}
-                  />
-                </div>
-              )}
             </div>
           )}
         </div>

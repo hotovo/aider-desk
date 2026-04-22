@@ -46,6 +46,7 @@ export const POSTHOG_HOST = 'https://eu.i.posthog.com';
 export const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
 export const AUTH_USERNAME = process.env.AIDER_DESK_USERNAME;
 export const AUTH_PASSWORD = process.env.AIDER_DESK_PASSWORD;
+export const CORS_ALLOWED_ORIGINS = process.env.AIDER_DESK_CORS_ALLOWED_ORIGINS;
 
 export const PROBE_BINARY_PATH = path.join(
   RESOURCES_DIR,

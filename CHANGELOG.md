@@ -9,6 +9,7 @@
 - added support for renaming worktree branches either manually or automatically
 - added worktree branch prefix setting
 - updated project dir normalization for comparing to avoid infinite projects
+- added support for setting CORS allowed origins
 
 ## [0.62.0]
 

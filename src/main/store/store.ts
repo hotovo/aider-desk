@@ -82,6 +82,10 @@ export const DEFAULT_SETTINGS: SettingsData = {
       username: '',
       password: '',
     },
+    cors: {
+      enabled: false,
+      origins: [],
+    },
   },
   memory: {
     enabled: true,
@@ -184,7 +188,14 @@ export class Store {
         },
       },
       mcpServers: settings.mcpServers || DEFAULT_SETTINGS.mcpServers,
-      server: settings.server || DEFAULT_SETTINGS.server,
+      server: {
+        ...DEFAULT_SETTINGS.server,
+        ...settings.server,
+        cors: {
+          ...DEFAULT_SETTINGS.server.cors,
+          ...settings.server?.cors,
+        },
+      },
       memory: {
         ...DEFAULT_SETTINGS.memory,
         ...settings?.memory,

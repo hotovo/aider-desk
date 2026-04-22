@@ -350,6 +350,7 @@ docker exec -it aiderdesk /bin/bash
 | `AIDER_DESK_USERNAME` | Basic auth username | - | No |
 | `AIDER_DESK_PASSWORD` | Basic auth password | - | No |
 | `AIDER_DESK_PROJECTS` | Comma-separated list of project paths | - | No |
+| `AIDER_DESK_CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins. Overrides CORS settings and implicitly enables CORS. | - | No |
 
 ## Troubleshooting
 

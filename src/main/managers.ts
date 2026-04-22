@@ -143,7 +143,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   const serverController = new ServerController(httpServer, projectManager, eventsHandler, store, pythonInstaller);
 
   // Initialize connector manager with the server
-  const connectorManager = new ConnectorManager(httpServer, projectManager, eventManager);
+  const connectorManager = new ConnectorManager(httpServer, projectManager, eventManager, store);
 
   // Start listening
   httpServer.listen(SERVER_PORT);
