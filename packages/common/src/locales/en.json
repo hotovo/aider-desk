@@ -780,7 +780,8 @@
       "cappuccino": "Cappuccino",
       "fresh": "Fresh",
       "botanical-garden": "Botanical Garden",
-      "botanical-garden-dark": "Botanical Garden (Dark)"
+      "botanical-garden-dark": "Botanical Garden (Dark)",
+      "obsidian": "Obsidian"
     },
     "aiderRestartConfirm": {
       "title": "Restart Required",

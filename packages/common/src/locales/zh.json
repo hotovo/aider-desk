@@ -775,7 +775,8 @@
       "serenity": "宁静",
       "fresh": "清新",
       "botanical-garden": "植物园",
-      "botanical-garden-dark": "植物园（深色）"
+      "botanical-garden-dark": "植物园（深色）",
+      "obsidian": "黑曜石"
     },
     "aiderRestartConfirm": {
       "title": "需要重启",

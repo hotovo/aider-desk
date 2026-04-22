@@ -10,6 +10,7 @@
 - added worktree branch prefix setting
 - updated project dir normalization for comparing to avoid infinite projects
 - added support for setting CORS allowed origins
+- added obsidian theme made by GLM-5.1's taste
 
 ## [0.62.0]
 
