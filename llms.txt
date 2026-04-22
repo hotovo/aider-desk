@@ -292,6 +292,7 @@ src/
           HtmlInfoDialog.tsx
           IconButton.tsx
           InfoIcon.tsx
+          InlineEditPanel.tsx
           Input.tsx
           ItemSelector.tsx
           LoadingOverlay.tsx
@@ -7217,6 +7218,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Resolve worktree conflicts with agent
 ⋮----
+// Rename worktree branch
+⋮----
 // Update open projects order
 ⋮----
 // Remove open project
@@ -8485,6 +8488,8 @@ private generateBranchName(): string
 ⋮----
 // If result is empty, use taskId
 ⋮----
+private async renameWorktreeBranchIfNeeded(): Promise<void>
+⋮----
 private isInternal()
 ⋮----
 public async saveTask(updates?: Partial<TaskData>, updateTimestamps = true): Promise<TaskData>
@@ -9116,6 +9121,8 @@ public async getWorktreeIntegrationStatus(targetBranch?: string)
 public async rebaseWorktreeFromBranch(fromBranch?: string): Promise<void>
 ⋮----
 public async abortWorktreeRebase(): Promise<void>
+⋮----
+public async renameWorktreeBranch(newBranchName: string): Promise<void>
 ⋮----
 private async executeConflictResolution(directoryPath: string, directoryName: string): Promise<void>
 ⋮----
@@ -10215,6 +10222,10 @@ actualBaseBranch = branch; // Use the newly created branch name
 ⋮----
 // Use the baseRef for the branch name, or resolve the current branch if baseRef is 'HEAD'
 ⋮----
+async renameBranch(projectPath: string, oldBranch: string, newBranch: string): Promise<string>
+⋮----
+private async findUniqueBranchName(projectPath: string, baseName: string): Promise<string>
+⋮----
 async createSymlinks(projectPath: string, worktreePath: string, folderNames: string[]): Promise<void>
 ⋮----
 private async existsAndIsDirectory(path: string): Promise<boolean>
@@ -10744,7 +10755,7 @@ import {
   VoiceSession,
   ChangeRequestItem,
 } from '@common/types';
-import { normalizeBaseDir } from '@common/utils';
+import { compareBaseDirs, normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 ⋮----
@@ -10922,6 +10933,8 @@ async abortWorktreeRebase(baseDir: string, taskId: string): Promise<void>
 async continueWorktreeRebase(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
+⋮----
+async renameWorktreeBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void>
 ⋮----
 async scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void>
 ⋮----
@@ -12422,6 +12435,8 @@ continueWorktreeRebase(baseDir: string, taskId: string): Promise<void>
 ⋮----
 resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
 ⋮----
+renameWorktreeBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void>
+⋮----
 // Memory operations
 listAllMemories(): Promise<MemoryEntry[]>
 ⋮----
@@ -13309,6 +13324,26 @@ type Props = {
 export const InfoIcon = (
 ⋮----
 className=
+
+================
+File: src/renderer/src/components/common/InlineEditPanel.tsx
+================
+import { KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { Input } from '@/components/common/Input';
+import { Button } from '@/components/common/Button';
+⋮----
+type Props = {
+  value: string;
+  onChange: (value: string) => void;
+  onConfirm: () => void;
+  onCancel: () => void;
+  placeholder?: string;
+  autoFocus?: boolean;
+};
+⋮----
+const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) =>
 
 ================
 File: src/renderer/src/components/common/Input.tsx
@@ -18311,7 +18346,7 @@ File: src/renderer/src/components/project/TaskSidebar/TaskItem.tsx
 ================
 import { TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { KeyboardEvent, MouseEvent, memo, useState } from 'react';
+import { MouseEvent, memo, useState } from 'react';
 import { HiPlus, HiCheck, HiSparkles } from 'react-icons/hi';
 import { IoGitBranch } from 'react-icons/io5';
 import { MdPushPin, MdChevronRight } from 'react-icons/md';
@@ -18321,7 +18356,7 @@ import { useLongPress } from '@reactuses/core';
 import { TaskStatusIcon } from './TaskStatusIcon';
 import { TaskMenuButton } from './TaskMenuButton';
 ⋮----
-import { Input } from '@/components/common/Input';
+import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { Button } from '@/components/common/Button';
 import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
@@ -18361,8 +18396,6 @@ type Props = {
 const toggleExpand = (e: MouseEvent) =>
 ⋮----
 const handleCreateSubtask = (e: MouseEvent) =>
-⋮----
-const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>) =>
 ⋮----
 const handleOnEdit = () =>
 ⋮----
@@ -19451,12 +19484,15 @@ File: src/renderer/src/components/project/WorktreeMergeButton.tsx
 ================
 import { useState, useRef } from 'react';
 import { FaArrowsRotate, FaBan, FaCodeMerge, FaCompress, FaDownload, FaFileLines, FaPlay, FaRobot } from 'react-icons/fa6';
+import { FaPencilAlt } from 'react-icons/fa';
+import { IoGitBranch } from 'react-icons/io5';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { WorktreeIntegrationStatus } from '@common/types';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
@@ -19470,6 +19506,7 @@ type Props = {
   onAbortRebase: () => void;
   onContinueRebase: () => void;
   onResolveConflictsWithAgent: () => void;
+  onRenameBranch: (newBranchName: string) => Promise<void>;
   disabled?: boolean;
   canAbortRebase?: boolean;
   canContinueRebase?: boolean;
@@ -19499,6 +19536,12 @@ const handleAbortRebaseConfirm = () =>
 const handleContinueRebaseConfirm = () =>
 ⋮----
 const handleResolveWithAgentConfirm = () =>
+⋮----
+const handleEditBranch = () =>
+⋮----
+const handleBranchEditConfirm = async () =>
+⋮----
+const handleBranchEditCancel = () =>
 ⋮----
 title=
 ⋮----
@@ -19920,6 +19963,7 @@ type Props = {
   onContinueRebase: () => void;
   onResolveConflictsWithAgent: () => void;
   onRevert: () => void;
+  onRenameBranch: (newBranchName: string) => Promise<void>;
   isMerging: boolean;
 };
 ⋮----
@@ -21090,6 +21134,8 @@ import { Slider } from '../common/Slider';
 import { ModelSelectorWrapper } from '../common/ModelSelectorWrapper';
 import { ItemConfig, ItemSelector } from '../common/ItemSelector';
 ⋮----
+import { Input } from '@/components/common/Input';
+⋮----
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
@@ -21116,6 +21162,10 @@ const handleTaskStateModelChange = (model: Model | null) =>
 const handleCommitMessageModelChange = (model: Model | null) =>
 ⋮----
 const handleDefaultWorkingModeChange = (mode: WorkingMode) =>
+⋮----
+const handleWorktreeBranchPrefixChange = (value: string) =>
+⋮----
+const handleRenameBranchOnNameGenerationChange = (checked: boolean) =>
 ⋮----
 <Section title=
 ⋮----
@@ -23471,6 +23521,7 @@ import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useSearchParams } from 'react-router-dom';
+import { compareBaseDirs } from '@common/utils';
 ⋮----
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
