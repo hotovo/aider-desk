@@ -6,7 +6,7 @@ import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/ext
 
 export const metadata = {
   name: 'fff',
-  version: '1.1.0',
+  version: '1.2.0',
   description: 'Fast file content search using FFF (Freakin Fast File Finder) — replaces the internal grep tool',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/fff/icon.png',
   author: 'wladimiiir',
@@ -147,7 +147,8 @@ export default class FffExtension implements Extension {
   }
 
   private async executeGrep(input: GrepInput, _signal: AbortSignal | undefined, context: ExtensionContext): Promise<string | GrepMatchResult[]> {
-    const projectDir = context.getProjectDir();
+    const taskContext = context.getTaskContext();
+    const projectDir = taskContext?.getTaskDir() ?? context.getProjectDir();
 
     if (!projectDir) {
       return 'Error: No project directory available.';
