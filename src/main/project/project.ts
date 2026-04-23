@@ -368,6 +368,18 @@ export class Project {
     return this.agentProfileManager.getProjectProfiles(this);
   }
 
+  /**
+   * Checks if any other task (excluding the specified taskId) uses the given worktree path.
+   */
+  public isWorktreeSharedWithOtherTasks(worktreePath: string, excludeTaskId: string): boolean {
+    for (const [id, task] of this.tasks.entries()) {
+      if (id !== excludeTaskId && task.task.worktree?.path === worktreePath) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private async deleteTaskInternal(taskId: string): Promise<void> {
     const taskDir = path.join(this.baseDir, '.aider-desk', 'tasks', taskId);
 
@@ -377,6 +389,21 @@ export class Project {
       await task.close();
       this.tasks.delete(taskId);
       this.eventManager.sendTaskDeleted(task.task);
+    }
+
+    // Remove worktree if the task has one and no other task shares it
+    const taskData = task?.task;
+    if (taskData?.worktree && !this.isWorktreeSharedWithOtherTasks(taskData.worktree.path, taskId)) {
+      try {
+        await this.worktreeManager.removeWorktree(this.baseDir, taskData.worktree);
+      } catch (error) {
+        logger.warn('Failed to remove worktree during task deletion', {
+          baseDir: this.baseDir,
+          taskId,
+          worktreePath: taskData.worktree.path,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
 
     // Delete the task directory
@@ -422,8 +449,13 @@ export class Project {
       throw new Error(`Task with id ${taskId} not found`);
     }
 
+    const hasWorktree = sourceTask.task.worktree && sourceTask.task.workingMode === 'worktree';
+
     const newTask = await this.prepareTask(undefined, {
       ...sourceTask.task,
+      // When the source task has a worktree, make the duplicate a subtask
+      // so both tasks sharing the same worktree are clearly related
+      ...(hasWorktree ? { parentId: sourceTask.task.parentId || taskId } : {}),
       state: sourceTask.task.state === DefaultTaskState.InProgress ? DefaultTaskState.Todo : sourceTask.task.state,
     });
     await newTask.init();

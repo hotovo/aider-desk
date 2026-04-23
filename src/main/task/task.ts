@@ -406,7 +406,11 @@ export class Task {
     } else if (workingMode === 'local') {
       // Check if worktree exists and set worktreeEnabled accordingly
       if (existingWorktree) {
-        await this.worktreeManager.removeWorktree(this.project.baseDir, existingWorktree);
+        // Only remove the worktree if no other tasks share it
+        const isShared = this.project.isWorktreeSharedWithOtherTasks(existingWorktree.path, this.taskId);
+        if (!isShared) {
+          await this.worktreeManager.removeWorktree(this.project.baseDir, existingWorktree);
+        }
         void this.sendUpdatedFilesUpdated();
         void this.sendWorktreeIntegrationStatusUpdated();
       }
@@ -3343,7 +3347,11 @@ ${error.stderr}`,
       this.task.workingMode = mode;
     } else if (mode === 'local') {
       if (currentWorktree) {
-        await this.worktreeManager.removeWorktree(this.project.baseDir, currentWorktree);
+        // Only remove the worktree if no other tasks share it
+        const isShared = this.project.isWorktreeSharedWithOtherTasks(currentWorktree.path, this.taskId);
+        if (!isShared) {
+          await this.worktreeManager.removeWorktree(this.project.baseDir, currentWorktree);
+        }
       }
       this.task.worktree = undefined;
       this.task.lastMergeState = undefined;
