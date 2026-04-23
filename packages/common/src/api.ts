@@ -259,6 +259,7 @@ export interface ApplicationAPI {
 
   // Worktree merge operations
   mergeWorktreeToMain: (baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string) => Promise<void>;
+  mergeAndSwitchToLocal: (baseDir: string, taskId: string, targetBranch?: string) => Promise<void>;
   applyUncommittedChanges: (baseDir: string, taskId: string, targetBranch?: string) => Promise<void>;
   revertLastMerge: (baseDir: string, taskId: string) => Promise<void>;
   listBranches: (baseDir: string) => Promise<BranchInfo[]>;

@@ -656,6 +656,7 @@ const api: ApplicationAPI = {
   // Worktree merge operations
   mergeWorktreeToMain: (baseDir, taskId, squash, targetBranch, commitMessage) =>
     ipcRenderer.invoke('merge-worktree-to-main', baseDir, taskId, squash, targetBranch, commitMessage),
+  mergeAndSwitchToLocal: (baseDir, taskId, targetBranch) => ipcRenderer.invoke('merge-and-switch-to-local', baseDir, taskId, targetBranch),
   applyUncommittedChanges: (baseDir, taskId, targetBranch) => ipcRenderer.invoke('apply-uncommitted-changes', baseDir, taskId, targetBranch),
   revertLastMerge: (baseDir, taskId) => ipcRenderer.invoke('revert-last-merge', baseDir, taskId),
   listBranches: (baseDir) => ipcRenderer.invoke('list-branches', baseDir),

@@ -1430,8 +1430,9 @@
     "worktree": "工作树",
     "switching": "切换中...",
     "confirmLocalTitle": "切换到本地模式",
-    "confirmLocalMessage": "警告：此工作树有未保存的工作：\n{{warnings}}\n\n删除工作树将删除这些工作。如果您想保留这些工作，请先使用合并操作将其合并到主分支。\n\n您确定要继续并删除工作树吗？",
-    "confirmLocalAction": "删除并切换"
+    "confirmLocalMessage": "此工作树有未保存的工作：\n{{warnings}}\n\n您可以在切换前将更改合并到主分支，或删除工作树并丢失这些工作。",
+    "confirmLocalAction": "删除并切换",
+    "mergeAndSwitchAction": "合并并切换"
   },
   "workingModeTooltip": {
     "local": "在此任务中直接在本地项目目录中进行更改",

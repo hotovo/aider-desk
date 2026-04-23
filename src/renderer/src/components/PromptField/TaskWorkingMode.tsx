@@ -90,6 +90,19 @@ export const TaskWorkingMode = ({
     }
   };
 
+  const performMergeAndSwitch = async () => {
+    setIsSwitching(true);
+    try {
+      await api.mergeAndSwitchToLocal(task.baseDir, task.id, worktreeStatus?.targetBranch);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to merge and switch:', error);
+    } finally {
+      setIsSwitching(false);
+      setShowConfirmLocal(false);
+    }
+  };
+
   const getWarningMessage = () => {
     if (!worktreeStatus) {
       return '';
@@ -156,6 +169,12 @@ export const TaskWorkingMode = ({
           onCancel={() => setShowConfirmLocal(false)}
           confirmButtonText={t('workingMode.confirmLocalAction')}
           confirmButtonColor="danger"
+          width={600}
+          additionalAction={{
+            label: t('workingMode.mergeAndSwitchAction'),
+            onClick: performMergeAndSwitch,
+            color: 'primary',
+          }}
         >
           <div className="whitespace-pre-wrap text-xs">{t('workingMode.confirmLocalMessage', { warnings: getWarningMessage() })}</div>
         </ConfirmDialog>

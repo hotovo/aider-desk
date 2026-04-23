@@ -286,6 +286,12 @@ const MergeWorktreeToMainSchema = z.object({
   commitMessage: z.string().optional(),
 });
 
+const MergeAndSwitchToLocalSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  targetBranch: z.string().optional(),
+});
+
 const ApplyUncommittedChangesSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
@@ -813,6 +819,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, squash, targetBranch, commitMessage } = parsed;
         await this.eventsHandler.mergeWorktreeToMain(projectDir, taskId, squash, targetBranch, commitMessage);
         res.status(200).json({ message: 'Worktree merged' });
+      }),
+    );
+
+    // Merge and switch to local
+    router.post(
+      '/project/worktree/merge-and-switch-to-local',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(MergeAndSwitchToLocalSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, targetBranch } = parsed;
+        await this.eventsHandler.mergeAndSwitchToLocal(projectDir, taskId, targetBranch);
+        res.status(200).json({ message: 'Worktree merged and switched to local' });
       }),
     );
 

@@ -963,6 +963,14 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  mergeAndSwitchToLocal(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
+    return this.post('/project/worktree/merge-and-switch-to-local', {
+      projectDir: baseDir,
+      taskId,
+      targetBranch,
+    });
+  }
+
   applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
     return this.post('/project/worktree/apply-uncommitted', {
       projectDir: baseDir,

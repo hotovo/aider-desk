@@ -536,6 +536,15 @@ export class EventsHandler {
     await task.mergeWorktreeToMain(squash, targetBranch, commitMessage);
   }
 
+  async mergeAndSwitchToLocal(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.mergeAndSwitchToLocal(targetBranch);
+  }
+
   async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {

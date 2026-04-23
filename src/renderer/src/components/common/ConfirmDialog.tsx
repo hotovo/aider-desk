@@ -4,6 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { BaseDialog } from './BaseDialog';
 import { Button, ButtonColor } from './Button';
 
+type AdditionalAction = {
+  label: string;
+  onClick: () => void;
+  color?: ButtonColor;
+  disabled?: boolean;
+};
+
 type Props = {
   title: string;
   onConfirm: () => void;
@@ -18,6 +25,7 @@ type Props = {
   width?: number;
   closeOnEscape?: boolean;
   footerAdditionalComponents?: ReactNode;
+  additionalAction?: AdditionalAction;
 };
 
 export const ConfirmDialog = ({
@@ -34,6 +42,7 @@ export const ConfirmDialog = ({
   width,
   closeOnEscape = false,
   footerAdditionalComponents,
+  additionalAction,
 }: Props) => {
   const { t } = useTranslation();
   const resolvedConfirmText = confirmButtonText ?? t('common.confirm');
@@ -50,6 +59,11 @@ export const ConfirmDialog = ({
           <Button onClick={onCancel} variant="text">
             {resolvedCancelText}
           </Button>
+          {additionalAction && (
+            <Button onClick={additionalAction.onClick} disabled={additionalAction.disabled} variant="contained" color={additionalAction.color ?? 'primary'}>
+              {additionalAction.label}
+            </Button>
+          )}
           <Button onClick={onConfirm} autoFocus={true} disabled={disabled} variant="contained" className={confirmButtonClass} color={confirmButtonColor}>
             {resolvedConfirmText}
           </Button>

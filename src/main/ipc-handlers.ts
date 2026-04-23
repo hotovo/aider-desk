@@ -450,6 +450,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.mergeWorktreeToMain(baseDir, taskId, squash, targetBranch, commitMessage);
   });
 
+  ipcMain.handle('merge-and-switch-to-local', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
+    await eventsHandler.mergeAndSwitchToLocal(baseDir, taskId, targetBranch);
+  });
+
   ipcMain.handle('apply-uncommitted-changes', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
     await eventsHandler.applyUncommittedChanges(baseDir, taskId, targetBranch);
   });

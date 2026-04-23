@@ -1472,8 +1472,9 @@
     "worktree": "Worktree",
     "switching": "Switching...",
     "confirmLocalTitle": "Switch to Local Mode",
-    "confirmLocalMessage": "Warning: This worktree has unsaved work:\n{{warnings}}\n\nRemoving the worktree will delete this work. If you want to keep this work, use Merge action to merge it to the main branch first.\n\nAre you sure you want to continue and remove the worktree?",
-    "confirmLocalAction": "Remove and switch"
+    "confirmLocalMessage": "This worktree has unsaved work:\n{{warnings}}\n\nYou can merge the changes to the main branch before switching, or remove the worktree and lose this work.",
+    "confirmLocalAction": "Remove and switch",
+    "mergeAndSwitchAction": "Merge and switch"
   },
   "workingModeTooltip": {
     "local": "Make changes directly in the local project directory for this task",
