@@ -82,7 +82,7 @@ Always use the `ui` prop components (`ui.Input`, `ui.TextArea`, `ui.Select`, `ui
     <Input
       label="My Setting"
       value={config?.mySetting || ''}
-      onChange={(value) => updateConfig({ ...config, mySetting: value })}
+      onChange={(e) => updateConfig({ ...config, mySetting: e.target.value })}
     />
   );
 };
@@ -112,7 +112,7 @@ When your component just reads from `config` and calls `updateConfig` on change 
 ```jsx
 ({ config, updateConfig, ui }) => {
   const { Input } = ui;
-  return <Input label="Folders" value={config?.folders || ''} onChange={(v) => updateConfig({ ...config, folders: v })} />;
+  return <Input label="Folders" value={config?.folders || ''} onChange={(e) => updateConfig({ ...config, folders: e.target.value })} />;
 };
 ```
 
@@ -186,7 +186,7 @@ Config components follow the same format as all other extension JSX files:
       <Input
         label="My Setting"
         value={config?.mySetting || ''}
-        onChange={(value) => updateConfig({ ...config, mySetting: value })}
+        onChange={(e) => updateConfig({ ...config, mySetting: e.target.value })}
         placeholder="Enter value..."
       />
       <p className="text-xs text-text-secondary -mt-2">
@@ -224,14 +224,14 @@ Config components follow the same format as all other extension JSX files:
       <Input
         label="Rule Folders"
         value={config?.ruleFolders || ''}
-        onChange={(value) => updateConfig({ ...config, ruleFolders: value })}
+        onChange={(e) => updateConfig({ ...config, ruleFolders: e.target.value })}
         placeholder=".custom-rules, .ai/rules"
       />
       <Input
         label="Max Depth"
         type="number"
         value={String(config?.maxDepth ?? 3)}
-        onChange={(value) => updateConfig({ ...config, maxDepth: Number(value) })}
+        onChange={(e) => updateConfig({ ...config, maxDepth: Number(e.target.value) })}
       />
       <Checkbox
         label="Include hidden directories"
@@ -262,7 +262,7 @@ Only use local state when you need behavior beyond simple read/write — such as
       <Input
         label="Folders (comma-separated)"
         value={rawValue}
-        onChange={(value) => updateConfig({ ...config, folders: value })}
+        onChange={(e) => updateConfig({ ...config, folders: e.target.value })}
       />
       {/* Tag preview — derived from config, uses inner state for UI interaction */}
       <div className="flex flex-wrap gap-1">
