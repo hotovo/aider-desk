@@ -14,6 +14,9 @@ import logger from '@/logger';
 import { openUrl as openUrlUtil } from '@/utils/open-url';
 
 export class ExtensionContextImpl implements ExtensionContext {
+  private readonly taskContext: TaskContext | null;
+  private readonly projectContext: ProjectContext | null;
+
   constructor(
     private readonly extensionId: string,
     private readonly extensionName: string,
@@ -23,7 +26,10 @@ export class ExtensionContextImpl implements ExtensionContext {
     private readonly memoryManager?: MemoryManager,
     private readonly project?: Project,
     private readonly task?: Task,
-  ) {}
+  ) {
+    this.taskContext = this.task ? new TaskContextImpl(this.task) : null;
+    this.projectContext = this.project ? new ProjectContextImpl(this.project) : null;
+  }
 
   log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void {
     const logFn = logger[type];
@@ -35,14 +41,14 @@ export class ExtensionContextImpl implements ExtensionContext {
   }
 
   getTaskContext(): TaskContext | null {
-    return this.task ? new TaskContextImpl(this.task) : null;
+    return this.taskContext;
   }
 
   getProjectContext(): ProjectContext {
-    if (!this.project) {
+    if (!this.projectContext) {
       throw new Error('Project context not available');
     }
-    return new ProjectContextImpl(this.project);
+    return this.projectContext;
   }
 
   async getModelConfigs(): Promise<Model[]> {
