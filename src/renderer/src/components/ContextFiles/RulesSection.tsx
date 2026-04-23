@@ -2,12 +2,12 @@ import { ContextFile, OS, TokensInfoData } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
-
 import { ContextFilesSection } from './ContextFilesSection';
 import { createFileTree } from './types';
 
 import type { TreeItem } from './types';
+
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 
 type Props = {
   rulesFiles: ContextFile[];
@@ -26,7 +26,7 @@ export const RulesSection = ({ rulesFiles, isOpen, totalStats, tokensInfo, os, c
 
   const [rulesExpandedItems, setRulesExpandedItems] = useState<string[]>([]);
 
-  const disabledRuleFiles = projectSettings?.disabledRuleFiles ?? [];
+  const disabledRuleFiles = useMemo(() => projectSettings?.disabledRuleFiles ?? [], [projectSettings?.disabledRuleFiles]);
 
   const sortedRulesFiles = useMemo(() => {
     return [...rulesFiles].sort((a, b) => a.path.localeCompare(b.path));
@@ -71,10 +71,7 @@ export const RulesSection = ({ rulesFiles, isOpen, totalStats, tokensInfo, os, c
 
   const addFile = useCallback((_item: TreeItem) => (_event: React.MouseEvent<HTMLButtonElement>) => {}, []);
 
-  const enabledRuleCount = useMemo(
-    () => rulesFiles.filter((f) => !disabledRuleFiles.includes(f.path)).length,
-    [rulesFiles, disabledRuleFiles],
-  );
+  const enabledRuleCount = useMemo(() => rulesFiles.filter((f) => !disabledRuleFiles.includes(f.path)).length, [rulesFiles, disabledRuleFiles]);
 
   return (
     <ContextFilesSection

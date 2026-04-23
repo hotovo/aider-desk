@@ -1944,11 +1944,11 @@ export class Task {
     }
 
     const profile = await this.getTaskAgentProfile();
-    const ruleFiles = await this.getRuleFilesAsContextFiles(profile || undefined);
+    const ruleFiles = await this.getRuleFilesAsContextFiles(profile || undefined, true);
     return [...contextFiles, ...ruleFiles];
   }
 
-  public async getRuleFilesAsContextFiles(profile?: AgentProfile): Promise<ContextFile[]> {
+  public async getRuleFilesAsContextFiles(profile?: AgentProfile, includeDisabled = false): Promise<ContextFile[]> {
     const ruleFiles: ContextFile[] = [];
     const homeDir = homedir();
 
@@ -2034,7 +2034,7 @@ export class Task {
 
     // Filter out disabled rule files
     const disabledRuleFiles = this.project.getProjectSettings().disabledRuleFiles ?? [];
-    const enabledRuleFiles = ruleFiles.filter((f) => !disabledRuleFiles.includes(f.path));
+    const enabledRuleFiles = includeDisabled ? ruleFiles : ruleFiles.filter((f) => !disabledRuleFiles.includes(f.path));
 
     // Dispatch extension event to allow modification of rule files
     const extensionResult = await this.extensionManager.dispatchEvent('onRuleFilesRetrieved', { files: enabledRuleFiles }, this.project, this);

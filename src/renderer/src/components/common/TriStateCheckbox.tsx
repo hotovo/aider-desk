@@ -1,6 +1,6 @@
 import { InputHTMLAttributes } from 'react';
 
-type TriState = 'checked' | 'unchecked' | 'indeterminate';
+export type TriState = 'checked' | 'unchecked' | 'indeterminate';
 
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;

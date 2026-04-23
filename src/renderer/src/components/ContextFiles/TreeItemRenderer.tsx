@@ -13,9 +13,27 @@ import { normalizePath } from './types';
 import type { SectionType, TreeItem } from './types';
 
 import { Tooltip } from '@/components/ui/Tooltip';
-import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
+import { TriState, TriStateCheckbox } from '@/components/common/TriStateCheckbox';
 
-type TriState = 'checked' | 'unchecked' | 'indeterminate';
+const getDescendantRuleFiles = (treeData: Record<string, TreeItem>, nodeId: string | number): string[] => {
+  const node = treeData[String(nodeId)];
+  if (!node?.children) {
+    return [];
+  }
+  const result: string[] = [];
+  for (const childId of node.children) {
+    const child = treeData[String(childId)];
+    if (!child) {
+      continue;
+    }
+    if (child.isFolder) {
+      result.push(...getDescendantRuleFiles(treeData, childId));
+    } else if (child.file?.path) {
+      result.push(child.file.path);
+    }
+  }
+  return result;
+};
 
 type Props = {
   item: TreeItem;
@@ -67,36 +85,25 @@ export const TreeItemRenderer = ({
   const isRuleDisabled = isRuleFile && filePath ? (disabledRuleFiles ?? []).includes(filePath) : false;
   const showFolderCheckbox = type === 'rules' && item.isFolder && onToggleRuleFile;
 
-  const getDescendantRuleFiles = useCallback(
-    (nodeId: string | number): string[] => {
-      const node = treeData[String(nodeId)];
-      if (!node?.children) return [];
-      const result: string[] = [];
-      for (const childId of node.children) {
-        const child = treeData[String(childId)];
-        if (!child) continue;
-        if (child.isFolder) {
-          result.push(...getDescendantRuleFiles(childId));
-        } else if (child.file?.path) {
-          result.push(child.file.path);
-        }
-      }
-      return result;
-    },
-    [treeData],
-  );
-
   const folderRuleFiles = useMemo(() => {
-    if (!showFolderCheckbox) return [];
-    return getDescendantRuleFiles(item.index);
-  }, [showFolderCheckbox, getDescendantRuleFiles, item.index]);
+    if (!showFolderCheckbox) {
+      return [];
+    }
+    return getDescendantRuleFiles(treeData, item.index);
+  }, [showFolderCheckbox, treeData, item.index]);
 
   const folderCheckState = useMemo((): TriState => {
-    if (!showFolderCheckbox || folderRuleFiles.length === 0) return 'unchecked';
+    if (!showFolderCheckbox || folderRuleFiles.length === 0) {
+      return 'unchecked';
+    }
     const disabled = disabledRuleFiles ?? [];
     const enabledCount = folderRuleFiles.filter((p) => !disabled.includes(p)).length;
-    if (enabledCount === 0) return 'unchecked';
-    if (enabledCount === folderRuleFiles.length) return 'checked';
+    if (enabledCount === 0) {
+      return 'unchecked';
+    }
+    if (enabledCount === folderRuleFiles.length) {
+      return 'checked';
+    }
     return 'indeterminate';
   }, [showFolderCheckbox, folderRuleFiles, disabledRuleFiles]);
 
@@ -107,7 +114,9 @@ export const TreeItemRenderer = ({
   }, [filePath, onToggleRuleFile, isRuleDisabled]);
 
   const handleFolderCheckboxToggle = useCallback(() => {
-    if (!onToggleRuleFile || folderRuleFiles.length === 0) return;
+    if (!onToggleRuleFile || folderRuleFiles.length === 0) {
+      return;
+    }
     const newState = folderCheckState === 'checked';
     onToggleRuleFile(folderRuleFiles, newState);
   }, [onToggleRuleFile, folderCheckState, folderRuleFiles]);
@@ -251,15 +260,8 @@ export const TreeItemRenderer = ({
               )}
             </>
           )}
-          {showFolderCheckbox && folderRuleFiles.length > 0 && (
-            <TriStateCheckbox state={folderCheckState} onChange={handleFolderCheckboxToggle} />
-          )}
-          {showRuleCheckbox && (
-            <TriStateCheckbox
-              state={isRuleDisabled ? 'unchecked' : 'checked'}
-              onChange={handleFileCheckboxToggle}
-            />
-          )}
+          {showFolderCheckbox && folderRuleFiles.length > 0 && <TriStateCheckbox state={folderCheckState} onChange={handleFolderCheckboxToggle} />}
+          {showRuleCheckbox && <TriStateCheckbox state={isRuleDisabled ? 'unchecked' : 'checked'} onChange={handleFileCheckboxToggle} />}
           {showConflictWarning && (
             <Tooltip content={t('contextFiles.fileHasConflicts')}>
               <RiAlertLine className="w-4 h-4 text-warning" />
