@@ -989,6 +989,10 @@
     "agentRule": "代理规则文件",
     "projectFiles": "项目文件",
     "rules": "规则文件",
+    "disableRuleFile": "禁用规则文件",
+    "enableRuleFile": "启用规则文件",
+    "disableAllRuleFiles": "禁用文件夹中的所有规则文件",
+    "enableAllRuleFiles": "启用文件夹中的所有规则文件",
     "diffViewer": {
       "file": "文件"
     },

@@ -8,6 +8,7 @@ type Props = {
   section: SectionType;
   title: string;
   count: number;
+  totalCount?: number;
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
   actions?: React.ReactNode;
@@ -15,7 +16,7 @@ type Props = {
   onToggle: () => void;
 };
 
-export const SectionHeader = ({ section, title, count, isOpen, totalStats, actions, alwaysVisibleActions, onToggle }: Props) => {
+export const SectionHeader = ({ section, title, count, totalCount, isOpen, totalStats, actions, alwaysVisibleActions, onToggle }: Props) => {
   return (
     <div
       className={clsx(
@@ -37,7 +38,11 @@ export const SectionHeader = ({ section, title, count, isOpen, totalStats, actio
           <span className="ml-0.5 text-error">-{totalStats.deletions}</span>
         </span>
       ) : (
-        !isOpen && <span className="text-2xs text-text-tertiary mr-2 bg-bg-secondary-light px-1.5 rounded-full">{count}</span>
+        !isOpen && (
+          <span className="text-2xs text-text-tertiary mr-2 bg-bg-secondary-light px-1.5 rounded-full">
+            {totalCount != null && totalCount !== count ? `${count}/${totalCount}` : count}
+          </span>
+        )
       )}
 
       <div className="flex items-center" onClick={(e) => e.stopPropagation()}>

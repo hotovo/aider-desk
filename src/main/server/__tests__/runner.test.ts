@@ -53,6 +53,7 @@ describe('addProjectsFromEnv', () => {
       modelEditFormats: {},
       currentMode: 'agent' as const,
       updatedFilesGroupMode: 'flat',
+      disabledRuleFiles: [],
     });
 
     // Mock managers

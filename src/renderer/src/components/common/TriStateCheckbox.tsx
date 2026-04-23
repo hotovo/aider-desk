@@ -13,7 +13,7 @@ export const TriStateCheckbox = ({ label, state, onChange, className = '', ...pr
   return (
     <div className={`flex items-center ${className}`}>
       <div
-        className="relative flex items-center justify-center"
+        className="relative flex items-center justify-center cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           onChange();

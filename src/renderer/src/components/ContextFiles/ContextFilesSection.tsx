@@ -26,7 +26,10 @@ type Props = {
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
   showBorderTop?: boolean;
+  disabledRuleFiles?: string[];
+  totalRuleCount?: number;
   onToggle: () => void;
+  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
@@ -52,7 +55,10 @@ export const ContextFilesSection = ({
   searchField,
   emptyContent,
   showBorderTop = false,
+  disabledRuleFiles,
+  totalRuleCount,
   onToggle,
+  onToggleRuleFile,
   onFileDiffClick,
   onFilePreviewClick,
   onRevertFile,
@@ -73,6 +79,7 @@ export const ContextFilesSection = ({
         section={section}
         title={title}
         count={count}
+        totalCount={totalRuleCount}
         isOpen={isOpen}
         totalStats={totalStats}
         actions={actions}
@@ -91,6 +98,8 @@ export const ContextFilesSection = ({
           os={os}
           searchField={searchField}
           emptyContent={emptyContent}
+          disabledRuleFiles={disabledRuleFiles}
+          onToggleRuleFile={onToggleRuleFile}
           onFileDiffClick={onFileDiffClick}
           onFilePreviewClick={onFilePreviewClick}
           onRevertFile={onRevertFile}

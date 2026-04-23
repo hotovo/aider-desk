@@ -324,6 +324,7 @@ export const ProjectSettingsSchema = z.object({
   weakModelLocked: z.boolean().optional(),
   autoApproveLocked: z.boolean().optional(),
   updatedFilesGroupMode: z.enum(['grouped', 'flat']).default('flat'),
+  disabledRuleFiles: z.array(z.string()).default([]),
 });
 
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;

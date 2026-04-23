@@ -2032,8 +2032,12 @@ export class Task {
       }
     }
 
+    // Filter out disabled rule files
+    const disabledRuleFiles = this.project.getProjectSettings().disabledRuleFiles ?? [];
+    const enabledRuleFiles = ruleFiles.filter((f) => !disabledRuleFiles.includes(f.path));
+
     // Dispatch extension event to allow modification of rule files
-    const extensionResult = await this.extensionManager.dispatchEvent('onRuleFilesRetrieved', { files: ruleFiles }, this.project, this);
+    const extensionResult = await this.extensionManager.dispatchEvent('onRuleFilesRetrieved', { files: enabledRuleFiles }, this.project, this);
     return extensionResult.files;
   }
 

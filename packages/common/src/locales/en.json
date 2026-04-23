@@ -1050,6 +1050,10 @@
     "agentRule": "Agent rule file",
     "projectFiles": "Project Files",
     "rules": "Rule Files",
+    "disableRuleFile": "Disable rule file",
+    "enableRuleFile": "Enable rule file",
+    "disableAllRuleFiles": "Disable all rule files in folder",
+    "enableAllRuleFiles": "Enable all rule files in folder",
     "diffViewer": {
       "file": "File"
     },

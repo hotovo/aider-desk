@@ -14,6 +14,7 @@
 - updated generate text function to properly use cache control
 - updated branch name fallback to use shortened taskId
 - added shared worktree detection to prevent accidental deletion
+- added support for enabling and disabling rule files
 
 ## [0.62.0]
 
