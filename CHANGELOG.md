@@ -16,6 +16,7 @@
 - added shared worktree detection to prevent accidental deletion
 - added support for enabling and disabling rule files
 - added support for merging worktree changes when switching to local mode
+- simplified the UI for Rule Files by flattening the tree to a list
 
 ## [0.62.0]
 

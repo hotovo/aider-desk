@@ -223,9 +223,6 @@ export const ContextFiles = ({
         rulesFiles={rulesFiles}
         isOpen={activeSection === 'rules'}
         totalStats={totalStats}
-        tokensInfo={tokensInfo}
-        os={os}
-        contextFilesMap={contextFilesMap}
         visitedSections={visitedSections}
         onToggle={() => setActiveSection('rules')}
       />

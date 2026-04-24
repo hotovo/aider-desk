@@ -18,14 +18,7 @@ type Props = {
 
 export const SectionHeader = ({ section, title, count, totalCount, isOpen, totalStats, actions, alwaysVisibleActions, onToggle }: Props) => {
   return (
-    <div
-      className={clsx(
-        'flex items-center px-2 select-none h-[40px] shrink-0 bg-bg-primary-light',
-        !isOpen && 'cursor-pointer',
-        isOpen && !actions && 'border-b border-border-dark-light',
-      )}
-      onClick={onToggle}
-    >
+    <div className={clsx('flex items-center px-2 select-none h-[40px] shrink-0 bg-bg-primary-light', !isOpen && 'cursor-pointer')} onClick={onToggle}>
       <motion.div initial={false} animate={{ rotate: isOpen ? 0 : -90 }} transition={{ duration: 0.1 }} className="mr-1">
         <HiChevronDown className="w-4 h-4 text-text-muted" />
       </motion.div>
