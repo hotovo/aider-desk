@@ -5,7 +5,7 @@
 - When you create a new component, first look at existing components to see how they're written; then consider framework choice, naming conventions, typing, and other conventions.
 - always define each component in its own file rather than inline within another component's file. If a component grows beyond ~50 lines or has its own state/hooks/types, extract it into a dedicated file in the same directory and import it.
 - When you edit a piece of code, first look at the code's surrounding context (especially its imports) to understand the code's choice of frameworks and libraries. Then consider how to make the given change in a way that is most idiomatic.
-- when creating Props type for a component, always use `type Props`
+- when creating Props type for a component, always use `type Props` and place it immediately above the component definition, with nothing in between
 - do not add `import React from 'react';`
 - do not use React.FC for components as type, if needed use `{}: Props` as argument. Example:
 ```tsx
