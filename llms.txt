@@ -3372,6 +3372,15 @@ import { openUrl as openUrlUtil } from '@/utils/open-url';
 export class ExtensionContextImpl implements ExtensionContext
 ⋮----
 constructor(
+    private readonly extensionId: string,
+    private readonly extensionName: string,
+    private readonly store?: Store,
+    private readonly modelManager?: ModelManager,
+    private readonly eventManager?: EventManager,
+    private readonly memoryManager?: MemoryManager,
+    private readonly project?: Project,
+    private readonly task?: Task,
+)
 ⋮----
 log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void
 ⋮----
@@ -6615,9 +6624,16 @@ public getCustomCommandManager(): CustomCommandManager
 ⋮----
 public getAgentProfiles(): AgentProfile[]
 ⋮----
+/**
+   * Checks if any other task (excluding the specified taskId) uses the given worktree path.
+   */
+public isWorktreeSharedWithOtherTasks(worktreePath: string, excludeTaskId: string): boolean
+⋮----
 private async deleteTaskInternal(taskId: string): Promise<void>
 ⋮----
 // Close the task if it's loaded
+⋮----
+// Remove worktree if the task has one and no other task shares it
 ⋮----
 // Delete the task directory
 ⋮----
@@ -6628,6 +6644,9 @@ public async deleteTask(taskId: string): Promise<void>
 // Then delete the parent task
 ⋮----
 public async duplicateTask(taskId: string): Promise<TaskData>
+⋮----
+// When the source task has a worktree, make the duplicate a subtask
+// so both tasks sharing the same worktree are clearly related
 ⋮----
 public async forkTask(taskId: string, messageId: string): Promise<TaskData>
 ⋮----
@@ -7187,6 +7206,8 @@ registerRoutes(router: Router): void
 // Scrape web
 ⋮----
 // Merge worktree to main
+⋮----
+// Merge and switch to local
 ⋮----
 // Apply uncommitted changes
 ⋮----
@@ -8492,7 +8513,7 @@ private generateBranchName(): string
 .replace(/-+/g, '-') // Replace multiple dashes with single dash
 .replace(/-$/, ''); // Remove trailing dash
 ⋮----
-// If result is empty, use taskId
+// If result is empty, use shortened taskId (first segment of UUID)
 ⋮----
 private async renameWorktreeBranchIfNeeded(): Promise<void>
 ⋮----
@@ -8517,6 +8538,8 @@ private async initInternal()
 // Create a default worktree for this task
 ⋮----
 // Check if worktree exists and set worktreeEnabled accordingly
+⋮----
+// Only remove the worktree if no other tasks share it
 ⋮----
 public async load(): Promise<TaskStateData>
 ⋮----
@@ -8782,7 +8805,7 @@ public async getUpdatedFiles(): Promise<UpdatedFile[]>
 ⋮----
 public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]>
 ⋮----
-public async getRuleFilesAsContextFiles(profile?: AgentProfile): Promise<ContextFile[]>
+public async getRuleFilesAsContextFiles(profile?: AgentProfile, includeDisabled = false): Promise<ContextFile[]>
 ⋮----
 // Get global rule files
 ⋮----
@@ -8801,6 +8824,8 @@ public async getRuleFilesAsContextFiles(profile?: AgentProfile): Promise<Context
 // Convert to relative path with ~/ prefix if in home directory
 ⋮----
 // Rule file doesn't exist or can't be accessed
+⋮----
+// Filter out disabled rule files
 ⋮----
 // Dispatch extension event to allow modification of rule files
 ⋮----
@@ -9094,6 +9119,8 @@ private async sendUpdatedFilesUpdated()
 ⋮----
 private async applyWorkingMode(mode: WorkingMode)
 ⋮----
+// Only remove the worktree if no other tasks share it
+⋮----
 public async mergeWorktreeToMain(squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
 // For squash merge, we need a commit message
@@ -9105,6 +9132,14 @@ public async mergeWorktreeToMain(squash: boolean, targetBranch?: string, commitM
 // Fallback to task name if AI generation fails
 ⋮----
 // Store merge state for potential revert
+⋮----
+public async mergeAndSwitchToLocal(targetBranch?: string): Promise<void>
+⋮----
+// Perform the merge (will throw on failure, preventing the switch)
+⋮----
+// Store merge state for potential revert
+⋮----
+// Now switch to local mode (same path as UI, handles save + events)
 ⋮----
 public async applyUncommittedChanges(targetBranch?: string): Promise<void>
 ⋮----
@@ -10916,6 +10951,8 @@ getTerminalsForTask(taskId: string):
 ⋮----
 async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
+async mergeAndSwitchToLocal(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
+⋮----
 async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
 async revertLastMerge(baseDir: string, taskId: string): Promise<void>
@@ -12421,6 +12458,8 @@ getCloudflareTunnelStatus(): Promise<CloudflareTunnelStatus>
 // Worktree merge operations
 mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
+mergeAndSwitchToLocal(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
+⋮----
 applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
 revertLastMerge(baseDir: string, taskId: string): Promise<void>
@@ -13223,6 +13262,13 @@ import { useTranslation } from 'react-i18next';
 import { BaseDialog } from './BaseDialog';
 import { Button, ButtonColor } from './Button';
 ⋮----
+type AdditionalAction = {
+  label: string;
+  onClick: () => void;
+  color?: ButtonColor;
+  disabled?: boolean;
+};
+⋮----
 type Props = {
   title: string;
   onConfirm: () => void;
@@ -13237,7 +13283,25 @@ type Props = {
   width?: number;
   closeOnEscape?: boolean;
   footerAdditionalComponents?: ReactNode;
+  additionalAction?: AdditionalAction;
 };
+⋮----
+export const ConfirmDialog = ({
+  title,
+  onConfirm,
+  onCancel,
+  confirmButtonText,
+  cancelButtonText,
+  contentClass,
+  children,
+  disabled = false,
+  confirmButtonClass,
+  confirmButtonColor,
+  width,
+  closeOnEscape = false,
+  footerAdditionalComponents,
+  additionalAction,
+}: Props) =>
 
 ================
 File: src/renderer/src/components/common/DatePicker.css
@@ -13830,7 +13894,7 @@ File: src/renderer/src/components/common/TriStateCheckbox.tsx
 ================
 import { InputHTMLAttributes } from 'react';
 ⋮----
-type TriState = 'checked' | 'unchecked' | 'indeterminate';
+export type TriState = 'checked' | 'unchecked' | 'indeterminate';
 ⋮----
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -14068,7 +14132,10 @@ type Props = {
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
   showBorderTop?: boolean;
+  disabledRuleFiles?: string[];
+  totalRuleCount?: number;
   onToggle: () => void;
+  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
@@ -14094,7 +14161,10 @@ export const ContextFilesSection = ({
   searchField,
   emptyContent,
   showBorderTop = false,
+  disabledRuleFiles,
+  totalRuleCount,
   onToggle,
+  onToggleRuleFile,
   onFileDiffClick,
   onFilePreviewClick,
   onRevertFile,
@@ -14317,6 +14387,8 @@ import { createFileTree } from './types';
 ⋮----
 import type { TreeItem } from './types';
 ⋮----
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+⋮----
 type Props = {
   rulesFiles: ContextFile[];
   isOpen: boolean;
@@ -14327,8 +14399,6 @@ type Props = {
   visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
   onToggle: () => void;
 };
-⋮----
-// Expand all folders in rules tree by default
 ⋮----
 // eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
@@ -14358,6 +14428,8 @@ type Props = {
   os: OS | null;
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
+  disabledRuleFiles?: string[];
+  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
@@ -14378,6 +14450,7 @@ type Props = {
   section: SectionType;
   title: string;
   count: number;
+  totalCount?: number;
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
   actions?: React.ReactNode;
@@ -14391,7 +14464,7 @@ className=
 File: src/renderer/src/components/ContextFiles/TreeItemRenderer.tsx
 ================
 import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
 import { MdUndo, MdOutlinePublic } from 'react-icons/md';
 import { TbPencilOff } from 'react-icons/tb';
@@ -14405,6 +14478,9 @@ import { normalizePath } from './types';
 import type { SectionType, TreeItem } from './types';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { TriState, TriStateCheckbox } from '@/components/common/TriStateCheckbox';
+⋮----
+const getDescendantRuleFiles = (treeData: Record<string, TreeItem>, nodeId: string | number): string[] =>
 ⋮----
 type Props = {
   item: TreeItem;
@@ -14418,6 +14494,8 @@ type Props = {
   updatedFiles: UpdatedFile[];
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
+  disabledRuleFiles?: string[];
+  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
@@ -20002,6 +20080,10 @@ type Props = {
 const handleWorkingModeChanged = async (mode: WorkingMode) =>
 ⋮----
 const performSwitch = async (mode: WorkingMode) =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const performMergeAndSwitch = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
