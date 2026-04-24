@@ -1469,7 +1469,7 @@ describe('ExtensionManager', () => {
 
     it('should filter by enabled extensions', () => {
       store.getSettings = vi.fn().mockReturnValue({
-        extensions: { disabled: ['ext2'] },
+        extensions: { disabled: ['/path/ext2.ts'] },
       });
 
       const mockStrategy = {

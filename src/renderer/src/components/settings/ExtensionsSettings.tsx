@@ -150,9 +150,9 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleToggleDisabled = (extensionName: string, isCurrentlyDisabled: boolean) => {
+  const handleToggleDisabled = (extensionFilePath: string, isCurrentlyDisabled: boolean) => {
     const disabledExtensions = settings.extensions?.disabled || [];
-    const updatedDisabled = isCurrentlyDisabled ? disabledExtensions.filter((name) => name !== extensionName) : [...disabledExtensions, extensionName];
+    const updatedDisabled = isCurrentlyDisabled ? disabledExtensions.filter((fp) => fp !== extensionFilePath) : [...disabledExtensions, extensionFilePath];
 
     setSettings({
       ...settings,
@@ -395,7 +395,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             <ExtensionCard
               key={extension.filePath}
               extension={extension}
-              isDisabled={disabledExtensions.includes(extension.metadata.name)}
+              isDisabled={disabledExtensions.includes(extension.filePath)}
               isUninstalling={uninstallingExtensions.has(extension.filePath)}
               isUpdating={updatingExtensions.has(extension.filePath)}
               hasUpdate={extensionHasUpdate}
@@ -466,7 +466,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             key={extension.id}
             extension={extension}
             isInstalled={true}
-            isDisabled={disabledExtensions.includes(installedExtension.metadata.name)}
+            isDisabled={disabledExtensions.includes(installedExtension.filePath)}
             isUninstalling={uninstallingExtensions.has(installedExtension.filePath)}
             isUpdating={updatingExtensions.has(installedExtension.filePath)}
             hasUpdate={extensionHasUpdate}

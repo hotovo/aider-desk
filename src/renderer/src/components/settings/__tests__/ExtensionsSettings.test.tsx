@@ -873,7 +873,7 @@ describe('ExtensionsSettings', () => {
       expect(mockSetSettings).toHaveBeenCalledWith(
         expect.objectContaining({
           extensions: expect.objectContaining({
-            disabled: expect.arrayContaining([extension.metadata.name]),
+            disabled: expect.arrayContaining([extension.filePath]),
           }),
         }),
       );
@@ -886,7 +886,7 @@ describe('ExtensionsSettings', () => {
         ...mockSettings,
         extensions: {
           repositories: [AIDER_DESK_EXTENSIONS_REPO_URL],
-          disabled: [extension.metadata.name],
+          disabled: [extension.filePath],
         },
       } as unknown as SettingsData;
 
@@ -906,7 +906,7 @@ describe('ExtensionsSettings', () => {
       expect(mockSetSettings).toHaveBeenCalledWith(
         expect.objectContaining({
           extensions: expect.objectContaining({
-            disabled: expect.not.arrayContaining([extension.metadata.name]),
+            disabled: expect.not.arrayContaining([extension.filePath]),
           }),
         }),
       );
@@ -919,7 +919,7 @@ describe('ExtensionsSettings', () => {
         ...mockSettings,
         extensions: {
           repositories: [AIDER_DESK_EXTENSIONS_REPO_URL],
-          disabled: [extension.metadata.name],
+          disabled: [extension.filePath],
         },
       } as unknown as SettingsData;
 

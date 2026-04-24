@@ -230,7 +230,7 @@ describe('ExtensionManager - executeUIExtensionAction', () => {
     mockRegistry.getExtensions = vi.fn().mockReturnValue([mockExtension]);
     store.getSettings = vi.fn().mockReturnValue({
       extensions: {
-        disabled: ['test-extension'],
+        disabled: ['/path/to/extension.ts'],
       },
     });
 

@@ -36,7 +36,7 @@ type Props = {
   isUpdating?: boolean;
   hasUpdate?: boolean;
   installedFilePath?: string;
-  onToggle?: (extensionName: string, isDisabled: boolean) => void;
+  onToggle?: (extensionFilePath: string, isDisabled: boolean) => void;
   onUninstall?: (exensionFilePath: string) => void;
   onInstall?: (extension: AvailableExtension) => void;
   onUpdate?: () => void;
@@ -71,8 +71,8 @@ export const ExtensionCard = ({
   };
 
   const handleToggleDisabled = () => {
-    if (onToggle) {
-      onToggle(data.name, isDisabled);
+    if (onToggle && filePath) {
+      onToggle(filePath, isDisabled);
     }
   };
 

@@ -180,7 +180,7 @@ export class ExtensionManager {
     const settings = this.store.getSettings();
     const disabledExtensions = settings.extensions?.disabled || [];
 
-    return extensions.filter((ext) => !disabledExtensions.includes(ext.metadata.name));
+    return extensions.filter((ext) => !disabledExtensions.includes(ext.filePath));
   }
 
   /**
@@ -205,7 +205,7 @@ export class ExtensionManager {
       if (changedExtensions.length > 0) {
         // Check if any changed extensions have UI components
         const allExtensions = this.registry.getExtensions();
-        const hasUIComponentsChange = allExtensions.some((ext) => changedExtensions.includes(ext.metadata.name) && ext.instance.getUIComponents !== undefined);
+        const hasUIComponentsChange = allExtensions.some((ext) => changedExtensions.includes(ext.filePath) && ext.instance.getUIComponents !== undefined);
 
         if (hasUIComponentsChange) {
           logger.debug('[Extensions] Extensions with UI components changed, triggering UI refresh');
@@ -243,6 +243,8 @@ export class ExtensionManager {
       await this.loadExtensionsForDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
 
       this.initialized = true;
+
+      this.migrateDisabledExtensions();
 
       await this.startHotReloadWatcher();
 
@@ -399,6 +401,48 @@ export class ExtensionManager {
     return this.initialized;
   }
 
+  /**
+   * @deprecated Migration helper: converts old name-based disabled list to filePath-based.
+   * Will be removed in a future version.
+   */
+  private migrateDisabledExtensions(): void {
+    const settings = this.store.getSettings();
+    const disabled = settings.extensions?.disabled;
+    if (!disabled || disabled.length === 0) {
+      return;
+    }
+
+    const allExtensions = this.registry.getExtensions();
+    const filePaths = new Set(allExtensions.map((ext) => ext.filePath));
+    const migrated: string[] = [];
+    let changed = false;
+
+    for (const item of disabled) {
+      if (filePaths.has(item)) {
+        migrated.push(item);
+      } else {
+        const match = allExtensions.find((ext) => ext.metadata.name === item);
+        if (match) {
+          migrated.push(match.filePath);
+          changed = true;
+        } else {
+          migrated.push(item);
+        }
+      }
+    }
+
+    if (changed) {
+      logger.info('[Extensions] Migrated disabled extensions from name-based to filePath-based identifiers');
+      this.store.saveSettings({
+        ...settings,
+        extensions: {
+          ...settings.extensions!,
+          disabled: migrated,
+        },
+      });
+    }
+  }
+
   private captureExtensionsTelemetry() {
     const allExtensions = this.registry.getExtensions();
     const settings = this.store.getSettings();
@@ -406,7 +450,7 @@ export class ExtensionManager {
 
     const globalExtensions = allExtensions.filter((ext) => !ext.projectDir).length;
     const projectExtensions = allExtensions.filter((ext) => ext.projectDir).length;
-    const enabledCount = allExtensions.filter((ext) => !disabledExtensions.includes(ext.metadata.name)).length;
+    const enabledCount = allExtensions.filter((ext) => !disabledExtensions.includes(ext.filePath)).length;
 
     this.telemetryManager.captureExtensionsLoaded(allExtensions.length, globalExtensions, projectExtensions, enabledCount, disabledExtensions.length);
   }
