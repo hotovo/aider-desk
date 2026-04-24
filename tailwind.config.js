@@ -134,7 +134,7 @@ module.exports = {
         },
       },
       animation: {
-        'fade-in': 'fade-in 0.3s ease-out',
+        'fade-in': 'fade-in 0.5s ease-in',
       },
       backgroundImage: {
         'slider-track': 'linear-gradient(to right, var(--slider-filled-color) 0%, var(--slider-filled-color) var(--slider-percentage), var(--slider-empty-color) var(--slider-percentage), var(--slider-empty-color) 100%)',

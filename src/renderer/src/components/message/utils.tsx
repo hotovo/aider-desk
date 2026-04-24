@@ -34,20 +34,20 @@ const ALL_FENCES = [
 
 export const REMARK_PLUGINS = [remarkGfm];
 export const MARKDOWN_COMPONENTS: Components = {
-  h1: (props) => <h1 className="text-2xl font-bold my-4 first:mt-0 last:mb-0" {...props} />,
-  h2: (props) => <h2 className="text-xl font-bold my-3 first:mt-0 last:mb-0" {...props} />,
-  h3: (props) => <h3 className="text-lg font-bold my-2 first:mt-0 last:mb-0" {...props} />,
-  h4: (props) => <h4 className="text-base font-bold my-1 first:mt-0 last:mb-0" {...props} />,
-  h5: (props) => <h5 className="text-sm font-bold first:mt-0 last:mb-0" {...props} />,
-  h6: (props) => <h6 className="text-xs font-bold first:mt-0 last:mb-0" {...props} />,
-  p: (props) => <p className="text-xs my-2 first:mt-0 last:mb-0" {...props} />,
-  ul: (props) => <ul className="list-disc list-inside ml-2 my-1 first:mt-0 last:mb-0" {...props} />,
-  ol: (props) => <ol className="list-decimal list-inside ml-2 my-1 first:mt-0 last:mb-0" {...props} />,
-  li: (props) => <li className="my-0.5" {...props} />,
-  blockquote: (props) => <blockquote className="border-l-4 border-border-default pl-4 italic my-0 text-text-muted-light" {...props} />,
-  strong: (props) => <strong className="font-bold" {...props} />,
-  em: (props) => <em className="italic" {...props} />,
-  a: (props) => <a className="text-info-light hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+  h1: (props) => <h1 className="animate-fade-in text-2xl font-bold my-4 first:mt-0 last:mb-0" {...props} />,
+  h2: (props) => <h2 className="animate-fade-in text-xl font-bold my-3 first:mt-0 last:mb-0" {...props} />,
+  h3: (props) => <h3 className="animate-fade-in text-lg font-bold my-2 first:mt-0 last:mb-0" {...props} />,
+  h4: (props) => <h4 className="animate-fade-in text-base font-bold my-1 first:mt-0 last:mb-0" {...props} />,
+  h5: (props) => <h5 className="animate-fade-in text-sm font-bold first:mt-0 last:mb-0" {...props} />,
+  h6: (props) => <h6 className="animate-fade-in text-xs font-bold first:mt-0 last:mb-0" {...props} />,
+  p: (props) => <p className="animate-fade-in text-xs my-2 first:mt-0 last:mb-0" {...props} />,
+  ul: (props) => <ul className="animate-fade-in list-disc list-inside ml-2 my-1 first:mt-0 last:mb-0" {...props} />,
+  ol: (props) => <ol className="animate-fade-in list-decimal list-inside ml-2 my-1 first:mt-0 last:mb-0" {...props} />,
+  li: (props) => <li className="animate-fade-in my-0.5" {...props} />,
+  blockquote: (props) => <blockquote className="animate-fade-in border-l-4 border-border-default pl-4 italic my-0 text-text-muted-light" {...props} />,
+  strong: (props) => <strong className="animate-fade-in font-bold" {...props} />,
+  em: (props) => <em className="animate-fade-in italic" {...props} />,
+  a: (props) => <a className="animate-fade-in text-info-light hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
   // Handle code blocks - check if it's a mermaid diagram or regular code
   code: (props) => {
     const { className, children } = props;
@@ -55,25 +55,25 @@ export const MARKDOWN_COMPONENTS: Components = {
     // Check if this is a mermaid code block (className includes 'language-mermaid')
     const language = className?.replace(/language-/, '') || '';
     if (language === 'mermaid' && typeof children === 'string') {
-      return <MermaidDiagram code={children} />;
+      return <MermaidDiagram className="animate-fade-in" code={children} />;
     }
 
     // Use CodeInline for inline code elements
-    return <CodeInline {...props} />;
+    return <CodeInline className="animate-fade-in" {...props} />;
   },
   // Basic styling for preformatted blocks (e.g., indented code)
-  pre: (props) => <pre className="p-2 rounded my-2 overflow-x-auto" {...props} />,
+  pre: (props) => <pre className="animate-fade-in p-2 rounded my-2 overflow-x-auto" {...props} />,
   // Table styling - wrapped in scrollable container for wide tables
   table: (props) => (
-    <div className="overflow-x-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary">
+    <div className="animate-fade-in overflow-x-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary">
       <table className="divide-y divide-border-default border-border-default mb-2 rounded-sm" {...props} />
     </div>
   ),
-  thead: (props) => <thead className="bg-bg-secondary-light" {...props} />,
-  tbody: (props) => <tbody className="bg-bg-primary-light-strong divide-y divide-border-default" {...props} />,
-  tr: (props) => <tr {...props} />,
-  th: (props) => <th className="px-5 py-2 text-left text-xs font-medium text-text-secondary uppercase tracking-wider" {...props} />,
-  td: (props) => <td className="px-4 py-2 text-xs text-text-primary whitespace-nowrap" {...props} />,
+  thead: (props) => <thead className="animate-fade-in bg-bg-secondary-light" {...props} />,
+  tbody: (props) => <tbody className="animate-fade-in bg-bg-primary-light-strong divide-y divide-border-default" {...props} />,
+  tr: (props) => <tr className="animate-fade-in" {...props} />,
+  th: (props) => <th className="animate-fade-in px-5 py-2 text-left text-xs font-medium text-text-secondary uppercase tracking-wider" {...props} />,
+  td: (props) => <td className="animate-fade-in px-4 py-2 text-xs text-text-primary whitespace-nowrap" {...props} />,
 };
 
 export const parseMessageContent = (baseDir: string, content: string, allFiles: string[], renderMarkdown = false, renderThinking = true) => {
@@ -491,20 +491,15 @@ export const groupAssistantMessages = (messages: Message[]): Message[] => {
 
   const flushCurrentGroup = () => {
     if (currentResponse) {
-      if (currentToolMessages.length > 0) {
-        // Create an AssistantGroupMessage
-        const assistantGroup: AssistantGroupMessage = {
-          id: currentResponse.id,
-          type: 'assistant-group',
-          content: '',
-          responseMessage: currentResponse,
-          toolMessages: currentToolMessages,
-        };
-        result.push(assistantGroup);
-      } else {
-        // No tool messages, just push the response as-is
-        result.push(currentResponse);
-      }
+      // Create an AssistantGroupMessage
+      const assistantGroup: AssistantGroupMessage = {
+        id: currentResponse.id,
+        type: 'assistant-group',
+        content: '',
+        responseMessage: currentResponse,
+        toolMessages: currentToolMessages,
+      };
+      result.push(assistantGroup);
       currentResponse = null;
       currentToolMessages = [];
     }
