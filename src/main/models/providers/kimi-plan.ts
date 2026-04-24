@@ -10,7 +10,6 @@ import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getAnthropicCacheControl, getAnthropicUsageReport } from '@/models/providers/anthropic';
 
 const KIMI_PLAN_BASE_URL = 'https://api.kimi.com/coding/v1';
-const KIMI_PLAN_MODEL_ID = 'k2p5';
 
 const loadKimiPlanModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isKimiPlanProvider(profile.provider)) {
@@ -26,10 +25,22 @@ const loadKimiPlanModels = async (profile: ProviderProfile, settings: SettingsDa
     return { models: [], success: false };
   }
 
-  // Return hardcoded model instead of fetching from API
+  // Return hardcoded models instead of fetching from API
   const models: Model[] = [
     {
-      id: KIMI_PLAN_MODEL_ID,
+      id: 'kimi-k2-thinking',
+      providerId: profile.id,
+      maxInputTokens: 262144,
+      maxOutputTokensLimit: 32768,
+    },
+    {
+      id: 'k2p5',
+      providerId: profile.id,
+      maxInputTokens: 262144,
+      maxOutputTokensLimit: 32768,
+    },
+    {
+      id: 'k2p6',
       providerId: profile.id,
       maxInputTokens: 262144,
       maxOutputTokensLimit: 32768,

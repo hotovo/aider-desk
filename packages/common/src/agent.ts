@@ -379,7 +379,7 @@ export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> =
   gemini: 'gemini-pro-latest',
   'gemini-cli': 'gemini-2.5-pro',
   groq: 'moonshotai/kimi-k2-instruct-0905',
-  'kimi-plan': 'k2p5',
+  'kimi-plan': 'k2p6',
   openai: 'gpt-5.4',
   openrouter: 'anthropic/claude-sonnet-4.6',
   opencode: 'claude-sonnet-4-6',
