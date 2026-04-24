@@ -211,9 +211,13 @@ export interface LmStudioProvider extends LlmProviderBase {
 }
 export const isLmStudioProvider = (provider: LlmProviderBase): provider is LmStudioProvider => provider.name === 'lmstudio';
 
+export type DeepseekReasoningEffort = 'high' | 'max';
+
 export interface DeepseekProvider extends LlmProviderBase {
   name: 'deepseek';
   apiKey: string;
+  thinkingEnabled?: boolean;
+  reasoningEffort?: DeepseekReasoningEffort;
 }
 export const isDeepseekProvider = (provider: LlmProviderBase): provider is DeepseekProvider => provider.name === 'deepseek';
 
@@ -371,7 +375,7 @@ export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> =
   bedrock: 'global.anthropic.claude-sonnet-4-6',
   cerebras: 'qwen-3-235b-a22b-instruct-2507',
   'claude-agent-sdk': 'sonnet',
-  deepseek: 'deepseek-chat',
+  deepseek: 'deepseek-v4-pro',
   gemini: 'gemini-pro-latest',
   'gemini-cli': 'gemini-2.5-pro',
   groq: 'moonshotai/kimi-k2-instruct-0905',
@@ -726,6 +730,7 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
       provider = {
         name: 'deepseek',
         apiKey: '',
+        thinkingEnabled: true,
       } satisfies DeepseekProvider;
       break;
     case 'bedrock':

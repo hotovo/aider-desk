@@ -13,6 +13,7 @@ import { OpenAiCompatibleModelOverrides } from './providers/OpenAiCompatibleMode
 import { DefaultModelOverrides } from './providers/DefaultModelOverrides';
 import { ZaiPlanModelOverrides } from './providers/ZaiPlanModelOverrides';
 import { AlibabaPlanModelOverrides } from './providers/AlibabaPlanModelOverrides';
+import { DeepseekModelOverrides } from './providers/DeepseekModelOverrides';
 
 import { Button } from '@/components/common/Button';
 import { Accordion } from '@/components/common/Accordion';
@@ -38,7 +39,7 @@ const PROVIDER_OVERRIDES_MAP: Partial<Record<LlmProviderName, ComponentType<Prov
   auggie: DefaultModelOverrides,
   bedrock: DefaultModelOverrides,
   cerebras: DefaultModelOverrides,
-  deepseek: DefaultModelOverrides,
+  deepseek: DeepseekModelOverrides,
   groq: DefaultModelOverrides,
   lmstudio: DefaultModelOverrides,
   minimax: DefaultModelOverrides,

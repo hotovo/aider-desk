@@ -1,8 +1,8 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DeepseekProvider, isDeepseekProvider } from '@common/agent';
+import { DeepseekProvider, isDeepseekProvider, LlmProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -92,6 +92,41 @@ export const createDeepseekLlm = (profile: ProviderProfile, model: Model, settin
   return deepseekProvider(model.id);
 };
 
+const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+  if (!isDeepseekProvider(llmProvider)) {
+    return undefined;
+  }
+
+  const providerOverrides = model.providerOverrides as Partial<DeepseekProvider> | undefined;
+  const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
+  const reasoningEffort = providerOverrides?.reasoningEffort ?? llmProvider.reasoningEffort ?? 'high';
+
+  return {
+    deepseek: {
+      thinking: { type: thinkingEnabled ? 'enabled' : 'disabled' },
+      ...(thinkingEnabled && { reasoningEffort }),
+    },
+  };
+};
+
+const getDeepseekProviderParameters = (llmProvider: LlmProvider, model: Model): Record<string, unknown> => {
+  if (!isDeepseekProvider(llmProvider)) {
+    return {};
+  }
+
+  const providerOverrides = model.providerOverrides as Partial<DeepseekProvider> | undefined;
+  const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
+
+  if (thinkingEnabled) {
+    return {
+      temperature: undefined,
+      topP: undefined,
+    };
+  }
+
+  return {};
+};
+
 // === Complete Strategy Implementation ===
 export const deepseekProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
@@ -103,4 +138,7 @@ export const deepseekProviderStrategy: LlmProviderStrategy = {
   hasEnvVars: hasDeepseekEnvVars,
   getAiderMapping: getDeepseekAiderMapping,
   getModelInfo: getDefaultModelInfo,
+
+  getProviderOptions: getDeepseekProviderOptions,
+  getProviderParameters: getDeepseekProviderParameters,
 };

@@ -34,6 +34,10 @@ export * from './OpenCodeAdvancedSettings';
 export * from './VertexAiAdvancedSettings';
 export * from './RequestyAdvancedSettings';
 
+// Thinking Settings
+export * from './AlibabaPlanThinkingSettings';
+export * from './ZaiPlanThinkingSetting';
+
 // Model Overrides
 export * from './OpenAiModelOverrides';
 export * from './OpenAiCompatibleModelOverrides';
@@ -42,6 +46,5 @@ export * from './OpenCodeModelOverrides';
 export * from './VertexAiModelOverrides';
 export * from './RequestyModelOverrides';
 export * from './ZaiPlanModelOverrides';
-
-// Utility Components
-export * from './ZaiPlanThinkingSetting';
+export * from './AlibabaPlanModelOverrides';
+export * from './DeepseekModelOverrides';

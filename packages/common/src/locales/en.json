@@ -326,7 +326,9 @@
     "thinkingBudgetTooltip": "Maximum number of tokens for thinking (0-81920)"
   },
   "deepseek": {
-    "apiKey": "API Key"
+    "apiKey": "API Key",
+    "thinkingEnabled": "Thinking Mode",
+    "reasoningEffort": "Reasoning Effort"
   },
   "bedrock": {
     "apiKey": "API Key",

@@ -365,7 +365,9 @@
     "thinkingBudgetTooltip": "思考的最大令牌数 (0-81920)"
   },
   "deepseek": {
-    "apiKey": "API 密钥"
+    "apiKey": "API 密钥",
+    "thinkingEnabled": "思考模式",
+    "reasoningEffort": "推理力度"
   },
   "bedrock": {
     "apiKey": "API 密钥",
