@@ -385,6 +385,8 @@ export class PromptsManager {
   private getRulesContent = async (task: Task, agentProfile?: AgentProfile) => {
     const ruleFiles = await task.getRuleFilesAsContextFiles(agentProfile);
 
+    logger.debug('Rule files for prompt content:', { ruleFiles });
+
     const ruleFilesContent = await Promise.all(
       ruleFiles.map(async (file) => {
         try {

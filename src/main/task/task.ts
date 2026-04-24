@@ -4,14 +4,15 @@ import { homedir } from 'os';
 
 import { simpleGit } from 'simple-git';
 import {
-  AiderRunOptions,
-  AIDER_MODES,
   AgentProfile,
+  AIDER_COMMANDS,
+  AIDER_MODES,
+  AiderRunOptions,
+  ChangeRequestItem,
+  ConnectorMessage,
   ContextAssistantMessage,
   ContextFile,
   ContextMessage,
-  ToolCallPart,
-  ToolResultPart,
   DefaultTaskState,
   EditFormat,
   FileEdit,
@@ -23,8 +24,8 @@ import {
   ModelsData,
   ProjectSettings,
   PromptContext,
-  QueuedPromptData,
   QuestionData,
+  QueuedPromptData,
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
@@ -33,17 +34,16 @@ import {
   TaskStateEmoji,
   TodoItem,
   TokensInfoData,
+  ToolCallPart,
   ToolData,
+  ToolResultPart,
   UpdatedFile,
   UpdatedFilesGroupMode,
   UsageReportData,
   UserMessageData,
   WorkingMode,
-  AIDER_COMMANDS,
-  ConnectorMessage,
-  ChangeRequestItem,
 } from '@common/types';
-import { extractProviderModel, extractTextContent, extractServerNameToolName, fileExists, parseUsageReport } from '@common/utils';
+import { extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { SKILLS_TOOL_ACTIVATE_SKILL } from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,14 +54,15 @@ import type { ToolContent } from '@common/types';
 import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 
+import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import {
+  AIDER_DESK_GLOBAL_RULES_DIR,
+  AIDER_DESK_PROJECT_RULES_DIR,
   AIDER_DESK_TASKS_DIR,
+  AIDER_DESK_TMP_DIR,
   AIDER_DESK_TODOS_FILE,
   WORKTREE_BRANCH_PREFIX,
-  AIDER_DESK_PROJECT_RULES_DIR,
-  AIDER_DESK_GLOBAL_RULES_DIR,
-  AIDER_DESK_TMP_DIR,
 } from '@/constants';
 import { Agent, AgentProfileManager, McpManager } from '@/agent';
 import { Connector } from '@/connector';
@@ -73,15 +74,14 @@ import { ModelManager } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { getEnvironmentVariablesForAider, execWithShellPath, isDirectory } from '@/utils';
+import { execWithShellPath, getEnvironmentVariablesForAider, isDirectory } from '@/utils';
 import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
-import { WorktreeManager, GitError } from '@/worktrees';
+import { GitError, WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
-import { ExtensionManager, ExtensionEventMap } from '@/extensions/extension-manager';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { getProxyEnvVars } from '@/proxy-manager';
 
@@ -2032,13 +2032,13 @@ export class Task {
       }
     }
 
+    // Dispatch extension event to allow modification of rule files
+    const extensionResult = await this.extensionManager.dispatchEvent('onRuleFilesRetrieved', { files: ruleFiles }, this.project, this);
+
     // Filter out disabled rule files
     const disabledRuleFiles = this.project.getProjectSettings().disabledRuleFiles ?? [];
-    const enabledRuleFiles = includeDisabled ? ruleFiles : ruleFiles.filter((f) => !disabledRuleFiles.includes(f.path));
 
-    // Dispatch extension event to allow modification of rule files
-    const extensionResult = await this.extensionManager.dispatchEvent('onRuleFilesRetrieved', { files: enabledRuleFiles }, this.project, this);
-    return extensionResult.files;
+    return includeDisabled ? extensionResult.files : extensionResult.files.filter((f) => !disabledRuleFiles.includes(f.path));
   }
 
   public getRepoMap(): string {
@@ -2971,9 +2971,13 @@ export class Task {
   async projectSettingsChanged(oldSettings: ProjectSettings, newSettings: ProjectSettings) {
     const modeChanged = oldSettings.currentMode !== newSettings.currentMode;
     const agentProfileIdChanged = oldSettings.agentProfileId !== newSettings.agentProfileId;
+    const disabledRulesChanged = JSON.stringify(oldSettings.disabledRuleFiles) !== JSON.stringify(newSettings.disabledRuleFiles);
 
-    if (agentProfileIdChanged || modeChanged) {
+    if (agentProfileIdChanged || modeChanged || disabledRulesChanged) {
       void this.sendContextFilesUpdated();
+    }
+    if (disabledRulesChanged) {
+      void this.updateAgentEstimatedTokens();
     }
   }
 
