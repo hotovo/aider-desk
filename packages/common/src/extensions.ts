@@ -563,25 +563,123 @@ export interface QuestionOptions {
  */
 export interface TaskContext {
   // Task Data (read-only access to all task properties)
+
+  /** Read-only snapshot of the current task state including id, name, status, mode, and all persisted fields */
   readonly data: TaskData;
 
   // Context Files (Read + Safe Write)
+
+  /**
+   * Get the list of files currently in the task's context.
+   * These are the files the agent is aware of and can reference.
+   * @returns Array of context files with their paths and read-only flags
+   */
   getContextFiles(): Promise<ContextFile[]>;
+
+  /**
+   * Add a single file to the task's context by path.
+   * Dispatches the `onFilesAdded` extension event before adding.
+   * Updates context info and notifies connectors after adding.
+   * @param path - Relative or absolute file path to add
+   * @param readOnly - If true, the file is marked as read-only in the context
+   */
   addFile(path: string, readOnly?: boolean): Promise<void>;
+
+  /**
+   * Add multiple files to the task's context at once.
+   * Dispatches the `onFilesAdded` extension event for each file before adding.
+   * Updates context info and notifies connectors after adding.
+   * @param files - One or more ContextFile objects with path and optional readOnly flag
+   */
   addFiles(...files: ContextFile[]): Promise<void>;
+
+  /**
+   * Remove a file from the task's context by path.
+   * Dispatches the `onFilesDropped` extension event before removing.
+   * @param path - File path to remove
+   */
   dropFile(path: string): Promise<void>;
 
   // Data Context Messages (Read + Safe Write)
+
+  /**
+   * Get the full conversation history from the task's context manager.
+   * These messages are stored in a JSON file on disk (not in a database) and sent to the LLM.
+   * @returns Array of context messages (user, assistant, system, tool, etc.)
+   */
   getContextMessages(): Promise<ContextMessage[]>;
+
+  /**
+   * Append a message to the task's context messages.
+   * The message is stored in memory and auto-saved to the context JSON file on disk.
+   * Optionally refreshes the context info summary displayed in the UI.
+   * @param message - The context message to add
+   * @param updateContextInfo - If true, refreshes the context info summary after adding
+   */
   addContextMessage(message: ContextMessage, updateContextInfo?: boolean): Promise<void>;
+
+  /**
+   * Remove a specific message from the context by its ID.
+   * Reloads connector messages and updates context info after removal.
+   * @param messageId - The unique identifier of the message to remove
+   */
   removeMessage(messageId: string): Promise<void>;
+
+  /**
+   * Remove the most recent message from the context.
+   * Reloads connector messages and updates context info after removal.
+   */
   removeLastMessage(): Promise<void>;
+
+  /**
+   * Remove all messages after the specified message (inclusive).
+   * Reloads connector messages and updates context info after removal.
+   * @param messageId - The ID of the message; this message and all messages after it are removed
+   */
   removeMessagesUpTo(messageId: string): Promise<void>;
+
+  /**
+   * Load a set of messages into the context manager, replacing the current in-memory messages
+   * and sending them to the UI via the event manager.
+   * This is used for loading pre-authored context (e.g., from extensions).
+   * @param messages - The context messages to load
+   */
   loadContextMessages(messages: ContextMessage[]): Promise<void>;
+
+  /**
+   * Re-execute the last user prompt, optionally with a different mode or edited text.
+   * Removes the last user message and all messages after it from the context, then resubmits.
+   * @param mode - Optional mode to use for re-execution (defaults to current mode)
+   * @param updatedPrompt - Optional new prompt text; if omitted, reuses the original prompt
+   */
   redoLastUserPrompt(mode?: string, updatedPrompt?: string): Promise<void>;
 
   // UI Context Messages
+
+  /**
+   * Send a user message to the UI for display in the task's chat.
+   * This only sends the message to the renderer via the event manager — it does not
+   * add the message to the data context or persist it.
+   * @param id - Unique identifier for the message
+   * @param content - Text content of the user message
+   * @param promptContext - Optional prompt context metadata
+   */
   addUserMessage(id: string, content: string, promptContext?: PromptContext): void;
+
+  /**
+   * Send a tool execution message to the UI for display in the task's chat.
+   * If a response and usage report are provided and saveToDb is true, the message is also
+   * persisted via the data manager. Updates total cost tracking when usage data is present.
+   * @param id - Unique identifier for the tool message
+   * @param serverName - Name of the tool server (e.g., MCP server name or tool group)
+   * @param toolName - Name of the tool that was called
+   * @param input - Tool input parameters
+   * @param response - Tool response text (if already available)
+   * @param usageReport - Token usage data for this tool call
+   * @param promptContext - Optional prompt context metadata
+   * @param saveToDb - Whether to persist this message via the data manager (default: true)
+   * @param finished - Whether the tool execution is complete (default: true if response is provided)
+   */
   addToolMessage(
     id: string,
     serverName: string,
@@ -593,26 +691,138 @@ export interface TaskContext {
     saveToDb?: boolean,
     finished?: boolean,
   ): void;
+
+  /**
+   * Process a response message — streams response chunks to the UI while in progress,
+   * and sends the completed response when finished.
+   * If finished and saveToDb is true, persists the response via the data manager.
+   * Dispatches the `onResponseChunk` and `onResponseCompleted` extension events.
+   * @param message - The response message containing content, finish state, and optional usage
+   * @param saveToDb - Whether to persist the completed response via the data manager (default: true)
+   */
   addResponseMessage(message: ResponseMessage, saveToDb?: boolean): Promise<void>;
 
   // Files & Repo (Read-only)
+
+  /**
+   * Get the working directory for this task.
+   * Returns the worktree path if the task has a git worktree configured,
+   * otherwise returns the project's base directory.
+   * @returns Absolute filesystem path to the task's working directory
+   */
   getTaskDir(): string;
+
+  /**
+   * Get a list of files that can be added to the task's context.
+   * Returns all files in the task directory that are not already in the context,
+   * optionally filtered by a regex pattern.
+   * @param searchRegex - Optional regex pattern to filter file names
+   * @returns Array of file paths relative to the task directory
+   */
   getAddableFiles(searchRegex?: string): Promise<string[]>;
+
+  /**
+   * Get all files in the task directory, optionally filtered by git tracking.
+   * @param useGit - If true (default), returns only git-tracked files; if false, returns all files
+   * @returns Array of file paths relative to the task directory
+   */
   getAllFiles(useGit?: boolean): Promise<string[]>;
+
+  /**
+   * Get files modified during the current task's execution.
+   * Compares the current state against the main branch using the worktree manager.
+   * @returns Array of updated file entries with path and diff information
+   */
   getUpdatedFiles(): Promise<UpdatedFile[]>;
+
+  /**
+   * Get the cached repository map string.
+   * The repo map summarizes the codebase structure and is maintained by the Aider manager.
+   * @returns Repository map as a formatted string
+   */
   getRepoMap(): string;
+
+  /**
+   * Stage a file in git (equivalent to `git add`).
+   * No-op if the project is not a git repository.
+   * @param path - File path to stage
+   */
   addToGit(path: string): Promise<void>;
 
   // Todos (Read + Safe Write)
+
+  /**
+   * Get all todo items for this task, read from the task's todo file on disk.
+   * @returns Array of todo items with name, completed status, and metadata
+   */
   getTodos(): Promise<TodoItem[]>;
+
+  /**
+   * Create a new uncompleted todo item and write the updated list to the todo file.
+   * @param name - Descriptive name for the todo item
+   * @returns Updated array of all todo items
+   */
   addTodo(name: string): Promise<TodoItem[]>;
+
+  /**
+   * Update an existing todo item's properties (e.g., mark as completed).
+   * Writes the updated list to the todo file.
+   * @param name - The name of the todo item to update
+   * @param updates - Partial fields to update (e.g., { completed: true })
+   * @returns Updated array of all todo items
+   * @throws Error if no todo items exist or the specified name is not found
+   */
   updateTodo(name: string, updates: Partial<TodoItem>): Promise<TodoItem[]>;
+
+  /**
+   * Remove a todo item by name and write the updated list to the todo file.
+   * @param name - The name of the todo item to delete
+   * @returns Updated array of all todo items
+   * @throws Error if no todo items exist
+   */
   deleteTodo(name: string): Promise<TodoItem[]>;
+
+  /**
+   * Remove all todo items from the task and write the empty list to the todo file.
+   * @returns Empty array
+   * @throws Error if no todo items exist
+   */
   clearAllTodos(): Promise<TodoItem[]>;
+
+  /**
+   * Replace the entire todo list with the provided items and write to the todo file.
+   * @param items - Complete set of todo items to set
+   * @param initialUserPrompt - Optional prompt text to associate with the todo set
+   */
   setTodos(items: TodoItem[], initialUserPrompt?: string): Promise<void>;
 
   // Execution
+
+  /**
+   * Submit a prompt for processing. If a prompt is already running, the new prompt is queued
+   * and will execute after the current one finishes.
+   * If there is a pending question, it will be answered with 'no' using the prompt text as user input.
+   * @param prompt - The text prompt to send
+   * @param mode - Optional mode to use (defaults to the task's current mode)
+   */
   runPrompt(prompt: string, mode?: string): Promise<void>;
+
+  /**
+   * Execute a prompt directly using a specific agent profile.
+   * Optionally waits for the currently running agent to finish before starting.
+   * Saves the task state, runs the agent, sends resulting messages to connectors,
+   * and determines the final task state.
+   * @param profile - The agent profile configuration to use
+   * @param mode - Execution mode
+   * @param prompt - The prompt text, or null to use the current conversation context
+   * @param promptContext - Optional prompt context metadata
+   * @param contextMessages - Override context messages (uses task's context messages if omitted)
+   * @param contextFiles - Override context files (uses task's context files if omitted)
+   * @param systemPrompt - Override system prompt for the agent
+   * @param waitForCurrentAgentToFinish - If true (default), waits for the running agent to complete before starting
+   * @param sendNotification - If true (default), sends a desktop notification when the prompt completes
+   * @returns Array of response completion data from the agent's execution
+   */
   runPromptInAgent(
     profile: AgentProfile,
     mode: string,
@@ -624,38 +834,204 @@ export interface TaskContext {
     waitForCurrentAgentToFinish?: boolean,
     sendNotification?: boolean,
   ): Promise<ResponseCompletedData[]>;
+
+  /**
+   * Execute a registered custom command by name.
+   * First checks extension commands, then falls back to file-based custom commands.
+   * Dispatches the `onCustomCommandExecuted` extension event. Processes the command template
+   * with the provided arguments before executing it.
+   * @param name - The command name (without the leading slash)
+   * @param args - Optional arguments to pass to the command template
+   * @param mode - Optional mode context for the command execution
+   */
   runCustomCommand(name: string, args?: string[], mode?: string): Promise<void>;
+
+  /**
+   * Spawn a subagent with the given profile and prompt within the current task context.
+   * The profile is automatically marked as a subagent. Dispatches the `onSubagentStarted`
+   * extension event (can be blocked). Uses the task's context messages and files unless
+   * overridden. Dispatches `onSubagentFinished` when complete.
+   * @param agentProfile - The agent profile configuration for the subagent
+   * @param prompt - The prompt to send to the subagent
+   */
   runSubagent(agentProfile: AgentProfile, prompt: string): Promise<void>;
+
+  /**
+   * Execute a slash command in the task's context.
+   * Dispatches the `onCommandExecuted` extension event (can be blocked).
+   * Adds the command to input history. Handles built-in commands like 'drop', 'reset',
+   * and 'undo' with special logic; forwards other commands to connectors.
+   * @param command - The command string to execute (without the leading slash)
+   */
   runCommand(command: string): Promise<void>;
+
+  /**
+   * Interrupt the currently running agent response or a specific subagent/conflict-resolution
+   * agent by ID. Aborts the corresponding AbortController and answers any pending question with 'no'.
+   */
   interruptResponse(): Promise<void>;
+
+  /**
+   * Generate text using a specific model without running the full agent loop.
+   * Delegates to the Agent's generateText method using the project directory.
+   * Useful for quick LLM calls (e.g., summarization, classification) within extensions.
+   * @param modelId - The model identifier to use (format: "provider/model")
+   * @param systemPrompt - System prompt for the generation request
+   * @param prompt - User prompt for the generation request
+   * @returns The generated text, or undefined if generation failed
+   */
   generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>;
 
   // User Interaction
+
+  /**
+   * Ask the user a question and wait for their response.
+   * Dispatches the `onQuestionAsked` extension event. If a previous question is pending,
+   * waits for it to be answered first. Supports stored answers for auto-answering.
+   * Sends a desktop notification if notifications are enabled.
+   * @param text - The question text to display to the user
+   * @param options - Optional configuration for answer choices, default answer, and subject
+   * @returns The user's selected answer string
+   */
   askQuestion(text: string, options?: QuestionOptions): Promise<string>;
+
+  /**
+   * Send a log message to the UI via the event manager.
+   * Log messages appear in the task's message stream as informational, error, or warning entries.
+   * @param level - Severity level: 'info', 'error', or 'warning'
+   * @param message - The log message text
+   */
   addLogMessage(level: 'info' | 'error' | 'warning', message?: string): void;
+
+  /**
+   * Show or update a loading indicator in the task's UI.
+   * Sends a loading log message via the event manager with optional interrupt action IDs.
+   * @param message - Loading text to display
+   * @param finished - If true, dismisses the loading indicator
+   */
   addLoadingMessage(message?: string, finished?: boolean): void;
 
   // Task Management
+
+  /**
+   * Update the task's data with the provided partial changes and persist them.
+   * Merges updates into the existing task data. Handles special side effects:
+   * working mode changes trigger worktree setup, mode changes may start the Aider manager,
+   * and agent profile changes update estimated tokens. Skips saving if nothing changed.
+   * @param updates - Partial task data fields to update
+   * @returns The fully updated task data
+   */
   updateTask(updates: Partial<TaskData>): Promise<TaskData>;
+
+  /**
+   * Perform a conversation handoff — generates a handoff summary of the current conversation
+   * using the handoff prompt template, then optionally executes a follow-up prompt.
+   * In agent mode, uses the handoff agent profile to generate the summary text.
+   * @param focus - Optional focus description to guide the handoff summary
+   * @param execute - If true, automatically runs the handoff prompt after generating the summary
+   */
   handoffConversation(focus?: string, execute?: boolean): Promise<void>;
 
   // Context Management
+
+  /**
+   * Clear the task's conversation context: sets the task state to Todo, clears all context messages
+   * in the context manager, sends a 'clear' command to connectors, and dispatches a clear event to the UI.
+   */
   clearContext(): Promise<void>;
+
+  /**
+   * Reset the task context by clearing both context files and context messages in the context manager,
+   * then saves the context to disk immediately.
+   */
   resetContext(): Promise<void>;
+
+  /**
+   * Compact the conversation by running a compact-conversation agent that summarizes the history.
+   * Preserves the original user message and skill activation messages, replacing the rest with the summary.
+   * Updates context info and adjusts the token usage estimate afterward.
+   * @param instructions - Optional custom instructions to guide the compaction process
+   */
   compactConversation(instructions?: string): Promise<void>;
+
+  /**
+   * Generate a markdown representation of the context messages in the context manager.
+   * Formats user and assistant messages as text, and tool messages with tool name and JSON result.
+   * @returns Markdown string of the context messages, or null if generation fails
+   */
   generateContextMarkdown(): Promise<string | null>;
+
+  /**
+   * Check whether the task has been fully initialized and is ready for use.
+   * @returns True if the task initialization process is complete
+   */
   isInitialized(): boolean;
+
+  /**
+   * Update the autocompletion data sent to the UI.
+   * Sends the provided words and the current file list from the task directory,
+   * but only if the file list has changed or force is true.
+   * @param words - New set of autocompletion words, or undefined to only update file list
+   */
   updateAutocompletionWords(words?: string[]): Promise<void>;
 
   // Queued Prompts
+
+  /**
+   * Get all prompts currently queued for execution in this task.
+   * Queued prompts are held in memory and execute sequentially after the current prompt finishes.
+   * @returns Array of queued prompt data with IDs, text, mode, and timestamp
+   */
   getQueuedPrompts(): QueuedPromptData[];
+
+  /**
+   * Immediately execute a queued prompt by moving it to the front of the queue,
+   * adding it as a user message, and interrupting the current agent response.
+   * @param promptId - The ID of the queued prompt to execute now
+   */
   sendQueuedPromptNow(promptId: string): Promise<void>;
+
+  /**
+   * Remove a prompt from the execution queue without running it.
+   * Notifies the UI of the updated queue.
+   * @param promptId - The ID of the queued prompt to remove
+   */
   removeQueuedPrompt(promptId: string): void;
+
+  /**
+   * Reorder the queued prompts to a specific arrangement.
+   * Notifies the UI of the updated queue.
+   * @param prompts - The complete reordered array of queued prompts
+   */
   reorderQueuedPrompts(prompts: QueuedPromptData[]): void;
+
+  /**
+   * Edit the text content of an existing queued prompt.
+   * Notifies the UI of the updated queue.
+   * @param promptId - The ID of the queued prompt to edit
+   * @param newText - The new text content for the prompt
+   */
   editQueuedPrompt(promptId: string, newText: string): void;
 
   // Advanced Operations
+
+  /**
+   * Get the agent profile assigned to this task.
+   * Checks the task-level agentProfileId first, then falls back to the project-level setting.
+   * Applies any task-level provider/model overrides to the resolved profile.
+   * @returns The resolved agent profile, or null if no profile is configured
+   */
   getTaskAgentProfile(): Promise<AgentProfile | null>;
+
+  /**
+   * Programmatically answer a pending question that was asked to the user.
+   * Dispatches the `onQuestionAnswered` extension event. Matches the answer against
+   * configured shortkeys, or defaults to 'y'/'n'. Supports storing the answer for
+   * future auto-answering with 'd' (don't ask again) or 'a' (always).
+   * @param answer - The answer text to submit (e.g., 'y', 'n', 'a', 'd')
+   * @param userInput - Optional raw user input associated with the answer
+   * @returns True if a pending question was answered, false if no question is pending
+   */
   answerQuestion(answer: string, userInput?: string): Promise<boolean>;
 }
 
@@ -665,32 +1041,121 @@ export interface TaskContext {
  */
 export interface ProjectContext {
   // Identity
+
+  /** Absolute path to the project's root directory on the filesystem */
   readonly baseDir: string;
 
   // Task Management
+
+  /**
+   * Create a new task within the project. Inherits model, mode, and other settings from the
+   * most recent task (or from the parent task if parentId is specified).
+   * Dispatches the `onTaskCreated` extension event after the task is created.
+   * @param params - Task creation parameters including optional name, parentId, mode, and agent/model selection
+   * @returns The newly created task data
+   */
   createTask(params: CreateTaskParams): Promise<TaskData>;
+
+  /**
+   * Get a TaskContext for a specific loaded task by its ID.
+   * Returns null if the task is not currently loaded in memory.
+   * @param taskId - The unique identifier of the task to retrieve
+   * @returns A TaskContext wrapping the Task instance, or null if not found
+   */
   getTask(taskId: string): TaskContext | null;
+
+  /**
+   * Get all loaded tasks in the project (excluding the internal task).
+   * Waits for initial task loading to complete before returning.
+   * @returns Array of all task data objects sorted by updatedAt (most recent first)
+   */
   getTasks(): Promise<TaskData[]>;
+
+  /**
+   * Get the TaskContext for the most recently updated task.
+   * Determined by the updatedAt timestamp, excluding the internal task.
+   * @returns A TaskContext for the most recent task, or null if no tasks exist
+   */
   getMostRecentTask(): TaskContext | null;
+
+  /**
+   * Fork a task at a specific message, creating a new subtask.
+   * The new task inherits settings from the source task and copies context messages
+   * up to and including the specified message. The new task's parentId is set to the
+   * source task or its parent.
+   * @param taskId - The ID of the task to fork
+   * @param messageId - The ID of the message to fork at (conversation is copied up to this point)
+   * @returns The newly created forked task data
+   */
   forkTask(taskId: string, messageId: string): Promise<TaskData>;
+
+  /**
+   * Create a duplicate of an existing task.
+   * The duplicate inherits settings from the source task and copies all context messages and files.
+   * If the source task has a worktree, the duplicate is made a subtask of the same parent.
+   * @param taskId - The ID of the task to duplicate
+   * @returns The newly created duplicate task data
+   */
   duplicateTask(taskId: string): Promise<TaskData>;
+
+  /**
+   * Permanently delete a task and all its subtasks.
+   * Closes the task(s), removes their worktrees if not shared with other tasks,
+   * and deletes their task directories from disk.
+   * @param taskId - The ID of the task to delete
+   */
   deleteTask(taskId: string): Promise<void>;
 
   // Agent Profiles
+
+  /**
+   * Get all agent profiles available for this project.
+   * Returns profiles from the agent profile manager scoped to this project,
+   * including built-in, user-defined, and extension-provided profiles.
+   * @returns Array of agent profile configurations
+   */
   getAgentProfiles(): AgentProfile[];
 
   // Commands (Read-only)
+
+  /**
+   * Get all custom commands registered in the project.
+   * Returns the full command data from the custom command manager,
+   * which includes both file-based and extension-provided commands.
+   * @returns Commands data containing all registered command definitions
+   */
   getCommands(): CommandsData;
 
   // Settings (Read-only)
+
+  /**
+   * Get the project-level settings from the store.
+   * @returns Current project settings
+   */
   getProjectSettings(): ProjectSettings;
 
   // Input History (Read-only)
+
+  /**
+   * Load the input history file for the project.
+   * Reads a file in a custom format where entries are separated by timestamp headers (# ...)
+   * and lines starting with + contain the actual input text.
+   * @returns Array of prompt strings in reverse chronological order (most recent first)
+   */
   getInputHistory(): Promise<string[]>;
 }
 
 /**
- * Context object passed to extension methods providing access to AiderDesk APIs
+ * Context object passed to extension methods providing access to AiderDesk APIs.
+ *
+ * Availability depends on where the context is created:
+ * - **Global context** (e.g., `onLoad` without project, `getAgents`, `getConfigComponent`):
+ *   project and task are not available — `getProjectDir()` returns empty string,
+ *   `getTaskContext()` returns null, and `getProjectContext()` throws.
+ * - **Project context** (e.g., event handlers, `getTools`, `getCommands`):
+ *   project is available but task may not be.
+ * - **Task context** (e.g., task-specific event handlers, command execution):
+ *   both project and task are available.
  *
  * @example
  * ```typescript
@@ -704,85 +1169,105 @@ export interface ProjectContext {
  */
 export interface ExtensionContext {
   /**
-   * Log a message to the AiderDesk console and log files
+   * Log a message prefixed with the extension name to the AiderDesk logger.
+   * Messages appear in the console output and log files at the specified level.
    * @param message - Message to log
-   * @param type - Log level (info, error, warn, debug)
+   * @param type - Log level: 'info' (default), 'error', 'warn', or 'debug'
    */
   log(message: string, type?: 'info' | 'error' | 'warn' | 'debug'): void;
 
   /**
-   * Get the current project directory path
-   * @returns Absolute path to the project directory
+   * Get the current project directory path.
+   * Only available when the context is created within a project scope (e.g., event handlers,
+   * getTools, getCommands). Returns an empty string when no project is available.
+   * @returns Absolute path to the project directory, or empty string if not in a project context
    */
   getProjectDir(): string;
 
   /**
-   * Get the current task context for safe task operations
-   * @returns TaskContext or null if no task is active
+   * Get the task context for the current task.
+   * Only available when the context is created for a specific task (e.g., task event handlers,
+   * command execution within a task). Returns null when no task is available.
+   * @returns TaskContext wrapping the current Task, or null if no task is active
    */
   getTaskContext(): TaskContext | null;
 
   /**
-   * Get the project context for safe project operations
-   * @returns ProjectContext
+   * Get the project context for safe project-level operations.
+   * Only available when the context is created within a project scope.
+   * Throws an Error if no project is available (e.g., during global onLoad).
+   * @returns ProjectContext wrapping the current Project
+   * @throws Error if called outside of a project context
    */
   getProjectContext(): ProjectContext;
 
   /**
-   * Get all available model configurations
-   * @returns Promise resolving to array of models
+   * Get all available model configurations from all enabled providers.
+   * Loads models from providers on first call and caches the results.
+   * Returns an empty array if the ModelManager is not available.
+   * @returns Promise resolving to a flat array of Model objects from all providers
    */
   getModelConfigs(): Promise<Model[]>;
 
   /**
-   * Get a specific setting value
-   * @param key - Setting key (dot-notation supported, e.g., 'general.theme')
-   * @returns Promise resolving to the setting value
+   * Get a specific setting value from the global settings using dot-notation path.
+   * Navigates the settings object by splitting the key on '.' and reducing.
+   * Returns undefined if the key path does not exist.
+   * @param key - Setting key in dot-notation (e.g., 'general.theme', 'taskSettings.defaultWorkingMode')
+   * @returns Promise resolving to the setting value, or undefined if not found
+   * @throws Error if the Store is not available
    */
   getSetting(key: string): Promise<unknown>;
 
   /**
-   * Update multiple settings at once
-   * @param updates - Partial settings object with updates
-   * @returns Promise that resolves when settings are saved
+   * Update global settings by merging the provided partial updates into the current settings,
+   * saving them via the store, and notifying the renderer via the event manager.
+   * @param updates - Partial settings object with fields to update
+   * @throws Error if the Store is not available
    */
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
 
   /**
-   * Trigger a data refresh for UI components in the renderer
-   * Use this when extension internal state changes and UI components need to re-fetch their data
+   * Trigger a data refresh for UI components in the renderer.
+   * Sends an event to the renderer causing matching components to re-fetch their data
+   * via `getUIExtensionData`. Can target a specific component and/or task.
+   * No-op if the EventManager is not available.
    * @param componentId - Optional component ID to refresh only a specific component
-   * @param taskId - Optional task ID to refresh only components for a specific task
+   * @param taskId - Optional task ID to scope the refresh to components for a specific task
    */
   triggerUIDataRefresh(componentId?: string, taskId?: string): void;
 
   /**
-   * Trigger a full reload of all UI component definitions for this extension
-   * Use this when the component structure or definitions have changed
+   * Trigger a full reload of all UI component definitions for this extension.
+   * Causes the renderer to discard cached component definitions and re-fetch them
+   * via `getUIComponents`. Use this when component structure or JSX has changed.
+   * No-op if the EventManager is not available.
    */
   triggerUIComponentsReload(): void;
 
   /**
-   * Open a URL either in external browser, a new window, or a modal overlay
+   * Open a URL in the specified target.
+   * - 'external': Opens in the system's default browser via `shell.openExternal`.
+   * - 'window': Opens in a new Electron BrowserWindow (in Node/Docker environments, falls back to external).
+   * - 'modal-overlay': Opens as an iframe inside a modal overlay dialog in the app (requires EventManager).
    * @param url - URL to open
    * @param target - Where to open: 'external' (system browser), 'window' (new Electron window), or 'modal-overlay' (iframe in modal)
-   *                   In Node/Docker environments, 'window' falls back to 'external'
-   * @returns Promise that resolves when URL is opened
+   * @throws Error if the URL fails to open
    */
   openUrl(url: string, target?: 'external' | 'window' | 'modal-overlay'): Promise<void>;
 
   /**
-   * Open a file or directory in the system's default application or file manager
+   * Open a file or directory in the system's default application using Electron's `shell.openPath`.
    * @param path - Absolute path to the file or directory to open
-   * @returns Promise that resolves to true if successful, false otherwise
+   * @returns true if opened successfully, false if it failed (e.g., not in Electron environment)
    */
   openPath(path: string): Promise<boolean>;
 
   /**
-   * Get the memory context for memory operations
-   * MemoryContext provides store, retrieve, list, update, and delete operations
-   * using the same underlying vector store as the built-in memory tools.
-   * @returns MemoryContext instance
+   * Get the memory context for vector store operations (store, retrieve, update, delete memories).
+   * Uses the same underlying vector store as the built-in memory tools.
+   * @returns MemoryContext instance (the MemoryManager itself)
+   * @throws Error if the MemoryManager is not available
    */
   getMemoryContext(): MemoryContext;
 }
