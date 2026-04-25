@@ -7,7 +7,7 @@ import prettierPlugin from 'eslint-plugin-prettier/recommended';
 import reactPlugin from 'eslint-plugin-react';
 
 export default tseslint.config({ ignores: ['build', 'dist', 'node_modules', 'out', '**/__fixtures__/**', 'docs-site', 'packages'] }, {
-  ignores: ['build', 'dist', 'node_modules', 'out', '**/__fixtures__/**', 'docs-site', 'packages'],
+  ignores: ['build', 'dist', 'node_modules', 'out', '**/__fixtures__/**', 'docs-site', 'packages', '.aider-desk'],
   extends: [
     js.configs.recommended,
     ...tseslint.configs.recommended,
