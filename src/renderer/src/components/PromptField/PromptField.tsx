@@ -231,6 +231,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       error: voiceError,
       resetTranscription,
       voiceAvailable,
+      mediaDevicesAvailable,
       mediaStream,
     } = useAudioRecorder();
     const [textBeforeRecording, setTextBeforeRecording] = useState('');
@@ -762,7 +763,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     );
 
     const toggleVoice = useCallback(() => {
-      if (voiceAvailable && !disabled && !processing) {
+      if (voiceAvailable && mediaDevicesAvailable && !disabled && !processing) {
         if (isRecording) {
           void stopRecording();
         } else {
@@ -772,7 +773,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         return true;
       }
       return false;
-    }, [voiceAvailable, disabled, processing, isRecording, stopRecording, startRecording]);
+    }, [voiceAvailable, mediaDevicesAvailable, disabled, processing, isRecording, stopRecording, startRecording]);
 
     useHotkeys(
       'alt+v',
@@ -1162,12 +1163,21 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             )}
             {isRecording && mediaStream && <AudioAnalyzer stream={mediaStream} />}
             {voiceAvailable && (
-              <Tooltip content={`${isRecording ? t('promptField.stopRecording') : t('promptField.startRecording')} (Alt+V)`}>
+              <Tooltip
+                content={
+                  mediaDevicesAvailable
+                    ? `${isRecording ? t('promptField.stopRecording') : t('promptField.startRecording')} (Alt+V)`
+                    : t('promptField.voiceUnavailable')
+                }
+              >
                 <button
                   onClick={isRecording ? stopRecording : startRecording}
-                  disabled={disabled || isProcessing}
+                  disabled={disabled || isProcessing || !mediaDevicesAvailable}
                   className={clsx(
-                    'text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary rounded p-1 transition-all duration-200',
+                    'rounded p-1',
+                    mediaDevicesAvailable
+                      ? 'text-text-muted-light hover:text-text-tertiary hover:bg-bg-tertiary transition-all duration-200'
+                      : 'text-text-muted-dark',
                     isRecording ? 'text-accent-primary animate-pulse' : '',
                   )}
                 >

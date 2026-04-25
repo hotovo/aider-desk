@@ -226,6 +226,12 @@ export const VoiceSettings = ({ providers: localProviders, setProviders: setLoca
   const [audioInputs, setAudioInputs] = useState<AudioDeviceOption[]>([]);
 
   useEffect(() => {
+    if (!navigator.mediaDevices) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAudioInputs([]);
+      return;
+    }
+
     const loadDevices = async () => {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();

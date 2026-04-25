@@ -21,6 +21,7 @@
 - fixed 'reasoning_content' issue with Deepseek provider
 - updated default models for Kimi Plan
 - added auto-reconnection in browser on server restart
+- added handling for unavailable MediaDevices API and microphone access
 
 ## [0.62.0]
 

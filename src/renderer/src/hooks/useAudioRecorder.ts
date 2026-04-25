@@ -14,6 +14,7 @@ export interface UseAudioRecorderType {
   error: string | null;
   resetTranscription: () => void;
   voiceAvailable: boolean;
+  mediaDevicesAvailable: boolean;
   mediaStream: MediaStream | null;
 }
 
@@ -36,6 +37,7 @@ export const useAudioRecorder = (): UseAudioRecorderType => {
   }, [providers]);
 
   const voiceAvailable = !!getVoiceProvider();
+  const mediaDevicesAvailable = typeof navigator !== 'undefined' && navigator.mediaDevices !== undefined;
 
   const createVoiceProvider = useCallback((providerName: string): VoiceProvider => {
     switch (providerName) {
@@ -151,6 +153,7 @@ export const useAudioRecorder = (): UseAudioRecorderType => {
     error,
     resetTranscription,
     voiceAvailable,
+    mediaDevicesAvailable,
     mediaStream,
   };
 };

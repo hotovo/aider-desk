@@ -1345,6 +1345,7 @@
     }
   },
   "promptField": {
+    "voiceUnavailable": "麦克风访问不可用。浏览器的 MediaDevices API 在此环境中不支持。请使用 HTTPS 或 localhost。",
     "savePrompt": "保存提示",
     "savePromptDescription": "保存提示而不执行",
     "saveError": "保存提示失败: {{error}}",

@@ -1387,6 +1387,7 @@
   "promptField": {
     "startRecording": "Start listening",
     "stopRecording": "Stop listening",
+    "voiceUnavailable": "Microphone access not available. The browser's MediaDevices API is not supported in this context. Use HTTPS or localhost.",
     "savePrompt": "Save Prompt",
     "savePromptDescription": "Save prompt without executing",
     "saveError": "Failed to save prompt: {{error}}",
