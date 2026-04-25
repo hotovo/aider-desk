@@ -901,6 +901,8 @@ export class Task {
       name: this.task.name || this.getTaskNameFromPrompt(prompt || ''),
       startedAt: new Date().toISOString(),
       state: DefaultTaskState.InProgress,
+      provider: this.task.provider || profile.provider,
+      model: this.task.model || profile.model,
     });
 
     const agentMessages = await this.agent.runAgent(this, profile, prompt, mode, promptContext, contextMessages, contextFiles, systemPrompt);
