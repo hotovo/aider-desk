@@ -19,7 +19,6 @@
 - simplified the UI for Rule Files by flattening the tree to a list
 - added thinking mode and reasoning effort controls to Deepseek provider
 - fixed 'reasoning_content' issue with Deepseek provider
-- added visual fade in effect to messages
 - updated default models for Kimi Plan
 - added auto-reconnection in browser on server restart
 
