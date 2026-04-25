@@ -409,6 +409,7 @@ src/
             BedrockParameters.tsx
             CerebrasParameters.tsx
             ClaudeAgentSdkParameters.tsx
+            DeepseekModelOverrides.tsx
             DeepseekParameters.tsx
             DefaultModelOverrides.tsx
             EnableVoiceControl.tsx
@@ -3743,6 +3744,12 @@ getExtensions(projectDir?: string): LoadedExtension[]
 ⋮----
 isInitialized(): boolean
 ⋮----
+/**
+   * @deprecated Migration helper: converts old name-based disabled list to filePath-based.
+   * Will be removed in a future version.
+   */
+private migrateDisabledExtensions(): void
+⋮----
 private captureExtensionsTelemetry()
 ⋮----
 async dispose(): Promise<void>
@@ -4850,10 +4857,10 @@ const getClaudeAgentSdkProviderParameters = (): Record<string, unknown> =>
 File: src/main/models/providers/deepseek.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { DeepseekProvider, isDeepseekProvider } from '@common/agent';
+import { DeepseekProvider, isDeepseekProvider, LlmProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -4868,6 +4875,10 @@ export const getDeepseekAiderMapping = (provider: ProviderProfile, modelId: stri
 ⋮----
 // === LLM Creation Functions ===
 export const createDeepseekLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+⋮----
+const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+⋮----
+const getDeepseekProviderParameters = (llmProvider: LlmProvider, model: Model): Record<string, unknown> =>
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5144,7 +5155,7 @@ import { getAnthropicCacheControl, getAnthropicUsageReport } from '@/models/prov
 ⋮----
 const loadKimiPlanModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
-// Return hardcoded model instead of fetching from API
+// Return hardcoded models instead of fetching from API
 ⋮----
 const hasKimiPlanEnvVars = (settings: SettingsData): boolean =>
 ⋮----
@@ -8376,14 +8387,15 @@ import { homedir } from 'os';
 ⋮----
 import { simpleGit } from 'simple-git';
 import {
-  AiderRunOptions,
-  AIDER_MODES,
   AgentProfile,
+  AIDER_COMMANDS,
+  AIDER_MODES,
+  AiderRunOptions,
+  ChangeRequestItem,
+  ConnectorMessage,
   ContextAssistantMessage,
   ContextFile,
   ContextMessage,
-  ToolCallPart,
-  ToolResultPart,
   DefaultTaskState,
   EditFormat,
   FileEdit,
@@ -8395,8 +8407,8 @@ import {
   ModelsData,
   ProjectSettings,
   PromptContext,
-  QueuedPromptData,
   QuestionData,
+  QueuedPromptData,
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
@@ -8405,17 +8417,16 @@ import {
   TaskStateEmoji,
   TodoItem,
   TokensInfoData,
+  ToolCallPart,
   ToolData,
+  ToolResultPart,
   UpdatedFile,
   UpdatedFilesGroupMode,
   UsageReportData,
   UserMessageData,
   WorkingMode,
-  AIDER_COMMANDS,
-  ConnectorMessage,
-  ChangeRequestItem,
 } from '@common/types';
-import { extractProviderModel, extractTextContent, extractServerNameToolName, fileExists, parseUsageReport } from '@common/utils';
+import { extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { SKILLS_TOOL_ACTIVATE_SKILL } from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
@@ -8426,14 +8437,15 @@ import type { ToolContent } from '@common/types';
 import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 ⋮----
+import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import {
+  AIDER_DESK_GLOBAL_RULES_DIR,
+  AIDER_DESK_PROJECT_RULES_DIR,
   AIDER_DESK_TASKS_DIR,
+  AIDER_DESK_TMP_DIR,
   AIDER_DESK_TODOS_FILE,
   WORKTREE_BRANCH_PREFIX,
-  AIDER_DESK_PROJECT_RULES_DIR,
-  AIDER_DESK_GLOBAL_RULES_DIR,
-  AIDER_DESK_TMP_DIR,
 } from '@/constants';
 import { Agent, AgentProfileManager, McpManager } from '@/agent';
 import { Connector } from '@/connector';
@@ -8445,15 +8457,14 @@ import { ModelManager } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { getEnvironmentVariablesForAider, execWithShellPath, isDirectory } from '@/utils';
+import { execWithShellPath, getEnvironmentVariablesForAider, isDirectory } from '@/utils';
 import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
-import { WorktreeManager, GitError } from '@/worktrees';
+import { GitError, WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
-import { ExtensionManager, ExtensionEventMap } from '@/extensions/extension-manager';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { getProxyEnvVars } from '@/proxy-manager';
 ⋮----
@@ -8825,9 +8836,9 @@ public async getRuleFilesAsContextFiles(profile?: AgentProfile, includeDisabled 
 ⋮----
 // Rule file doesn't exist or can't be accessed
 ⋮----
-// Filter out disabled rule files
-⋮----
 // Dispatch extension event to allow modification of rule files
+⋮----
+// Filter out disabled rule files
 ⋮----
 public getRepoMap(): string
 ⋮----
@@ -14378,31 +14389,24 @@ onFileDiffClick=
 ================
 File: src/renderer/src/components/ContextFiles/RulesSection.tsx
 ================
-import { ContextFile, OS, TokensInfoData } from '@common/types';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ContextFile } from '@common/types';
+import { Activity, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MdOutlinePublic } from 'react-icons/md';
+import { RiRobot2Line } from 'react-icons/ri';
+import { VscFileCode } from 'react-icons/vsc';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
 ⋮----
-import { ContextFilesSection } from './ContextFilesSection';
-import { createFileTree } from './types';
+import { SectionHeader } from './SectionHeader';
 ⋮----
-import type { TreeItem } from './types';
-⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 ⋮----
-type Props = {
-  rulesFiles: ContextFile[];
-  isOpen: boolean;
-  totalStats: { additions: number; deletions: number };
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
-  onToggle: () => void;
-};
+const getFileName = (filePath: string) =>
 ⋮----
-// eslint-disable-next-line react-hooks/exhaustive-deps
-⋮----
-onFileDiffClick=
+className=
 
 ================
 File: src/renderer/src/components/ContextFiles/SectionContent.tsx
@@ -14458,7 +14462,7 @@ type Props = {
   onToggle: () => void;
 };
 ⋮----
-className=
+<div className=
 
 ================
 File: src/renderer/src/components/ContextFiles/TreeItemRenderer.tsx
@@ -16508,15 +16512,13 @@ import { CodeInline } from '@/components/common/CodeInline';
 const thinkingAnswerContent = parseThinkingAnswerFormat(content, baseDir, allFiles, renderMarkdown, renderThinking);
 if (thinkingAnswerContent)
 ⋮----
-if (currentText.trimEnd())
-⋮----
-if (renderMarkdown)
-⋮----
-if (codeContent.length > 0)
+const processCodeBlock = () =>
 ⋮----
 // Check if the line is just a filepath
 ⋮----
 // Check if line ends with a filepath
+⋮----
+const findFileInNextLine = (currentLine: number):
 ⋮----
 // Check if the next line is just a filepath
 ⋮----
@@ -16622,8 +16624,6 @@ return result; // Return default if rawContent is empty
 const flushCurrentGroup = () =>
 ⋮----
 // Create an AssistantGroupMessage
-⋮----
-// No tool messages, just push the response as-is
 ⋮----
 // Flush any previous group before starting a new one
 ⋮----
@@ -16972,13 +16972,40 @@ type Props = {
 };
 
 ================
+File: src/renderer/src/components/ModelLibrary/providers/DeepseekModelOverrides.tsx
+================
+import { getDefaultProviderParams, DeepseekProvider, DeepseekReasoningEffort, LlmProvider } from '@common/agent';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { DisableStreaming } from '../DisableStreaming';
+⋮----
+import { Checkbox } from '@/components/common/Checkbox';
+import { Select, Option } from '@/components/common/Select';
+⋮----
+type Props = {
+  provider: LlmProvider;
+  overrides: Partial<DeepseekProvider>;
+  onChange: (overrides: Record<string, unknown>) => void;
+};
+⋮----
+const handleThinkingEnabledChange = (checked: boolean) =>
+⋮----
+const handleReasoningEffortChange = (value: string) =>
+⋮----
+const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+<Select label=
+
+================
 File: src/renderer/src/components/ModelLibrary/providers/DeepseekParameters.tsx
 ================
 import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DeepseekProvider } from '@common/agent';
+import { DeepseekProvider, DeepseekReasoningEffort } from '@common/agent';
 ⋮----
 import { Input } from '@/components/common/Input';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Select, Option } from '@/components/common/Select';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 ⋮----
 type Props = {
@@ -16986,11 +17013,17 @@ type Props = {
   onChange: (updated: DeepseekProvider) => void;
 };
 ⋮----
-export const DeepseekParameters = (
-⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
+const handleThinkingEnabledChange = (checked: boolean) =>
+⋮----
+const handleReasoningEffortChange = (value: string) =>
+⋮----
 label=
+⋮----
+<span className="text-sm font-medium">
+⋮----
+<Select label=
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/DefaultModelOverrides.tsx
@@ -17169,9 +17202,9 @@ File: src/renderer/src/components/ModelLibrary/providers/index.ts
 ================
 // Advanced Settings
 ⋮----
-// Model Overrides
+// Thinking Settings
 ⋮----
-// Utility Components
+// Model Overrides
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/KimiPlanParameters.tsx
@@ -18034,6 +18067,7 @@ import { OpenAiCompatibleModelOverrides } from './providers/OpenAiCompatibleMode
 import { DefaultModelOverrides } from './providers/DefaultModelOverrides';
 import { ZaiPlanModelOverrides } from './providers/ZaiPlanModelOverrides';
 import { AlibabaPlanModelOverrides } from './providers/AlibabaPlanModelOverrides';
+import { DeepseekModelOverrides } from './providers/DeepseekModelOverrides';
 ⋮----
 import { Button } from '@/components/common/Button';
 import { Accordion } from '@/components/common/Accordion';
@@ -20675,7 +20709,7 @@ type Props = {
   isUpdating?: boolean;
   hasUpdate?: boolean;
   installedFilePath?: string;
-  onToggle?: (extensionName: string, isDisabled: boolean) => void;
+  onToggle?: (extensionFilePath: string, isDisabled: boolean) => void;
   onUninstall?: (exensionFilePath: string) => void;
   onInstall?: (extension: AvailableExtension) => void;
   onUpdate?: () => void;
@@ -20817,7 +20851,7 @@ const handleRefresh = async () =>
 ⋮----
 // eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
-const handleToggleDisabled = (extensionName: string, isCurrentlyDisabled: boolean) =>
+const handleToggleDisabled = (extensionFilePath: string, isCurrentlyDisabled: boolean) =>
 ⋮----
 const handleUninstall = async (extensionFilePath: string) =>
 ⋮----
@@ -27033,18 +27067,18 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test:web test:node"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "0.0.5",
-    "@ai-sdk/amazon-bedrock": "3.0.93",
-    "@ai-sdk/anthropic": "2.0.74",
-    "@ai-sdk/azure": "2.0.104",
-    "@ai-sdk/cerebras": "1.0.40",
-    "@ai-sdk/deepseek": "1.0.36",
-    "@ai-sdk/google": "2.0.67",
-    "@ai-sdk/google-vertex": "3.0.127",
-    "@ai-sdk/groq": "2.0.37",
+    "@ai-sdk/alibaba": "^0.0.6",
+    "@ai-sdk/amazon-bedrock": "^3.0.97",
+    "@ai-sdk/anthropic": "^2.0.77",
+    "@ai-sdk/azure": "^2.0.105",
+    "@ai-sdk/cerebras": "^1.0.41",
+    "@ai-sdk/deepseek": "1.0.37",
+    "@ai-sdk/google": "^2.0.70",
+    "@ai-sdk/google-vertex": "^3.0.132",
+    "@ai-sdk/groq": "^2.0.38",
     "@ai-sdk/mistral": "2.0.30",
-    "@ai-sdk/openai": "2.0.102",
-    "@ai-sdk/openai-compatible": "1.0.35",
+    "@ai-sdk/openai": "^2.0.103",
+    "@ai-sdk/openai-compatible": "^1.0.36",
     "@ai-sdk/provider": "2.0.1",
     "@aiderdesk/extensions": "workspace:*",
     "@augmentcode/auggie-sdk": "0.1.15",
@@ -27091,7 +27125,7 @@ File: package.json
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "^2.8.0",
-    "ai": "5.0.172",
+    "ai": "5.0.179",
     "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "1.5.1",
     "apache-arrow": "18.1.0",
