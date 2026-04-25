@@ -21,6 +21,7 @@
 - fixed 'reasoning_content' issue with Deepseek provider
 - added visual fade in effect to messages
 - updated default models for Kimi Plan
+- added auto-reconnection in browser on server restart
 
 ## [0.62.0]
 
