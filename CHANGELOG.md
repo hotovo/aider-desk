@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.63.0]
 
 - correctly executing the probe semantic search tool in case of edge cases
 - added cache and retry mechanism to model loading
