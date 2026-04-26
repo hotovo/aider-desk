@@ -1,16 +1,23 @@
 import { IoPlayOutline } from 'react-icons/io5';
-import { RiAlertLine, RiCheckLine, RiPlayLine } from 'react-icons/ri';
+import { RiAlertLine, RiCheckFill, RiCheckLine, RiPlayLine } from 'react-icons/ri';
+import { MdOutlineDifference } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { ReactNode, useMemo, useState } from 'react';
-import { DefaultTaskState, Mode, TaskData } from '@common/types';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { DefaultTaskState, Mode, TaskData, UpdatedFile } from '@common/types';
 
 import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 
+import type { DiffModalGroup } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+
+import { UpdatedFilesDiffModal } from '@/components/ContextFiles/UpdatedFilesDiffModal';
 import { Button } from '@/components/common/Button';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
 import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useApi } from '@/contexts/ApiContext';
+import { groupFilesByCommit } from '@/components/ContextFiles/group-files';
+import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 
 type Props = {
   projectDir: string;
@@ -43,6 +50,10 @@ export const TaskStateActions = ({
   const { t } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const api = useApi();
+  const [updatedFiles, setUpdatedFiles] = useState<UpdatedFile[]>([]);
+  const [showDiffModal, setShowDiffModal] = useState(false);
+
   const isWorktree = task?.workingMode === 'worktree';
   const { worktreeStatus } = useWorktreeIntegrationStatus(projectDir, taskId, isWorktree);
 
@@ -55,6 +66,26 @@ export const TaskStateActions = ({
     () => worktreeStatus?.rebaseState.inProgress === true && worktreeStatus.rebaseState.hasUnmergedPaths === false,
     [worktreeStatus],
   );
+
+  useEffect(() => {
+    if (state === DefaultTaskState.ReadyForReview) {
+      const fetchUpdatedFiles = async () => {
+        try {
+          const files = await api.getUpdatedFiles(projectDir, taskId);
+          setUpdatedFiles(files);
+        } catch {
+          // silently ignore fetch errors
+        }
+      };
+      void fetchUpdatedFiles();
+    }
+  }, [state, api, projectDir, taskId]);
+
+  const diffModalGroups = useMemo<DiffModalGroup[]>(() => groupFilesByCommit(updatedFiles), [updatedFiles]);
+
+  const handleReviewChanges = useCallback(() => {
+    setShowDiffModal(true);
+  }, []);
 
   const { isEmpty: isEmptyTaskActions, renderComponents: renderTaskActionsComponents } = useExtensionComponentsWrapper({
     placement: 'task-state-actions-all',
@@ -168,14 +199,36 @@ export const TaskStateActions = ({
   }
 
   if (state === DefaultTaskState.ReadyForReview && onMarkAsDone) {
-    return renderSection(
-      <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
-      t('messages.taskReadyForReview'),
+    return (
       <>
-        <Button key="markAsDone" variant="outline" color="primary" size="xs" onClick={onMarkAsDone}>
-          {t('messages.markAsDone')}
-        </Button>
-      </>,
+        {renderSection(
+          <RiCheckLine className="h-4 w-4 flex-shrink-0 text-tertiary" />,
+          t('messages.taskReadyForReview'),
+          <>
+            {updatedFiles.length > 0 && (
+              <Button key="reviewChanges" variant="contained" color="primary" size="xs" onClick={handleReviewChanges}>
+                <MdOutlineDifference className="mr-1 w-3 h-3" />
+                {t('messages.reviewChanges')}
+              </Button>
+            )}
+            <Button key="markAsDone" variant="outline" color={updatedFiles.length > 0 ? 'tertiary' : 'primary'} size="xs" onClick={onMarkAsDone}>
+              <RiCheckFill className="mr-1 w-3 h-3" />
+              {t('messages.markAsDone')}
+            </Button>
+          </>,
+        )}
+        {showDiffModal && (
+          <UpdatedFilesDiffModal
+            groups={diffModalGroups}
+            initialFile={diffModalGroups[0]?.files[0] || null}
+            onClose={() => setShowDiffModal(false)}
+            baseDir={projectDir}
+            taskId={taskId}
+            openInWindowUrl={`#${ROUTES.Diff}?${URL_PARAMS.PROJECT}=${encodeBaseDir(projectDir)}&${URL_PARAMS.TASK}=${taskId}`}
+            openInWindowTitle={task?.name ? t('contextFiles.updatedFilesWindowTitle', { name: task.name }) : undefined}
+          />
+        )}
+      </>
     );
   }
 

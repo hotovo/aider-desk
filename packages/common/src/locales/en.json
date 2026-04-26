@@ -956,6 +956,7 @@
     "taskTodo": "Task Not Started",
     "taskTodoDescription": "Task Ready to Execute.",
     "markAsDone": "Mark as done",
+    "reviewChanges": "Review changes",
     "taskReadyForImplementation": "Task Ready for Implementation",
     "taskDone": "Task Completed",
     "taskDoneArchived": "Task Completed and Archived",

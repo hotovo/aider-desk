@@ -21,6 +21,7 @@
 - updated default models for Kimi Plan
 - added auto-reconnection in browser on server restart
 - added handling for unavailable MediaDevices API and microphone access
+- added Review changes task state action
 
 ## [0.62.0]
 

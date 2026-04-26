@@ -895,6 +895,7 @@
     "taskTodo": "任务未开始",
     "taskTodoDescription": "任务尚未开始。点击执行开始。",
     "markAsDone": "标记为完成",
+    "reviewChanges": "审查变更",
     "taskReadyForImplementation": "任务准备就绪，待实施",
     "taskDone": "任务已完成",
     "taskDoneArchived": "任务已完成并已归档",
