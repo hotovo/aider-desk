@@ -29,7 +29,7 @@ index 71888e3..2d2cd02 100644
  type DeepSeekChatOptions = z.infer<typeof deepseekChatOptions>;
  
 diff --git a/node_modules/@ai-sdk/deepseek/dist/index.js b/node_modules/@ai-sdk/deepseek/dist/index.js
-index 6385093..a58890b 100644
+index 6385093..16fadc5 100644
 --- a/node_modules/@ai-sdk/deepseek/dist/index.js
 +++ b/node_modules/@ai-sdk/deepseek/dist/index.js
 @@ -54,13 +54,6 @@ function convertToDeepSeekChatMessages({
@@ -56,6 +56,15 @@ index 6385093..a58890b 100644
                if (reasoning == null) {
                  reasoning = part.text;
                } else {
+@@ -124,7 +114,7 @@ function convertToDeepSeekChatMessages({
+         messages.push({
+           role: "assistant",
+           content: text,
+-          reasoning_content: reasoning,
++          reasoning_content: reasoning || '',
+           tool_calls: toolCalls.length > 0 ? toolCalls : void 0
+         });
+         break;
 @@ -252,7 +242,11 @@ var deepseekChatOptions = import_v42.z.object({
     */
    thinking: import_v42.z.object({
@@ -80,7 +89,7 @@ index 6385093..a58890b 100644
        warnings: [...warnings, ...toolWarnings]
      };
 diff --git a/node_modules/@ai-sdk/deepseek/dist/index.mjs b/node_modules/@ai-sdk/deepseek/dist/index.mjs
-index a2a1c31..3cc3965 100644
+index a2a1c31..c22565a 100644
 --- a/node_modules/@ai-sdk/deepseek/dist/index.mjs
 +++ b/node_modules/@ai-sdk/deepseek/dist/index.mjs
 @@ -43,13 +43,6 @@ function convertToDeepSeekChatMessages({
@@ -107,6 +116,15 @@ index a2a1c31..3cc3965 100644
                if (reasoning == null) {
                  reasoning = part.text;
                } else {
+@@ -113,7 +103,7 @@ function convertToDeepSeekChatMessages({
+         messages.push({
+           role: "assistant",
+           content: text,
+-          reasoning_content: reasoning,
++          reasoning_content: reasoning || '',
+           tool_calls: toolCalls.length > 0 ? toolCalls : void 0
+         });
+         break;
 @@ -241,7 +231,11 @@ var deepseekChatOptions = z2.object({
     */
    thinking: z2.object({
