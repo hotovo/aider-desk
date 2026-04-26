@@ -12260,7 +12260,11 @@ constructor()
 ⋮----
 // Filter by taskId for task-level events
 ⋮----
-private ensureSocketConnected(): void
+private ensureSocketConnected(): Promise<void>
+⋮----
+const onConnect = () =>
+⋮----
+const cleanup = () =>
 ⋮----
 private addListener<T extends keyof EventDataMap>(eventType: T, callback: EventCallback<EventDataMap[T]>, baseDir?: string, taskId?: string): () => void
 ⋮----
@@ -16512,13 +16516,15 @@ import { CodeInline } from '@/components/common/CodeInline';
 const thinkingAnswerContent = parseThinkingAnswerFormat(content, baseDir, allFiles, renderMarkdown, renderThinking);
 if (thinkingAnswerContent)
 ⋮----
-const processCodeBlock = () =>
+if (currentText.trimEnd())
+⋮----
+if (renderMarkdown)
+⋮----
+if (codeContent.length > 0)
 ⋮----
 // Check if the line is just a filepath
 ⋮----
 // Check if line ends with a filepath
-⋮----
-const findFileInNextLine = (currentLine: number):
 ⋮----
 // Check if the next line is just a filepath
 ⋮----
@@ -16624,6 +16630,8 @@ return result; // Return default if rawContent is empty
 const flushCurrentGroup = () =>
 ⋮----
 // Create an AssistantGroupMessage
+⋮----
+// No tool messages, just push the response as-is
 ⋮----
 // Flush any previous group before starting a new one
 ⋮----
@@ -21376,6 +21384,8 @@ const handleUpdateProfile = (profile: ProviderProfile) =>
 ⋮----
 const handleIdleTimeoutChangeSeconds = (seconds: number) =>
 ⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
 const loadDevices = async () =>
 ⋮----
 const handleDeviceChange = () =>
@@ -22380,6 +22390,7 @@ export interface UseAudioRecorderType {
   error: string | null;
   resetTranscription: () => void;
   voiceAvailable: boolean;
+  mediaDevicesAvailable: boolean;
   mediaStream: MediaStream | null;
 }
 ⋮----
