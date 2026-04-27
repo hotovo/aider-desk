@@ -4,185 +4,185 @@ on:
   workflow_dispatch: # Manual trigger
 
 jobs:
-  release-linux:
-    name: Release Linux packages
-    runs-on: ubuntu-latest
-    container:
-      image: electronuserland/builder
-      env:
-        TAR_OPTIONS: "--format=ustar"
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-    steps:
-      - uses: "actions/checkout@v1"
-
-      - uses: "actions/setup-node@v4"
-        with:
-          node-version: '22.17.0'
-
-      - run: npm ci --arch=x64
-
-      - name: Release Linux
-        run: npm run build:linux -- --x64 -p always
-
-      - name: Install GitHub CLI
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends gh ca-certificates
-
-      - name: Mark repository as safe for git
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - name: Upload backwards compatible x64 AppImage (no x64 suffix)
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          APPIMAGE_ARCH=$(ls -1 dist/*.AppImage | grep -E -- '-(x64|x86_64)\.AppImage$' | head -n 1)
-          if [ -z "$APPIMAGE_ARCH" ]; then
-            echo "Could not find x64 AppImage in dist/" >&2
-            ls -la dist
-            exit 1
-          fi
-
-          APPIMAGE_COMPAT="$APPIMAGE_ARCH"
-          APPIMAGE_COMPAT="${APPIMAGE_COMPAT%-x64.AppImage}"
-          APPIMAGE_COMPAT="${APPIMAGE_COMPAT%-x86_64.AppImage}.AppImage"
-          cp "$APPIMAGE_ARCH" "$APPIMAGE_COMPAT"
-
-          echo "Created compat AppImage: $APPIMAGE_COMPAT"
-
-          REPO="${GITHUB_REPOSITORY}"
-          RELEASE_TAG=$(curl -fsSL \
-            -H "Authorization: token ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPO}/releases" \
-            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s).find(x=>x.draft); if(!r){process.exit(1)}; console.log(r.tag_name)})")
-          if [ -z "$RELEASE_TAG" ]; then
-            echo "Could not find draft release tag" >&2
-            exit 1
-          fi
-
-          gh release upload "$RELEASE_TAG" "$APPIMAGE_COMPAT" --clobber
-
-      - name: Add compat AppImage entry to latest-linux.yml and upload to release
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          # Update latest-linux.yml with compat AppImage entry
-          node - <<'NODE'
-          const fs = require('fs');
-          const yaml = require('js-yaml');
-
-          const ymlPath = 'dist/latest-linux.yml';
-          const data = yaml.load(fs.readFileSync(ymlPath, 'utf8'));
-
-          const files = Array.isArray(data.files) ? data.files : [];
-          const appImageIdx = files.findIndex((f) => typeof f?.url === 'string' && f.url.endsWith('.AppImage'));
-          if (appImageIdx === -1) {
-            throw new Error('Could not find AppImage entry in dist/latest-linux.yml');
-          }
-
-          const appImage = files[appImageIdx];
-          const compatUrl = appImage.url.replace(/-(x64|x86_64)\.AppImage$/, '.AppImage');
-
-          if (compatUrl === appImage.url) {
-            throw new Error(`AppImage url did not match expected x64 suffix: ${appImage.url}`);
-          }
-
-          files.push({ ...appImage, url: compatUrl });
-
-          data.files = files;
-          data.path = compatUrl;
-          data.sha512 = appImage.sha512;
-
-          fs.writeFileSync(ymlPath, yaml.dump(data));
-          console.log('Updated latest-linux.yml with compat AppImage entry (last)');
-          NODE
-
-          # Upload updated latest-linux.yml to release
-          REPO="${GITHUB_REPOSITORY}"
-          RELEASE_TAG=$(curl -fsSL \
-            -H "Authorization: token ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${REPO}/releases" \
-            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s).find(x=>x.draft); if(!r){process.exit(1)}; console.log(r.tag_name)})")
-
-          if [ -z "$RELEASE_TAG" ]; then
-            echo "Could not find draft release tag" >&2
-            exit 1
-          fi
-
-          gh release upload "$RELEASE_TAG" dist/latest-linux.yml --clobber
-
-  release-linux-arm64:
-    name: Release Linux ARM64 packages
-    runs-on: ubuntu-22.04-arm
-    env:
-      TAR_OPTIONS: "--format=ustar"
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-    steps:
-      - uses: "actions/checkout@v1"
-
-      - uses: "actions/setup-node@v4"
-        with:
-          node-version: '22.17.0'
-
-      - name: Install Linux build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libarchive-tools \
-            rpm \
-            libgtk-3-0 \
-            libnss3 \
-            libxss1 \
-            libasound2 \
-            libgbm1 \
-            libx11-xcb1 \
-            libdrm2 \
-            libxkbcommon0 \
-            libxrandr2 \
-            libxcomposite1 \
-            libxcursor1 \
-            libxdamage1 \
-            libxi6 \
-            libxtst6 \
-            xdg-utils
-
-      - name: Install FPM
-        run: |
-          sudo apt-get update
-          sudo apt-get install ruby ruby-dev build-essential
-          sudo gem install --no-document fpm
-
-      - run: npm ci --arch=arm64
-
-      - name: Release Linux ARM64
-        env:
-          USE_SYSTEM_FPM: true
-        run: npm run build:linux -- --arm64 -p always
-
-  release-win:
-    name: Release Windows packages
-    runs-on: windows-latest
-
-    steps:
-      - name: Preserve $HOME set in the container
-        run: echo HOME=/root >> "$GITHUB_ENV"
-
-      - uses: "actions/checkout@v1"
-
-      - uses: "actions/setup-node@v4"
-        with:
-          node-version: '22.17.0'
-
-      - run: npm ci
-
-      - name: Release Windows
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build && npx electron-builder --win -p always
+#  release-linux:
+#    name: Release Linux packages
+#    runs-on: ubuntu-latest
+#    container:
+#      image: electronuserland/builder
+#      env:
+#        TAR_OPTIONS: "--format=ustar"
+#        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#
+#    steps:
+#      - uses: "actions/checkout@v1"
+#
+#      - uses: "actions/setup-node@v4"
+#        with:
+#          node-version: '22.17.0'
+#
+#      - run: npm ci --arch=x64
+#
+#      - name: Release Linux
+#        run: npm run build:linux -- --x64 -p always
+#
+#      - name: Install GitHub CLI
+#        run: |
+#          apt-get update
+#          apt-get install -y --no-install-recommends gh ca-certificates
+#
+#      - name: Mark repository as safe for git
+#        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+#
+#      - name: Upload backwards compatible x64 AppImage (no x64 suffix)
+#        env:
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#        run: |
+#          APPIMAGE_ARCH=$(ls -1 dist/*.AppImage | grep -E -- '-(x64|x86_64)\.AppImage$' | head -n 1)
+#          if [ -z "$APPIMAGE_ARCH" ]; then
+#            echo "Could not find x64 AppImage in dist/" >&2
+#            ls -la dist
+#            exit 1
+#          fi
+#
+#          APPIMAGE_COMPAT="$APPIMAGE_ARCH"
+#          APPIMAGE_COMPAT="${APPIMAGE_COMPAT%-x64.AppImage}"
+#          APPIMAGE_COMPAT="${APPIMAGE_COMPAT%-x86_64.AppImage}.AppImage"
+#          cp "$APPIMAGE_ARCH" "$APPIMAGE_COMPAT"
+#
+#          echo "Created compat AppImage: $APPIMAGE_COMPAT"
+#
+#          REPO="${GITHUB_REPOSITORY}"
+#          RELEASE_TAG=$(curl -fsSL \
+#            -H "Authorization: token ${GH_TOKEN}" \
+#            -H "Accept: application/vnd.github+json" \
+#            "https://api.github.com/repos/${REPO}/releases" \
+#            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s).find(x=>x.draft); if(!r){process.exit(1)}; console.log(r.tag_name)})")
+#          if [ -z "$RELEASE_TAG" ]; then
+#            echo "Could not find draft release tag" >&2
+#            exit 1
+#          fi
+#
+#          gh release upload "$RELEASE_TAG" "$APPIMAGE_COMPAT" --clobber
+#
+#      - name: Add compat AppImage entry to latest-linux.yml and upload to release
+#        env:
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#        run: |
+#          # Update latest-linux.yml with compat AppImage entry
+#          node - <<'NODE'
+#          const fs = require('fs');
+#          const yaml = require('js-yaml');
+#
+#          const ymlPath = 'dist/latest-linux.yml';
+#          const data = yaml.load(fs.readFileSync(ymlPath, 'utf8'));
+#
+#          const files = Array.isArray(data.files) ? data.files : [];
+#          const appImageIdx = files.findIndex((f) => typeof f?.url === 'string' && f.url.endsWith('.AppImage'));
+#          if (appImageIdx === -1) {
+#            throw new Error('Could not find AppImage entry in dist/latest-linux.yml');
+#          }
+#
+#          const appImage = files[appImageIdx];
+#          const compatUrl = appImage.url.replace(/-(x64|x86_64)\.AppImage$/, '.AppImage');
+#
+#          if (compatUrl === appImage.url) {
+#            throw new Error(`AppImage url did not match expected x64 suffix: ${appImage.url}`);
+#          }
+#
+#          files.push({ ...appImage, url: compatUrl });
+#
+#          data.files = files;
+#          data.path = compatUrl;
+#          data.sha512 = appImage.sha512;
+#
+#          fs.writeFileSync(ymlPath, yaml.dump(data));
+#          console.log('Updated latest-linux.yml with compat AppImage entry (last)');
+#          NODE
+#
+#          # Upload updated latest-linux.yml to release
+#          REPO="${GITHUB_REPOSITORY}"
+#          RELEASE_TAG=$(curl -fsSL \
+#            -H "Authorization: token ${GH_TOKEN}" \
+#            -H "Accept: application/vnd.github+json" \
+#            "https://api.github.com/repos/${REPO}/releases" \
+#            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const r=JSON.parse(s).find(x=>x.draft); if(!r){process.exit(1)}; console.log(r.tag_name)})")
+#
+#          if [ -z "$RELEASE_TAG" ]; then
+#            echo "Could not find draft release tag" >&2
+#            exit 1
+#          fi
+#
+#          gh release upload "$RELEASE_TAG" dist/latest-linux.yml --clobber
+#
+#  release-linux-arm64:
+#    name: Release Linux ARM64 packages
+#    runs-on: ubuntu-22.04-arm
+#    env:
+#      TAR_OPTIONS: "--format=ustar"
+#      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#
+#    steps:
+#      - uses: "actions/checkout@v1"
+#
+#      - uses: "actions/setup-node@v4"
+#        with:
+#          node-version: '22.17.0'
+#
+#      - name: Install Linux build dependencies
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y --no-install-recommends \
+#            libarchive-tools \
+#            rpm \
+#            libgtk-3-0 \
+#            libnss3 \
+#            libxss1 \
+#            libasound2 \
+#            libgbm1 \
+#            libx11-xcb1 \
+#            libdrm2 \
+#            libxkbcommon0 \
+#            libxrandr2 \
+#            libxcomposite1 \
+#            libxcursor1 \
+#            libxdamage1 \
+#            libxi6 \
+#            libxtst6 \
+#            xdg-utils
+#
+#      - name: Install FPM
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install ruby ruby-dev build-essential
+#          sudo gem install --no-document fpm
+#
+#      - run: npm ci --arch=arm64
+#
+#      - name: Release Linux ARM64
+#        env:
+#          USE_SYSTEM_FPM: true
+#        run: npm run build:linux -- --arm64 -p always
+#
+#  release-win:
+#    name: Release Windows packages
+#    runs-on: windows-latest
+#
+#    steps:
+#      - name: Preserve $HOME set in the container
+#        run: echo HOME=/root >> "$GITHUB_ENV"
+#
+#      - uses: "actions/checkout@v1"
+#
+#      - uses: "actions/setup-node@v4"
+#        with:
+#          node-version: '22.17.0'
+#
+#      - run: npm ci
+#
+#      - name: Release Windows
+#        env:
+#          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#        run: npm run build && npx electron-builder --win -p always
 
   release-macos-x64:
     name: Release macOS x64 packages
@@ -256,46 +256,46 @@ jobs:
           name: latest-mac-arm64-yml
           path: dist/latest-mac.yml
 
-  release-docker:
-    name: Release Docker image
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
-    steps:
-      - name: Clear up space
-        run: sudo rm -rf /usr/local/.ghcup /usr/local/lib/android /usr/share/dotnet /usr/share/swift
-
-      - uses: "actions/checkout@v1"
-
-      - name: Get version from package.json
-        id: get-version
-        run: |
-          # Get version from package.json
-          VERSION=$(node -e "console.log(require('./package.json').version)")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Using version: $VERSION"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Build and push multi-platform Docker images
-        run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository }}
-          VERSION=${{ steps.get-version.outputs.version }}
-
-          docker buildx build --platform linux/amd64,linux/arm64 \
-            -t ${IMAGE_NAME}:${VERSION} \
-            --push \
-            .
-
-          echo "Built and pushed multi-platform image: ${IMAGE_NAME}:${VERSION}"
+#  release-docker:
+#    name: Release Docker image
+#    runs-on: ubuntu-latest
+#    env:
+#      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+#
+#    steps:
+#      - name: Clear up space
+#        run: sudo rm -rf /usr/local/.ghcup /usr/local/lib/android /usr/share/dotnet /usr/share/swift
+#
+#      - uses: "actions/checkout@v1"
+#
+#      - name: Get version from package.json
+#        id: get-version
+#        run: |
+#          # Get version from package.json
+#          VERSION=$(node -e "console.log(require('./package.json').version)")
+#          echo "version=$VERSION" >> $GITHUB_OUTPUT
+#          echo "Using version: $VERSION"
+#
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v3
+#
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v3
+#
+#      - name: Log in to GitHub Container Registry
+#        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+#
+#      - name: Build and push multi-platform Docker images
+#        run: |
+#          IMAGE_NAME=ghcr.io/${{ github.repository }}
+#          VERSION=${{ steps.get-version.outputs.version }}
+#
+#          docker buildx build --platform linux/amd64,linux/arm64 \
+#            -t ${IMAGE_NAME}:${VERSION} \
+#            --push \
+#            .
+#
+#          echo "Built and pushed multi-platform image: ${IMAGE_NAME}:${VERSION}"
 
   combine-macos-yml:
     name: Combine macOS yml files
@@ -355,7 +355,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # Get the draft release tag
-          RELEASE_TAG=$(gh release list --limit 1 --json tagName,isDraft --jq '.[] | select(.isDraft == true) | .tagName')
+          RELEASE_TAG="v0.63.0"
           echo "release_tag=$RELEASE_TAG" >> $GITHUB_OUTPUT
 
       - name: Upload combined yml to release
