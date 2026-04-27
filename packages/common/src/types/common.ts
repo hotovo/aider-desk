@@ -1108,3 +1108,13 @@ export interface ChangeRequestItem {
   userComment: string;
 }
 
+export type SkillLocation = 'global' | 'project' | 'builtin' | 'extension';
+
+export interface SkillDefinition {
+  name: string;
+  description: string;
+  location: SkillLocation;
+  dirPath?: string;
+  content?: string;
+}
+

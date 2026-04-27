@@ -18,6 +18,7 @@ import {
   Model,
   ProjectSettings,
   PromptContext,
+  SkillDefinition,
   ProviderProfile,
   QuestionData,
   QueuedPromptData,
@@ -1413,6 +1414,16 @@ export interface Extension {
    * Provider names can override built-in providers (user responsibility to avoid conflicts between extensions).
    */
   getProviders?(context: ExtensionContext): ProviderDefinition[];
+
+  // Skill registration
+
+  /**
+   * Return array of skills this extension provides
+   * Each skill must have a name, description, location, and dirPath
+   * Skills are loaded when the agent has Skills Tools enabled
+   * @param context - Extension context
+   */
+  getSkills?(context: ExtensionContext): SkillDefinition[];
 
   /**
    * Called when a user updates an extension-provided agent profile

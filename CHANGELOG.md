@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added support for extension-provided skills
+
 ## [0.63.0]
 
 - correctly executing the probe semantic search tool in case of edge cases

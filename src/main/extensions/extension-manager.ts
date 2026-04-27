@@ -4,7 +4,7 @@ import path from 'path';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, ExtensionConfigComponent, SettingsData, ToolApprovalState } from '@common/types';
+import { AvailableExtension, ExtensionConfigComponent, SettingsData, SkillDefinition, ToolApprovalState } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 
 import { ExtensionLoader } from './extension-loader';
@@ -1106,6 +1106,51 @@ export class ExtensionManager {
     }
 
     return collectedProviders;
+  }
+
+  getSkills(project: Project, task: Task): SkillDefinition[] {
+    const collectedSkills: SkillDefinition[] = [];
+    const allExtensions = this.registry.getExtensions(project.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      const { instance, metadata } = loaded;
+
+      if (!instance.getSkills) {
+        continue;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project, task);
+        const skills = instance.getSkills(context);
+
+        if (!Array.isArray(skills)) {
+          logger.error(`[Extensions] Extension '${metadata.name}' getSkills() did not return an array`);
+          continue;
+        }
+
+        for (const skill of skills) {
+          if (!skill.name || !skill.description) {
+            logger.error(`[Extensions] Invalid skill from extension '${metadata.name}': missing name or description`);
+            continue;
+          }
+
+          if (!skill.dirPath && !skill.content) {
+            logger.error(`[Extensions] Invalid skill from extension '${metadata.name}': must have dirPath or content`);
+            continue;
+          }
+
+          collectedSkills.push({
+            ...skill,
+            location: 'extension',
+          });
+        }
+      } catch (error) {
+        logger.error(`[Extensions] Failed to get skills from extension '${metadata.name}':`, error);
+      }
+    }
+
+    return collectedSkills;
   }
 
   getUIComponents(project?: Project, task?: Task): RegisteredUIComponent[] {
