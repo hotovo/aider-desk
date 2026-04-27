@@ -220,14 +220,11 @@ jobs:
           name: latest-mac-x64-yml
           path: dist/latest-mac.yml
 
-      - name: Upload built packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-x64-packages
-          path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.blockmap
+      - name: Upload packages to release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh release upload v0.63.0 dist/*.dmg dist/*.zip dist/*.blockmap --clobber
 
   release-macos-arm64:
     name: Release macOS arm64 packages
@@ -265,14 +262,11 @@ jobs:
           name: latest-mac-arm64-yml
           path: dist/latest-mac.yml
 
-      - name: Upload built packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-arm64-packages
-          path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.blockmap
+      - name: Upload packages to release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh release upload v0.63.0 dist/*.dmg dist/*.zip dist/*.blockmap --clobber
 
 #  release-docker:
 #    name: Release Docker image
