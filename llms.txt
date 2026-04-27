@@ -225,7 +225,6 @@ src/
       probe.ts
       python.ts
       shell.ts
-      truncate.ts
       web-scrapper.ts
     versions/
       index.ts
@@ -1575,9 +1574,6 @@ import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
 import { ChildProcess } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
-import { createWriteStream } from 'node:fs';
-import { tmpdir } from 'node:os';
 ⋮----
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
@@ -1604,7 +1600,6 @@ import { isURL } from '@common/utils';
 import { ApprovalManager } from './approval-manager';
 ⋮----
 import { search } from '@/utils/probe';
-import { DEFAULT_MAX_BYTES, GREP_MAX_LINE_LENGTH, formatSize, truncateHead, truncateLine, truncateTail } from '@/utils/truncate';
 import { Task } from '@/task';
 import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
@@ -1629,8 +1624,6 @@ const withFileLock = <T>(filePath: string, operation: () => Promise<T>): Promise
  * @returns The expanded path with ~ replaced by the home directory
  */
 const expandTilde = (filePath: string): string =>
-⋮----
-const getTempFilePath = (): string =>
 ⋮----
 /**
  * Reads a file and returns its content with optional line numbering and line range.
@@ -1660,14 +1653,6 @@ const sanitize = (str: string) =>
 ⋮----
 // Use replacer function to avoid special replacement patterns ($&, $`, '$', $$)
 ⋮----
-const startLineDisplay = startLine + 1; // 1-indexed for display
-⋮----
-// Apply user offset and limit first
-⋮----
-// Apply head truncation
-⋮----
-// Add line numbers if requested
-⋮----
 absolute: false, // Keep paths relative to cwd for easier processing
 ⋮----
 // Convert to absolute paths for filtering, then back to relative
@@ -1678,10 +1663,6 @@ absolute: false, // Keep paths relative to cwd for easier processing
 ⋮----
 const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // Simpler for line-by-line test
 ⋮----
-// Build text output with per-line truncation
-⋮----
-// Apply byte truncation only (no line limit — match count already caps rows)
-⋮----
 false, // not finished yet
 ⋮----
 // Pattern validation
@@ -1690,15 +1671,11 @@ false, // not finished yet
 ⋮----
 // Check allowed patterns - if matches, skip approval and execute directly
 ⋮----
-const ensureTempFile = () =>
-⋮----
 const cleanup = () =>
 ⋮----
-const closeTempFile = () =>
+// Remove abort listener to prevent memory leaks
 ⋮----
 const resolveWithResult = () =>
-⋮----
-// Write full output to temp file if one was created
 ⋮----
 abortListener = () =>
 ⋮----
@@ -9973,55 +9950,6 @@ export const execWithShellPath = async (
 ): Promise<
 
 ================
-File: src/main/utils/truncate.ts
-================
-import { Buffer } from 'node:buffer';
-⋮----
-export const DEFAULT_MAX_BYTES = 50 * 1024; // 50KB
-export const GREP_MAX_LINE_LENGTH = 500; // Max chars per grep match line
-⋮----
-export interface TruncationResult {
-  content: string;
-  truncated: boolean;
-  truncatedBy: 'lines' | 'bytes' | null;
-  totalLines: number;
-  totalBytes: number;
-  outputLines: number;
-  outputBytes: number;
-  lastLinePartial: boolean;
-  firstLineExceedsLimit: boolean;
-  maxLines: number;
-  maxBytes: number;
-}
-⋮----
-export interface TruncationOptions {
-  maxLines?: number;
-  maxBytes?: number;
-}
-⋮----
-export const formatSize = (bytes: number): string =>
-⋮----
-/**
- * Truncate content from the head (keep first N lines/bytes).
- * Never returns partial lines. If first line exceeds byte limit,
- * returns empty content with firstLineExceedsLimit=true.
- */
-export const truncateHead = (content: string, options: TruncationOptions =
-⋮----
-/**
- * Truncate content from the tail (keep last N lines/bytes).
- * May return partial first line if the last line alone exceeds byte limit.
- */
-export const truncateTail = (content: string, options: TruncationOptions =
-⋮----
-const truncateStringToBytesFromEnd = (str: string, maxBytes: number): string =>
-⋮----
-/**
- * Truncate a single line to max characters, adding [truncated] suffix.
- */
-export const truncateLine = (line: string, maxChars: number = GREP_MAX_LINE_LENGTH):
-
-================
 File: src/main/utils/web-scrapper.ts
 ================
 import Turndown from 'turndown';
@@ -16265,18 +16193,25 @@ onClick=
 File: src/renderer/src/components/message/TaskStateActions.tsx
 ================
 import { IoPlayOutline } from 'react-icons/io5';
-import { RiAlertLine, RiCheckLine, RiPlayLine } from 'react-icons/ri';
+import { RiAlertLine, RiCheckFill, RiCheckLine, RiPlayLine } from 'react-icons/ri';
+import { MdOutlineDifference } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { ReactNode, useMemo, useState } from 'react';
-import { DefaultTaskState, Mode, TaskData } from '@common/types';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { DefaultTaskState, Mode, TaskData, UpdatedFile } from '@common/types';
 ⋮----
 import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 ⋮----
+import type { DiffModalGroup } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+⋮----
+import { UpdatedFilesDiffModal } from '@/components/ContextFiles/UpdatedFilesDiffModal';
 import { Button } from '@/components/common/Button';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
 import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useApi } from '@/contexts/ApiContext';
+import { groupFilesByCommit } from '@/components/ContextFiles/group-files';
+import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 ⋮----
 type Props = {
   projectDir: string;
@@ -16293,6 +16228,10 @@ type Props = {
   onDeleteTask?: () => void;
 };
 ⋮----
+const fetchUpdatedFiles = async () =>
+⋮----
+// silently ignore fetch errors
+⋮----
 const handleDeleteClick = () =>
 ⋮----
 const handleCancelDelete = () =>
@@ -16307,6 +16246,9 @@ const handleUnarchiveClick = () =>
 ⋮----
 const renderSection = (icon: ReactNode, text: string, actions: ReactNode) =>
 ⋮----
+
+⋮----
+onClose=
 
 ================
 File: src/renderer/src/components/message/ThinkingAnswerBlock.tsx
