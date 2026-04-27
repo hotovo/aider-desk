@@ -87,6 +87,6 @@ deb:
 npmRebuild: true
 publish:
   provider: github
-  releaseType: draft
+  releaseType: release
   vPrefixedTagName: true
   publishAutoUpdate: true
