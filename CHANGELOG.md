@@ -8,6 +8,7 @@
 - added base branch name to the worktree merge button and improved rebasing
 - hide save prompt button when editing last message
 - added support for redoing any user prompt
+- initializing symlink folders on new task when worktree mode is set
 
 ## [0.63.0]
 

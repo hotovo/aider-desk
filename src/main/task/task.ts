@@ -430,8 +430,7 @@ export class Task {
         });
       } else {
         // Create a default worktree for this task
-        const branchName = this.generateBranchName();
-        this.task.worktree = await this.worktreeManager.createWorktree(this.project.baseDir, this.taskId, branchName);
+        await this.initWorktree();
         void this.sendUpdatedFilesUpdated();
         void this.sendWorktreeIntegrationStatusUpdated();
       }
@@ -3370,6 +3369,20 @@ ${error.stderr}`,
     this.eventManager.sendUpdatedFilesUpdated(this.project.baseDir, this.taskId, updatedFiles);
   }
 
+  private async initWorktree(): Promise<void> {
+    const branchName = this.generateBranchName();
+    this.task.worktree = await this.worktreeManager.createWorktree(this.project.baseDir, this.taskId, branchName);
+
+    const settings = this.store.getSettings();
+    if (settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0) {
+      await this.worktreeManager.createSymlinks(
+        this.project.baseDir,
+        this.task.worktree.path,
+        settings.taskSettings.worktreeSymlinkFolders,
+      );
+    }
+  }
+
   private async applyWorkingMode(mode: WorkingMode) {
     logger.info('Applying workingMode configuration', {
       baseDir: this.project.baseDir,
@@ -3382,13 +3395,7 @@ ${error.stderr}`,
     const currentWorktree = await this.worktreeManager.getTaskWorktree(this.project.baseDir, this.taskId);
     if (mode === 'worktree') {
       if (!currentWorktree) {
-        const branchName = this.generateBranchName();
-        this.task.worktree = await this.worktreeManager.createWorktree(this.project.baseDir, this.taskId, branchName);
-
-        const settings = this.store.getSettings();
-        if (settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0) {
-          await this.worktreeManager.createSymlinks(this.project.baseDir, this.task.worktree.path, settings.taskSettings.worktreeSymlinkFolders);
-        }
+        await this.initWorktree();
       }
       this.task.workingMode = mode;
     } else if (mode === 'local') {
