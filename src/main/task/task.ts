@@ -3375,11 +3375,7 @@ ${error.stderr}`,
 
     const settings = this.store.getSettings();
     if (settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0) {
-      await this.worktreeManager.createSymlinks(
-        this.project.baseDir,
-        this.task.worktree.path,
-        settings.taskSettings.worktreeSymlinkFolders,
-      );
+      await this.worktreeManager.createSymlinks(this.project.baseDir, this.task.worktree.path, settings.taskSettings.worktreeSymlinkFolders);
     }
   }
 
