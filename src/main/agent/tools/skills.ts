@@ -98,7 +98,12 @@ const getActivateSkillDescription = (skills: Skill[]): string => {
   return `${instructions}\n\n<available_skills>\n${availableSkills}\n</available_skills>`;
 };
 
-export const createSkillsToolset = async (task: Task, profile: AgentProfile, promptContext?: PromptContext, extensionManager?: ExtensionManager): Promise<ToolSet> => {
+export const createSkillsToolset = async (
+  task: Task,
+  profile: AgentProfile,
+  promptContext?: PromptContext,
+  extensionManager?: ExtensionManager,
+): Promise<ToolSet> => {
   const approvalManager = new ApprovalManager(task, profile);
   const extensionSkills = extensionManager?.getSkills(task.project, task) ?? [];
 
@@ -167,7 +172,9 @@ export const createSkillsToolset = async (task: Task, profile: AgentProfile, pro
         return `Skill '${requested.name}' has no content or dirPath.`;
       }
 
-      const dirInfo = requested.dirPath ? `\nSkill directory is ${requested.dirPath} - use it as parent directory for relative paths mentioned in the skill description.` : '';
+      const dirInfo = requested.dirPath
+        ? `\nSkill directory is ${requested.dirPath} - use it as parent directory for relative paths mentioned in the skill description.`
+        : '';
 
       return `${content}\n\nSkill '${requested.name}' activated.${dirInfo}`;
     },
