@@ -1724,21 +1724,13 @@ import { tool, type ToolSet } from 'ai';
 import { loadFront } from 'yaml-front-matter';
 import { z } from 'zod';
 import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
-import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
+import { AgentProfile, PromptContext, SkillDefinition as Skill, SkillLocation, ToolApprovalState } from '@common/types';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
 import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR } from '@/constants';
+import { ExtensionManager } from '@/extensions/extension-manager';
 import { Task } from '@/task';
-⋮----
-type SkillLocation = 'global' | 'project' | 'builtin';
-⋮----
-type Skill = {
-  name: string;
-  description: string;
-  location: SkillLocation;
-  dirPath: string;
-};
 ⋮----
 const parseSkillFrontMatter = (markdown: string):
 ⋮----
@@ -1750,7 +1742,7 @@ const loadSkillsFromDir = async (skillsRootDir: string, location: SkillLocation)
 ⋮----
 const getActivateSkillDescription = (skills: Skill[]): string =>
 ⋮----
-export const createSkillsToolset = async (task: Task, profile: AgentProfile, promptContext?: PromptContext): Promise<ToolSet> =>
+export const createSkillsToolset = async (task: Task, profile: AgentProfile, promptContext?: PromptContext, extensionManager?: ExtensionManager): Promise<ToolSet> =>
 ⋮----
 const generateActivateSkillDescription = async (): Promise<string> =>
 
@@ -3514,7 +3506,7 @@ import path from 'path';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, ExtensionConfigComponent, SettingsData, ToolApprovalState } from '@common/types';
+import { AvailableExtension, ExtensionConfigComponent, SettingsData, SkillDefinition, ToolApprovalState } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 ⋮----
 import { ExtensionLoader } from './extension-loader';
@@ -3791,6 +3783,8 @@ getModes(project: Project): RegisteredMode[]
 validateModeDefinition(mode: ModeDefinition):
 ⋮----
 getProviders(project?: Project): RegisteredProvider[]
+⋮----
+getSkills(project: Project, task: Task): SkillDefinition[]
 ⋮----
 getUIComponents(project?: Project, task?: Task): RegisteredUIComponent[]
 ⋮----
@@ -26974,7 +26968,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.63.0-dev",
+  "version": "0.64.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
