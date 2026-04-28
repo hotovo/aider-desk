@@ -13,12 +13,14 @@ import { ExtensionContextImpl } from './extension-context';
 import { ExtensionFetcher } from './extension-fetcher';
 
 import type {
+  AfterCommitEvent,
   AgentFinishedEvent,
   AgentStartedEvent,
   AgentStepFinishedEvent,
   AgentStepStartedEvent,
   AiderPromptFinishedEvent,
   AiderPromptStartedEvent,
+  BeforeCommitEvent,
   CommandDefinition,
   CommandExecutedEvent,
   CustomCommandExecutedEvent,
@@ -142,6 +144,8 @@ export type ExtensionEventMap = {
   onQuestionAnswered: QuestionAnsweredEvent;
   onCommandExecuted: CommandExecutedEvent;
   onCustomCommandExecuted: CustomCommandExecutedEvent;
+  onBeforeCommit: BeforeCommitEvent;
+  onAfterCommit: AfterCommitEvent;
 };
 
 export class ExtensionManager {

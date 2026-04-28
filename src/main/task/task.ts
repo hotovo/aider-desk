@@ -3752,10 +3752,20 @@ ${error.stderr}`,
       amend,
     });
 
+    const beforeResult = await this.extensionManager.dispatchEvent('onBeforeCommit', { message, amend }, this.project, this);
+    if (beforeResult.blocked) {
+      logger.debug('Commit blocked by extension');
+      return;
+    }
+    message = beforeResult.message;
+    amend = beforeResult.amend;
+
     const taskDir = this.getTaskDir();
     await this.worktreeManager.commitChanges(taskDir, message, amend);
     await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
+
+    await this.extensionManager.dispatchEvent('onAfterCommit', { message, amend }, this.project, this);
   }
 
   public async getWorktreeIntegrationStatus(targetBranch?: string) {

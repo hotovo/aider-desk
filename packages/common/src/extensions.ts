@@ -551,6 +551,19 @@ export interface AiderPromptFinishedEvent {
   responses: ResponseCompletedData[];
 }
 
+/** Event payload for before commit events */
+export interface BeforeCommitEvent {
+  message: string;
+  amend: boolean;
+  blocked?: boolean;
+}
+
+/** Event payload for after commit events */
+export interface AfterCommitEvent {
+  readonly message: string;
+  readonly amend: boolean;
+}
+
 /** Options for asking questions to the user */
 export interface QuestionOptions {
   subject?: string;
@@ -1726,4 +1739,20 @@ export interface Extension {
    * @returns void or partial event to modify responses
    */
   onAiderPromptFinished?(event: AiderPromptFinishedEvent, context: ExtensionContext): Promise<void | Partial<AiderPromptFinishedEvent>>;
+
+  // Commit Events
+
+  /**
+   * Called before changes are committed
+   * Modify event.message and event.amend to change the commit message or amend flag
+   * Set event.blocked = true to prevent the commit
+   * @returns void or partial event to modify commit parameters
+   */
+  onBeforeCommit?(event: BeforeCommitEvent, context: ExtensionContext): Promise<void | Partial<BeforeCommitEvent>>;
+
+  /**
+   * Called after changes are committed
+   * @returns void (read-only event)
+   */
+  onAfterCommit?(event: AfterCommitEvent, context: ExtensionContext): Promise<void>;
 }

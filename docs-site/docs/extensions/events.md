@@ -75,6 +75,7 @@ async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext) {
 | **Subagent** | Started, Finished | Subagent execution |
 | **Question** | Asked, Answered | User questions |
 | **Command** | Executed, Custom Command Executed | Command execution |
+| **Commit** | Before Commit, After Commit | Commit lifecycle |
 | **Aider** | Prompt Started, Prompt Finished | Legacy Aider events |
 
 ---
@@ -510,6 +511,31 @@ interface CustomCommandExecutedEvent {
   mode: Mode;
   blocked?: boolean;
   prompt?: string;
+}
+```
+
+---
+
+## Commit Events
+
+### BeforeCommitEvent
+Called before changes are committed. Use to modify the commit message, amend flag, or block the commit.
+
+```typescript
+interface BeforeCommitEvent {
+  message: string;
+  amend: boolean;
+  blocked?: boolean;
+}
+```
+
+### AfterCommitEvent
+Called after changes are committed. Read-only event for observing committed changes.
+
+```typescript
+interface AfterCommitEvent {
+  readonly message: string;
+  readonly amend: boolean;
 }
 ```
 
