@@ -223,8 +223,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return { message: 'Messages removed' };
   });
 
-  ipcMain.on('redo-last-user-prompt', (_, baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string) => {
-    void eventsHandler.redoLastUserPrompt(baseDir, taskId, mode, updatedPrompt);
+  ipcMain.on('redo-user-prompt', (_, baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string) => {
+    void eventsHandler.redoUserPrompt(baseDir, taskId, messageId, mode, updatedPrompt);
   });
 
   ipcMain.on('resume-task', (_, baseDir: string, taskId: string) => {

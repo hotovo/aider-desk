@@ -87,7 +87,7 @@ export interface ApplicationAPI {
   resetTask: (baseDir: string, taskId: string) => void;
   runPrompt: (baseDir: string, taskId: string, prompt: string, mode?: Mode) => void;
   savePrompt: (baseDir: string, taskId: string, prompt: string) => Promise<void>;
-  redoLastUserPrompt: (baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string) => void;
+  redoUserPrompt: (baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string) => void;
   resumeTask: (baseDir: string, taskId: string) => void;
   answerQuestion: (baseDir: string, taskId: string, answer: string) => void;
   removeQueuedPrompt: (baseDir: string, taskId: string, promptId: string) => void;

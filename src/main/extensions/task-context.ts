@@ -62,8 +62,17 @@ export class TaskContextImpl implements TaskContext {
     await this.task.loadContextMessages(messages);
   }
 
+  async redoUserPrompt(messageId: string, mode?: string, updatedPrompt?: string): Promise<void> {
+    await this.task.redoUserPrompt(messageId, (mode as Mode) || 'agent', updatedPrompt);
+  }
+
   async redoLastUserPrompt(mode?: string, updatedPrompt?: string): Promise<void> {
-    await this.task.redoLastUserPrompt((mode as Mode) || 'agent', updatedPrompt);
+    const messages = await this.task.getContextMessages();
+    const lastUserMessage = messages.findLast((msg) => msg.role === 'user');
+    if (!lastUserMessage) {
+      return;
+    }
+    await this.task.redoUserPrompt(lastUserMessage.id, (mode as Mode) || 'agent', updatedPrompt);
   }
 
   async removeMessagesUpTo(messageId: string): Promise<void> {

@@ -31,7 +31,7 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
-  redoLastUserPrompt: () => void;
+  redoUserPrompt: (messageId: string) => void;
   editLastUserMessage: (content: string) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
@@ -48,7 +48,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
       allFiles = [],
       renderMarkdown,
       removeMessage,
-      redoLastUserPrompt,
+      redoUserPrompt,
       editLastUserMessage,
       onInterrupt,
       onForkFromMessage,
@@ -184,7 +184,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={renderMarkdown}
                       remove={inProgress ? undefined : removeMessage}
-                      redo={inProgress ? undefined : redoLastUserPrompt}
+                      redo={inProgress ? undefined : () => redoUserPrompt(message.id)}
                       edit={editLastUserMessage}
                       onInterrupt={onInterrupt}
                     />
@@ -207,7 +207,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={renderMarkdown}
                       remove={inProgress ? undefined : () => removeMessage(message)}
-                      redo={virtualRow.index === lastUserMessageIndex && !inProgress ? redoLastUserPrompt : undefined}
+                      redo={!inProgress && isUserMessage(message) ? () => redoUserPrompt(message.id) : undefined}
                       edit={virtualRow.index === lastUserMessageIndex ? editLastUserMessage : undefined}
                       onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
                       onRemoveUpTo={onRemoveUpToMessage ? () => onRemoveUpToMessage(message) : undefined}

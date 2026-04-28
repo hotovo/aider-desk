@@ -246,8 +246,8 @@ export class EventsHandler {
     this.eventManager.sendTaskMessageRemoved(baseDir, taskId, removedIds);
   }
 
-  async redoLastUserPrompt(baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string): Promise<void> {
-    void this.projectManager.getProject(baseDir).getTask(taskId)?.redoLastUserPrompt(mode, updatedPrompt);
+  async redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string): Promise<void> {
+    void this.projectManager.getProject(baseDir).getTask(taskId)?.redoUserPrompt(messageId, mode, updatedPrompt);
   }
 
   async resumeTask(baseDir: string, taskId: string): Promise<void> {

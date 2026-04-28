@@ -2471,33 +2471,34 @@ export class Task {
     }
   }
 
-  public async redoLastUserPrompt(mode: Mode, updatedPrompt?: string) {
-    logger.info('Redoing last user prompt:', {
+  public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string) {
+    logger.info('Redoing user prompt:', {
       baseDir: this.project.baseDir,
+      messageId,
       mode,
       hasUpdatedPrompt: !!updatedPrompt,
     });
 
-    const removedMessages = this.contextManager.removeMessagesUpToLastUserMessage();
-    const originalLastUserMessage = removedMessages.findLast((msg) => msg.role === MessageRole.User);
-    if (!originalLastUserMessage) {
-      logger.warn('Could not find original last user message content to redo.');
+    const removedMessages = this.contextManager.removeMessagesUpToUserMessage(messageId);
+    const originalUserMessage = removedMessages[0];
+    if (!originalUserMessage || originalUserMessage.role !== MessageRole.User) {
+      logger.warn('Could not find the specified user message to redo.', { messageId });
       return;
     }
 
-    const promptToRun = updatedPrompt ?? (originalLastUserMessage.content as string);
+    const promptToRun = updatedPrompt ?? (originalUserMessage.content as string);
 
     if (promptToRun) {
       logger.info('Found message content to run, reloading and re-running prompt.', {
         remainingMessagesCount: (await this.contextManager.getContextMessages()).length,
       });
 
-      this.sendTaskMessageRemoved(removedMessages.slice(0, -1).map((msg) => msg.id));
+      this.sendTaskMessageRemoved(removedMessages.slice(1).map((msg) => msg.id));
 
       await this.updateContextInfo();
 
       // No need to await runPrompt here, let it run in the background
-      void this.runPrompt(promptToRun, mode, false, originalLastUserMessage.id);
+      void this.runPrompt(promptToRun, mode, false, originalUserMessage.id);
     } else {
       logger.warn('Could not find a previous user message to redo or an updated prompt to run.');
     }
@@ -2532,7 +2533,7 @@ export class Task {
         // Last message is from user, redo it
         logger.info('Last message is from user, redoing prompt');
         this.addLogMessage('loading', 'Resuming task...');
-        void this.redoLastUserPrompt(mode);
+        void this.redoUserPrompt(lastMessage.id, mode);
       } else {
         // Last message is not from user, send "Continue" to aider
         logger.info('Last message is not from user, sending Continue prompt');

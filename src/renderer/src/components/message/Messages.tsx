@@ -26,7 +26,7 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
-  redoLastUserPrompt: () => void;
+  redoUserPrompt: (messageId: string) => void;
   editLastUserMessage: (content: string) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
@@ -43,7 +43,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
       allFiles = [],
       renderMarkdown,
       removeMessage,
-      redoLastUserPrompt,
+      redoUserPrompt,
       editLastUserMessage,
       onInterrupt,
       onForkFromMessage,
@@ -137,7 +137,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
               lastUserMessageIndex={lastUserMessageIndex}
               inProgress={inProgress}
               removeMessage={removeMessage}
-              redoLastUserPrompt={redoLastUserPrompt}
+              redoUserPrompt={redoUserPrompt}
               editLastUserMessage={editLastUserMessage}
               onInterrupt={onInterrupt}
               onForkFromMessage={onForkFromMessage}

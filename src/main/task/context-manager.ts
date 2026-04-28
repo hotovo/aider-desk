@@ -484,17 +484,18 @@ export class ContextManager {
     this.autosave();
   }
 
-  removeMessagesUpToLastUserMessage(): ContextMessage[] {
-    const lastUserMessageIndex = this.messages.findLastIndex((msg) => msg.role === MessageRole.User);
-    if (lastUserMessageIndex === -1) {
-      logger.warn('No user message found to remove up to.', {
+  removeMessagesUpToUserMessage(messageId: string): ContextMessage[] {
+    const userMessageIndex = this.messages.findIndex((msg) => msg.id === messageId && msg.role === MessageRole.User);
+    if (userMessageIndex === -1) {
+      logger.warn('No user message found with the given ID to remove up to.', {
         taskId: this.taskId,
+        messageId,
       });
       return [];
     }
 
-    const removedMessages = this.messages.splice(lastUserMessageIndex);
-    logger.debug(`Task ${this.taskId}: Removed ${removedMessages.length} messages up to last user message. Total messages: ${this.messages.length}`);
+    const removedMessages = this.messages.splice(userMessageIndex);
+    logger.debug(`Task ${this.taskId}: Removed ${removedMessages.length} messages up to user message ${messageId}. Total messages: ${this.messages.length}`);
     this.autosave();
 
     return removedMessages;

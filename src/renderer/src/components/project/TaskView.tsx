@@ -286,6 +286,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
         updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
         if (editingMessageIndex !== null) {
           // This submission is an edit of a previous message
+          const editedMessageId = displayedMessages[editingMessageIndex]?.id;
           setEditingMessageIndex(null); // Clear editing state
           setMessages(task.id, (prevMessages) => {
             return prevMessages
@@ -301,7 +302,9 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 }
               });
           });
-          api.redoLastUserPrompt(projectDir, task.id, currentMode, prompt);
+          if (editedMessageId) {
+            api.redoUserPrompt(projectDir, task.id, editedMessageId, currentMode, prompt);
+          }
         } else {
           if (!question && !inProgress) {
             startTransition(() => {
@@ -387,14 +390,27 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       setAiderModelsData(task.id, null);
     }, [resetTask, task.id, setAiderModelsData]);
 
+    const handleRedoUserPrompt = useCallback(
+      (messageId: string) => {
+        const userMessageIndex = displayedMessages.findIndex((msg) => msg.id === messageId);
+        if (userMessageIndex === -1) {
+          return;
+        }
+        setMessages(task.id, (prevMessages) => {
+          return prevMessages.filter((_, index) => index <= userMessageIndex);
+        });
+        updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
+        api.redoUserPrompt(projectDir, task.id, messageId, currentMode);
+      },
+      [displayedMessages, setMessages, task.id, updateOptimisticTaskState, api, projectDir, currentMode],
+    );
+
     const handleRedoLastUserPrompt = useCallback(() => {
-      const lastUserMessageIndex = displayedMessages.findLastIndex(isUserMessage);
-      setMessages(task.id, (prevMessages) => {
-        return prevMessages.filter((_, index) => index <= lastUserMessageIndex);
-      });
-      updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
-      api.redoLastUserPrompt(projectDir, task.id, currentMode);
-    }, [displayedMessages, setMessages, task.id, updateOptimisticTaskState, api, projectDir, currentMode]);
+      const lastUserMessage = displayedMessages.findLast(isUserMessage);
+      if (lastUserMessage) {
+        handleRedoUserPrompt(lastUserMessage.id);
+      }
+    }, [displayedMessages, handleRedoUserPrompt]);
 
     const handleResumeTask = useCallback(() => {
       api.resumeTask(projectDir, task.id);
@@ -689,7 +705,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={settings.renderMarkdown}
                       removeMessage={handleRemoveMessage}
-                      redoLastUserPrompt={handleRedoLastUserPrompt}
+                      redoUserPrompt={handleRedoUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
                       onInterrupt={handleInterruptResponse}
                       onForkFromMessage={handleForkFromMessage}
@@ -705,7 +721,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={settings.renderMarkdown}
                       removeMessage={handleRemoveMessage}
-                      redoLastUserPrompt={handleRedoLastUserPrompt}
+                      redoUserPrompt={handleRedoUserPrompt}
                       editLastUserMessage={handleEditLastUserMessage}
                       onInterrupt={handleInterruptResponse}
                       onForkFromMessage={handleForkFromMessage}

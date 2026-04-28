@@ -666,6 +666,14 @@ export interface TaskContext {
    * @param mode - Optional mode to use for re-execution (defaults to current mode)
    * @param updatedPrompt - Optional new prompt text; if omitted, reuses the original prompt
    */
+  redoUserPrompt(messageId: string, mode?: string, updatedPrompt?: string): Promise<void>;
+
+  /**
+   * Re-execute the last user prompt, optionally with a different mode or edited text.
+   * Convenience method that finds the last user message and calls redoUserPrompt with its ID.
+   * @param mode - Optional mode to use for re-execution (defaults to current mode)
+   * @param updatedPrompt - Optional new prompt text; if omitted, reuses the original prompt
+   */
   redoLastUserPrompt(mode?: string, updatedPrompt?: string): Promise<void>;
 
   // UI Context Messages

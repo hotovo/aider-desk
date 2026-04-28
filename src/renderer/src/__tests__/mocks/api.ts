@@ -63,7 +63,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     resetTask: vi.fn((): void => undefined),
     runPrompt: vi.fn((): void => undefined),
     savePrompt: vi.fn((): Promise<void> => Promise.resolve()),
-    redoLastUserPrompt: vi.fn((): void => undefined),
+    redoUserPrompt: vi.fn((): void => undefined),
     resumeTask: vi.fn((): void => undefined),
     answerQuestion: vi.fn((): void => undefined),
     loadInputHistory: vi.fn((): Promise<string[]> => Promise.resolve([])),

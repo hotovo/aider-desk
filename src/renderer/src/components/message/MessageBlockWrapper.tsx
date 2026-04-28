@@ -1,5 +1,5 @@
 import { memo, useMemo, type ReactNode } from 'react';
-import { isGroupMessage, isAssistantGroupMessage, Message } from '@common/types';
+import { isGroupMessage, isAssistantGroupMessage, isUserMessage, Message } from '@common/types';
 
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
@@ -18,7 +18,7 @@ type Props = {
   lastUserMessageIndex: number;
   inProgress: boolean;
   removeMessage: (message: Message) => void;
-  redoLastUserPrompt: () => void;
+  redoUserPrompt: (messageId: string) => void;
   editLastUserMessage: (content: string) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
@@ -36,7 +36,7 @@ export const MessageBlockWrapper = memo(
     lastUserMessageIndex,
     inProgress,
     removeMessage,
-    redoLastUserPrompt,
+    redoUserPrompt,
     editLastUserMessage,
     onInterrupt,
     onForkFromMessage,
@@ -59,7 +59,7 @@ export const MessageBlockWrapper = memo(
           allFiles={allFiles}
           renderMarkdown={renderMarkdown}
           remove={inProgress ? undefined : removeMessage}
-          redo={inProgress ? undefined : redoLastUserPrompt}
+          redo={inProgress ? undefined : () => redoUserPrompt(message.id)}
           edit={editLastUserMessage}
           onInterrupt={onInterrupt}
         />
@@ -86,7 +86,7 @@ export const MessageBlockWrapper = memo(
           allFiles={allFiles}
           renderMarkdown={renderMarkdown}
           remove={inProgress ? undefined : () => removeMessage(message)}
-          redo={index === lastUserMessageIndex && !inProgress ? redoLastUserPrompt : undefined}
+          redo={!inProgress && isUserMessage(message) ? () => redoUserPrompt(message.id) : undefined}
           edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
           onInterrupt={onInterrupt}
           onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}

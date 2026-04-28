@@ -124,9 +124,10 @@ const LoadInputHistorySchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
 });
 
-const RedoLastUserPromptSchema = z.object({
+const RedoUserPromptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
+  messageId: z.string().min(1, 'Message id is required'),
   mode: z.string().min(1, 'Mode is required'),
   updatedPrompt: z.string().optional(),
 });
@@ -396,18 +397,18 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
-    // Redo last user prompt
+    // Redo user prompt
     router.post(
       '/project/redo-prompt',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(RedoLastUserPromptSchema, req.body, res);
+        const parsed = this.validateRequest(RedoUserPromptSchema, req.body, res);
         if (!parsed) {
           return;
         }
 
-        const { projectDir, taskId, mode, updatedPrompt } = parsed;
-        await this.eventsHandler.redoLastUserPrompt(projectDir, taskId, mode, updatedPrompt);
-        res.status(200).json({ message: 'Redo last user prompt initiated' });
+        const { projectDir, taskId, messageId, mode, updatedPrompt } = parsed;
+        await this.eventsHandler.redoUserPrompt(projectDir, taskId, messageId, mode, updatedPrompt);
+        res.status(200).json({ message: 'Redo user prompt initiated' });
       }),
     );
 
