@@ -59,14 +59,14 @@ export const ConfirmDialog = ({
           <Button onClick={onCancel} variant="text">
             {resolvedCancelText}
           </Button>
+          <Button onClick={onConfirm} autoFocus={true} disabled={disabled} variant="contained" className={confirmButtonClass} color={confirmButtonColor}>
+            {resolvedConfirmText}
+          </Button>
           {additionalAction && (
             <Button onClick={additionalAction.onClick} disabled={additionalAction.disabled} variant="contained" color={additionalAction.color ?? 'primary'}>
               {additionalAction.label}
             </Button>
           )}
-          <Button onClick={onConfirm} autoFocus={true} disabled={disabled} variant="contained" className={confirmButtonClass} color={confirmButtonColor}>
-            {resolvedConfirmText}
-          </Button>
         </>
       }
       closeOnEscape={closeOnEscape}

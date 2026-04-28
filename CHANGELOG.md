@@ -9,6 +9,7 @@
 - hide save prompt button when editing last message
 - added support for redoing any user prompt
 - initializing symlink folders on new task when worktree mode is set
+- changed order of the buttons in Switch To Local confirm dialog
 
 ## [0.63.0]
 
