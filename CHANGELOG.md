@@ -10,6 +10,7 @@
 - added support for redoing any user prompt
 - initializing symlink folders on new task when worktree mode is set
 - changed order of the buttons in Switch To Local confirm dialog
+- optimized grep tool output to use markdown format
 
 ## [0.63.0]
 

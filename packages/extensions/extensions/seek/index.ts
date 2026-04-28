@@ -6,7 +6,7 @@ import type { Extension, ExtensionContext, ProjectStartedEvent, ToolDefinition }
 
 export const metadata = {
   name: 'seek',
-  version: '1.0.0',
+  version: '1.1.0',
   description: 'Fast ranked code search using seek (zoekt) — replaces the internal grep tool',
   author: 'wladimiiir',
   icon: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/seek/icon.png',
@@ -66,6 +66,55 @@ const globToRegex = (glob: string): string | null => {
   }
 
   return regex;
+};
+
+const formatGrepResultsAsMarkdown = (
+  results: GrepMatchResult[],
+  searchTerm: string,
+  filePattern: string,
+  maxResults: number,
+): string => {
+  // Group results by file path
+  const grouped: Record<string, GrepMatchResult[]> = {};
+  for (const r of results) {
+    if (!grouped[r.filePath]) {
+      grouped[r.filePath] = [];
+    }
+    grouped[r.filePath].push(r);
+  }
+
+  const lines: string[] = [];
+  lines.push(`## Grep Results: \`${searchTerm}\` in \`${filePattern}\` (${results.length} matches)`);
+  lines.push('');
+
+  for (const [filePath, matches] of Object.entries(grouped)) {
+    lines.push(`### ${filePath} (${matches.length} ${matches.length === 1 ? 'match' : 'matches'})`);
+    for (const match of matches) {
+      const escapedContent = match.lineContent.replace(/`/g, '\\`');
+      lines.push(`- **L${match.lineNumber}:** \`${escapedContent}\``);
+      if (match.context && match.context.length > 0) {
+        lines.push('  ```');
+        for (const ctxLine of match.context) {
+          // Strip line number prefix (format: "123: content" → "content")
+          const content = ctxLine.replace(/^\d+: /, '');
+          lines.push(`  ${content}`);
+        }
+        lines.push('  ```');
+      }
+    }
+    lines.push('');
+  }
+
+  const notices: string[] = [];
+  if (results.length >= maxResults) {
+    notices.push(`${maxResults} matches limit reached. Use maxResults=${maxResults * 2} for more, or refine pattern`);
+  }
+  if (notices.length > 0) {
+    lines.push('---');
+    lines.push(`[${notices.join('. ')}]`);
+  }
+
+  return lines.join('\n');
 };
 
 const buildSeekQuery = (input: GrepInput): string => {
@@ -272,7 +321,7 @@ const buildInstallErrorMessage = (): string => {
   ].join('\n');
 };
 
-const runSeekAndParse = async (input: GrepInput, projectDir: string, signal?: AbortSignal): Promise<string | GrepMatchResult[]> => {
+const runSeekAndParse = async (input: GrepInput, projectDir: string, signal?: AbortSignal): Promise<string> => {
   const query = buildSeekQuery(input);
   const result = await execSeek(query, projectDir, signal);
 
@@ -296,11 +345,8 @@ const runSeekAndParse = async (input: GrepInput, projectDir: string, signal?: Ab
     return `No matches found for pattern '${input.searchTerm}' in files matching '${input.filePattern}'.`;
   }
 
-  if (parsed.length > input.maxResults) {
-    return parsed.slice(0, input.maxResults);
-  }
-
-  return parsed;
+  const results = parsed.length > input.maxResults ? parsed.slice(0, input.maxResults) : parsed;
+  return formatGrepResultsAsMarkdown(results, input.searchTerm, input.filePattern, input.maxResults);
 };
 
 export default class SeekExtension implements Extension {
@@ -334,7 +380,7 @@ export default class SeekExtension implements Extension {
     ];
   }
 
-  private async executeGrep(input: GrepInput, signal: AbortSignal | undefined, context: ExtensionContext): Promise<string | GrepMatchResult[]> {
+  private async executeGrep(input: GrepInput, signal: AbortSignal | undefined, context: ExtensionContext): Promise<string> {
     const projectDir = context.getProjectDir();
 
     if (!projectDir) {

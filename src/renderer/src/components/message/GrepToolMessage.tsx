@@ -24,17 +24,93 @@ type Props = {
   hideMessageBar?: boolean;
 };
 
+const parseMarkdownResults = (md: string): Array<Match> | null => {
+  const results: Array<Match> = [];
+  const lines = md.split('\n');
+  let currentFile = '';
+  let currentMatch: Match | null = null;
+  let inContext = false;
+  const contextLines: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith('---')) {
+      break;
+    }
+
+    if (line.startsWith('### ')) {
+      currentFile = line.replace(/^### /, '').replace(/ \(\d+ matches?\)$/, '');
+      continue;
+    }
+
+    if (line.startsWith('- **L') && line.includes(':** `')) {
+      if (currentMatch && contextLines.length > 0) {
+        currentMatch.context = [...contextLines];
+        contextLines.length = 0;
+      }
+      if (currentMatch) {
+        results.push(currentMatch);
+      }
+
+      const matchRegex = /^- \*\*L(\d+):\*\* `(.*)`$/;
+      const m = line.match(matchRegex);
+      if (m) {
+        currentMatch = {
+          filePath: currentFile,
+          lineNumber: parseInt(m[1], 10),
+          lineContent: m[2],
+        };
+      }
+      inContext = false;
+      continue;
+    }
+
+    if (line.trim() === '```') {
+      if (inContext) {
+        if (currentMatch) {
+          currentMatch.context = [...contextLines];
+          contextLines.length = 0;
+        }
+        inContext = false;
+      } else {
+        inContext = true;
+      }
+      continue;
+    }
+
+    if (inContext) {
+      contextLines.push(line.replace(/^ {2}/, ''));
+    }
+  }
+
+  if (currentMatch) {
+    if (contextLines.length > 0) {
+      currentMatch.context = [...contextLines];
+    }
+    results.push(currentMatch);
+  }
+
+  return results.length > 0 ? results : null;
+};
+
 export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const filePattern = message.args.filePattern as string;
   const searchTerm = message.args.searchTerm as string;
   const contextLines = message.args.contextLines as number;
-  const content = message.content && JSON.parse(message.content);
-  const isError = content && !Array.isArray(content) && typeof content === 'string' && content.startsWith('Error:');
-  const isDenied = content && typeof content === 'string' && content.startsWith('Grep search for');
+  const rawContent = message.content && JSON.parse(message.content);
+  const isMarkdown = rawContent && typeof rawContent === 'string' && rawContent.startsWith('## Grep Results:');
+  const isError =
+    rawContent &&
+    typeof rawContent === 'string' &&
+    (rawContent.startsWith('Error:') || rawContent.startsWith('No files found') || rawContent.startsWith('No matches found'));
+  const isDenied = rawContent && typeof rawContent === 'string' && rawContent.startsWith('Grep search for');
 
-  const matchCount = Array.isArray(content) ? content.length : 0;
+  const content: Array<Match> | null =
+    isMarkdown && typeof rawContent === 'string' ? parseMarkdownResults(rawContent) : Array.isArray(rawContent) ? rawContent : null;
+  const matchCount = content ? content.length : 0;
 
   const title = (
     <div className="flex items-center gap-2 w-full text-left">
@@ -42,7 +118,7 @@ export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, on
         <LuFileSearch className="w-4 h-4" />
       </div>
       <div className="text-xs text-text-primary flex flex-wrap gap-1">
-        {!content ? (
+        {!rawContent ? (
           <span>{t('toolMessage.power.grep.findingMatches')}</span>
         ) : isError || isDenied ? (
           <span>{t('toolMessage.power.grep.title')}</span>
@@ -60,14 +136,14 @@ export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, on
           <CodeInline className="bg-bg-primary-light">{searchTerm}</CodeInline>
         </span>
       </div>
-      {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
-      {content &&
+      {!rawContent && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
+      {rawContent &&
         (isError ? (
-          <Tooltip content={content}>
+          <Tooltip content={typeof rawContent === 'string' ? rawContent : ''}>
             <RiErrorWarningFill className="w-3 h-3 text-error flex-shrink-0" />
           </Tooltip>
         ) : isDenied ? (
-          <Tooltip content={content}>
+          <Tooltip content={typeof rawContent === 'string' ? rawContent : ''}>
             <RiCloseCircleFill className="w-3 h-3 text-warning flex-shrink-0" />
           </Tooltip>
         ) : matchCount > 0 ? (
@@ -77,7 +153,7 @@ export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, on
   );
 
   const renderContent = () => {
-    if (!content) {
+    if (!rawContent) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
           <div className="flex items-center gap-2">
@@ -91,7 +167,7 @@ export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, on
     if (isError) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
-          <div className="text-error">{content}</div>
+          <div className="text-error">{typeof rawContent === 'string' ? rawContent : ''}</div>
         </div>
       );
     }
@@ -101,14 +177,14 @@ export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, on
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
           <div className="text-warning">
             <pre className="whitespace-pre-wrap bg-bg-primary-light p-3 rounded text-2xs max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth font-mono">
-              {content}
+              {typeof rawContent === 'string' ? rawContent : ''}
             </pre>
           </div>
         </div>
       );
     }
 
-    if (!Array.isArray(content) || content.length === 0) {
+    if (!content || content.length === 0) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
           <div className="text-text-muted">{t('toolMessage.power.grep.noMatches')}</div>
@@ -130,7 +206,7 @@ export const GrepToolMessage = ({ message, onRemove, compact = false, onFork, on
         <div className="flex items-center gap-2 mb-2">
           <span className="font-semibold text-text-secondary">
             {t('toolMessage.power.grep.foundMatches', {
-              count: content.length,
+              count: matchCount,
             })}
           </span>
           {contextLines > 0 && (

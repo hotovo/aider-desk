@@ -6,7 +6,7 @@ import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/ext
 
 export const metadata = {
   name: 'fff',
-  version: '1.2.0',
+  version: '1.3.0',
   description: 'Fast file content search using FFF (Freakin Fast File Finder) — replaces the internal grep tool',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/fff/icon.png',
   author: 'wladimiiir',
@@ -51,6 +51,55 @@ const fileContentCache = new Map<string, string[]>();
 
 const clearFileCache = (): void => {
   fileContentCache.clear();
+};
+
+const formatGrepResultsAsMarkdown = (
+  results: GrepMatchResult[],
+  searchTerm: string,
+  filePattern: string,
+  maxResults: number,
+): string => {
+  // Group results by file path
+  const grouped: Record<string, GrepMatchResult[]> = {};
+  for (const r of results) {
+    if (!grouped[r.filePath]) {
+      grouped[r.filePath] = [];
+    }
+    grouped[r.filePath].push(r);
+  }
+
+  const lines: string[] = [];
+  lines.push(`## Grep Results: \`${searchTerm}\` in \`${filePattern}\` (${results.length} matches)`);
+  lines.push('');
+
+  for (const [filePath, matches] of Object.entries(grouped)) {
+    lines.push(`### ${filePath} (${matches.length} ${matches.length === 1 ? 'match' : 'matches'})`);
+    for (const match of matches) {
+      const escapedContent = match.lineContent.replace(/`/g, '\\`');
+      lines.push(`- **L${match.lineNumber}:** \`${escapedContent}\``);
+      if (match.context && match.context.length > 0) {
+        lines.push('  ```');
+        for (const ctxLine of match.context) {
+          // Strip line number prefix (format: "123|content" → "content")
+          const content = ctxLine.replace(/^\d+\|/, '');
+          lines.push(`  ${content}`);
+        }
+        lines.push('  ```');
+      }
+    }
+    lines.push('');
+  }
+
+  const notices: string[] = [];
+  if (results.length >= maxResults) {
+    notices.push(`${maxResults} matches limit reached. Use maxResults=${maxResults * 2} for more, or refine pattern`);
+  }
+  if (notices.length > 0) {
+    lines.push('---');
+    lines.push(`[${notices.join('. ')}]`);
+  }
+
+  return lines.join('\n');
 };
 
 const getCachedLines = (projectDir: string, relativePath: string): string[] | null => {
@@ -146,7 +195,7 @@ export default class FffExtension implements Extension {
     ];
   }
 
-  private async executeGrep(input: GrepInput, _signal: AbortSignal | undefined, context: ExtensionContext): Promise<string | GrepMatchResult[]> {
+  private async executeGrep(input: GrepInput, _signal: AbortSignal | undefined, context: ExtensionContext): Promise<string> {
     const taskContext = context.getTaskContext();
     const projectDir = taskContext?.getTaskDir() ?? context.getProjectDir();
 
@@ -204,7 +253,8 @@ export default class FffExtension implements Extension {
         return `No matches found for pattern '${input.searchTerm}' in files matching '${input.filePattern}'.`;
       }
 
-      return convertGrepResults(grepResult.value, input.maxResults, projectDir, input.contextLines);
+      const results = convertGrepResults(grepResult.value, input.maxResults, projectDir, input.contextLines);
+      return formatGrepResultsAsMarkdown(results, input.searchTerm, input.filePattern, input.maxResults);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       return `Error during fff search: ${errorMsg}`;

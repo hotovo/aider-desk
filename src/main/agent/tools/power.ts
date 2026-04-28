@@ -552,7 +552,46 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         if (results.length === 0) {
           return `No matches found for pattern '${searchTerm}' in files matching '${filePattern}'.`;
         }
-        return results;
+
+        // Group results by file path
+        const grouped: Record<string, typeof results> = {};
+        for (const r of results) {
+          if (!grouped[r.filePath]) {
+            grouped[r.filePath] = [];
+          }
+          grouped[r.filePath].push(r);
+        }
+
+        const lines: string[] = [];
+        lines.push(`## Grep Results: \`${searchTerm}\` in \`${filePattern}\` (${results.length} matches)`);
+        lines.push('');
+
+        for (const [filePath, matches] of Object.entries(grouped)) {
+          lines.push(`### ${filePath} (${matches.length} ${matches.length === 1 ? 'match' : 'matches'})`);
+          for (const match of matches) {
+            const escapedContent = match.lineContent.replace(/`/g, '\\`');
+            lines.push(`- **L${match.lineNumber}:** \`${escapedContent}\``);
+            if (match.context && match.context.length > 0) {
+              lines.push('  ```');
+              for (const ctxLine of match.context) {
+                lines.push(`  ${ctxLine}`);
+              }
+              lines.push('  ```');
+            }
+          }
+          lines.push('');
+        }
+
+        const notices: string[] = [];
+        if (results.length >= maxResults) {
+          notices.push(`${maxResults} matches limit reached. Use maxResults=${maxResults * 2} for more, or refine pattern`);
+        }
+        if (notices.length > 0) {
+          lines.push('---');
+          lines.push(`[${notices.join('. ')}]`);
+        }
+
+        return lines.join('\n');
       } catch (error) {
         if (isAbortError(error)) {
           return 'Operation was cancelled by user.';
