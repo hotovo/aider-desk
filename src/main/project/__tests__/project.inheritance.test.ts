@@ -117,7 +117,7 @@ describe('Project Inheritance', () => {
   });
 
   it('should inherit worktree and workingMode from parent', async () => {
-    const parentWorktree: Worktree = { path: '/path/to/worktree', baseBranch: 'main' };
+    const parentWorktree: Worktree = { path: '/path/to/worktree', branch: 'main' };
     const parentTask = {
       task: {
         id: 'parent-id',

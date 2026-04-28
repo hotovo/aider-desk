@@ -286,7 +286,7 @@ export class Task {
   }
 
   private async renameWorktreeBranchIfNeeded(): Promise<void> {
-    if (this.task.workingMode !== 'worktree' || !this.task.worktree?.baseBranch) {
+    if (this.task.workingMode !== 'worktree' || !this.task.worktree?.branch) {
       return;
     }
 
@@ -295,7 +295,7 @@ export class Task {
       return;
     }
 
-    const oldBranch = this.task.worktree.baseBranch;
+    const oldBranch = this.task.worktree.branch;
     const newBranch = this.generateBranchName();
 
     if (oldBranch === newBranch) {
@@ -303,6 +303,38 @@ export class Task {
     }
 
     await this.renameWorktreeBranch(newBranch);
+  }
+
+  /**
+   * @deprecated This migration ensures older task data has the `branch` field
+   * and `baseBranch` stores the branch the worktree was created from.
+   * Can be removed once all users have migrated past v0.64.0.
+   */
+  private async migrateWorktreeData(): Promise<void> {
+    if (!this.task.worktree || this.task.worktree.branch) {
+      return;
+    }
+
+    const currentBranch = this.task.worktree.baseBranch;
+    this.task.worktree.branch = currentBranch;
+
+    let resolvedBase = '';
+    if (this.task.worktree.baseCommit) {
+      const branches = await this.worktreeManager.getBranchesContainingCommit(this.project.baseDir, this.task.worktree.baseCommit);
+      if (branches.length === 1) {
+        resolvedBase = branches[0];
+      }
+    }
+    if (!resolvedBase) {
+      try {
+        resolvedBase = await this.worktreeManager.getProjectMainBranch(this.project.baseDir);
+      } catch {
+        resolvedBase = '';
+      }
+    }
+    this.task.worktree.baseBranch = resolvedBase || undefined;
+
+    await this.saveTask({ worktree: this.task.worktree });
   }
 
   private isInternal() {
@@ -429,6 +461,9 @@ export class Task {
         this.task.workingMode = 'local';
       }
     }
+
+    await this.migrateWorktreeData();
+
     if (await fileExists(this.getTaskDir())) {
       this.git = simpleGit(this.getTaskDir());
     }
@@ -3738,7 +3773,8 @@ ${error.stderr}`,
     ]);
 
     return {
-      currentBranch: this.task.worktree.baseBranch || '',
+      currentBranch: this.task.worktree.branch || '',
+      baseBranch: this.task.worktree.baseBranch || '',
       targetBranch: effectiveTargetBranch,
       aheadCommits: {
         count: unmergedWork.unmergedCommitCount,
@@ -3777,7 +3813,7 @@ ${error.stderr}`,
         // This ensures subsequent rebases only replay commits made after this point
         const newHead = await this.worktreeManager.getHeadCommit(this.task.worktree.path);
         if (newHead) {
-          await this.saveTask({ worktree: { ...this.task.worktree, baseCommit: newHead } });
+          await this.saveTask({ worktree: { ...this.task.worktree, baseCommit: newHead, baseBranch: effectiveFromBranch } });
         }
 
         this.addLogMessage('info', 'Worktree rebased successfully', true);
@@ -3831,13 +3867,13 @@ ${error.stderr}`,
       throw new Error('No worktree exists for this task');
     }
 
-    const oldBranchName = this.task.worktree.baseBranch;
+    const oldBranchName = this.task.worktree.branch;
     if (!oldBranchName) {
       throw new Error('Cannot determine current branch name');
     }
 
     const actualBranchName = await this.worktreeManager.renameBranch(this.project.baseDir, oldBranchName, newBranchName);
-    this.task.worktree.baseBranch = actualBranchName;
+    this.task.worktree.branch = actualBranchName;
     await this.saveTask({ worktree: this.task.worktree });
     void this.sendWorktreeIntegrationStatusUpdated();
   }

@@ -202,6 +202,12 @@ export const WorktreeMergeButton = ({
 
           <div className="border-t border-border-default-dark my-1" />
 
+          {status?.baseBranch && (
+            <div className="px-3 py-0.5 text-2xs text-text-muted">
+              {t('worktree.basedOn')}: <span className="text-text-secondary">{status.baseBranch}</span>
+            </div>
+          )}
+
           <button
             onClick={handleRebaseClick}
             className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2"

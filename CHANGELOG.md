@@ -4,6 +4,7 @@
 
 - added support for extension-provided skills
 - using baseCommit when rebasing the worktree on different branch
+- added base branch name to the worktree merge button and improved rebasing
 
 ## [0.63.0]
 

@@ -1662,6 +1662,7 @@
     "worktreeDirectory": "工作树目录",
     "baseBranch": "基础分支",
     "baseCommit": "基础提交",
+    "currentBranch": "分支",
     "targetBranch": "目标分支",
     "lastMergeState": "最后合并状态",
     "beforeMergeCommit": "合并前提交",
@@ -1690,7 +1691,7 @@
     "merge": "合并",
     "squash": "压缩合并",
     "onlyUncommitted": "仅未提交的更改",
-    "rebaseFromBranch": "从分支变基",
+    "rebaseFromBranch": "从分支变基...",
     "abortRebase": "中止变基",
     "continueRebase": "继续变基",
     "rebaseConflictsDescription": "在以下文件中检测到变基冲突。请手动解决后继续，或使用 AI 代理协助。",
@@ -1728,7 +1729,8 @@
     "revert": "撤销",
     "noChanges": "没有更改",
     "renameBranch": "重命名分支",
-    "branchNamePlaceholder": "输入分支名称..."
+    "branchNamePlaceholder": "输入分支名称...",
+    "basedOn": "基于"
   },
   "welcomeMessage": {
     "title": "AiderDesk",

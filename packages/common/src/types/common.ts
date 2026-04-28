@@ -27,6 +27,7 @@ export const WorktreeSchema = z.object({
   path: z.string(),
   baseBranch: z.string().optional(),
   baseCommit: z.string().optional(),
+  branch: z.string().optional(),
   prunable: z.boolean().optional(),
 });
 
@@ -69,6 +70,7 @@ export interface ConflictResolutionFileContext {
 
 export interface WorktreeIntegrationStatus {
   currentBranch: string;
+  baseBranch: string;
   targetBranch: string;
   aheadCommits: WorktreeAheadCommits;
   uncommittedFiles: WorktreeUncommittedFiles;

@@ -1654,6 +1654,7 @@
     "worktreeDirectory": "Worktree Directory",
     "baseBranch": "Base Branch",
     "baseCommit": "Base Commit",
+    "currentBranch": "Branch",
     "targetBranch": "Target Branch",
     "lastMergeState": "Last Merge State",
     "beforeMergeCommit": "Before Merge Commit",
@@ -1682,7 +1683,7 @@
     "merge": "Merge",
     "squash": "Squash & Merge",
     "onlyUncommitted": "Only uncommitted",
-    "rebaseFromBranch": "Rebase from branch",
+    "rebaseFromBranch": "Rebase from branch...",
     "abortRebase": "Abort rebase",
     "continueRebase": "Continue rebase",
     "rebaseConflictsDescription": "Rebase conflicts detected in the following files. Resolve them manually and continue, or use the AI agent to help.",
@@ -1720,7 +1721,8 @@
     "revert": "Revert",
     "noChanges": "No changes",
     "renameBranch": "Rename branch",
-    "branchNamePlaceholder": "Enter branch name..."
+    "branchNamePlaceholder": "Enter branch name...",
+    "basedOn": "Based on"
   },
   "welcomeMessage": {
     "title": "AiderDesk",

@@ -119,7 +119,7 @@ export class WorktreeManager {
 
         // 4. Logic for creating the worktree
         let baseCommit: string;
-        let actualBaseBranch: string;
+        let newBranchName: string;
         const baseRef = baseBranch; // Will be 'HEAD' if not provided
 
         if (branch) {
@@ -143,7 +143,7 @@ export class WorktreeManager {
                 cwd: projectPath,
               })
             ).stdout.trim();
-            actualBaseBranch = branch;
+            newBranchName = branch;
           } else {
             // A2. Create new branch from baseRef (which defaults to 'HEAD')
 
@@ -165,7 +165,7 @@ export class WorktreeManager {
 
             // Create the new branch and checkout the worktree
             await execWithShellPath(`git worktree add -b ${branch} "${worktreePath}" ${baseRef}`, { cwd: projectPath });
-            actualBaseBranch = branch; // Use the newly created branch name
+            newBranchName = branch; // Use the newly created branch name
           }
         } else {
           // B. No branch name provided: Create detached worktree from current HEAD (or specified baseRef)
@@ -183,21 +183,35 @@ export class WorktreeManager {
           // Use the baseRef for the branch name, or resolve the current branch if baseRef is 'HEAD'
           if (baseRef === 'HEAD') {
             try {
-              actualBaseBranch = (
+              newBranchName = (
                 await execWithShellPath('git rev-parse --abbrev-ref HEAD', {
                   cwd: projectPath,
                 })
               ).stdout.trim();
-              if (actualBaseBranch === 'HEAD') {
-                actualBaseBranch = 'DETACHED HEAD';
+              if (newBranchName === 'HEAD') {
+                newBranchName = 'DETACHED HEAD';
               }
             } catch {
-              actualBaseBranch = 'DETACHED HEAD';
+              newBranchName = 'DETACHED HEAD';
             }
           } else {
-            actualBaseBranch = `${baseRef} (DETACHED)`;
+            newBranchName = `${baseRef} (DETACHED)`;
           }
           logger.info(`Worktree created in DETACHED HEAD mode from commit: ${baseCommit}`);
+        }
+
+        // Resolve the base branch: if baseRef is 'HEAD', resolve to the current branch name
+        let resolvedBaseBranch: string | undefined;
+        if (baseRef === 'HEAD') {
+          try {
+            const result = await execWithShellPath('git rev-parse --abbrev-ref HEAD', { cwd: projectPath });
+            const headBranch = result.stdout.trim();
+            resolvedBaseBranch = headBranch !== 'HEAD' ? headBranch : undefined;
+          } catch {
+            resolvedBaseBranch = undefined;
+          }
+        } else {
+          resolvedBaseBranch = baseRef;
         }
 
         logger.info(`Worktree created successfully at: ${worktreePath}`);
@@ -205,7 +219,8 @@ export class WorktreeManager {
         return {
           path: worktreePath,
           baseCommit,
-          baseBranch: actualBaseBranch,
+          baseBranch: resolvedBaseBranch,
+          branch: newBranchName,
         };
       } catch (error) {
         logger.error('Failed to create worktree:', error);
@@ -299,15 +314,15 @@ export class WorktreeManager {
         await execWithShellPath(`git worktree remove "${worktree.path}" --force`, { cwd: projectDir });
 
         // Clean up the branch if it's a task branch (starts with "task-" or looks like generated from task name)
-        if (worktree.baseBranch) {
+        if (worktree.branch) {
           try {
-            await execWithShellPath(`git branch -D ${worktree.baseBranch}`, {
+            await execWithShellPath(`git branch -D ${worktree.branch}`, {
               cwd: projectDir,
             });
-            logger.info(`Deleted task branch: ${worktree.baseBranch}`);
+            logger.info(`Deleted task branch: ${worktree.branch}`);
           } catch (error) {
             // Branch might not exist or be protected, don't fail the removal
-            logger.debug(`Could not delete branch ${worktree.baseBranch}:`, error);
+            logger.debug(`Could not delete branch ${worktree.branch}:`, error);
           }
         }
       } catch (error: unknown) {
@@ -342,12 +357,12 @@ export class WorktreeManager {
               ...currentWorktree,
             });
           }
-          currentWorktree = { path: line.substring(9), baseBranch: '' };
+          currentWorktree = { path: line.substring(9), branch: '' };
         } else if (line.startsWith('branch ')) {
           currentWorktree = {
             ...(currentWorktree || {}),
             path: currentWorktree ? currentWorktree.path : '',
-            baseBranch: line.substring(7).replace('refs/heads/', ''),
+            branch: line.substring(7).replace('refs/heads/', ''),
           };
         } else if (line.startsWith('HEAD ')) {
           currentWorktree = {
@@ -359,7 +374,7 @@ export class WorktreeManager {
           currentWorktree = {
             ...(currentWorktree || {}),
             path: currentWorktree ? currentWorktree.path : '',
-            baseBranch: undefined,
+            branch: undefined,
           };
         } else if (line.startsWith('prunable')) {
           currentWorktree = {
@@ -394,7 +409,7 @@ export class WorktreeManager {
 
       // Get all worktrees to identify which branches have worktrees
       const worktrees = await this.listWorktrees(projectPath);
-      const worktreeBranches = new Set(worktrees.map((w) => w.baseBranch));
+      const worktreeBranches = new Set(worktrees.map((w) => w.branch));
 
       const branches: Array<{
         name: string;
@@ -473,6 +488,19 @@ export class WorktreeManager {
       return stdout.trim();
     } catch {
       return undefined;
+    }
+  }
+
+  async getBranchesContainingCommit(projectPath: string, commit: string): Promise<string[]> {
+    try {
+      const { stdout } = await execWithShellPath(`git branch --contains ${commit} --format='%(refname:short)'`, { cwd: projectPath });
+      return stdout
+        .trim()
+        .split('\n')
+        .map((b) => b.trim())
+        .filter((b) => b);
+    } catch {
+      return [];
     }
   }
 

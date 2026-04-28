@@ -94,6 +94,13 @@ export const TaskInfoPanel = ({ task, messageCount, onClose }: Props) => {
                     className="p-1"
                   />
                 </div>
+                {task.worktree.branch && (
+                  <div className="text-2xs text-text-muted mt-1 flex items-center gap-2">
+                    <span className="text-text-muted">{t('taskInfo.currentBranch')}:</span>
+                    <span className="text-text-secondary text-2xs">{task.worktree.branch}</span>
+                    <CopyMessageButton content={task.worktree.branch} alwaysShow={true} />
+                  </div>
+                )}
                 {task.worktree.baseBranch && (
                   <div className="text-2xs text-text-muted mt-1 flex items-center gap-2">
                     <span className="text-text-muted">{t('taskInfo.baseBranch')}:</span>
