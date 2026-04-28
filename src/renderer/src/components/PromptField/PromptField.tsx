@@ -147,6 +147,7 @@ type Props = {
   runTests: (testCmd?: string) => void;
   redoLastUserPrompt: () => void;
   editLastUserMessage: () => void;
+  isEditingLastMessage?: boolean;
   disabled?: boolean;
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
@@ -185,6 +186,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       runTests,
       redoLastUserPrompt,
       editLastUserMessage,
+      isEditingLastMessage = false,
       openModelSelector,
       openAgentModelSelector,
       disabled = false,
@@ -1193,7 +1195,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             )}
             {text.trim() && !isRecording && (
               <>
-                {!processing && (
+                {!processing && !isEditingLastMessage && (
                   <Tooltip content={t('promptField.savePrompt')}>
                     <button
                       onClick={handleSavePrompt}
