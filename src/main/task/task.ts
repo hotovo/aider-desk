@@ -3446,6 +3446,7 @@ ${error.stderr}`,
         effectiveCommitMessage || this.task.name || `Task ${this.taskId} changes`,
         targetBranch,
         symlinkFolders,
+        this.task.worktree.baseCommit,
       );
 
       // Store merge state for potential revert
@@ -3769,9 +3770,16 @@ ${error.stderr}`,
 
     try {
       this.addLogMessage('loading', `Rebasing worktree from ${effectiveFromBranch}...`);
-      const { success, error } = await this.worktreeManager.rebaseMainIntoWorktree(this.task.worktree.path, effectiveFromBranch);
+      const { success, error } = await this.worktreeManager.rebaseMainIntoWorktree(this.task.worktree.path, effectiveFromBranch, this.task.worktree.baseCommit);
 
       if (success) {
+        // Update baseCommit to the new HEAD after successful rebase
+        // This ensures subsequent rebases only replay commits made after this point
+        const newHead = await this.worktreeManager.getHeadCommit(this.task.worktree.path);
+        if (newHead) {
+          await this.saveTask({ worktree: { ...this.task.worktree, baseCommit: newHead } });
+        }
+
         this.addLogMessage('info', 'Worktree rebased successfully', true);
         return;
       }

@@ -467,6 +467,15 @@ export class WorktreeManager {
     return await this.getProjectMainBranch(project.path);
   }
 
+  async getHeadCommit(worktreePath: string): Promise<string | undefined> {
+    try {
+      const { stdout } = await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
+      return stdout.trim();
+    } catch {
+      return undefined;
+    }
+  }
+
   async hasChangesToRebase(worktreePath: string, mainBranch: string): Promise<boolean> {
     try {
       // Check if main branch has commits that the current branch doesn't have
@@ -618,6 +627,7 @@ export class WorktreeManager {
   async rebaseMainIntoWorktree(
     worktreePath: string,
     mainBranch: string,
+    baseCommit?: string,
   ): Promise<{
     success: boolean;
     error?: GitError;
@@ -649,8 +659,10 @@ export class WorktreeManager {
           logger.info('Created temporary commit for uncommitted changes');
         }
 
-        // 2. Rebase the current worktree branch onto local main branch
-        const command = `git rebase ${mainBranch}`;
+        // 2. Rebase the current worktree branch onto target branch
+        // When baseCommit is provided, use --onto to only replay commits made after baseCommit
+        // This avoids carrying over base branch commits that aren't in the target branch
+        const command = baseCommit ? `git rebase --onto ${mainBranch} ${baseCommit}` : `git rebase ${mainBranch}`;
         executedCommands.push(`${command} (in ${worktreePath})`);
         const rebaseResult = await execWithShellPath(command, {
           cwd: worktreePath,
@@ -745,7 +757,13 @@ export class WorktreeManager {
     });
   }
 
-  private async squashAndMergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string, commitMessage: string): Promise<void> {
+  private async squashAndMergeWorktreeToMain(
+    projectPath: string,
+    worktreePath: string,
+    mainBranch: string,
+    commitMessage: string,
+    baseCommit?: string,
+  ): Promise<void> {
     const executedCommands: string[] = [];
     let lastOutput = '';
 
@@ -768,8 +786,9 @@ export class WorktreeManager {
       }
 
       // SAFETY CHECK 1: Rebase worktree onto main FIRST before squashing
-      command = `git rebase ${mainBranch}`;
-      executedCommands.push(`git rebase ${mainBranch} (in ${worktreePath})`);
+      // Use --onto with baseCommit to only replay worktree-specific commits
+      command = baseCommit ? `git rebase --onto ${mainBranch} ${baseCommit}` : `git rebase ${mainBranch}`;
+      executedCommands.push(`${command} (in ${worktreePath})`);
       try {
         const rebaseWorktreeResult = await execWithShellPath(command, {
           cwd: worktreePath,
@@ -1281,6 +1300,7 @@ export class WorktreeManager {
     commitMessage?: string,
     targetBranch?: string,
     symlinkFolders: string[] = [],
+    baseCommit?: string,
   ): Promise<MergeState> {
     return await withLock(`git-merge-worktree-${worktreePath}`, async () => {
       const timestamp = Date.now();
@@ -1321,7 +1341,7 @@ export class WorktreeManager {
           if (!commitMessage) {
             throw new Error('Commit message is required for squash merge');
           }
-          await this.squashAndMergeWorktreeToMain(projectPath, worktreePath, mainBranch, commitMessage);
+          await this.squashAndMergeWorktreeToMain(projectPath, worktreePath, mainBranch, commitMessage, baseCommit);
         } else {
           await this.mergeWorktreeToMain(projectPath, worktreePath, mainBranch);
         }
