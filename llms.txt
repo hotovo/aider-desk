@@ -1742,7 +1742,12 @@ const loadSkillsFromDir = async (skillsRootDir: string, location: SkillLocation)
 ⋮----
 const getActivateSkillDescription = (skills: Skill[]): string =>
 ⋮----
-export const createSkillsToolset = async (task: Task, profile: AgentProfile, promptContext?: PromptContext, extensionManager?: ExtensionManager): Promise<ToolSet> =>
+export const createSkillsToolset = async (
+  task: Task,
+  profile: AgentProfile,
+  promptContext?: PromptContext,
+  extensionManager?: ExtensionManager,
+): Promise<ToolSet> =>
 ⋮----
 const generateActivateSkillDescription = async (): Promise<string> =>
 
@@ -3515,12 +3520,14 @@ import { ExtensionContextImpl } from './extension-context';
 import { ExtensionFetcher } from './extension-fetcher';
 ⋮----
 import type {
+  AfterCommitEvent,
   AgentFinishedEvent,
   AgentStartedEvent,
   AgentStepFinishedEvent,
   AgentStepStartedEvent,
   AiderPromptFinishedEvent,
   AiderPromptStartedEvent,
+  BeforeCommitEvent,
   CommandDefinition,
   CommandExecutedEvent,
   CustomCommandExecutedEvent,
@@ -3642,6 +3649,8 @@ export type ExtensionEventMap = {
   onQuestionAnswered: QuestionAnsweredEvent;
   onCommandExecuted: CommandExecutedEvent;
   onCustomCommandExecuted: CustomCommandExecutedEvent;
+  onBeforeCommit: BeforeCommitEvent;
+  onAfterCommit: AfterCommitEvent;
 };
 ⋮----
 export class ExtensionManager
@@ -4049,6 +4058,8 @@ async removeMessage(messageId: string): Promise<void>
 async removeLastMessage(): Promise<void>
 ⋮----
 async loadContextMessages(messages: ContextMessage[]): Promise<void>
+⋮----
+async redoUserPrompt(messageId: string, mode?: string, updatedPrompt?: string): Promise<void>
 ⋮----
 async redoLastUserPrompt(mode?: string, updatedPrompt?: string): Promise<void>
 ⋮----
@@ -7135,7 +7146,7 @@ registerRoutes(router: Router): void
 ⋮----
 // Get input history
 ⋮----
-// Redo last user prompt
+// Redo user prompt
 ⋮----
 // Resume task
 ⋮----
@@ -8219,7 +8230,7 @@ private removeByToolCallId(toolCallId: string): string[]
 ⋮----
 removeLastMessage(): void
 ⋮----
-removeMessagesUpToLastUserMessage(): ContextMessage[]
+removeMessagesUpToUserMessage(messageId: string): ContextMessage[]
 ⋮----
 toConnectorMessages(contextMessages: ContextMessage[] = this.messages): ConnectorMessage[]
 ⋮----
@@ -8498,6 +8509,13 @@ private generateBranchName(): string
 // If result is empty, use shortened taskId (first segment of UUID)
 ⋮----
 private async renameWorktreeBranchIfNeeded(): Promise<void>
+⋮----
+/**
+   * @deprecated This migration ensures older task data has the `branch` field
+   * and `baseBranch` stores the branch the worktree was created from.
+   * Can be removed once all users have migrated past v0.64.0.
+   */
+private async migrateWorktreeData(): Promise<void>
 ⋮----
 private isInternal()
 ⋮----
@@ -8901,7 +8919,7 @@ public async removeMessagesUpTo(messageId: string): Promise<string[]>
 ⋮----
 public sendTaskMessageRemoved(messageIds: string[])
 ⋮----
-public async redoLastUserPrompt(mode: Mode, updatedPrompt?: string)
+public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string)
 ⋮----
 // No need to await runPrompt here, let it run in the background
 ⋮----
@@ -9099,6 +9117,8 @@ private async sendWorktreeIntegrationStatusUpdated()
 ⋮----
 private async sendUpdatedFilesUpdated()
 ⋮----
+private async initWorktree(): Promise<void>
+⋮----
 private async applyWorkingMode(mode: WorkingMode)
 ⋮----
 // Only remove the worktree if no other tasks share it
@@ -9142,6 +9162,9 @@ public async commitChanges(message: string, amend: boolean): Promise<void>
 public async getWorktreeIntegrationStatus(targetBranch?: string)
 ⋮----
 public async rebaseWorktreeFromBranch(fromBranch?: string): Promise<void>
+⋮----
+// Update baseCommit to the new HEAD after successful rebase
+// This ensures subsequent rebases only replay commits made after this point
 ⋮----
 public async abortWorktreeRebase(): Promise<void>
 ⋮----
@@ -10186,7 +10209,7 @@ const baseRef = baseBranch; // Will be 'HEAD' if not provided
 ⋮----
 // Create the new branch and checkout the worktree
 ⋮----
-actualBaseBranch = branch; // Use the newly created branch name
+newBranchName = branch; // Use the newly created branch name
 ⋮----
 // B. No branch name provided: Create detached worktree from current HEAD (or specified baseRef)
 ⋮----
@@ -10195,6 +10218,8 @@ actualBaseBranch = branch; // Use the newly created branch name
 // Capture the base commit (the commit it's detached at)
 ⋮----
 // Use the baseRef for the branch name, or resolve the current branch if baseRef is 'HEAD'
+⋮----
+// Resolve the base branch: if baseRef is 'HEAD', resolve to the current branch name
 ⋮----
 async renameBranch(projectPath: string, oldBranch: string, newBranch: string): Promise<string>
 ⋮----
@@ -10242,6 +10267,10 @@ async detectMainBranch(projectPath: string): Promise<string>
 // Deprecated: Use getProjectMainBranch instead
 async getEffectiveMainBranch(project:
 ⋮----
+async getHeadCommit(worktreePath: string): Promise<string | undefined>
+⋮----
+async getBranchesContainingCommit(projectPath: string, commit: string): Promise<string[]>
+⋮----
 async hasChangesToRebase(worktreePath: string, mainBranch: string): Promise<boolean>
 ⋮----
 // Check if main branch has commits that the current branch doesn't have
@@ -10282,6 +10311,7 @@ async checkForRebaseConflicts(
 async rebaseMainIntoWorktree(
     worktreePath: string,
     mainBranch: string,
+    baseCommit?: string,
 ): Promise<
 ⋮----
 // 1. Check for uncommitted changes and create temporary commit if needed
@@ -10290,7 +10320,9 @@ async rebaseMainIntoWorktree(
 ⋮----
 // Create temporary commit with unique timestamp
 ⋮----
-// 2. Rebase the current worktree branch onto local main branch
+// 2. Rebase the current worktree branch onto target branch
+// When baseCommit is provided, use --onto to only replay commits made after baseCommit
+// This avoids carrying over base branch commits that aren't in the target branch
 ⋮----
 // 3. If rebase succeeds AND we had uncommitted changes, reset to uncommitted state
 ⋮----
@@ -10308,13 +10340,20 @@ async continueRebase(worktreePath: string): Promise<void>
 ⋮----
 // Always try to reset temporary commit if it exists after successful continue
 ⋮----
-private async squashAndMergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string, commitMessage: string): Promise<void>
+private async squashAndMergeWorktreeToMain(
+    projectPath: string,
+    worktreePath: string,
+    mainBranch: string,
+    commitMessage: string,
+    baseCommit?: string,
+): Promise<void>
 ⋮----
 // Get current branch name in worktree (for logging purposes)
 ⋮----
 // Check if there are any changes to merge (before rebase)
 ⋮----
 // SAFETY CHECK 1: Rebase worktree onto main FIRST before squashing
+// Use --onto with baseCommit to only replay worktree-specific commits
 ⋮----
 // If rebase fails, abort it in the worktree
 ⋮----
@@ -10440,6 +10479,7 @@ async mergeWorktreeToMainWithUncommitted(
     commitMessage?: string,
     targetBranch?: string,
     symlinkFolders: string[] = [],
+    baseCommit?: string,
 ): Promise<MergeState>
 ⋮----
 // 1. Track initial state
@@ -10806,7 +10846,7 @@ async removeMessage(baseDir: string, taskId: string, messageId: string): Promise
 ⋮----
 async removeMessagesUpTo(baseDir: string, taskId: string, messageId: string): Promise<void>
 ⋮----
-async redoLastUserPrompt(baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string): Promise<void>
+async redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string): Promise<void>
 ⋮----
 async resumeTask(baseDir: string, taskId: string): Promise<void>
 ⋮----
@@ -12213,7 +12253,7 @@ restartProject(baseDir: string): void
 resetTask(baseDir: string, taskId: string): void
 runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode): void
 savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
-redoLastUserPrompt(baseDir: string, taskId: string, mode: Mode, updatedPrompt?: string): void
+redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string): void
 resumeTask(baseDir: string, taskId: string): void
 answerQuestion(baseDir: string, taskId: string, answer: string): void
 removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void
@@ -15837,7 +15877,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
 File: src/renderer/src/components/message/MessageBlockWrapper.tsx
 ================
 import { memo, useMemo, type ReactNode } from 'react';
-import { isGroupMessage, isAssistantGroupMessage, Message } from '@common/types';
+import { isGroupMessage, isAssistantGroupMessage, isUserMessage, Message } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
@@ -15856,7 +15896,7 @@ type Props = {
   lastUserMessageIndex: number;
   inProgress: boolean;
   removeMessage: (message: Message) => void;
-  redoLastUserPrompt: () => void;
+  redoUserPrompt: (messageId: string) => void;
   editLastUserMessage: (content: string) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
@@ -15896,7 +15936,7 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
-  redoLastUserPrompt: () => void;
+  redoUserPrompt: (messageId: string) => void;
   editLastUserMessage: (content: string) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
@@ -16629,7 +16669,7 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
-  redoLastUserPrompt: () => void;
+  redoUserPrompt: (messageId: string) => void;
   editLastUserMessage: (content: string) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
@@ -19362,6 +19402,7 @@ type Props = {
 // Focus prompt field
 ⋮----
 // This submission is an edit of a previous message
+⋮----
 setEditingMessageIndex(null); // Clear editing state
 ⋮----
 // OPTIMISTIC: Add user message immediately before backend response
@@ -19924,6 +19965,7 @@ type Props = {
   runTests: (testCmd?: string) => void;
   redoLastUserPrompt: () => void;
   editLastUserMessage: () => void;
+  isEditingLastMessage?: boolean;
   disabled?: boolean;
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
