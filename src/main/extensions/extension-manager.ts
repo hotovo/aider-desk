@@ -1708,6 +1708,20 @@ export class ExtensionManager {
       // Unload existing extension before overwriting files
       await this.unloadExtensionsForDir(targetDir);
 
+      // Clean up old extension if the type changed (file → folder or folder → file)
+      const parsedExistingPath = path.parse(existingExtension.filePath);
+      const existingIsFolder = parsedExistingPath.name === 'index';
+
+      if (extension.type === 'folder' && !existingIsFolder) {
+        // Previous version was a single file, new version is a folder — remove old file
+        await fs.unlink(existingExtension.filePath);
+        logger.debug(`[Extensions] Removed old single-file extension: ${existingExtension.filePath}`);
+      } else if (extension.type === 'single' && existingIsFolder) {
+        // Previous version was a folder, new version is a single file — remove old folder
+        await fs.rm(parsedExistingPath.dir, { recursive: true, force: true });
+        logger.debug(`[Extensions] Removed old folder extension: ${parsedExistingPath.dir}`);
+      }
+
       if (extension.type === 'single' && extension.file) {
         const url = `${githubRawBase}/${extension.file}`;
         const response = await fetch(url);
