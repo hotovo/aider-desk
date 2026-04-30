@@ -211,7 +211,6 @@ export type UIComponentPlacement =
  * - React: React object with hooks (useState, useEffect, useCallback, useMemo, useRef, etc.)
  * - task: Current TaskData
  * - projectDir: Project directory path
- * - api: ApplicationAPI reference
  * - mode: Current mode string
  *
  * @example

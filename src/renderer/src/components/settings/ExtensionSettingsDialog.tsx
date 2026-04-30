@@ -72,6 +72,13 @@ export const ExtensionSettingsDialog = ({ extensionId, extensionName, projectDir
     };
   }, [api, extensionId, projectDir, onClose, t]);
 
+  const executeExtensionAction = useCallback(
+    async (action: string, ...args: unknown[]) => {
+      return await api.executeUIExtensionAction(extensionId, 'config', action, args);
+    },
+    [api, extensionId],
+  );
+
   const handleSave = useCallback(async () => {
     if (!componentDef) {
       return;
@@ -113,8 +120,10 @@ export const ExtensionSettingsDialog = ({ extensionId, extensionName, projectDir
 
   const componentProps = {
     ...extensionProps,
+    extensionId,
     config,
     updateConfig: setConfig,
+    executeExtensionAction,
   };
 
   return (

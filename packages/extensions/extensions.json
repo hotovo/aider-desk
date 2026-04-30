@@ -84,9 +84,10 @@
     {
       "id": "sound-notification",
       "name": "Sound Notification",
-      "description": "Plays a 'Jobs Done' sound when a prompt finishes",
-      "file": "sound-notification.ts",
-      "type": "single",
+      "description": "Plays sound notifications using packs from og-packs",
+      "folder": "sound-notification",
+      "type": "folder",
+      "hasDependencies": false,
       "capabilities": ["notifications"]
     },
     {
