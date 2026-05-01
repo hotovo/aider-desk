@@ -20,6 +20,7 @@ import {
   VoiceApi,
   TerminalApi,
   ExtensionsApi,
+  SkillsApi,
 } from '@/server/rest-api';
 import { AUTH_PASSWORD, AUTH_USERNAME, SERVER_PORT } from '@/constants';
 import logger from '@/logger';
@@ -120,6 +121,7 @@ export class ServerController {
     new VoiceApi(this.eventsHandler).registerRoutes(apiRouter);
     new TerminalApi(this.eventsHandler).registerRoutes(apiRouter);
     new ExtensionsApi(this.eventsHandler).registerRoutes(apiRouter);
+    new SkillsApi(this.eventsHandler).registerRoutes(apiRouter);
 
     // Mount the API router globally under /api
     this.app.use('/api', apiRouter);

@@ -68,6 +68,8 @@ import {
   ModalOverlayUrlData,
   AiderConnectorStatus,
   ChangeRequestItem,
+  SkillDefinition,
+  SkillsUpdatedData,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -127,6 +129,11 @@ export interface ApplicationAPI {
   pasteImage: (baseDir: string, taskId: string, imageBuffer?: ArrayBuffer) => void;
   scrapeWeb: (baseDir: string, taskId: string, url: string, filePath?: string) => Promise<void>;
   initProjectRulesFile: (baseDir: string, taskId: string, args?: string) => Promise<void>;
+
+  // Skills operations
+  getSkills: (baseDir: string, taskId: string) => Promise<SkillDefinition[]>;
+  activateSkill: (baseDir: string, taskId: string, skillName: string) => Promise<void>;
+  deactivateSkill: (baseDir: string, taskId: string, skillName: string) => Promise<void>;
 
   // Todo operations
   getTodos: (baseDir: string, taskId: string) => Promise<TodoItem[]>;
@@ -210,6 +217,7 @@ export interface ApplicationAPI {
   addLogListener: (baseDir: string, taskId: string, callback: (data: LogData) => void) => () => void;
   addContextFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void) => () => void;
   addUpdatedFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void) => () => void;
+  addSkillsUpdatedListener: (baseDir: string, taskId: string, callback: (data: SkillsUpdatedData) => void) => () => void;
   addCommandsUpdatedListener: (baseDir: string, callback: (data: CommandsData) => void) => () => void;
   addUpdateAutocompletionListener: (baseDir: string, taskId: string, callback: (data: AutocompletionData) => void) => () => void;
   addAskQuestionListener: (baseDir: string, taskId: string, callback: (data: QuestionData) => void) => () => void;

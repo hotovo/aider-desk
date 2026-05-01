@@ -464,7 +464,7 @@ export class Agent {
     }
 
     if (profile.useSkillsTools) {
-      const skillsTools = await createSkillsToolset(task, profile, promptContext, this.extensionManager);
+      const skillsTools = await createSkillsToolset(task, profile, promptContext);
       Object.assign(toolSet, skillsTools);
     }
 

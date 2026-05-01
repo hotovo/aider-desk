@@ -66,6 +66,8 @@ import {
   ModalOverlayUrlData,
   AiderConnectorStatus,
   ChangeRequestItem,
+  SkillDefinition,
+  SkillsUpdatedData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -99,6 +101,7 @@ type EventDataMap = {
   'worktree-integration-status-updated': WorktreeIntegrationStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
   'updated-files-updated': UpdatedFilesUpdatedData;
+  'skills-updated': SkillsUpdatedData;
   notification: NotificationData;
   'task-created': TaskCreatedData;
   'task-initialized': TaskData;
@@ -174,6 +177,7 @@ export class BrowserApi implements ApplicationAPI {
       'provider-models-updated': new Map(),
       'providers-updated': new Map(),
       'updated-files-updated': new Map(),
+      'skills-updated': new Map(),
       'project-settings-updated': new Map(),
       'task-created': new Map(),
       'task-initialized': new Map(),
@@ -559,6 +563,15 @@ export class BrowserApi implements ApplicationAPI {
   initProjectRulesFile(baseDir: string, taskId: string, args?: string): Promise<void> {
     return this.post('/project/init-rules', { projectDir: baseDir, taskId, args });
   }
+  getSkills(baseDir: string, taskId: string): Promise<SkillDefinition[]> {
+    return this.get('/skills', { projectDir: baseDir, taskId });
+  }
+  activateSkill(baseDir: string, taskId: string, skillName: string): Promise<void> {
+    return this.post('/skills/activate', { projectDir: baseDir, taskId, skillName });
+  }
+  deactivateSkill(baseDir: string, taskId: string, skillName: string): Promise<void> {
+    return this.post('/skills/deactivate', { projectDir: baseDir, taskId, skillName });
+  }
   getTodos(baseDir: string, taskId: string): Promise<TodoItem[]> {
     return this.get('/project/todos', { projectDir: baseDir, taskId });
   }
@@ -780,6 +793,9 @@ export class BrowserApi implements ApplicationAPI {
   }
   addUpdatedFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void {
     return this.addListener('updated-files-updated', callback, baseDir, taskId);
+  }
+  addSkillsUpdatedListener(baseDir: string, taskId: string, callback: (data: SkillsUpdatedData) => void): () => void {
+    return this.addListener('skills-updated', callback, baseDir, taskId);
   }
   addCommandsUpdatedListener(baseDir: string, callback: (data: CommandsData) => void): () => void {
     return this.addListener('commands-updated', callback, baseDir);

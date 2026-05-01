@@ -313,6 +313,16 @@ export class ContextManager {
     return this.removeByToolCallId(messageId);
   }
 
+  removeMessagesByIds(ids: string[]): void {
+    for (const id of ids) {
+      const index = this.messages.findIndex((msg) => msg.id === id);
+      if (index !== -1) {
+        this.messages.splice(index, 1);
+      }
+    }
+    this.autosave();
+  }
+
   private removeMessageByIndex(index: number, messageId: string): string[] {
     const removedIds: string[] = [];
     removedIds.push(messageId);

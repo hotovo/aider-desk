@@ -29,6 +29,7 @@ import {
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  SkillDefinition as Skill,
   TaskData,
   TaskStateData,
   TaskStateEmoji,
@@ -45,7 +46,7 @@ import {
 } from '@common/types';
 import { extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
-import { SKILLS_TOOL_ACTIVATE_SKILL } from '@common/tools';
+import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
@@ -78,6 +79,7 @@ import { execWithShellPath, getEnvironmentVariablesForAider, isDirectory } from 
 import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
+import { SkillManager } from '@/skills/skill-manager';
 import { GitError, WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
@@ -140,6 +142,7 @@ export class Task {
   private readonly contextManager: ContextManager;
   private readonly agent: Agent;
   private readonly aiderManager: AiderManager;
+  private readonly skillManager: SkillManager;
 
   readonly task: TaskData;
 
@@ -169,6 +172,7 @@ export class Task {
     };
     this.taskDataPath = path.join(this.project.baseDir, AIDER_DESK_TASKS_DIR, this.taskId, 'settings.json');
     this.contextManager = new ContextManager(this, this.taskId);
+    this.skillManager = new SkillManager(project.baseDir, extensionManager);
     this.agent = new Agent(
       this.store,
       this.agentProfileManager,
@@ -950,6 +954,7 @@ export class Task {
     void this.sendRequestContextInfo();
     void this.sendWorktreeIntegrationStatusUpdated();
     void this.sendUpdatedFilesUpdated();
+    void this.sendSkillsUpdated();
 
     this.resolveAgentRunPromises();
 
@@ -2111,6 +2116,122 @@ export class Task {
     return this.contextManager.getContextMessages();
   }
 
+  public getSkillManager(): SkillManager {
+    return this.skillManager;
+  }
+
+  public async getSkills(): Promise<Skill[]> {
+    const contextMessages = await this.contextManager.getContextMessages();
+    return this.skillManager.getSkills(contextMessages);
+  }
+
+  public async activateSkill(skillName: string): Promise<void> {
+    const contextMessages = await this.contextManager.getContextMessages();
+    const activatedNames = this.skillManager.getActivatedSkillNames(contextMessages);
+
+    if (activatedNames.has(skillName)) {
+      logger.debug('Skill already activated, skipping', { skillName });
+      return;
+    }
+
+    const content = await this.skillManager.getSkillContent(skillName);
+    if (!content) {
+      throw new Error(`Skill '${skillName}' not found`);
+    }
+
+    const [assistantMessage, toolMessage] = this.skillManager.buildActivateSkillMessages(skillName, content);
+
+    this.contextManager.addContextMessage(assistantMessage);
+    this.contextManager.addContextMessage(toolMessage);
+
+    await this.processResponseMessage(
+      {
+        id: assistantMessage.id,
+        action: 'response',
+        content: 'User requested the skill activation.',
+        finished: true,
+      },
+      false,
+    );
+
+    const toolCallId = (toolMessage.content as Array<{ toolCallId: string }>)[0].toolCallId;
+
+    this.addToolMessage(
+      toolCallId,
+      SKILLS_TOOL_GROUP_NAME,
+      SKILLS_TOOL_ACTIVATE_SKILL,
+      { skill: skillName },
+      JSON.stringify(content),
+      undefined,
+      undefined,
+      false,
+      true,
+    );
+
+    await this.updateContextInfo();
+  }
+
+  public async deactivateSkill(skillName: string): Promise<string[]> {
+    const contextMessages = await this.contextManager.getContextMessages();
+    const toolName = `${SKILLS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SKILLS_TOOL_ACTIVATE_SKILL}`;
+
+    // Find the assistant message with the skill's tool-call
+    for (let i = contextMessages.length - 1; i >= 0; i--) {
+      const message = contextMessages[i];
+
+      if (message.role === 'assistant' && Array.isArray(message.content)) {
+        const toolCallPart = message.content.find(
+          (part) => part.type === 'tool-call' && part.toolName === toolName && (part.input as Record<string, string>)?.skill === skillName,
+        );
+
+        if (!toolCallPart || toolCallPart.type !== 'tool-call') {
+          continue;
+        }
+
+        const toolCallId = toolCallPart.toolCallId;
+
+        // Find the tool message
+        const toolMessage = contextMessages.find(
+          (msg) =>
+            msg.role === 'tool' && Array.isArray(msg.content) && msg.content.some((part) => part.type === 'tool-result' && part.toolCallId === toolCallId),
+        );
+
+        const removedIds: string[] = [];
+        const idsToRemoveFromContext: string[] = [];
+
+        if (toolMessage) {
+          removedIds.push(toolMessage.id);
+          removedIds.push(toolCallId);
+          idsToRemoveFromContext.push(toolMessage.id);
+        }
+
+        // Check if assistant message has other tool-calls besides this one
+        const otherToolCalls = message.content.filter((part) => part.type === 'tool-call' && part !== toolCallPart);
+
+        if (otherToolCalls.length > 0) {
+          // Has other tool-calls — only remove the skill tool-call part, keep the assistant message
+          this.contextManager.removeMessageById(toolCallId);
+        } else {
+          // No other tool-calls — remove the entire assistant message too
+          removedIds.push(message.id);
+          idsToRemoveFromContext.push(message.id);
+          this.contextManager.removeMessagesByIds(idsToRemoveFromContext);
+        }
+
+        if (removedIds.length > 0) {
+          await this.reloadConnectorMessages();
+          await this.updateContextInfo();
+          void this.sendSkillsUpdated();
+        }
+
+        return removedIds;
+      }
+    }
+
+    logger.debug(`No activation found for skill '${skillName}' to deactivate.`);
+    return [];
+  }
+
   public async addRoleContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData) {
     logger.debug('Adding role message to session:', {
       baseDir: this.project.baseDir,
@@ -2453,6 +2574,9 @@ export class Task {
     await this.reloadConnectorMessages();
 
     await this.updateContextInfo();
+    if (removedIds.length > 0) {
+      void this.sendSkillsUpdated();
+    }
     return removedIds;
   }
 
@@ -2461,6 +2585,9 @@ export class Task {
     await this.reloadConnectorMessages();
 
     await this.updateContextInfo();
+    if (removedIds.length > 0) {
+      void this.sendSkillsUpdated();
+    }
     return removedIds;
   }
 
@@ -3367,6 +3494,11 @@ ${error.stderr}`,
       updatedFiles: updatedFiles.map((f) => f.path),
     });
     this.eventManager.sendUpdatedFilesUpdated(this.project.baseDir, this.taskId, updatedFiles);
+  }
+
+  public async sendSkillsUpdated(): Promise<void> {
+    const skills = await this.getSkills();
+    this.eventManager.sendSkillsUpdated(this.project.baseDir, this.taskId, skills);
   }
 
   private async initWorktree(): Promise<void> {

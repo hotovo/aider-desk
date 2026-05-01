@@ -34,6 +34,8 @@ import {
   UpdatedFilesUpdatedData,
   QueuedPromptData,
   QueuedPromptsUpdatedData,
+  SkillDefinition,
+  SkillsUpdatedData,
   CommandsData,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
@@ -104,6 +106,16 @@ export class EventManager {
     };
     this.sendToWindows('updated-files-updated', data);
     this.broadcastToEventConnectors('updated-files-updated', data);
+  }
+
+  sendSkillsUpdated(baseDir: string, taskId: string, skills: SkillDefinition[]): void {
+    const data: SkillsUpdatedData = {
+      baseDir,
+      taskId,
+      skills,
+    };
+    this.sendToWindows('skills-updated', data);
+    this.broadcastToEventConnectors('skills-updated', data);
   }
 
   // Response events

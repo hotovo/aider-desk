@@ -110,6 +110,11 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     initProjectRulesFile: vi.fn((_baseDir?: string, _taskId?: string, _args?: string): Promise<void> => Promise.resolve()),
     readFile: vi.fn((): Promise<string> => Promise.resolve('')),
 
+    // Skills operations
+    getSkills: vi.fn((): Promise<never[]> => Promise.resolve([])),
+    activateSkill: vi.fn((): Promise<void> => Promise.resolve()),
+    deactivateSkill: vi.fn((): Promise<void> => Promise.resolve()),
+
     // Todo operations
     getTodos: vi.fn((): Promise<TodoItem[]> => Promise.resolve([])),
     addTodo: vi.fn((): Promise<TodoItem[]> => Promise.resolve([])),
@@ -179,6 +184,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addLogListener: vi.fn(() => vi.fn()),
     addContextFilesUpdatedListener: vi.fn(() => vi.fn()),
     addUpdatedFilesUpdatedListener: vi.fn(() => vi.fn()),
+    addSkillsUpdatedListener: vi.fn(() => vi.fn()),
     addCommandsUpdatedListener: vi.fn(() => vi.fn()),
     addUpdateAutocompletionListener: vi.fn(() => vi.fn()),
     addAskQuestionListener: vi.fn(() => vi.fn()),

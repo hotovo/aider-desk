@@ -37,7 +37,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
+  visitedSections: Set<string>;
   onToggle: () => void;
   taskName?: string;
 };

@@ -8,6 +8,7 @@ import { UserContextFilesSection } from './UserContextFilesSection';
 import { UpdatedFilesSection } from './UpdatedFilesSection';
 import { ProjectFilesSection } from './ProjectFilesSection';
 import { RulesSection } from './RulesSection';
+import { SkillsSection } from './SkillsSection';
 import { normalizePath } from './types';
 
 import type { SectionType, TreeItem } from './types';
@@ -225,6 +226,15 @@ export const ContextFiles = ({
         totalStats={totalStats}
         visitedSections={visitedSections}
         onToggle={() => setActiveSection('rules')}
+      />
+
+      <SkillsSection
+        baseDir={baseDir}
+        taskId={taskId}
+        isOpen={activeSection === 'skills'}
+        totalStats={totalStats}
+        visitedSections={visitedSections}
+        onToggle={() => setActiveSection('skills')}
       />
     </div>
   );

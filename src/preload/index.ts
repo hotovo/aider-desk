@@ -34,6 +34,7 @@ import {
   TokensInfoData,
   ToolData,
   UpdatedFilesUpdatedData,
+  SkillsUpdatedData,
   UserMessageData,
   VersionsInfo,
   WorktreeIntegrationStatusUpdatedData,
@@ -103,6 +104,10 @@ const api: ApplicationAPI = {
   pasteImage: (baseDir, taskId) => ipcRenderer.send('paste-image', baseDir, taskId),
   scrapeWeb: (baseDir, taskId, url, filePath) => ipcRenderer.invoke('scrape-web', baseDir, taskId, url, filePath),
   initProjectRulesFile: (baseDir, taskId, args) => ipcRenderer.invoke('init-project-rules-file', baseDir, taskId, args),
+
+  getSkills: (baseDir, taskId) => ipcRenderer.invoke('get-skills', baseDir, taskId),
+  activateSkill: (baseDir, taskId, skillName) => ipcRenderer.invoke('activate-skill', baseDir, taskId, skillName),
+  deactivateSkill: (baseDir, taskId, skillName) => ipcRenderer.invoke('deactivate-skill', baseDir, taskId, skillName),
 
   getTodos: (baseDir, taskId) => ipcRenderer.invoke('get-todos', baseDir, taskId),
   addTodo: (baseDir, taskId, name) => ipcRenderer.invoke('add-todo', baseDir, taskId, name),
@@ -253,6 +258,19 @@ const api: ApplicationAPI = {
     ipcRenderer.on('updated-files-updated', listener);
     return () => {
       ipcRenderer.removeListener('updated-files-updated', listener);
+    };
+  },
+
+  addSkillsUpdatedListener: (baseDir, taskId, callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: SkillsUpdatedData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir) || data.taskId !== taskId) {
+        return;
+      }
+      callback(data);
+    };
+    ipcRenderer.on('skills-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('skills-updated', listener);
     };
   },
 

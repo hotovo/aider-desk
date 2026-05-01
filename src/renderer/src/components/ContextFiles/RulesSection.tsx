@@ -47,7 +47,7 @@ type Props = {
   rulesFiles: ContextFile[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
-  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
+  visitedSections: Set<string>;
   onToggle: () => void;
 };
 

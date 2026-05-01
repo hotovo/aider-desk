@@ -27,7 +27,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
+  visitedSections: Set<string>;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   onToggle: () => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;

@@ -999,6 +999,20 @@ export class EventsHandler {
     return this.projectManager.getProject(baseDir).getTask(taskId)?.initProjectAgentsFile(args);
   }
 
+  async getSkills(baseDir: string, taskId: string) {
+    return (await this.projectManager.getProject(baseDir).getTask(taskId)?.getSkills()) || [];
+  }
+
+  async activateSkill(baseDir: string, taskId: string, skillName: string): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.activateSkill(skillName);
+    void this.projectManager.getProject(baseDir).getTask(taskId)?.sendSkillsUpdated();
+  }
+
+  async deactivateSkill(baseDir: string, taskId: string, skillName: string): Promise<void> {
+    const removedIds = (await this.projectManager.getProject(baseDir).getTask(taskId)?.deactivateSkill(skillName)) ?? [];
+    this.eventManager.sendTaskMessageRemoved(baseDir, taskId, removedIds);
+  }
+
   async enableServer(username?: string, password?: string): Promise<SettingsData> {
     const currentSettings = this.store.getSettings();
     const updatedSettings: SettingsData = {

@@ -1079,19 +1079,6 @@ export interface ModalOverlayUrlData {
   url: string;
 }
 
-// Aider connector status (covers both Python installation and per-task connector lifecycle)
-export type AiderConnectorState =
-  | 'idle'
-  | 'checking-uv'
-  | 'downloading-uv'
-  | 'creating-venv'
-  | 'installing-packages'
-  | 'setting-up-connector'
-  | 'setting-up-mcp'
-  | 'starting-connector'
-  | 'ready'
-  | 'failed';
-
 export type AiderConnectorStatus =
   | { state: 'idle' }
   | { state: 'checking-uv' }
@@ -1118,5 +1105,12 @@ export interface SkillDefinition {
   location: SkillLocation;
   dirPath?: string;
   content?: string;
+  activated?: boolean;
+}
+
+export interface SkillsUpdatedData {
+  baseDir: string;
+  taskId: string;
+  skills: SkillDefinition[];
 }
 

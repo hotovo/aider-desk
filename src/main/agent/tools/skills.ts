@@ -1,89 +1,11 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { homedir } from 'os';
-
 import { tool, type ToolSet } from 'ai';
-import { loadFront } from 'yaml-front-matter';
 import { z } from 'zod';
 import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
-import { AgentProfile, PromptContext, SkillDefinition as Skill, SkillLocation, ToolApprovalState } from '@common/types';
+import { AgentProfile, PromptContext, SkillDefinition as Skill, ToolApprovalState } from '@common/types';
 
 import { ApprovalManager } from './approval-manager';
 
-import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR } from '@/constants';
-import { ExtensionManager } from '@/extensions/extension-manager';
 import { Task } from '@/task';
-
-const SKILLS_DIR_NAME = 'skills';
-const SKILL_MARKDOWN_FILE = 'SKILL.md';
-
-const parseSkillFrontMatter = (markdown: string): { name: string; description: string } | null => {
-  const parsed = loadFront(markdown);
-  const name = typeof parsed.name === 'string' ? parsed.name : undefined;
-  const description = typeof parsed.description === 'string' ? parsed.description : undefined;
-
-  if (!name || !description) {
-    return null;
-  }
-
-  return { name, description };
-};
-
-const safeReadDir = async (dirPath: string): Promise<string[]> => {
-  try {
-    return await fs.readdir(dirPath);
-  } catch {
-    return [];
-  }
-};
-
-const safeStat = async (filePath: string): Promise<import('fs').Stats | null> => {
-  try {
-    return await fs.stat(filePath);
-  } catch {
-    return null;
-  }
-};
-
-const loadSkillsFromDir = async (skillsRootDir: string, location: SkillLocation): Promise<Skill[]> => {
-  const entries = await safeReadDir(skillsRootDir);
-
-  const skills: Skill[] = [];
-  for (const entry of entries) {
-    const dirPath = path.join(skillsRootDir, entry);
-    const stat = await safeStat(dirPath);
-    if (!stat?.isDirectory()) {
-      continue;
-    }
-
-    const skillMdPath = path.join(dirPath, SKILL_MARKDOWN_FILE);
-    const skillMdStat = await safeStat(skillMdPath);
-    if (!skillMdStat?.isFile()) {
-      continue;
-    }
-
-    let markdown: string;
-    try {
-      markdown = await fs.readFile(skillMdPath, 'utf8');
-    } catch {
-      continue;
-    }
-
-    const parsed = parseSkillFrontMatter(markdown);
-    if (!parsed) {
-      continue;
-    }
-
-    skills.push({
-      name: parsed.name,
-      description: parsed.description,
-      location,
-      dirPath,
-    });
-  }
-
-  return skills;
-};
 
 const getActivateSkillDescription = (skills: Skill[]): string => {
   const instructions =
@@ -98,26 +20,13 @@ const getActivateSkillDescription = (skills: Skill[]): string => {
   return `${instructions}\n\n<available_skills>\n${availableSkills}\n</available_skills>`;
 };
 
-export const createSkillsToolset = async (
-  task: Task,
-  profile: AgentProfile,
-  promptContext?: PromptContext,
-  extensionManager?: ExtensionManager,
-): Promise<ToolSet> => {
+export const createSkillsToolset = async (task: Task, profile: AgentProfile, promptContext?: PromptContext): Promise<ToolSet> => {
   const approvalManager = new ApprovalManager(task, profile);
-  const extensionSkills = extensionManager?.getSkills(task.project, task) ?? [];
+  const skillManager = task.getSkillManager();
 
   const generateActivateSkillDescription = async (): Promise<string> => {
-    const globalSkillsDir = path.join(homedir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
-    const projectSkillsDir = path.join(task.getProjectDir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
-
-    const [globalSkills, projectSkills, builtinSkills] = await Promise.all([
-      loadSkillsFromDir(globalSkillsDir, 'global'),
-      loadSkillsFromDir(projectSkillsDir, 'project'),
-      loadSkillsFromDir(AIDER_DESK_BUILTIN_SKILLS_DIR, 'builtin'),
-    ]);
-
-    return getActivateSkillDescription([...projectSkills, ...globalSkills, ...builtinSkills, ...extensionSkills]);
+    const skills = await skillManager.loadAllSkills();
+    return getActivateSkillDescription(skills);
   };
 
   const activateSkillTool = tool({
@@ -139,16 +48,7 @@ export const createSkillsToolset = async (
         return `Activating skill denied by user. Reason: ${userInput}`;
       }
 
-      const globalSkillsDir = path.join(homedir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
-      const projectSkillsDir = path.join(task.getProjectDir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
-
-      const [globalSkills, projectSkills, builtinSkills] = await Promise.all([
-        loadSkillsFromDir(globalSkillsDir, 'global'),
-        loadSkillsFromDir(projectSkillsDir, 'project'),
-        loadSkillsFromDir(AIDER_DESK_BUILTIN_SKILLS_DIR, 'builtin'),
-      ]);
-
-      const allSkills = [...projectSkills, ...globalSkills, ...builtinSkills, ...extensionSkills];
+      const allSkills = await skillManager.loadAllSkills();
 
       const requested = allSkills.find((s) => s.name === skill);
       if (!requested) {
@@ -156,19 +56,8 @@ export const createSkillsToolset = async (
         return `Skill '${skill}' not found. Available skills: ${available || '(none)'}.`;
       }
 
-      let content: string;
-
-      if (requested.content) {
-        content = requested.content;
-      } else if (requested.dirPath) {
-        const skillMdPath = path.join(requested.dirPath, SKILL_MARKDOWN_FILE);
-
-        try {
-          content = await fs.readFile(skillMdPath, 'utf8');
-        } catch {
-          return `Failed to read skill content from ${skillMdPath}.`;
-        }
-      } else {
+      const content = await skillManager.getSkillContent(skill);
+      if (!content) {
         return `Skill '${requested.name}' has no content or dirPath.`;
       }
 
