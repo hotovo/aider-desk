@@ -448,7 +448,9 @@ async def run_editor_coder_stream(architect_coder, connector, prompt_context):
 
 class ConnectorInputOutput(InputOutput):
   def __init__(self, connector=None, prompt_context=None, **kwargs):
-    super().__init__(**kwargs)
+    # Aider's InputOutput initializer can call overridable output hooks.
+    # Initialize AiderDesk state first so early hook calls do not hit missing
+    # attributes and leave the connector stuck during startup or tool handling.
     self.connector = connector
     self.prompt_context = prompt_context
     self.running_shell_command = False
@@ -456,19 +458,20 @@ class ConnectorInputOutput(InputOutput):
     self.current_command = None
     self.add_command_to_context = True
     self.cancelled = False
+    super().__init__(**kwargs)
 
   def add_to_input_history(self, input_text):
     # handled by AiderDesk
     pass
 
   def tool_output(self, *messages, log_only=False, bold=False):
-    if self.cancelled:
+    if getattr(self, 'cancelled', False):
       return
     super().tool_output(*messages, log_only=log_only, bold=bold)
-    if self.running_shell_command:
+    if getattr(self, 'running_shell_command', False):
       for message in messages:
         # Extract current command from "Running" messages
-        if message.startswith("Running ") and not self.current_command:
+        if message.startswith("Running ") and not getattr(self, 'current_command', None):
           async def send_use_command_output():
             await self.connector.send_action({
               "action": "use-command-output",
@@ -492,7 +495,7 @@ class ConnectorInputOutput(InputOutput):
     return False
 
   def tool_warning(self, message="", strip=True):
-    if self.cancelled:
+    if getattr(self, 'cancelled', False):
       return
     super().tool_warning(message, strip)
     if self.connector and not self.is_warning_ignored(message):
@@ -513,7 +516,7 @@ class ConnectorInputOutput(InputOutput):
     return False
 
   def tool_error(self, message="", strip=True):
-    if self.cancelled:
+    if getattr(self, 'cancelled', False):
       return
     super().tool_error(message, strip)
     if self.connector and not self.is_error_ignored(message):
