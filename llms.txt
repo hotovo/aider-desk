@@ -1663,6 +1663,8 @@ absolute: false, // Keep paths relative to cwd for easier processing
 ⋮----
 const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // Simpler for line-by-line test
 ⋮----
+// Group results by file path
+⋮----
 false, // not finished yet
 ⋮----
 // Pattern validation
@@ -3874,6 +3876,12 @@ async uninstallExtension(extensionId: string, projectDir?: string): Promise<bool
 async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean>
 ⋮----
 // Unload existing extension before overwriting files
+⋮----
+// Clean up old extension if the type changed (file → folder or folder → file)
+⋮----
+// Previous version was a single file, new version is a folder — remove old file
+⋮----
+// Previous version was a folder, new version is a single file — remove old folder
 ⋮----
 /**
    * Dispatches an event to all loaded and initialized extensions.
@@ -15501,6 +15509,8 @@ type Props = {
   onRemoveUpTo?: () => void;
   hideMessageBar?: boolean;
 };
+⋮----
+const parseMarkdownResults = (md: string): Array<Match> | null =>
 
 ================
 File: src/renderer/src/components/message/GroupMessageBlock.tsx
@@ -22154,6 +22164,7 @@ import { UIComponentProps, UIComponents } from '@common/extensions';
 import { AgentProfile, TaskData, Message } from '@common/types';
 ⋮----
 import { useModelProviders } from '@/contexts/ModelProviderContext';
+⋮----
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { ModelSelectorWrapper } from '@/components/common/ModelSelectorWrapper';
