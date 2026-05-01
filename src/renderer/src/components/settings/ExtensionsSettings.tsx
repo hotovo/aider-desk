@@ -114,7 +114,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     setLoadingInstalled(true);
     try {
       const extensions = await api.getInstalledExtensions(projectDir);
-      setInstalledExtensions(extensions);
+      setInstalledExtensions(extensions.sort((a, b) => a.metadata.name.localeCompare(b.metadata.name)));
     } catch {
       showErrorNotification(t('settings.extensions.errors.loadInstalled'));
     } finally {
