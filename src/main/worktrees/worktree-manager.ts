@@ -1,6 +1,6 @@
 import path, { join } from 'path';
 import fs, { mkdir, rm, lstat, symlink } from 'fs/promises';
-import { existsSync } from 'fs';
+import { existsSync, lstatSync } from 'fs';
 
 import {
   ConflictResolutionFileContext,
@@ -1201,10 +1201,12 @@ export class WorktreeManager {
    */
   async hasUncommittedChanges(path: string): Promise<boolean> {
     try {
-      const { stdout } = await execWithShellPath('git status --porcelain=v1', {
+      const { stdout } = await execWithShellPath('git status --porcelain=v1 -z', {
         cwd: path,
       });
-      return stdout.trim().length > 0;
+      const filePaths = this.parseGitStatusEntries(stdout);
+      const realChanges = filePaths.filter((filePath) => !this.isSymlinkPath(path, filePath));
+      return realChanges.length > 0;
     } catch (error) {
       logger.error('Failed to check for uncommitted changes:', error);
       return false;
@@ -1444,6 +1446,7 @@ export class WorktreeManager {
     projectPath: string,
     worktreePath: string,
     targetBranch?: string,
+    symlinkFolders: string[] = [],
   ): Promise<{
     hasUncommittedChanges: boolean;
     hasUnmergedCommits: boolean;
@@ -1453,8 +1456,15 @@ export class WorktreeManager {
   }> {
     try {
       // 1. Check for uncommitted changes
-      const hasUncommittedChanges = await this.hasUncommittedChanges(worktreePath);
       const { files: uncommittedFiles } = await this.getUncommittedFiles(worktreePath);
+
+      // Filter out files that belong to symlink folders (worktree infrastructure artifacts)
+      const filteredUncommittedFiles = uncommittedFiles.filter((file) => {
+        const pathPart = file.replace(/^..\s*/, '').trim();
+        const normalizedPath = pathPart.replace(/\\/g, '/');
+        return !symlinkFolders.some((folder) => normalizedPath.startsWith(`${folder}/`) || normalizedPath === folder);
+      });
+      const actualHasUncommittedChanges = filteredUncommittedFiles.length > 0;
 
       // 2. Get the target branch name
       const effectiveTargetBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
@@ -1480,11 +1490,11 @@ export class WorktreeManager {
       const hasUnmergedCommits = unmergedCommitCount > 0;
 
       return {
-        hasUncommittedChanges,
+        hasUncommittedChanges: actualHasUncommittedChanges,
         hasUnmergedCommits,
         unmergedCommitCount,
         unmergedCommits,
-        uncommittedFiles,
+        uncommittedFiles: filteredUncommittedFiles,
       };
     } catch (error) {
       logger.error('Failed to check worktree for unmerged work:', error);
@@ -1517,15 +1527,30 @@ export class WorktreeManager {
     const { stdout } = await execWithShellPath('git status --porcelain=v1 -z', {
       cwd: worktreePath,
     });
-    const files = stdout
-      .split('\0')
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
+    const filePaths = this.parseGitStatusEntries(stdout);
+    const files = filePaths.filter((filePath) => !this.isSymlinkPath(worktreePath, filePath));
 
     return {
       count: files.length,
       files: Array.from(new Set(files)),
     };
+  }
+
+  private parseGitStatusEntries(stdout: string): string[] {
+    return stdout
+      .split('\0')
+      .map((entry) => entry.substring(3).trim())
+      .filter((filePath) => filePath.length > 0);
+  }
+
+  private isSymlinkPath(cwd: string, filePath: string): boolean {
+    try {
+      const fullPath = join(cwd, filePath);
+      const stat = lstatSync(fullPath);
+      return stat.isSymbolicLink();
+    } catch {
+      return false;
+    }
   }
 
   /**

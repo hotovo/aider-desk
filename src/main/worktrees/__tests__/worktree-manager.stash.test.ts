@@ -230,7 +230,7 @@ describe('WorktreeManager - stashUncommittedChanges', () => {
       const calls = (execWithShellPath as Mock).mock.calls;
 
       expect(calls).toHaveLength(2);
-      expect(calls[0][0]).toBe('git status --porcelain=v1');
+      expect(calls[0][0]).toBe('git status --porcelain=v1 -z');
       expect(calls[1][0]).toBe('git stash push -u -m "test-stash-id: Test stash message"');
     });
   });
@@ -243,7 +243,7 @@ describe('WorktreeManager - stashUncommittedChanges', () => {
 
       expect(result).toBeNull();
       expect(execWithShellPath).toHaveBeenCalledTimes(1);
-      expect(execWithShellPath).toHaveBeenCalledWith('git status --porcelain=v1', { cwd: testPath });
+      expect(execWithShellPath).toHaveBeenCalledWith('git status --porcelain=v1 -z', { cwd: testPath });
     });
 
     it('should return null early and not check untracked files when no changes exist', async () => {

@@ -3911,9 +3911,11 @@ ${error.stderr}`,
 
     const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
     const worktreePath = this.task.worktree.path;
+    const settings = this.store.getSettings();
+    const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
     const [unmergedWork, predictedConflicts, rebaseState] = await Promise.all([
-      this.worktreeManager.checkWorktreeForUnmergedWork(this.project.baseDir, worktreePath, effectiveTargetBranch),
+      this.worktreeManager.checkWorktreeForUnmergedWork(this.project.baseDir, worktreePath, effectiveTargetBranch, symlinkFolders),
       this.worktreeManager.checkForRebaseConflicts(worktreePath, effectiveTargetBranch),
       this.worktreeManager.getRebaseState(worktreePath),
     ]);
