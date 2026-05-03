@@ -167,6 +167,7 @@ src/
         prompt-api.ts
         providers-api.ts
         settings-api.ts
+        skills-api.ts
         system-api.ts
         terminal-api.ts
         todo-api.ts
@@ -177,6 +178,8 @@ src/
       index.ts
       runner.ts
       server-controller.ts
+    skills/
+      skill-manager.ts
     store/
       migrations/
         v0-to-v1.ts
@@ -333,6 +336,7 @@ src/
           RulesSection.tsx
           SectionContent.tsx
           SectionHeader.tsx
+          SkillsSection.tsx
           TreeItemRenderer.tsx
           types.ts
           UpdatedFilesDiffModal.tsx
@@ -937,6 +941,10 @@ pass # The task was cancelled, which is an expected way for it to end.
 class ConnectorInputOutput(InputOutput)
 ⋮----
 def __init__(self, connector=None, prompt_context=None, **kwargs)
+⋮----
+# Aider's InputOutput initializer can call overridable output hooks.
+# Initialize AiderDesk state first so early hook calls do not hit missing
+# attributes and leave the connector stuck during startup or tool handling.
 ⋮----
 def add_to_input_history(self, input_text)
 ⋮----
@@ -1718,38 +1726,18 @@ timeout: 5 * 60, // 5 minutes
 ================
 File: src/main/agent/tools/skills.ts
 ================
-import fs from 'fs/promises';
-import path from 'path';
-import { homedir } from 'os';
-⋮----
 import { tool, type ToolSet } from 'ai';
-import { loadFront } from 'yaml-front-matter';
 import { z } from 'zod';
 import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
-import { AgentProfile, PromptContext, SkillDefinition as Skill, SkillLocation, ToolApprovalState } from '@common/types';
+import { AgentProfile, PromptContext, SkillDefinition as Skill, ToolApprovalState } from '@common/types';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
-import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR } from '@/constants';
-import { ExtensionManager } from '@/extensions/extension-manager';
 import { Task } from '@/task';
-⋮----
-const parseSkillFrontMatter = (markdown: string):
-⋮----
-const safeReadDir = async (dirPath: string): Promise<string[]> =>
-⋮----
-const safeStat = async (filePath: string): Promise<import('fs').Stats | null> =>
-⋮----
-const loadSkillsFromDir = async (skillsRootDir: string, location: SkillLocation): Promise<Skill[]> =>
 ⋮----
 const getActivateSkillDescription = (skills: Skill[]): string =>
 ⋮----
-export const createSkillsToolset = async (
-  task: Task,
-  profile: AgentProfile,
-  promptContext?: PromptContext,
-  extensionManager?: ExtensionManager,
-): Promise<ToolSet> =>
+export const createSkillsToolset = async (task: Task, profile: AgentProfile, promptContext?: PromptContext): Promise<ToolSet> =>
 ⋮----
 const generateActivateSkillDescription = async (): Promise<string> =>
 
@@ -3163,6 +3151,8 @@ import {
   UpdatedFilesUpdatedData,
   QueuedPromptData,
   QueuedPromptsUpdatedData,
+  SkillDefinition,
+  SkillsUpdatedData,
   CommandsData,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
@@ -3196,6 +3186,8 @@ sendFileAdded(baseDir: string, taskId: string, file: ContextFile): void
 sendContextFilesUpdated(baseDir: string, taskId: string, files: ContextFile[]): void
 ⋮----
 sendUpdatedFilesUpdated(baseDir: string, taskId: string, files: UpdatedFile[]): void
+⋮----
+sendSkillsUpdated(baseDir: string, taskId: string, skills: SkillDefinition[]): void
 ⋮----
 // Response events
 sendResponseChunk(data: ResponseChunkData): void
@@ -7367,6 +7359,22 @@ registerRoutes(router: Router): void
 // Get OS
 
 ================
+File: src/main/server/rest-api/skills-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+export class SkillsApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+
+================
 File: src/main/server/rest-api/system-api.ts
 ================
 import { Router } from 'express';
@@ -7581,6 +7589,7 @@ import {
   VoiceApi,
   TerminalApi,
   ExtensionsApi,
+  SkillsApi,
 } from '@/server/rest-api';
 import { AUTH_PASSWORD, AUTH_USERNAME, SERVER_PORT } from '@/constants';
 import logger from '@/logger';
@@ -7644,6 +7653,46 @@ async close()
 async startServer()
 ⋮----
 async stopServer()
+
+================
+File: src/main/skills/skill-manager.ts
+================
+import fs from 'fs/promises';
+import path from 'path';
+import { homedir } from 'os';
+⋮----
+import { v4 as uuidv4 } from 'uuid';
+import { loadFront } from 'yaml-front-matter';
+import { SKILLS_TOOL_GROUP_NAME, SKILLS_TOOL_ACTIVATE_SKILL, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { ContextAssistantMessage, ContextMessage, ContextToolMessage, SkillDefinition as Skill, SkillLocation } from '@common/types';
+⋮----
+import type { Project } from '@/project';
+import type { Task } from '@/task';
+⋮----
+import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR } from '@/constants';
+import { ExtensionManager } from '@/extensions/extension-manager';
+⋮----
+const parseSkillFrontMatter = (markdown: string):
+⋮----
+const safeReadDir = async (dirPath: string): Promise<string[]> =>
+⋮----
+const safeStat = async (filePath: string): Promise<import('fs').Stats | null> =>
+⋮----
+const loadSkillsFromDir = async (skillsRootDir: string, location: SkillLocation): Promise<Skill[]> =>
+⋮----
+export class SkillManager
+⋮----
+constructor(projectDir: string, extensionManager?: ExtensionManager)
+⋮----
+async loadAllSkills(): Promise<Skill[]>
+⋮----
+async getSkills(contextMessages?: ContextMessage[]): Promise<Skill[]>
+⋮----
+async getSkillContent(skillName: string): Promise<string | null>
+⋮----
+getActivatedSkillNames(contextMessages: ContextMessage[]): Set<string>
+⋮----
+buildActivateSkillMessages(skillName: string, content: string): [ContextAssistantMessage, ContextToolMessage]
 
 ================
 File: src/main/store/migrations/v0-to-v1.ts
@@ -8222,6 +8271,8 @@ removeMessageById(messageId: string): string[]
 ⋮----
 // If not found by ID, try to find by tool call ID
 ⋮----
+removeMessagesByIds(ids: string[]): void
+⋮----
 private removeMessageByIndex(index: number, messageId: string): string[]
 ⋮----
 private removeByToolCallId(toolCallId: string): string[]
@@ -8402,6 +8453,7 @@ import {
   ResponseChunkData,
   ResponseCompletedData,
   SettingsData,
+  SkillDefinition as Skill,
   TaskData,
   TaskStateData,
   TaskStateEmoji,
@@ -8418,7 +8470,7 @@ import {
 } from '@common/types';
 import { extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
-import { SKILLS_TOOL_ACTIVATE_SKILL } from '@common/tools';
+import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
@@ -8451,6 +8503,7 @@ import { execWithShellPath, getEnvironmentVariablesForAider, isDirectory } from 
 import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
+import { SkillManager } from '@/skills/skill-manager';
 import { GitError, WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
@@ -8849,6 +8902,24 @@ public addLogMessage(level: LogLevel, message?: string, finished = false, prompt
 ⋮----
 public getContextMessages()
 ⋮----
+public getSkillManager(): SkillManager
+⋮----
+public async getSkills(): Promise<Skill[]>
+⋮----
+public async activateSkill(skillName: string): Promise<void>
+⋮----
+public async deactivateSkill(skillName: string): Promise<string[]>
+⋮----
+// Find the assistant message with the skill's tool-call
+⋮----
+// Find the tool message
+⋮----
+// Check if assistant message has other tool-calls besides this one
+⋮----
+// Has other tool-calls — only remove the skill tool-call part, keep the assistant message
+⋮----
+// No other tool-calls — remove the entire assistant message too
+⋮----
 public async addRoleContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData)
 ⋮----
 public async addContextMessage(message: ContextMessage, updateContextInfo = false)
@@ -9124,6 +9195,8 @@ public async updateTask(updates: Partial<TaskData>): Promise<TaskData>
 private async sendWorktreeIntegrationStatusUpdated()
 ⋮----
 private async sendUpdatedFilesUpdated()
+⋮----
+public async sendSkillsUpdated(): Promise<void>
 ⋮----
 private async initWorktree(): Promise<void>
 ⋮----
@@ -11048,6 +11121,12 @@ async clearAllTodos(baseDir: string, taskId: string): Promise<TodoItem[]>
 ⋮----
 async initProjectRulesFile(baseDir: string, taskId: string, args?: string): Promise<void>
 ⋮----
+async getSkills(baseDir: string, taskId: string)
+⋮----
+async activateSkill(baseDir: string, taskId: string, skillName: string): Promise<void>
+⋮----
+async deactivateSkill(baseDir: string, taskId: string, skillName: string): Promise<void>
+⋮----
 async enableServer(username?: string, password?: string): Promise<SettingsData>
 ⋮----
 async disableServer(): Promise<SettingsData>
@@ -11995,6 +12074,7 @@ import {
   TokensInfoData,
   ToolData,
   UpdatedFilesUpdatedData,
+  SkillsUpdatedData,
   UserMessageData,
   VersionsInfo,
   WorktreeIntegrationStatusUpdatedData,
@@ -12157,6 +12237,8 @@ import {
   ModalOverlayUrlData,
   AiderConnectorStatus,
   ChangeRequestItem,
+  SkillDefinition,
+  SkillsUpdatedData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -12190,6 +12272,7 @@ type EventDataMap = {
   'worktree-integration-status-updated': WorktreeIntegrationStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
   'updated-files-updated': UpdatedFilesUpdatedData;
+  'skills-updated': SkillsUpdatedData;
   notification: NotificationData;
   'task-created': TaskCreatedData;
   'task-initialized': TaskData;
@@ -12305,6 +12388,9 @@ runCommand(baseDir: string, taskId: string, command: string): void
 async pasteImage(baseDir: string, taskId: string, imageBuffer?: ArrayBuffer): Promise<void>
 scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void>
 initProjectRulesFile(baseDir: string, taskId: string, args?: string): Promise<void>
+getSkills(baseDir: string, taskId: string): Promise<SkillDefinition[]>
+activateSkill(baseDir: string, taskId: string, skillName: string): Promise<void>
+deactivateSkill(baseDir: string, taskId: string, skillName: string): Promise<void>
 getTodos(baseDir: string, taskId: string): Promise<TodoItem[]>
 addTodo(baseDir: string, taskId: string, name: string): Promise<TodoItem[]>
 updateTodo(baseDir: string, taskId: string, name: string, updates: Partial<TodoItem>): Promise<TodoItem[]>
@@ -12368,6 +12454,7 @@ addResponseCompletedListener(baseDir: string, taskId: string, callback: (data: R
 addLogListener(baseDir: string, taskId: string, callback: (data: LogData) => void): () => void
 addContextFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void): () => void
 addUpdatedFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void
+addSkillsUpdatedListener(baseDir: string, taskId: string, callback: (data: SkillsUpdatedData) => void): () => void
 addCommandsUpdatedListener(baseDir: string, callback: (data: CommandsData) => void): () => void
 addUpdateAutocompletionListener(baseDir: string, taskId: string, callback: (data: AutocompletionData) => void): () => void
 addAskQuestionListener(baseDir: string, taskId: string, callback: (data: QuestionData) => void): () => void
@@ -14063,6 +14150,7 @@ import { UserContextFilesSection } from './UserContextFilesSection';
 import { UpdatedFilesSection } from './UpdatedFilesSection';
 import { ProjectFilesSection } from './ProjectFilesSection';
 import { RulesSection } from './RulesSection';
+import { SkillsSection } from './SkillsSection';
 import { normalizePath } from './types';
 ⋮----
 import type { SectionType, TreeItem } from './types';
@@ -14347,7 +14435,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
+  visitedSections: Set<string>;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   onToggle: () => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -14439,6 +14527,28 @@ type Props = {
 <div className=
 
 ================
+File: src/renderer/src/components/ContextFiles/SkillsSection.tsx
+================
+import { SkillDefinition } from '@common/types';
+import { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { HiX } from 'react-icons/hi';
+import { MdOutlinePublic, MdOutlineRefresh } from 'react-icons/md';
+import { RiPlayCircleLine, RiRocketLine, RiRobot2Line } from 'react-icons/ri';
+import { VscFileCode } from 'react-icons/vsc';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+⋮----
+import { SectionHeader } from './SectionHeader';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+className=
+⋮----
+onClick=
+
+================
 File: src/renderer/src/components/ContextFiles/TreeItemRenderer.tsx
 ================
 import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
@@ -14506,7 +14616,7 @@ export interface TreeItem {
   file?: ContextFile;
 }
 ⋮----
-export type SectionType = 'updated' | 'project' | 'context' | 'rules';
+export type SectionType = 'updated' | 'project' | 'context' | 'rules' | 'skills';
 ⋮----
 export const normalizePath = (path: string): string =>
 ⋮----
@@ -14660,7 +14770,7 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<'updated' | 'project' | 'context' | 'rules'>;
+  visitedSections: Set<string>;
   onToggle: () => void;
   taskName?: string;
 };
@@ -22164,7 +22274,6 @@ import { UIComponentProps, UIComponents } from '@common/extensions';
 import { AgentProfile, TaskData, Message } from '@common/types';
 ⋮----
 import { useModelProviders } from '@/contexts/ModelProviderContext';
-⋮----
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { ModelSelectorWrapper } from '@/components/common/ModelSelectorWrapper';
