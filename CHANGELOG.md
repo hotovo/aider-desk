@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.64.0]
 
 - added onBeforeCommit and onAfterCommit extension hooks for commit lifecycle
 - added support for extension-provided skills
@@ -12,6 +12,8 @@
 - changed order of the buttons in Switch To Local confirm dialog
 - optimized grep tool output to use markdown format
 - added tool output truncation for bash power tool and MCP tools
+- promoting right sidebar to Workspace sidebar
+- added Skills to Workspace sidebar and support for manually activating/deactivating them
 - added ability to reorder and hide context sidebar sections
 
 ## [0.63.0]
