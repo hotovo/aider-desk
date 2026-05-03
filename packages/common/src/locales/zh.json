@@ -969,6 +969,7 @@
     "errorLoading": "加载文件失败"
   },
   "contextFiles": {
+"workspaceTitle": "工作区",
     "title": "上下文文件",
     "updatedFiles": "已更新文件",
     "uncommittedChanges": "未提交的更改",
@@ -994,6 +995,8 @@
     "rules": "规则文件",
     "skills": "技能",
     "noSkills": "无可用技能",
+    "editSections": "重新排序和隐藏分区",
+    "done": "完成",
     "skillActivated": "已激活",
     "skillActivate": "激活",
     "skillDeactivate": "停用",

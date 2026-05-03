@@ -308,5 +308,7 @@ export const getDefaultProjectSettings = (
     autoApproveLocked: false,
     updatedFilesGroupMode: 'flat',
     disabledRuleFiles: [],
+    contextSidebarSectionsOrder: [],
+    contextSidebarSectionsHidden: [],
   };
 };

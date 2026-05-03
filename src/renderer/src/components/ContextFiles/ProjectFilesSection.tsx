@@ -32,6 +32,10 @@ type Props = {
   onToggle: () => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
 };
 
 export const ProjectFilesSection = ({
@@ -48,6 +52,10 @@ export const ProjectFilesSection = ({
   onToggle,
   onDropFile,
   onAddFile,
+  editMode,
+  isHidden,
+  onToggleHidden,
+  showBorderTop,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -214,13 +222,16 @@ export const ProjectFilesSection = ({
         os={os}
         actions={projectActions}
         searchField={searchField}
-        showBorderTop
+        showBorderTop={showBorderTop}
         onToggle={onToggle}
         onFileDiffClick={() => {}}
         onFilePreviewClick={setPreviewFilePath}
         onRevertFile={() => {}}
         onDropFile={onDropFile}
         onAddFile={onAddFile}
+        editMode={editMode}
+        isHidden={isHidden}
+        onToggleHidden={onToggleHidden}
       />
 
       {previewFilePath && <FileViewerModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}

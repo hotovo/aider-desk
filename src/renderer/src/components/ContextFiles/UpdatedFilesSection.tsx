@@ -1,11 +1,12 @@
 import { ContextFile, OS, TokensInfoData, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
 import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
-import { MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
+import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
+import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 
 import { createFileTree } from './types';
 import { SectionContent } from './SectionContent';
@@ -40,9 +41,90 @@ type Props = {
   visitedSections: Set<string>;
   onToggle: () => void;
   taskName?: string;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
 };
 
-export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, contextFilesMap, visitedSections, onToggle, taskName }: Props) => {
+const UpdatedSectionHeader = ({
+  isOpen,
+  title,
+  totalStats,
+  updatedActions,
+  onToggle,
+  editMode,
+  isHidden,
+  onToggleHidden,
+}: {
+  isOpen: boolean;
+  title: string;
+  totalStats: { additions: number; deletions: number };
+  updatedActions: React.ReactNode;
+  onToggle: () => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+}) => {
+  return (
+    <div
+      className={clsx(
+        'flex items-center px-2 select-none h-[40px] shrink-0 bg-bg-primary-light',
+        !editMode && !isOpen && 'cursor-pointer',
+        editMode && !isHidden && 'cursor-grab',
+        editMode && isHidden && 'opacity-50',
+        isOpen && !updatedActions && !editMode && 'border-b border-border-dark-light',
+      )}
+      onClick={!editMode ? onToggle : undefined}
+    >
+      {editMode && (
+        <div className="mr-1 text-text-muted cursor-grab active:cursor-grabbing touch-none">
+          <MdDragIndicator className="w-4 h-4" />
+        </div>
+      )}
+
+      {!editMode && (
+        <motion.div initial={false} animate={{ rotate: isOpen ? 0 : -90 }} transition={{ duration: 0.1 }} className="mr-1">
+          <HiChevronDown className="w-4 h-4 text-text-muted" />
+        </motion.div>
+      )}
+
+      <span className="text-xs font-semibold uppercase flex-grow text-text-secondary">{title}</span>
+
+      {!editMode && (
+        <span className="text-2xs mr-2 bg-bg-secondary-light px-1.5 rounded-full">
+          <span className="text-success">+{totalStats.additions}</span>
+          <span className="ml-0.5 text-error">-{totalStats.deletions}</span>
+        </span>
+      )}
+
+      <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+        {!editMode && isOpen && updatedActions}
+        {editMode && onToggleHidden && (
+          <button onClick={onToggleHidden} className="p-1 hover:bg-bg-tertiary rounded transition-colors">
+            {isHidden ? <RiEyeOffLine className="w-4 h-4 text-text-muted" /> : <RiEyeLine className="w-4 h-4 text-text-primary" />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export const UpdatedFilesSection = ({
+  baseDir,
+  taskId,
+  isOpen,
+  tokensInfo,
+  os,
+  contextFilesMap,
+  visitedSections,
+  onToggle,
+  taskName,
+  editMode,
+  isHidden,
+  onToggleHidden,
+  showBorderTop,
+}: Props) => {
   const { t } = useTranslation();
   const api = useApi();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
@@ -324,38 +406,22 @@ export const UpdatedFilesSection = ({ baseDir, taskId, isOpen, tokensInfo, os, c
   return (
     <>
       <motion.div
-        className={clsx('flex flex-col flex-grow overflow-hidden min-h-[40px]', 'border-t border-border-dark-light')}
+        className={clsx('flex flex-col overflow-hidden min-h-[40px]', showBorderTop && 'border-t border-border-dark-light')}
         initial={false}
-        animate={{
-          flexGrow: isOpen ? 1 : 0,
-          flexShrink: isOpen ? 1 : 0,
-        }}
+        animate={editMode ? { flexGrow: 0, flexShrink: 0 } : { flexGrow: isOpen ? 1 : 0, flexShrink: isOpen ? 1 : 0 }}
         transition={{ duration: 0.3, ease: 'easeIn' }}
       >
         {/* Outer section header */}
-        <div
-          className={clsx(
-            'flex items-center px-2 select-none h-[40px] shrink-0 bg-bg-primary-light',
-            !isOpen && 'cursor-pointer',
-            isOpen && !updatedActions && 'border-b border-border-dark-light',
-          )}
-          onClick={onToggle}
-        >
-          <motion.div initial={false} animate={{ rotate: isOpen ? 0 : -90 }} transition={{ duration: 0.1 }} className="mr-1">
-            <HiChevronDown className="w-4 h-4 text-text-muted" />
-          </motion.div>
-
-          <span className="text-xs font-semibold uppercase flex-grow text-text-secondary">{t('contextFiles.updatedFiles')}</span>
-
-          <span className="text-2xs mr-2 bg-bg-secondary-light px-1.5 rounded-full">
-            <span className="text-success">+{totalStats.additions}</span>
-            <span className="ml-0.5 text-error">-{totalStats.deletions}</span>
-          </span>
-
-          <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-            {isOpen && updatedActions}
-          </div>
-        </div>
+        <UpdatedSectionHeader
+          isOpen={isOpen}
+          title={t('contextFiles.updatedFiles')}
+          totalStats={totalStats}
+          updatedActions={updatedActions}
+          onToggle={onToggle}
+          editMode={editMode}
+          isHidden={isHidden}
+          onToggleHidden={onToggleHidden}
+        />
 
         {/* Content area */}
         <Activity mode={isOpen ? 'visible' : 'hidden'}>

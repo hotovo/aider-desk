@@ -1030,6 +1030,7 @@
     "errorLoading": "Failed to load file"
   },
   "contextFiles": {
+    "workspaceTitle": "Workspace",
     "title": "Context Files",
     "updatedFiles": "Updated Files",
     "uncommittedChanges": "Uncommitted Changes",
@@ -1055,6 +1056,8 @@
     "rules": "Rule Files",
     "skills": "Skills",
     "noSkills": "No skills available",
+    "editSections": "Reorder & hide sections",
+    "done": "Done",
     "skillActivated": "Active",
     "skillActivate": "Activate",
     "skillDeactivate": "Deactivate",

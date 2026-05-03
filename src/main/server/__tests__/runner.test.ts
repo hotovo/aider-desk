@@ -54,6 +54,8 @@ describe('addProjectsFromEnv', () => {
       currentMode: 'agent' as const,
       updatedFilesGroupMode: 'flat',
       disabledRuleFiles: [],
+      contextSidebarSectionsOrder: [],
+      contextSidebarSectionsHidden: [],
     });
 
     // Mock managers

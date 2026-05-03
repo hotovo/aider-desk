@@ -22,13 +22,15 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
   actions?: React.ReactNode;
-  alwaysVisibleActions?: React.ReactNode;
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
   showBorderTop?: boolean;
   disabledRuleFiles?: string[];
   totalRuleCount?: number;
+  editMode?: boolean;
+  isHidden?: boolean;
   onToggle: () => void;
+  onToggleHidden?: () => void;
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
@@ -51,13 +53,15 @@ export const ContextFilesSection = ({
   tokensInfo,
   os,
   actions,
-  alwaysVisibleActions,
   searchField,
   emptyContent,
   showBorderTop = false,
   disabledRuleFiles,
   totalRuleCount,
+  editMode,
+  isHidden,
   onToggle,
+  onToggleHidden,
   onToggleRuleFile,
   onFileDiffClick,
   onFilePreviewClick,
@@ -67,12 +71,9 @@ export const ContextFilesSection = ({
 }: Props) => {
   return (
     <motion.div
-      className={clsx('flex flex-col flex-grow overflow-hidden min-h-[40px]', showBorderTop && 'border-t border-border-dark-light')}
+      className={clsx('flex flex-col overflow-hidden min-h-[40px]', showBorderTop && 'border-t border-border-dark-light')}
       initial={false}
-      animate={{
-        flexGrow: isOpen ? 1 : 0,
-        flexShrink: isOpen ? 1 : 0,
-      }}
+      animate={editMode ? { flexGrow: 0, flexShrink: 0 } : { flexGrow: isOpen ? 1 : 0, flexShrink: isOpen ? 1 : 0 }}
       transition={{ duration: 0.3, ease: 'easeIn' }}
     >
       <SectionHeader
@@ -83,8 +84,10 @@ export const ContextFilesSection = ({
         isOpen={isOpen}
         totalStats={totalStats}
         actions={actions}
-        alwaysVisibleActions={alwaysVisibleActions}
         onToggle={onToggle}
+        editMode={editMode}
+        isHidden={isHidden}
+        onToggleHidden={onToggleHidden}
       />
       <Activity mode={isOpen ? 'visible' : 'hidden'}>
         <SectionContent

@@ -21,10 +21,13 @@ type Props = {
   contextFilesMap: Map<string, ContextFile>;
   showFileDialog: () => void;
   onDropAllFiles: () => void;
-  collapseButton?: React.ReactNode;
   onToggle: () => void;
   onFilePreviewClick?: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
 };
 
 export const UserContextFilesSection = ({
@@ -37,10 +40,13 @@ export const UserContextFilesSection = ({
   contextFilesMap,
   showFileDialog,
   onDropAllFiles,
-  collapseButton,
   onToggle,
   onFilePreviewClick,
   onDropFile,
+  editMode,
+  isHidden,
+  onToggleHidden,
+  showBorderTop,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -121,7 +127,6 @@ export const UserContextFilesSection = ({
       tokensInfo={tokensInfo}
       os={os}
       actions={contextActions}
-      alwaysVisibleActions={collapseButton}
       emptyContent={<EmptyContextInfo mode={mode} />}
       onToggle={onToggle}
       onFileDiffClick={() => {}}
@@ -129,6 +134,10 @@ export const UserContextFilesSection = ({
       onRevertFile={() => {}}
       onDropFile={onDropFile}
       onAddFile={addFile}
+      editMode={editMode}
+      isHidden={isHidden}
+      onToggleHidden={onToggleHidden}
+      showBorderTop={showBorderTop}
     />
   );
 };

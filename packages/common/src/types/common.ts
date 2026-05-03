@@ -327,6 +327,8 @@ export const ProjectSettingsSchema = z.object({
   autoApproveLocked: z.boolean().optional(),
   updatedFilesGroupMode: z.enum(['grouped', 'flat']).default('flat'),
   disabledRuleFiles: z.array(z.string()).default([]),
+  contextSidebarSectionsOrder: z.array(z.string()).default([]),
+  contextSidebarSectionsHidden: z.array(z.string()).default([]),
 });
 
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;

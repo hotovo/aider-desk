@@ -49,9 +49,13 @@ type Props = {
   totalStats: { additions: number; deletions: number };
   visitedSections: Set<string>;
   onToggle: () => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
 };
 
-export const RulesSection = ({ rulesFiles, isOpen, totalStats, visitedSections, onToggle }: Props) => {
+export const RulesSection = ({ rulesFiles, isOpen, totalStats, visitedSections, onToggle, editMode, isHidden, onToggleHidden, showBorderTop }: Props) => {
   const { t } = useTranslation();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
 
@@ -80,12 +84,9 @@ export const RulesSection = ({ rulesFiles, isOpen, totalStats, visitedSections, 
 
   return (
     <motion.div
-      className={clsx('flex flex-col flex-grow overflow-hidden min-h-[40px]', 'border-t border-border-dark-light')}
+      className={clsx('flex flex-col overflow-hidden min-h-[40px]', showBorderTop && 'border-t border-border-dark-light')}
       initial={false}
-      animate={{
-        flexGrow: isOpen ? 1 : 0,
-        flexShrink: isOpen ? 1 : 0,
-      }}
+      animate={editMode ? { flexGrow: 0, flexShrink: 0 } : { flexGrow: isOpen ? 1 : 0, flexShrink: isOpen ? 1 : 0 }}
       transition={{ duration: 0.3, ease: 'easeIn' }}
     >
       <SectionHeader
@@ -96,6 +97,9 @@ export const RulesSection = ({ rulesFiles, isOpen, totalStats, visitedSections, 
         isOpen={isOpen}
         totalStats={totalStats}
         onToggle={onToggle}
+        editMode={editMode}
+        isHidden={isHidden}
+        onToggleHidden={onToggleHidden}
       />
       <Activity mode={isOpen ? 'visible' : 'hidden'}>
         <motion.div
