@@ -52,7 +52,7 @@ import {
 } from '@common/tools';
 import { TextPart } from '@ai-sdk/provider-utils';
 
-import { createPowerToolset, readFileContent } from './tools/power';
+import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
 import { createSearchParentTaskTool, createTasksToolset } from './tools/tasks';
 import { createAiderToolset } from './tools/aider';
@@ -61,7 +61,14 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, findLastUserMessage, THINKING_RESPONSE_STAR_TAG } from './utils';
+import {
+  ANSWER_RESPONSE_START_TAG,
+  extractPromptContextFromToolResult,
+  findLastUserMessage,
+  readFileContent,
+  THINKING_RESPONSE_STAR_TAG,
+  truncateToolResult,
+} from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
@@ -592,6 +599,16 @@ export class Agent {
         );
 
         logger.debug(`Tool ${toolDef.name} returned response`, { response });
+
+        // Truncate large text content in the response
+        if (response && typeof response === 'object' && 'content' in response && Array.isArray(response.content)) {
+          for (let i = 0; i < response.content.length; i++) {
+            const part = response.content[i];
+            if (part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string') {
+              part.text = await truncateToolResult(part.text);
+            }
+          }
+        }
 
         // Update last tool call time
         this.lastToolCallTime = Date.now();

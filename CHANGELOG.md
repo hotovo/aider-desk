@@ -11,6 +11,7 @@
 - initializing symlink folders on new task when worktree mode is set
 - changed order of the buttons in Switch To Local confirm dialog
 - optimized grep tool output to use markdown format
+- added tool output truncation for bash power tool and MCP tools
 
 ## [0.63.0]
 
