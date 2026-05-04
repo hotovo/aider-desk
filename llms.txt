@@ -1578,10 +1578,10 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
 File: src/main/agent/tools/power.ts
 ================
 import fs from 'fs/promises';
-import os from 'os';
 import path from 'path';
 import { spawn } from 'child_process';
 import { ChildProcess } from 'node:child_process';
+import { Buffer } from 'node:buffer';
 ⋮----
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
@@ -1601,8 +1601,6 @@ import {
   POWER_TOOL_SEMANTIC_SEARCH as TOOL_SEMANTIC_SEARCH,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-// @ts-expect-error istextorbinary is not typed properly
-import { isBinary } from 'istextorbinary';
 import { isURL } from '@common/utils';
 ⋮----
 import { ApprovalManager } from './approval-manager';
@@ -1613,6 +1611,7 @@ import logger from '@/logger';
 import { filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellPath } from '@/utils/shell';
+import { expandTilde, readFileContent, truncateToolResult } from '@/agent/utils';
 ⋮----
 /**
  * File lock map to prevent race conditions when multiple edits target the same file.
@@ -1625,24 +1624,6 @@ import { getShellCommandArgs, getShellPath } from '@/utils/shell';
  * If another operation is in progress for the same file, it waits for it to complete.
  */
 const withFileLock = <T>(filePath: string, operation: () => Promise<T>): Promise<T> =>
-⋮----
-/**
- * Expands a tilde (~) at the beginning of a path to the user's home directory.
- * @param filePath - The file path to expand
- * @returns The expanded path with ~ replaced by the home directory
- */
-const expandTilde = (filePath: string): string =>
-⋮----
-/**
- * Reads a file and returns its content with optional line numbering and line range.
- * @param absolutePath - The absolute path to the file
- * @param withLines - Whether to return the file content with line numbers in format "lineNumber|content"
- * @param lineOffset - The starting line number (0-based) to begin reading from
- * @param lineLimit - The maximum number of lines to read
- * @returns The file content as a string, formatted according to the parameters
- * @throws Error if the file is binary or cannot be read
- */
-export const readFileContent = async (absolutePath: string, withLines = false, lineOffset = 0, lineLimit = 1000): Promise<string> =>
 ⋮----
 export const createPowerToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext, abortSignal?: AbortSignal): ToolSet =>
 ⋮----
@@ -1685,7 +1666,7 @@ const cleanup = () =>
 ⋮----
 // Remove abort listener to prevent memory leaks
 ⋮----
-const resolveWithResult = () =>
+const resolveWithResult = async () =>
 ⋮----
 abortListener = () =>
 ⋮----
@@ -2200,7 +2181,7 @@ import {
 } from '@common/tools';
 import { TextPart } from '@ai-sdk/provider-utils';
 ⋮----
-import { createPowerToolset, readFileContent } from './tools/power';
+import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
 import { createSearchParentTaskTool, createTasksToolset } from './tools/tasks';
 import { createAiderToolset } from './tools/aider';
@@ -2209,7 +2190,14 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, findLastUserMessage, THINKING_RESPONSE_STAR_TAG } from './utils';
+import {
+  ANSWER_RESPONSE_START_TAG,
+  extractPromptContextFromToolResult,
+  findLastUserMessage,
+  readFileContent,
+  THINKING_RESPONSE_STAR_TAG,
+  truncateToolResult,
+} from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 ⋮----
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
@@ -2321,6 +2309,8 @@ const execute = async (args:
 // --- End Tool Approval Logic ---
 ⋮----
 // Enforce minimum time between tool calls
+⋮----
+// Truncate large text content in the response
 ⋮----
 // Update last tool call time
 ⋮----
@@ -2807,6 +2797,12 @@ const newMessages = [...messages]; // Create a mutable copy
 ================
 File: src/main/agent/utils.ts
 ================
+import os, { tmpdir } from 'os';
+import fs from 'fs/promises';
+import path from 'path';
+⋮----
+// @ts-expect-error istextorbinary is not typed properly
+import { isBinary } from 'istextorbinary';
 import { ContextMessage, ContextUserMessage, MessageRole, PromptContext } from '@common/types';
 ⋮----
 /**
@@ -2817,6 +2813,33 @@ import { ContextMessage, ContextUserMessage, MessageRole, PromptContext } from '
 export const extractPromptContextFromToolResult = (toolResult: unknown): PromptContext | undefined =>
 ⋮----
 export const findLastUserMessage = (messages: ContextMessage[]): ContextUserMessage | undefined =>
+⋮----
+/**
+ * Expands a tilde (~) at the beginning of a path to the user's home directory.
+ * @param filePath - The file path to expand
+ * @returns The expanded path with ~ replaced by the home directory
+ */
+export const expandTilde = (filePath: string): string =>
+⋮----
+/**
+ * Reads a file and returns its content with optional line numbering and line range.
+ * @param absolutePath - The absolute path to the file
+ * @param withLines - Whether to return the file content with line numbers in format "lineNumber|content"
+ * @param lineOffset - The starting line number (0-based) to begin reading from
+ * @param lineLimit - The maximum number of lines to read
+ * @param sizeLimit - Maximum file size in KB; files exceeding this are truncated. Defaults to 5% of lineLimit
+ * @returns The file content as a string, formatted according to the parameters
+ * @throws Error if the file is binary or cannot be read
+ */
+export const readFileContent = async (
+  absolutePath: string,
+  withLines = false,
+  lineOffset = 0,
+  lineLimit = 1000,
+  sizeLimit = 0.05 * lineLimit,
+): Promise<string> =>
+⋮----
+export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50): Promise<string> =>
 
 ================
 File: src/main/connector/connector-manager.ts
@@ -10210,7 +10233,7 @@ File: src/main/worktrees/worktree-manager.ts
 ================
 import path, { join } from 'path';
 import fs, { mkdir, rm, lstat, symlink } from 'fs/promises';
-import { existsSync } from 'fs';
+import { existsSync, lstatSync } from 'fs';
 ⋮----
 import {
   ConflictResolutionFileContext,
@@ -10590,9 +10613,12 @@ async checkWorktreeForUnmergedWork(
     projectPath: string,
     worktreePath: string,
     targetBranch?: string,
+    symlinkFolders: string[] = [],
 ): Promise<
 ⋮----
 // 1. Check for uncommitted changes
+⋮----
+// Filter out files that belong to symlink folders (worktree infrastructure artifacts)
 ⋮----
 // 2. Get the target branch name
 ⋮----
@@ -10605,6 +10631,10 @@ async checkWorktreeForUnmergedWork(
 async getAheadCommits(worktreePath: string, targetBranch: string): Promise<WorktreeAheadCommits>
 ⋮----
 async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles>
+⋮----
+private parseGitStatusEntries(stdout: string): string[]
+⋮----
+private isSymlinkPath(cwd: string, filePath: string): boolean
 ⋮----
 /**
    * Get updated files with per-commit and uncommitted diffs.
@@ -14144,7 +14174,13 @@ import { ContextFile, Mode, TokensInfoData } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocalStorage } from '@reactuses/core';
-import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { RiMenuUnfold4Line, RiListSettingsLine } from 'react-icons/ri';
+import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { clsx } from 'clsx';
+import { MdDone } from 'react-icons/md';
+import { AnimatePresence } from 'framer-motion';
 ⋮----
 import { UserContextFilesSection } from './UserContextFilesSection';
 import { UpdatedFilesSection } from './UpdatedFilesSection';
@@ -14158,6 +14194,7 @@ import type { SectionType, TreeItem } from './types';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useOS } from '@/hooks/useOS';
 import { useApi } from '@/contexts/ApiContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 ⋮----
 type Props = {
   baseDir: string;
@@ -14172,7 +14209,16 @@ type Props = {
   taskName?: string;
 };
 ⋮----
+type SortableSectionWrapperProps = {
+  id: SectionType;
+  editMode: boolean;
+  isHidden: boolean;
+  children: React.ReactNode;
+};
+⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
+onToggleHidden=
 
 ================
 File: src/renderer/src/components/ContextFiles/ContextFilesSection.tsx
@@ -14201,13 +14247,15 @@ type Props = {
   tokensInfo?: TokensInfoData | null;
   os: OS | null;
   actions?: React.ReactNode;
-  alwaysVisibleActions?: React.ReactNode;
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
   showBorderTop?: boolean;
   disabledRuleFiles?: string[];
   totalRuleCount?: number;
+  editMode?: boolean;
+  isHidden?: boolean;
   onToggle: () => void;
+  onToggleHidden?: () => void;
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
@@ -14230,13 +14278,15 @@ export const ContextFilesSection = ({
   tokensInfo,
   os,
   actions,
-  alwaysVisibleActions,
   searchField,
   emptyContent,
   showBorderTop = false,
   disabledRuleFiles,
   totalRuleCount,
+  editMode,
+  isHidden,
   onToggle,
+  onToggleHidden,
   onToggleRuleFile,
   onFileDiffClick,
   onFilePreviewClick,
@@ -14440,6 +14490,10 @@ type Props = {
   onToggle: () => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
 };
 ⋮----
 // eslint-disable-next-line no-console
@@ -14509,6 +14563,8 @@ File: src/renderer/src/components/ContextFiles/SectionHeader.tsx
 import { HiChevronDown } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
+import { MdDragIndicator } from 'react-icons/md';
+import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 ⋮----
 import type { SectionType } from './types';
 ⋮----
@@ -14520,11 +14576,13 @@ type Props = {
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
   actions?: React.ReactNode;
-  alwaysVisibleActions?: React.ReactNode;
   onToggle: () => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
 };
 ⋮----
-<div className=
+className=
 
 ================
 File: src/renderer/src/components/ContextFiles/SkillsSection.tsx
@@ -14734,11 +14792,12 @@ File: src/renderer/src/components/ContextFiles/UpdatedFilesSection.tsx
 import { ContextFile, OS, TokensInfoData, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
 import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
-import { MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
+import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
+import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 ⋮----
 import { createFileTree } from './types';
 import { SectionContent } from './SectionContent';
@@ -14773,7 +14832,13 @@ type Props = {
   visitedSections: Set<string>;
   onToggle: () => void;
   taskName?: string;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
 };
+⋮----
+className=
 ⋮----
 // Group files by commit hash; preserve commit order from backend (newest first in array),
 // then reverse for display (oldest first). Uncommitted always last.
@@ -14801,8 +14866,6 @@ type Props = {
 // eslint-disable-next-line no-console
 ⋮----
 // eslint-disable-next-line no-console
-⋮----
-className=
 ⋮----
 {/* Outer section header */}
 ⋮----
@@ -14851,10 +14914,13 @@ type Props = {
   contextFilesMap: Map<string, ContextFile>;
   showFileDialog: () => void;
   onDropAllFiles: () => void;
-  collapseButton?: React.ReactNode;
   onToggle: () => void;
   onFilePreviewClick?: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
 };
 ⋮----
 const expandFolders = (treeData: Record<string, TreeItem>, files: ContextFile[], currentExpanded: string[]) =>
