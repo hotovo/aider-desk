@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added onInterrupted extension hook to allow blocking or customizing interrupt behavior
+- fixed 'process is not defined' error in renderer
 
 ## [0.64.0]
 

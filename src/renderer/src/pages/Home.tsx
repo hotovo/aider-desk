@@ -9,6 +9,7 @@ import { useSearchParams } from 'react-router-dom';
 import { compareBaseDirs } from '@common/utils';
 
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
+import { useOS } from '@/hooks/useOS';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
 import { LogsPage } from '@/components/logs/LogsPage';
 import { IconButton } from '@/components/common/IconButton';
@@ -40,6 +41,7 @@ export const Home = () => {
   const { t } = useTranslation();
   const { versions } = useVersions();
   const api = useApi();
+  const os = useOS();
   const { PROJECT_HOTKEYS } = useConfiguredHotkeys();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openProjects, setOpenProjects] = useState<ProjectData[]>([]);
@@ -220,7 +222,7 @@ export const Home = () => {
         return;
       }
 
-      const existingProject = optimisticOpenProjects.find((p) => compareBaseDirs(p.baseDir, projectBaseDir));
+      const existingProject = optimisticOpenProjects.find((p) => compareBaseDirs(p.baseDir, projectBaseDir, os ?? undefined));
 
       // Only update initial task ID on first navigation or when task changes
       if (taskId && (!initialUrlNavigationDone || taskId !== initialTaskId)) {
@@ -229,7 +231,7 @@ export const Home = () => {
       startProjectTransition(async () => {
         if (existingProject) {
           // Project exists, just update optimistic state (URL is already set)
-          if (!compareBaseDirs(activeProject, projectBaseDir)) {
+          if (!compareBaseDirs(activeProject, projectBaseDir, os ?? undefined)) {
             setOptimisticActiveProject(projectBaseDir);
           }
         } else {
