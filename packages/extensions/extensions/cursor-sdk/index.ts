@@ -247,13 +247,99 @@ function transformCursorResult(
     case 'glob': {
       const v = value as { files: string[]; totalFiles: number };
       const files = v?.files ?? [];
-      const str = files.join('\n');
-      return { resultStr: str, output: { type: 'text', value: str } };
+      return { resultStr: JSON.stringify(files), output: { type: 'json', value: files } };
     }
     case 'grep': {
-      const v = value as { workspaceResults?: Record<string, unknown> };
-      const str = JSON.stringify(v ?? {});
-      return { resultStr: str, output: { type: 'text', value: str } };
+      const v = value as {
+        workspaceResults?: Record<string, {
+          type: 'content' | 'files';
+          output?: {
+            matches?: Array<{
+              file: string;
+              line: string;
+              lineNumber?: number;
+              beforeContext?: string[];
+              afterContext?: string[];
+            }>;
+            totalMatches?: number;
+            files?: string[];
+            count?: number;
+          };
+        }>;
+      };
+
+      const workspaceResults = v?.workspaceResults;
+      if (!workspaceResults || Object.keys(workspaceResults).length === 0) {
+        const noResults = 'No matches found.';
+        return { resultStr: JSON.stringify(noResults), output: { type: 'text', value: noResults } };
+      }
+
+      const allMatches: Array<{
+        filePath: string;
+        lineNumber: number;
+        lineContent: string;
+        context?: string[];
+      }> = [];
+
+      for (const [, result] of Object.entries(workspaceResults)) {
+        if (result.type === 'content' && result.output?.matches) {
+          for (const match of result.output.matches) {
+            const lineContent = match.line ?? '';
+            const context: string[] = [];
+            if (match.beforeContext) {
+              context.push(...match.beforeContext);
+            }
+            if (lineContent) {
+              context.push(lineContent);
+            }
+            if (match.afterContext) {
+              context.push(...match.afterContext);
+            }
+            allMatches.push({
+              filePath: match.file,
+              lineNumber: match.lineNumber ?? 0,
+              lineContent,
+              context: context.length > 1 ? context : undefined,
+            });
+          }
+        }
+      }
+
+      if (allMatches.length === 0) {
+        const noResults = 'No matches found.';
+        return { resultStr: JSON.stringify(noResults), output: { type: 'text', value: noResults } };
+      }
+
+      const grouped: Record<string, typeof allMatches> = {};
+      for (const r of allMatches) {
+        if (!grouped[r.filePath]) {
+          grouped[r.filePath] = [];
+        }
+        grouped[r.filePath].push(r);
+      }
+
+      const lines: string[] = [];
+      lines.push(`## Grep Results (${allMatches.length} matches)`);
+      lines.push('');
+
+      for (const [filePath, matches] of Object.entries(grouped)) {
+        lines.push(`### ${filePath} (${matches.length} ${matches.length === 1 ? 'match' : 'matches'})`);
+        for (const match of matches) {
+          const escapedContent = match.lineContent.replace(/`/g, '\\`');
+          lines.push(`- **L${match.lineNumber}:** \`${escapedContent}\``);
+          if (match.context && match.context.length > 0) {
+            lines.push('  ```');
+            for (const ctxLine of match.context) {
+              lines.push(`  ${ctxLine}`);
+            }
+            lines.push('  ```');
+          }
+        }
+        lines.push('');
+      }
+
+      const str = lines.join('\n');
+      return { resultStr: JSON.stringify(str), output: { type: 'text', value: str } };
     }
     default: {
       const str = cursorResult !== undefined
@@ -272,7 +358,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     icon: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
