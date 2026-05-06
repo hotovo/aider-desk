@@ -1,0 +1,13 @@
+{
+  "name": "external-skills-extension",
+  "version": "1.0.0",
+  "description": "Includes skill files from Cursor, Claude Code, and other external AI coding assistants",
+  "main": "index.ts",
+  "author": "wladimiiir",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@aiderdesk/extensions": ">=0.14.0",
+    "yaml-front-matter": "^4.1.1"
+  }
+}

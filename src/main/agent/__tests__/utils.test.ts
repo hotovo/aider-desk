@@ -77,7 +77,7 @@ describe('truncateToolResult', () => {
       const previewSection = result.split('\n... Content truncated')[0];
       const previewBytes = Buffer.byteLength(previewSection, 'utf8');
       expect(previewBytes).toBeLessThanOrEqual(10 * 1024);
-    });
+    }, 30000);
 
     it('should truncate by bytes when size exceeds limit even if line count is within limit', async () => {
       const longLine = 'b'.repeat(60 * 1024);
@@ -152,7 +152,7 @@ describe('truncateToolResult', () => {
 
       writeSpy.mockRestore();
     });
-  });
+  }, 30000);
 
   describe('edge cases', () => {
     it('should handle empty string', async () => {

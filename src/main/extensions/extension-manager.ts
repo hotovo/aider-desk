@@ -1148,7 +1148,7 @@ export class ExtensionManager {
 
           collectedSkills.push({
             ...skill,
-            location: 'extension',
+            location: skill.location || 'extension',
           });
         }
       } catch (error) {

@@ -82,6 +82,15 @@
       "capabilities": ["context"]
     },
     {
+      "id": "external-skills",
+      "name": "External Skills",
+      "description": "Includes skill files from Cursor, Claude Code, and other external AI coding assistants",
+      "folder": "external-skills",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["context"]
+    },
+    {
       "id": "sound-notification",
       "name": "Sound Notification",
       "description": "Plays sound notifications using packs from og-packs",
