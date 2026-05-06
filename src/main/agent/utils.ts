@@ -4,6 +4,7 @@ import path from 'path';
 
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
+import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { ContextMessage, ContextUserMessage, MessageRole, PromptContext } from '@common/types';
 
 export const THINKING_RESPONSE_STAR_TAG = '---\n► **THINKING**\n';
@@ -96,12 +97,13 @@ export const readFileContent = async (
   return limitedLines.join('\n');
 };
 
-export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50): Promise<string> => {
+export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50, maxTokens = 50000): Promise<string> => {
   const lines = content.split('\n');
   const sizeBytes = Buffer.byteLength(content, 'utf8');
   const sizeKB = sizeBytes / 1024;
+  const tokenCount = maxTokens === Infinity ? 0 : encode(content).length;
 
-  if (lines.length <= maxLines && sizeKB <= maxSizeKB) {
+  if (lines.length <= maxLines && sizeKB <= maxSizeKB && tokenCount <= maxTokens) {
     return content;
   }
 
@@ -111,7 +113,6 @@ export const truncateToolResult = async (content: string, maxLines = 1000, maxSi
 
   await fs.writeFile(tmpFilePath, content, 'utf8');
 
-  const previewLines = lines.slice(0, maxLines);
   const reasons: string[] = [];
   if (lines.length > maxLines) {
     reasons.push(`${lines.length} lines exceeded limit of ${maxLines}`);
@@ -119,6 +120,54 @@ export const truncateToolResult = async (content: string, maxLines = 1000, maxSi
   if (sizeKB > maxSizeKB) {
     reasons.push(`${sizeKB.toFixed(1)} KB exceeded limit of ${maxSizeKB} KB`);
   }
+  if (tokenCount > maxTokens) {
+    reasons.push(`${tokenCount} tokens exceeded limit of ${maxTokens}`);
+  }
 
-  return previewLines.join('\n') + `\n... Content truncated (${reasons.join(', ')}). Full content saved to ${tmpFilePath}.`;
+  if (tokenCount > maxTokens) {
+    const headBudget = Math.floor(maxTokens / 2);
+    const tailBudget = maxTokens - headBudget;
+
+    const headLines: string[] = [];
+    let headTokens = 0;
+    for (const line of lines) {
+      const lineTokens = encode(line).length;
+      if (headTokens + lineTokens > headBudget) {
+        break;
+      }
+      headLines.push(line);
+      headTokens += lineTokens;
+    }
+
+    const tailLines: string[] = [];
+    let tailTokens = 0;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (headLines.length + tailLines.length >= lines.length) {
+        break;
+      }
+      const lineTokens = encode(lines[i]).length;
+      if (tailTokens + lineTokens > tailBudget) {
+        break;
+      }
+      tailLines.unshift(lines[i]);
+      tailTokens += lineTokens;
+    }
+
+    const omittedLines = lines.length - headLines.length - tailLines.length;
+    const truncationNotice = `\n\n... ${omittedLines} lines omitted (${reasons.join(', ')}). Full content saved to ${tmpFilePath}.\n\n`;
+
+    return headLines.join('\n') + truncationNotice + tailLines.join('\n');
+  }
+
+  let preview: string;
+
+  if (sizeKB > maxSizeKB) {
+    const maxBytes = Math.floor(maxSizeKB * 1024);
+    const contentBuffer = Buffer.from(content, 'utf8');
+    preview = contentBuffer.subarray(0, maxBytes).toString('utf8');
+  } else {
+    preview = lines.slice(0, maxLines).join('\n');
+  }
+
+  return preview + `\n... Content truncated (${reasons.join(', ')}). Full content saved to ${tmpFilePath}.`;
 };

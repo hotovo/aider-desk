@@ -637,8 +637,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           isResolved = true;
           cleanup();
 
-          const truncatedStdout = await truncateToolResult(stdout);
-          const truncatedStderr = await truncateToolResult(stderr);
+          const truncatedStdout = await truncateToolResult(stdout, 1000, 50, 10000);
+          const truncatedStderr = await truncateToolResult(stderr, 1000, 50, 10000);
 
           resolve({ stdout: truncatedStdout, stderr: truncatedStderr, exitCode });
         };
