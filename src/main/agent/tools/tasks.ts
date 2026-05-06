@@ -319,6 +319,10 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           updates.provider = provider;
           updates.model = modelParts.join('/');
           updates.mainModel = modelId;
+        } else {
+          // Clear inherited provider/model so the profile's own defaults are used
+          updates.provider = undefined;
+          updates.model = undefined;
         }
 
         // createNewTask returns TaskData, not Task instance
