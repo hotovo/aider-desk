@@ -3394,7 +3394,6 @@ ${error.stderr}`,
     };
 
     this.addUserMessage(promptContext.id, prompt);
-    this.addLogMessage('loading', 'Executing custom command...');
 
     try {
       if (!AIDER_MODES.includes(mode)) {
@@ -3405,13 +3404,26 @@ ${error.stderr}`,
           return;
         }
 
+        // Activate command skills before running the prompt
+        if (command.skills?.length) {
+          for (const skillName of command.skills) {
+            try {
+              await this.activateSkill(skillName);
+            } catch (error) {
+              logger.warn(`Failed to activate skill '${skillName}' for command '${commandName}': ${error instanceof Error ? error.message : String(error)}`);
+            }
+          }
+        }
+
         const systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), this, profile, command.autoApprove ?? this.task.autoApprove);
 
         const messages = command.includeContext === false ? [] : undefined;
         const contextFiles = command.includeContext === false ? [] : undefined;
+        this.addLogMessage('loading', 'Executing custom command...');
         await this.runPromptInAgent(profile, mode, prompt, promptContext, messages, contextFiles, systemPrompt);
       } else {
         // All other modes (code, ask, architect)
+        this.addLogMessage('loading', 'Executing custom command...');
         await this.runPromptInAider(mode, prompt, promptContext);
       }
     } finally {

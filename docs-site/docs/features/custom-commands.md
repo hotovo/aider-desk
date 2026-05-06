@@ -52,6 +52,7 @@ Any line starting with `!` will be treated as a shell command.
     *   `description` (string, **required**): A description of what the argument represents.
     *   `required` (boolean, optional): Set to `true` if the argument is mandatory, `false` otherwise. Defaults to `true`.
 *   `includeContext` (boolean, optional): Determines whether the current conversation context (chat history and context files) should be included when the command is run. Defaults to `true`. If set to `false`, the agent will receive an empty list of messages. This is useful for commands that should operate independently of the current task.
+*   `skills` (string, optional): A comma-separated list of skill names to activate before the command prompt is executed. Skills are only activated in non-Aider modes (e.g., agent mode). For example: `skills: writing-tests, code-review`.
 
 ### Command Template:
 

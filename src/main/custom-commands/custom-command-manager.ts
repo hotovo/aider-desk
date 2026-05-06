@@ -185,6 +185,13 @@ export class CustomCommandManager {
       const template = parsed.__content?.trim() || '';
       const includeContext = typeof parsed.includeContext === 'boolean' ? parsed.includeContext : true;
       const autoApprove = typeof parsed.autoApprove === 'boolean' ? parsed.autoApprove : undefined;
+      const skills =
+        typeof parsed.skills === 'string' && parsed.skills.trim()
+          ? parsed.skills
+              .split(',')
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : undefined;
       commands.set(name, {
         name,
         description: parsed.description || 'Not specified',
@@ -192,6 +199,7 @@ export class CustomCommandManager {
         template,
         includeContext,
         autoApprove,
+        skills,
       });
     } catch (err) {
       logger.error(`Failed to parse command file ${filePath}: ${err}`);

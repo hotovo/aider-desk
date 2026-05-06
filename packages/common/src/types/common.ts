@@ -956,6 +956,7 @@ export interface CustomCommand extends Command {
   template: string;
   includeContext?: boolean;
   autoApprove?: boolean;
+  skills?: string[];
 }
 
 export interface TerminalData {
