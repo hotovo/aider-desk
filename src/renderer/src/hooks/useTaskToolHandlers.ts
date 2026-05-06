@@ -88,13 +88,14 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
         const loadingMessages = prevMessages.filter((message) => message.type === 'loading');
         const nonLoadingMessages = prevMessages.filter((message) => message.type !== 'loading' && message.id !== id);
         const toolMessageIndex = prevMessages.findIndex((message) => message.id === id);
-        const toolMessage = prevMessages[toolMessageIndex];
+        const toolMessage = prevMessages[toolMessageIndex] as ToolMessage;
 
         if (toolMessage) {
           const updatedMessages = [...prevMessages];
           updatedMessages[toolMessageIndex] = {
             ...createNewToolMessage(),
             ...toolMessage,
+            args: args || toolMessage.args,
             content: response || '',
             usageReport,
             promptContext,
