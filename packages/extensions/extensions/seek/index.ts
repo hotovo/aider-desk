@@ -6,10 +6,10 @@ import type { Extension, ExtensionContext, ProjectStartedEvent, ToolDefinition }
 
 export const metadata = {
   name: 'seek',
-  version: '1.1.0',
+  version: '1.1.1',
   description: 'Fast ranked code search using seek (zoekt) — replaces the internal grep tool',
   author: 'wladimiiir',
-  icon: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/seek/icon.png',
+  iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/seek/icon.png',
   capabilities: ['tools', 'search'],
 };
 

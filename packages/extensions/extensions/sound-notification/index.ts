@@ -46,9 +46,9 @@ const bundledPacks: SoundPack[] = JSON.parse(readFileSync(join(__dirname, 'packs
 export default class SoundNotificationExtension implements Extension {
   static metadata = {
     name: 'Sound Notification',
-    version: '2.0.0',
+    version: '2.0.1',
     description: 'Plays sound notifications using packs from og-packs',
-    icon: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sound-notification/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sound-notification/icon.png',
     capabilities: ['notifications'],
   };
 
