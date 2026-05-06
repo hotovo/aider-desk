@@ -15,7 +15,7 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { AgentProfile, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
-import { fileExists } from '@common/utils';
+import { fileExists, isUuid } from '@common/utils';
 
 import { ApprovalManager } from './approval-manager';
 
@@ -23,6 +23,7 @@ import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import { search } from '@/utils/probe';
 import logger from '@/logger';
 import { isAbortError } from '@/utils/errors';
+import { deriveDirName } from '@/utils';
 import { Task } from '@/task';
 
 export const createTasksToolset = (settings: SettingsData, task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet => {
@@ -210,11 +211,28 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
   const nameProperty = autoGenerateTaskName
     ? z.string().optional().describe('Optional concise name for the new task. If not provided, the task name will be auto-generated from the prompt.')
     : z.string().describe('Concise name for the new task.');
+
+  const availableAgents = task
+    .getProject()
+    .getAgentProfiles()
+    .map((p) => {
+      const slug = deriveDirName(p.name, new Set());
+      const shortId = isUuid(p.id) ? p.id.substring(0, 8) : p.id;
+      return `${slug}(${shortId})`;
+    })
+    .join(',');
+
   const CreateTaskInputSchema = z.object({
     prompt: z.string().describe('The initial prompt for the new task'),
     name: nameProperty,
-    agentProfileId: z.string().optional().describe('Optional agent profile ID to use for the task. Use only when explicitly requested by the user.'),
-    modelId: z.string().optional().describe('Optional model ID to use for the task. Use only when explicitly requested by the user.'),
+    agentProfileId: z
+      .string()
+      .optional()
+      .describe(`Optional agent profile ID or name. Available agents: ${availableAgents}. Use only when explicitly requested by the user.`),
+    modelId: z
+      .string()
+      .optional()
+      .describe('Optional model ID in the format `provider/model` to use for the task. Use only when explicitly requested by the user.'),
     mode: z.string().optional().default('agent').describe('Optional mode to use for the task. Use only when explicitly requested by the user.'),
     asSubtask: z
       .boolean()
@@ -282,7 +300,17 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         const updates: Partial<TaskData> = {};
 
         if (agentProfileId) {
-          updates.agentProfileId = agentProfileId;
+          const resolvedProfile = task.getProject().resolveAgentProfile(agentProfileId);
+          if (resolvedProfile) {
+            updates.agentProfileId = resolvedProfile.id;
+          } else {
+            const availableProfiles = task
+              .getProject()
+              .getAgentProfiles()
+              .map((p) => `"${p.name}"`)
+              .join(', ');
+            return `Agent profile '${agentProfileId}' not found. Available profiles: ${availableProfiles}`;
+          }
         }
 
         if (modelId) {

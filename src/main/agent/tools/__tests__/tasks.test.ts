@@ -27,6 +27,7 @@ describe('Tasks Tools - search_task', () => {
       getTask: vi.fn(),
       deleteTask: vi.fn(),
       getTasks: vi.fn(),
+      getAgentProfiles: vi.fn(() => []),
     };
 
     mockTask = {

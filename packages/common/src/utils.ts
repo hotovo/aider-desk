@@ -303,3 +303,5 @@ export const extractProviderModel = (modelId: string): [string, string] => {
   const [providerId, ...modelParts] = modelId.split('/');
   return [providerId, modelParts.join('/')];
 };
+
+export const isUuid = (id: string): boolean => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);

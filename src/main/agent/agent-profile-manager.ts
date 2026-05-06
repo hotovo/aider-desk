@@ -612,6 +612,50 @@ export class AgentProfileManager {
     return this.profiles.get(profileId)?.agentProfile;
   }
 
+  public resolveAgentProfile(id: string): AgentProfile | null {
+    const lowerId = id.toLowerCase();
+
+    // 1. Try matching by profile id (covers both file-based and extension agents)
+    const directMatch = this.getProfile(id);
+    if (directMatch) {
+      return directMatch;
+    }
+
+    const allProfiles = this.getAllProfiles();
+
+    // 2. Try matching by profile name (case-insensitive)
+    for (const profile of allProfiles) {
+      if (profile.name.toLowerCase() === lowerId) {
+        return profile;
+      }
+    }
+
+    // 3. Try matching by dirName (folder name) for file-based profiles
+    for (const context of this.profiles.values()) {
+      if (context.dirName.toLowerCase() === lowerId) {
+        return context.agentProfile;
+      }
+    }
+
+    // 4. Try matching by dirName using slugified input
+    const slugifiedId = deriveDirName(id, new Set()).toLowerCase();
+    for (const context of this.profiles.values()) {
+      if (context.dirName.toLowerCase() === slugifiedId) {
+        return context.agentProfile;
+      }
+    }
+
+    // 5. Try matching by derived name from profile name (slugified + filenamified)
+    for (const profile of allProfiles) {
+      const derivedName = deriveDirName(profile.name, new Set()).toLowerCase();
+      if (derivedName === slugifiedId) {
+        return profile;
+      }
+    }
+
+    return null;
+  }
+
   private getOrderedProfiles(profileContexts: AgentProfileContext[]): AgentProfile[] {
     return profileContexts
       .sort((a, b) => {

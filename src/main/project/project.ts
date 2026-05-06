@@ -368,6 +368,10 @@ export class Project {
     return this.agentProfileManager.getProjectProfiles(this);
   }
 
+  public resolveAgentProfile(id: string): AgentProfile | null {
+    return this.agentProfileManager.resolveAgentProfile(id);
+  }
+
   /**
    * Checks if any other task (excluding the specified taskId) uses the given worktree path.
    */

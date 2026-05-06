@@ -147,9 +147,7 @@ describe('truncateToolResult', () => {
 
       await truncateToolResult(content);
 
-      const tmpFileCalls = writeSpy.mock.calls.filter((call) =>
-        String(call[0]).includes('aider-desk-tool-result-'),
-      );
+      const tmpFileCalls = writeSpy.mock.calls.filter((call) => String(call[0]).includes('aider-desk-tool-result-'));
       expect(tmpFileCalls).toHaveLength(0);
 
       writeSpy.mockRestore();
