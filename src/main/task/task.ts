@@ -3020,6 +3020,7 @@ export class Task {
 
   async updateContextInfo(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {
     void this.debouncedUpdateContextInfo(checkContextFilesIncluded, checkRepoMapIncluded);
+    void this.sendSkillsUpdated();
   }
 
   private debouncedUpdateContextInfo = debounce(async (checkContextFilesIncluded = false, checkRepoMapIncluded = false) => {
