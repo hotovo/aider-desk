@@ -261,6 +261,13 @@ export class EventsHandler {
     }
   }
 
+  async smartCompactConversation(baseDir: string, taskId: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (task) {
+      await task.smartCompactConversation();
+    }
+  }
+
   async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {

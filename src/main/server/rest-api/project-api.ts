@@ -259,6 +259,11 @@ const HandoffConversationSchema = z.object({
   focus: z.string().optional(),
 });
 
+const SmartCompactConversationSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+});
+
 const ChangeRequestItemSchema = z.object({
   filename: z.string().min(1, 'Filename is required'),
   lineNumber: z.number().int().min(1, 'Line number is required'),
@@ -760,6 +765,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, mode, customInstructions } = parsed;
         await this.eventsHandler.compactConversation(projectDir, taskId, mode, customInstructions);
         res.status(200).json({ message: 'Conversation compacted' });
+      }),
+    );
+
+    // Smart compact conversation
+    router.post(
+      '/project/smart-compact-conversation',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(SmartCompactConversationSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.smartCompactConversation(projectDir, taskId);
+        res.status(200).json({ message: 'Conversation smart-compacted' });
       }),
     );
 

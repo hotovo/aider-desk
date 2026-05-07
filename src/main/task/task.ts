@@ -2115,6 +2115,10 @@ export class Task {
     return this.contextManager.getContextMessages();
   }
 
+  public setContextMessages(messages: ContextMessage[], save = true) {
+    this.contextManager.setContextMessages(messages, save);
+  }
+
   public getSkillManager(): SkillManager {
     return this.skillManager;
   }
@@ -2755,6 +2759,25 @@ export class Task {
     }
 
     return skillMessages;
+  }
+
+  public async smartCompactConversation(contextMessages?: ContextMessage[]) {
+    if (!contextMessages) {
+      contextMessages = await this.contextManager.getContextMessages();
+    }
+
+    if (contextMessages.length === 0) {
+      this.addLogMessage('warning', 'No conversation to compact.');
+      return;
+    }
+
+    const { smartCompactMessages } = await import('@/agent/smart-compaction');
+    const compactedMessages = smartCompactMessages(contextMessages);
+
+    this.contextManager.setContextMessages(compactedMessages);
+    await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
+    await this.updateContextInfo();
+    this.addLogMessage('info', 'Conversation smart-compacted.');
   }
 
   public async compactConversation(

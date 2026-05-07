@@ -13,6 +13,7 @@ import { ItemConfig, ItemSelector } from '../common/ItemSelector';
 import { ChipListInput } from '../common/ChipListInput';
 
 import { Input } from '@/components/common/Input';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 const WORKING_MODE_ITEMS: ItemConfig<WorkingMode>[] = [
   {
@@ -193,7 +194,7 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
   };
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
+    <div className="space-y-6 flex flex-col">
       <Section title={t('settings.tasks.title')} className="px-4 py-5">
         <div className="space-y-3">
           <div className="space-y-2">
@@ -281,6 +282,99 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
         </div>
       </Section>
 
+      <Section id="context" title={t('settings.tasks.contextManagement')}>
+        <div className="px-4 py-3 pt-4">
+          <div className="flex gap-16 items-start mb-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <Slider
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={settings.taskSettings.contextCompactingThreshold.percentage}
+                  onChange={handleCompactingThresholdPercentageChange}
+                  showValue={false}
+                  size="sm"
+                  className="flex-1"
+                  label={
+                    <div className="flex items-center gap-1 mb-2">
+                      <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactingThreshold')}</label>
+                      <InfoIcon tooltip={t('settings.tasks.contextCompactingThresholdTooltip')} />
+                    </div>
+                  }
+                />
+                <span className="text-xs text-text-primary font-medium text-right">
+                  {settings.taskSettings.contextCompactingThreshold.percentage === 0
+                    ? t('settings.tasks.contextCompactingThresholdOff')
+                    : `${settings.taskSettings.contextCompactingThreshold.percentage}%`}
+                </span>
+              </div>
+            </div>
+
+            <Input
+              type="number"
+              min={0}
+              step={10000}
+              value={settings.taskSettings.contextCompactingThreshold.tokens}
+              onChange={(e) => handleCompactingThresholdTokensChange(e.target.value)}
+              label={
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactingThresholdTokens')}</label>
+                  <InfoIcon tooltip={t('settings.tasks.contextCompactingThresholdTokensTooltip')} />
+                </div>
+              }
+              wrapperClassName="flex-1"
+            />
+          </div>
+
+          <div className="text-2xs text-text-muted mb-4">{t('settings.tasks.contextCompactingThresholdLowerNote')}</div>
+
+          <div className="flex items-center gap-1 mb-2">
+            <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactionType')}</label>
+            <InfoIcon tooltip={t('settings.tasks.contextCompactionTypeTooltip')} />
+          </div>
+
+          <div className="flex gap-2">
+            <Tooltip content={t('settings.tasks.contextCompactionTypeCompactTooltip')}>
+              <button
+                onClick={() => handleCompactionTypeChange(ContextCompactionType.Compact)}
+                className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
+                  settings.taskSettings.contextCompactionType === ContextCompactionType.Compact
+                    ? 'bg-bg-primary border-border-light text-text-primary'
+                    : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
+                }`}
+              >
+                {t('settings.tasks.contextCompactionTypeCompact')}
+              </button>
+            </Tooltip>
+            <Tooltip content={t('settings.tasks.contextCompactionTypeSmartTooltip')}>
+              <button
+                onClick={() => handleCompactionTypeChange(ContextCompactionType.Smart)}
+                className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
+                  settings.taskSettings.contextCompactionType === ContextCompactionType.Smart
+                    ? 'bg-bg-primary border-border-light text-text-primary'
+                    : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
+                }`}
+              >
+                {t('settings.tasks.contextCompactionTypeSmart')}
+              </button>
+            </Tooltip>
+            <Tooltip content={t('settings.tasks.contextCompactionTypeHandoffTooltip')}>
+              <button
+                onClick={() => handleCompactionTypeChange(ContextCompactionType.Handoff)}
+                className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
+                  settings.taskSettings.contextCompactionType === ContextCompactionType.Handoff
+                    ? 'bg-bg-primary border-border-light text-text-primary'
+                    : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
+                }`}
+              >
+                {t('settings.tasks.contextCompactionTypeHandoff')}
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+      </Section>
+
       <Section id="worktree" title={t('settings.tasks.worktree')}>
         <div className="px-4 py-3 pt-4 space-y-3">
           <div className="flex flex-col gap-3">
@@ -339,87 +433,6 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
                 removeTooltip={t('settings.tasks.removeSymlinkFolder')}
                 emptyLabel={t('settings.tasks.noSymlinkFolders')}
               />
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      <Section id="context" title={t('settings.tasks.contextManagement')}>
-        <div className="px-4 py-3 pt-4">
-          <div className="flex gap-16 items-start">
-            <div className="flex-1">
-              <div className="flex items-center gap-1 mb-2">
-                <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactingThreshold')}</label>
-                <InfoIcon tooltip={t('settings.tasks.contextCompactingThresholdTooltip')} />
-              </div>
-
-              <div className="flex items-center gap-3 mb-3">
-                <Slider
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={settings.taskSettings.contextCompactingThreshold.percentage}
-                  onChange={handleCompactingThresholdPercentageChange}
-                  showValue={false}
-                  size="sm"
-                  className="flex-1"
-                />
-                <span className="text-xs text-text-primary font-medium text-right">
-                  {settings.taskSettings.contextCompactingThreshold.percentage === 0
-                    ? t('settings.tasks.contextCompactingThresholdOff')
-                    : `${settings.taskSettings.contextCompactingThreshold.percentage}%`}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 flex-1">
-                  <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactingThresholdTokens')}</label>
-                  <InfoIcon tooltip={t('settings.tasks.contextCompactingThresholdTokensTooltip')} />
-                </div>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number"
-                    min={0}
-                    step={10000}
-                    value={settings.taskSettings.contextCompactingThreshold.tokens}
-                    onChange={(e) => handleCompactingThresholdTokensChange(e.target.value)}
-                    className="w-24 px-2 py-1 text-xs bg-bg-secondary-light border border-border-default rounded text-text-primary focus:outline-none focus:border-border-light"
-                  />
-                  <span className="text-xs text-text-muted">{t('common.suffix.tokens')}</span>
-                </div>
-              </div>
-
-              <div className="text-2xs text-text-muted mt-2">{t('settings.tasks.contextCompactingThresholdLowerNote')}</div>
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-center gap-1 mb-2">
-                <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactionType')}</label>
-                <InfoIcon tooltip={t('settings.tasks.contextCompactionTypeTooltip')} />
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleCompactionTypeChange(ContextCompactionType.Compact)}
-                  className={`flex-1 px-3 py-1.5 text-xs rounded border transition-colors ${
-                    settings.taskSettings.contextCompactionType === ContextCompactionType.Compact
-                      ? 'bg-bg-primary border-border-light text-text-primary'
-                      : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
-                  }`}
-                >
-                  {t('settings.tasks.contextCompactionTypeCompact')}
-                </button>
-                <button
-                  onClick={() => handleCompactionTypeChange(ContextCompactionType.Handoff)}
-                  className={`flex-1 px-3 py-1.5 text-xs rounded border transition-colors ${
-                    settings.taskSettings.contextCompactionType === ContextCompactionType.Handoff
-                      ? 'bg-bg-primary border-border-light text-text-primary'
-                      : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
-                  }`}
-                >
-                  {t('settings.tasks.contextCompactionTypeHandoff')}
-                </button>
-              </div>
             </div>
           </div>
         </div>

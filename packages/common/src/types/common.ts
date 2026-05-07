@@ -550,6 +550,7 @@ export enum MemoryEmbeddingProvider {
 export enum ContextCompactionType {
   Compact = 'compact',
   Handoff = 'handoff',
+  Smart = 'smart',
 }
 
 export interface TaskSettings {

@@ -60,6 +60,7 @@ const COMMANDS = [
   '/redo',
   '/edit-last',
   '/compact',
+  '/smart-compact',
   '/commit',
   '/handoff',
   '/init',
@@ -510,6 +511,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/compact':
             prepareForNextPrompt();
             api.compactConversation(baseDir, taskId, mode, args);
+            break;
+          case '/smart-compact':
+            prepareForNextPrompt();
+            void api.smartCompactConversation(baseDir, taskId);
             break;
           case '/handoff': {
             const focus = args || '';

@@ -178,6 +178,7 @@ const api: ApplicationAPI = {
   removeMessage: (baseDir, taskId, messageId) => ipcRenderer.invoke('remove-message', baseDir, taskId, messageId),
   removeMessagesUpTo: (baseDir, taskId, messageId) => ipcRenderer.invoke('remove-messages-up-to', baseDir, taskId, messageId),
   compactConversation: (baseDir, taskId, mode, customInstructions) => ipcRenderer.invoke('compact-conversation', baseDir, taskId, mode, customInstructions),
+  smartCompactConversation: (baseDir, taskId) => ipcRenderer.invoke('smart-compact-conversation', baseDir, taskId),
   handoffConversation: (baseDir, taskId, focus) => ipcRenderer.invoke('handoff-conversation', baseDir, taskId, focus),
   runCodeChangeRequests: (baseDir, taskId, requests, createNewTask?) => ipcRenderer.send('run-code-change-requests', baseDir, taskId, requests, createNewTask),
   setZoomLevel: (level) => ipcRenderer.invoke('set-zoom-level', level),

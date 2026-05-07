@@ -188,6 +188,7 @@ export interface ApplicationAPI {
   removeMessage: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
   removeMessagesUpTo: (baseDir: string, taskId: string, messageId: string) => Promise<void>;
   compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
+  smartCompactConversation: (baseDir: string, taskId: string) => Promise<void>;
   handoffConversation: (baseDir: string, taskId: string, focus?: string) => Promise<void>;
   runCodeChangeRequests: (baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean) => void;
   setZoomLevel: (level: number) => Promise<void>;

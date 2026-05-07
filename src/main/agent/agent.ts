@@ -2011,6 +2011,22 @@ export class Agent {
           promptContext,
         });
         messages.push(...resultMessages);
+      } else if (contextCompactionType === ContextCompactionType.Smart) {
+        const { smartCompactMessages } = await import('@/agent/smart-compaction');
+        const compactedMessages = smartCompactMessages([...contextMessages, ...resultMessages]);
+        task.setContextMessages(compactedMessages);
+
+        messages.length = 0;
+        resultMessages.length = 0;
+
+        messages.push(...(await this.prepareMessages(task, profile, await task.getContextMessages(), contextFiles)));
+        resultMessages.push({
+          id: uuidv4(),
+          role: 'user',
+          content: `The conversation history was smart-compacted to reduce token usage. Please continue with my request:\n\n${userRequestMessage.content}`,
+          promptContext,
+        });
+        messages.push(...resultMessages);
       } else if (contextCompactionType === ContextCompactionType.Handoff) {
         // Perform handoff
         await task.handoffConversation(

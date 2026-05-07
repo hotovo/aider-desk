@@ -235,6 +235,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.compactConversation(baseDir, taskId, mode, customInstructions);
   });
 
+  ipcMain.handle('smart-compact-conversation', async (_event, baseDir: string, taskId: string) => {
+    return await eventsHandler.smartCompactConversation(baseDir, taskId);
+  });
+
   ipcMain.handle('handoff-conversation', async (_event, baseDir: string, taskId: string, focus?: string) => {
     return await eventsHandler.handoffConversation(baseDir, taskId, focus);
   });

@@ -706,6 +706,13 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  async smartCompactConversation(baseDir: string, taskId: string): Promise<void> {
+    await this.post('/project/smart-compact-conversation', {
+      projectDir: baseDir,
+      taskId,
+    });
+  }
+
   async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void> {
     await this.post('/project/handoff-conversation', {
       projectDir: baseDir,
