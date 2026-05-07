@@ -54,27 +54,12 @@ export const readFileContent = async (
   withLines = false,
   lineOffset = 0,
   lineLimit = 1000,
-  sizeLimit = 0.05 * lineLimit,
+  sizeLimit = Math.max(50, 0.05 * lineLimit),
 ): Promise<string> => {
   const fileContentBuffer = await fs.readFile(absolutePath);
 
   if (isBinary(absolutePath, fileContentBuffer)) {
     throw new Error('Binary files cannot be read.');
-  }
-
-  const fileSizeKB = fileContentBuffer.length / 1024;
-
-  if (fileSizeKB > sizeLimit) {
-    const truncatedBytes = fileContentBuffer.subarray(0, Math.floor(sizeLimit * 1024));
-    const truncatedContent = truncatedBytes.toString('utf8');
-    const truncatedLines = truncatedContent.split('\n');
-    if (withLines) {
-      return (
-        truncatedLines.map((line, index) => `${index + 1}|${line}`).join('\n') +
-        `\n\nFile size limit (${sizeLimit.toFixed(1)} KB) exceeded. Use shell commands (e.g., head, tail, grep) to read specific parts.`
-      );
-    }
-    return truncatedContent + `\n\nFile size limit (${sizeLimit.toFixed(1)} KB) exceeded. Use shell commands (e.g., head, tail, grep) to read specific parts.`;
   }
 
   const fileContent = fileContentBuffer.toString('utf8');
@@ -83,18 +68,34 @@ export const readFileContent = async (
 
   const startIndex = Math.max(0, lineOffset);
   const endIndex = Math.min(totalLines, startIndex + lineLimit);
-  let limitedLines = lines.slice(startIndex, endIndex);
+  const limitedLines = lines.slice(startIndex, endIndex);
+  const limitedContent = limitedLines.join('\n');
+  const limitedSizeKB = Buffer.byteLength(limitedContent, 'utf8') / 1024;
+
+  if (limitedSizeKB > sizeLimit) {
+    const truncatedBytes = Buffer.from(limitedContent, 'utf8').subarray(0, Math.floor(sizeLimit * 1024));
+    const truncatedContent = truncatedBytes.toString('utf8');
+    const truncatedLines = truncatedContent.split('\n');
+    if (withLines) {
+      return (
+        truncatedLines.map((line, index) => `${startIndex + index + 1}|${line}`).join('\n') +
+        `\n\nFile size limit (${sizeLimit.toFixed(1)} KB) exceeded. Use shell commands (e.g., head, tail, grep) to read specific parts.`
+      );
+    }
+    return truncatedContent + `\n\nFile size limit (${sizeLimit.toFixed(1)} KB) exceeded. Use shell commands (e.g., head, tail, grep) to read specific parts.`;
+  }
+
+  let resultLines = limitedLines;
 
   if (withLines) {
-    limitedLines = limitedLines.map((line, index) => `${startIndex + index + 1}|${line}`);
+    resultLines = limitedLines.map((line, index) => `${startIndex + index + 1}|${line}`);
   }
 
   if (endIndex < totalLines) {
-    limitedLines.push('...');
-    limitedLines.push(`Total lines in the file: ${totalLines}`);
+    resultLines = [...resultLines, '...', `Total lines in the file: ${totalLines}`];
   }
 
-  return limitedLines.join('\n');
+  return resultLines.join('\n');
 };
 
 export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50, maxTokens = 50000): Promise<string> => {

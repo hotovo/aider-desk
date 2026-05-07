@@ -7,6 +7,7 @@
 - fixed 'process is not defined' error in renderer
 - added flexible agent profile resolution and improved task creation tool
 - added support for activating skills in custom commands
+- correctly using the partial file content when using read_file tool with offset and limit
 
 ## [0.64.0]
 
