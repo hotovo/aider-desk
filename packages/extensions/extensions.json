@@ -243,6 +243,15 @@
       "capabilities": ["metrics"]
     },
     {
+      "id": "verifier",
+      "name": "Verifier",
+      "description": "Adds a 'Proceed & Verify' button that starts implementation with automatic review against the plan, with configurable max retries",
+      "folder": "verifier",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["workflows", "ui"]
+    },
+    {
       "id": "bmad",
       "name": "BMAD Method",
       "description": "Provides BMAD mode with structured workflows for planning, designing, and implementing software projects",
