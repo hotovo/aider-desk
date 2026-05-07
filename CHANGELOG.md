@@ -8,6 +8,7 @@
 - added flexible agent profile resolution and improved task creation tool
 - added support for activating skills in custom commands
 - correctly using the partial file content when using read_file tool with offset and limit
+- added support for both percentage and token count thresholds for context compaction
 
 ## [0.64.0]
 

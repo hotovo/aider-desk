@@ -1949,24 +1949,42 @@ export class Agent {
     promptContext?: PromptContext,
     abortSignal?: AbortSignal,
   ) {
-    const contextCompactingThreshold =
-      task.task.contextCompactingThreshold ?? this.store.getProjectSettings(task.getProjectDir())?.contextCompactingThreshold ?? 0;
-    const contextCompactionType = profile.isSubagent
-      ? ContextCompactionType.Compact
-      : (this.store.getSettings().taskSettings.contextCompactionType ?? ContextCompactionType.Compact);
+    const taskSettings = this.store.getSettings().taskSettings;
+    const thresholdConfig = taskSettings.contextCompactingThreshold;
+    const taskTokensOverride = task.task.contextCompactingThresholdTokens;
+    const contextCompactionType = profile.isSubagent ? ContextCompactionType.Compact : (taskSettings.contextCompactionType ?? ContextCompactionType.Compact);
     const lastAssistantMessage = [...resultMessages].reverse().find((m) => m.role === 'assistant');
     const usageReport = lastAssistantMessage?.usageReport;
     const maxTokens = this.modelManager.getModelSettings(provider.provider.name, model)?.maxInputTokens;
 
-    if (contextCompactingThreshold === 0 || !usageReport || !maxTokens) {
+    if (!usageReport || !maxTokens) {
       return true;
     }
 
-    // Check for context compacting
     const totalTokens = usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0);
-    if (maxTokens && totalTokens > (maxTokens * contextCompactingThreshold) / 100) {
+
+    let effectiveThreshold: number;
+    let thresholdDescription: string;
+
+    if (taskTokensOverride !== undefined) {
+      if (taskTokensOverride === 0) {
+        return true;
+      }
+      effectiveThreshold = taskTokensOverride;
+      thresholdDescription = `task override: ${taskTokensOverride}`;
+    } else {
+      if (thresholdConfig.percentage === 0) {
+        return true;
+      }
+      const percentageThreshold = (maxTokens * thresholdConfig.percentage) / 100;
+      const tokenThreshold = thresholdConfig.tokens;
+      effectiveThreshold = Math.min(percentageThreshold, tokenThreshold);
+      thresholdDescription = `percentage: ${percentageThreshold}, tokens: ${tokenThreshold}`;
+    }
+
+    if (totalTokens > effectiveThreshold) {
       logger.info(
-        `Token usage ${totalTokens} exceeds threshold of ${contextCompactingThreshold}%. Compacting conversation with type: ${contextCompactionType}.`,
+        `Token usage ${totalTokens} exceeds effective threshold of ${effectiveThreshold} (${thresholdDescription}). Compacting conversation with type: ${contextCompactionType}.`,
       );
 
       if (contextCompactionType === ContextCompactionType.Compact) {

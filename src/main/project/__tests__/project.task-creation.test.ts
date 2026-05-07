@@ -133,7 +133,7 @@ describe('Project - createNewTask', () => {
               autoGenerateTaskName: true,
               showTaskStateActions: true,
               worktreeSymlinkFolders: [],
-              contextCompactingThreshold: 0,
+              contextCompactingThreshold: { percentage: 90, tokens: 100000 },
               contextCompactionType: ContextCompactionType.Compact,
               defaultWorkingMode: 'local',
               worktreeBranchPrefix: 'aider-desk/task/',

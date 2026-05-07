@@ -37,6 +37,7 @@ import { migrateSettingsV15toV16 } from '@/store/migrations/v15-to-v16';
 import { migrateSettingsV16toV17 } from '@/store/migrations/v16-to-v17';
 import { migrateSettingsV17toV18 } from '@/store/migrations/v17-to-v18';
 import { migrateSettingsV18toV19 } from '@/store/migrations/v18-to-v19';
+import { migrateSettingsV19toV20 } from '@/store/migrations/v19-to-v20';
 
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',
@@ -98,7 +99,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
     autoGenerateTaskName: true,
     showTaskStateActions: true,
     worktreeSymlinkFolders: ['node_modules', 'vendor', '__pycache__', '.venv', 'venv'],
-    contextCompactingThreshold: 0,
+    contextCompactingThreshold: { percentage: 90, tokens: 100000 },
     contextCompactionType: ContextCompactionType.Compact,
     defaultWorkingMode: 'local',
     worktreeBranchPrefix: 'aider-desk/task/',
@@ -129,7 +130,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 19;
+const CURRENT_SETTINGS_VERSION = 20;
 
 export class Store {
   // @ts-expect-error expected to be initialized
@@ -309,6 +310,11 @@ export class Store {
       if (settingsVersion === 18) {
         settings = migrateSettingsV18toV19(settings);
         settingsVersion = 19;
+      }
+
+      if (settingsVersion === 19) {
+        settings = migrateSettingsV19toV20(settings);
+        settingsVersion = 20;
       }
 
       this.store.set('settings', settings as SettingsData);

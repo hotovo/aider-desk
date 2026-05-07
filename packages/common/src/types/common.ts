@@ -322,7 +322,6 @@ export const ProjectSettingsSchema = z.object({
   reasoningEffort: z.string().optional(),
   thinkingTokens: z.string().optional(),
   currentMode: z.string(),
-  contextCompactingThreshold: z.number().optional(),
   weakModelLocked: z.boolean().optional(),
   autoApproveLocked: z.boolean().optional(),
   updatedFilesGroupMode: z.enum(['grouped', 'flat']).default('flat'),
@@ -558,7 +557,7 @@ export interface TaskSettings {
   autoGenerateTaskName: boolean;
   showTaskStateActions: boolean;
   worktreeSymlinkFolders: string[];
-  contextCompactingThreshold: number;
+  contextCompactingThreshold: { percentage: number; tokens: number };
   contextCompactionType: ContextCompactionType;
   taskNameModel?: string | null;
   taskStateModel?: string | null;
@@ -843,7 +842,7 @@ export const TaskDataSchema = z.object({
   reasoningEffort: z.string().optional(),
   thinkingTokens: z.string().optional(),
   currentMode: z.string().optional(),
-  contextCompactingThreshold: z.number().optional(),
+  contextCompactingThresholdTokens: z.number().optional(),
   weakModelLocked: z.boolean().optional(),
   handoff: z.boolean().optional(),
   lastAgentProviderMetadata: z.unknown().optional(),

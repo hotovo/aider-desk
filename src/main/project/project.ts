@@ -128,9 +128,7 @@ export class Project {
     }
 
     const projectSettings = this.getProjectSettings();
-    const taskSettings = this.store.getSettings().taskSettings;
     const taskData: Partial<TaskData> = {
-      contextCompactingThreshold: taskSettings.contextCompactingThreshold,
       autoApprove: projectSettings.autoApproveLocked ? true : initialTaskData.autoApprove,
       ...initialTaskData,
     };

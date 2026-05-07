@@ -89,12 +89,32 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
-  const handleCompactingThresholdChange = (value: number) => {
+  const handleCompactingThresholdPercentageChange = (value: number) => {
     setSettings({
       ...settings,
       taskSettings: {
         ...settings.taskSettings,
-        contextCompactingThreshold: Math.round(value),
+        contextCompactingThreshold: {
+          ...settings.taskSettings.contextCompactingThreshold,
+          percentage: Math.round(value),
+        },
+      },
+    });
+  };
+
+  const handleCompactingThresholdTokensChange = (value: string) => {
+    const numValue = parseInt(value, 10);
+    if (isNaN(numValue) || numValue < 0) {
+      return;
+    }
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        contextCompactingThreshold: {
+          ...settings.taskSettings.contextCompactingThreshold,
+          tokens: numValue,
+        },
       },
     });
   };
@@ -333,21 +353,43 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
                 <InfoIcon tooltip={t('settings.tasks.contextCompactingThresholdTooltip')} />
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-3">
                 <Slider
                   min={0}
                   max={100}
                   step={1}
-                  value={settings.taskSettings.contextCompactingThreshold ?? 0}
-                  onChange={handleCompactingThresholdChange}
+                  value={settings.taskSettings.contextCompactingThreshold.percentage}
+                  onChange={handleCompactingThresholdPercentageChange}
                   showValue={false}
                   size="sm"
                   className="flex-1"
                 />
                 <span className="text-xs text-text-primary font-medium text-right">
-                  {settings.taskSettings.contextCompactingThreshold === 0 ? 'Off' : `${settings.taskSettings.contextCompactingThreshold}%`}
+                  {settings.taskSettings.contextCompactingThreshold.percentage === 0
+                    ? t('settings.tasks.contextCompactingThresholdOff')
+                    : `${settings.taskSettings.contextCompactingThreshold.percentage}%`}
                 </span>
               </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1 flex-1">
+                  <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactingThresholdTokens')}</label>
+                  <InfoIcon tooltip={t('settings.tasks.contextCompactingThresholdTokensTooltip')} />
+                </div>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min={0}
+                    step={10000}
+                    value={settings.taskSettings.contextCompactingThreshold.tokens}
+                    onChange={(e) => handleCompactingThresholdTokensChange(e.target.value)}
+                    className="w-24 px-2 py-1 text-xs bg-bg-secondary-light border border-border-default rounded text-text-primary focus:outline-none focus:border-border-light"
+                  />
+                  <span className="text-xs text-text-muted">{t('common.suffix.tokens')}</span>
+                </div>
+              </div>
+
+              <div className="text-2xs text-text-muted mt-2">{t('settings.tasks.contextCompactingThresholdLowerNote')}</div>
             </div>
 
             <div className="flex-1">

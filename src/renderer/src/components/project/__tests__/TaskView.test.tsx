@@ -154,7 +154,13 @@ describe('TaskView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useApi).mockReturnValue(mockApi);
-    vi.mocked(useSettings).mockReturnValue({ settings: { virtualizedRendering: false, renderMarkdown: true } } as ReturnType<typeof useSettings>);
+    vi.mocked(useSettings).mockReturnValue({
+      settings: {
+        virtualizedRendering: false,
+        renderMarkdown: true,
+        taskSettings: { contextCompactingThreshold: { percentage: 90, tokens: 100000 } },
+      },
+    } as ReturnType<typeof useSettings>);
     vi.mocked(useProjectSettings).mockReturnValue({ projectSettings: { agentProfileId: 'default' } } as ReturnType<typeof useProjectSettings>);
     vi.mocked(useTask).mockReturnValue(mockTaskContext as ReturnType<typeof useTask>);
     vi.mocked(useTaskState).mockReturnValue(mockTaskState);

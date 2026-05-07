@@ -99,7 +99,6 @@ export const EMPTY_TASK_DATA: TaskData = {
   agentTotalCost: 0,
   mainModel: '',
   currentMode: 'agent',
-  contextCompactingThreshold: 0,
   weakModelLocked: false,
   parentId: null,
   lastAgentProviderMetadata: undefined,
