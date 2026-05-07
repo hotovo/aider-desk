@@ -260,6 +260,7 @@ export const Home = () => {
     initialTaskId,
     setOptimisticActiveProject,
     optimisticOpenProjects,
+    os,
   ]);
 
   // Note: We no longer sync activeProject to URL here because setActiveProject now updates the URL directly
