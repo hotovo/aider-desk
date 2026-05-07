@@ -10,7 +10,7 @@ import { clsx } from 'clsx';
 import { MdDone } from 'react-icons/md';
 import { AnimatePresence } from 'framer-motion';
 
-import { UserContextFilesSection } from './UserContextFilesSection';
+import { ContextFilesSection } from './ContextFilesSection';
 import { UpdatedFilesSection } from './UpdatedFilesSection';
 import { ProjectFilesSection } from './ProjectFilesSection';
 import { RulesSection } from './RulesSection';
@@ -24,7 +24,7 @@ import { useOS } from '@/hooks/useOS';
 import { useApi } from '@/contexts/ApiContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 
-import './ContextFiles.css';
+import './Workspace.css';
 
 const ALL_SECTIONS: SectionType[] = ['context', 'updated', 'project', 'rules', 'skills'];
 
@@ -75,7 +75,7 @@ const SortableSectionWrapper = ({ id, editMode, isHidden, children }: SortableSe
   );
 };
 
-export const ContextFiles = ({
+export const Workspace = ({
   baseDir,
   taskId,
   allFiles,
@@ -92,7 +92,7 @@ export const ContextFiles = ({
   const api = useApi();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
 
-  const [activeSection, setActiveSection] = useLocalStorage<SectionType>(`context-files-active-section-${baseDir}`, 'context');
+  const [activeSection, setActiveSection] = useLocalStorage<SectionType>(`workspace-active-section-${baseDir}`, 'context');
   const [visitedSections, setVisitedSections] = useState<Set<SectionType>>(new Set(['context']));
   const [isDragging, setIsDragging] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -276,7 +276,7 @@ export const ContextFiles = ({
     switch (section) {
       case 'context':
         return (
-          <UserContextFilesSection
+          <ContextFilesSection
             mode={mode}
             userContextFiles={userContextFiles}
             isOpen={activeSection === 'context' && !editMode}
@@ -368,7 +368,7 @@ export const ContextFiles = ({
 
   return (
     <div
-      className={`context-files-root flex-grow w-full h-full flex flex-col overflow-hidden bg-bg-primary-light-strong ${isDragging ? 'drag-over' : ''}`}
+      className={`workspace-root flex-grow w-full h-full flex flex-col overflow-hidden bg-bg-primary-light-strong ${isDragging ? 'drag-over' : ''}`}
       onDrop={handleFileDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

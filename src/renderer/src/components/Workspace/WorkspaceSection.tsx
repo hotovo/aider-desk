@@ -39,7 +39,7 @@ type Props = {
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
-export const ContextFilesSection = ({
+export const WorkspaceSection = ({
   section,
   title,
   count,

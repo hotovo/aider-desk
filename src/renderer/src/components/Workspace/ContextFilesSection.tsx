@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 
-import { ContextFilesSection } from './ContextFilesSection';
+import { WorkspaceSection } from './WorkspaceSection';
 import { EmptyContextInfo } from './EmptyContextInfo';
 import { createFileTree } from './types';
 
@@ -30,7 +30,7 @@ type Props = {
   showBorderTop?: boolean;
 };
 
-export const UserContextFilesSection = ({
+export const ContextFilesSection = ({
   mode,
   userContextFiles,
   isOpen,
@@ -113,7 +113,7 @@ export const UserContextFilesSection = ({
   );
 
   return (
-    <ContextFilesSection
+    <WorkspaceSection
       section="context"
       title={t('contextFiles.title')}
       count={userContextFiles.length}

@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { UpdatedFile } from '@common/types';
 
-import { groupFilesByCommit } from '@/components/ContextFiles/group-files';
-import { UpdatedFilesDiffModal } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+import { groupFilesByCommit } from '@/components/Workspace/group-files';
+import { UpdatedFilesDiffModal } from '@/components/Workspace/UpdatedFilesDiffModal';
 import { useApi } from '@/contexts/ApiContext';
 import { URL_PARAMS, decodeBaseDir } from '@/utils/routes';
 

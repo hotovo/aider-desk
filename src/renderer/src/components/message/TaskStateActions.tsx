@@ -7,16 +7,16 @@ import { DefaultTaskState, Mode, TaskData, UpdatedFile } from '@common/types';
 
 import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 
-import type { DiffModalGroup } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+import type { DiffModalGroup } from '@/components/Workspace/UpdatedFilesDiffModal';
 
-import { UpdatedFilesDiffModal } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+import { UpdatedFilesDiffModal } from '@/components/Workspace/UpdatedFilesDiffModal';
 import { Button } from '@/components/common/Button';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
 import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
 import { useApi } from '@/contexts/ApiContext';
-import { groupFilesByCommit } from '@/components/ContextFiles/group-files';
+import { groupFilesByCommit } from '@/components/Workspace/group-files';
 import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 
 type Props = {

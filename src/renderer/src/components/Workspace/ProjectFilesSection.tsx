@@ -8,9 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { FileViewerModal } from 'src/renderer/src/components/ContextFiles/FileViewerModal';
+import { FileViewerModal } from 'src/renderer/src/components/Workspace/FileViewerModal';
 
-import { ContextFilesSection } from './ContextFilesSection';
+import { WorkspaceSection } from './WorkspaceSection';
 import { normalizePath, createFileTree } from './types';
 
 import type { TreeItem } from './types';
@@ -207,7 +207,7 @@ export const ProjectFilesSection = ({
 
   return (
     <>
-      <ContextFilesSection
+      <WorkspaceSection
         section="project"
         title={t('contextFiles.projectFiles')}
         count={allFiles.length}

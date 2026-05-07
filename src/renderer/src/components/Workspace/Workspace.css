@@ -17,7 +17,7 @@ body.theme-light .context-dimmed {
   opacity: 0.9;
 }
 
-.context-files-root.drag-over {
+.workspace-root.drag-over {
   @apply bg-bg-tertiary;
 }
 

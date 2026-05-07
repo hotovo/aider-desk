@@ -16,9 +16,9 @@ import { TextArea } from '@/components/common/TextArea';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { DiffFileItem } from '@/components/ContextFiles/DiffFileItem';
-import { DiffFilesSidebar } from '@/components/ContextFiles/DiffFilesSidebar';
-import { CommentsPanel } from '@/components/ContextFiles/CommentsPanel';
+import { DiffFileItem } from '@/components/Workspace/DiffFileItem';
+import { DiffFilesSidebar } from '@/components/Workspace/DiffFilesSidebar';
+import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
 
 type PendingComment = {

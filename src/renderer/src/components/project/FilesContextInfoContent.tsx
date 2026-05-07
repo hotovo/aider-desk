@@ -1,6 +1,6 @@
 import { ContextFile, Mode, TaskData, TokensInfoData } from '@common/types';
 
-import { ContextFiles } from '@/components/ContextFiles';
+import { Workspace } from '@/components/Workspace';
 import { CostInfo } from '@/components/CostInfo';
 
 type Props = {
@@ -43,7 +43,7 @@ export const FilesContextInfoContent = ({
   return (
     <>
       <div className="flex-grow flex flex-col overflow-y-hidden">
-        <ContextFiles
+        <Workspace
           baseDir={baseDir}
           taskId={taskId}
           allFiles={allFiles}

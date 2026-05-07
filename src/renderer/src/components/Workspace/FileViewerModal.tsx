@@ -8,7 +8,7 @@ import { isCodeEditorDarkTheme } from '@common/types';
 
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
-import { CommentsPanel } from '@/components/ContextFiles/CommentsPanel';
+import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
 import { useSettings } from '@/contexts/SettingsContext';
 
