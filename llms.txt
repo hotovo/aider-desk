@@ -1809,7 +1809,7 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { AgentProfile, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
-import { fileExists } from '@common/utils';
+import { fileExists, isUuid } from '@common/utils';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
@@ -1817,6 +1817,7 @@ import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import { search } from '@/utils/probe';
 import logger from '@/logger';
 import { isAbortError } from '@/utils/errors';
+import { deriveDirName } from '@/utils';
 import { Task } from '@/task';
 ⋮----
 export const createTasksToolset = (settings: SettingsData, task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
@@ -1836,6 +1837,8 @@ actualIndex = contextMessages.length + messageIndex; // e.g., -1 becomes length-
 // Determine if parentTaskId should be available (only for top-level tasks)
 ⋮----
 // Parse modelId to extract provider and model
+⋮----
+// Clear inherited provider/model so the profile's own defaults are used
 ⋮----
 // createNewTask returns TaskData, not Task instance
 // We need to get the actual Task instance to call methods on it
@@ -2063,6 +2066,18 @@ public getProfile(profileId: string): AgentProfile | undefined
 // Check extension agents first (they can override file-based profiles)
 ⋮----
 // Fall back to file-based profiles
+⋮----
+public resolveAgentProfile(id: string): AgentProfile | null
+⋮----
+// 1. Try matching by profile id (covers both file-based and extension agents)
+⋮----
+// 2. Try matching by profile name (case-insensitive)
+⋮----
+// 3. Try matching by dirName (folder name) for file-based profiles
+⋮----
+// 4. Try matching by dirName using slugified input
+⋮----
+// 5. Try matching by derived name from profile name (slugified + filenamified)
 ⋮----
 private getOrderedProfiles(profileContexts: AgentProfileContext[]): AgentProfile[]
 ⋮----
@@ -2803,6 +2818,7 @@ import path from 'path';
 ⋮----
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
+import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { ContextMessage, ContextUserMessage, MessageRole, PromptContext } from '@common/types';
 ⋮----
 /**
@@ -2839,7 +2855,7 @@ export const readFileContent = async (
   sizeLimit = 0.05 * lineLimit,
 ): Promise<string> =>
 ⋮----
-export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50): Promise<string> =>
+export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50, maxTokens = 50000): Promise<string> =>
 
 ================
 File: src/main/connector/connector-manager.ts
@@ -6642,6 +6658,8 @@ public getCustomCommandManager(): CustomCommandManager
 ⋮----
 public getAgentProfiles(): AgentProfile[]
 ⋮----
+public resolveAgentProfile(id: string): AgentProfile | null
+⋮----
 /**
    * Checks if any other task (excluding the specified taskId) uses the given worktree path.
    */
@@ -9200,6 +9218,8 @@ public async runCustomCommand(commandName: string, args: string[], mode: Mode = 
 // Re-throw other errors
 ⋮----
 // Agent mode logic
+⋮----
+// Activate command skills before running the prompt
 ⋮----
 // All other modes (code, ask, architect)
 ⋮----
@@ -23855,6 +23875,7 @@ import { useSearchParams } from 'react-router-dom';
 import { compareBaseDirs } from '@common/utils';
 ⋮----
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
+import { useOS } from '@/hooks/useOS';
 import { UsageDashboard } from '@/components/usage/UsageDashboard';
 import { LogsPage } from '@/components/logs/LogsPage';
 import { IconButton } from '@/components/common/IconButton';
