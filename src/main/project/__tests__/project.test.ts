@@ -22,8 +22,9 @@ vi.mock('@/extensions/extension-manager');
 vi.mock('@/constants');
 vi.mock('@/utils');
 vi.mock('fs/promises');
+let uuidCounter = 0;
 vi.mock('uuid', () => ({
-  v4: vi.fn(() => 'test-uuid-' + Math.random()),
+  v4: vi.fn(() => `uuid-${String(uuidCounter++).padStart(8, '0')}-${Math.random()}`),
 }));
 
 import * as fs from 'fs/promises';
@@ -64,6 +65,7 @@ describe('Project - createNewTask', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    uuidCounter = 0;
 
     baseDir = '/test/project';
 
