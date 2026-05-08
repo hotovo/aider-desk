@@ -144,13 +144,73 @@ const removeToolCallFromAssistant = (messages: ContextMessage[], toolCallId: str
 
   assistantMsg.content.splice(callInfo.partIndex, 1);
 
-  if (assistantMsg.content.length === 0) {
+  const hasToolCalls = assistantMsg.content.some((p) => p.type === 'tool-call');
+
+  if (!hasToolCalls) {
     messages.splice(callInfo.messageIndex, 1);
+  }
+};
+
+const removeToolResult = (messages: ContextMessage[], toolCallId: string): void => {
+  const toolMsgIdx = messages.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === toolCallId));
+  if (toolMsgIdx === -1) {
+    return;
+  }
+
+  const toolMsg = messages[toolMsgIdx] as ContextToolMessage;
+  const partIdx = toolMsg.content.findIndex((p) => p.type === 'tool-result' && p.toolCallId === toolCallId);
+  if (partIdx === -1) {
+    return;
+  }
+
+  toolMsg.content.splice(partIdx, 1);
+
+  if (toolMsg.content.length === 0) {
+    messages.splice(toolMsgIdx, 1);
   }
 };
 
 const getProtectedStartIndex = (messages: ContextMessage[], protectedMessageCount: number): number => {
   return Math.max(0, messages.length - protectedMessageCount);
+};
+
+const mergeConsecutiveAssistantMessages = (messages: ContextMessage[]): ContextMessage[] => {
+  const result = cloneMessages(messages);
+
+  for (let i = result.length - 2; i >= 0; i--) {
+    const current = result[i];
+    const next = result[i + 1];
+
+    if (current.role !== 'assistant' || next.role !== 'assistant') {
+      continue;
+    }
+
+    const currentHasToolCalls = Array.isArray(current.content) && current.content.some((p) => p.type === 'tool-call');
+    const nextHasToolCalls = Array.isArray(next.content) && next.content.some((p) => p.type === 'tool-call');
+
+    if (currentHasToolCalls || nextHasToolCalls) {
+      continue;
+    }
+
+    const currentTextParts = Array.isArray(current.content) ? current.content.filter((p) => p.type === 'text') : [];
+    const nextTextParts = Array.isArray(next.content) ? next.content.filter((p) => p.type === 'text') : [];
+
+    const mergedText = [...currentTextParts, ...nextTextParts]
+      .map((p) => (p as TextPart).text)
+      .filter(Boolean)
+      .join('\n\n');
+
+    (current as ContextAssistantMessage).content = mergedText ? [{ type: 'text', text: mergedText } satisfies TextPart] : [];
+
+    result.splice(i + 1, 1);
+  }
+
+  return result.filter((msg) => {
+    if (msg.role === 'assistant' && Array.isArray(msg.content) && msg.content.length === 0) {
+      return false;
+    }
+    return true;
+  });
 };
 
 export const smartCompactMessages = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
@@ -163,6 +223,7 @@ export const smartCompactMessages = (messages: ContextMessage[], protectedMessag
   result = compactSemanticSearches(result, protectedMessageCount);
   result = deduplicateBash(result, protectedMessageCount);
   result = redactFetchOutputs(result, protectedMessageCount);
+  result = mergeConsecutiveAssistantMessages(result);
 
   return result;
 };
@@ -171,9 +232,10 @@ export const removeErroredTools = (messages: ContextMessage[], protectedMessageC
   const result = cloneMessages(messages);
   const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
 
-  const indicesToRemove: Set<number> = new Set();
-
-  for (let i = 0; i < protectedStart; i++) {
+  for (let i = protectedStart - 1; i >= 0; i--) {
+    if (i >= result.length) {
+      continue;
+    }
     const msg = result[i];
     if (msg.role !== 'tool') {
       continue;
@@ -185,15 +247,9 @@ export const removeErroredTools = (messages: ContextMessage[], protectedMessageC
         continue;
       }
       if (isErrorResult(info.output) || isNoOpResult(info.output)) {
-        indicesToRemove.add(i);
         removeToolCallFromAssistant(result, info.toolCallId);
+        removeToolResult(result, info.toolCallId);
       }
-    }
-  }
-
-  for (let i = result.length - 1; i >= 0; i--) {
-    if (indicesToRemove.has(i)) {
-      result.splice(i, 1);
     }
   }
 
@@ -207,6 +263,9 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
   const fileEditGroups = new Map<string, { messageIndex: number; toolCallId: string }[]>();
 
   for (let i = 0; i < protectedStart; i++) {
+    if (i >= result.length) {
+      break;
+    }
     const msg = result[i];
     if (msg.role !== 'tool') {
       continue;
@@ -264,11 +323,7 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
 
     for (const edit of edits) {
       removeToolCallFromAssistant(result, edit.toolCallId);
-
-      const toolMsgIdx = result.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === edit.toolCallId));
-      if (toolMsgIdx !== -1) {
-        result.splice(toolMsgIdx, 1);
-      }
+      removeToolResult(result, edit.toolCallId);
     }
 
     const insertIndex = firstEdit.messageIndex < result.length ? firstEdit.messageIndex : result.length;
@@ -286,6 +341,20 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
 
   for (let i = 0; i < result.length; i++) {
     const msg = result[i];
+
+    // Check for synthetic <file-edited> messages from collapseFileEdits
+    if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+      for (const part of msg.content) {
+        if (part.type === 'text') {
+          const match = part.text.match(/<file-edited path="([^"]+)">/);
+          if (match) {
+            editedFilePaths.add(match[1]);
+          }
+        }
+      }
+      continue;
+    }
+
     if (msg.role !== 'tool') {
       continue;
     }
@@ -340,7 +409,10 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
 
   const readFileGroups = new Map<string, { messageIndex: number; toolCallId: string }[]>();
 
-  for (let i = 0; i < protectedStart; i++) {
+  for (let i = protectedStart - 1; i >= 0; i--) {
+    if (i >= result.length) {
+      continue;
+    }
     const msg = result[i];
     if (msg.role !== 'tool') {
       continue;
@@ -367,10 +439,7 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
 
       if (editedFilePaths.has(filePath) || protectedReadFilePaths.has(filePath)) {
         removeToolCallFromAssistant(result, part.toolCallId);
-        const toolMsgIdx = result.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === part.toolCallId));
-        if (toolMsgIdx !== -1) {
-          result.splice(toolMsgIdx, 1);
-        }
+        removeToolResult(result, part.toolCallId);
         continue;
       }
 
@@ -392,10 +461,7 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
     const toRemove = reads.slice(0, -1);
     for (const read of toRemove) {
       removeToolCallFromAssistant(result, read.toolCallId);
-      const toolMsgIdx = result.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === read.toolCallId));
-      if (toolMsgIdx !== -1) {
-        result.splice(toolMsgIdx, 1);
-      }
+      removeToolResult(result, read.toolCallId);
     }
   }
 
@@ -410,6 +476,18 @@ export const removeObsoleteSearches = (messages: ContextMessage[], protectedMess
 
   for (let i = 0; i < result.length; i++) {
     const msg = result[i];
+
+    // Check for synthetic <file-edited> messages from collapseFileEdits
+    if (msg.role === 'assistant' && Array.isArray(msg.content)) {
+      for (const part of msg.content) {
+        if (part.type === 'text' && part.text.includes('<file-edited')) {
+          fileModificationPositions.push(i);
+          break;
+        }
+      }
+      continue;
+    }
+
     if (msg.role !== 'tool') {
       continue;
     }
@@ -434,9 +512,10 @@ export const removeObsoleteSearches = (messages: ContextMessage[], protectedMess
     return result;
   }
 
-  const indicesToRemove: Set<number> = new Set();
-
-  for (let i = 0; i < protectedStart; i++) {
+  for (let i = protectedStart - 1; i >= 0; i--) {
+    if (i >= result.length) {
+      continue;
+    }
     const msg = result[i];
     if (msg.role !== 'tool') {
       continue;
@@ -456,15 +535,9 @@ export const removeObsoleteSearches = (messages: ContextMessage[], protectedMess
 
       const hasLaterModification = fileModificationPositions.some((pos) => pos > i);
       if (hasLaterModification) {
-        indicesToRemove.add(i);
         removeToolCallFromAssistant(result, part.toolCallId);
+        removeToolResult(result, part.toolCallId);
       }
-    }
-  }
-
-  for (let i = result.length - 1; i >= 0; i--) {
-    if (indicesToRemove.has(i)) {
-      result.splice(i, 1);
     }
   }
 
@@ -478,6 +551,9 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
   const searchIndices: { messageIndex: number; partIndex: number; toolCallId: string }[] = [];
 
   for (let i = 0; i < protectedStart; i++) {
+    if (i >= result.length) {
+      break;
+    }
     const msg = result[i];
     if (msg.role !== 'tool') {
       continue;
@@ -506,38 +582,14 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
 
   for (const search of toRemove) {
     removeToolCallFromAssistant(result, search.toolCallId);
+    removeToolResult(result, search.toolCallId);
   }
 
-  for (let i = result.length - 1; i >= 0; i--) {
-    const msg = result[i];
-    if (msg.role !== 'tool') {
-      continue;
-    }
-
-    const partsToRemove = msg.content.filter(
-      (part) =>
-        part.type === 'tool-result' &&
-        isPowerTool(extractServerNameToolName(part.toolName)[0]) &&
-        extractServerNameToolName(part.toolName)[1] === POWER_TOOL_SEMANTIC_SEARCH &&
-        toRemove.some((r) => r.toolCallId === part.toolCallId),
-    );
-
-    if (partsToRemove.length > 0) {
-      const remainingParts = msg.content.filter(
-        (part) => !partsToRemove.some((pr) => (pr as ToolResultPart).toolCallId === (part as ToolResultPart).toolCallId),
-      );
-
-      if (remainingParts.length === 0) {
-        result.splice(i, 1);
-      } else {
-        (msg as ContextToolMessage).content = remainingParts as ToolResultPart[];
-      }
-    }
-  }
-
-  const keptMsg = result[toKeep.messageIndex];
-  if (keptMsg && keptMsg.role === 'tool') {
-    const keptPart = keptMsg.content[toKeep.partIndex] as ToolResultPart;
+  const keptToolIdx = result.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === toKeep.toolCallId));
+  if (keptToolIdx !== -1) {
+    const keptMsg = result[keptToolIdx] as ContextToolMessage;
+    const keptPartIdx = keptMsg.content.findIndex((p) => p.type === 'tool-result' && p.toolCallId === toKeep.toolCallId);
+    const keptPart = keptMsg.content[keptPartIdx] as ToolResultPart;
     if (keptPart && keptPart.output.type === 'text') {
       const lines = keptPart.output.value.split('\n');
       if (lines.length > 50) {
@@ -605,14 +657,14 @@ export const deduplicateBash = (messages: ContextMessage[], protectedMessageCoun
     const toRemove = occurrences.slice(0, -1);
     for (const occ of toRemove) {
       removeToolCallFromAssistant(result, occ.toolCallId);
-      const toolMsgIdx = result.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === occ.toolCallId));
-      if (toolMsgIdx !== -1) {
-        result.splice(toolMsgIdx, 1);
-      }
+      removeToolResult(result, occ.toolCallId);
     }
   }
 
   for (let i = 0; i < protectedStart; i++) {
+    if (i >= result.length) {
+      break;
+    }
     const msg = result[i];
     if (msg.role !== 'tool') {
       continue;

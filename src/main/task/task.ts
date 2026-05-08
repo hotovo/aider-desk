@@ -2119,6 +2119,10 @@ export class Task {
     this.contextManager.setContextMessages(messages, save);
   }
 
+  public async backupContext(): Promise<void> {
+    await this.contextManager.backupContext();
+  }
+
   public getSkillManager(): SkillManager {
     return this.skillManager;
   }
@@ -2770,6 +2774,8 @@ export class Task {
       this.addLogMessage('warning', 'No conversation to compact.');
       return;
     }
+
+    await this.contextManager.backupContext();
 
     const { smartCompactMessages } = await import('@/agent/smart-compaction');
     const compactedMessages = smartCompactMessages(contextMessages);

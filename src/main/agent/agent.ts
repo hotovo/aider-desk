@@ -70,6 +70,7 @@ import {
   truncateToolResult,
 } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
+import { smartCompactMessages } from './smart-compaction';
 
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
 
@@ -2012,20 +2013,18 @@ export class Agent {
         });
         messages.push(...resultMessages);
       } else if (contextCompactionType === ContextCompactionType.Smart) {
-        const { smartCompactMessages } = await import('@/agent/smart-compaction');
+        // backing up the current context before compacting for debugging purposes
+        await task.backupContext();
+
         const compactedMessages = smartCompactMessages([...contextMessages, ...resultMessages]);
         task.setContextMessages(compactedMessages);
+        await task.loadContextMessages(compactedMessages);
+        task.addLogMessage('info', 'Previous conversation has been compacted.');
 
         messages.length = 0;
         resultMessages.length = 0;
 
-        messages.push(...(await this.prepareMessages(task, profile, await task.getContextMessages(), contextFiles)));
-        resultMessages.push({
-          id: uuidv4(),
-          role: 'user',
-          content: `The conversation history was smart-compacted to reduce token usage. Please continue with my request:\n\n${userRequestMessage.content}`,
-          promptContext,
-        });
+        messages.push(...(await this.prepareMessages(task, profile, compactedMessages, contextFiles)));
         messages.push(...resultMessages);
       } else if (contextCompactionType === ContextCompactionType.Handoff) {
         // Perform handoff

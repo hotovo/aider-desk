@@ -654,6 +654,37 @@ export class ContextManager {
     }
   }
 
+  /**
+   * Creates a backup of the current context.json file before a destructive operation
+   * (e.g., smart compaction). Backups are named context.backup.001.json, context.backup.002.json, etc.
+   * For debugging purposes only.
+   */
+  async backupContext(): Promise<void> {
+    try {
+      const dir = path.dirname(this.storagePath);
+      const files = await fs.readdir(dir);
+      const backupPattern = /^context\.backup\.(\d+)\.json$/;
+      let maxNumber = 0;
+      for (const file of files) {
+        const match = backupPattern.exec(file);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
+        }
+      }
+
+      const nextNumber = String(maxNumber + 1).padStart(3, '0');
+      const backupPath = path.join(dir, `context.backup.${nextNumber}.json`);
+      await fs.copyFile(this.storagePath, backupPath);
+
+      logger.debug(`Task context backed up to ${backupPath}`, { taskId: this.taskId });
+    } catch (error) {
+      logger.error('Failed to backup task context:', { error, taskId: this.taskId });
+    }
+  }
+
   private async cleanupContext(): Promise<void> {
     // Filter out files that no longer exist
     const existingFiles: ContextFile[] = [];
