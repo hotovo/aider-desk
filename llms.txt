@@ -74,6 +74,7 @@ src/
       index.ts
       mcp-manager.ts
       optimizer.ts
+      smart-compaction.ts
       utils.ts
     connector/
       connector-manager.ts
@@ -193,6 +194,7 @@ src/
         v16-to-v17.ts
         v17-to-v18.ts
         v18-to-v19.ts
+        v19-to-v20.ts
         v2-to-v3.ts
         v3-to-v4.ts
         v4-to-v5.ts
@@ -320,28 +322,6 @@ src/
           VerticalDotsMenu.tsx
           VirtualTable.tsx
           WarningIcon.tsx
-        ContextFiles/
-          CommentsPanel.tsx
-          ContextFiles.css
-          ContextFiles.tsx
-          ContextFilesSection.tsx
-          ContextFilesSectionInner.tsx
-          DiffFileItem.tsx
-          DiffFilesSidebar.tsx
-          EmptyContextInfo.tsx
-          FileViewerModal.tsx
-          group-files.ts
-          index.ts
-          ProjectFilesSection.tsx
-          RulesSection.tsx
-          SectionContent.tsx
-          SectionHeader.tsx
-          SkillsSection.tsx
-          TreeItemRenderer.tsx
-          types.ts
-          UpdatedFilesDiffModal.tsx
-          UpdatedFilesSection.tsx
-          UserContextFilesSection.tsx
         extensions/
           ExtensionComponentWrapper.tsx
           ExtensionUIErrorBoundary.tsx
@@ -549,6 +529,28 @@ src/
           UsageDashboard.tsx
           UsageTable.tsx
           utils.ts
+        Workspace/
+          CommentsPanel.tsx
+          ContextFilesSection.tsx
+          ContextFilesSectionInner.tsx
+          DiffFileItem.tsx
+          DiffFilesSidebar.tsx
+          EmptyContextInfo.tsx
+          FileViewerModal.tsx
+          group-files.ts
+          index.ts
+          ProjectFilesSection.tsx
+          RulesSection.tsx
+          SectionContent.tsx
+          SectionHeader.tsx
+          SkillsSection.tsx
+          TreeItemRenderer.tsx
+          types.ts
+          UpdatedFilesDiffModal.tsx
+          UpdatedFilesSection.tsx
+          Workspace.css
+          Workspace.tsx
+          WorkspaceSection.tsx
         AutocompletionInput.tsx
         CostInfo.tsx
         ModelSelector.tsx
@@ -2543,8 +2545,6 @@ private async compactMessagesIfNeeded(
     abortSignal?: AbortSignal,
 )
 ⋮----
-// Check for context compacting
-⋮----
 // reload messages after compacting
 ⋮----
 // Perform handoff
@@ -2810,6 +2810,79 @@ const newMessages = [...messages]; // Create a mutable copy
 // Since we've processed a block of 4, we can safely jump ahead.
 
 ================
+File: src/main/agent/smart-compaction.ts
+================
+import { ContextMessage, ContextToolMessage, ContextAssistantMessage, TextPart, ToolResultPart, ToolResultOutput } from '@common/types';
+import {
+  POWER_TOOL_GROUP_NAME,
+  POWER_TOOL_FILE_EDIT,
+  POWER_TOOL_FILE_READ,
+  POWER_TOOL_FILE_WRITE,
+  POWER_TOOL_GLOB,
+  POWER_TOOL_GREP,
+  POWER_TOOL_SEMANTIC_SEARCH,
+  POWER_TOOL_BASH,
+  POWER_TOOL_FETCH,
+} from '@common/tools';
+import { extractServerNameToolName } from '@common/utils';
+import { v4 as uuidv4 } from 'uuid';
+⋮----
+type ToolInfo = {
+  messageIndex: number;
+  toolCallId: string;
+  toolName: string;
+  serverName: string;
+  input: unknown;
+  output: ToolResultOutput | undefined;
+};
+⋮----
+type AssistantToolCallInfo = {
+  messageIndex: number;
+  partIndex: number;
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
+};
+⋮----
+const extractFilePath = (args: unknown): string | undefined =>
+⋮----
+const getToolOutputText = (output: ToolResultOutput | undefined): string =>
+⋮----
+const isErrorResult = (output: ToolResultOutput | undefined): boolean =>
+⋮----
+const isNoOpResult = (output: ToolResultOutput | undefined): boolean =>
+⋮----
+const isPowerTool = (serverName: string): boolean =>
+⋮----
+const getToolInfoFromToolMessage = (message: ContextToolMessage): ToolInfo[] =>
+⋮----
+const findAssistantToolCall = (messages: ContextMessage[], toolCallId: string): AssistantToolCallInfo | undefined =>
+⋮----
+const cloneMessages = (messages: ContextMessage[]): ContextMessage[] =>
+⋮----
+const removeToolCallFromAssistant = (messages: ContextMessage[], toolCallId: string): void =>
+⋮----
+const getProtectedStartIndex = (messages: ContextMessage[], protectedMessageCount: number): number =>
+⋮----
+export const smartCompactMessages = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+⋮----
+export const removeErroredTools = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+⋮----
+export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+⋮----
+export const removeStaleFileReads = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+⋮----
+export const removeObsoleteSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+⋮----
+export const compactSemanticSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+⋮----
+export const deduplicateBash = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+⋮----
+// Not JSON, leave as-is
+⋮----
+export const redactFetchOutputs = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+
+================
 File: src/main/agent/utils.ts
 ================
 import os, { tmpdir } from 'os';
@@ -2852,7 +2925,7 @@ export const readFileContent = async (
   withLines = false,
   lineOffset = 0,
   lineLimit = 1000,
-  sizeLimit = 0.05 * lineLimit,
+  sizeLimit = Math.max(50, 0.05 * lineLimit),
 ): Promise<string> =>
 ⋮----
 export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50, maxTokens = 50000): Promise<string> =>
@@ -7235,6 +7308,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Compact conversation
 ⋮----
+// Smart compact conversation
+⋮----
 // Handoff conversation
 ⋮----
 // Run code change requests
@@ -7878,6 +7953,14 @@ import { SettingsData } from '@common/types';
 export const migrateSettingsV18toV19 = (settings: any): SettingsData =>
 
 ================
+File: src/main/store/migrations/v19-to-v20.ts
+================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SettingsData } from '@common/types';
+⋮----
+export const migrateSettingsV19toV20 = (settings: any): SettingsData =>
+
+================
 File: src/main/store/migrations/v2-to-v3.ts
 ================
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -8003,6 +8086,7 @@ import { migrateSettingsV15toV16 } from '@/store/migrations/v15-to-v16';
 import { migrateSettingsV16toV17 } from '@/store/migrations/v16-to-v17';
 import { migrateSettingsV17toV18 } from '@/store/migrations/v17-to-v18';
 import { migrateSettingsV18toV19 } from '@/store/migrations/v18-to-v19';
+import { migrateSettingsV19toV20 } from '@/store/migrations/v19-to-v20';
 ⋮----
 const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean =>
 ⋮----
@@ -8945,6 +9029,8 @@ public addLogMessage(level: LogLevel, message?: string, finished = false, prompt
 ⋮----
 public getContextMessages()
 ⋮----
+public setContextMessages(messages: ContextMessage[], save = true)
+⋮----
 public getSkillManager(): SkillManager
 ⋮----
 public async getSkills(): Promise<Skill[]>
@@ -9078,6 +9164,8 @@ private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextM
 // Convert the deduplicated activations to the expected message format
 ⋮----
 // Create a filtered assistant message that only contains the skill activation tool-call
+⋮----
+public async smartCompactConversation(contextMessages?: ContextMessage[])
 ⋮----
 public async compactConversation(
     mode: Mode,
@@ -10985,6 +11073,8 @@ async resumeTask(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructions?: string): Promise<void>
 ⋮----
+async smartCompactConversation(baseDir: string, taskId: string): Promise<void>
+⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
 async runCodeChangeRequests(baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean): Promise<void>
@@ -12474,6 +12564,8 @@ async removeMessage(baseDir: string, taskId: string, messageId: string): Promise
 ⋮----
 async removeMessagesUpTo(baseDir: string, taskId: string, messageId: string): Promise<void>
 compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructions?: string): void
+⋮----
+async smartCompactConversation(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
@@ -14123,839 +14215,6 @@ export const WarningIcon = (
 className=
 
 ================
-File: src/renderer/src/components/ContextFiles/CommentsPanel.tsx
-================
-import { memo, useCallback, useState } from 'react';
-import { HiPencil, HiTrash } from 'react-icons/hi';
-import { RiMenuUnfold4Line } from 'react-icons/ri';
-import { useTranslation } from 'react-i18next';
-import { useLocalStorage } from '@reactuses/core';
-import { clsx } from 'clsx';
-⋮----
-import { IconButton } from '@/components/common/IconButton';
-import { TextArea } from '@/components/common/TextArea';
-import { Checkbox } from '@/components/common/Checkbox';
-import { Button } from '@/components/common/Button';
-⋮----
-type PendingComment = {
-  id: string;
-  filePath: string;
-  lineNumber: number;
-  comment: string;
-};
-⋮----
-type Props = {
-  pendingComments: PendingComment[];
-  onRemoveComment: (id: string) => void;
-  onUpdateComment: (id: string, comment: string) => void;
-  onSubmitAll: () => void;
-  isSubmitting: boolean;
-  createNewTask: boolean;
-  onCreateNewTaskChange: (value: boolean) => void;
-};
-⋮----
-onClick=
-⋮----
-<div className=
-⋮----
-{/* Panel header */}
-⋮----
-icon=
-⋮----
-onStartEdit=
-⋮----
-{/* Submit change requests */}
-⋮----
-<Checkbox label=
-
-================
-File: src/renderer/src/components/ContextFiles/ContextFiles.css
-================
-.rct-tree-items-container {
-⋮----
-.rct-tree-root {
-⋮----
-@apply p-0;
-⋮----
-.context-dimmed {
-⋮----
-@apply text-text-muted;
-⋮----
-body.theme-light .context-dimmed {
-⋮----
-.context-files-root.drag-over {
-⋮----
-@apply bg-bg-tertiary;
-⋮----
-@tailwind utilities;
-
-================
-File: src/renderer/src/components/ContextFiles/ContextFiles.tsx
-================
-import { ContextFile, Mode, TokensInfoData } from '@common/types';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useLocalStorage } from '@reactuses/core';
-import { RiMenuUnfold4Line, RiListSettingsLine } from 'react-icons/ri';
-import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { clsx } from 'clsx';
-import { MdDone } from 'react-icons/md';
-import { AnimatePresence } from 'framer-motion';
-⋮----
-import { UserContextFilesSection } from './UserContextFilesSection';
-import { UpdatedFilesSection } from './UpdatedFilesSection';
-import { ProjectFilesSection } from './ProjectFilesSection';
-import { RulesSection } from './RulesSection';
-import { SkillsSection } from './SkillsSection';
-import { normalizePath } from './types';
-⋮----
-import type { SectionType, TreeItem } from './types';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-import { useOS } from '@/hooks/useOS';
-import { useApi } from '@/contexts/ApiContext';
-import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
-⋮----
-type Props = {
-  baseDir: string;
-  taskId: string;
-  allFiles: string[];
-  contextFiles: ContextFile[];
-  showFileDialog: () => void;
-  tokensInfo?: TokensInfoData | null;
-  refreshAllFiles: (useGit?: boolean) => Promise<void>;
-  mode: Mode;
-  onToggleFilesSidebarCollapse?: () => void;
-  taskName?: string;
-};
-⋮----
-type SortableSectionWrapperProps = {
-  id: SectionType;
-  editMode: boolean;
-  isHidden: boolean;
-  children: React.ReactNode;
-};
-⋮----
-// eslint-disable-next-line react-hooks/set-state-in-effect
-⋮----
-onToggleHidden=
-
-================
-File: src/renderer/src/components/ContextFiles/ContextFilesSection.tsx
-================
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
-import React, { Activity } from 'react';
-import { motion } from 'framer-motion';
-import { clsx } from 'clsx';
-⋮----
-import { SectionHeader } from './SectionHeader';
-import { SectionContent } from './SectionContent';
-⋮----
-import type { SectionType, TreeItem } from './types';
-⋮----
-type Props = {
-  section: SectionType;
-  title: string;
-  count: number;
-  isOpen: boolean;
-  totalStats: { additions: number; deletions: number };
-  treeData: Record<string, TreeItem>;
-  expandedItems: string[];
-  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
-  contextFilesMap: Map<string, ContextFile>;
-  updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  actions?: React.ReactNode;
-  searchField?: React.ReactNode;
-  emptyContent?: React.ReactNode;
-  showBorderTop?: boolean;
-  disabledRuleFiles?: string[];
-  totalRuleCount?: number;
-  editMode?: boolean;
-  isHidden?: boolean;
-  onToggle: () => void;
-  onToggleHidden?: () => void;
-  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
-  onFileDiffClick: (file: UpdatedFile) => void;
-  onFilePreviewClick?: (filePath: string) => void;
-  onRevertFile: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
-};
-⋮----
-export const ContextFilesSection = ({
-  section,
-  title,
-  count,
-  isOpen,
-  totalStats,
-  treeData,
-  expandedItems,
-  setExpandedItems,
-  contextFilesMap,
-  updatedFiles,
-  tokensInfo,
-  os,
-  actions,
-  searchField,
-  emptyContent,
-  showBorderTop = false,
-  disabledRuleFiles,
-  totalRuleCount,
-  editMode,
-  isHidden,
-  onToggle,
-  onToggleHidden,
-  onToggleRuleFile,
-  onFileDiffClick,
-  onFilePreviewClick,
-  onRevertFile,
-  onDropFile,
-  onAddFile,
-}: Props) =>
-⋮----
-className=
-
-================
-File: src/renderer/src/components/ContextFiles/ContextFilesSectionInner.tsx
-================
-// This file is deprecated. Use UserContextFilesSection.tsx instead.
-
-================
-File: src/renderer/src/components/ContextFiles/DiffFileItem.tsx
-================
-import { useCallback, useMemo, useState } from 'react';
-import { HiChevronDown } from 'react-icons/hi';
-import { AnimatePresence, motion } from 'framer-motion';
-import { MdOutlineCommit } from 'react-icons/md';
-import { RiAlertLine } from 'react-icons/ri';
-import { DiffViewMode, UpdatedFile } from '@common/types';
-import { useTranslation } from 'react-i18next';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
-⋮----
-type Props = {
-  file: UpdatedFile;
-  index: number;
-  diffViewMode: DiffViewMode;
-  selectedLineNumber?: number | null;
-  onLineClick: (lineInfo: PierreLineClickInfo, filePath: string) => void;
-  comments?: DiffComment[];
-  onEditComment?: (info: { commentId: string; viewportRect: { top: number; left: number } }) => void;
-  onRemoveComment?: (commentId: string) => void;
-};
-
-================
-File: src/renderer/src/components/ContextFiles/DiffFilesSidebar.tsx
-================
-import { ContextFile, UpdatedFile } from '@common/types';
-import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
-import { MdOutlineCommit } from 'react-icons/md';
-import { RiAlertLine } from 'react-icons/ri';
-import { useTranslation } from 'react-i18next';
-import { useDebounce, useLocalStorage } from '@reactuses/core';
-import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
-import { ResizableBox } from 'react-resizable';
-import { clsx } from 'clsx';
-⋮----
-import { createFileTree, normalizePath } from './types';
-import { UNCOMMITTED_GROUP_ID } from './group-files';
-⋮----
-import type { DiffModalGroup } from './UpdatedFilesDiffModal';
-import type { TreeItem } from './types';
-⋮----
-import { Input } from '@/components/common/Input';
-import { Tooltip } from '@/components/ui/Tooltip';
-⋮----
-type GroupTree = {
-  group: DiffModalGroup;
-  treeData: Record<string, TreeItem>;
-  files: UpdatedFile[];
-};
-⋮----
-type Props = {
-  groups: DiffModalGroup[];
-  currentFile: UpdatedFile | null;
-  onFileSelect: (file: UpdatedFile) => void;
-};
-⋮----
-// eslint-disable-next-line react-hooks/set-state-in-effect
-⋮----
-const handleExpandItem = (item: TreeItem) =>
-⋮----
-const handleCollapseItem = (item: TreeItem) =>
-⋮----
-const handleClick = () =>
-⋮----
-const renderChevron = () =>
-⋮----
-
-================
-File: src/renderer/src/components/ContextFiles/EmptyContextInfo.tsx
-================
-import { AIDER_MODES, Mode } from '@common/types';
-import { useTranslation } from 'react-i18next';
-⋮----
-type Props = {
-  mode: Mode;
-};
-
-================
-File: src/renderer/src/components/ContextFiles/FileViewerModal.tsx
-================
-import { type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { AiOutlineLoading3Quarters } from 'react-icons/ai';
-import { HiOutlineExclamation, HiPencil, HiTrash } from 'react-icons/hi';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { File, type FileProps, type LineAnnotation, type LineEventBaseProps } from '@pierre/diffs/react';
-import { isCodeEditorDarkTheme } from '@common/types';
-⋮----
-import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
-import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
-import { CommentsPanel } from '@/components/ContextFiles/CommentsPanel';
-import { useApi } from '@/contexts/ApiContext';
-import { useSettings } from '@/contexts/SettingsContext';
-⋮----
-type PendingComment = {
-  id: string;
-  filePath: string;
-  lineNumber: number;
-  comment: string;
-};
-⋮----
-type ActiveLineInfo = {
-  lineKey: string;
-  lineNumber: number;
-  viewportRect: { top: number; left: number };
-};
-⋮----
-type Props = {
-  filePath: string;
-  baseDir: string;
-  taskId: string;
-  onClose: () => void;
-};
-⋮----
-const fetchFileContent = async () =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const handleEdit = (e: MouseEvent<HTMLButtonElement>) =>
-const handleRemove = ()
-⋮----
-onMouseDown=
-⋮----
-const renderLoading = () => (
-    <div className="flex items-center justify-center h-full">
-      <AiOutlineLoading3Quarters className="w-8 h-8 text-text-muted animate-spin" />
-    </div>
-  );
-⋮----
-<ModalOverlayLayout title=
-
-================
-File: src/renderer/src/components/ContextFiles/group-files.ts
-================
-import { UpdatedFile } from '@common/types';
-⋮----
-import type { DiffModalGroup } from './UpdatedFilesDiffModal';
-⋮----
-export const groupFilesByCommit = (files: UpdatedFile[]): DiffModalGroup[] =>
-⋮----
-// Oldest commits first (reverse of backend order), then uncommitted last
-
-================
-File: src/renderer/src/components/ContextFiles/index.ts
-================
-
-
-================
-File: src/renderer/src/components/ContextFiles/ProjectFilesSection.tsx
-================
-import { ContextFile, OS, TokensInfoData } from '@common/types';
-import React, { useCallback, useMemo, useState } from 'react';
-import { HiX } from 'react-icons/hi';
-import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
-import { MdOutlineSearch, MdOutlineRefresh } from 'react-icons/md';
-import { FaGitSquare } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
-import { useDebounce, useLocalStorage } from '@reactuses/core';
-import { AnimatePresence, motion } from 'framer-motion';
-import { clsx } from 'clsx';
-import { FileViewerModal } from 'src/renderer/src/components/ContextFiles/FileViewerModal';
-⋮----
-import { ContextFilesSection } from './ContextFilesSection';
-import { normalizePath, createFileTree } from './types';
-⋮----
-import type { TreeItem } from './types';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-import { Input } from '@/components/common/Input';
-⋮----
-type Props = {
-  baseDir: string;
-  taskId: string;
-  allFiles: string[];
-  isOpen: boolean;
-  totalStats: { additions: number; deletions: number };
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<string>;
-  refreshAllFiles: (useGit?: boolean) => Promise<void>;
-  onToggle: () => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
-  editMode?: boolean;
-  isHidden?: boolean;
-  onToggleHidden?: () => void;
-  showBorderTop?: boolean;
-};
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-<FaGitSquare className=
-⋮----
-onFileDiffClick=
-
-================
-File: src/renderer/src/components/ContextFiles/RulesSection.tsx
-================
-import { ContextFile } from '@common/types';
-import { Activity, useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { MdOutlinePublic } from 'react-icons/md';
-import { RiRobot2Line } from 'react-icons/ri';
-import { VscFileCode } from 'react-icons/vsc';
-import { motion } from 'framer-motion';
-import { clsx } from 'clsx';
-⋮----
-import { SectionHeader } from './SectionHeader';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
-import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
-⋮----
-const getFileName = (filePath: string) =>
-⋮----
-className=
-
-================
-File: src/renderer/src/components/ContextFiles/SectionContent.tsx
-================
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
-import React, { useCallback } from 'react';
-import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
-import { motion } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
-⋮----
-import { TreeItemRenderer } from './TreeItemRenderer';
-⋮----
-import type { SectionType, TreeItem } from './types';
-⋮----
-type Props = {
-  section: SectionType;
-  treeData: Record<string, TreeItem>;
-  expandedItems: string[];
-  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
-  contextFilesMap: Map<string, ContextFile>;
-  updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  searchField?: React.ReactNode;
-  emptyContent?: React.ReactNode;
-  disabledRuleFiles?: string[];
-  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
-  onFileDiffClick: (file: UpdatedFile) => void;
-  onFilePreviewClick?: (filePath: string) => void;
-  onRevertFile: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
-};
-
-================
-File: src/renderer/src/components/ContextFiles/SectionHeader.tsx
-================
-import { HiChevronDown } from 'react-icons/hi';
-import { motion } from 'framer-motion';
-import { clsx } from 'clsx';
-import { MdDragIndicator } from 'react-icons/md';
-import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
-⋮----
-import type { SectionType } from './types';
-⋮----
-type Props = {
-  section: SectionType;
-  title: string;
-  count: number;
-  totalCount?: number;
-  isOpen: boolean;
-  totalStats: { additions: number; deletions: number };
-  actions?: React.ReactNode;
-  onToggle: () => void;
-  editMode?: boolean;
-  isHidden?: boolean;
-  onToggleHidden?: () => void;
-};
-⋮----
-className=
-
-================
-File: src/renderer/src/components/ContextFiles/SkillsSection.tsx
-================
-import { SkillDefinition } from '@common/types';
-import { Activity, useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { HiX } from 'react-icons/hi';
-import { MdOutlinePublic, MdOutlineRefresh } from 'react-icons/md';
-import { RiPlayCircleLine, RiRocketLine, RiRobot2Line } from 'react-icons/ri';
-import { VscFileCode } from 'react-icons/vsc';
-import { motion } from 'framer-motion';
-import { clsx } from 'clsx';
-⋮----
-import { SectionHeader } from './SectionHeader';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-import { useApi } from '@/contexts/ApiContext';
-⋮----
-className=
-⋮----
-onClick=
-
-================
-File: src/renderer/src/components/ContextFiles/TreeItemRenderer.tsx
-================
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
-import { useCallback, useMemo } from 'react';
-import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
-import { MdUndo, MdOutlinePublic } from 'react-icons/md';
-import { TbPencilOff } from 'react-icons/tb';
-import { RiAlertLine, RiRobot2Line } from 'react-icons/ri';
-import { VscFileCode } from 'react-icons/vsc';
-import { useTranslation } from 'react-i18next';
-import { twMerge } from 'tailwind-merge';
-⋮----
-import { normalizePath } from './types';
-⋮----
-import type { SectionType, TreeItem } from './types';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-import { TriState, TriStateCheckbox } from '@/components/common/TriStateCheckbox';
-⋮----
-const getDescendantRuleFiles = (treeData: Record<string, TreeItem>, nodeId: string | number): string[] =>
-⋮----
-type Props = {
-  item: TreeItem;
-  title: React.ReactNode;
-  children: React.ReactNode;
-  type: SectionType;
-  treeData: Record<string, TreeItem>;
-  expandedItems: string[];
-  setExpandedItems: (items: string[]) => void;
-  contextFilesMap: Map<string, ContextFile>;
-  updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  disabledRuleFiles?: string[];
-  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
-  onFileDiffClick: (file: UpdatedFile) => void;
-  onFilePreviewClick?: (filePath: string) => void;
-  onRevertFile: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
-};
-⋮----
-const renderChevron = () =>
-⋮----
-const renderTitle = () =>
-⋮----
-const renderFile = () =>
-⋮----
-<span className=
-⋮----
-
-⋮----
-<button onClick=
-
-================
-File: src/renderer/src/components/ContextFiles/types.ts
-================
-import { ContextFile } from '@common/types';
-⋮----
-export interface TreeItem {
-  index: string | number;
-  isFolder?: boolean;
-  children?: (string | number)[];
-  data: string;
-  file?: ContextFile;
-}
-⋮----
-export type SectionType = 'updated' | 'project' | 'context' | 'rules' | 'skills';
-⋮----
-export const normalizePath = (path: string): string =>
-⋮----
-export const createFileTree = (files: ContextFile[], rootId = 'root') =>
-
-================
-File: src/renderer/src/components/ContextFiles/UpdatedFilesDiffModal.tsx
-================
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
-import { MdOutlineCommit, MdUndo } from 'react-icons/md';
-import { useTranslation } from 'react-i18next';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { useLocalStorage } from '@reactuses/core';
-import { DiffViewMode, UpdatedFile } from '@common/types';
-import { clsx } from 'clsx';
-⋮----
-import { IconButton } from '@/components/common/IconButton';
-import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { DiffLineCommentPanel, PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
-import { CompactSelect } from '@/components/common/CompactSelect';
-import { TextArea } from '@/components/common/TextArea';
-import { Checkbox } from '@/components/common/Checkbox';
-import { Button } from '@/components/common/Button';
-import { Tooltip } from '@/components/ui/Tooltip';
-import { DiffFileItem } from '@/components/ContextFiles/DiffFileItem';
-import { DiffFilesSidebar } from '@/components/ContextFiles/DiffFilesSidebar';
-import { CommentsPanel } from '@/components/ContextFiles/CommentsPanel';
-import { useApi } from '@/contexts/ApiContext';
-⋮----
-type PendingComment = {
-  id: string;
-  filePath: string;
-  lineNumber: number;
-  lineKey: string;
-  comment: string;
-};
-⋮----
-export type DiffModalGroup = {
-  id: string | null;
-  commitHash?: string;
-  commitMessage?: string;
-  files: UpdatedFile[];
-};
-⋮----
-type Props = {
-  groups: DiffModalGroup[];
-  initialFile: UpdatedFile | null;
-  onClose: () => void;
-  baseDir: string;
-  taskId: string;
-  openInWindowUrl?: string;
-  openInWindowTitle?: string;
-};
-⋮----
-// Flatten groups into a single file list for navigation
-⋮----
-// Cumulative file counts per group for rendering offsets in all-files view
-⋮----
-// Find the position of a file in the flat list, matching by path and commitHash.
-// When commitHash is undefined/null, the file belongs to the uncommitted group.
-⋮----
-// Derive current position from the active file object
-⋮----
-// Derive current group by matching commitHash — uncommitted when commitHash is absent
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// Allow empty message only when amending
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// Sync currentFile when initialFile prop changes (user clicks a different file)
-⋮----
-// Scroll to the active file when in view-all mode
-⋮----
-// Scroll spy: update currentFile based on scroll position in all-files view
-⋮----
-const handleScroll = () =>
-⋮----
-// Whether data is in flat mode (single group with no commit hashes)
-⋮----
-// Render a group section header for the all-files view
-⋮----
-// Skip rendering header for flat mode single group
-⋮----
-title=
-⋮----
-{/* Group badge in single-file mode */}
-⋮----
-className=
-⋮----
-{/* Main content area: file sidebar on left, diff viewer center, comments panel right */}
-⋮----
-{/* Diff viewer with its own scroll - scrollbar right next to the file */}
-⋮----
-comments=
-⋮----
-{/* Right side: Comments panel */}
-⋮----
-{/* Footer */}
-⋮----
-{/* Commit section */}
-⋮----
-isGeneratingMessage
-
-================
-File: src/renderer/src/components/ContextFiles/UpdatedFilesSection.tsx
-================
-import { ContextFile, OS, TokensInfoData, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
-import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
-import { HiChevronDown } from 'react-icons/hi';
-import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
-import { motion } from 'framer-motion';
-import { clsx } from 'clsx';
-import { useTranslation } from 'react-i18next';
-import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
-import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
-⋮----
-import { createFileTree } from './types';
-import { SectionContent } from './SectionContent';
-import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
-import { groupFilesByCommit, UNCOMMITTED_GROUP_ID } from './group-files';
-⋮----
-import type { DiffModalGroup } from './UpdatedFilesDiffModal';
-import type { SectionType, TreeItem } from './types';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { useApi } from '@/contexts/ApiContext';
-import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
-import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
-⋮----
-interface CommitGroup {
-  id: string;
-  commitHash?: string;
-  commitMessage?: string;
-  files: UpdatedFile[];
-  additions: number;
-  deletions: number;
-}
-⋮----
-type Props = {
-  baseDir: string;
-  taskId: string;
-  isOpen: boolean;
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<string>;
-  onToggle: () => void;
-  taskName?: string;
-  editMode?: boolean;
-  isHidden?: boolean;
-  onToggleHidden?: () => void;
-  showBorderTop?: boolean;
-};
-⋮----
-className=
-⋮----
-// Group files by commit hash; preserve commit order from backend (newest first in array),
-// then reverse for display (oldest first). Uncommitted always last.
-⋮----
-// Extend DiffModalGroup with per-group stats for the section's tree/header UI
-⋮----
-// Build tree data for each group — use 'root' as root key since SectionContent expects it
-⋮----
-// Build tree data for flat mode
-⋮----
-// Auto-expand folder items in each group's tree when tree data changes
-⋮----
-// Auto-expand folders in flat tree when tree data changes
-⋮----
-// Default: only the bottom-most (last) group is expanded.
-// Only re-run when group count changes, not on every file refresh,
-// to preserve user's manual expand/collapse choices between refreshes.
-⋮----
-// eslint-disable-next-line react-hooks/exhaustive-deps
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-{/* Outer section header */}
-⋮----
-{/* Content area */}
-⋮----
-{renderCommitGroupHeader(group, isGroupExpanded)}
-
-                          {isGroupExpanded && tree && (
-                            <SectionContent
-                              section={'updated' as SectionType}
-                              treeData={tree}
-                              expandedItems={expanded}
-setExpandedItems=
-⋮----
-setExpandedItems=
-⋮----
-onClose=
-⋮----
-openInWindowTitle=
-⋮----
-title=
-
-================
-File: src/renderer/src/components/ContextFiles/UserContextFilesSection.tsx
-================
-import { ContextFile, Mode, OS, TokensInfoData } from '@common/types';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
-import { useTranslation } from 'react-i18next';
-⋮----
-import { ContextFilesSection } from './ContextFilesSection';
-import { EmptyContextInfo } from './EmptyContextInfo';
-import { createFileTree } from './types';
-⋮----
-import type { TreeItem } from './types';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-⋮----
-type Props = {
-  mode: Mode;
-  userContextFiles: ContextFile[];
-  isOpen: boolean;
-  totalStats: { additions: number; deletions: number };
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  contextFilesMap: Map<string, ContextFile>;
-  showFileDialog: () => void;
-  onDropAllFiles: () => void;
-  onToggle: () => void;
-  onFilePreviewClick?: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  editMode?: boolean;
-  isHidden?: boolean;
-  onToggleHidden?: () => void;
-  showBorderTop?: boolean;
-};
-⋮----
-const expandFolders = (treeData: Record<string, TreeItem>, files: ContextFile[], currentExpanded: string[]) =>
-⋮----
-const checkChild = (childKey: string | number) =>
-⋮----
-// eslint-disable-next-line react-hooks/exhaustive-deps
-⋮----
-<Tooltip content=
-⋮----
-onFileDiffClick=
-
-================
 File: src/renderer/src/components/extensions/ExtensionComponentWrapper.tsx
 ================
 import { memo } from 'react';
@@ -16443,16 +15702,16 @@ import { DefaultTaskState, Mode, TaskData, UpdatedFile } from '@common/types';
 ⋮----
 import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
 ⋮----
-import type { DiffModalGroup } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+import type { DiffModalGroup } from '@/components/Workspace/UpdatedFilesDiffModal';
 ⋮----
-import { UpdatedFilesDiffModal } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+import { UpdatedFilesDiffModal } from '@/components/Workspace/UpdatedFilesDiffModal';
 import { Button } from '@/components/common/Button';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
 import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
 import { useApi } from '@/contexts/ApiContext';
-import { groupFilesByCommit } from '@/components/ContextFiles/group-files';
+import { groupFilesByCommit } from '@/components/Workspace/group-files';
 import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 ⋮----
 type Props = {
@@ -19094,7 +18353,7 @@ File: src/renderer/src/components/project/FilesContextInfoContent.tsx
 ================
 import { ContextFile, Mode, TaskData, TokensInfoData } from '@common/types';
 ⋮----
-import { ContextFiles } from '@/components/ContextFiles';
+import { Workspace } from '@/components/Workspace';
 import { CostInfo } from '@/components/CostInfo';
 ⋮----
 type Props = {
@@ -21485,6 +20744,7 @@ import { ItemConfig, ItemSelector } from '../common/ItemSelector';
 import { ChipListInput } from '../common/ChipListInput';
 ⋮----
 import { Input } from '@/components/common/Input';
+import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
   settings: SettingsData;
@@ -21501,7 +20761,9 @@ const handleAddSymlinkFolder = (folder: string) =>
 ⋮----
 const handleRemoveSymlinkFolder = (folder: string) =>
 ⋮----
-const handleCompactingThresholdChange = (value: number) =>
+const handleCompactingThresholdPercentageChange = (value: number) =>
+⋮----
+const handleCompactingThresholdTokensChange = (value: string) =>
 ⋮----
 const handleCompactionTypeChange = (value: ContextCompactionType) =>
 ⋮----
@@ -21518,6 +20780,10 @@ const handleWorktreeBranchPrefixChange = (value: string) =>
 const handleRenameBranchOnNameGenerationChange = (checked: boolean) =>
 ⋮----
 <Section title=
+⋮----
+<label className="text-xs text-text-primary font-medium">
+⋮----
+onChange=
 ⋮----
 onClick=
 
@@ -22094,6 +21360,839 @@ export enum GroupBy {
 export const formatDateByGroup = (timestamp: string, groupBy: GroupBy): string =>
 
 ================
+File: src/renderer/src/components/Workspace/CommentsPanel.tsx
+================
+import { memo, useCallback, useState } from 'react';
+import { HiPencil, HiTrash } from 'react-icons/hi';
+import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { useTranslation } from 'react-i18next';
+import { useLocalStorage } from '@reactuses/core';
+import { clsx } from 'clsx';
+⋮----
+import { IconButton } from '@/components/common/IconButton';
+import { TextArea } from '@/components/common/TextArea';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Button } from '@/components/common/Button';
+⋮----
+type PendingComment = {
+  id: string;
+  filePath: string;
+  lineNumber: number;
+  comment: string;
+};
+⋮----
+type Props = {
+  pendingComments: PendingComment[];
+  onRemoveComment: (id: string) => void;
+  onUpdateComment: (id: string, comment: string) => void;
+  onSubmitAll: () => void;
+  isSubmitting: boolean;
+  createNewTask: boolean;
+  onCreateNewTaskChange: (value: boolean) => void;
+};
+⋮----
+onClick=
+⋮----
+<div className=
+⋮----
+{/* Panel header */}
+⋮----
+icon=
+⋮----
+onStartEdit=
+⋮----
+{/* Submit change requests */}
+⋮----
+<Checkbox label=
+
+================
+File: src/renderer/src/components/Workspace/ContextFilesSection.tsx
+================
+import { ContextFile, Mode, OS, TokensInfoData } from '@common/types';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { WorkspaceSection } from './WorkspaceSection';
+import { EmptyContextInfo } from './EmptyContextInfo';
+import { createFileTree } from './types';
+⋮----
+import type { TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  mode: Mode;
+  userContextFiles: ContextFile[];
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  contextFilesMap: Map<string, ContextFile>;
+  showFileDialog: () => void;
+  onDropAllFiles: () => void;
+  onToggle: () => void;
+  onFilePreviewClick?: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
+};
+⋮----
+const expandFolders = (treeData: Record<string, TreeItem>, files: ContextFile[], currentExpanded: string[]) =>
+⋮----
+const checkChild = (childKey: string | number) =>
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+<Tooltip content=
+⋮----
+onFileDiffClick=
+
+================
+File: src/renderer/src/components/Workspace/ContextFilesSectionInner.tsx
+================
+// This file is deprecated. Use UserContextFilesSection.tsx instead.
+
+================
+File: src/renderer/src/components/Workspace/DiffFileItem.tsx
+================
+import { useCallback, useMemo, useState } from 'react';
+import { HiChevronDown } from 'react-icons/hi';
+import { AnimatePresence, motion } from 'framer-motion';
+import { MdOutlineCommit } from 'react-icons/md';
+import { RiAlertLine } from 'react-icons/ri';
+import { DiffViewMode, UpdatedFile } from '@common/types';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
+⋮----
+type Props = {
+  file: UpdatedFile;
+  index: number;
+  diffViewMode: DiffViewMode;
+  selectedLineNumber?: number | null;
+  onLineClick: (lineInfo: PierreLineClickInfo, filePath: string) => void;
+  comments?: DiffComment[];
+  onEditComment?: (info: { commentId: string; viewportRect: { top: number; left: number } }) => void;
+  onRemoveComment?: (commentId: string) => void;
+};
+
+================
+File: src/renderer/src/components/Workspace/DiffFilesSidebar.tsx
+================
+import { ContextFile, UpdatedFile } from '@common/types';
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
+import { MdOutlineCommit } from 'react-icons/md';
+import { RiAlertLine } from 'react-icons/ri';
+import { useTranslation } from 'react-i18next';
+import { useDebounce, useLocalStorage } from '@reactuses/core';
+import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
+import { ResizableBox } from 'react-resizable';
+import { clsx } from 'clsx';
+⋮----
+import { createFileTree, normalizePath } from './types';
+import { UNCOMMITTED_GROUP_ID } from './group-files';
+⋮----
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
+import type { TreeItem } from './types';
+⋮----
+import { Input } from '@/components/common/Input';
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type GroupTree = {
+  group: DiffModalGroup;
+  treeData: Record<string, TreeItem>;
+  files: UpdatedFile[];
+};
+⋮----
+type Props = {
+  groups: DiffModalGroup[];
+  currentFile: UpdatedFile | null;
+  onFileSelect: (file: UpdatedFile) => void;
+};
+⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
+const handleExpandItem = (item: TreeItem) =>
+⋮----
+const handleCollapseItem = (item: TreeItem) =>
+⋮----
+const handleClick = () =>
+⋮----
+const renderChevron = () =>
+⋮----
+
+================
+File: src/renderer/src/components/Workspace/EmptyContextInfo.tsx
+================
+import { AIDER_MODES, Mode } from '@common/types';
+import { useTranslation } from 'react-i18next';
+⋮----
+type Props = {
+  mode: Mode;
+};
+
+================
+File: src/renderer/src/components/Workspace/FileViewerModal.tsx
+================
+import { type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import { HiOutlineExclamation, HiPencil, HiTrash } from 'react-icons/hi';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { File, type FileProps, type LineAnnotation, type LineEventBaseProps } from '@pierre/diffs/react';
+import { isCodeEditorDarkTheme } from '@common/types';
+⋮----
+import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
+import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
+import { useApi } from '@/contexts/ApiContext';
+import { useSettings } from '@/contexts/SettingsContext';
+⋮----
+type PendingComment = {
+  id: string;
+  filePath: string;
+  lineNumber: number;
+  comment: string;
+};
+⋮----
+type ActiveLineInfo = {
+  lineKey: string;
+  lineNumber: number;
+  viewportRect: { top: number; left: number };
+};
+⋮----
+type Props = {
+  filePath: string;
+  baseDir: string;
+  taskId: string;
+  onClose: () => void;
+};
+⋮----
+const fetchFileContent = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const handleEdit = (e: MouseEvent<HTMLButtonElement>) =>
+const handleRemove = ()
+⋮----
+onMouseDown=
+⋮----
+const renderLoading = () => (
+    <div className="flex items-center justify-center h-full">
+      <AiOutlineLoading3Quarters className="w-8 h-8 text-text-muted animate-spin" />
+    </div>
+  );
+⋮----
+<ModalOverlayLayout title=
+
+================
+File: src/renderer/src/components/Workspace/group-files.ts
+================
+import { UpdatedFile } from '@common/types';
+⋮----
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
+⋮----
+export const groupFilesByCommit = (files: UpdatedFile[]): DiffModalGroup[] =>
+⋮----
+// Oldest commits first (reverse of backend order), then uncommitted last
+
+================
+File: src/renderer/src/components/Workspace/index.ts
+================
+
+
+================
+File: src/renderer/src/components/Workspace/ProjectFilesSection.tsx
+================
+import { ContextFile, OS, TokensInfoData } from '@common/types';
+import React, { useCallback, useMemo, useState } from 'react';
+import { HiX } from 'react-icons/hi';
+import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
+import { MdOutlineSearch, MdOutlineRefresh } from 'react-icons/md';
+import { FaGitSquare } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
+import { useDebounce, useLocalStorage } from '@reactuses/core';
+import { AnimatePresence, motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { FileViewerModal } from 'src/renderer/src/components/Workspace/FileViewerModal';
+⋮----
+import { WorkspaceSection } from './WorkspaceSection';
+import { normalizePath, createFileTree } from './types';
+⋮----
+import type { TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { Input } from '@/components/common/Input';
+⋮----
+type Props = {
+  baseDir: string;
+  taskId: string;
+  allFiles: string[];
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  contextFilesMap: Map<string, ContextFile>;
+  visitedSections: Set<string>;
+  refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  onToggle: () => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
+};
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+<FaGitSquare className=
+⋮----
+onFileDiffClick=
+
+================
+File: src/renderer/src/components/Workspace/RulesSection.tsx
+================
+import { ContextFile } from '@common/types';
+import { Activity, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { MdOutlinePublic } from 'react-icons/md';
+import { RiRobot2Line } from 'react-icons/ri';
+import { VscFileCode } from 'react-icons/vsc';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+⋮----
+import { SectionHeader } from './SectionHeader';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+⋮----
+const getFileName = (filePath: string) =>
+⋮----
+className=
+
+================
+File: src/renderer/src/components/Workspace/SectionContent.tsx
+================
+import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import React, { useCallback } from 'react';
+import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { TreeItemRenderer } from './TreeItemRenderer';
+⋮----
+import type { SectionType, TreeItem } from './types';
+⋮----
+type Props = {
+  section: SectionType;
+  treeData: Record<string, TreeItem>;
+  expandedItems: string[];
+  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  contextFilesMap: Map<string, ContextFile>;
+  updatedFiles: UpdatedFile[];
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  searchField?: React.ReactNode;
+  emptyContent?: React.ReactNode;
+  disabledRuleFiles?: string[];
+  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
+  onFileDiffClick: (file: UpdatedFile) => void;
+  onFilePreviewClick?: (filePath: string) => void;
+  onRevertFile: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+};
+
+================
+File: src/renderer/src/components/Workspace/SectionHeader.tsx
+================
+import { HiChevronDown } from 'react-icons/hi';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { MdDragIndicator } from 'react-icons/md';
+import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
+⋮----
+import type { SectionType } from './types';
+⋮----
+type Props = {
+  section: SectionType;
+  title: string;
+  count: number;
+  totalCount?: number;
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  actions?: React.ReactNode;
+  onToggle: () => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+};
+⋮----
+className=
+
+================
+File: src/renderer/src/components/Workspace/SkillsSection.tsx
+================
+import { SkillDefinition } from '@common/types';
+import { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { HiX } from 'react-icons/hi';
+import { MdOutlinePublic, MdOutlineRefresh } from 'react-icons/md';
+import { RiPlayCircleLine, RiRocketLine, RiRobot2Line } from 'react-icons/ri';
+import { VscFileCode } from 'react-icons/vsc';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+⋮----
+import { SectionHeader } from './SectionHeader';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+className=
+⋮----
+onClick=
+
+================
+File: src/renderer/src/components/Workspace/TreeItemRenderer.tsx
+================
+import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { useCallback, useMemo } from 'react';
+import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
+import { MdUndo, MdOutlinePublic } from 'react-icons/md';
+import { TbPencilOff } from 'react-icons/tb';
+import { RiAlertLine, RiRobot2Line } from 'react-icons/ri';
+import { VscFileCode } from 'react-icons/vsc';
+import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
+⋮----
+import { normalizePath } from './types';
+⋮----
+import type { SectionType, TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TriState, TriStateCheckbox } from '@/components/common/TriStateCheckbox';
+⋮----
+const getDescendantRuleFiles = (treeData: Record<string, TreeItem>, nodeId: string | number): string[] =>
+⋮----
+type Props = {
+  item: TreeItem;
+  title: React.ReactNode;
+  children: React.ReactNode;
+  type: SectionType;
+  treeData: Record<string, TreeItem>;
+  expandedItems: string[];
+  setExpandedItems: (items: string[]) => void;
+  contextFilesMap: Map<string, ContextFile>;
+  updatedFiles: UpdatedFile[];
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  disabledRuleFiles?: string[];
+  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
+  onFileDiffClick: (file: UpdatedFile) => void;
+  onFilePreviewClick?: (filePath: string) => void;
+  onRevertFile: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+};
+⋮----
+const renderChevron = () =>
+⋮----
+const renderTitle = () =>
+⋮----
+const renderFile = () =>
+⋮----
+<span className=
+⋮----
+
+⋮----
+<button onClick=
+
+================
+File: src/renderer/src/components/Workspace/types.ts
+================
+import { ContextFile } from '@common/types';
+⋮----
+export interface TreeItem {
+  index: string | number;
+  isFolder?: boolean;
+  children?: (string | number)[];
+  data: string;
+  file?: ContextFile;
+}
+⋮----
+export type SectionType = 'updated' | 'project' | 'context' | 'rules' | 'skills';
+⋮----
+export const normalizePath = (path: string): string =>
+⋮----
+export const createFileTree = (files: ContextFile[], rootId = 'root') =>
+
+================
+File: src/renderer/src/components/Workspace/UpdatedFilesDiffModal.tsx
+================
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
+import { MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { useLocalStorage } from '@reactuses/core';
+import { DiffViewMode, UpdatedFile } from '@common/types';
+import { clsx } from 'clsx';
+⋮----
+import { IconButton } from '@/components/common/IconButton';
+import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { DiffLineCommentPanel, PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
+import { CompactSelect } from '@/components/common/CompactSelect';
+import { TextArea } from '@/components/common/TextArea';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Button } from '@/components/common/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { DiffFileItem } from '@/components/Workspace/DiffFileItem';
+import { DiffFilesSidebar } from '@/components/Workspace/DiffFilesSidebar';
+import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type PendingComment = {
+  id: string;
+  filePath: string;
+  lineNumber: number;
+  lineKey: string;
+  comment: string;
+};
+⋮----
+export type DiffModalGroup = {
+  id: string | null;
+  commitHash?: string;
+  commitMessage?: string;
+  files: UpdatedFile[];
+};
+⋮----
+type Props = {
+  groups: DiffModalGroup[];
+  initialFile: UpdatedFile | null;
+  onClose: () => void;
+  baseDir: string;
+  taskId: string;
+  openInWindowUrl?: string;
+  openInWindowTitle?: string;
+};
+⋮----
+// Flatten groups into a single file list for navigation
+⋮----
+// Cumulative file counts per group for rendering offsets in all-files view
+⋮----
+// Find the position of a file in the flat list, matching by path and commitHash.
+// When commitHash is undefined/null, the file belongs to the uncommitted group.
+⋮----
+// Derive current position from the active file object
+⋮----
+// Derive current group by matching commitHash — uncommitted when commitHash is absent
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// Allow empty message only when amending
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// Sync currentFile when initialFile prop changes (user clicks a different file)
+⋮----
+// Scroll to the active file when in view-all mode
+⋮----
+// Scroll spy: update currentFile based on scroll position in all-files view
+⋮----
+const handleScroll = () =>
+⋮----
+// Whether data is in flat mode (single group with no commit hashes)
+⋮----
+// Render a group section header for the all-files view
+⋮----
+// Skip rendering header for flat mode single group
+⋮----
+title=
+⋮----
+{/* Group badge in single-file mode */}
+⋮----
+className=
+⋮----
+{/* Main content area: file sidebar on left, diff viewer center, comments panel right */}
+⋮----
+{/* Diff viewer with its own scroll - scrollbar right next to the file */}
+⋮----
+comments=
+⋮----
+{/* Right side: Comments panel */}
+⋮----
+{/* Footer */}
+⋮----
+{/* Commit section */}
+⋮----
+isGeneratingMessage
+
+================
+File: src/renderer/src/components/Workspace/UpdatedFilesSection.tsx
+================
+import { ContextFile, OS, TokensInfoData, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
+import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { HiChevronDown } from 'react-icons/hi';
+import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
+import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
+import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
+⋮----
+import { createFileTree } from './types';
+import { SectionContent } from './SectionContent';
+import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
+import { groupFilesByCommit, UNCOMMITTED_GROUP_ID } from './group-files';
+⋮----
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
+import type { SectionType, TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { useApi } from '@/contexts/ApiContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
+⋮----
+interface CommitGroup {
+  id: string;
+  commitHash?: string;
+  commitMessage?: string;
+  files: UpdatedFile[];
+  additions: number;
+  deletions: number;
+}
+⋮----
+type Props = {
+  baseDir: string;
+  taskId: string;
+  isOpen: boolean;
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  contextFilesMap: Map<string, ContextFile>;
+  visitedSections: Set<string>;
+  onToggle: () => void;
+  taskName?: string;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
+};
+⋮----
+className=
+⋮----
+// Group files by commit hash; preserve commit order from backend (newest first in array),
+// then reverse for display (oldest first). Uncommitted always last.
+⋮----
+// Extend DiffModalGroup with per-group stats for the section's tree/header UI
+⋮----
+// Build tree data for each group — use 'root' as root key since SectionContent expects it
+⋮----
+// Build tree data for flat mode
+⋮----
+// Auto-expand folder items in each group's tree when tree data changes
+⋮----
+// Auto-expand folders in flat tree when tree data changes
+⋮----
+// Default: only the bottom-most (last) group is expanded.
+// Only re-run when group count changes, not on every file refresh,
+// to preserve user's manual expand/collapse choices between refreshes.
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+{/* Outer section header */}
+⋮----
+{/* Content area */}
+⋮----
+{renderCommitGroupHeader(group, isGroupExpanded)}
+
+                          {isGroupExpanded && tree && (
+                            <SectionContent
+                              section={'updated' as SectionType}
+                              treeData={tree}
+                              expandedItems={expanded}
+setExpandedItems=
+⋮----
+setExpandedItems=
+⋮----
+onClose=
+⋮----
+openInWindowTitle=
+⋮----
+title=
+
+================
+File: src/renderer/src/components/Workspace/Workspace.css
+================
+.rct-tree-items-container {
+⋮----
+.rct-tree-root {
+⋮----
+@apply p-0;
+⋮----
+.context-dimmed {
+⋮----
+@apply text-text-muted;
+⋮----
+body.theme-light .context-dimmed {
+⋮----
+.workspace-root.drag-over {
+⋮----
+@apply bg-bg-tertiary;
+⋮----
+@tailwind utilities;
+
+================
+File: src/renderer/src/components/Workspace/Workspace.tsx
+================
+import { ContextFile, Mode, TokensInfoData } from '@common/types';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocalStorage } from '@reactuses/core';
+import { RiMenuUnfold4Line, RiListSettingsLine } from 'react-icons/ri';
+import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { clsx } from 'clsx';
+import { MdDone } from 'react-icons/md';
+import { AnimatePresence } from 'framer-motion';
+⋮----
+import { ContextFilesSection } from './ContextFilesSection';
+import { UpdatedFilesSection } from './UpdatedFilesSection';
+import { ProjectFilesSection } from './ProjectFilesSection';
+import { RulesSection } from './RulesSection';
+import { SkillsSection } from './SkillsSection';
+import { normalizePath } from './types';
+⋮----
+import type { SectionType, TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { useOS } from '@/hooks/useOS';
+import { useApi } from '@/contexts/ApiContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+⋮----
+type Props = {
+  baseDir: string;
+  taskId: string;
+  allFiles: string[];
+  contextFiles: ContextFile[];
+  showFileDialog: () => void;
+  tokensInfo?: TokensInfoData | null;
+  refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  mode: Mode;
+  onToggleFilesSidebarCollapse?: () => void;
+  taskName?: string;
+};
+⋮----
+type SortableSectionWrapperProps = {
+  id: SectionType;
+  editMode: boolean;
+  isHidden: boolean;
+  children: React.ReactNode;
+};
+⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
+onToggleHidden=
+
+================
+File: src/renderer/src/components/Workspace/WorkspaceSection.tsx
+================
+import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import React, { Activity } from 'react';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+⋮----
+import { SectionHeader } from './SectionHeader';
+import { SectionContent } from './SectionContent';
+⋮----
+import type { SectionType, TreeItem } from './types';
+⋮----
+type Props = {
+  section: SectionType;
+  title: string;
+  count: number;
+  isOpen: boolean;
+  totalStats: { additions: number; deletions: number };
+  treeData: Record<string, TreeItem>;
+  expandedItems: string[];
+  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  contextFilesMap: Map<string, ContextFile>;
+  updatedFiles: UpdatedFile[];
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  actions?: React.ReactNode;
+  searchField?: React.ReactNode;
+  emptyContent?: React.ReactNode;
+  showBorderTop?: boolean;
+  disabledRuleFiles?: string[];
+  totalRuleCount?: number;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggle: () => void;
+  onToggleHidden?: () => void;
+  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
+  onFileDiffClick: (file: UpdatedFile) => void;
+  onFilePreviewClick?: (filePath: string) => void;
+  onRevertFile: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+};
+⋮----
+export const WorkspaceSection = ({
+  section,
+  title,
+  count,
+  isOpen,
+  totalStats,
+  treeData,
+  expandedItems,
+  setExpandedItems,
+  contextFilesMap,
+  updatedFiles,
+  tokensInfo,
+  os,
+  actions,
+  searchField,
+  emptyContent,
+  showBorderTop = false,
+  disabledRuleFiles,
+  totalRuleCount,
+  editMode,
+  isHidden,
+  onToggle,
+  onToggleHidden,
+  onToggleRuleFile,
+  onFileDiffClick,
+  onFilePreviewClick,
+  onRevertFile,
+  onDropFile,
+  onAddFile,
+}: Props) =>
+⋮----
+className=
+
+================
 File: src/renderer/src/components/AutocompletionInput.tsx
 ================
 import { useState, useRef, useEffect, ReactNode, ClipboardEvent } from 'react';
@@ -22233,10 +22332,13 @@ File: src/renderer/src/components/TokenUsageBar.tsx
 import { AIDER_MODES, Mode, TaskData, TokensInfoData } from '@common/types';
 import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import debounce from 'lodash/debounce';
+import { useDebounceFn } from '@reactuses/core';
 import { clsx } from 'clsx';
 ⋮----
+import { useSettings } from '@/contexts/SettingsContext';
 import { formatHumanReadable } from '@/utils/string-utils';
+⋮----
+const getDefaultThresholdTokens = (task: TaskData, thresholdConfig:
 ⋮----
 type Props = {
   task: TaskData;
@@ -24143,8 +24245,8 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { UpdatedFile } from '@common/types';
 ⋮----
-import { groupFilesByCommit } from '@/components/ContextFiles/group-files';
-import { UpdatedFilesDiffModal } from '@/components/ContextFiles/UpdatedFilesDiffModal';
+import { groupFilesByCommit } from '@/components/Workspace/group-files';
+import { UpdatedFilesDiffModal } from '@/components/Workspace/UpdatedFilesDiffModal';
 import { useApi } from '@/contexts/ApiContext';
 import { URL_PARAMS, decodeBaseDir } from '@/utils/routes';
 ⋮----
