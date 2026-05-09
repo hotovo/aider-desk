@@ -683,6 +683,7 @@ export class ModelManager {
   getModelSettings(providerId: string, modelId: string, useModelInfoFallback = false): Model | undefined {
     let model: Model | undefined;
     const providerModels = this.providerModels[providerId];
+    logger.debug(`getModelSettings providerModels for provider: ${providerId}`, { providerModels });
     if (providerModels) {
       model = providerModels.find((m) => m.id === modelId);
     }
@@ -697,6 +698,12 @@ export class ModelManager {
         };
       }
     }
+
+    logger.debug('getModelSettings model', {
+      providerId,
+      modelId,
+      model,
+    });
 
     return model;
   }

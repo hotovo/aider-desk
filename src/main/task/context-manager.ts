@@ -782,9 +782,9 @@ export class ContextManager {
     await this.cleanupContext();
   }
 
-  async loadMessages(messages: ContextMessage[]): Promise<void> {
+  async loadMessages(messages: ContextMessage[], updateTaskState = true): Promise<void> {
     // Clear all current messages
-    await this.task.clearContext(false, false);
+    await this.task.clearContext(false, false, updateTaskState);
 
     this.messages = messages;
 

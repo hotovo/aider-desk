@@ -86,6 +86,7 @@ import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { getProxyEnvVars } from '@/proxy-manager';
+import { smartCompactMessages } from '@/agent/smart-compaction';
 
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
@@ -2115,14 +2116,6 @@ export class Task {
     return this.contextManager.getContextMessages();
   }
 
-  public setContextMessages(messages: ContextMessage[], save = true) {
-    this.contextManager.setContextMessages(messages, save);
-  }
-
-  public async backupContext(): Promise<void> {
-    await this.contextManager.backupContext();
-  }
-
   public getSkillManager(): SkillManager {
     return this.skillManager;
   }
@@ -2289,18 +2282,21 @@ export class Task {
     this.eventManager.sendTool(data);
   }
 
-  public async clearContext(addToHistory = false, updateContextInfo = true) {
+  public async clearContext(addToHistory = false, updateContextInfo = true, updateTaskState = true) {
     logger.info('Clearing context:', {
       baseDir: this.project.baseDir,
       addToHistory,
       updateContextInfo,
     });
 
-    await this.updateTask({
-      state: DefaultTaskState.Todo,
-      metadata: undefined,
-      lastAgentProviderMetadata: null,
-    });
+    if (updateTaskState) {
+      await this.updateTask({
+        state: DefaultTaskState.Todo,
+        metadata: undefined,
+        lastAgentProviderMetadata: null,
+      });
+    }
+
     this.contextManager.clearMessages();
     await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
@@ -2765,25 +2761,27 @@ export class Task {
     return skillMessages;
   }
 
-  public async smartCompactConversation(contextMessages?: ContextMessage[]) {
+  public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.') {
     if (!contextMessages) {
       contextMessages = await this.contextManager.getContextMessages();
     }
 
     if (contextMessages.length === 0) {
       this.addLogMessage('warning', 'No conversation to compact.');
-      return;
+      return [];
     }
 
+    // backing up the current context before compacting for debugging purposes
     await this.contextManager.backupContext();
 
-    const { smartCompactMessages } = await import('@/agent/smart-compaction');
     const compactedMessages = smartCompactMessages(contextMessages);
 
     this.contextManager.setContextMessages(compactedMessages);
-    await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
+    await this.contextManager.loadMessages(compactedMessages, false);
     await this.updateContextInfo();
-    this.addLogMessage('info', 'Conversation smart-compacted.');
+    this.addLogMessage('info', infoMessage);
+
+    return compactedMessages;
   }
 
   public async compactConversation(

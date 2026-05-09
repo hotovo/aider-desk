@@ -71,7 +71,6 @@ import {
   truncateToolResult,
 } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
-import { smartCompactMessages } from './smart-compaction';
 
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
 
@@ -1032,7 +1031,7 @@ export class Agent {
       };
 
       // Get the model to use its temperature and max output tokens settings
-      const modelSettings = this.modelManager.getModelSettings(provider.provider.name, modelName);
+      const modelSettings = this.modelManager.getModelSettings(provider.id, modelName);
       const effectiveTemperature = profile.temperature ?? modelSettings?.temperature;
       const effectiveMaxOutputTokens = profile.maxTokens ?? modelSettings?.maxOutputTokens;
 
@@ -1990,11 +1989,28 @@ export class Agent {
       contextCompactionType = ContextCompactionType.Compact;
     }
 
+    logger.debug('Compaction threshold', {
+      thresholdConfig,
+      profile: {
+        autoCompactThresholdPercentage: profile.autoCompactThresholdPercentage,
+        autoCompactThresholdTokens: profile.autoCompactThresholdTokens,
+      },
+      taskSettings: {
+        contextCompactingThreshold: taskSettings.contextCompactingThreshold,
+      },
+      taskTokensOverride,
+      contextCompactionType,
+    });
+
     const lastAssistantMessage = [...resultMessages].reverse().find((m) => m.role === 'assistant');
     const usageReport = lastAssistantMessage?.usageReport;
-    const maxTokens = this.modelManager.getModelSettings(provider.provider.name, model)?.maxInputTokens;
+    const maxTokens = this.modelManager.getModelSettings(provider.id, model)?.maxInputTokens;
 
     if (!usageReport || !maxTokens) {
+      logger.debug('No usageReport or maxTokens', {
+        usageReport,
+        maxTokens,
+      });
       return true;
     }
 
@@ -2018,6 +2034,12 @@ export class Agent {
       effectiveThreshold = Math.min(percentageThreshold, tokenThreshold);
       thresholdDescription = `percentage: ${percentageThreshold}, tokens: ${tokenThreshold}`;
     }
+
+    logger.debug('Checking total tokens vs effective threshold', {
+      totalTokens,
+      effectiveThreshold,
+      thresholdDescription,
+    });
 
     if (totalTokens > effectiveThreshold) {
       logger.info(
@@ -2049,13 +2071,7 @@ export class Agent {
         });
         messages.push(...resultMessages);
       } else if (contextCompactionType === ContextCompactionType.Smart) {
-        // backing up the current context before compacting for debugging purposes
-        await task.backupContext();
-
-        const compactedMessages = smartCompactMessages([...contextMessages, ...resultMessages]);
-        task.setContextMessages(compactedMessages);
-        await task.loadContextMessages(compactedMessages);
-        task.addLogMessage('info', 'Previous conversation has been compacted.');
+        const compactedMessages = await task.smartCompactConversation([...contextMessages, ...resultMessages], 'Previous conversation has been compacted.');
 
         messages.length = 0;
         resultMessages.length = 0;

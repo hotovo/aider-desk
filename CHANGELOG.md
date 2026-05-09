@@ -16,6 +16,7 @@
 - added retry logic for network errors during agent streaming
 - updated loading of model token limits from openai-compatible providers
 - added worker pool for diff rendering for better Updated Files diff viewer loading performance
+- correctly getting the model parameters and triggering compaction for custom providers
 
 ## [0.64.0]
 
