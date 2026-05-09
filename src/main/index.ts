@@ -9,7 +9,7 @@ import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron';
 import icon from '../../build/icon.png?asset';
 import splashImage from '../../build/splash.mp4?asset';
 
-import { AIDER_DESK_DATA_DIR, HEADLESS_MODE } from '@/constants';
+import { AIDER_DESK_DATA_DIR, DISABLE_MENU, HEADLESS_MODE } from '@/constants';
 import { ProgressWindow } from '@/progress-window';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { performStartUp, UpdateProgressData } from '@/start-up';
@@ -286,8 +286,12 @@ app.whenReady().then(async () => {
     electronApp.setAppUserModelId('com.hotovo.aider-desk');
 
     if (!HEADLESS_MODE) {
-      // Setup custom menu only in GUI mode - pass createNewWindow function
-      setupCustomMenu(() => void createNewWindow());
+      if (DISABLE_MENU) {
+        Menu.setApplicationMenu(null);
+      } else {
+        // Setup custom menu only in GUI mode - pass createNewWindow function
+        setupCustomMenu(() => void createNewWindow());
+      }
 
       app.on('browser-window-created', (_, window) => {
         optimizer.watchWindowShortcuts(window);

@@ -17,6 +17,7 @@
 - updated loading of model token limits from openai-compatible providers
 - added worker pool for diff rendering for better Updated Files diff viewer loading performance
 - correctly getting the model parameters and triggering compaction for custom providers
+- added support for AIDER_DESK_DISABLE_MENU=true to disable Electron app menu
 
 ## [0.64.0]
 
