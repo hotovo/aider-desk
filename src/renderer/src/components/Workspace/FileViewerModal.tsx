@@ -4,13 +4,11 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { HiOutlineExclamation, HiPencil, HiTrash } from 'react-icons/hi';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { File, type FileProps, type LineAnnotation, type LineEventBaseProps } from '@pierre/diffs/react';
-import { isCodeEditorDarkTheme } from '@common/types';
 
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
 import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
-import { useSettings } from '@/contexts/SettingsContext';
 
 import '@/components/common/DiffViewer/PierreDiffViewer.scss';
 
@@ -37,7 +35,6 @@ type Props = {
 export const FileViewerModal = ({ filePath, baseDir, taskId, onClose }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
-  const { theme } = useSettings();
 
   const [content, setContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -189,10 +186,9 @@ export const FileViewerModal = ({ filePath, baseDir, taskId, onClose }: Props) =
         disableFileHeader: true,
         enableGutterUtility: true,
         overflow: 'wrap',
-        theme: !theme || isCodeEditorDarkTheme(theme) ? 'github-dark-default' : 'github-light-default',
         onLineClick: handleLineClick,
       }) as FileProps<unknown>['options'],
-    [theme, handleLineClick],
+    [handleLineClick],
   );
 
   const lineAnnotations = useMemo<LineAnnotation<{ id: string; comment: string }>[]>(
@@ -283,7 +279,7 @@ export const FileViewerModal = ({ filePath, baseDir, taskId, onClose }: Props) =
             {error && renderError()}
             {!isLoading && !error && fileContents && (
               <div className="select-text bg-bg-code-block rounded-lg px-4 py-2 text-xs relative">
-                <File file={fileContents} options={fileOptions} disableWorkerPool={true} {...(hasAnnotations ? { lineAnnotations, renderAnnotation } : {})} />
+                <File file={fileContents} options={fileOptions} {...(hasAnnotations ? { lineAnnotations, renderAnnotation } : {})} />
               </div>
             )}
           </div>

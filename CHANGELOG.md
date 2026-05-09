@@ -15,6 +15,7 @@
 - added auto-compact overrides for agent profiles
 - added retry logic for network errors during agent streaming
 - updated loading of model token limits from openai-compatible providers
+- added worker pool for diff rendering for better Updated Files diff viewer loading performance
 
 ## [0.64.0]
 

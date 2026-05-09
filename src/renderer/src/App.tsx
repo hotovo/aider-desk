@@ -22,6 +22,7 @@ import { AgentsProvider } from '@/contexts/AgentsContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
 import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
 
 const ICON_CONTEXT_DEFAULT_VALUE: IconContext = {};
 
@@ -126,10 +127,12 @@ const App = () => {
                   <AgentsProvider>
                     <ContextMenuProvider>
                       <ExtensionsProvider>
-                        <ThemeAndFontManager />
-                        <AnimatedRoutes />
-                        <ToastContainer />
-                        <ModalOverlayUrlHandler />
+                        <DiffsWorkerPoolProvider>
+                          <ThemeAndFontManager />
+                          <AnimatedRoutes />
+                          <ToastContainer />
+                          <ModalOverlayUrlHandler />
+                        </DiffsWorkerPoolProvider>
                       </ExtensionsProvider>
                     </ContextMenuProvider>
                   </AgentsProvider>

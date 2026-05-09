@@ -21,6 +21,9 @@ export default defineConfig({
   },
   renderer: {
     publicDir: resolve(__dirname, 'src/renderer/public'),
+    worker: {
+      format: 'es',
+    },
     optimizeDeps: {
       include: ['ghostty-web'],
       exclude: [],

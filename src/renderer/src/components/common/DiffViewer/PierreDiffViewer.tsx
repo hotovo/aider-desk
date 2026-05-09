@@ -1,11 +1,10 @@
 import { type MouseEvent, useCallback, useMemo } from 'react';
 import { HiPencil, HiTrash } from 'react-icons/hi';
-import { DiffViewMode, isCodeEditorDarkTheme } from '@common/types';
+import { DiffViewMode } from '@common/types';
 import { MultiFileDiff, type MultiFileDiffProps, PatchDiff } from '@pierre/diffs/react';
 
 import type { DiffLineAnnotation, OnDiffLineClickProps, SelectedLineRange } from '@pierre/diffs';
 
-import { useSettings } from '@/contexts/SettingsContext';
 import './PierreDiffViewer.scss';
 
 export type PierreLineClickInfo = {
@@ -47,8 +46,6 @@ export const PierreDiffViewer = ({
   onEditComment,
   onRemoveComment,
 }: Props) => {
-  const { theme } = useSettings();
-
   const handleLineClick = useCallback(
     (props: OnDiffLineClickProps) => {
       if (!onLineClick || props.annotationSide !== 'additions') {
@@ -117,10 +114,9 @@ export const PierreDiffViewer = ({
         diffStyle: (viewMode === DiffViewMode.SideBySide ? 'split' : 'unified') as 'split' | 'unified',
         disableLineNumbers: !udiff,
         overflow: 'wrap',
-        theme: !theme || isCodeEditorDarkTheme(theme) ? 'github-dark-default' : 'github-light-default',
         ...(onLineClick ? { onLineClick: handleLineClick } : {}),
       }) as MultiFileDiffProps<unknown>['options'],
-    [showFilename, theme, udiff, viewMode, onLineClick, handleLineClick],
+    [showFilename, udiff, viewMode, onLineClick, handleLineClick],
   );
 
   const selectedLines = useMemo<SelectedLineRange | null>(
@@ -131,7 +127,7 @@ export const PierreDiffViewer = ({
   const annotationProps = comments && comments.length > 0 ? { lineAnnotations, renderAnnotation } : {};
 
   if (udiff) {
-    return <PatchDiff patch={udiff} options={options} selectedLines={selectedLines} disableWorkerPool={true} {...annotationProps} />;
+    return <PatchDiff patch={udiff} options={options} selectedLines={selectedLines} {...annotationProps} />;
   }
 
   if (oldValue !== undefined && newValue !== undefined) {
@@ -145,7 +141,6 @@ export const PierreDiffViewer = ({
         newFile={{ name: fileName || 'file.txt', contents: newContents }}
         options={options}
         selectedLines={selectedLines}
-        disableWorkerPool={true}
         {...annotationProps}
       />
     );
