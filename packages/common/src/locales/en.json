@@ -1653,6 +1653,7 @@
     "noDate": "No date",
     "archiveTask": "Archive task",
     "unarchiveTask": "Unarchive task",
+    "filterStates": "Filter by state",
     "showArchived": "Show archived",
     "hideArchived": "Hide archived",
     "archived": "Archived",

@@ -1661,6 +1661,7 @@
     "noDate": "无日期",
     "archiveTask": "归档任务",
     "unarchiveTask": "取消归档任务",
+    "filterStates": "按状态筛选",
     "showArchived": "显示已归档",
     "hideArchived": "隐藏已归档",
     "archived": "已归档",

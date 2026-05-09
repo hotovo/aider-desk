@@ -1,4 +1,4 @@
-import { InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData } from '@common/types';
+import { InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { useLocalStorage } from '@reactuses/core';
@@ -293,7 +293,8 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
 
   const switchToTaskByIndex = useCallback(
     (index: number) => {
-      const sortedTasks = getSortedVisibleTasks(optimisticTasks);
+      const allStates = new Set([...Object.values(DefaultTaskState)]);
+      const sortedTasks = getSortedVisibleTasks(optimisticTasks, allStates, true);
       if (index < sortedTasks.length) {
         const targetTask = sortedTasks[index];
         if (targetTask && targetTask.id !== activeTaskId) {

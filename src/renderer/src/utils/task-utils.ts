@@ -18,9 +18,17 @@ const getMostRecentUpdatedAt = (task: TaskData, allTasks: TaskData[]): string | 
   return mostRecent;
 };
 
-export const getSortedVisibleTasks = (tasks: TaskData[], showArchived: boolean = false, searchQuery: string = ''): TaskData[] => {
+export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<string>, showArchived: boolean = false, searchQuery: string = ''): TaskData[] => {
   const filteredTasks = tasks
-    .filter((task) => showArchived || !task.archived)
+    .filter((task) => {
+      if (task.archived && !showArchived) {
+        return false;
+      }
+      if (task.state && !selectedStates.has(task.state)) {
+        return false;
+      }
+      return true;
+    })
     .filter((task) => {
       if (!searchQuery.trim()) {
         return true;
@@ -29,18 +37,11 @@ export const getSortedVisibleTasks = (tasks: TaskData[], showArchived: boolean =
       return task.name.toLowerCase().includes(searchText);
     });
 
-  // When showArchived is false, exclude tasks whose parent is archived
-  // Check each task's parent exists in the original tasks and is not archived
   const tasksWithValidParents = filteredTasks.filter((task) => {
     if (!task.parentId) {
       return true;
     }
-    // Find the parent in the original tasks array
     const parentTask = tasks.find((t) => t.id === task.parentId);
-    // Include the task if:
-    // - showArchived is true (show everything), OR
-    // - parent doesn't exist (orphan), OR
-    // - parent exists and is not archived
     return showArchived || !parentTask || !parentTask.archived;
   });
 
@@ -86,10 +87,11 @@ export const getSortedVisibleTasks = (tasks: TaskData[], showArchived: boolean =
 export const flattenTasksForVirtualization = (
   tasks: TaskData[],
   expandedIds: Set<string>,
+  selectedStates: Set<string>,
   showArchived: boolean = false,
   searchQuery: string = '',
 ): VirtualTaskItem[] => {
-  const sortedTasks = getSortedVisibleTasks(tasks, showArchived, searchQuery);
+  const sortedTasks = getSortedVisibleTasks(tasks, selectedStates, showArchived, searchQuery);
   const topLevelTasks = sortedTasks.filter((task) => !task.parentId || !sortedTasks.some((t) => t.id === task.parentId));
 
   const pinnedTasks = topLevelTasks.filter((task) => task.pinned);

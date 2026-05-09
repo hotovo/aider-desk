@@ -1,4 +1,4 @@
-import { TaskData } from '@common/types';
+import { DefaultTaskState, TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { MouseEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
 import { HiPlus } from 'react-icons/hi';
@@ -7,7 +7,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineSearch } from 'react-icons/md';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BiArchive, BiArchiveIn } from 'react-icons/bi';
+import { FiFilter } from 'react-icons/fi';
 import { HiXMark } from 'react-icons/hi2';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -19,10 +19,12 @@ import { TaskSectionHeader } from './TaskSectionHeader';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { flattenTasksForVirtualization } from '@/utils/task-utils';
 import { Input } from '@/components/common/Input';
-import { IconButton } from '@/components/common/IconButton';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Toggle } from '@/components/common/Toggle';
+import { getTaskStateLabel, getStateTextClass } from '@/components/common/TaskStateChip';
 
 export const COLLAPSED_WIDTH = 44;
 export const EXPANDED_WIDTH = 256;
@@ -67,7 +69,9 @@ const TaskSidebarComponent = ({
   const { t } = useTranslation();
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [selectedStates, setSelectedStates] = useState<Set<string>>(() => new Set([...Object.values(DefaultTaskState)]));
   const [showArchived, setShowArchived] = useState<boolean>(false);
+  const [isFilterVisible, setIsFilterVisible] = useState<boolean>(false);
   const [isSearchVisible, setIsSearchVisible] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedIds, setExpandedIds] = useLocalStorage<string[]>('aider-desk-expanded-tasks', []);
@@ -117,8 +121,8 @@ const TaskSidebarComponent = ({
   const expandedIdsSet = useMemo(() => new Set(expandedIds ?? []), [expandedIds]);
 
   const virtualItems = useMemo(
-    () => flattenTasksForVirtualization(tasks, expandedIdsSet, showArchived, debouncedSearchQuery),
-    [tasks, expandedIdsSet, showArchived, debouncedSearchQuery],
+    () => flattenTasksForVirtualization(tasks, expandedIdsSet, selectedStates, showArchived, debouncedSearchQuery),
+    [tasks, expandedIdsSet, selectedStates, showArchived, debouncedSearchQuery],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -479,18 +483,16 @@ const TaskSidebarComponent = ({
                     <>
                       <h3 className="text-sm font-semibold uppercase h-5">{t('taskSidebar.title')}</h3>
                       <div className="flex items-center gap-1">
-                        <IconButton
-                          onClick={() => setShowArchived(!showArchived)}
-                          tooltip={showArchived ? t('taskSidebar.hideArchived') : t('taskSidebar.showArchived')}
-                          className="p-1.5 hover:bg-bg-tertiary rounded-md group"
-                          icon={
-                            showArchived ? (
-                              <BiArchiveIn className="w-4 h-4 text-text-primary" />
-                            ) : (
-                              <BiArchive className="w-4 h-4 text-text-dark group-hover:text-text-muted" />
-                            )
-                          }
-                        />
+                        <Tooltip content={t('taskSidebar.filterStates')}>
+                          <button
+                            className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors"
+                            onClick={() => {
+                              setIsFilterVisible(!isFilterVisible);
+                            }}
+                          >
+                            <FiFilter className="w-4 h-4 text-text-primary" />
+                          </button>
+                        </Tooltip>
                         <Tooltip content={t('taskSidebar.search')}>
                           <button
                             className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
@@ -518,6 +520,34 @@ const TaskSidebarComponent = ({
               )}
             </AnimatePresence>
           </div>
+
+          <Activity mode={!isCollapsed && isFilterVisible ? 'visible' : 'hidden'}>
+            <div className="px-2 pb-2 flex flex-col gap-y-1">
+              {Object.values(DefaultTaskState).map((state) => (
+                <Checkbox
+                  key={state}
+                  size="xs"
+                  checked={selectedStates.has(state)}
+                  onChange={(checked) => {
+                    setSelectedStates((prev) => {
+                      const newSet = new Set(prev);
+                      if (checked) {
+                        newSet.add(state);
+                      } else {
+                        newSet.delete(state);
+                      }
+                      return newSet;
+                    });
+                  }}
+                  label={<span className={getStateTextClass(state)}>{getTaskStateLabel(t, state)}</span>}
+                />
+              ))}
+              <div className="flex items-center gap-2 pt-1 border-t border-border-dark-light">
+                <Toggle color="tertiary" size="sm" checked={showArchived} onChange={setShowArchived} />
+                <span className="text-2xs">{t('taskSidebar.archived')}</span>
+              </div>
+            </div>
+          </Activity>
 
           <Activity mode={!isCollapsed && isSearchVisible ? 'visible' : 'hidden'}>
             <div className="px-2 pb-2">

@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { TaskData } from '@common/types';
+import { DefaultTaskState, TaskData } from '@common/types';
 
 import { getSortedVisibleTasks, flattenTasksForVirtualization } from '../task-utils';
+
+const allStates = new Set([...Object.values(DefaultTaskState)]);
+const defaultStates = new Set([...Object.values(DefaultTaskState)]);
 
 describe('task-utils', () => {
   describe('getSortedVisibleTasks', () => {
@@ -14,7 +17,7 @@ describe('task-utils', () => {
     ];
 
     it('should group subtasks under their parent tasks', () => {
-      const sorted = getSortedVisibleTasks(mockTasks as TaskData[]);
+      const sorted = getSortedVisibleTasks(mockTasks as TaskData[], defaultStates);
 
       // Expected order:
       // 1. Parent 2 (Pinned)
@@ -32,7 +35,7 @@ describe('task-utils', () => {
         { id: '2', name: 'T2', updatedAt: '2026-01-14T11:00:00Z', pinned: false, parentId: null },
         { id: '3', name: 'T3', updatedAt: '2026-01-14T09:00:00Z', pinned: true, parentId: null },
       ];
-      const sorted = getSortedVisibleTasks(tasks as TaskData[]);
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], defaultStates);
       expect(sorted.map((t) => t.id)).toEqual(['3', '2', '1']);
     });
 
@@ -43,7 +46,7 @@ describe('task-utils', () => {
         { id: '3', name: 'Parent B', updatedAt: '2026-01-14T11:00:00Z', pinned: false, parentId: null },
         { id: '4', name: 'Subtask B1', updatedAt: '2026-01-14T10:30:00Z', pinned: false, parentId: '3' },
       ];
-      const sorted = getSortedVisibleTasks(tasks as TaskData[]);
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], defaultStates);
       // Parent A should be first because its subtask A1 (12:00) is newer than Parent B (11:00)
       expect(sorted.map((t) => t.id)).toEqual(['1', '2', '3', '4']);
     });
@@ -56,7 +59,7 @@ describe('task-utils', () => {
         { id: '4', name: 'Parent B', updatedAt: '2026-01-14T12:00:00Z', pinned: false, parentId: null },
         { id: '5', name: 'Subtask B1', updatedAt: '2026-01-14T11:00:00Z', pinned: false, parentId: '4' },
       ];
-      const sorted = getSortedVisibleTasks(tasks as TaskData[]);
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], defaultStates);
       // Parent A should be first because its nested subtask A1.1 (13:00) is newer than Parent B (12:00)
       expect(sorted.map((t) => t.id)).toEqual(['1', '2', '3', '4', '5']);
     });
@@ -67,7 +70,7 @@ describe('task-utils', () => {
         { id: '2', name: 'Subtask A1', updatedAt: '2026-01-14T11:00:00Z', pinned: false, parentId: '1' },
         { id: '3', name: 'Parent B', updatedAt: '2026-01-14T10:00:00Z', pinned: false, parentId: null },
       ];
-      const sorted = getSortedVisibleTasks(tasks as TaskData[]);
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], defaultStates);
       // Parent A should be first because its subtask (11:00) is newer than Parent B (10:00)
       expect(sorted.map((t) => t.id)).toEqual(['1', '2', '3']);
     });
@@ -81,7 +84,7 @@ describe('task-utils', () => {
       ];
       // When showArchived is true, all tasks should be shown
       // Subtask of archived parent (id: '2') appears as orphan since parent is filtered
-      const sorted = getSortedVisibleTasks(tasks as TaskData[], true);
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], allStates, true);
       expect(sorted.map((t) => t.id)).toEqual(['3', '4', '1', '2']);
     });
 
@@ -91,7 +94,7 @@ describe('task-utils', () => {
         { id: '2', name: 'Archived Subtask', updatedAt: '2026-01-14T10:00:00Z', pinned: false, parentId: '1', archived: true },
         { id: '3', name: 'Active Subtask', updatedAt: '2026-01-14T11:00:00Z', pinned: false, parentId: '1', archived: false },
       ];
-      const sorted = getSortedVisibleTasks(tasks as TaskData[], true);
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], allStates, true);
       // Should include both archived and active subtasks of active parent
       expect(sorted.map((t) => t.id)).toEqual(['1', '3', '2']);
     });
@@ -106,7 +109,7 @@ describe('task-utils', () => {
     ];
 
     it('should return headers and tasks in correct order', () => {
-      const flattened = flattenTasksForVirtualization(mockTasks as TaskData[], new Set(), false, '');
+      const flattened = flattenTasksForVirtualization(mockTasks as TaskData[], new Set(), defaultStates, false, '');
 
       // Pinned task should be first (without header)
       expect(flattened[0]).toEqual({ type: 'task', id: '1', task: expect.any(Object), level: 0 });
@@ -116,7 +119,7 @@ describe('task-utils', () => {
     });
 
     it('should include subtasks when parent is expanded', () => {
-      const flattened = flattenTasksForVirtualization(mockTasks as TaskData[], new Set(['2']), false, '');
+      const flattened = flattenTasksForVirtualization(mockTasks as TaskData[], new Set(['2']), defaultStates, false, '');
 
       const todayTaskIndex = flattened.findIndex((item) => item.type === 'task' && item.id === '2');
       const subtaskIndex = flattened.findIndex((item) => item.type === 'task' && item.id === '3');
@@ -128,7 +131,7 @@ describe('task-utils', () => {
     });
 
     it('should not include subtasks when parent is not expanded', () => {
-      const flattened = flattenTasksForVirtualization(mockTasks as TaskData[], new Set(), false, '');
+      const flattened = flattenTasksForVirtualization(mockTasks as TaskData[], new Set(), defaultStates, false, '');
 
       const subtaskIndex = flattened.findIndex((item) => item.type === 'task' && item.id === '3');
       expect(subtaskIndex).toBe(-1);
@@ -140,7 +143,7 @@ describe('task-utils', () => {
         { id: '2', name: 'Task 2', updatedAt: new Date().toISOString(), pinned: false, parentId: null },
       ];
 
-      const flattened = flattenTasksForVirtualization(tasksWithPinned as TaskData[], new Set(), false, '');
+      const flattened = flattenTasksForVirtualization(tasksWithPinned as TaskData[], new Set(), defaultStates, false, '');
 
       // No pinned header should exist
       expect(flattened.find((item) => item.type === 'header' && item.id === 'pinned')).toBeUndefined();
@@ -149,7 +152,7 @@ describe('task-utils', () => {
     });
 
     it('should filter tasks based on search query', () => {
-      const flattened = flattenTasksForVirtualization(mockTasks as TaskData[], new Set(), false, 'Pinned');
+      const flattened = flattenTasksForVirtualization(mockTasks as TaskData[], new Set(), defaultStates, false, 'Pinned');
 
       const taskItems = flattened.filter((item) => item.type === 'task');
       expect(taskItems.length).toBe(1);

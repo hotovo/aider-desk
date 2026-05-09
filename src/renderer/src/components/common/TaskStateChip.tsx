@@ -4,12 +4,7 @@ import { DefaultTaskState } from '@common/types';
 
 import type { TFunction } from 'i18next';
 
-type Props = {
-  state: string;
-  className?: string;
-};
-
-const getStateTextClass = (state: string): string => {
+export const getStateTextClass = (state: string): string => {
   switch (state) {
     case DefaultTaskState.Interrupted:
       return 'text-button-danger';
@@ -34,6 +29,11 @@ const getStateTextClass = (state: string): string => {
 
 export const getTaskStateLabel = (t: TFunction, state: string) => {
   return t(`taskState.${state}`, { defaultValue: state.replace(/[-_]/g, ' ') });
+};
+
+type Props = {
+  state: string;
+  className?: string;
 };
 
 export const TaskStateChip = ({ state, className = '' }: Props) => {

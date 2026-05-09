@@ -6,6 +6,7 @@ import { IoGitBranch } from 'react-icons/io5';
 import { MdPushPin, MdChevronRight } from 'react-icons/md';
 import { clsx } from 'clsx';
 import { useLongPress } from '@reactuses/core';
+import { BiArchiveIn } from 'react-icons/bi';
 
 import { TaskStatusIcon } from './TaskStatusIcon';
 import { TaskMenuButton } from './TaskMenuButton';
@@ -192,7 +193,11 @@ export const TaskItem = memo(
                     <IoGitBranch className="w-3 h-3" />
                   </span>
                 )}
-                {task.archived && <span>• {t('taskSidebar.archived')}</span>}
+                {task.archived && (
+                  <span className="px-1 py-0.5 rounded border border-border-dark-light bg-bg-tertiary-emphasis text-text-tertiary">
+                    <BiArchiveIn className="w-3 h-3" />
+                  </span>
+                )}
               </div>
             </div>
           </div>

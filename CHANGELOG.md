@@ -11,6 +11,7 @@
 - added support for both percentage and token count thresholds for context compaction
 - added Smart context compation type
 - shortened task ID for better management
+- added task state filtering to sidebar
 
 ## [0.64.0]
 
