@@ -14,6 +14,7 @@
 - added task state filtering to sidebar
 - added auto-compact overrides for agent profiles
 - added retry logic for network errors during agent streaming
+- updated loading of model token limits from openai-compatible providers
 
 ## [0.64.0]
 

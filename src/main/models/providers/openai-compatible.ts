@@ -45,12 +45,27 @@ const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: Se
 
     const data = await response.json();
     const models =
-      data.data?.map((model: { id: string }) => {
-        return {
-          id: model.id,
-          providerId: profile.id,
-        } satisfies Model;
-      }) || [];
+      data.data?.map(
+        (model: {
+          id: string;
+          max_model_len?: number;
+          context_length?: number;
+          num_ctx?: number;
+          context_window?: number;
+          max_completion_tokens?: number;
+          max_tokens?: number;
+        }) => {
+          const maxInputTokens = model.max_model_len ?? model.context_length ?? model.num_ctx ?? model.context_window;
+          const maxOutputTokensLimit = model.max_completion_tokens ?? model.max_tokens;
+
+          return {
+            id: model.id,
+            providerId: profile.id,
+            ...(maxInputTokens != null && { maxInputTokens }),
+            ...(maxOutputTokensLimit != null && { maxOutputTokensLimit }),
+          } satisfies Model;
+        },
+      ) || [];
 
     logger.info(`Loaded ${models.length} OpenAI-compatible models for profile ${profile.id}`);
     return { models, success: true };
