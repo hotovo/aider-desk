@@ -172,3 +172,35 @@ export const truncateToolResult = async (content: string, maxLines = 1000, maxSi
 
   return preview + `\n... Content truncated (${reasons.join(', ')}). Full content saved to ${tmpFilePath}.`;
 };
+
+const NETWORK_ERROR_CODES = ['ECONNRESET', 'EPIPE', 'ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'ENETUNREACH', 'EAI_AGAIN'] as const;
+
+const UNDICI_ERROR_PREFIX = 'UND_ERR_';
+
+export const isNetworkError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  if (error instanceof TypeError && error.message === 'terminated') {
+    return true;
+  }
+
+  if ('code' in error) {
+    const code = (error as { code: string }).code;
+    if (typeof code === 'string') {
+      if (code.startsWith(UNDICI_ERROR_PREFIX)) {
+        return true;
+      }
+      if ((NETWORK_ERROR_CODES as readonly string[]).includes(code)) {
+        return true;
+      }
+    }
+  }
+
+  if (error.cause instanceof Error && isNetworkError(error.cause)) {
+    return true;
+  }
+
+  return false;
+};

@@ -13,6 +13,7 @@
 - shortened task ID for better management
 - added task state filtering to sidebar
 - added auto-compact overrides for agent profiles
+- added retry logic for network errors during agent streaming
 
 ## [0.64.0]
 
