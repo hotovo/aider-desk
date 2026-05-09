@@ -419,9 +419,9 @@ export interface AgentProfile {
   provider: string;
   model: string;
   maxIterations: number;
-  maxTokens?: number; // Optional: overrides model maxOutputTokens when set
+  maxTokens?: number; // overrides model maxOutputTokens when set
   minTimeBetweenToolCalls: number; // in milliseconds
-  temperature?: number; // Optional: overrides model temperature when set
+  temperature?: number; // overrides model temperature when set
   enabledServers: string[];
   toolApprovals: Record<string, ToolApprovalState>;
   toolSettings: Record<string, ToolSettings>;
@@ -439,6 +439,9 @@ export interface AgentProfile {
   subagent: SubagentConfig;
   isSubagent?: boolean; // flag to indicate if this profile is being used as a subagent
   ruleFiles?: string[]; // Array of absolute paths to rule files for this agent profile
+  autoCompactThresholdPercentage?: number; // overrides global auto-compact threshold percentage when set
+  autoCompactThresholdTokens?: number; // overrides global auto-compact threshold tokens when set
+  autoCompactionType?: ContextCompactionType; // overrides global compaction type when set
 }
 
 export interface EnvironmentVariable {

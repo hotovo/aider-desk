@@ -1951,9 +1951,17 @@ export class Agent {
     abortSignal?: AbortSignal,
   ) {
     const taskSettings = this.store.getSettings().taskSettings;
-    const thresholdConfig = taskSettings.contextCompactingThreshold;
+    const thresholdConfig = {
+      percentage: profile.autoCompactThresholdPercentage ?? taskSettings.contextCompactingThreshold.percentage,
+      tokens: profile.autoCompactThresholdTokens ?? taskSettings.contextCompactingThreshold.tokens,
+    };
     const taskTokensOverride = task.task.contextCompactingThresholdTokens;
-    const contextCompactionType = profile.isSubagent ? ContextCompactionType.Compact : (taskSettings.contextCompactionType ?? ContextCompactionType.Compact);
+    let contextCompactionType = profile.autoCompactionType ?? taskSettings.contextCompactionType ?? ContextCompactionType.Compact;
+    if (profile.isSubagent && contextCompactionType === ContextCompactionType.Handoff) {
+      // subagent cannot use Handoff, so we fallback to Compact
+      contextCompactionType = ContextCompactionType.Compact;
+    }
+
     const lastAssistantMessage = [...resultMessages].reverse().find((m) => m.role === 'assistant');
     const usageReport = lastAssistantMessage?.usageReport;
     const maxTokens = this.modelManager.getModelSettings(provider.provider.name, model)?.maxInputTokens;

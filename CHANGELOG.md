@@ -12,6 +12,7 @@
 - added Smart context compation type
 - shortened task ID for better management
 - added task state filtering to sidebar
+- added auto-compact overrides for agent profiles
 
 ## [0.64.0]
 

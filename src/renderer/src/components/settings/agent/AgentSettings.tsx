@@ -1,5 +1,6 @@
 import {
   AgentProfile,
+  ContextCompactionType,
   ContextMemoryMode,
   GenericTool,
   InvocationMode,
@@ -82,6 +83,7 @@ import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 const tools: Record<string, GenericTool[]> = {
   [AIDER_TOOL_GROUP_NAME]: [
@@ -266,6 +268,30 @@ const getRunSettingsSummary = (profile: AgentProfile) => {
       <div key="tokens" className="flex items-center gap-1">
         <FaArrowRightFromBracket className="w-2.5 h-2.5 -rotate-90 text-text-secondary" />
         <span>{profile.maxTokens}</span>
+      </div>,
+    );
+  }
+
+  if (profile.autoCompactThresholdPercentage !== undefined) {
+    settings.push(
+      <div key="threshold-pct" className="flex items-center gap-1">
+        <span>{profile.autoCompactThresholdPercentage}%</span>
+      </div>,
+    );
+  }
+
+  if (profile.autoCompactThresholdTokens !== undefined) {
+    settings.push(
+      <div key="threshold-tokens" className="flex items-center gap-1">
+        <span>{profile.autoCompactThresholdTokens.toLocaleString()} tok</span>
+      </div>,
+    );
+  }
+
+  if (profile.autoCompactionType !== undefined) {
+    settings.push(
+      <div key="compaction-type" className="flex items-center gap-1">
+        <span>{profile.autoCompactionType}</span>
       </div>,
     );
   }
@@ -1057,6 +1083,164 @@ export const AgentSettings = ({
                             <IconButton
                               icon={<FaTimes className="w-3 h-3" />}
                               onClick={() => handleProfileSettingChange('maxTokens', undefined)}
+                              tooltip={t('settings.agent.clearOverride')}
+                              className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Auto-compact Threshold Percentage */}
+                      {selectedProfile.autoCompactThresholdPercentage === undefined ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center text-xs">
+                            <span className="whitespace-nowrap">{t('settings.agent.autoCompactThresholdPercentage')}</span>
+                            <InfoIcon tooltip={t('settings.agent.autoCompactThresholdPercentageTooltip')} className="ml-1" />
+                            <div className="flex items-center justify-end w-full">
+                              <Button
+                                variant="text"
+                                size="xs"
+                                onClick={() =>
+                                  handleProfileSettingChange('autoCompactThresholdPercentage', settings.taskSettings.contextCompactingThreshold.percentage)
+                                }
+                              >
+                                {t('settings.agent.override')}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Slider
+                              label={
+                                <div className="flex items-center text-xs">
+                                  <span className="whitespace-nowrap">{t('settings.agent.autoCompactThresholdPercentage')}</span>
+                                  <InfoIcon tooltip={t('settings.agent.autoCompactThresholdPercentageTooltip')} className="ml-1" />
+                                </div>
+                              }
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={selectedProfile.autoCompactThresholdPercentage}
+                              className="flex-1"
+                              onChange={(value) => handleProfileSettingChange('autoCompactThresholdPercentage', value)}
+                            />
+                            <IconButton
+                              icon={<FaTimes className="w-3 h-3" />}
+                              onClick={() => handleProfileSettingChange('autoCompactThresholdPercentage', undefined)}
+                              tooltip={t('settings.agent.clearOverride')}
+                              className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm mt-8"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Auto-compact Threshold Tokens */}
+                      <div className="space-y-2">
+                        <div className="flex items-center text-xs">
+                          <span className="flex-shrink-0 whitespace-nowrap">{t('settings.agent.autoCompactThresholdTokens')}</span>
+                          <InfoIcon tooltip={t('settings.agent.autoCompactThresholdTokensTooltip')} className="ml-1" />
+                          {selectedProfile.autoCompactThresholdTokens === undefined && (
+                            <div className="flex items-center justify-end w-full">
+                              <Button
+                                variant="text"
+                                size="xs"
+                                onClick={() =>
+                                  handleProfileSettingChange('autoCompactThresholdTokens', settings.taskSettings.contextCompactingThreshold.tokens)
+                                }
+                              >
+                                {t('settings.agent.override')}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        {selectedProfile.autoCompactThresholdTokens !== undefined && (
+                          <div className="flex items-center gap-2 w-full">
+                            <div className="flex-1">
+                              <Input
+                                type="number"
+                                min={0}
+                                step={10000}
+                                value={selectedProfile.autoCompactThresholdTokens.toString()}
+                                onChange={(e) => handleProfileSettingChange('autoCompactThresholdTokens', Number(e.target.value))}
+                              />
+                            </div>
+                            <IconButton
+                              icon={<FaTimes className="w-3 h-3" />}
+                              onClick={() => handleProfileSettingChange('autoCompactThresholdTokens', undefined)}
+                              tooltip={t('settings.agent.clearOverride')}
+                              className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Compaction Type */}
+                      <div className="space-y-2">
+                        <div className="flex items-center text-xs">
+                          <span className="whitespace-nowrap">{t('settings.agent.autoCompactionType')}</span>
+                          <InfoIcon tooltip={t('settings.agent.autoCompactionTypeTooltip')} className="ml-1" />
+                          {selectedProfile.autoCompactionType === undefined && (
+                            <div className="flex items-center justify-end w-full">
+                              <Button
+                                variant="text"
+                                size="xs"
+                                onClick={() =>
+                                  handleProfileSettingChange('autoCompactionType', settings.taskSettings.contextCompactionType ?? ContextCompactionType.Compact)
+                                }
+                              >
+                                {t('settings.agent.override')}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                        {selectedProfile.autoCompactionType !== undefined && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-2">
+                              <Tooltip content={t('settings.tasks.contextCompactionTypeCompactTooltip')}>
+                                <button
+                                  onClick={() => handleProfileSettingChange('autoCompactionType', ContextCompactionType.Compact)}
+                                  className={clsx(
+                                    'w-[100px] px-3 py-1.5 text-xs rounded border transition-colors',
+                                    selectedProfile.autoCompactionType === ContextCompactionType.Compact
+                                      ? 'bg-bg-primary border-border-light text-text-primary'
+                                      : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary',
+                                  )}
+                                >
+                                  {t('settings.tasks.contextCompactionTypeCompact')}
+                                </button>
+                              </Tooltip>
+                              <Tooltip content={t('settings.tasks.contextCompactionTypeSmartTooltip')}>
+                                <button
+                                  onClick={() => handleProfileSettingChange('autoCompactionType', ContextCompactionType.Smart)}
+                                  className={clsx(
+                                    'w-[100px] px-3 py-1.5 text-xs rounded border transition-colors',
+                                    selectedProfile.autoCompactionType === ContextCompactionType.Smart
+                                      ? 'bg-bg-primary border-border-light text-text-primary'
+                                      : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary',
+                                  )}
+                                >
+                                  {t('settings.tasks.contextCompactionTypeSmart')}
+                                </button>
+                              </Tooltip>
+                              <Tooltip content={t('settings.tasks.contextCompactionTypeHandoffTooltip')}>
+                                <button
+                                  onClick={() => handleProfileSettingChange('autoCompactionType', ContextCompactionType.Handoff)}
+                                  className={clsx(
+                                    'w-[100px] px-3 py-1.5 text-xs rounded border transition-colors',
+                                    selectedProfile.autoCompactionType === ContextCompactionType.Handoff
+                                      ? 'bg-bg-primary border-border-light text-text-primary'
+                                      : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary',
+                                  )}
+                                >
+                                  {t('settings.tasks.contextCompactionTypeHandoff')}
+                                </button>
+                              </Tooltip>
+                            </div>
+                            <IconButton
+                              icon={<FaTimes className="w-3 h-3" />}
+                              onClick={() => handleProfileSettingChange('autoCompactionType', undefined)}
                               tooltip={t('settings.agent.clearOverride')}
                               className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm"
                             />
