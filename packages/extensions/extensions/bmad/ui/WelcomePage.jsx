@@ -6,6 +6,7 @@
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [installError, setInstallError] = useState(null);
   const [executingWorkflows, setExecutingWorkflows] = useState({});
   const intervalRef = useRef(null);
 
@@ -35,6 +36,7 @@
   const FiFilePlus = icons.Fi.FiFilePlus;
   const FiEye = icons.Fi.FiEye;
   const FiPlay = icons.Fi.FiPlay;
+  const FiRefreshCw = icons.Fi.FiRefreshCw;
   const CgSpinner = icons.Cg.CgSpinner;
   const HiCheck = icons.Hi.HiCheck;
   const HiClock = icons.Hi.HiClock;
@@ -108,8 +110,14 @@
 
   const handleInstall = async () => {
     setInstalling(true);
+    setInstallError(null);
     try {
-      await executeExtensionAction('install');
+      const result = await executeExtensionAction('install');
+      if (result && !result.success) {
+        setInstallError(result.error || 'Installation failed');
+      }
+    } catch (err) {
+      setInstallError(err instanceof Error ? err.message : String(err));
     } finally {
       setInstalling(false);
     }
@@ -310,7 +318,7 @@
 
   // Render BmadInstallPrompt
   const renderBmadInstallPrompt = () => {
-    const installCommand = 'npx -y bmad-method@6.0.4 install';
+    const installCommand = 'npx -y bmad-method@6.0.4 install --modules bmm';
     const benefits = [
       'Structured approach to software development',
       'Comprehensive documentation at every phase',
@@ -320,18 +328,18 @@
 
     return (
       <div className="flex flex-col items-center justify-center py-8">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-3xl">
           {renderBmadWelcomeSection()}
 
           <div className="bg-bg-secondary rounded-lg border border-border-dark-light p-4 mb-4">
             <p className="text-xs text-text-tertiary mb-3 font-medium">Why BMAD?</p>
             <ul className="space-y-2">
               {benefits.map((benefit, i) => (
-                <li key={i} className="flex items-start gap-2.5">
+                <li key={i} className="flex items-start gap-2">
                   <div className="w-4 h-4 rounded-full bg-success-subtle flex items-center justify-center flex-shrink-0 mt-0.5">
                     <FiCheck className="w-2.5 h-2.5 text-success" />
                   </div>
-                  <span className="text-xs text-text-secondary">{benefit}</span>
+                  <span className="text-xs text-text-secondary ml-0.5">{benefit}</span>
                 </li>
               ))}
             </ul>
@@ -357,6 +365,18 @@
             <p className="text-xs text-text-secondary text-center">
               This will run the installation command in your project directory.
             </p>
+
+            <div className="flex items-center justify-center gap-1.5 text-xs text-text-tertiary">
+              <FiAlertTriangle className="w-3.5 h-3.5" />
+              <span>Prerequisites: <span className="font-medium text-text-secondary">Node.js v20+</span></span>
+            </div>
+
+            {installError && (
+              <div className="flex items-start gap-2 bg-error-subtle border border-error-emphasis rounded-lg p-3">
+                <FiAlertTriangle className="w-4 h-4 text-error flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-error">{installError}</p>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-border-dark-light pt-4 mt-2">
@@ -366,9 +386,20 @@
               <div className="group flex items-center justify-between gap-2 bg-bg-primary rounded-md px-3 py-2">
                 <code className="text-xs text-text-primary font-mono">{installCommand}</code>
               </div>
-              <p className="text-xs text-text-tertiary mt-2">
+              <div className="flex items-center justify-between mt-2">
+              <p className="text-xs text-text-tertiary">
                 After installation, click refresh to continue.
               </p>
+              <ui.Button
+                onClick={() => executeExtensionAction('refresh-data')}
+                size="sm"
+                color="tertiary"
+                className="gap-1.5"
+              >
+                <FiRefreshCw className="w-3.5 h-3.5" />
+                Refresh
+              </ui.Button>
+            </div>
             </div>
           </div>
         </div>

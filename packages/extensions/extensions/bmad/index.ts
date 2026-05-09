@@ -117,7 +117,7 @@ const getManager = (projectDir: string, context: ExtensionContext): BmadManager 
 export default class BmadExtension implements Extension {
   static metadata = {
     name: 'BMAD Method',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Provides BMAD mode with structured workflows for planning, designing, and implementing software projects',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/bmad/icon.png',
@@ -365,6 +365,11 @@ export default class BmadExtension implements Extension {
           return result;
         }
 
+        case 'refresh-data': {
+          context.triggerUIDataRefresh(componentId);
+          return { success: true };
+        }
+
         case 'get-status': {
           // Just trigger a refresh
           context.triggerUIDataRefresh(componentId);
@@ -477,11 +482,16 @@ export default class BmadExtension implements Extension {
         default:
           return { success: false, error: `Unknown action: ${action}` };
       }
-    } catch (error) {
-      context.log(`Failed to execute action '${action}': ${error}`, 'error');
+    } catch (error: unknown) {
+      const message = error instanceof Error
+        ? error.message
+        : (typeof error === 'object' && error !== null && 'message' in error)
+          ? String((error as { message: unknown }).message)
+          : String(error);
+      context.log(`Failed to execute action '${action}': ${message}`, 'error');
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: message,
       };
     }
   }
