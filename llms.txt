@@ -2216,6 +2216,7 @@ import {
   truncateToolResult,
 } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
+import { smartCompactMessages } from './smart-compaction';
 ⋮----
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
 ⋮----
@@ -2547,6 +2548,8 @@ private async compactMessagesIfNeeded(
 ⋮----
 // reload messages after compacting
 ⋮----
+// backing up the current context before compacting for debugging purposes
+⋮----
 // Perform handoff
 
 ================
@@ -2862,7 +2865,11 @@ const cloneMessages = (messages: ContextMessage[]): ContextMessage[] =>
 ⋮----
 const removeToolCallFromAssistant = (messages: ContextMessage[], toolCallId: string): void =>
 ⋮----
+const removeToolResult = (messages: ContextMessage[], toolCallId: string): void =>
+⋮----
 const getProtectedStartIndex = (messages: ContextMessage[], protectedMessageCount: number): number =>
+⋮----
+const mergeConsecutiveAssistantMessages = (messages: ContextMessage[]): ContextMessage[] =>
 ⋮----
 export const smartCompactMessages = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
@@ -2872,7 +2879,11 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
 ⋮----
 export const removeStaleFileReads = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
+// Check for synthetic <file-edited> messages from collapseFileEdits
+⋮----
 export const removeObsoleteSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+⋮----
+// Check for synthetic <file-edited> messages from collapseFileEdits
 ⋮----
 export const compactSemanticSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
@@ -6695,7 +6706,9 @@ public async createNewTask(params?: CreateTaskParams)
 ⋮----
 // adding files from internal task that keeps track of files to new task
 ⋮----
-private async prepareTask(taskId: string = uuidv4(), initialTaskData?: Partial<TaskData>)
+private generateShortTaskId(): string
+⋮----
+private async prepareTask(taskId: string = this.generateShortTaskId(), initialTaskData?: Partial<TaskData>)
 ⋮----
 // Allow extensions to modify task data after preparation
 ⋮----
@@ -8422,6 +8435,13 @@ toConnectorMessages(contextMessages: ContextMessage[] = this.messages): Connecto
 ⋮----
 async save(): Promise<void>
 ⋮----
+/**
+   * Creates a backup of the current context.json file before a destructive operation
+   * (e.g., smart compaction). Backups are named context.backup.001.json, context.backup.002.json, etc.
+   * For debugging purposes only.
+   */
+async backupContext(): Promise<void>
+⋮----
 private async cleanupContext(): Promise<void>
 ⋮----
 // Filter out files that no longer exist
@@ -9030,6 +9050,8 @@ public addLogMessage(level: LogLevel, message?: string, finished = false, prompt
 public getContextMessages()
 ⋮----
 public setContextMessages(messages: ContextMessage[], save = true)
+⋮----
+public async backupContext(): Promise<void>
 ⋮----
 public getSkillManager(): SkillManager
 ⋮----
