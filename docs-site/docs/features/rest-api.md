@@ -13,7 +13,10 @@ The REST API is organized into logical modules covering different aspects of Aid
 
 - **Context Management**: File and context operations
 - **Prompt Execution**: AI interaction and response handling
+- **Queued Prompts**: Managing prompts waiting in the execution queue
 - **Project Management**: Project lifecycle and configuration
+- **Task Management**: Task creation, updates, and lifecycle
+- **Worktree Operations**: Git worktree isolation, merging, and rebase
 - **Settings Management**: Application and project settings
 - **Session Management**: Conversation persistence
 - **Todo Management**: Task tracking
@@ -144,6 +147,27 @@ Re-executes the last user prompt with optional modifications.
   }
   ```
 
+#### Save Prompt
+Saves a prompt to the task without executing it. The prompt is stored as a user message in the task's context and the task state is set to `TODO`. This is useful for pre-loading a task with a prompt that an operator can review before manually starting execution.
+
+Unlike `POST /api/run-prompt`, this endpoint does **not** trigger any AI model execution. The prompt is simply saved and becomes visible in the task's chat history.
+
+- **Endpoint**: `POST /api/save-prompt`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/your/project",
+    "taskId": "abc123",
+    "prompt": "Create a user authentication system with JWT tokens"
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "message": "Prompt saved successfully"
+  }
+  ```
+
 #### Answer Question
 Provides an answer to a question asked by the AI.
 
@@ -152,6 +176,7 @@ Provides an answer to a question asked by the AI.
   ```json
   {
     "projectDir": "/path/to/your/project",
+    "taskId": "abc123",
     "answer": "React"
   }
   ```
@@ -159,6 +184,95 @@ Provides an answer to a question asked by the AI.
   ```json
   {
     "message": "Answer submitted"
+  }
+  ```
+
+### Queued Prompts
+
+When a task is already processing a prompt, any new prompts submitted via `POST /api/run-prompt` are automatically queued for sequential execution. The queued prompts are visible in the AiderDesk UI and can be managed through the following endpoints.
+
+Queued prompts are useful for:
+- **Batch processing**: Submit multiple prompts that execute one after another
+- **Manual review**: Prompts wait in the queue until the operator or the system processes them
+- **Reordering**: Adjust the execution order before prompts are processed
+
+#### Remove Queued Prompt
+Removes a prompt from the task's queue.
+
+- **Endpoint**: `POST /api/project/remove-queued-prompt`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/your/project",
+    "taskId": "abc123",
+    "promptId": "prompt-uuid"
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "message": "Queued prompt removed"
+  }
+  ```
+
+#### Send Queued Prompt Now
+Moves a queued prompt to the top of the queue and interrupts the current execution to start processing it immediately.
+
+- **Endpoint**: `POST /api/project/send-queued-prompt-now`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/your/project",
+    "taskId": "abc123",
+    "promptId": "prompt-uuid"
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "message": "Queued prompt sent"
+  }
+  ```
+
+#### Reorder Queued Prompts
+Changes the execution order of all queued prompts for a task. The `prompts` array must contain all existing queued prompts in the desired order.
+
+- **Endpoint**: `POST /api/project/reorder-queued-prompts`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/your/project",
+    "taskId": "abc123",
+    "prompts": [
+      { "id": "prompt-2", "text": "Second prompt", "mode": "code", "timestamp": 1715340000000 },
+      { "id": "prompt-1", "text": "First prompt", "mode": "agent", "timestamp": 1715330000000 }
+    ]
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "message": "Queued prompts reordered"
+  }
+  ```
+
+#### Edit Queued Prompt
+Modifies the text of a prompt that is already in the queue.
+
+- **Endpoint**: `POST /api/project/edit-queued-prompt`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/your/project",
+    "taskId": "abc123",
+    "promptId": "prompt-uuid",
+    "newText": "Updated prompt text"
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "message": "Queued prompt edited"
   }
   ```
 
@@ -281,6 +395,104 @@ Pastes an image from clipboard into the project.
 
 ### Task Management
 
+Tasks are the primary unit of work in AiderDesk. Each task holds its own conversation context, mode, working mode (local or worktree), and agent configuration. Understanding the task lifecycle is important for automation use cases.
+
+#### Create Task
+Creates a new task within a project. The new task inherits model, mode, and other settings from the most recent task (or from the parent task if `parentId` is specified).
+
+- **Endpoint**: `POST /api/project/tasks/new`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/project",
+    "parentId": null,
+    "name": "Implement login feature"
+  }
+  ```
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | `projectDir` | string | Yes | Absolute path to the project directory |
+  | `parentId` | string \| null | No | Parent task ID for creating subtasks |
+  | `name` | string | No | Display name for the task |
+- **Response**: `200 OK` (returns `TaskData` object)
+  ```json
+  {
+    "id": "a1b2c3d4",
+    "baseDir": "/path/to/project",
+    "name": "Implement login feature",
+    "currentMode": "agent",
+    "workingMode": "local",
+    "worktree": null,
+    "autoApprove": false,
+    ...
+  }
+  ```
+
+:::important Task Initialization and Worktree
+The task is returned in an **uninitialized** state. The `workingMode` field reflects the global default (`taskSettings.defaultWorkingMode`), but the Git worktree is **not yet materialized** at this point — `worktree` will be `null` even if `workingMode` is `"worktree"`. Worktree creation happens when the task is initialized (loaded or when a prompt is run). To create a task with a verified worktree via the REST API, use the two-step pattern described in [External Automation Bridge](#external-automation-bridge).
+:::
+
+#### Update Task
+Updates a task's properties. This is the supported way to change `workingMode`, `currentMode`, `autoApprove`, and other task fields.
+
+- **Endpoint**: `POST /api/project/tasks`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/project",
+    "id": "a1b2c3d4",
+    "updates": {
+      "workingMode": "worktree",
+      "currentMode": "agent",
+      "name": "Updated task name"
+    }
+  }
+  ```
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | `projectDir` | string | Yes | Absolute path to the project directory |
+  | `id` | string | Yes | Task ID to update |
+  | `updates` | object | Yes | Partial `TaskData` with fields to change |
+- **Response**: `200 OK` (returns updated `TaskData`)
+
+When `workingMode` is changed to `"worktree"`, the Git worktree is **synchronously created** during this call. The response will contain the fully populated `worktree` object with `path` and `branch`. No polling is required.
+
+```json
+{
+  "id": "a1b2c3d4",
+  "workingMode": "worktree",
+  "worktree": {
+    "path": "/path/to/project/.aider-desk/tasks/a1b2c3d4/worktree",
+    "branch": "task/a1b2c3d4",
+    "baseBranch": "main"
+  },
+  ...
+}
+```
+
+#### List Tasks
+Lists all tasks for a project.
+
+- **Endpoint**: `GET /api/project/tasks?projectDir=/path/to/project`
+- **Response**: `200 OK` (returns array of `TaskData` objects)
+
+Note that listed tasks may not be fully initialized. The `workingMode` and `worktree` fields reflect the persisted state but may not yet match the runtime state if the task hasn't been loaded.
+
+#### Load Task Data
+Loads a task's runtime state including messages, context files, and queued prompts. This also triggers task initialization (including worktree materialization if `workingMode` is `"worktree"` and no worktree exists yet).
+
+- **Endpoint**: `POST /api/project/tasks/load`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/project",
+    "id": "a1b2c3d4"
+  }
+  ```
+- **Response**: `200 OK` (returns `TaskStateData` with `messages`, `files`, `workingMode`, etc.)
+
+The returned object contains the conversation state but **not** the full `worktree` metadata. Use `GET /api/project/worktree/status` or `POST /api/project/tasks` (update) to get worktree details.
+
 #### Save Task
 Saves the current conversation task.
 
@@ -296,30 +508,6 @@ Saves the current conversation task.
   ```json
   {
     "message": "Task saved"
-  }
-  ```
-
-#### List Tasks
-Lists all saved tasks for a project.
-
-- **Endpoint**: `GET /api/project/tasks?projectDir=/path/to/project`
-- **Response**: `200 OK` (returns tasks array)
-
-#### Load Task Messages
-Loads messages from a saved task.
-
-- **Endpoint**: `POST /api/project/task/load-messages`
-- **Request Body**:
-  ```json
-  {
-    "projectDir": "/path/to/project",
-    "name": "feature-login"
-  }
-  ```
-- **Response**: `200 OK`
-  ```json
-  {
-    "message": "Task messages loaded"
   }
   ```
 
@@ -429,6 +617,123 @@ Reloads all MCP servers with new configuration.
   }
   ```
 
+### Worktree Operations
+
+Worktrees provide Git isolation for tasks. Each worktree is a separate working directory linked to the main repository, allowing tasks to make changes without affecting each other or the main branch. All worktree endpoints require `projectDir` and `taskId` parameters.
+
+#### Get Worktree Status
+Returns the integration status of a task's worktree against a target branch. This is the **authoritative endpoint** for verifying that a Git worktree has been materialized and checking its state.
+
+- **Endpoint**: `GET /api/project/worktree/status`
+- **Query Parameters**:
+  | Parameter | Type | Required | Description |
+  |-----------|------|----------|-------------|
+  | `projectDir` | string | Yes | Absolute path to the project directory |
+  | `taskId` | string | Yes | Task ID |
+  | `targetBranch` | string | No | Branch to compare against (defaults to main branch) |
+- **Response**: `200 OK`
+  ```json
+  {
+    "currentBranch": "task/a1b2c3d4",
+    "baseBranch": "main",
+    "targetBranch": "main",
+    "aheadCommits": {
+      "count": 3,
+      "commits": ["abc1234 feat: add login", "def5678 fix: validation", "..."]
+    },
+    "uncommittedFiles": {
+      "count": 2,
+      "files": ["src/auth.ts", "src/login.tsx"]
+    },
+    "predictedConflicts": [],
+    "rebaseState": null
+  }
+  ```
+  Returns `null` if no worktree exists for the task. A non-null response confirms the worktree is materialized on disk.
+
+#### Merge Worktree to Main
+Merges the task's worktree branch into a target branch (typically main).
+
+- **Endpoint**: `POST /api/project/worktree/merge-to-main`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/project",
+    "taskId": "a1b2c3d4",
+    "squash": false,
+    "targetBranch": "main",
+    "commitMessage": "feat: implement login feature"
+  }
+  ```
+- **Response**: `200 OK` `{ "message": "Worktree merged" }`
+
+#### Commit Changes
+Commits uncommitted changes in the worktree.
+
+- **Endpoint**: `POST /api/project/worktree/commit-changes`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/project",
+    "taskId": "a1b2c3d4",
+    "message": "feat: implement login",
+    "amend": false
+  }
+  ```
+- **Response**: `200 OK` `{ "message": "Changes committed" }`
+
+#### Generate Commit Message
+Uses AI to generate a commit message based on the worktree's uncommitted changes.
+
+- **Endpoint**: `POST /api/project/worktree/generate-commit-message`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/project",
+    "taskId": "a1b2c3d4"
+  }
+  ```
+- **Response**: `200 OK` (returns generated commit message string)
+
+#### Rebase Worktree from Branch
+Rebases the worktree branch onto the specified source branch.
+
+- **Endpoint**: `POST /api/project/worktree/rebase-from-branch`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/project",
+    "taskId": "a1b2c3d4",
+    "fromBranch": "main"
+  }
+  ```
+- **Response**: `200 OK` `{ "message": "Worktree rebased" }`
+
+#### Rename Worktree Branch
+Renames the current worktree branch.
+
+- **Endpoint**: `POST /api/project/worktree/rename-branch`
+- **Request Body**:
+  ```json
+  {
+    "projectDir": "/path/to/project",
+    "taskId": "a1b2c3d4",
+    "newBranchName": "feature/login-v2"
+  }
+  ```
+- **Response**: `200 OK` `{ "message": "Branch renamed" }`
+
+#### Additional Worktree Endpoints
+
+- `POST /api/project/worktree/merge-and-switch-to-local` — Merge worktree and switch task to local mode
+- `POST /api/project/worktree/apply-uncommitted` — Apply uncommitted changes to a target branch
+- `POST /api/project/worktree/revert-last-merge` — Revert the most recent merge
+- `POST /api/project/worktree/restore-file` — Restore a file from the target branch
+- `POST /api/project/worktree/abort-rebase` — Abort an in-progress rebase
+- `POST /api/project/worktree/continue-rebase` — Continue an in-progress rebase after resolving conflicts
+- `POST /api/project/worktree/resolve-conflicts-with-agent` — Use AI agent to resolve rebase conflicts
+- `GET /api/project/worktree/branches` — List worktree branches
+
 ### Additional Endpoints
 
 The API includes many more endpoints for:
@@ -442,6 +747,131 @@ The API includes many more endpoints for:
 - **Version Management**: Check for updates and get version info
 - **Terminal Operations**: Create, write to, and manage terminals
 
+## Integration Patterns
+
+### External Automation Bridge
+
+For external tools (CI/CD pipelines, IssueOps bridges, chat bots) that need to create isolated tasks with verified Git worktree isolation, use the following two-step pattern. This ensures the task is created in Worktree mode with the worktree fully materialized, while keeping the task queued and ready for manual or deferred execution.
+
+#### Step 1: Create the Task
+
+```bash
+curl -X POST http://localhost:24337/api/project/tasks/new \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectDir": "/path/to/project",
+    "name": "issue-123: Fix login bug"
+  }'
+```
+
+Response:
+```json
+{
+  "id": "a1b2c3d4",
+  "name": "issue-123: Fix login bug",
+  "currentMode": "agent",
+  "workingMode": "local",
+  "worktree": null,
+  ...
+}
+```
+
+The task is created but the worktree is **not yet materialized**. The `workingMode` reflects the global default setting.
+
+#### Step 2: Enable Worktree Mode
+
+```bash
+curl -X POST http://localhost:24337/api/project/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectDir": "/path/to/project",
+    "id": "a1b2c3d4",
+    "updates": {
+      "workingMode": "worktree",
+      "currentMode": "agent"
+    }
+  }'
+```
+
+Response:
+```json
+{
+  "id": "a1b2c3d4",
+  "workingMode": "worktree",
+  "worktree": {
+    "path": "/path/to/project/.aider-desk/tasks/a1b2c3d4/worktree",
+    "branch": "task/a1b2c3d4",
+    "baseBranch": "main"
+  },
+  ...
+}
+```
+
+The worktree is **synchronously created** during this call. The response is authoritative — if it contains a `worktree` object, the Git worktree is materialized on disk.
+
+#### Step 3 (Optional): Verify Worktree Isolation
+
+```bash
+curl "http://localhost:24337/api/project/worktree/status?projectDir=/path/to/project&taskId=a1b2c3d4"
+```
+
+A non-null response confirms the worktree exists and is operational. Use this to verify isolation before transitioning external state (e.g., moving a GitHub issue to `a2a/queued`).
+
+#### Step 4 (When Ready): Execute the Task
+
+```bash
+curl -X POST http://localhost:24337/api/run-prompt \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectDir": "/path/to/project",
+    "taskId": "a1b2c3d4",
+    "prompt": "Fix the login bug described in issue #123",
+    "mode": "agent"
+  }'
+```
+
+Or save a prompt for later review without starting execution:
+
+```bash
+curl -X POST http://localhost:24337/api/save-prompt \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectDir": "/path/to/project",
+    "taskId": "a1b2c3d4",
+    "prompt": "Fix the login bug described in issue #123"
+  }'
+```
+
+#### Failure Recovery
+
+If Step 2 fails (e.g., git error, disk full), the task exists but has no worktree. The bridge should treat this as a failure and either retry or clean up:
+
+```bash
+# Clean up the failed task
+curl -X POST http://localhost:24337/api/project/delete-task \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectDir": "/path/to/project",
+    "taskId": "a1b2c3d4"
+  }'
+```
+
+### Task Initialization Lifecycle
+
+Understanding the task lifecycle is important for automation:
+
+1. **Created** (`POST /api/project/tasks/new`) — Task object exists in memory with persisted data. No initialization has occurred. Worktree is not materialized. Aider process is not started.
+
+2. **Updated** (`POST /api/project/tasks`) — Task properties are changed. If `workingMode` is changed to `"worktree"`, the Git worktree is synchronously created. If `currentMode` is set to an aider-requiring mode, the Aider process is started in the background.
+
+3. **Loaded** (`POST /api/project/tasks/load`) — Task is fully initialized: worktree is materialized (if `workingMode` is `"worktree"`), context files are loaded, and the Aider process starts if needed.
+
+4. **Prompt executed** (`POST /api/run-prompt`) — The AI processes the prompt. This is the execution step.
+
+5. **Prompt saved** (`POST /api/save-prompt`) — A prompt is stored without execution. The task state is set to `TODO`, making it visible in the UI for an operator to review and start manually.
+
+For external bridges that need verified isolation before execution, the recommended approach is: create → update with `workingMode: "worktree"` → verify via worktree status → run prompt (or save prompt for manual start).
+
 ## Usage Examples
 
 ### JavaScript/Node.js
@@ -449,26 +879,73 @@ The API includes many more endpoints for:
 ```javascript
 const axios = require('axios');
 const AIDER_API_BASE = 'http://localhost:24337/api';
-// Start a project
+
 async function startProject(projectDir) {
   const response = await axios.post(`${AIDER_API_BASE}/project/start`, {
-    projectDir: projectDir
+    projectDir
   });
   return response.data;
 }
-// Run a prompt
-async function runPrompt(projectDir, prompt) {
+
+async function runPrompt(projectDir, taskId, prompt, mode = 'code') {
   const response = await axios.post(`${AIDER_API_BASE}/run-prompt`, {
-    projectDir: projectDir,
-    prompt: prompt,
-    mode: 'code'
+    projectDir,
+    taskId,
+    prompt,
+    mode
   });
   return response.data;
 }
+
+async function savePrompt(projectDir, taskId, prompt) {
+  const response = await axios.post(`${AIDER_API_BASE}/save-prompt`, {
+    projectDir,
+    taskId,
+    prompt
+  });
+  return response.data;
+}
+
+// Create an isolated worktree task (two-step pattern)
+async function createWorktreeTask(projectDir, name) {
+  // Step 1: Create the task (uninitialized, no worktree yet)
+  const { data: task } = await axios.post(`${AIDER_API_BASE}/project/tasks/new`, {
+    projectDir,
+    name
+  });
+
+  // Step 2: Enable worktree mode (synchronously materializes the Git worktree)
+  const { data: updatedTask } = await axios.post(`${AIDER_API_BASE}/project/tasks`, {
+    projectDir,
+    id: task.id,
+    updates: { workingMode: 'worktree', currentMode: 'agent' }
+  });
+
+  // Verify worktree isolation
+  if (!updatedTask.worktree) {
+    throw new Error(`Worktree not materialized for task ${task.id}`);
+  }
+
+  return updatedTask;
+}
+
 // Usage
 const projectDir = '/path/to/my/project';
 await startProject(projectDir);
-const result = await runPrompt(projectDir, 'Create a hello world function');
+
+// Simple prompt execution
+const result = await runPrompt(projectDir, 'abc123', 'Create a hello world function');
+
+// Or save a draft prompt for later review
+await savePrompt(projectDir, 'abc123', 'Create a hello world function');
+
+// Or create an isolated worktree task for external automation
+const task = await createWorktreeTask(projectDir, 'issue-123: Fix login bug');
+console.log(`Worktree isolated at: ${task.worktree.path}`);
+console.log(`Branch: ${task.worktree.branch}`);
+
+// Save a prompt for the worktree task (does not start execution)
+await savePrompt(projectDir, task.id, 'Fix the login bug described in issue #123');
 ```
 
 ### cURL Examples
@@ -478,6 +955,7 @@ const result = await runPrompt(projectDir, 'Create a hello world function');
 curl -X POST http://localhost:24337/api/project/start \
   -H "Content-Type: application/json" \
   -d '{"projectDir": "/path/to/project"}'
+
 # Run a prompt
 curl -X POST http://localhost:24337/api/run-prompt \
   -H "Content-Type: application/json" \
@@ -486,6 +964,34 @@ curl -X POST http://localhost:24337/api/run-prompt \
     "prompt": "Create a hello world function",
     "mode": "code"
   }'
+
+# Save a prompt without executing it
+curl -X POST http://localhost:24337/api/save-prompt \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectDir": "/path/to/project",
+    "taskId": "abc123",
+    "prompt": "Create a hello world function"
+  }'
+
+# Create a worktree task (two-step pattern)
+# Step 1: Create task
+TASK_ID=$(curl -s -X POST http://localhost:24337/api/project/tasks/new \
+  -H "Content-Type: application/json" \
+  -d '{"projectDir": "/path/to/project", "name": "issue-123"}' \
+  | jq -r '.id')
+
+# Step 2: Enable worktree mode (synchronously creates Git worktree)
+curl -X POST http://localhost:24337/api/project/tasks \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"projectDir\": \"/path/to/project\",
+    \"id\": \"$TASK_ID\",
+    \"updates\": {\"workingMode\": \"worktree\", \"currentMode\": \"agent\"}
+  }"
+
+# Step 3: Verify worktree isolation
+curl "http://localhost:24337/api/project/worktree/status?projectDir=/path/to/project&taskId=$TASK_ID"
 ```
 
 ## Error Handling
@@ -506,3 +1012,5 @@ The API uses standard HTTP status codes:
 4. **Rate Limiting**: Respect rate limits and implement exponential backoff
 5. **Authentication**: Keep API keys secure when using environment variables
 6. **Validation**: Validate paths and parameters before sending requests
+7. **Worktree Isolation**: Use the two-step create-then-update pattern to ensure Git worktree isolation is verified before starting execution. Do not rely on `POST /api/project/tasks/new` alone to materialize a worktree.
+8. **Conservative Automation**: For external bridges, verify worktree status via `GET /api/project/worktree/status` before transitioning external state (e.g., moving a GitHub issue to `a2a/queued`). Fail closed if the worktree cannot be verified.
