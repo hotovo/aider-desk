@@ -804,7 +804,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       }
 
       try {
-        return await scrapeWeb(url, timeout, abortSignal, format);
+        const content = await scrapeWeb(url, timeout, abortSignal, format);
+        return await truncateToolResult(content, 1000, 50, 10000);
       } catch (error) {
         if (isAbortError(error)) {
           return 'Operation was cancelled by user.';
