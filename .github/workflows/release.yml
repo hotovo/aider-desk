@@ -165,7 +165,7 @@ jobs:
 
   release-win:
     name: Release Windows packages
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Preserve $HOME set in the container
