@@ -562,6 +562,7 @@ src/
         AgentsContext.tsx
         ApiContext.tsx
         ContextMenuContext.tsx
+        DiffsWorkerPoolContext.tsx
         ExtensionsContext.tsx
         ModelProviderContext.tsx
         ProjectSettingsContext.tsx
@@ -2211,12 +2212,12 @@ import {
   ANSWER_RESPONSE_START_TAG,
   extractPromptContextFromToolResult,
   findLastUserMessage,
+  isNetworkError,
   readFileContent,
   THINKING_RESPONSE_STAR_TAG,
   truncateToolResult,
 } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
-import { smartCompactMessages } from './smart-compaction';
 ⋮----
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
 ⋮----
@@ -2546,9 +2547,9 @@ private async compactMessagesIfNeeded(
     abortSignal?: AbortSignal,
 )
 ⋮----
-// reload messages after compacting
+// subagent cannot use Handoff, so we fallback to Compact
 ⋮----
-// backing up the current context before compacting for debugging purposes
+// reload messages after compacting
 ⋮----
 // Perform handoff
 
@@ -2940,6 +2941,8 @@ export const readFileContent = async (
 ): Promise<string> =>
 ⋮----
 export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50, maxTokens = 50000): Promise<string> =>
+⋮----
+export const isNetworkError = (error: unknown): boolean =>
 
 ================
 File: src/main/connector/connector-manager.ts
@@ -8460,7 +8463,7 @@ async load(): Promise<void>
 ⋮----
 private async loadInternal(): Promise<void>
 ⋮----
-async loadMessages(messages: ContextMessage[]): Promise<void>
+async loadMessages(messages: ContextMessage[], updateTaskState = true): Promise<void>
 ⋮----
 // Clear all current messages
 ⋮----
@@ -8657,6 +8660,7 @@ import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { getProxyEnvVars } from '@/proxy-manager';
+import { smartCompactMessages } from '@/agent/smart-compaction';
 ⋮----
 const getTaskFinishedNotificationText = (task: TaskData) =>
 ⋮----
@@ -9049,10 +9053,6 @@ public addLogMessage(level: LogLevel, message?: string, finished = false, prompt
 ⋮----
 public getContextMessages()
 ⋮----
-public setContextMessages(messages: ContextMessage[], save = true)
-⋮----
-public async backupContext(): Promise<void>
-⋮----
 public getSkillManager(): SkillManager
 ⋮----
 public async getSkills(): Promise<Skill[]>
@@ -9081,7 +9081,7 @@ public sendUserMessage(data: UserMessageData)
 ⋮----
 public sendToolMessage(data: ToolData)
 ⋮----
-public async clearContext(addToHistory = false, updateContextInfo = true)
+public async clearContext(addToHistory = false, updateContextInfo = true, updateTaskState = true)
 ⋮----
 public async resetContext()
 ⋮----
@@ -9187,7 +9187,9 @@ private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextM
 ⋮----
 // Create a filtered assistant message that only contains the skill activation tool-call
 ⋮----
-public async smartCompactConversation(contextMessages?: ContextMessage[])
+public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.')
+⋮----
+// backing up the current context before compacting for debugging purposes
 ⋮----
 public async compactConversation(
     mode: Mode,
@@ -11370,7 +11372,7 @@ import { app, BrowserWindow, dialog, Menu, session, shell } from 'electron';
 import icon from '../../build/icon.png?asset';
 import splashImage from '../../build/splash.mp4?asset';
 ⋮----
-import { AIDER_DESK_DATA_DIR, HEADLESS_MODE } from '@/constants';
+import { AIDER_DESK_DATA_DIR, DISABLE_MENU, HEADLESS_MODE } from '@/constants';
 import { ProgressWindow } from '@/progress-window';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { performStartUp, UpdateProgressData } from '@/start-up';
@@ -13064,12 +13066,10 @@ File: src/renderer/src/components/common/DiffViewer/PierreDiffViewer.tsx
 ================
 import { type MouseEvent, useCallback, useMemo } from 'react';
 import { HiPencil, HiTrash } from 'react-icons/hi';
-import { DiffViewMode, isCodeEditorDarkTheme } from '@common/types';
+import { DiffViewMode } from '@common/types';
 import { MultiFileDiff, type MultiFileDiffProps, PatchDiff } from '@pierre/diffs/react';
 ⋮----
 import type { DiffLineAnnotation, OnDiffLineClickProps, SelectedLineRange } from '@pierre/diffs';
-⋮----
-import { useSettings } from '@/contexts/SettingsContext';
 ⋮----
 export type PierreLineClickInfo = {
   lineNumber: number;
@@ -14082,14 +14082,14 @@ import { DefaultTaskState } from '@common/types';
 ⋮----
 import type { TFunction } from 'i18next';
 ⋮----
+export const getStateTextClass = (state: string): string =>
+⋮----
+export const getTaskStateLabel = (t: TFunction, state: string) =>
+⋮----
 type Props = {
   state: string;
   className?: string;
 };
-⋮----
-const getStateTextClass = (state: string): string =>
-⋮----
-export const getTaskStateLabel = (t: TFunction, state: string) =>
 ⋮----
 export const TaskStateChip = (
 ⋮----
@@ -14112,11 +14112,16 @@ File: src/renderer/src/components/common/Toggle.tsx
 ================
 import { clsx } from 'clsx';
 ⋮----
+export type ToggleColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
+export type ToggleSize = 'sm' | 'md';
+⋮----
 type Props = {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   'aria-label'?: string;
+  color?: ToggleColor;
+  size?: ToggleSize;
 };
 ⋮----
 export const Toggle = (
@@ -17969,6 +17974,7 @@ import { IoGitBranch } from 'react-icons/io5';
 import { MdPushPin, MdChevronRight } from 'react-icons/md';
 import { clsx } from 'clsx';
 import { useLongPress } from '@reactuses/core';
+import { BiArchiveIn } from 'react-icons/bi';
 ⋮----
 import { TaskStatusIcon } from './TaskStatusIcon';
 import { TaskMenuButton } from './TaskMenuButton';
@@ -18110,7 +18116,7 @@ return <div className=
 ================
 File: src/renderer/src/components/project/TaskSidebar/TaskSidebar.tsx
 ================
-import { TaskData } from '@common/types';
+import { DefaultTaskState, TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { MouseEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
 import { HiPlus } from 'react-icons/hi';
@@ -18119,7 +18125,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineSearch } from 'react-icons/md';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BiArchive, BiArchiveIn } from 'react-icons/bi';
+import { FiFilter } from 'react-icons/fi';
 import { HiXMark } from 'react-icons/hi2';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -18131,10 +18137,12 @@ import { TaskSectionHeader } from './TaskSectionHeader';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { flattenTasksForVirtualization } from '@/utils/task-utils';
 import { Input } from '@/components/common/Input';
-import { IconButton } from '@/components/common/IconButton';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Toggle } from '@/components/common/Toggle';
+import { getTaskStateLabel, getStateTextClass } from '@/components/common/TaskStateChip';
 ⋮----
 type Props = {
   loading: boolean;
@@ -18202,7 +18210,9 @@ const handleBulkArchive = async () =>
 onArchive=
 onUnarchive=
 ⋮----
-onClick=
+checked=
+⋮----
+setSelectedStates((prev) =>
 ⋮----
 {/* Bulk Delete Confirmation */}
 ⋮----
@@ -18586,7 +18596,7 @@ e.stopPropagation(); // Prevent tab selection/drag initiation
 ================
 File: src/renderer/src/components/project/ProjectView.tsx
 ================
-import { InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData } from '@common/types';
+import { InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { useLocalStorage } from '@reactuses/core';
@@ -19655,6 +19665,7 @@ File: src/renderer/src/components/settings/agent/AgentSettings.tsx
 ================
 import {
   AgentProfile,
+  ContextCompactionType,
   ContextMemoryMode,
   GenericTool,
   InvocationMode,
@@ -19737,6 +19748,7 @@ import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
+import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 // Helper functions for accordion summaries
 const getRunSettingsSummary = (profile: AgentProfile) =>
@@ -19883,6 +19895,14 @@ onDelete=
 {/* Max Tokens Column */}
 ⋮----
 onChange=
+⋮----
+{/* Auto-compact Threshold Percentage */}
+⋮----
+<span className="whitespace-nowrap">
+⋮----
+{/* Auto-compact Threshold Tokens */}
+⋮----
+{/* Compaction Type */}
 ⋮----
 onRemove=
 onEdit=
@@ -21567,13 +21587,11 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { HiOutlineExclamation, HiPencil, HiTrash } from 'react-icons/hi';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { File, type FileProps, type LineAnnotation, type LineEventBaseProps } from '@pierre/diffs/react';
-import { isCodeEditorDarkTheme } from '@common/types';
 ⋮----
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
 import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
-import { useSettings } from '@/contexts/SettingsContext';
 ⋮----
 type PendingComment = {
   id: string;
@@ -22477,6 +22495,24 @@ const handleContextMenu = (params: ContextMenuParams) =>
 // Handle other elements with text content
 ⋮----
 // eslint-disable-next-line no-console
+
+================
+File: src/renderer/src/contexts/DiffsWorkerPoolContext.tsx
+================
+import { type ReactNode, useEffect, useMemo } from 'react';
+import { WorkerPoolContextProvider, useWorkerPool } from '@pierre/diffs/react';
+import { isCodeEditorDarkTheme } from '@common/types';
+import Worker from '@pierre/diffs/worker/worker.js?worker';
+⋮----
+import type { Theme } from '@common/types';
+⋮----
+import { useSettings } from '@/contexts/SettingsContext';
+⋮----
+const workerFactory = ()
+⋮----
+const getDiffsTheme = (theme: Theme | null)
+⋮----
+const DiffsThemeSync = () =>
 
 ================
 File: src/renderer/src/contexts/ExtensionsContext.tsx
@@ -26606,17 +26642,7 @@ export type VirtualTaskItem = { type: 'header'; id: string; title: string } | { 
 ⋮----
 const getMostRecentUpdatedAt = (task: TaskData, allTasks: TaskData[]): string | undefined =>
 ⋮----
-export const getSortedVisibleTasks = (tasks: TaskData[], showArchived: boolean = false, searchQuery: string = ''): TaskData[] =>
-⋮----
-// When showArchived is false, exclude tasks whose parent is archived
-// Check each task's parent exists in the original tasks and is not archived
-⋮----
-// Find the parent in the original tasks array
-⋮----
-// Include the task if:
-// - showArchived is true (show everything), OR
-// - parent doesn't exist (orphan), OR
-// - parent exists and is not archived
+export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<string>, showArchived: boolean = false, searchQuery: string = ''): TaskData[] =>
 ⋮----
 const sortFn = (a: TaskData, b: TaskData) =>
 ⋮----
@@ -26629,6 +26655,7 @@ const addTaskWithChildren = (task: TaskData) =>
 export const flattenTasksForVirtualization = (
   tasks: TaskData[],
   expandedIds: Set<string>,
+  selectedStates: Set<string>,
   showArchived: boolean = false,
   searchQuery: string = '',
 ): VirtualTaskItem[] =>
@@ -26832,6 +26859,7 @@ import { AgentsProvider } from '@/contexts/AgentsContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
 import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
 ⋮----
 const ModalOverlayUrlHandler = () =>
 ⋮----
