@@ -48,7 +48,7 @@ interface TaskStore {
   setQuestion: (taskId: string, question: QuestionData | null) => void;
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
   setQueuedPrompts: (taskId: string, queuedPrompts: QueuedPromptData[]) => void;
-  clearSession: (taskId: string, messagesOnly: boolean) => void;
+  clearSession: (taskId: string) => void;
 }
 
 export const useTaskStore = createWithEqualityFn<TaskStore>(
@@ -145,19 +145,17 @@ export const useTaskStore = createWithEqualityFn<TaskStore>(
         return { taskStateMap: newMap };
       }),
 
-    clearSession: (taskId, messagesOnly) =>
+    clearSession: (taskId) =>
       set((state) => {
         const newStateMap = new Map(state.taskStateMap);
-        const newMessagesMap = new Map(state.taskMessagesMap);
         const current = newStateMap.get(taskId) || EMPTY_TASK_STATE;
-        const update: Partial<TaskState> = {};
-        if (!messagesOnly) {
-          update.tokensInfo = null;
-          update.question = null;
-        }
-        newStateMap.set(taskId, { ...current, ...update });
-        newMessagesMap.set(taskId, []);
-        return { taskStateMap: newStateMap, taskMessagesMap: newMessagesMap };
+
+        newStateMap.set(taskId, {
+          ...current,
+          question: null,
+          tokensInfo: null,
+        });
+        return { taskStateMap: newStateMap };
       }),
   }),
   shallow,

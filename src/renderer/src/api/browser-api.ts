@@ -70,7 +70,7 @@ import {
   SkillsUpdatedData,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
-import axios, { type AxiosInstance } from 'axios';
+import { type AxiosInstance, create } from 'axios';
 import { io, Socket } from 'socket.io-client';
 import { compareBaseDirs } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
@@ -196,7 +196,7 @@ export class BrowserApi implements ApplicationAPI {
       'modal-overlay-url': new Map(),
       'aider-connector-status': new Map(),
     };
-    this.apiClient = axios.create({
+    this.apiClient = create({
       baseURL: `${baseUrl}/api`,
       headers: {
         'Content-Type': 'application/json',

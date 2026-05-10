@@ -1114,7 +1114,7 @@ export class Agent {
         let iterationError: unknown | null = null;
         let hasReasoning: boolean = false;
         let finishReason: null | FinishReason = null;
-        let responseMessages: ContextMessage[] = [];
+        let currentStepMessages: ContextMessage[] = [];
         let responseMessageIndex: number = 0;
 
         const onStepFinish = async (stepResult: StepResult<typeof toolSet>) => {
@@ -1130,7 +1130,7 @@ export class Agent {
             return;
           }
 
-          responseMessages = await this.processStep(currentResponseId, stepResult, task, provider, modelName, promptContext, abortSignal);
+          currentStepMessages = await this.processStep(currentResponseId, stepResult, task, provider, modelName, promptContext, abortSignal);
           const extensionResult = await this.extensionManager.dispatchEvent(
             'onAgentStepFinished',
             {
@@ -1139,12 +1139,12 @@ export class Agent {
               currentResponseId,
               stepResult,
               finishReason,
-              responseMessages,
+              responseMessages: currentStepMessages,
             },
             task.project,
             task,
           );
-          responseMessages = extensionResult.responseMessages;
+          currentStepMessages = extensionResult.responseMessages;
           finishReason = extensionResult.finishReason;
 
           currentResponseId = uuidv4();
@@ -1152,7 +1152,7 @@ export class Agent {
           hasReasoning = false;
           streamingMessageIds.clear();
 
-          if (responseMessages.length > 0) {
+          if (currentStepMessages.length > 0) {
             // Reset retry count when we get a response
             retryCount = 0;
           }
@@ -1336,8 +1336,8 @@ export class Agent {
           }
         }
 
-        const newMessages = this.filterResultMessages(responseMessages);
-        messages.push(...responseMessages);
+        const newMessages = this.filterResultMessages(currentStepMessages);
+        messages.push(...currentStepMessages);
         resultMessages.push(...newMessages);
 
         if (includeInContext) {
@@ -1369,7 +1369,7 @@ export class Agent {
         }
 
         // Check for 'stop' with trailing tool message
-        const lastMessage = responseMessages[responseMessages.length - 1];
+        const lastMessage = currentStepMessages[currentStepMessages.length - 1];
         if (finishReason === 'stop' && lastMessage?.role === 'tool') {
           logger.debug('Finish reason is "stop" but last message is a tool call. Retrying...');
           retryCount++;
@@ -2073,11 +2073,12 @@ export class Agent {
       } else if (contextCompactionType === ContextCompactionType.Smart) {
         const compactedMessages = await task.smartCompactConversation([...contextMessages, ...resultMessages], 'Previous conversation has been compacted.');
 
+        contextMessages.length = 0;
         messages.length = 0;
         resultMessages.length = 0;
 
+        contextMessages.push(...compactedMessages);
         messages.push(...(await this.prepareMessages(task, profile, compactedMessages, contextFiles)));
-        messages.push(...resultMessages);
       } else if (contextCompactionType === ContextCompactionType.Handoff) {
         // Perform handoff
         await task.handoffConversation(

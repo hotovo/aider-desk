@@ -101,9 +101,10 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
   const resetTask = useCallback(
     (taskId: string) => {
       api.resetTask(baseDir, taskId);
-      clearSession(taskId, false);
+      clearSession(taskId);
+      setMessages(taskId, () => []);
     },
-    [api, baseDir, clearSession],
+    [api, baseDir, clearSession, setMessages],
   );
 
   const answerQuestion = useCallback(

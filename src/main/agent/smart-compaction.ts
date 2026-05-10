@@ -23,6 +23,7 @@ type ToolInfo = {
 };
 
 type AssistantToolCallInfo = {
+  messageId: string;
   messageIndex: number;
   partIndex: number;
   toolCallId: string;
@@ -104,6 +105,7 @@ const findAssistantToolCall = (messages: ContextMessage[], toolCallId: string): 
       if (part.type === 'tool-call' && part.toolCallId === toolCallId) {
         const [, toolName] = extractServerNameToolName(part.toolName);
         return {
+          messageId: msg.id,
           messageIndex: i,
           partIndex: j,
           toolCallId: part.toolCallId,
@@ -260,7 +262,7 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
   const result = cloneMessages(messages);
   const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
 
-  const fileEditGroups = new Map<string, { messageIndex: number; toolCallId: string }[]>();
+  const fileEditGroups = new Map<string, { assistantMessageId: string; toolCallId: string }[]>();
 
   for (let i = 0; i < protectedStart; i++) {
     if (i >= result.length) {
@@ -297,18 +299,18 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
         fileEditGroups.set(filePath, []);
       }
       fileEditGroups.get(filePath)!.push({
-        messageIndex: i,
+        assistantMessageId: callInfo.messageId,
         toolCallId: part.toolCallId,
       });
     }
   }
 
-  for (const [, edits] of fileEditGroups) {
+  for (const [filePath, edits] of fileEditGroups) {
     if (edits.length === 0) {
       continue;
     }
 
-    const firstEdit = edits[0];
+    const lastEdit = edits[edits.length - 1];
 
     const syntheticMessage: ContextAssistantMessage = {
       id: uuidv4(),
@@ -316,18 +318,19 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
       content: [
         {
           type: 'text',
-          text: `<file-edited path="${extractFilePath(findAssistantToolCall(result, firstEdit.toolCallId)?.input)}">File was edited. Read the content again if you need to work on it.</file-edited>`,
+          text: `<file-edited path="${filePath}">File was edited. Read the content again if you need to work on it.</file-edited>`,
         } satisfies TextPart,
       ],
     };
+
+    const assistantIndex = result.findIndex((m) => m.id === lastEdit.assistantMessageId);
+    const insertIndex = assistantIndex !== -1 ? assistantIndex + 1 : 0;
+    result.splice(insertIndex, 0, syntheticMessage);
 
     for (const edit of edits) {
       removeToolCallFromAssistant(result, edit.toolCallId);
       removeToolResult(result, edit.toolCallId);
     }
-
-    const insertIndex = firstEdit.messageIndex < result.length ? firstEdit.messageIndex : result.length;
-    result.splice(insertIndex, 0, syntheticMessage);
   }
 
   return result;

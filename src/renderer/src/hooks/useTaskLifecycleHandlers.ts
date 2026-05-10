@@ -10,16 +10,18 @@ import { useTaskStore } from '@/stores/taskStore';
 export const useTaskLifecycleHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
   const clearSession = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.clearSession, shallow);
+  const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
   const handleClearProject = useCallback(
     ({ clearMessages: messages, clearSession: session }: ClearTaskData) => {
+      if (messages) {
+        setMessages(taskId, () => []);
+      }
       if (session) {
-        clearSession(taskId, false);
-      } else if (messages) {
-        clearSession(taskId, true);
+        clearSession(taskId);
       }
     },
-    [taskId, clearSession],
+    [setMessages, clearSession, taskId],
   );
 
   useEffect(() => {
