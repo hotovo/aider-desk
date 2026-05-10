@@ -57,6 +57,7 @@ echo ""
 echo "--- Installing dependencies ---"
 cd "$SCRIPT_DIR"
 npm install --ignore-scripts --legacy-peer-deps
+npm audit fix
 echo ""
 
 echo "=== Build complete! ==="

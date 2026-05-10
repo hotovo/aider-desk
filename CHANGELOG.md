@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.65.0]
 
 - added onInterrupted extension hook to allow blocking or customizing interrupt behavior
 - added token-based truncation to tool results
