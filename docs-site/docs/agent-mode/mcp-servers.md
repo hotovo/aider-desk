@@ -112,3 +112,33 @@ Once a server is configured globally, you must enable it within a specific **Age
 2.  In the **MCP Servers** section, you will see a list of all configured servers.
 3.  Use the checkbox next to each server name to enable or disable it for the selected profile.
 4.  You can further refine tool access by expanding a server's entry and setting the approval state for each individual tool (`Always`, `Never`, `Ask`).
+
+## Authorization for Remote MCP Servers
+
+AiderDesk's MCP client does not currently support OAuth authorization for remote MCP servers. If your server requires authorization (e.g., Sentry), you can use [mcp-remote](https://github.com/geelen/mcp-remote) as a workaround.
+
+### Step 1: Authorize in Your Terminal
+
+Run `mcp-remote` in your terminal and complete the authorization flow:
+
+```bash
+npx mcp-remote https://mcp.sentry.dev/mcp
+```
+
+### Step 2: Configure AiderDesk
+
+Use `mcp-remote` as a stdio-based proxy in your MCP server configuration instead of connecting directly:
+
+```json
+{
+  "mcpServers": {
+    "sentry": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://mcp.sentry.dev/mcp"
+      ]
+    }
+  }
+}
+```
