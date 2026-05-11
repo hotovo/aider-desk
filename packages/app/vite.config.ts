@@ -8,6 +8,9 @@ const ROOT = resolve(__dirname, '..', '..');
 const PKG = resolve(__dirname);
 
 export default defineConfig({
+  define: {
+    'process.env.POSTHOG_PUBLIC_API_KEY': JSON.stringify(process.env.POSTHOG_PUBLIC_API_KEY ?? ''),
+  },
   build: {
     outDir: 'out',
     lib: {

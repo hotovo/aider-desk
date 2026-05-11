@@ -4,3 +4,4 @@ resources/
 out/
 node_modules/
 patches/
+.env

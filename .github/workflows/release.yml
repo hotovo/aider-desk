@@ -23,6 +23,8 @@ jobs:
       - run: npm ci --arch=x64
 
       - name: Release Linux
+        env:
+          POSTHOG_PUBLIC_API_KEY: ${{ secrets.POSTHOG_PUBLIC_API_KEY }}
         run: npm run build:linux -- --x64 -p always
 
       - name: Install GitHub CLI
@@ -161,6 +163,7 @@ jobs:
       - name: Release Linux ARM64
         env:
           USE_SYSTEM_FPM: true
+          POSTHOG_PUBLIC_API_KEY: ${{ secrets.POSTHOG_PUBLIC_API_KEY }}
         run: npm run build:linux -- --arm64 -p always
 
   release-win:
@@ -182,6 +185,7 @@ jobs:
       - name: Release Windows
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          POSTHOG_PUBLIC_API_KEY: ${{ secrets.POSTHOG_PUBLIC_API_KEY }}
         run: npm run build && npx electron-builder --win -p always
 
   release-macos-x64:
@@ -211,6 +215,7 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NODE_OPTIONS: --max-old-space-size=4096
+          POSTHOG_PUBLIC_API_KEY: ${{ secrets.POSTHOG_PUBLIC_API_KEY }}
 
         run: npm run build:mac -- --x64 -p always
 
@@ -247,6 +252,7 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           NODE_OPTIONS: --max-old-space-size=4096
+          POSTHOG_PUBLIC_API_KEY: ${{ secrets.POSTHOG_PUBLIC_API_KEY }}
 
         run: npm run build:mac -- --arm64 -p always
 
@@ -291,6 +297,7 @@ jobs:
           VERSION=${{ steps.get-version.outputs.version }}
 
           docker buildx build --platform linux/amd64,linux/arm64 \
+            --build-arg POSTHOG_PUBLIC_API_KEY=${{ secrets.POSTHOG_PUBLIC_API_KEY }} \
             -t ${IMAGE_NAME}:${VERSION} \
             --push \
             .

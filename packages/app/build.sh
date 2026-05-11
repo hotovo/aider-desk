@@ -4,6 +4,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Load .env file if it exists
+if [ -f "$SCRIPT_DIR/.env" ]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/.env"
+  set +a
+  echo "Loaded environment variables from $SCRIPT_DIR/.env"
+fi
+
 echo "=== AiderDesk Package Build ==="
 echo "Root: $ROOT_DIR"
 echo ""
@@ -11,14 +20,14 @@ echo ""
 # Step 1: Build runner.js and cli.js via vite
 echo "--- Building runner.js & cli.js ---"
 cd "$SCRIPT_DIR"
-NODE_ENV=npx vite build
+POSTHOG_PUBLIC_API_KEY="${POSTHOG_PUBLIC_API_KEY:-}" NODE_ENV=npx vite build
 echo "runner.js & cli.js built successfully."
 echo ""
 
 # Step 2: Build and copy renderer
 echo "--- Building renderer ---"
 cd "$ROOT_DIR"
-npx electron-vite build
+POSTHOG_PUBLIC_API_KEY="${POSTHOG_PUBLIC_API_KEY:-}" npx electron-vite build
 mkdir -p "$SCRIPT_DIR/out/renderer"
 cp -r "$ROOT_DIR/out/renderer/." "$SCRIPT_DIR/out/renderer/"
 echo "Renderer copied successfully."

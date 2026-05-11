@@ -7,6 +7,7 @@ export function getRunnerEnv(port: number): Record<string, string> {
     ...(process.env as Record<string, string>),
     NODE_ENV: process.env.NODE_ENV || 'production',
     AIDER_DESK_HEADLESS: 'true',
+    AIDER_DESK_APP_TYPE: 'app',
     AIDER_DESK_RESOURCES_DIR: resourcesDir,
     AIDER_DESK_RENDERER_DIR: rendererDir,
   };

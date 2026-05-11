@@ -4,6 +4,7 @@ FROM node:24-slim AS builder
 
 # These are set automatically by buildx - amd64, arm64
 ARG TARGETARCH=amd64
+ARG POSTHOG_PUBLIC_API_KEY=''
 
 # Install Python and build tools for native module compilation (node-pty)
 RUN apt-get update && \
@@ -39,7 +40,7 @@ RUN node -e "const pkg = require('./package.json'); delete pkg.scripts.postinsta
 RUN node scripts/download-probe.mjs
 
 # Build the server and MCP server (includes resources copy) - prebuild:server builds renderer
-RUN npm run build:server
+RUN POSTHOG_PUBLIC_API_KEY=${POSTHOG_PUBLIC_API_KEY} npm run build:server
 
 # Production stage
 FROM node:24-slim
@@ -120,6 +121,7 @@ RUN touch ${AIDER_DESK_DATA_DIR}/setup-complete
 # Set environment variables
 ENV NODE_ENV=production
 ENV AIDER_DESK_HEADLESS=true
+ENV AIDER_DESK_APP_TYPE=docker
 
 # Configure Git to allow access to all directories (fixes Docker volume ownership issue)
 RUN git config --global --add safe.directory "*"

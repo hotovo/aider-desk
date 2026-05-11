@@ -4,8 +4,13 @@ import { defineConfig } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
+const posthogDefine = {
+  'process.env.POSTHOG_PUBLIC_API_KEY': JSON.stringify(process.env.POSTHOG_PUBLIC_API_KEY ?? ''),
+};
+
 export default defineConfig({
   main: {
+    define: posthogDefine,
     plugins: [
       tsconfigPaths({
         projects: [resolve(__dirname, 'tsconfig.node.json')],

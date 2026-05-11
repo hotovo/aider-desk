@@ -3,7 +3,7 @@ import { AgentProfile, Mode, SettingsData, TaskData } from '@common/types';
 
 import { Store } from '@/store';
 import logger from '@/logger';
-import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST } from '@/constants';
+import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST, APP_TYPE } from '@/constants';
 import { getElectronApp } from '@/app';
 
 export class TelemetryManager {
@@ -33,6 +33,11 @@ export class TelemetryManager {
   }
 
   async init(): Promise<void> {
+    if (!POSTHOG_PUBLIC_API_KEY) {
+      logger.info('TelemetryManager skipped: POSTHOG_PUBLIC_API_KEY not configured.');
+      return;
+    }
+
     try {
       await import('./open-telemetry');
 
@@ -46,6 +51,7 @@ export class TelemetryManager {
         properties: {
           os: process.platform,
           version: app?.getVersion(),
+          appType: APP_TYPE,
         },
       });
     } catch (error) {

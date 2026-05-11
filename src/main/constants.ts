@@ -40,10 +40,11 @@ export const WORKTREE_BRANCH_PREFIX = 'aider-desk/task/';
 export const AIDER_DESK_MEMORY_FILE = path.join(AIDER_DESK_DATA_DIR, 'memory.db');
 export const EXTENSIONS_REPOS_CACHE_DIR = path.join(AIDER_DESK_CACHE_DIR, 'extensions');
 
-export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
+export const POSTHOG_PUBLIC_API_KEY = process.env.POSTHOG_PUBLIC_API_KEY ?? '';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
 
 export const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
+export const APP_TYPE = process.env.AIDER_DESK_APP_TYPE || (HEADLESS_MODE ? 'docker' : 'electron');
 export const DISABLE_MENU = process.env.AIDER_DESK_DISABLE_MENU === 'true';
 export const AUTH_USERNAME = process.env.AIDER_DESK_USERNAME;
 export const AUTH_PASSWORD = process.env.AIDER_DESK_PASSWORD;
