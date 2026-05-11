@@ -172,9 +172,7 @@ npm install
 
 ## TypeScript Setup
 
-For TypeScript support in your extensions, you can either install the npm package or download the type definitions.
-
-### Option 1: Install via npm (Recommended)
+For TypeScript support in your extensions, install the `@aiderdesk/extensions` package:
 
 ```bash
 npm install @aiderdesk/extensions
@@ -184,24 +182,6 @@ Then import in your extension:
 
 ```typescript
 import type { Extension, ExtensionContext } from '@aiderdesk/extensions';
-```
-
-### Option 2: Download Type Definitions
-
-```bash
-# Download type definitions to your extensions directory
-curl -o ~/.aider-desk/extensions/extension-types.d.ts \
-  https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions.d.ts
-
-# For project extensions
-curl -o .aider-desk/extensions/extension-types.d.ts \
-  https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions.d.ts
-```
-
-Then import in your extension:
-
-```typescript
-import type { Extension, ExtensionContext } from './extension-types';
 ```
 
 ## Verifying Installation
