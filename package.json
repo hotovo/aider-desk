@@ -89,6 +89,7 @@
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
     "@pierre/diffs": "^1.1.16",
+    "@posthog/ai": "^7.18.1",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",

@@ -2,12 +2,13 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 
 import { initializeLangfuseExporter } from './langfuse';
+import { initializePostHogExporter } from './posthog';
 
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 
 import logger from '@/logger';
 
-const traceExporter: SpanExporter | undefined = initializeLangfuseExporter();
+const traceExporter: SpanExporter | undefined = initializeLangfuseExporter() ?? initializePostHogExporter();
 
 if (traceExporter) {
   logger.info('Initializing OpenTelemetry...');

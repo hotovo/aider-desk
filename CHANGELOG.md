@@ -1,5 +1,10 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added limit truncation to fetch tool result
+- added PostHog integration for telemetry
+
 ## [0.65.0]
 
 - added onInterrupted extension hook to allow blocking or customizing interrupt behavior

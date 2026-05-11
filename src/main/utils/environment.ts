@@ -7,7 +7,7 @@ import { DEFAULT_AGENT_PROFILE, DEFAULT_AIDER_MAIN_MODEL, DEFAULT_PROVIDER_MODEL
 import { EnvironmentVariable, Model, ProjectSettings, ProviderProfile, SettingsData } from '@common/types';
 
 import logger from '@/logger';
-import { getLangfuseEnvironmentVariables } from '@/telemetry';
+import { getLangfuseEnvironmentVariables, getPostHogAiderEnvironmentVariables } from '@/telemetry';
 import { Store } from '@/store';
 
 const readEnvFile = (filePath: string): Record<string, string> | null => {
@@ -280,6 +280,7 @@ export const getEnvironmentVariablesForAider = (settings: SettingsData, baseDir:
 const getTelemetryEnvironmentVariablesForAider = (settings: SettingsData, baseDir: string): Record<string, unknown> => {
   return {
     ...getLangfuseEnvironmentVariables(baseDir, settings),
+    ...getPostHogAiderEnvironmentVariables(baseDir, settings),
   };
 };
 
