@@ -61,14 +61,14 @@ Configuration can also be managed through the extension's settings UI.
 When the user interrupts a running Cursor agent:
 
 1. AiderDesk fires `onInterrupted`
-2. The extension resolves the abort promise associated with the active run
-3. The streaming loop exits via `Promise.race`
+2. The extension calls `run.cancel()` on the active Cursor SDK run (if supported)
+3. The stream drains naturally until it ends with a terminal `status: "cancelled"` event
 4. `{ blocked: true }` is returned to prevent AiderDesk's default interrupt handling
 5. The agent ID is cleared from task metadata so the next prompt starts a fresh agent
 
 ## Limitations / Known Gaps
 
 - **No connector message forwarding** — Messages produced by the extension are sent directly to the UI via `TaskContext`. External API clients (REST API, MCP) will not see these messages.
-- **Limited abort integration** — Cancellation uses a promise-based signal rather than `AbortController`. The Cursor SDK agent is not explicitly cancelled; the streaming loop simply stops consuming events.
+- **Limited abort integration** — Cancellation relies on `run.cancel()`. If the run does not support cancellation (e.g., detached/replayed run handles), the stream will still drain naturally until it ends.
 - **Edit tool diff parsing** — The `edit` tool results are parsed from unified diffs into search/replace pairs. Complex edits (creates, deletes, renames) may not be accurately represented.
 - **Agent resumption** — If the extension is unloaded or AiderDesk restarts mid-run, the agent ID stored in task metadata may reference a stale agent that cannot be resumed.

@@ -358,7 +358,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '1.1.1',
+    version: '1.2.0',
     description: 'Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -366,7 +366,7 @@ export default class CursorSdkExtension implements Extension {
   };
 
   private configPath = join(__dirname, 'config.json');
-  private abortResolvers = new Map<string, () => void>();
+  private activeRuns = new Map<string, Run>();
 
   private loadConfig(): CursorConfig {
     try {
@@ -385,10 +385,12 @@ export default class CursorSdkExtension implements Extension {
   }
 
   async onUnload(): Promise<void> {
-    for (const resolver of this.abortResolvers.values()) {
-      resolver();
+    for (const run of this.activeRuns.values()) {
+      if (run.supports('cancel')) {
+        await run.cancel().catch(() => {});
+      }
     }
-    this.abortResolvers.clear();
+    this.activeRuns.clear();
   }
 
   getProviders(_context: ExtensionContext): ProviderDefinition[] {
@@ -434,8 +436,13 @@ export default class CursorSdkExtension implements Extension {
     }
 
     const taskContext = context.getTaskContext();
-    if (!taskContext || !event.prompt) {
+    if (!taskContext) {
       return undefined;
+    }
+
+    const prompt = event.prompt || 'Continue where you left off.';
+    if (!event.prompt) {
+      context.log('Resuming Cursor agent with continuation prompt', 'info');
     }
 
     const config = this.loadConfig();
@@ -451,11 +458,6 @@ export default class CursorSdkExtension implements Extension {
     const taskId = taskContext.data.id;
     const modelId = event.model.replace(`${CURSOR_PROVIDER_NAME}/`, '');
     const projectDir = taskContext.getTaskDir();
-
-    const abortPromise = new Promise<void>((resolve) => {
-      this.abortResolvers.set(taskId, resolve);
-    });
-    let aborted = false;
 
     const agentOptions = {
       apiKey,
@@ -479,43 +481,28 @@ export default class CursorSdkExtension implements Extension {
         });
       }
 
-      const run = await agent.send(event.prompt);
+      const run = await agent.send(prompt);
       context.log(`Cursor run started: ${run.id}`, 'info');
+
+      this.activeRuns.set(taskId, run);
 
       taskContext.addLoadingMessage('Running Cursor agent...');
 
-      let contextMessages: ContextMessage[] = [];
+      const contextMessages = await processStream(run, taskContext);
 
-      const streamPromise = processStream(run, taskContext).then((messages) => {
-        contextMessages = messages;
-      });
+      const result = await run.wait();
+      context.log(`Cursor run finished: ${result.status}`, 'info');
 
-      await Promise.race([
-        streamPromise,
-        abortPromise.then(() => {
-          aborted = true;
-        }),
-      ]);
-
-      if (!aborted) {
-        const result = await run.wait();
-        context.log(`Cursor run finished: ${result.status}`, 'info');
-
-        for (const contextMessage of contextMessages) {
-          await taskContext.addContextMessage(contextMessage);
-        }
-
-        taskContext.addLoadingMessage(undefined, true);
+      for (const contextMessage of contextMessages) {
+        await taskContext.addContextMessage(contextMessage);
       }
     } catch (err) {
-      if (!aborted) {
-        const message = err instanceof Error ? err.message : String(err);
-        context.log(`Cursor agent error: ${message}`, 'error');
-        taskContext.addLogMessage('error', `Cursor SDK error: ${message}`);
-        taskContext.addLoadingMessage(undefined, true);
-      }
+      const message = err instanceof Error ? err.message : String(err);
+      context.log(`Cursor agent error: ${message}`, 'error');
+      taskContext.addLogMessage('error', `Cursor SDK error: ${message}`);
     } finally {
-      this.abortResolvers.delete(taskId);
+      this.activeRuns.delete(taskId);
+      taskContext.addLoadingMessage(undefined, true);
 
       if (agent) {
         try {
@@ -539,13 +526,17 @@ export default class CursorSdkExtension implements Extension {
     }
 
     const taskId = taskContext.data.id;
-    const resolver = this.abortResolvers.get(taskId);
-    if (resolver) {
+    const run = this.activeRuns.get(taskId);
+    if (run) {
       context.log(`Interrupting Cursor agent for task ${taskId}`, 'info');
-      resolver();
-      this.abortResolvers.delete(taskId);
+
+      if (run.supports('cancel')) {
+        await run.cancel();
+      }
 
       await taskContext.updateTask({
+        state: 'INTERRUPTED',
+        interruptedAt: new Date().toISOString(),
         metadata: { ...taskContext.data.metadata, [AGENT_ID_METADATA_KEY]: undefined },
       });
 
