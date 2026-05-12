@@ -5,6 +5,7 @@ import { MdOutlineCommit } from 'react-icons/md';
 import { RiAlertLine } from 'react-icons/ri';
 import { DiffViewMode, UpdatedFile } from '@common/types';
 import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
@@ -18,9 +19,10 @@ type Props = {
   comments?: DiffComment[];
   onEditComment?: (info: { commentId: string; viewportRect: { top: number; left: number } }) => void;
   onRemoveComment?: (commentId: string) => void;
+  stickyHeader?: boolean;
 };
 
-export const DiffFileItem = ({ file, index, diffViewMode, selectedLineNumber, onLineClick, comments, onEditComment, onRemoveComment }: Props) => {
+export const DiffFileItem = ({ file, index, diffViewMode, selectedLineNumber, onLineClick, comments, onEditComment, onRemoveComment, stickyHeader }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -38,8 +40,18 @@ export const DiffFileItem = ({ file, index, diffViewMode, selectedLineNumber, on
   const fileComments = useMemo(() => comments ?? [], [comments]);
 
   return (
-    <div id={`diff-file-${index}`} className="select-text bg-bg-code-block rounded-lg text-xs relative overflow-hidden">
-      <button type="button" onClick={handleToggle} className="w-full flex items-center gap-2 p-3 hover:bg-bg-tertiary transition-colors">
+    <div
+      id={`diff-file-${index}`}
+      className={clsx('select-text bg-bg-code-block rounded-lg text-xs relative', stickyHeader && !isExpanded ? 'overflow-hidden' : '')}
+    >
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={clsx(
+          'w-full flex items-center gap-2 p-3 hover:bg-bg-tertiary transition-colors',
+          stickyHeader && 'sticky top-0 z-[5] bg-bg-code-block rounded-t-lg',
+        )}
+      >
         <motion.div animate={{ rotate: isExpanded ? 0 : -90 }} transition={{ duration: 0.2 }}>
           <HiChevronDown className="h-4 w-4 text-text-secondary" />
         </motion.div>

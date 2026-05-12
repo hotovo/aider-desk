@@ -8,6 +8,7 @@
 - added undo functionality for clearing the messages and compacting
 - updated extension event types to include agentProfile and support blocking reasons
 - added option to manage token usage tracking for OpenAI-compatible providers
+- added sticky file path header to diff file items
 
 ## [0.65.0]
 

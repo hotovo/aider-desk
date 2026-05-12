@@ -607,6 +607,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
                             comments={getCommentsForFile(file.path)}
                             onEditComment={handleEditCommentFromDiffViewer}
                             onRemoveComment={handleRemoveComment}
+                            stickyHeader
                           />
                         );
                       })}
