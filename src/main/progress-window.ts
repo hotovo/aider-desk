@@ -33,11 +33,7 @@ export class ProgressWindow {
       this.resolveReady();
     });
 
-    // Send icon path and splash image to renderer once loaded
     this.window.webContents.on('did-finish-load', () => {
-      if (options.icon) {
-        this.window.webContents.send('set-icon-path', options.icon);
-      }
       if (options.splashImage) {
         this.window.webContents.send('set-splash-image', options.splashImage);
       }

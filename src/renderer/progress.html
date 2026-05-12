@@ -44,18 +44,12 @@
       border-radius: 12px;
       padding: 32px;
       width: 100%;
+      aspect-ratio: 500 / 330;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
       -webkit-app-region: no-drag;
-    }
-
-    .container::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(34, 36, 49, 0.7);
-      border-radius: 12px;
-      pointer-events: none;
-      z-index: 1;
     }
 
     #splash-video {
@@ -66,29 +60,6 @@
       object-fit: cover;
       border-radius: 12px;
       z-index: 0;
-    }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 32px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .brand-icon {
-      width: 72px;
-      height: 72px;
-      border-radius: 14px;
-    }
-
-    .brand-name {
-      font-size: 20px;
-      font-weight: 600;
-      color: #f1f3f5;
-      letter-spacing: -0.3px;
     }
 
     .detail {
@@ -202,13 +173,6 @@
 <body>
   <div class="container">
     <video id="splash-video" autoplay muted loop></video>
-    <div class="brand">
-      <div class="brand-icon-wrapper">
-        <img class="brand-icon" id="brand-icon" src="" alt="AiderDesk">
-      </div>
-      <span class="brand-name">AiderDesk</span>
-    </div>
-
     <div class="detail">
       <span class="detail-text" id="detail-text">Initializing...</span>
     </div>
@@ -223,17 +187,9 @@
   <script>
     const { ipcRenderer } = require('electron');
 
-    ipcRenderer.on('set-icon-path', (_, iconPath) => {
-      document.getElementById('brand-icon').src = iconPath;
-    });
-
     ipcRenderer.on('set-splash-image', (_, imagePath) => {
       const video = document.getElementById('splash-video');
       video.src = imagePath;
-    });
-
-    ipcRenderer.on('set-title', (_, title) => {
-      // Title is no longer displayed, but keep handler for compatibility
     });
 
     ipcRenderer.on('set-detail', (_, value) => {
