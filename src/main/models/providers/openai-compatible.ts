@@ -126,12 +126,16 @@ const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, setti
     throw new Error(`Base URL is required for ${provider.name} provider. Set it in Providers settings or via the OPENAI_API_BASE environment variable.`);
   }
 
+  const providerOverrides = model.providerOverrides as Partial<OpenAiCompatibleProvider> | undefined;
+  const trackTokenUsage = providerOverrides?.trackTokenUsage ?? provider.trackTokenUsage;
+
   // Use createOpenAICompatible to get a provider instance, then get the model
   const compatibleProvider = createOpenAICompatible({
     name: provider.name,
     apiKey,
     baseURL: baseUrl,
     headers: profile.headers,
+    includeUsage: trackTokenUsage !== false,
   });
   return compatibleProvider(model.id);
 };

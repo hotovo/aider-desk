@@ -22,6 +22,7 @@ export const OpenAiCompatibleModelOverrides = ({ provider, overrides, onChange }
   const handleProviderChange = (updatedProvider: OpenAiCompatibleProvider) => {
     const newOverrides = {
       reasoningEffort: updatedProvider.reasoningEffort,
+      trackTokenUsage: updatedProvider.trackTokenUsage,
       disableStreaming: updatedProvider.disableStreaming,
     };
 

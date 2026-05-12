@@ -270,6 +270,8 @@
     },
     "disableStreaming": "禁用流式传输",
     "disableStreamingInfo": "禁用响应流式传输。当提供商或模型不支持流式传输时使用此选项。",
+    "trackTokenUsage": "跟踪 Token 使用量",
+    "trackTokenUsageInfo": "在流式响应中包含 Token 使用量信息。如果提供商不支持流式块中的 usage 字段，请禁用此选项。",
     "disable": "禁用",
     "enable": "启用",
     "providerDisabled": "此提供商已被禁用。其模型将不可用。"

@@ -3,6 +3,7 @@ import { OpenAiCompatibleProvider } from '@common/agent';
 import { ReasoningEffort } from '@common/types';
 
 import { Select, Option } from '@/components/common/Select';
+import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 
 type Props = {
@@ -31,6 +32,13 @@ export const OpenAiCompatibleAdvancedSettings = ({ provider, onChange }: Props) 
     });
   };
 
+  const handleTrackTokenUsageChange = (trackTokenUsage: boolean) => {
+    onChange({
+      ...provider,
+      trackTokenUsage,
+    });
+  };
+
   return (
     <div className="space-y-4">
       <Select
@@ -44,6 +52,10 @@ export const OpenAiCompatibleAdvancedSettings = ({ provider, onChange }: Props) 
         onChange={handleReasoningEffortChange}
         options={reasoningOptions}
       />
+      <div className="flex items-center space-x-2">
+        <Checkbox label={t('modelLibrary.trackTokenUsage')} checked={provider.trackTokenUsage !== false} onChange={handleTrackTokenUsageChange} size="md" />
+        <InfoIcon tooltip={t('modelLibrary.trackTokenUsageInfo')} />
+      </div>
     </div>
   );
 };

@@ -271,6 +271,8 @@
     },
     "disableStreaming": "Disable streaming",
     "disableStreamingInfo": "Disables response streaming. Use this when the provider or model does not support streaming responses.",
+    "trackTokenUsage": "Track token usage",
+    "trackTokenUsageInfo": "Include token usage information in streaming responses. Disable if the provider does not support the usage field in stream chunks.",
     "disable": "Disable",
     "enable": "Enable",
     "providerDisabled": "This provider is disabled. Its models will not be available."

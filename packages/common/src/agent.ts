@@ -260,6 +260,7 @@ export interface OpenAiCompatibleProvider extends LlmProviderBase {
   apiKey: string;
   baseUrl?: string;
   reasoningEffort?: ReasoningEffort;
+  trackTokenUsage?: boolean;
 }
 export const isOpenAiCompatibleProvider = (provider: LlmProviderBase): provider is OpenAiCompatibleProvider => provider.name === 'openai-compatible';
 
@@ -747,6 +748,7 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         apiKey: '',
         baseUrl: '',
         reasoningEffort: ReasoningEffort.None,
+        trackTokenUsage: true,
       } satisfies OpenAiCompatibleProvider;
       break;
     case 'litellm':

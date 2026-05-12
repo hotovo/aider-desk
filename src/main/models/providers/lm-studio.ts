@@ -95,6 +95,7 @@ export const createLmStudioLlm = (profile: ProviderProfile, model: Model, settin
     name: 'lmstudio',
     baseURL: baseUrl,
     headers: profile.headers,
+    includeUsage: true,
   });
   return lmStudioProvider(model.id);
 };
