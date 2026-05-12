@@ -1831,7 +1831,7 @@ export class ExtensionManager {
           currentEvent = { ...currentEvent, ...partialEvent };
 
           // Check for blocking
-          if ('blocked' in currentEvent && currentEvent.blocked === true) {
+          if ('blocked' in currentEvent && currentEvent.blocked) {
             logger.debug(`[Extensions] Event '${String(eventName)}' blocked by extension '${metadata.name}'`);
             break;
           }

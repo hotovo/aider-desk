@@ -490,10 +490,10 @@ export class Agent {
       Object.assign(toolSet, extensionTools);
     }
 
-    return this.wrapToolsWithHooks(task, toolSet, abortSignal, promptContext);
+    return this.wrapToolsWithHooks(task, profile, toolSet, abortSignal, promptContext);
   }
 
-  private wrapToolsWithHooks(task: Task, toolSet: ToolSet, abortSignal?: AbortSignal, promptContext?: PromptContext): ToolSet {
+  private wrapToolsWithHooks(task: Task, profile: AgentProfile, toolSet: ToolSet, abortSignal?: AbortSignal, promptContext?: PromptContext): ToolSet {
     const wrappedToolSet: ToolSet = {};
 
     for (const [toolName, toolDef] of Object.entries(toolSet)) {
@@ -507,7 +507,7 @@ export class Agent {
 
           const toolCalledExtensionResult = await this.extensionManager.dispatchEvent(
             'onToolCalled',
-            { toolName, input: effectiveInput, abortSignal: options.abortSignal || abortSignal },
+            { toolName, agentProfile: profile, input: effectiveInput, abortSignal: options.abortSignal || abortSignal },
             task.project,
             task,
           );
@@ -530,7 +530,7 @@ export class Agent {
 
           const toolFinishedExtensionResult = await this.extensionManager.dispatchEvent(
             'onToolFinished',
-            { toolName, input: effectiveInput, output: result },
+            { toolName, agentProfile: profile, input: effectiveInput, output: result },
             task.project,
             task,
           );

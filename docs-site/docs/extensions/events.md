@@ -320,7 +320,7 @@ Called when important reminders are being generated. Use to modify the reminders
 
 ```typescript
 interface ImportantRemindersEvent {
-  readonly profile: AgentProfile;
+  readonly agentProfile: AgentProfile;
   remindersContent: string;
 }
 ```
@@ -336,7 +336,7 @@ Called when a tool requires approval.
 interface ToolApprovalEvent {
   readonly toolName: string;
   readonly input: Record<string, unknown> | undefined;
-  blocked?: boolean;
+  blocked?: boolean | string;
   allowed?: boolean;
 }
 ```
@@ -347,6 +347,7 @@ Called when a tool is about to be executed.
 ```typescript
 interface ToolCalledEvent {
   readonly toolName: string;
+  readonly agentProfile: AgentProfile;
   readonly abortSignal?: AbortSignal;
   input: Record<string, unknown> | undefined;
   output?: unknown;
@@ -359,6 +360,7 @@ Called after tool execution completes.
 ```typescript
 interface ToolFinishedEvent {
   readonly toolName: string;
+  readonly agentProfile: AgentProfile;
   readonly input: Record<string, unknown> | undefined;
   output: unknown;
 }

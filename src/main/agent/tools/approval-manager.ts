@@ -19,7 +19,7 @@ export class ApprovalManager {
   ): Promise<[boolean, string | undefined]> {
     const extensionResult = await this.task.dispatchExtensionEvent('onToolApproval', { toolName, input });
     if (extensionResult.blocked) {
-      return [false, undefined];
+      return [false, typeof extensionResult.blocked === 'string' ? extensionResult.blocked : undefined];
     }
     if (extensionResult.allowed) {
       return [true, undefined];

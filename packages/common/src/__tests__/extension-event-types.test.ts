@@ -163,31 +163,36 @@ describe('Event Payload Interfaces', () => {
       expect(event.allowed).toBe(false);
     });
 
-    it('ToolCalledEvent should have toolName and input fields', () => {
+    it('ToolCalledEvent should have toolName, agentProfile, and input fields', () => {
       const event: ToolCalledEvent = {
         toolName: 'test-tool',
+        agentProfile: {} as AgentProfile,
         input: undefined,
       };
       expect(event).toHaveProperty('toolName');
+      expect(event).toHaveProperty('agentProfile');
       expect(event).toHaveProperty('input');
     });
 
     it('ToolCalledEvent should support optional output field', () => {
       const event: ToolCalledEvent = {
         toolName: 'test-tool',
+        agentProfile: {} as AgentProfile,
         input: {},
         output: 'result',
       };
       expect(event.output).toBe('result');
     });
 
-    it('ToolFinishedEvent should have toolName, input, and output fields', () => {
+    it('ToolFinishedEvent should have toolName, agentProfile, input, and output fields', () => {
       const event: ToolFinishedEvent = {
         toolName: 'test-tool',
+        agentProfile: {} as AgentProfile,
         input: {},
         output: 'success',
       };
       expect(event).toHaveProperty('toolName');
+      expect(event).toHaveProperty('agentProfile');
       expect(event).toHaveProperty('input');
       expect(event).toHaveProperty('output');
     });
@@ -592,7 +597,7 @@ describe('Event Modification Pattern', () => {
         return { output: 'modified result' };
       },
     };
-    const result = await extension.onToolFinished!({ toolName: 'test', input: {}, output: 'original' }, mockContext);
+    const result = await extension.onToolFinished!({ toolName: 'test', agentProfile: {} as AgentProfile, input: {}, output: 'original' }, mockContext);
     expect(result?.output).toBe('modified result');
   });
 });
@@ -621,6 +626,28 @@ describe('Blocking Events', () => {
       };
       const result = await extension.onToolApproval!({ toolName: 'dangerous-tool', input: {} }, mockContext);
       expect(result?.blocked).toBe(true);
+    });
+
+    it('should support blocked field as string with reason', () => {
+      const event: ToolApprovalEvent = {
+        toolName: 'dangerous-tool',
+        input: {},
+        blocked: 'This tool is not allowed in this context',
+      };
+      expect(event.blocked).toBe('This tool is not allowed in this context');
+    });
+
+    it('extension can return blocked string with reason', async () => {
+      const extension: Extension = {
+        async onToolApproval(event): Promise<void | Partial<ToolApprovalEvent>> {
+          if (event.toolName === 'dangerous-tool') {
+            return { blocked: 'Security policy violation' };
+          }
+          return;
+        },
+      };
+      const result = await extension.onToolApproval!({ toolName: 'dangerous-tool', input: {} }, mockContext);
+      expect(result?.blocked).toBe('Security policy violation');
     });
   });
 

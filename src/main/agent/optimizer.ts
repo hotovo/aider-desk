@@ -149,6 +149,7 @@ const addImportantReminders = async (
       'onImportantReminders',
       {
         profile,
+        agentProfile: profile,
         remindersContent,
       },
       task.project,

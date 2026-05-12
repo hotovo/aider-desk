@@ -6,6 +6,7 @@
 - added PostHog integration for telemetry
 - add context file properly handles existing files
 - added undo functionality for clearing the messages and compacting
+- updated extension event types to include agentProfile and support blocking reasons
 
 ## [0.65.0]
 

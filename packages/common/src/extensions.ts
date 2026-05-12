@@ -430,7 +430,9 @@ export interface OptimizeMessagesEvent {
 
 /** Event payload for important reminders events */
 export interface ImportantRemindersEvent {
+  /** @deprecated Use `agentProfile` instead. Will be removed in a future version. */
   readonly profile: AgentProfile;
+  readonly agentProfile: AgentProfile;
   remindersContent: string;
 }
 
@@ -438,13 +440,14 @@ export interface ImportantRemindersEvent {
 export interface ToolApprovalEvent {
   readonly toolName: string;
   readonly input: Record<string, unknown> | undefined;
-  blocked?: boolean;
+  blocked?: boolean | string;
   allowed?: boolean;
 }
 
 /** Event payload for tool called events */
 export interface ToolCalledEvent {
   readonly toolName: string;
+  readonly agentProfile: AgentProfile;
   readonly abortSignal?: AbortSignal;
   input: Record<string, unknown> | undefined;
   output?: unknown;
@@ -453,6 +456,7 @@ export interface ToolCalledEvent {
 /** Event payload for tool finished events */
 export interface ToolFinishedEvent {
   readonly toolName: string;
+  readonly agentProfile: AgentProfile;
   readonly input: Record<string, unknown> | undefined;
   output: unknown;
 }
@@ -1641,7 +1645,7 @@ export interface Extension {
 
   /**
    * Called when a tool requires approval
-   * Set event.blocked = true to prevent execution
+   * Set event.blocked = true to prevent execution, or set to a string to block with a reason
    * @returns void or partial event to modify approval behavior
    */
   onToolApproval?(event: ToolApprovalEvent, context: ExtensionContext): Promise<void | Partial<ToolApprovalEvent>>;
