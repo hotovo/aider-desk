@@ -58,17 +58,17 @@
   },
   "onboarding": {
     "title": "Welcome to AiderDesk",
-    "description": "AiderDesk is your desktop companion for AI-assisted coding. This application brings the power of Aider's AI coding assistant to a user-friendly interface, helping you:",
+    "description": "Transparent, steerable AI orchestration for professional software engineers. More than a GUI for Aider — a complete orchestration layer that helps you:",
     "skipForNow": "Skip for now",
     "finish": "Finish Setup",
     "features": {
-      "1": "Manage multiple coding projects",
-      "2": "Track your AI usage and costs",
-      "3": "Interact with AI models in a structured way",
-      "4": "Visualize and manage your code files",
-      "5": "Use agentic flow for automated coding tasks and connection to MCP servers"
+      "1": "Manage projects, tasks, and Git worktrees in isolated environments",
+      "2": "Review every change before it lands with rich diff viewers and approval gates",
+      "3": "Steer AI behavior with tool approval gates, message editing, and task forking",
+      "4": "Use smart context and memory with semantic search and vector embeddings",
+      "5": "Extend everything via MCP, custom extensions, and multi-model subagents"
     },
-    "getStarted": "Let's get started by configuring your Aider settings.",
+    "getStarted": "Let's get started by connecting your AI model.",
     "steps": {
       "welcome": "Welcome",
       "connectModel": "Connect AI Model",
@@ -138,7 +138,7 @@
     },
     "complete": {
       "title": "Setup Complete!",
-      "description": "Congratulations! You've successfully set up AiderDesk. You're now ready to start coding with AI assistance.",
+      "description": "Congratulations! You've successfully set up AiderDesk. You're now ready to steer AI-assisted development with full transparency and control.",
       "ready": "Click 'Finish Setup' to begin your coding journey.",
       "success": "Onboarding completed successfully! Welcome to AiderDesk."
     },
