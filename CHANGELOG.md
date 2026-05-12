@@ -4,6 +4,8 @@
 
 - added limit truncation to fetch tool result
 - added PostHog integration for telemetry
+- add context file properly handles existing files
+- added undo functionality for clearing the messages and compacting
 
 ## [0.65.0]
 

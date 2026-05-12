@@ -152,6 +152,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     compactConversation: vi.fn((): void => undefined),
     smartCompactConversation: vi.fn((): Promise<void> => Promise.resolve()),
     handoffConversation: vi.fn((): Promise<void> => Promise.resolve()),
+    undoContextChange: vi.fn((): Promise<boolean> => Promise.resolve(false)),
     runCodeChangeRequests: vi.fn((): void => undefined),
 
     // UI operations
@@ -184,6 +185,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addResponseCompletedListener: vi.fn(() => vi.fn()),
     addLogListener: vi.fn(() => vi.fn()),
     addContextFilesUpdatedListener: vi.fn(() => vi.fn()),
+    addContextInfoUpdatedListener: vi.fn(() => vi.fn()),
     addUpdatedFilesUpdatedListener: vi.fn(() => vi.fn()),
     addSkillsUpdatedListener: vi.fn(() => vi.fn()),
     addCommandsUpdatedListener: vi.fn(() => vi.fn()),

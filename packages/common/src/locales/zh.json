@@ -14,6 +14,7 @@
     "close": "关闭",
     "confirm": "确认",
     "back": "返回",
+    "undo": "撤销",
     "next": "下一步",
     "previous": "上一个",
     "of": "共",
@@ -1422,6 +1423,7 @@
     "stopResponse": "停止响应",
     "sendMessage": "发送消息(Enter)",
     "clearChat": "清除聊天",
+    "undoContextChange": "恢复消息至先前状态",
     "agentModeOnly": "仅在代理模式下可用",
     "handoffError": "交接失败：{{error}}",
     "taskInfo": "任务信息"

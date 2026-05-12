@@ -32,6 +32,7 @@ const CURRENT_CONTEXT_VERSION = 2;
 export class ContextManager {
   private messages: ContextMessage[];
   private files: ContextFile[];
+  private undoSnapshot: ContextMessage[] | null = null;
   private loadPromise: Promise<void> | null = null;
   private loaded = false;
   private autosaveEnabled = false;
@@ -48,6 +49,17 @@ export class ContextManager {
 
     // Task-specific storage path - single context per task
     this.storagePath = path.join(task.getProjectDir(), AIDER_DESK_TASKS_DIR, taskId, 'context.json');
+  }
+
+  hasUndoSnapshot(): boolean {
+    return this.undoSnapshot !== null;
+  }
+
+  undoContextChange(): ContextMessage[] | null {
+    const snapshot = this.undoSnapshot;
+    this.undoSnapshot = null;
+    this.task.sendContextInfoUpdated();
+    return snapshot;
   }
 
   public enableAutosave() {
@@ -89,6 +101,12 @@ export class ContextManager {
 
     this.messages.push(message);
     logger.debug(`Task ${this.taskId}: Added ${message.role} message. Total messages: ${this.messages.length}`);
+
+    if (this.undoSnapshot !== null) {
+      this.undoSnapshot = null;
+      this.task.sendContextInfoUpdated();
+    }
+
     this.autosave();
   }
 
@@ -250,6 +268,10 @@ export class ContextManager {
       messages: contextMessages.length,
       save,
     });
+    if (this.messages.length > 0 && this.messages !== contextMessages) {
+      this.undoSnapshot = [...this.messages];
+      this.task.sendContextInfoUpdated();
+    }
     this.messages = contextMessages;
     if (save) {
       this.autosave();
@@ -283,8 +305,12 @@ export class ContextManager {
     }
   }
 
-  clearMessages(save = true) {
+  clearMessages(save = true, createSnapshot = true) {
     logger.debug('Clearing task messages', { taskId: this.taskId });
+    if (createSnapshot && this.messages.length > 0) {
+      this.undoSnapshot = [...this.messages];
+      this.task.sendContextInfoUpdated();
+    }
     this.messages = [];
     if (save) {
       this.autosave();
@@ -792,7 +818,7 @@ export class ContextManager {
 
   async loadMessages(messages: ContextMessage[], updateTaskState = true): Promise<void> {
     // Clear all current messages
-    await this.task.clearContext(false, false, updateTaskState);
+    await this.task.clearContext(false, false, updateTaskState, false);
 
     this.messages = messages;
 

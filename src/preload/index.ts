@@ -4,6 +4,7 @@ import {
   CommandOutputData,
   CommandsData,
   ContextFilesUpdatedData,
+  ContextInfoData,
   ContextMenuParams,
   CreateTaskParams,
   ExtensionUIRefreshData,
@@ -179,6 +180,7 @@ const api: ApplicationAPI = {
   removeMessagesUpTo: (baseDir, taskId, messageId) => ipcRenderer.invoke('remove-messages-up-to', baseDir, taskId, messageId),
   compactConversation: (baseDir, taskId, mode, customInstructions) => ipcRenderer.invoke('compact-conversation', baseDir, taskId, mode, customInstructions),
   smartCompactConversation: (baseDir, taskId) => ipcRenderer.invoke('smart-compact-conversation', baseDir, taskId),
+  undoContextChange: (baseDir, taskId) => ipcRenderer.invoke('undo-context-change', baseDir, taskId),
   handoffConversation: (baseDir, taskId, focus) => ipcRenderer.invoke('handoff-conversation', baseDir, taskId, focus),
   runCodeChangeRequests: (baseDir, taskId, requests, createNewTask?) => ipcRenderer.send('run-code-change-requests', baseDir, taskId, requests, createNewTask),
   setZoomLevel: (level) => ipcRenderer.invoke('set-zoom-level', level),
@@ -453,6 +455,19 @@ const api: ApplicationAPI = {
     ipcRenderer.on('message-removed', listener);
     return () => {
       ipcRenderer.removeListener('message-removed', listener);
+    };
+  },
+
+  addContextInfoUpdatedListener: (baseDir, taskId, callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ContextInfoData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir) || data.taskId !== taskId) {
+        return;
+      }
+      callback(data);
+    };
+    ipcRenderer.on('context-info-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('context-info-updated', listener);
     };
   },
 

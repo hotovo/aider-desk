@@ -109,7 +109,19 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const { loadTask, clearSession, resetTask, setMessages, setTodoItems, setAiderModelsData, answerQuestion, interruptResponse, refreshAllFiles } = useTask();
 
     const taskState = useTaskState(task.id);
-    const { loading, loaded, allFiles, contextFiles, autocompletionWords, tokensInfo, question, todoItems, aiderModelsData, queuedPrompts } = taskState;
+    const {
+      loading,
+      loaded,
+      allFiles,
+      contextFiles,
+      autocompletionWords,
+      tokensInfo,
+      question,
+      todoItems,
+      aiderModelsData,
+      queuedPrompts,
+      canUndoContextChange,
+    } = taskState;
 
     const messages = useTaskMessages(task.id);
     const deferredMessages = useDeferredValue(messages);
@@ -582,6 +594,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [updateTask, task.id],
     );
 
+    const handleUndoContextChange = useCallback(() => {
+      void api.undoContextChange(projectDir, task.id);
+    }, [api, projectDir, task.id]);
+
     const handleAnswerQuestion = useCallback(
       (answer: string) => {
         answerQuestion(task.id, answer);
@@ -841,6 +857,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   onToggleTaskInfoPanel={handleToggleTaskInfoPanel}
                   onAutoApproveChanged={handleAutoApproveChanged}
                   showSettingsPage={showSettingsPage}
+                  canUndoContextChange={canUndoContextChange && messages.length === 0}
+                  onUndoContextChange={handleUndoContextChange}
                 />
               </div>
               <div className="flex gap-2 justify-between flex-wrap">

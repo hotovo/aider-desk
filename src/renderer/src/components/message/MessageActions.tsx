@@ -1,9 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { MdUndo } from 'react-icons/md';
 
 import { Button } from '../common/Button';
 
 import { useApi } from '@/contexts/ApiContext';
+import { useTaskStore } from '@/stores/taskStore';
 
 type Props = {
   actionIds: string[];
@@ -16,6 +18,7 @@ export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt }: Prop
   const { t } = useTranslation();
   const [isExecuted, setIsExecuted] = useState(false);
   const api = useApi();
+  const canUndoContextChange = useTaskStore((state) => state.taskStateMap.get(taskId)?.canUndoContextChange ?? false);
 
   if (!actionIds || actionIds.length === 0 || isExecuted) {
     return null;
@@ -39,6 +42,11 @@ export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt }: Prop
   const handleRebaseWorktree = () => {
     setIsExecuted(true);
     void api.rebaseWorktreeFromBranch(baseDir, taskId);
+  };
+
+  const handleUndoContextChange = () => {
+    setIsExecuted(true);
+    void api.undoContextChange(baseDir, taskId);
   };
 
   const renderAction = (id: string) => {
@@ -73,6 +81,13 @@ export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt }: Prop
             {t('worktree.rebaseFromBranch')}
           </Button>
         );
+      case 'undoContextChange':
+        return canUndoContextChange ? (
+          <Button key={id} size="xs" variant="text" color="primary" onClick={handleUndoContextChange} tooltip={t('promptField.undoContextChange')}>
+            <MdUndo className="w-4 h-4 mr-1" />
+            {t('common.undo')}
+          </Button>
+        ) : null;
       default:
         return null;
     }

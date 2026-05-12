@@ -2,6 +2,7 @@ import { FaInfoCircle, FaExclamationTriangle, FaExclamationCircle } from 'react-
 import { MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { LogMessage } from '@common/types';
+import { clsx } from 'clsx';
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { MessageActions } from './MessageActions';
@@ -54,23 +55,29 @@ export const LogMessageBlock = ({ baseDir, taskId, message, onRemove, compact = 
   }
 
   return (
-    <div className={`${baseClasses} ${config.levelClasses} relative group`}>
+    <div className={`${baseClasses} ${config.levelClasses} relative group flex items-center justify-between`}>
       {renderMessage()}
-      {message.actionIds && (
-        <div className="flex flex-wrap justify-end mt-4">
-          <MessageActions actionIds={message.actionIds} baseDir={baseDir} taskId={taskId} onInterrupt={onInterrupt} />
-        </div>
-      )}
-      <div className="absolute top-2 right-2 flex items-center space-x-1">
-        <CopyMessageButton content={t(message.content)} className={config.tooltipClass} />
-        {onRemove && (
-          <IconButton
-            icon={<MdClose className="w-4 h-4" />}
-            onClick={onRemove}
-            tooltip={t('common.remove')}
-            className={`p-1 rounded ${config.tooltipClass} opacity-0 group-hover:opacity-100 transition-opacity duration-200`}
-          />
+      <div className="flex items-center gap-4">
+        {message.actionIds && (
+          <div className="flex flex-wrap justify-end">
+            <MessageActions actionIds={message.actionIds} baseDir={baseDir} taskId={taskId} onInterrupt={onInterrupt} />
+          </div>
         )}
+        <div className="flex items-center space-x-1">
+          <CopyMessageButton
+            content={t(message.content)}
+            className={clsx(config.tooltipClass, 'transition-colors text-text-dark group-hover:text-text-muted-light')}
+            alwaysShow={true}
+          />
+          {onRemove && (
+            <IconButton
+              icon={<MdClose className="w-4 h-4" />}
+              onClick={onRemove}
+              tooltip={t('common.remove')}
+              className={clsx(config.tooltipClass, 'p-1 rounded transition-colors text-text-dark group-hover:text-text-muted-light duration-200')}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

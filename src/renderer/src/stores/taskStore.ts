@@ -15,6 +15,7 @@ export interface TaskState {
   aiderModelsData: ModelsData | null;
   lastActiveAt: Date | null;
   queuedPrompts: QueuedPromptData[];
+  canUndoContextChange: boolean;
 }
 
 export const EMPTY_TASK_STATE: TaskState = {
@@ -29,6 +30,7 @@ export const EMPTY_TASK_STATE: TaskState = {
   aiderModelsData: null,
   lastActiveAt: null,
   queuedPrompts: [],
+  canUndoContextChange: false,
 };
 
 export const EMPTY_MESSAGES: Message[] = [];

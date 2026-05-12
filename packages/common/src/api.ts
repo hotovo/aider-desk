@@ -4,6 +4,7 @@ import {
   AutocompletionData,
   BranchInfo,
   ClearTaskData,
+  ContextInfoData,
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
@@ -190,6 +191,7 @@ export interface ApplicationAPI {
   compactConversation: (baseDir: string, taskId: string, mode: Mode, customInstructions?: string) => void;
   smartCompactConversation: (baseDir: string, taskId: string) => Promise<void>;
   handoffConversation: (baseDir: string, taskId: string, focus?: string) => Promise<void>;
+  undoContextChange: (baseDir: string, taskId: string) => Promise<boolean>;
   runCodeChangeRequests: (baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
@@ -231,6 +233,7 @@ export interface ApplicationAPI {
   addUserMessageListener: (baseDir: string, taskId: string, callback: (data: UserMessageData) => void) => () => void;
   addInputHistoryUpdatedListener: (baseDir: string, callback: (data: InputHistoryData) => void) => () => void;
   addClearTaskListener: (baseDir: string, taskId: string, callback: (data: ClearTaskData) => void) => () => void;
+  addContextInfoUpdatedListener: (baseDir: string, taskId: string, callback: (data: ContextInfoData) => void) => () => void;
   addMessageRemovedListener: (baseDir: string, taskId: string, callback: (data: MessageRemovedData) => void) => () => void;
   addProjectStartedListener: (baseDir: string, callback: (data: ProjectStartedData) => void) => () => void;
   addVersionsInfoUpdatedListener: (callback: (data: VersionsInfo) => void) => () => void;

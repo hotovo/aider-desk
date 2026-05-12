@@ -1,6 +1,8 @@
 import { ReactNode, MouseEvent } from 'react';
 import { twMerge } from 'tailwind-merge';
 
+import { Tooltip } from '@/components/ui/Tooltip';
+
 export type ButtonVariant = 'contained' | 'text' | 'outline';
 export type ButtonColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'xs';
@@ -16,6 +18,7 @@ type Props = {
   size?: ButtonSize;
   type?: 'button' | 'submit' | 'reset';
   title?: string;
+  tooltip?: string;
 };
 
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
@@ -58,31 +61,46 @@ export const Button = ({
   size = 'md',
   type = 'button',
   title,
+  tooltip,
 }: Props) => {
-  const baseColorClasses = disabled
-    ? 'bg-bg-tertiary-strong text-text-muted cursor-not-allowed hover:bg-bg-tertiary-strong hover:text-text-muted'
-    : colorClasses[color][variant];
+  const renderButton = () => {
+    const baseColorClasses = disabled
+      ? 'bg-bg-tertiary-strong text-text-muted cursor-not-allowed hover:bg-bg-tertiary-strong hover:text-text-muted'
+      : colorClasses[color][variant];
 
-  const baseSizeClasses = sizeClasses[size];
+    const baseSizeClasses = sizeClasses[size];
 
-  const borderClass = variant === 'outline' && !disabled ? 'border' : '';
+    const borderClass = variant === 'outline' && !disabled ? 'border' : '';
 
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      autoFocus={autoFocus}
-      title={title}
-      className={twMerge(
-        'flex items-center space-x-1 rounded-lg font-medium transition-colors select-none',
-        borderClass,
-        baseColorClasses,
-        baseSizeClasses,
-        className,
-      )}
-    >
-      {children}
-    </button>
-  );
+    return (
+      <button
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        autoFocus={autoFocus}
+        title={title}
+        className={twMerge(
+          'flex items-center space-x-1 rounded-lg font-medium transition-colors select-none',
+          borderClass,
+          baseColorClasses,
+          baseSizeClasses,
+          className,
+        )}
+      >
+        {children}
+      </button>
+    );
+  };
+
+  const button = renderButton();
+
+  if (tooltip) {
+    return (
+      <Tooltip content={tooltip}>
+        <div>{button}</div>
+      </Tooltip>
+    );
+  }
+
+  return button;
 };

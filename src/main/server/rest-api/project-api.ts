@@ -35,6 +35,11 @@ const ClearContextSchema = z.object({
   taskId: z.string().min(1, 'Task id is required'),
 });
 
+const UndoContextChangeSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+});
+
 const AnswerQuestionSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
@@ -780,6 +785,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId } = parsed;
         await this.eventsHandler.smartCompactConversation(projectDir, taskId);
         res.status(200).json({ message: 'Conversation smart-compacted' });
+      }),
+    );
+
+    // Undo context change
+    router.post(
+      '/project/undo-context-change',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(UndoContextChangeSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        const undone = await this.eventsHandler.undoContextChange(projectDir, taskId);
+        res.status(200).json({ undone });
       }),
     );
 

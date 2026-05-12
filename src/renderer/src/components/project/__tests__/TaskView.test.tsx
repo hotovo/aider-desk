@@ -148,6 +148,7 @@ describe('TaskView', () => {
     aiderModelsData: null,
     lastActiveAt: null,
     queuedPrompts: [],
+    canUndoContextChange: false,
   };
   const mockMessages: Message[] = [];
 

@@ -39,6 +39,7 @@ import {
   CommandsData,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
+  ContextInfoData,
 } from '@common/types';
 
 import type { WindowManager } from '@/window-manager';
@@ -75,6 +76,11 @@ export class EventManager {
     };
     this.sendToWindows('clear-task', data);
     this.broadcastToEventConnectors('clear-task', data);
+  }
+
+  sendContextInfoUpdated(data: ContextInfoData): void {
+    this.sendToWindows('context-info-updated', data);
+    this.broadcastToEventConnectors('context-info-updated', data);
   }
 
   // File management events

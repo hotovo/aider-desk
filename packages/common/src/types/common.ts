@@ -703,6 +703,12 @@ export interface ClearTaskData {
   clearSession: boolean;
 }
 
+export interface ContextInfoData {
+  baseDir: string;
+  taskId: string;
+  canUndoContextChange: boolean;
+}
+
 export interface TokensCost {
   tokens: number;
   tokensEstimated?: boolean;

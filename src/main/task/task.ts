@@ -2282,7 +2282,7 @@ export class Task {
     this.eventManager.sendTool(data);
   }
 
-  public async clearContext(addToHistory = false, updateContextInfo = true, updateTaskState = true) {
+  public async clearContext(addToHistory = false, updateContextInfo = true, updateTaskState = true, createSnapshot = true) {
     logger.info('Clearing context:', {
       baseDir: this.project.baseDir,
       addToHistory,
@@ -2297,7 +2297,7 @@ export class Task {
       });
     }
 
-    this.contextManager.clearMessages();
+    this.contextManager.clearMessages(true, createSnapshot);
     await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
 
@@ -2314,6 +2314,33 @@ export class Task {
     this.contextManager.clearContextFiles();
     this.contextManager.clearMessages();
     await this.contextManager.save();
+  }
+
+  sendContextInfoUpdated() {
+    this.eventManager.sendContextInfoUpdated({
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      canUndoContextChange: this.contextManager.hasUndoSnapshot(),
+    });
+  }
+
+  async undoContextChange(): Promise<boolean> {
+    const snapshot = this.contextManager.undoContextChange();
+    if (!snapshot) {
+      logger.debug('No undo snapshot available', { taskId: this.taskId });
+      return false;
+    }
+
+    logger.info('Undoing context change', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      messagesCount: snapshot.length,
+    });
+
+    await this.contextManager.loadMessages(snapshot);
+    await this.updateContextInfo();
+    this.sendContextInfoUpdated();
+    return true;
   }
 
   /**
@@ -2779,7 +2806,7 @@ export class Task {
     this.contextManager.setContextMessages(compactedMessages);
     await this.contextManager.loadMessages(compactedMessages, false);
     await this.updateContextInfo();
-    this.addLogMessage('info', infoMessage);
+    this.addLogMessage('info', infoMessage, false, undefined, ['undoContextChange']);
 
     return compactedMessages;
   }
@@ -2906,7 +2933,7 @@ export class Task {
       }
 
       await this.updateContextInfo();
-      this.addLogMessage('info', 'Conversation compacted.');
+      this.addLogMessage('info', 'Conversation compacted.', false, undefined, ['undoContextChange']);
     } catch (error) {
       logger.error('Failed to compact conversation', {
         baseDir: this.project.baseDir,

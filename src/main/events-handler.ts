@@ -268,6 +268,14 @@ export class EventsHandler {
     }
   }
 
+  async undoContextChange(baseDir: string, taskId: string): Promise<boolean> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (task) {
+      return task.undoContextChange();
+    }
+    return false;
+  }
+
   async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
