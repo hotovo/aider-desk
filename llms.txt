@@ -216,6 +216,7 @@ src/
       index.ts
       langfuse.ts
       open-telemetry.ts
+      posthog.ts
       telemetry-manager.ts
     terminal/
       index.ts
@@ -1379,6 +1380,8 @@ def setup_telemetry()
 langfuse_public_key = os.getenv("LANGFUSE_PUBLIC_KEY")
 langfuse_secret_key = os.getenv("LANGFUSE_SECRET_KEY")
 langfuse_host = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+⋮----
+posthog_api_key = os.getenv("POSTHOG_API_KEY")
 ⋮----
 # Set OpenRouter site and app name
 
@@ -9498,12 +9501,28 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 ⋮----
 import { initializeLangfuseExporter } from './langfuse';
+import { initializePostHogExporter } from './posthog';
 ⋮----
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 ⋮----
 import logger from '@/logger';
 ⋮----
 // Graceful shutdown
+
+================
+File: src/main/telemetry/posthog.ts
+================
+import { PostHogTraceExporter } from '@posthog/ai/otel';
+⋮----
+import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
+import type { SettingsData } from '@common/types';
+⋮----
+import { getEffectiveEnvironmentVariable } from '@/utils/environment';
+import logger from '@/logger';
+⋮----
+export const initializePostHogExporter = (): SpanExporter | undefined =>
+⋮----
+export const getPostHogAiderEnvironmentVariables = (baseDir: string, settings: SettingsData): Record<string, unknown> =>
 
 ================
 File: src/main/telemetry/telemetry-manager.ts
@@ -9513,7 +9532,7 @@ import { AgentProfile, Mode, SettingsData, TaskData } from '@common/types';
 ⋮----
 import { Store } from '@/store';
 import logger from '@/logger';
-import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST } from '@/constants';
+import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST, APP_TYPE } from '@/constants';
 import { getElectronApp } from '@/app';
 ⋮----
 export class TelemetryManager
@@ -9613,7 +9632,7 @@ import { DEFAULT_AGENT_PROFILE, DEFAULT_AIDER_MAIN_MODEL, DEFAULT_PROVIDER_MODEL
 import { EnvironmentVariable, Model, ProjectSettings, ProviderProfile, SettingsData } from '@common/types';
 ⋮----
 import logger from '@/logger';
-import { getLangfuseEnvironmentVariables } from '@/telemetry';
+import { getLangfuseEnvironmentVariables, getPostHogAiderEnvironmentVariables } from '@/telemetry';
 import { Store } from '@/store';
 ⋮----
 const readEnvFile = (filePath: string): Record<string, string> | null =>
@@ -27372,7 +27391,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.65.0-dev",
+  "version": "0.66.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -27461,6 +27480,7 @@ File: package.json
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
     "@pierre/diffs": "^1.1.16",
+    "@posthog/ai": "^7.18.1",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
