@@ -110,7 +110,15 @@ export class ContextManager {
       return [];
     }
 
-    if (this.isContextFileAlreadyAdded(absolutePath)) {
+    const existingContextFile = this.findExistingContextFile(absolutePath);
+    if (existingContextFile) {
+      const readOnly = contextFile.readOnly ?? false;
+      if (existingContextFile.readOnly !== readOnly) {
+        existingContextFile.readOnly = readOnly;
+        this.autosave();
+        return [existingContextFile];
+      }
+
       return [];
     }
 
@@ -174,11 +182,11 @@ export class ContextManager {
   }
 
   /**
-   * Checks whether a resolved absolute path matches any already-added context file.
+   * Finds an already-added context file matching the given resolved absolute path, if any.
    * Accounts for files that may have been resolved from either taskDir or projectDir.
    */
-  private isContextFileAlreadyAdded(absolutePath: string): boolean {
-    return this.files.some((file) => {
+  private findExistingContextFile(absolutePath: string): ContextFile | undefined {
+    return this.files.find((file) => {
       const taskDirResolved = path.resolve(this.task.getTaskDir(), file.path);
       const projectDirResolved = path.resolve(this.task.getProjectDir(), file.path);
       return taskDirResolved === absolutePath || projectDirResolved === absolutePath;
