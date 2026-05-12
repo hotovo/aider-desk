@@ -1,7 +1,8 @@
 {
   "languages": {
     "en": "English",
-    "zh": "中文"
+    "zh": "中文",
+    "ru": "Русский"
   },
   "common": {
     "settings": "Settings",
