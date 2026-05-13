@@ -737,6 +737,7 @@ export interface UserMessageData {
   baseDir: string;
   taskId: string;
   content: string;
+  images?: string[];
   promptContext?: PromptContext;
 }
 

@@ -17,6 +17,7 @@ export const useTaskMessageHandlers = (baseDir: string, taskId: string) => {
         id: data.id,
         type: 'user',
         content: data.content,
+        images: data.images,
         promptContext: data.promptContext,
       };
 

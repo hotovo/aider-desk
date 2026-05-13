@@ -238,7 +238,7 @@ describe('TaskView', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Run Prompt'));
     });
-    expect(mockApi.runPrompt).toHaveBeenCalledWith(projectDir, mockTask.id, 'hello', 'code');
+    expect(mockApi.runPrompt).toHaveBeenCalledWith(projectDir, mockTask.id, 'hello', 'code', undefined);
   });
 
   it('calls api.addFile when files are added', async () => {

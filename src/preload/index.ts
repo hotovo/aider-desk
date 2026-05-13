@@ -63,9 +63,10 @@ const api: ApplicationAPI = {
   stopProject: (baseDir) => ipcRenderer.send('stop-project', baseDir),
   restartProject: (baseDir) => ipcRenderer.send('restart-project', baseDir),
   resetTask: (baseDir, taskId) => ipcRenderer.send('reset-task', baseDir, taskId),
-  runPrompt: (baseDir, taskId, prompt, mode) => ipcRenderer.send('run-prompt', baseDir, taskId, prompt, mode),
+  runPrompt: (baseDir, taskId, prompt, mode, images) => ipcRenderer.send('run-prompt', baseDir, taskId, prompt, mode, images),
   savePrompt: (baseDir, taskId, prompt) => ipcRenderer.invoke('save-prompt', baseDir, taskId, prompt),
-  redoUserPrompt: (baseDir, taskId, messageId, mode, updatedPrompt?) => ipcRenderer.send('redo-user-prompt', baseDir, taskId, messageId, mode, updatedPrompt),
+  redoUserPrompt: (baseDir, taskId, messageId, mode, updatedPrompt?, updatedImages?) =>
+    ipcRenderer.send('redo-user-prompt', baseDir, taskId, messageId, mode, updatedPrompt, updatedImages),
   resumeTask: (baseDir, taskId) => ipcRenderer.send('resume-task', baseDir, taskId),
   answerQuestion: (baseDir, taskId, answer) => ipcRenderer.send('answer-question', baseDir, taskId, answer),
   removeQueuedPrompt: (baseDir, taskId, promptId) => ipcRenderer.send('remove-queued-prompt', baseDir, taskId, promptId),

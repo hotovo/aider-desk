@@ -54,6 +54,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
                 id: message.id,
                 type: 'user',
                 content: message.content,
+                images: message.images,
                 promptContext: message.promptContext,
               } as UserMessage,
             ];

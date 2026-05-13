@@ -35,9 +35,8 @@ import {
   type TypedToolResult,
   wrapLanguageModel,
 } from 'ai';
-import { delay, extractProviderModel, extractServerNameToolName } from '@common/utils';
+import { delay, extractProviderModel, extractServerNameToolName, extractTextContent } from '@common/utils';
 import { LlmProviderName } from '@common/agent';
-import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
@@ -63,6 +62,7 @@ import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 import {
   ANSWER_RESPONSE_START_TAG,
+  estimateMessageTokens,
   extractPromptContextFromToolResult,
   findLastUserMessage,
   isNetworkError,
@@ -755,6 +755,7 @@ export class Agent {
     systemPrompt?: string,
     includeInContext = true,
     abortSignal?: AbortSignal,
+    images?: string[],
   ): Promise<ContextMessage[]> {
     let contextMessages = initialContextMessages ?? (await task.getContextMessages());
     let contextFiles = initialContextFiles ?? (await task.getContextFiles());
@@ -767,10 +768,41 @@ export class Agent {
       ? {
           id: promptContext?.id || uuidv4(),
           role: 'user',
-          content: prompt,
+          content:
+            images && images.length > 0
+              ? [
+                  { type: 'text' as const, text: prompt },
+                  ...images.map((dataUrl) => {
+                    const match = dataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
+                    return {
+                      type: 'image' as const,
+                      image: match ? match[2] : dataUrl,
+                      mediaType: match ? match[1] : undefined,
+                    };
+                  }),
+                ]
+              : prompt,
           promptContext,
         }
       : null;
+
+    if (userRequestMessage) {
+      logger.info('User request message created:', {
+        id: userRequestMessage.id,
+        contentType: typeof userRequestMessage.content === 'string' ? 'string' : 'parts',
+        ...(typeof userRequestMessage.content === 'string'
+          ? { contentPreview: userRequestMessage.content.substring(0, 200) }
+          : {
+              parts: (userRequestMessage.content as Array<{ type: string; text?: string; mediaType?: string; image?: string }>).map((part) => ({
+                type: part.type,
+                ...(part.type === 'text' ? { textPreview: part.text?.substring(0, 100) } : {}),
+                ...(part.type === 'image'
+                  ? { mediaType: part.mediaType, imagePreview: typeof part.image === 'string' ? part.image.substring(0, 80) : typeof part.image }
+                  : {}),
+              })),
+            }),
+      });
+    }
 
     const settings = this.store.getSettings();
     const projectProfiles = this.agentProfileManager.getProjectProfiles(task.project);
@@ -1070,6 +1102,39 @@ export class Agent {
         };
 
         const optimizedMessages = await getOptimizedMessages();
+
+        logger.info('Optimized messages for LLM:', {
+          count: optimizedMessages.length,
+          lastUserMessage: (() => {
+            for (let i = optimizedMessages.length - 1; i >= 0; i--) {
+              if (optimizedMessages[i].role === 'user') {
+                const msg = optimizedMessages[i];
+                return {
+                  index: i,
+                  contentType: typeof msg.content,
+                  contentIsArray: Array.isArray(msg.content),
+                  contentPreview:
+                    typeof msg.content === 'string'
+                      ? msg.content.substring(0, 200)
+                      : Array.isArray(msg.content)
+                        ? (msg.content as Array<{ type: string; text?: string; image?: string; mediaType?: string }>).map((p) => ({
+                            type: p.type,
+                            ...(p.type === 'text' ? { textPreview: p.text?.substring(0, 100) } : {}),
+                            ...(p.type === 'image'
+                              ? {
+                                  mediaType: p.mediaType,
+                                  imageType: typeof p.image,
+                                  imagePreview: typeof p.image === 'string' ? p.image.substring(0, 80) : undefined,
+                                }
+                              : {}),
+                          }))
+                        : String(msg.content).substring(0, 200),
+                };
+              }
+            }
+            return null;
+          })(),
+        });
 
         return {
           providerOptions,
@@ -1826,11 +1891,11 @@ export class Agent {
       optimizedMessages.unshift({ role: 'system', content: systemPrompt });
 
       const chatMessages = optimizedMessages.map((msg) => ({
-        role: msg.role === 'tool' ? 'user' : msg.role, // Map 'tool' role to user message as gpt-tokenizer does not support tool messages
-        content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content), // Handle potential non-string content if necessary
+        role: msg.role === 'tool' ? 'user' : msg.role,
+        content: msg.content,
       }));
 
-      return countTokens(chatMessages);
+      return estimateMessageTokens(chatMessages);
     } catch (error) {
       logger.error(`Error counting tokens: ${error}`);
       return 0;
@@ -2063,10 +2128,15 @@ export class Agent {
         resultMessages.length = 0;
 
         messages.push(...(await this.prepareMessages(task, profile, await task.getContextMessages(), contextFiles)));
+        const continuationText = `Based on your compacted summary of our previous conversation, please continue our work with my request:\n\n${extractTextContent(userRequestMessage.content)}`;
+        const originalImageParts = Array.isArray(userRequestMessage.content)
+          ? userRequestMessage.content.filter((part): part is ImagePart => part.type === 'image')
+          : [];
+
         resultMessages.push({
           id: uuidv4(),
           role: 'user',
-          content: `Based on your compacted summary of our previous conversation, please continue our work with my request:\n\n${userRequestMessage.content}`,
+          content: originalImageParts.length > 0 ? [{ type: 'text' as const, text: continuationText }, ...originalImageParts] : continuationText,
           promptContext,
         });
         messages.push(...resultMessages);

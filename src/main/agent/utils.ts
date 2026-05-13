@@ -204,3 +204,61 @@ export const isNetworkError = (error: unknown): boolean => {
 
   return false;
 };
+
+const IMAGE_TOKEN_ESTIMATE = 1000;
+
+type CountableMessage = { role: string; content: unknown };
+
+const extractToolResultText = (output: unknown): string => {
+  if (!output || typeof output !== 'object') {
+    return '';
+  }
+  const o = output as { type: string; value?: unknown };
+  if (o.type === 'text' || o.type === 'error-text') {
+    return String(o.value ?? '');
+  }
+  if (o.type === 'json' || o.type === 'error-json') {
+    return JSON.stringify(o.value);
+  }
+  if (o.type === 'content' && Array.isArray(o.value)) {
+    return o.value
+      .map((v: { type: string; text?: string; data?: string }) => (v.type === 'text' ? (v.text ?? '') : v.type === 'media' ? '[media]' : ''))
+      .join('\n');
+  }
+  return JSON.stringify(output);
+};
+
+export const estimateMessageTokens = (messages: CountableMessage[]): number => {
+  let estimatedImageTokens = 0;
+  const textOnlyMessages = messages.map((msg) => {
+    if (typeof msg.content === 'string') {
+      return msg;
+    }
+
+    if (!Array.isArray(msg.content)) {
+      return { role: msg.role, content: '' };
+    }
+
+    const parts = msg.content as Array<Record<string, unknown>>;
+    const textParts: string[] = [];
+
+    for (const part of parts) {
+      const type = part.type as string;
+      if (type === 'text' && typeof part.text === 'string') {
+        textParts.push(part.text);
+      } else if (type === 'tool-call') {
+        textParts.push(JSON.stringify(part.input ?? ''));
+      } else if (type === 'tool-result') {
+        textParts.push(extractToolResultText(part.output));
+      } else if (type === 'reasoning' && typeof part.text === 'string') {
+        textParts.push(part.text);
+      } else if (type === 'image') {
+        estimatedImageTokens += IMAGE_TOKEN_ESTIMATE;
+      }
+    }
+
+    return { role: msg.role, content: textParts.join('\n\n') };
+  });
+
+  return textOnlyMessages.reduce((sum, msg) => sum + encode(typeof msg.content === 'string' ? msg.content : '').length, 0) + estimatedImageTokens;
+};

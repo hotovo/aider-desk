@@ -1428,7 +1428,8 @@
     "undoContextChange": "恢复消息至先前状态",
     "agentModeOnly": "仅在代理模式下可用",
     "handoffError": "交接失败：{{error}}",
-    "taskInfo": "任务信息"
+    "taskInfo": "任务信息",
+    "pastedImage": "粘贴的图片 {{index}}"
   },
   "agentProfiles": {
     "title": "代理配置",

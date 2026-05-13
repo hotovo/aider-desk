@@ -1121,12 +1121,22 @@ export class ContextManager {
         }
       } else if (message.role === 'user') {
         const content = extractTextContent(message.content);
+        const images = Array.isArray(message.content)
+          ? message.content
+              .filter((part): part is { type: 'image'; image: string; mediaType?: string } => part.type === 'image')
+              .map((part) => {
+                const data = part.image;
+                const mediaType = part.mediaType || 'image/png';
+                return data.startsWith('data:') ? data : `data:${mediaType};base64,${data}`;
+              })
+          : undefined;
         const userMessageData: UserMessageData = {
           type: 'user',
           id: message.id || uuidv4(),
           baseDir: this.task.getProjectDir(),
           taskId: this.taskId,
           content: content,
+          images: images && images.length > 0 ? images : undefined,
           promptContext: message.promptContext,
         };
         messagesData.push(userMessageData);

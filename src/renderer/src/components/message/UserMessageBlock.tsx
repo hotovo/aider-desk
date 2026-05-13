@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { FaRegUser } from 'react-icons/fa';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -15,9 +16,60 @@ type Props = {
   compact?: boolean;
   onRemove?: () => void;
   onRedo?: () => void;
-  onEdit?: (content: string) => void;
+  onEdit?: (content: string, images?: string[]) => void;
   onFork?: () => void;
   onRemoveUpTo?: () => void;
+};
+
+const MessageImages = ({ images }: { images: string[] }) => {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+  const handleImageClick = (index: number) => {
+    setExpandedIndex(index);
+  };
+
+  const handleExpandedClick = () => {
+    setExpandedIndex(null);
+  };
+
+  return (
+    <>
+      <div className="flex flex-wrap gap-2 mt-2">
+        {images.map((src, index) => (
+          <img
+            key={index}
+            src={src}
+            alt={`Pasted image ${index + 1}`}
+            className="max-h-40 max-w-[200px] rounded-md border border-border-dark-light cursor-pointer hover:opacity-80 transition-opacity object-contain"
+            onClick={() => handleImageClick(index)}
+          />
+        ))}
+      </div>
+      <AnimatePresence>
+        {expandedIndex !== null && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 cursor-pointer"
+            onClick={handleExpandedClick}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <motion.img
+              src={images[expandedIndex]}
+              alt={`Expanded image ${expandedIndex + 1}`}
+              className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl object-contain"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
 };
 
 export const UserMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, compact = false, onRemove, onRedo, onEdit, onFork, onRemoveUpTo }: Props) => {
@@ -26,7 +78,7 @@ export const UserMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, c
 
   const handleEdit = () => {
     if (onEdit) {
-      onEdit(message.content);
+      onEdit(message.content, message.images);
     }
   };
 
@@ -43,7 +95,10 @@ export const UserMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, c
           <div className="mt-[3px]">
             <FaRegUser className="text-text-tertiary w-3.5 h-3.5" />
           </div>
-          <div className="flex-grow-1 w-full overflow-hidden">{parsedContent}</div>
+          <div className="flex-grow-1 w-full overflow-hidden">
+            {parsedContent}
+            {message.images && message.images.length > 0 && <MessageImages images={message.images} />}
+          </div>
         </div>
         {!compact && (
           <MessageBar

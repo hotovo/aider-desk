@@ -294,7 +294,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     }, [updateTask, task.id]);
 
     const runPrompt = useCallback(
-      (prompt: string) => {
+      (prompt: string, images?: string[]) => {
         updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
         if (editingMessageIndex !== null) {
           // This submission is an edit of a previous message
@@ -308,6 +308,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   return {
                     ...message,
                     content: prompt,
+                    images,
                   };
                 } else {
                   return message;
@@ -315,7 +316,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               });
           });
           if (editedMessageId) {
-            api.redoUserPrompt(projectDir, task.id, editedMessageId, currentMode, prompt);
+            api.redoUserPrompt(projectDir, task.id, editedMessageId, currentMode, prompt, images);
           }
         } else {
           if (!question && !inProgress) {
@@ -325,13 +326,14 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 id: uuidv4(),
                 type: 'user',
                 content: prompt,
+                images,
                 isOptimistic: true,
               } satisfies UserMessage;
               setMessages(task.id, (prevMessages) => [...prevMessages, optimisticUserMessage]);
               setDisplayedMessages([...displayedMessages, optimisticUserMessage]);
             });
           }
-          api.runPrompt(projectDir, task.id, prompt, currentMode);
+          api.runPrompt(projectDir, task.id, prompt, currentMode, images);
         }
       },
       [
@@ -357,8 +359,9 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     );
 
     const handleEditLastUserMessage = useCallback(
-      (content?: string) => {
+      (content?: string, images?: string[]) => {
         let contentToEdit = content;
+        let imagesToEdit = images;
         const messageIndex = displayedMessages.findLastIndex(isUserMessage);
 
         if (messageIndex === -1) {
@@ -367,9 +370,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           return;
         }
 
+        const lastUserMessage = displayedMessages[messageIndex] as UserMessage | undefined;
         if (contentToEdit === undefined) {
-          const lastUserMessage = displayedMessages[messageIndex];
-          contentToEdit = lastUserMessage.content;
+          contentToEdit = lastUserMessage?.content;
+        }
+        if (imagesToEdit === undefined) {
+          imagesToEdit = lastUserMessage?.images;
         }
         if (contentToEdit === undefined) {
           // eslint-disable-next-line no-console
@@ -379,7 +385,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
         setEditingMessageIndex(messageIndex);
         setTimeout(() => {
-          promptFieldRef.current?.setText(contentToEdit);
+          promptFieldRef.current?.setText(contentToEdit!);
+          if (imagesToEdit && imagesToEdit.length > 0) {
+            promptFieldRef.current?.setImages(imagesToEdit);
+          }
           promptFieldRef.current?.focus();
         }, 0);
       },

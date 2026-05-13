@@ -1470,7 +1470,8 @@
     "undoContextChange": "Restore messages to previous state",
     "agentModeOnly": "Available in Agent mode only",
     "handoffError": "Handoff failed: {{error}}",
-    "taskInfo": "Show task information"
+    "taskInfo": "Show task information",
+    "pastedImage": "Pasted image {{index}}"
   },
   "agentProfiles": {
     "title": "Agents",

@@ -353,19 +353,20 @@ export class BrowserApi implements ApplicationAPI {
   resetTask(baseDir: string, taskId: string): void {
     this.post('/project/tasks/reset', { projectDir: baseDir, taskId });
   }
-  runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode): void {
-    this.post('/run-prompt', { projectDir: baseDir, taskId, prompt, mode });
+  runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): void {
+    this.post('/run-prompt', { projectDir: baseDir, taskId, prompt, mode, images });
   }
   savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void> {
     return this.post('/save-prompt', { projectDir: baseDir, taskId, prompt });
   }
-  redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string): void {
+  redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]): void {
     this.post('/project/redo-prompt', {
       projectDir: baseDir,
       taskId,
       messageId,
       mode,
       updatedPrompt,
+      updatedImages,
     });
   }
   resumeTask(baseDir: string, taskId: string): void {

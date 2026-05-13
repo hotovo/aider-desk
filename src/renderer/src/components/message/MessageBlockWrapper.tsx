@@ -19,7 +19,7 @@ type Props = {
   inProgress: boolean;
   removeMessage: (message: Message) => void;
   redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string) => void;
+  editLastUserMessage: (content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;

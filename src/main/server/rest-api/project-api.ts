@@ -135,6 +135,7 @@ const RedoUserPromptSchema = z.object({
   messageId: z.string().min(1, 'Message id is required'),
   mode: z.string().min(1, 'Mode is required'),
   updatedPrompt: z.string().optional(),
+  updatedImages: z.array(z.string()).optional(),
 });
 
 const ResumeTaskSchema = z.object({
@@ -416,8 +417,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, messageId, mode, updatedPrompt } = parsed;
-        await this.eventsHandler.redoUserPrompt(projectDir, taskId, messageId, mode, updatedPrompt);
+        const { projectDir, taskId, messageId, mode, updatedPrompt, updatedImages } = parsed;
+        await this.eventsHandler.redoUserPrompt(projectDir, taskId, messageId, mode, updatedPrompt, updatedImages);
         res.status(200).json({ message: 'Redo user prompt initiated' });
       }),
     );

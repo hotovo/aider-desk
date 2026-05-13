@@ -44,7 +44,7 @@ import {
   UserMessageData,
   WorkingMode,
 } from '@common/types';
-import { extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
@@ -717,6 +717,7 @@ export class Task {
     addToInputHistory = true,
     userMessageId = uuidv4(),
     sendNotification = true,
+    images?: string[],
   ): Promise<ResponseCompletedData[]> {
     if (this.currentQuestion) {
       if (await this.answerQuestion('n', prompt)) {
@@ -762,7 +763,7 @@ export class Task {
       await this.project.addToInputHistory(prompt);
     }
 
-    this.addUserMessage(userMessageId, prompt);
+    this.addUserMessage(userMessageId, prompt, promptContext, images);
     this.addLogMessage('loading');
 
     this.telemetryManager.captureRunPrompt(mode);
@@ -776,7 +777,7 @@ export class Task {
         throw new Error('No active Agent profile found');
       }
 
-      responses = await this.runPromptInAgent(profile, mode, prompt, promptContext, undefined, undefined, undefined, true, sendNotification);
+      responses = await this.runPromptInAgent(profile, mode, prompt, promptContext, undefined, undefined, undefined, true, sendNotification, images);
     } else {
       responses = await this.runPromptInAider(mode, prompt, promptContext, sendNotification);
     }
@@ -930,6 +931,7 @@ export class Task {
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
     sendNotification = true,
+    images?: string[],
   ): Promise<ResponseCompletedData[]> {
     if (waitForCurrentAgentToFinish) {
       await this.waitForCurrentAgentToFinish();
@@ -943,7 +945,19 @@ export class Task {
       model: this.task.model || profile.model,
     });
 
-    const agentMessages = await this.agent.runAgent(this, profile, prompt, mode, promptContext, contextMessages, contextFiles, systemPrompt);
+    const agentMessages = await this.agent.runAgent(
+      this,
+      profile,
+      prompt,
+      mode,
+      promptContext,
+      contextMessages,
+      contextFiles,
+      systemPrompt,
+      true,
+      undefined,
+      images,
+    );
     if (agentMessages.length > 0) {
       // send messages to connectors
       this.contextManager.toConnectorMessages(agentMessages).forEach((message) => {
@@ -2263,7 +2277,8 @@ export class Task {
   public sendUserMessage(data: UserMessageData) {
     logger.debug('Sending user message:', {
       baseDir: this.project.baseDir,
-      content: data.content.substring(0, 100),
+      content: data.content?.substring(0, 100),
+      hasImages: (data.images?.length ?? 0) > 0,
     });
     this.eventManager.sendUserMessage(data);
   }
@@ -2582,7 +2597,7 @@ export class Task {
     }
   }
 
-  addUserMessage(id: string, content: string, promptContext?: PromptContext) {
+  addUserMessage(id: string, content: string, promptContext?: PromptContext, images?: string[]) {
     logger.info('Adding user message:', {
       baseDir: this.project.baseDir,
       content: content.substring(0, 100),
@@ -2594,6 +2609,7 @@ export class Task {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       content,
+      images,
       promptContext,
     };
 
@@ -2635,12 +2651,13 @@ export class Task {
     }
   }
 
-  public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string) {
+  public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]) {
     logger.info('Redoing user prompt:', {
       baseDir: this.project.baseDir,
       messageId,
       mode,
       hasUpdatedPrompt: !!updatedPrompt,
+      hasUpdatedImages: !!updatedImages,
     });
 
     const removedMessages = this.contextManager.removeMessagesUpToUserMessage(messageId);
@@ -2650,7 +2667,9 @@ export class Task {
       return;
     }
 
-    const promptToRun = updatedPrompt ?? (originalUserMessage.content as string);
+    const originalText = extractTextContent(originalUserMessage.content);
+    const promptToRun = updatedPrompt ?? originalText;
+    const imagesToRun = updatedImages ?? (updatedPrompt !== undefined ? undefined : extractImagesFromContent(originalUserMessage.content));
 
     if (promptToRun) {
       logger.info('Found message content to run, reloading and re-running prompt.', {
@@ -2662,7 +2681,7 @@ export class Task {
       await this.updateContextInfo();
 
       // No need to await runPrompt here, let it run in the background
-      void this.runPrompt(promptToRun, mode, false, originalUserMessage.id);
+      void this.runPrompt(promptToRun, mode, false, originalUserMessage.id, true, imagesToRun);
     } else {
       logger.warn('Could not find a previous user message to redo or an updated prompt to run.');
     }

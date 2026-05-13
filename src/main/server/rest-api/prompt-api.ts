@@ -10,6 +10,7 @@ const RunPromptSchema = z.object({
   taskId: z.string().min(1, 'Task ID is required'),
   prompt: z.string().min(1, 'Prompt is required'),
   mode: z.string().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 const SavePromptSchema = z.object({
@@ -32,9 +33,9 @@ export class PromptApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, prompt, mode } = parsed;
+        const { projectDir, taskId, prompt, mode, images } = parsed;
 
-        const responses = await this.eventsHandler.runPrompt(projectDir, taskId, prompt, mode);
+        const responses = await this.eventsHandler.runPrompt(projectDir, taskId, prompt, mode, images);
 
         res.status(200).json(responses);
       }),

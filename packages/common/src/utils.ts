@@ -33,6 +33,26 @@ export const extractTextContent = (content: unknown): string => {
   return '';
 };
 
+export const extractImagesFromContent = (content: unknown): string[] | undefined => {
+  if (!Array.isArray(content)) {
+    return undefined;
+  }
+
+  const images = content
+    .filter((part): part is { type: 'image'; image: string; mediaType?: string } => part.type === 'image')
+    .map((part) => {
+      const data = part.image;
+      if (typeof data !== 'string') {
+        return undefined;
+      }
+      const mediaType = part.mediaType || 'image/png';
+      return data.startsWith('data:') ? data : `data:${mediaType};base64,${data}`;
+    })
+    .filter((v): v is string => v !== undefined);
+
+  return images.length > 0 ? images : undefined;
+};
+
 export const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const parseUsageReport = (model: string, report: string): UsageReportData => {

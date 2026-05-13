@@ -166,10 +166,16 @@ const addImportantReminders = async (
     remindersContent = `\n\n<ThisIsImportant>\n${remindersContent}\n</ThisIsImportant>`;
   }
 
-  const updatedFirstUserMessage = {
-    ...userRequestMessage,
-    content: `${userRequestMessage.content}${remindersContent}`,
-  } satisfies UserModelMessage;
+  const updatedFirstUserMessage: UserModelMessage =
+    typeof userRequestMessage.content === 'string'
+      ? {
+          ...userRequestMessage,
+          content: `${userRequestMessage.content}${remindersContent}`,
+        }
+      : {
+          ...userRequestMessage,
+          content: [...userRequestMessage.content, { type: 'text' as const, text: remindersContent }],
+        };
 
   const newMessages = [...messages];
   newMessages[userRequestMessageIndex] = updatedFirstUserMessage;

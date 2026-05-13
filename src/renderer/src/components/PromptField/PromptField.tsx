@@ -18,6 +18,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
+import { AiOutlineClose } from 'react-icons/ai';
 import { clsx } from 'clsx';
 
 import { QueuedPromptsList } from './QueuedPromptsList';
@@ -116,6 +117,7 @@ export interface PromptFieldRef {
   focus: () => void;
   setText: (text: string) => void;
   appendText: (text: string) => void;
+  setImages: (images: string[]) => void;
 }
 
 type Props = {
@@ -130,7 +132,7 @@ type Props = {
   openAgentModelSelector?: (model?: string) => void;
   mode: Mode;
   onModeChanged: (mode: Mode) => void;
-  runPrompt: (prompt: string) => void;
+  runPrompt: (prompt: string, images?: string[]) => void;
   savePrompt: (prompt: string) => Promise<void>;
   showFileDialog: (readOnly: boolean) => void;
   addFiles?: (filePaths: string[], readOnly?: boolean) => void;
@@ -202,6 +204,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     const { t } = useTranslation();
     const { isMobile } = useResponsive();
     const [text, setText] = useState('');
+    const [pastedImages, setPastedImages] = useState<string[]>([]);
     const debouncedText = useDebounce(text, 100);
     const { setText: setSavedText } = usePromptFieldText(baseDir, taskId, (text) => {
       const view = editorRef.current?.view;
@@ -427,12 +430,16 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           }
         }, 0);
       },
+      setImages: (newImages: string[]) => {
+        setPastedImages(newImages);
+      },
     }));
 
     const prepareForNextPrompt = useCallback(() => {
       setTextWithDispatch('');
       setSavedText('');
       setPendingCommand(null);
+      setPastedImages([]);
     }, [setTextWithDispatch, setSavedText]);
 
     const executeCommand = useCallback(
@@ -712,8 +719,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           prepareForNextPrompt();
           handleConfirmCommand();
         } else {
-          runPrompt(text);
+          const images = pastedImages.length > 0 ? pastedImages : undefined;
+          runPrompt(text, images);
           prepareForNextPrompt();
+          setPastedImages([]);
         }
         setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
       }
@@ -721,6 +730,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       scrollToBottom,
       stopRecording,
       text,
+      pastedImages,
       customCommands,
       extensionCommands,
       api,
@@ -1007,18 +1017,31 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             if (item.type.indexOf('image') !== -1) {
               const file = item.getAsFile();
               if (file) {
-                file.arrayBuffer().then((buffer) => {
-                  api.pasteImage(baseDir, taskId, buffer);
-                });
+                if (!AIDER_MODES.includes(mode)) {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    const dataUrl = e.target?.result as string;
+                    if (dataUrl) {
+                      setPastedImages((prev) => [...prev, dataUrl]);
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                } else {
+                  file.arrayBuffer().then((buffer) => {
+                    api.pasteImage(baseDir, taskId, buffer);
+                  });
+                }
               } else {
-                api.pasteImage(baseDir, taskId);
+                if (AIDER_MODES.includes(mode)) {
+                  api.pasteImage(baseDir, taskId);
+                }
               }
               break;
             }
           }
         }
       },
-      [api, baseDir, taskId],
+      [api, baseDir, taskId, mode],
     );
 
     const extensions = useMemo(
@@ -1135,6 +1158,25 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 </>
               )}
             </div>
+          </div>
+        )}
+        {pastedImages.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2 p-2 bg-bg-secondary rounded-md border border-border-default-dark">
+            {pastedImages.map((dataUrl, index) => (
+              <div key={index} className="relative group">
+                <img
+                  src={dataUrl}
+                  alt={t('promptField.pastedImage', { index: index + 1 })}
+                  className="h-20 rounded border border-border-dark-light object-contain"
+                />
+                <button
+                  onClick={() => setPastedImages((prev) => prev.filter((_, i) => i !== index))}
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-bg-tertiary rounded-full flex items-center justify-center text-text-muted-light hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <AiOutlineClose className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
         <div className="relative flex-shrink-0">

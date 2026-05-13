@@ -37,8 +37,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.saveSettings(newSettings);
   });
 
-  ipcMain.on('run-prompt', async (_, baseDir: string, taskId: string, prompt: string, mode?: Mode) => {
-    void eventsHandler.runPrompt(baseDir, taskId, prompt, mode);
+  ipcMain.on('run-prompt', async (_, baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]) => {
+    void eventsHandler.runPrompt(baseDir, taskId, prompt, mode, images);
   });
 
   ipcMain.handle('save-prompt', async (_, baseDir: string, taskId: string, prompt: string) => {
@@ -223,8 +223,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return { message: 'Messages removed' };
   });
 
-  ipcMain.on('redo-user-prompt', (_, baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string) => {
-    void eventsHandler.redoUserPrompt(baseDir, taskId, messageId, mode, updatedPrompt);
+  ipcMain.on('redo-user-prompt', (_, baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]) => {
+    void eventsHandler.redoUserPrompt(baseDir, taskId, messageId, mode, updatedPrompt, updatedImages);
   });
 
   ipcMain.on('resume-task', (_, baseDir: string, taskId: string) => {
