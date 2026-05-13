@@ -2309,7 +2309,7 @@ return; // Do not add the tool if it's never approved
 ⋮----
 // Add extension tools
 ⋮----
-private wrapToolsWithHooks(task: Task, toolSet: ToolSet, abortSignal?: AbortSignal, promptContext?: PromptContext): ToolSet
+private wrapToolsWithHooks(task: Task, profile: AgentProfile, toolSet: ToolSet, abortSignal?: AbortSignal, promptContext?: PromptContext): ToolSet
 ⋮----
 // Use modified input from extension if provided
 ⋮----
@@ -3286,6 +3286,7 @@ import {
   CommandsData,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
+  ContextInfoData,
 } from '@common/types';
 ⋮----
 import type { WindowManager } from '@/window-manager';
@@ -3309,6 +3310,8 @@ constructor(private readonly windowManager?: WindowManager)
 sendProjectStarted(baseDir: string): void
 ⋮----
 sendClearTask(baseDir: string, taskId: string, clearMessages: boolean, clearFiles: boolean): void
+⋮----
+sendContextInfoUpdated(data: ContextInfoData): void
 ⋮----
 // File management events
 sendFileAdded(baseDir: string, taskId: string, file: ContextFile): void
@@ -7330,6 +7333,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Smart compact conversation
 ⋮----
+// Undo context change
+⋮----
 // Handoff conversation
 ⋮----
 // Run code change requests
@@ -8362,6 +8367,10 @@ constructor(
 ⋮----
 // Task-specific storage path - single context per task
 ⋮----
+hasUndoSnapshot(): boolean
+⋮----
+undoContextChange(): ContextMessage[] | null
+⋮----
 public enableAutosave()
 ⋮----
 public disableAutosave()
@@ -8381,10 +8390,10 @@ async addContextFile(contextFile: ContextFile): Promise<ContextFile[]>
 private async resolveContextFilePath(relativePath: string): Promise<string | null>
 ⋮----
 /**
-   * Checks whether a resolved absolute path matches any already-added context file.
+   * Finds an already-added context file matching the given resolved absolute path, if any.
    * Accounts for files that may have been resolved from either taskDir or projectDir.
    */
-private isContextFileAlreadyAdded(absolutePath: string): boolean
+private findExistingContextFile(absolutePath: string): ContextFile | undefined
 ⋮----
 dropContextFile(filePath: string): ContextFile[]
 ⋮----
@@ -8402,7 +8411,7 @@ async getContextMessages(): Promise<ContextMessage[]>
 ⋮----
 clearContextFiles(save = true)
 ⋮----
-clearMessages(save = true)
+clearMessages(save = true, createSnapshot = true)
 ⋮----
 removeMessageById(messageId: string): string[]
 ⋮----
@@ -9085,9 +9094,13 @@ public sendUserMessage(data: UserMessageData)
 ⋮----
 public sendToolMessage(data: ToolData)
 ⋮----
-public async clearContext(addToHistory = false, updateContextInfo = true, updateTaskState = true)
+public async clearContext(addToHistory = false, updateContextInfo = true, updateTaskState = true, createSnapshot = true)
 ⋮----
 public async resetContext()
+⋮----
+sendContextInfoUpdated()
+⋮----
+async undoContextChange(): Promise<boolean>
 ⋮----
 /**
    * Load context messages into the task context and send them to the UI.
@@ -11119,6 +11132,8 @@ async compactConversation(baseDir: string, taskId: string, mode: Mode, customIns
 ⋮----
 async smartCompactConversation(baseDir: string, taskId: string): Promise<void>
 ⋮----
+async undoContextChange(baseDir: string, taskId: string): Promise<boolean>
+⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
 async runCodeChangeRequests(baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean): Promise<void>
@@ -11925,8 +11940,6 @@ export class ProgressWindow
 ⋮----
 constructor(options:
 ⋮----
-// Send icon path and splash image to renderer once loaded
-⋮----
 on(event: 'ready', callback: () => void): void
 ⋮----
 setDetail(value: string): void
@@ -12230,6 +12243,7 @@ import {
   CommandOutputData,
   CommandsData,
   ContextFilesUpdatedData,
+  ContextInfoData,
   ContextMenuParams,
   CreateTaskParams,
   ExtensionUIRefreshData,
@@ -12362,6 +12376,7 @@ import {
   CloudflareTunnelStatus,
   CommandOutputData,
   ContextFilesUpdatedData,
+  ContextInfoData,
   ContextMenuParams,
   CommandsData,
   EditFormat,
@@ -12439,6 +12454,7 @@ type EventDataMap = {
   log: LogData;
   'system-log': SystemLogData;
   'context-files-updated': ContextFilesUpdatedData;
+  'context-info-updated': ContextInfoData;
   'commands-updated': CommandsData;
   'update-autocompletion': AutocompletionData;
   'ask-question': QuestionData;
@@ -12611,6 +12627,8 @@ compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructi
 ⋮----
 async smartCompactConversation(baseDir: string, taskId: string): Promise<void>
 ⋮----
+async undoContextChange(baseDir: string, taskId: string): Promise<boolean>
+⋮----
 async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void>
 ⋮----
 runCodeChangeRequests(baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean): void
@@ -12641,6 +12659,7 @@ addResponseChunkListener(baseDir: string, taskId: string, callback: (data: Respo
 addResponseCompletedListener(baseDir: string, taskId: string, callback: (data: ResponseCompletedData) => void): () => void
 addLogListener(baseDir: string, taskId: string, callback: (data: LogData) => void): () => void
 addContextFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void): () => void
+addContextInfoUpdatedListener(baseDir: string, taskId: string, callback: (data: ContextInfoData) => void): () => void
 addUpdatedFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void
 addSkillsUpdatedListener(baseDir: string, taskId: string, callback: (data: SkillsUpdatedData) => void): () => void
 addCommandsUpdatedListener(baseDir: string, callback: (data: CommandsData) => void): () => void
@@ -13320,6 +13339,8 @@ File: src/renderer/src/components/common/Button.tsx
 import { ReactNode, MouseEvent } from 'react';
 import { twMerge } from 'tailwind-merge';
 ⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
 export type ButtonVariant = 'contained' | 'text' | 'outline';
 export type ButtonColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'xs';
@@ -13335,6 +13356,7 @@ type Props = {
   size?: ButtonSize;
   type?: 'button' | 'submit' | 'reset';
   title?: string;
+  tooltip?: string;
 };
 ⋮----
 export const Button = ({
@@ -13348,7 +13370,10 @@ export const Button = ({
   size = 'md',
   type = 'button',
   title,
+  tooltip,
 }: Props) =>
+⋮----
+const renderButton = () =>
 ⋮----
 className=
 
@@ -15170,6 +15195,7 @@ import { FaInfoCircle, FaExclamationTriangle, FaExclamationCircle } from 'react-
 import { MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { LogMessage } from '@common/types';
+import { clsx } from 'clsx';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 import { MessageActions } from './MessageActions';
@@ -15192,17 +15218,21 @@ const renderMessage = () => (
     </div>
   );
 ⋮----
-<CopyMessageButton content=
+content=
+⋮----
+className=
 
 ================
 File: src/renderer/src/components/message/MessageActions.tsx
 ================
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { MdUndo } from 'react-icons/md';
 ⋮----
 import { Button } from '../common/Button';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
+import { useTaskStore } from '@/stores/taskStore';
 ⋮----
 type Props = {
   actionIds: string[];
@@ -15218,6 +15248,10 @@ const handleContinueRebase = () =>
 const handleResolveConflictsWithAgent = () =>
 ⋮----
 const handleRebaseWorktree = () =>
+⋮----
+const handleUndoContextChange = () =>
+⋮----
+<Button key=
 
 ================
 File: src/renderer/src/components/message/MessageBar.tsx
@@ -16854,6 +16888,7 @@ import { OpenAiCompatibleProvider } from '@common/agent';
 import { ReasoningEffort } from '@common/types';
 ⋮----
 import { Select, Option } from '@/components/common/Select';
+import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 ⋮----
 type Props = {
@@ -16863,7 +16898,11 @@ type Props = {
 ⋮----
 const handleReasoningEffortChange = (value: string) =>
 ⋮----
+const handleTrackTokenUsageChange = (trackTokenUsage: boolean) =>
+⋮----
 <span>
+⋮----
+<Checkbox label=
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/OpenAiCompatibleModelOverrides.tsx
@@ -18802,7 +18841,7 @@ File: src/renderer/src/components/project/TaskControlBar.tsx
 import { AIDER_MODES, Mode, TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { FaInfoCircle } from 'react-icons/fa';
-import { MdPlaylistRemove } from 'react-icons/md';
+import { MdPlaylistRemove, MdUndo } from 'react-icons/md';
 import { VscTerminal } from 'react-icons/vsc';
 import { clsx } from 'clsx';
 ⋮----
@@ -18810,7 +18849,6 @@ import { AgentSelector } from '@/components/AgentSelector';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
 import { AutoApprove } from '@/components/PromptField/AutoApprove';
 import { Button } from '@/components/common/Button';
-import { Tooltip } from '@/components/ui/Tooltip';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
@@ -18828,6 +18866,8 @@ type Props = {
   onToggleTaskInfoPanel?: () => void;
   onAutoApproveChanged?: (autoApprove: boolean) => void;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
+  canUndoContextChange?: boolean;
+  onUndoContextChange?: () => void;
 };
 ⋮----
 const handleAutoApproveLockChanged = (locked: boolean) =>
@@ -21527,6 +21567,7 @@ import { MdOutlineCommit } from 'react-icons/md';
 import { RiAlertLine } from 'react-icons/ri';
 import { DiffViewMode, UpdatedFile } from '@common/types';
 import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
@@ -21540,7 +21581,12 @@ type Props = {
   comments?: DiffComment[];
   onEditComment?: (info: { commentId: string; viewportRect: { top: number; left: number } }) => void;
   onRemoveComment?: (commentId: string) => void;
+  stickyHeader?: boolean;
 };
+⋮----
+export const DiffFileItem = (
+⋮----
+className=
 
 ================
 File: src/renderer/src/components/Workspace/DiffFilesSidebar.tsx
@@ -23126,7 +23172,15 @@ import { useCallback, useEffect } from 'react';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import type { AutocompletionData, ContextFilesUpdatedData, ModelsData, QuestionData, QueuedPromptsUpdatedData, TokensInfoData } from '@common/types';
+import type {
+  AutocompletionData,
+  ContextFilesUpdatedData,
+  ContextInfoData,
+  ModelsData,
+  QuestionData,
+  QueuedPromptsUpdatedData,
+  TokensInfoData,
+} from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
@@ -24466,6 +24520,7 @@ export interface TaskState {
   aiderModelsData: ModelsData | null;
   lastActiveAt: Date | null;
   queuedPrompts: QueuedPromptData[];
+  canUndoContextChange: boolean;
 }
 ⋮----
 interface TaskStore {
@@ -27063,18 +27118,12 @@ File: src/renderer/progress.html
       border-radius: 12px;
       padding: 32px;
       width: 100%;
+      aspect-ratio: 500 / 330;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
       -webkit-app-region: no-drag;
-    }
-
-    .container::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(34, 36, 49, 0.7);
-      border-radius: 12px;
-      pointer-events: none;
-      z-index: 1;
     }
 
     #splash-video {
@@ -27085,29 +27134,6 @@ File: src/renderer/progress.html
       object-fit: cover;
       border-radius: 12px;
       z-index: 0;
-    }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 32px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .brand-icon {
-      width: 72px;
-      height: 72px;
-      border-radius: 14px;
-    }
-
-    .brand-name {
-      font-size: 20px;
-      font-weight: 600;
-      color: #f1f3f5;
-      letter-spacing: -0.3px;
     }
 
     .detail {
@@ -27221,13 +27247,6 @@ File: src/renderer/progress.html
 <body>
   <div class="container">
     <video id="splash-video" autoplay muted loop></video>
-    <div class="brand">
-      <div class="brand-icon-wrapper">
-        <img class="brand-icon" id="brand-icon" src="" alt="AiderDesk">
-      </div>
-      <span class="brand-name">AiderDesk</span>
-    </div>
-
     <div class="detail">
       <span class="detail-text" id="detail-text">Initializing...</span>
     </div>
@@ -27242,17 +27261,9 @@ File: src/renderer/progress.html
   <script>
     const { ipcRenderer } = require('electron');
 
-    ipcRenderer.on('set-icon-path', (_, iconPath) => {
-      document.getElementById('brand-icon').src = iconPath;
-    });
-
     ipcRenderer.on('set-splash-image', (_, imagePath) => {
       const video = document.getElementById('splash-video');
       video.src = imagePath;
-    });
-
-    ipcRenderer.on('set-title', (_, title) => {
-      // Title is no longer displayed, but keep handler for compatibility
     });
 
     ipcRenderer.on('set-detail', (_, value) => {
