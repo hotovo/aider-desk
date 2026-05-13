@@ -156,7 +156,7 @@ mindmap
 
 ## 🤝 Contributing
 
-We welcome contributions from engineers who share our vision of transparent, steerable AI! Whether it's a bug fix, a new Extension, or a core feature enhancement, please check out our Contributing Guidelines to get started.
+We welcome contributions from engineers who share our vision of transparent, steerable AI! Whether it's a bug fix, a new Extension, or a core feature enhancement, please check out our [Contributing Guidelines](CONTRIBUTING.md) to get started.
 
 ---
 
@@ -170,4 +170,4 @@ Thank you ❤️
 
 ## 📄 License
 
-AiderDesk is released under the MIT License.
+AiderDesk is released under the [Apache License 2.0](LICENSE).
