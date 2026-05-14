@@ -11,6 +11,7 @@
 - added sticky file path header to diff file items
 - updated onboarding feature descriptions
 - added support for sending images within user messages in Agent mode
+- improved process termination on POSIX by using process groups
 
 ## [0.65.0]
 

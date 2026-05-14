@@ -610,6 +610,20 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
 
       const absoluteCwd = expandedCwd ? path.resolve(task.getTaskDir(), expandedCwd) : task.getTaskDir();
 
+      const isPosix = process.platform !== 'win32';
+
+      const killProcess = (pid: number) => {
+        if (isPosix) {
+          try {
+            process.kill(-pid, 'SIGKILL');
+          } catch {
+            treeKill(pid, 'SIGKILL');
+          }
+        } else {
+          treeKill(pid, 'SIGKILL');
+        }
+      };
+
       return await new Promise((resolve) => {
         let stdout = '';
         let stderr = '';
@@ -649,7 +663,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           }
 
           if (childProcess?.pid) {
-            treeKill(childProcess.pid, 'SIGKILL');
+            killProcess(childProcess.pid);
           }
 
           // Use the standard resolution method with proper type
@@ -667,6 +681,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             cwd: absoluteCwd,
             env: { ...process.env, TERM: 'dumb', DEBIAN_FRONTEND: 'noninteractive', PATH: getShellPath() },
             stdio: ['ignore', 'pipe', 'pipe'], // Explicitly pipe stdout and stderr to capture output from piped commands
+            detached: isPosix,
             signal: abortSignal,
           });
 
@@ -677,7 +692,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             }
 
             if (childProcess?.pid) {
-              treeKill(childProcess.pid, 'SIGKILL');
+              killProcess(childProcess.pid);
             }
             stderr = `Error: Command timed out after ${timeout}ms. Consider increasing the timeout parameter.`;
             exitCode = 124;
