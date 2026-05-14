@@ -2185,9 +2185,8 @@ import {
   type TypedToolResult,
   wrapLanguageModel,
 } from 'ai';
-import { delay, extractProviderModel, extractServerNameToolName } from '@common/utils';
+import { delay, extractProviderModel, extractServerNameToolName, extractTextContent } from '@common/utils';
 import { LlmProviderName } from '@common/agent';
-import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
@@ -2213,6 +2212,7 @@ import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 import {
   ANSWER_RESPONSE_START_TAG,
+  estimateMessageTokens,
   extractPromptContextFromToolResult,
   findLastUserMessage,
   isNetworkError,
@@ -2383,6 +2383,7 @@ async runAgent(
     systemPrompt?: string,
     includeInContext = true,
     abortSignal?: AbortSignal,
+    images?: string[],
 ): Promise<ContextMessage[]>
 ⋮----
 // Store resolved provider for use in retry logic
@@ -2503,9 +2504,6 @@ async estimateTokens(task: Task, profile: AgentProfile): Promise<number>
 inputSchema: tool.inputSchema ? tool.inputSchema : '', // Get Zod schema description
 ⋮----
 // Add tool definitions and system prompt to the beginning
-⋮----
-role: msg.role === 'tool' ? 'user' : msg.role, // Map 'tool' role to user message as gpt-tokenizer does not support tool messages
-content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content), // Handle potential non-string content if necessary
 ⋮----
 interrupt()
 ⋮----
@@ -2947,6 +2945,12 @@ export const readFileContent = async (
 export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50, maxTokens = 50000): Promise<string> =>
 ⋮----
 export const isNetworkError = (error: unknown): boolean =>
+⋮----
+type CountableMessage = { role: string; content: unknown };
+⋮----
+const extractToolResultText = (output: unknown): string =>
+⋮----
+export const estimateMessageTokens = (messages: CountableMessage[]): number =>
 
 ================
 File: src/main/connector/connector-manager.ts
@@ -8631,7 +8635,7 @@ import {
   UserMessageData,
   WorkingMode,
 } from '@common/types';
-import { extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
@@ -8825,6 +8829,7 @@ public async runPrompt(
     addToInputHistory = true,
     userMessageId = uuidv4(),
     sendNotification = true,
+    images?: string[],
 ): Promise<ResponseCompletedData[]>
 ⋮----
 // Queue the prompt for later execution
@@ -8855,6 +8860,7 @@ public async runPromptInAgent(
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
     sendNotification = true,
+    images?: string[],
 ): Promise<ResponseCompletedData[]>
 ⋮----
 // send messages to connectors
@@ -9156,7 +9162,7 @@ public addToolMessage(
 ⋮----
 private updateTotalCosts(usageReport: UsageReportData)
 ⋮----
-addUserMessage(id: string, content: string, promptContext?: PromptContext)
+addUserMessage(id: string, content: string, promptContext?: PromptContext, images?: string[])
 ⋮----
 public async removeLastMessage()
 ⋮----
@@ -9166,7 +9172,7 @@ public async removeMessagesUpTo(messageId: string): Promise<string[]>
 ⋮----
 public sendTaskMessageRemoved(messageIds: string[])
 ⋮----
-public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string)
+public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[])
 ⋮----
 // No need to await runPrompt here, let it run in the background
 ⋮----
@@ -11124,7 +11130,7 @@ async removeMessage(baseDir: string, taskId: string, messageId: string): Promise
 ⋮----
 async removeMessagesUpTo(baseDir: string, taskId: string, messageId: string): Promise<void>
 ⋮----
-async redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string): Promise<void>
+async redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]): Promise<void>
 ⋮----
 async resumeTask(baseDir: string, taskId: string): Promise<void>
 ⋮----
@@ -11154,7 +11160,7 @@ async pasteImage(baseDir: string, taskId: string, imageBuffer?: Buffer): Promise
 ⋮----
 applyEdits(baseDir: string, taskId: string, edits: FileEdit[]): void
 ⋮----
-async runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode): Promise<ResponseCompletedData[]>
+async runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): Promise<ResponseCompletedData[]>
 ⋮----
 async savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
 ⋮----
@@ -12544,9 +12550,9 @@ stopProject(baseDir: string): void
 ⋮----
 restartProject(baseDir: string): void
 resetTask(baseDir: string, taskId: string): void
-runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode): void
+runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): void
 savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
-redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string): void
+redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]): void
 resumeTask(baseDir: string, taskId: string): void
 answerQuestion(baseDir: string, taskId: string, answer: string): void
 removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void
@@ -15445,7 +15451,7 @@ type Props = {
   inProgress: boolean;
   removeMessage: (message: Message) => void;
   redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string) => void;
+  editLastUserMessage: (content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -15485,7 +15491,7 @@ type Props = {
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
   redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string) => void;
+  editLastUserMessage: (content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -15971,6 +15977,7 @@ type Props = {
 ================
 File: src/renderer/src/components/message/UserMessageBlock.tsx
 ================
+import { useState } from 'react';
 import { FaRegUser } from 'react-icons/fa';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -15988,10 +15995,14 @@ type Props = {
   compact?: boolean;
   onRemove?: () => void;
   onRedo?: () => void;
-  onEdit?: (content: string) => void;
+  onEdit?: (content: string, images?: string[]) => void;
   onFork?: () => void;
   onRemoveUpTo?: () => void;
 };
+⋮----
+const handleImageClick = (index: number) =>
+⋮----
+const handleExpandedClick = () =>
 ⋮----
 export const UserMessageBlock = (
 ⋮----
@@ -16218,7 +16229,7 @@ type Props = {
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
   redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string) => void;
+  editLastUserMessage: (content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -19470,6 +19481,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
+import { AiOutlineClose } from 'react-icons/ai';
 import { clsx } from 'clsx';
 ⋮----
 import { QueuedPromptsList } from './QueuedPromptsList';
@@ -19492,6 +19504,7 @@ export interface PromptFieldRef {
   focus: () => void;
   setText: (text: string) => void;
   appendText: (text: string) => void;
+  setImages: (images: string[]) => void;
 }
 ⋮----
 type Props = {
@@ -19506,7 +19519,7 @@ type Props = {
   openAgentModelSelector?: (model?: string) => void;
   mode: Mode;
   onModeChanged: (mode: Mode) => void;
-  runPrompt: (prompt: string) => void;
+  runPrompt: (prompt: string, images?: string[]) => void;
   savePrompt: (prompt: string) => Promise<void>;
   showFileDialog: (readOnly: boolean) => void;
   addFiles?: (filePaths: string[], readOnly?: boolean) => void;
