@@ -12,6 +12,7 @@
 - updated onboarding feature descriptions
 - added support for sending images within user messages in Agent mode
 - improved process termination on POSIX by using process groups
+- updated Requesty provider to use costs from the API response
 
 ## [0.65.0]
 

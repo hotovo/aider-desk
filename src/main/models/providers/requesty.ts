@@ -210,7 +210,7 @@ export const getRequestyUsageReport = (
   const sentTokens = totalSentTokens - cacheReadTokens;
 
   // Calculate cost internally with already deducted sentTokens
-  const messageCost = calculateRequestyCost(model, sentTokens, receivedTokens, cacheWriteTokens, cacheReadTokens);
+  const messageCost = requesty?.usage?.cost ?? calculateRequestyCost(model, sentTokens, receivedTokens, cacheWriteTokens, cacheReadTokens);
 
   return {
     model: `${provider.id}/${model.id}`,
