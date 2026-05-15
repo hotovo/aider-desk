@@ -1668,6 +1668,8 @@ false, // not finished yet
 ⋮----
 // Check allowed patterns - if matches, skip approval and execute directly
 ⋮----
+const killProcess = (pid: number) =>
+⋮----
 const cleanup = () =>
 ⋮----
 // Remove abort listener to prevent memory leaks
