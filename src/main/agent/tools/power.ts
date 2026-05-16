@@ -461,14 +461,25 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         rgArgs.push('-g', filePattern);
         rgArgs.push('--', searchTerm, '.');
 
+        const taskDir = task.getTaskDir();
+        logger.debug('Executing ripgrep:', {
+          binary: RIPGREP_BINARY_PATH,
+          args: rgArgs,
+          cwd: taskDir,
+        });
+
         const { stdout, stderr } = await execFileAsync(RIPGREP_BINARY_PATH, rgArgs, {
-          cwd: task.getTaskDir(),
+          cwd: taskDir,
           env: { ...process.env, TERM: 'dumb', PATH: getShellPath() },
           maxBuffer: 10 * 1024 * 1024,
           windowsHide: true,
         });
 
+        logger.debug('ripgrep stdout raw:', { stdout: stdout.substring(0, 2000) });
+        logger.debug('ripgrep stderr:', { stderr: stderr.substring(0, 2000) });
+
         const outputLines = stdout.split('\n').filter(Boolean);
+        logger.debug('outputLines count:', { count: outputLines.length, lines: outputLines.slice(0, 20) });
         if (outputLines.length === 0) {
           return `No matches found for pattern '${searchTerm}' in files matching '${filePattern}'.`;
         }
@@ -481,9 +492,17 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         }> = [];
 
         // rg --no-heading -n output: "path:linenum:content" for matches, "path-linenum-content" for context
+        // Strip trailing \r from Windows CRLF line endings
         const outputLineRegex = /^(.+?)([:-])(\d+)\2(.*)$/;
 
-        for (const line of outputLines) {
+        for (let rawLine of outputLines) {
+          // Fix: On Windows, stdout from ripgrep uses \r\n line endings.
+          // After split('\n'), each line retains a trailing \r, which
+          // causes the regex $ anchor to not match. Strip it here.
+          if (rawLine.endsWith('\r')) {
+            rawLine = rawLine.slice(0, -1);
+          }
+          const line = rawLine;
           const match = outputLineRegex.exec(line);
           if (!match) {
             continue;
