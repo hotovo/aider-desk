@@ -15,6 +15,8 @@
 - updated Requesty provider to use costs from the API response
 - improved handling of missing git configuration and empty repositories
 - integrated ripgrep for grep tool searches
+- correctly using the parent task when subtask agent creates subtask
+- sorting the list_task tool result tasks by descending updated date
 
 ## [0.65.0]
 

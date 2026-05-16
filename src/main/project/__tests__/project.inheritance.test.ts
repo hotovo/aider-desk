@@ -152,4 +152,44 @@ describe('Project Inheritance', () => {
     const task = await project.createNewTask({ parentId: '' });
     expect(task.parentId).toBeNull();
   });
+
+  it('should flatten subtask-of-subtask to use top-level parent', async () => {
+    const parentTask = {
+      task: {
+        id: 'top-level-parent',
+        parentId: null,
+        workingMode: 'local',
+        mainModel: 'parent-model',
+      } as TaskData,
+      saveTask: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const subtaskTask = {
+      task: {
+        id: 'subtask-id',
+        parentId: 'top-level-parent',
+        workingMode: 'local',
+        mainModel: 'parent-model',
+      } as TaskData,
+      saveTask: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const internalTask = (project as any).getTask(INTERNAL_TASK_ID);
+    (project as any).getTask = vi.fn((id) => {
+      if (id === 'top-level-parent') {
+        return parentTask;
+      }
+      if (id === 'subtask-id') {
+        return subtaskTask;
+      }
+      if (id === INTERNAL_TASK_ID) {
+        return internalTask;
+      }
+      return null;
+    });
+
+    const newTask = await project.createNewTask({ parentId: 'subtask-id' });
+
+    expect(newTask.parentId).toBe('top-level-parent');
+  });
 });

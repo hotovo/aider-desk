@@ -85,6 +85,11 @@ export class Project {
         throw new Error(`Parent task with id ${normalizedParams.parentId} not found`);
       }
 
+      // Flatten: if the parent is itself a subtask, use its parent instead for parentId
+      if (parentTask.task.parentId) {
+        normalizedParams.parentId = parentTask.task.parentId;
+      }
+
       if (!parentTask.task.createdAt) {
         // when a subtask for non-saved task is created we need to save the parent task first
         await parentTask.saveTask();

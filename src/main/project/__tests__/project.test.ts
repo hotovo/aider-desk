@@ -253,17 +253,16 @@ describe('Project - createNewTask', () => {
       expect(mockEventManager.sendTaskCreated).toHaveBeenCalledWith(newTask, undefined);
     });
 
-    it('should allow creating subtasks from a parent that itself has a parent (nested subtasks)', async () => {
-      // Setup: Create a three-level hierarchy
+    it('should flatten subtask-of-subtask to use top-level parent', async () => {
+      // Setup: Create a two-level hierarchy
       const grandparentTask = await project.createNewTask();
       const parentTask = await project.createNewTask({ parentId: grandparentTask.id });
 
-      // Act: Create a subtask of the parent task
+      // Act: Create a subtask of the parent task (which is itself a subtask)
       const subtask = await project.createNewTask({ parentId: parentTask.id });
 
-      // Assert: The subtask should have the correct parentId (parent task's id, not grandparent's)
-      expect(subtask.parentId).toBe(parentTask.id);
-      expect(grandparentTask.id).not.toBe(subtask.parentId);
+      // Assert: The subtask should be flattened to the grandparent (top-level parent)
+      expect(subtask.parentId).toBe(grandparentTask.id);
     });
   });
 

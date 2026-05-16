@@ -59,6 +59,13 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           allTasks = allTasks.filter((t) => t.state === state);
         }
 
+        // Sort by updatedAt descending (most recently updated first)
+        allTasks.sort((a, b) => {
+          const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+          const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+          return dateB - dateA;
+        });
+
         // Apply pagination
         const startIndex = Math.max(0, offset);
         const endIndex = startIndex + Math.max(0, limit || allTasks.length);
@@ -204,9 +211,6 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     },
   });
 
-  // Determine if parentTaskId should be available (only for top-level tasks)
-  const isSubtask = task.task.parentId !== null;
-
   const autoGenerateTaskName = settings.taskSettings.autoGenerateTaskName;
   const nameProperty = autoGenerateTaskName
     ? z.string().optional().describe('Optional concise name for the new task. If not provided, the task name will be auto-generated from the prompt.')
@@ -222,59 +226,58 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     })
     .join(',');
 
-  const CreateTaskInputSchema = z.object({
-    prompt: z.string().describe('The initial prompt for the new task'),
-    name: nameProperty,
-    agentProfileId: z
-      .string()
-      .optional()
-      .describe(`Optional agent profile ID or name. Available agents: ${availableAgents}. Use only when explicitly requested by the user.`),
-    modelId: z
-      .string()
-      .optional()
-      .describe('Optional model ID in the format `provider/model` to use for the task. Use only when explicitly requested by the user.'),
-    mode: z.string().optional().default('agent').describe('Optional mode to use for the task. Use only when explicitly requested by the user.'),
-    asSubtask: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe('If true, the task will be created as a subtask of the current task. Use only when explicitly requested by the user.'),
-    autoApprove: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe(
-        'If true, the task will be created with auto-approve enabled. Set autoApprove to true when no planning is needed, just execution of the task with all the work.',
-      ),
-    worktree: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe('If true, the task will be created in worktree mode. Use only when explicitly requested by the user.'),
-    executeAndWait: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe('If true, the task will be created and executed immediately and the tool will wait for it to complete before returning.'),
-    executeInBackground: z.boolean().optional().default(false).describe('If true, the task will be created and executed in the background.'),
-  });
-
-  const CreateTaskWithParentInputSchema = CreateTaskInputSchema.extend({
-    parentTaskId: z
-      .string()
-      .nullable()
-      .optional()
-      .describe(
-        `Optional ID of the parent task. If provided, the new task will be created as a subtask of the specified parent. Use the current task's ID (${task.taskId}) to create a subtask of the current task. When asSubtask is true, this tasks ID will be used automatically.`,
-      ),
-  });
-
   const createTaskTool = tool({
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_CREATE_TASK],
-    inputSchema: isSubtask ? CreateTaskInputSchema : CreateTaskWithParentInputSchema,
+    inputSchema: z.object({
+      prompt: z.string().describe('The initial prompt for the new task'),
+      name: nameProperty,
+      agentProfileId: z
+        .string()
+        .optional()
+        .describe(`Optional agent profile ID or name. Available agents: ${availableAgents}. Use only when explicitly requested by the user.`),
+      modelId: z
+        .string()
+        .optional()
+        .describe('Optional model ID in the format `provider/model` to use for the task. Use only when explicitly requested by the user.'),
+      mode: z.string().optional().default('agent').describe('Optional mode to use for the task. Use only when explicitly requested by the user.'),
+      asSubtask: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('If true, the task will be created as a subtask of the current task. Use only when explicitly requested by the user.'),
+      parentTaskId: z
+        .string()
+        .nullable()
+        .optional()
+        .describe(
+          'Optional ID of the parent task. If provided, the new task will be created as a subtask of the specified parent. When asSubtask is specified as true, this is not needed as parent ID is resolved automatically.',
+        ),
+      autoApprove: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          'If true, the task will be created with auto-approve enabled. Set autoApprove to true when no planning is needed, just execution of the task with all the work.',
+        ),
+      worktree: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('If true, the task will be created in worktree mode. Use only when explicitly requested by the user.'),
+      executeAndWait: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('If true, the task will be created and executed immediately and the tool will wait for it to complete before returning.'),
+      executeInBackground: z.boolean().optional().default(false).describe('If true, the task will be created and executed in the background.'),
+    }),
     execute: async (input, { toolCallId }) => {
       const { prompt, name, agentProfileId, modelId, mode = 'agent', asSubtask = false, autoApprove, worktree, executeAndWait, executeInBackground } = input;
-      const parentTaskId: string | null | undefined = asSubtask ? task.taskId : 'parentTaskId' in input ? (input.parentTaskId as string | null) : undefined;
+      const parentTaskId: string | null | undefined = asSubtask
+        ? task.task.parentId || task.taskId
+        : 'parentTaskId' in input
+          ? (input.parentTaskId as string | null)
+          : undefined;
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_CREATE_TASK, input, undefined, undefined, promptContext);
 
       const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_CREATE_TASK}`;
