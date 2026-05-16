@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
+import AdmZip from 'adm-zip';
+
 import logger from '@/logger';
 import { AIDER_DESK_BIN_DIR, RIPGREP_BINARY_PATH } from '@/constants';
 
@@ -80,9 +82,13 @@ const downloadRipgrep = async (): Promise<void> => {
         strip: 1,
       });
     } else if (filename.endsWith('.zip')) {
-      const AdmZip = (await import('adm-zip')).default;
       const zip = new AdmZip(tempFile);
-      zip.extractAllTo(AIDER_DESK_BIN_DIR, true);
+      const entry = zip.getEntry(rgExeName) || zip.getEntries().find((e) => e.entryName.endsWith(rgExeName));
+      if (entry) {
+        fs.writeFileSync(path.join(AIDER_DESK_BIN_DIR, rgExeName), entry.getData());
+      } else {
+        throw new Error(`Could not find ${rgExeName} in zip archive`);
+      }
     }
 
     if (process.platform !== 'win32') {
