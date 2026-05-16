@@ -1,8 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { spawn } from 'child_process';
+import { spawn, execFile } from 'child_process';
 import { ChildProcess } from 'node:child_process';
+import { promisify } from 'util';
 import { Buffer } from 'node:buffer';
+
+const execFileAsync = promisify(execFile);
 
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
@@ -29,10 +32,11 @@ import { ApprovalManager } from './approval-manager';
 import { search } from '@/utils/probe';
 import { Task } from '@/task';
 import logger from '@/logger';
-import { filterIgnoredFiles, scrapeWeb } from '@/utils';
+import { ensureRipgrepBinary, filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellPath } from '@/utils/shell';
 import { expandTilde, readFileContent, truncateToolResult } from '@/agent/utils';
+import { RIPGREP_BINARY_PATH } from '@/constants';
 
 /**
  * File lock map to prevent race conditions when multiple edits target the same file.
@@ -438,23 +442,35 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         return `Grep search for '${searchTerm}' in files matching '${filePattern}' denied by user. Reason: ${userInput}`;
       }
 
-      try {
-        const files = await glob(filePattern, {
-          cwd: task.getTaskDir(),
-          nodir: true,
-          absolute: true,
-          signal: abortSignal,
-        });
+      const rgAvailable = await ensureRipgrepBinary();
+      if (!rgAvailable) {
+        return 'Error: ripgrep binary is not available. Please try again or check the logs for details.';
+      }
 
-        if (files.length === 0) {
-          return `No files found matching pattern '${filePattern}'.`;
+      try {
+        const rgArgs: string[] = ['--no-heading', '--line-number', '--color', 'never', '--max-count', String(maxResults)];
+
+        if (!caseSensitive) {
+          rgArgs.push('-i');
         }
 
-        // Filter out ignored files in batch
-        const filteredFiles = await filterIgnoredFiles(task.getTaskDir(), files);
+        if (contextLines > 0) {
+          rgArgs.push('-C', String(contextLines));
+        }
 
-        if (filteredFiles.length === 0) {
-          return `No files found matching pattern '${filePattern}' (all files were ignored).`;
+        rgArgs.push('-g', filePattern);
+        rgArgs.push('--', searchTerm, '.');
+
+        const { stdout, stderr } = await execFileAsync(RIPGREP_BINARY_PATH, rgArgs, {
+          cwd: task.getTaskDir(),
+          env: { ...process.env, TERM: 'dumb', PATH: getShellPath() },
+          maxBuffer: 10 * 1024 * 1024,
+          windowsHide: true,
+        });
+
+        const outputLines = stdout.split('\n').filter(Boolean);
+        if (outputLines.length === 0) {
+          return `No matches found for pattern '${searchTerm}' in files matching '${filePattern}'.`;
         }
 
         const results: Array<{
@@ -463,44 +479,51 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           lineContent: string;
           context?: string[];
         }> = [];
-        const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // Simpler for line-by-line test
 
-        for (const absoluteFilePath of filteredFiles) {
-          const fileContent = await fs.readFile(absoluteFilePath, {
-            encoding: 'utf8',
-            signal: abortSignal,
-          });
-          const lines = fileContent.split('\n');
-          const relativeFilePath = path.relative(task.getTaskDir(), absoluteFilePath);
+        // rg --no-heading -n output: "path:linenum:content" for matches, "path-linenum-content" for context
+        const outputLineRegex = /^(.+?)([:-])(\d+)\2(.*)$/;
 
-          for (let index = 0; index < lines.length; index++) {
-            const line = lines[index];
-            if (searchRegex.test(line)) {
-              if (results.length >= maxResults) {
-                break;
+        for (const line of outputLines) {
+          const match = outputLineRegex.exec(line);
+          if (!match) {
+            continue;
+          }
+
+          const [, rawFilePath, separator, lineNumStr, content] = match;
+          const lineNum = parseInt(lineNumStr, 10);
+          if (isNaN(lineNum)) {
+            continue;
+          }
+
+          const filePath = rawFilePath.startsWith('./') ? rawFilePath.slice(2) : rawFilePath;
+
+          const isMatch = separator === ':';
+
+          if (isMatch) {
+            results.push({
+              filePath,
+              lineNumber: lineNum,
+              lineContent: content,
+            });
+          } else {
+            const lastResult = results[results.length - 1];
+            if (lastResult) {
+              if (!lastResult.context) {
+                lastResult.context = [];
               }
-              const matchResult: {
-                filePath: string;
-                lineNumber: number;
-                lineContent: string;
-                context?: string[];
-              } = {
-                filePath: relativeFilePath,
-                lineNumber: index + 1,
-                lineContent: line,
-              };
-
-              if (contextLines > 0) {
-                const start = Math.max(0, index - contextLines);
-                const end = Math.min(lines.length - 1, index + contextLines);
-                matchResult.context = lines.slice(start, end + 1);
-              }
-              results.push(matchResult);
+              lastResult.context.push(content);
             }
+          }
+
+          if (results.length >= maxResults) {
+            break;
           }
         }
 
         if (results.length === 0) {
+          if (stderr.trim()) {
+            return `Error during grep: ${stderr.trim()}`;
+          }
           return `No matches found for pattern '${searchTerm}' in files matching '${filePattern}'.`;
         }
 
@@ -513,24 +536,24 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           grouped[r.filePath].push(r);
         }
 
-        const lines: string[] = [];
-        lines.push(`## Grep Results: \`${searchTerm}\` in \`${filePattern}\` (${results.length} matches)`);
-        lines.push('');
+        const markdownLines: string[] = [];
+        markdownLines.push(`## Grep Results: \`${searchTerm}\` in \`${filePattern}\` (${results.length} matches)`);
+        markdownLines.push('');
 
         for (const [filePath, matches] of Object.entries(grouped)) {
-          lines.push(`### ${filePath} (${matches.length} ${matches.length === 1 ? 'match' : 'matches'})`);
+          markdownLines.push(`### ${filePath} (${matches.length} ${matches.length === 1 ? 'match' : 'matches'})`);
           for (const match of matches) {
             const escapedContent = match.lineContent.replace(/`/g, '\\`');
-            lines.push(`- **L${match.lineNumber}:** \`${escapedContent}\``);
+            markdownLines.push(`- **L${match.lineNumber}:** \`${escapedContent}\``);
             if (match.context && match.context.length > 0) {
-              lines.push('  ```');
+              markdownLines.push('  ```');
               for (const ctxLine of match.context) {
-                lines.push(`  ${ctxLine}`);
+                markdownLines.push(`  ${ctxLine}`);
               }
-              lines.push('  ```');
+              markdownLines.push('  ```');
             }
           }
-          lines.push('');
+          markdownLines.push('');
         }
 
         const notices: string[] = [];
@@ -538,11 +561,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           notices.push(`${maxResults} matches limit reached. Use maxResults=${maxResults * 2} for more, or refine pattern`);
         }
         if (notices.length > 0) {
-          lines.push('---');
-          lines.push(`[${notices.join('. ')}]`);
+          markdownLines.push('---');
+          markdownLines.push(`[${notices.join('. ')}]`);
         }
 
-        return lines.join('\n');
+        return await truncateToolResult(markdownLines.join('\n'), 1000, 50, 10000);
       } catch (error) {
         if (isAbortError(error)) {
           return 'Operation was cancelled by user.';

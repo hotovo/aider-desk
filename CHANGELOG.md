@@ -14,6 +14,7 @@
 - improved process termination on POSIX by using process groups
 - updated Requesty provider to use costs from the API response
 - improved handling of missing git configuration and empty repositories
+- integrated ripgrep for grep tool searches
 
 ## [0.65.0]
 

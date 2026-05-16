@@ -17,6 +17,7 @@ export const AIDER_DESK_CONNECTOR_DIR = path.join(AIDER_DESK_DATA_DIR, 'aider-co
 export const AIDER_DESK_MCP_SERVER_DIR = path.join(AIDER_DESK_DATA_DIR, 'mcp-server');
 export const AIDER_DESK_BIN_DIR = path.join(AIDER_DESK_DATA_DIR, 'bin');
 export const UV_EXECUTABLE = process.platform === 'win32' ? path.join(AIDER_DESK_BIN_DIR, 'uv.exe') : path.join(AIDER_DESK_BIN_DIR, 'uv');
+export const RIPGREP_BINARY_PATH = process.platform === 'win32' ? path.join(AIDER_DESK_BIN_DIR, 'rg.exe') : path.join(AIDER_DESK_BIN_DIR, 'rg');
 export const SERVER_PORT = process.env.AIDER_DESK_PORT ? parseInt(process.env.AIDER_DESK_PORT) : 24337;
 export const PID_FILES_DIR = path.join(AIDER_DESK_DATA_DIR, 'aider-processes');
 // constants for project directory files
