@@ -37,7 +37,7 @@ export class VersionsManager {
       };
     }
 
-    logger.info('Checking for version updates...');
+    logger.debug('Checking for version updates...');
     // Get AiderDesk version using app.getVersion()
     const aiderDeskCurrentVersion = app.getVersion();
 
