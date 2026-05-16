@@ -1,13 +1,11 @@
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { DefaultTaskState, MessageViewMode, TaskData, isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@common/types';
+import { DefaultTaskState, MessageViewMode, TaskData, isUserMessage, Message } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import { clsx } from 'clsx';
 
-import { MessageBlock } from './MessageBlock';
-import { GroupMessageBlock } from './GroupMessageBlock';
-import { AssistantMessageBlock } from './AssistantMessageBlock';
+import { MessageBlockWrapper } from './MessageBlockWrapper';
 
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
@@ -15,7 +13,6 @@ import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
-import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
@@ -92,6 +89,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
         return indices.sort((a, b) => a - b);
       },
       paddingStart: 16,
+      gap: 8,
       overscan: 5,
     });
 
@@ -175,46 +173,22 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  <ExtensionComponentWrapper placement="task-message-above" />
-                  {isGroupMessage(message) ? (
-                    <GroupMessageBlock
-                      baseDir={baseDir}
-                      taskId={taskId}
-                      message={message}
-                      allFiles={allFiles}
-                      renderMarkdown={renderMarkdown}
-                      remove={inProgress ? undefined : removeMessage}
-                      redo={inProgress ? undefined : () => redoUserPrompt(message.id)}
-                      edit={editLastUserMessage}
-                      onInterrupt={onInterrupt}
-                    />
-                  ) : isAssistantGroupMessage(message) ? (
-                    <AssistantMessageBlock
-                      baseDir={baseDir}
-                      taskId={taskId}
-                      message={message}
-                      allFiles={allFiles}
-                      renderMarkdown={renderMarkdown}
-                      remove={inProgress ? undefined : removeMessage}
-                      onFork={onForkFromMessage}
-                      onRemoveUpTo={onRemoveUpToMessage}
-                    />
-                  ) : (
-                    <MessageBlock
-                      baseDir={baseDir}
-                      taskId={taskId}
-                      message={message}
-                      allFiles={allFiles}
-                      renderMarkdown={renderMarkdown}
-                      remove={inProgress ? undefined : () => removeMessage(message)}
-                      redo={!inProgress && isUserMessage(message) ? () => redoUserPrompt(message.id) : undefined}
-                      edit={virtualRow.index === lastUserMessageIndex ? editLastUserMessage : undefined}
-                      onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
-                      onRemoveUpTo={onRemoveUpToMessage ? () => onRemoveUpToMessage(message) : undefined}
-                      onInterrupt={onInterrupt}
-                    />
-                  )}
-                  <ExtensionComponentWrapper placement="task-message-below" />
+                  <MessageBlockWrapper
+                    baseDir={baseDir}
+                    taskId={taskId}
+                    message={message}
+                    allFiles={allFiles}
+                    renderMarkdown={renderMarkdown}
+                    index={virtualRow.index}
+                    lastUserMessageIndex={lastUserMessageIndex}
+                    inProgress={inProgress}
+                    removeMessage={removeMessage}
+                    redoUserPrompt={redoUserPrompt}
+                    editLastUserMessage={editLastUserMessage}
+                    onInterrupt={onInterrupt}
+                    onForkFromMessage={onForkFromMessage}
+                    onRemoveUpToMessage={onRemoveUpToMessage}
+                  />
                 </div>
               );
             })}

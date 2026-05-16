@@ -17,6 +17,7 @@
 - integrated ripgrep for grep tool searches
 - correctly using the parent task when subtask agent creates subtask
 - sorting the list_task tool result tasks by descending updated date
+- added missing gap between messages in virtualized message rendering
 
 ## [0.65.0]
 
