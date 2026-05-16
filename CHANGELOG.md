@@ -13,6 +13,7 @@
 - added support for sending images within user messages in Agent mode
 - improved process termination on POSIX by using process groups
 - updated Requesty provider to use costs from the API response
+- improved handling of missing git configuration and empty repositories
 
 ## [0.65.0]
 

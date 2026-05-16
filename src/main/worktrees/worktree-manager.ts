@@ -114,7 +114,13 @@ export class WorktreeManager {
           } catch {
             // Ignore add errors (no files to add)
           }
-          await execWithShellPath('git commit -m "Initial commit" --allow-empty', { cwd: projectPath });
+          try {
+            await execWithShellPath('git commit -m "Initial commit" --allow-empty', { cwd: projectPath });
+          } catch {
+            await execWithShellPath('git -c user.name="AiderDesk" -c user.email="aiderdesk@aiderdesk" commit -m "Initial commit" --allow-empty', {
+              cwd: projectPath,
+            });
+          }
         }
 
         // 4. Logic for creating the worktree
@@ -1685,6 +1691,13 @@ export class WorktreeManager {
 
     // 3. Get uncommitted changes (diff against HEAD, not merge-base)
     try {
+      // Check if HEAD exists (no commits yet in worktree)
+      await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
+    } catch {
+      return files;
+    }
+
+    try {
       const { stdout: uncommittedNumstat } = await execWithShellPath('git diff --numstat -z HEAD', {
         cwd: worktreePath,
       });
@@ -1811,6 +1824,12 @@ export class WorktreeManager {
    * Non-worktree mode: simple uncommitted changes vs HEAD.
    */
   private async getNonWorktreeUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]> {
+    try {
+      await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
+    } catch {
+      return [];
+    }
+
     const { stdout } = await execWithShellPath('git diff --numstat -z HEAD', {
       cwd: worktreePath,
     });
