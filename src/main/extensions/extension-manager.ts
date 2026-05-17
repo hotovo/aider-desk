@@ -1574,14 +1574,26 @@ export class ExtensionManager {
         const repoDir = await this.fetcher.ensureRepoCloned(repositoryUrl);
 
         const extensionsPath = this.fetcher.getExtensionsPath(repositoryUrl, repoDir);
-        const sourcePath = path.join(extensionsPath, extension.folder);
         const targetPath = path.join(targetDir, extension.folder);
+
+        // For repo-root extensions (entire repo is the extension), use extensionsPath directly
+        // For subdirectory extensions, join with the folder name
+        let sourcePath = path.join(extensionsPath, extension.folder);
+        if (!(await this.fileExists(sourcePath))) {
+          sourcePath = extensionsPath;
+        }
 
         if (!(await this.fileExists(sourcePath))) {
           throw new Error(`Extension folder not found in repository: ${extension.folder}`);
         }
 
         await fs.cp(sourcePath, targetPath, { recursive: true });
+
+        // Remove .git directory if present (from cloned repos)
+        const gitDir = path.join(targetPath, '.git');
+        if (await this.fileExists(gitDir)) {
+          await fs.rm(gitDir, { recursive: true, force: true });
+        }
 
         if (extension.hasDependencies) {
           logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
@@ -1741,14 +1753,25 @@ export class ExtensionManager {
         const repoDir = await this.fetcher.ensureRepoCloned(repositoryUrl);
 
         const extensionsPath = this.fetcher.getExtensionsPath(repositoryUrl, repoDir);
-        const sourcePath = path.join(extensionsPath, extension.folder);
         const targetPath = path.join(targetDir, extension.folder);
+
+        // For repo-root extensions (entire repo is the extension), use extensionsPath directly
+        let sourcePath = path.join(extensionsPath, extension.folder);
+        if (!(await this.fileExists(sourcePath))) {
+          sourcePath = extensionsPath;
+        }
 
         if (!(await this.fileExists(sourcePath))) {
           throw new Error(`Extension folder not found in repository: ${extension.folder}`);
         }
 
         await fs.cp(sourcePath, targetPath, { recursive: true });
+
+        // Remove .git directory if present (from cloned repos)
+        const gitDir = path.join(targetPath, '.git');
+        if (await this.fileExists(gitDir)) {
+          await fs.rm(gitDir, { recursive: true, force: true });
+        }
 
         const packageJsonPath = path.join(targetPath, 'package.json');
         if (await this.fileExists(packageJsonPath)) {

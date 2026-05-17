@@ -172,6 +172,51 @@ export class ExtensionFetcher {
     try {
       const entries = await fs.readdir(extensionsPath, { withFileTypes: true });
 
+      // Check if the repo root itself is a folder-based extension
+      const rootIndexTs = path.join(extensionsPath, 'index.ts');
+      const rootIndexJs = path.join(extensionsPath, 'index.js');
+      const rootPackageJson = path.join(extensionsPath, 'package.json');
+
+      let rootIndexFile: string | null = null;
+      if (await this.fileExists(rootIndexTs)) {
+        rootIndexFile = rootIndexTs;
+      } else if (await this.fileExists(rootIndexJs)) {
+        rootIndexFile = rootIndexJs;
+      }
+
+      const hasRootPackageJson = await this.fileExists(rootPackageJson);
+
+      if (rootIndexFile && hasRootPackageJson) {
+        const metadata = await this.extractMetadataFromLocalFile(rootIndexFile);
+
+        if (metadata) {
+          const repoName = this.getRepoName(repoUrl);
+
+          let readmeContent: string | undefined;
+          const readmePath = path.join(extensionsPath, 'README.md');
+          try {
+            const content = await fs.readFile(readmePath, 'utf-8');
+            if (content.trim()) {
+              readmeContent = content;
+            }
+          } catch {
+            // README.md doesn't exist or can't be read, that's fine
+          }
+
+          extensions.push({
+            ...metadata,
+            id: repoName,
+            type: 'folder',
+            folder: repoName,
+            repositoryUrl: repoUrl,
+            hasDependencies: true,
+            readmeContent,
+          });
+
+          return extensions;
+        }
+      }
+
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const indexPathTs = path.join(extensionsPath, entry.name, 'index.ts');
@@ -232,6 +277,19 @@ export class ExtensionFetcher {
     }
 
     return extensions;
+  }
+
+  private getRepoName(repoUrl: string): string {
+    try {
+      const url = new URL(repoUrl);
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      if (pathParts.length >= 2) {
+        return pathParts[1].replace(/\.git$/, '');
+      }
+    } catch {
+      // fall through
+    }
+    return repoUrl.replace(/[^a-zA-Z0-9]/g, '-');
   }
 
   private async fileExists(filePath: string): Promise<boolean> {
