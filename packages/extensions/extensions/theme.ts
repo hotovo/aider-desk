@@ -82,9 +82,10 @@ const THEME_COMMAND: CommandDefinition = {
 export default class ThemeExtension implements Extension {
   static metadata = {
     name: 'Theme',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Adds a /theme command to switch AiderDesk themes',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/theme.png',
     capabilities: ['commands'],
   };
 

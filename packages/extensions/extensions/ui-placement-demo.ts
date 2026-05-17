@@ -63,9 +63,10 @@ const createChipJsx = (placement: string): string => `
 export default class UIPlacementDemoExtension implements Extension {
   static metadata = {
     name: 'UI Placement Demo',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Demonstrates all available UI component placement locations in AiderDesk for extension development',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/ui-placement-demo.png',
     capabilities: ['ui', 'example'],
   };
 

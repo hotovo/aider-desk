@@ -17,9 +17,10 @@ const SUPPORTED_PROVIDERS = ['openai', 'openai-compatible'];
 export default class UltrathinkExtension implements Extension {
   static metadata = {
     name: 'Ultrathink',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Automatically increases reasoning effort when prompts contain thinking-related trigger phrases',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/ultrathink.png',
     capabilities: ['optimization'],
   };
 

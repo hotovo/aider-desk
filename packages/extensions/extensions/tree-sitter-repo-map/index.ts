@@ -109,9 +109,10 @@ const REPO_MAP_COMMAND: CommandDefinition = {
 export default class TreeSitterRepoMapExtension implements Extension {
   static metadata = {
     name: 'Tree-Sitter Repo Map',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Provides enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/tree-sitter-repo-map/icon.png',
     capabilities: ['context', 'commands'],
   };
 

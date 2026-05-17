@@ -16,9 +16,10 @@ const protectedPaths = ['.env', '.git/', 'node_modules/'];
 export default class ProtectedPathsExtension implements Extension {
   static metadata = {
     name: 'Protected Paths',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Blocks write and edit operations to protected paths (.env, .git/, node_modules/)',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/protected-paths.png',
     capabilities: ['security'],
   };
 
