@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.66.0]
 
 - added limit truncation to fetch tool result
 - added PostHog integration for telemetry
