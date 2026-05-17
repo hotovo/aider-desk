@@ -648,6 +648,7 @@
       "context": "Контекст",
       "runSettings": "Параметры",
       "maxIterations": "Максимум итераций",
+      "infinite": "Бесконечно",
       "minTimeBetweenToolCalls": "Минимальное время между вызовами инструментов (мс)",
       "maxTokens": "Максимум токенов",
       "temperature": "Температура",

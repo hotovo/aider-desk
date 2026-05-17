@@ -400,7 +400,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   name: 'Default Agent',
   provider: 'anthropic',
   model: DEFAULT_PROVIDER_MODELS.anthropic!,
-  maxIterations: 250,
+  maxIterations: 0,
   minTimeBetweenToolCalls: 0,
   toolApprovals: {
     // aider tools

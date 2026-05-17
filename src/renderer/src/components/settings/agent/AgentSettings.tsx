@@ -248,7 +248,7 @@ const getRunSettingsSummary = (profile: AgentProfile) => {
   settings.push(
     <div key="iterations" className="flex items-center gap-1">
       <MdRepeat className="w-3 h-3 text-text-secondary" />
-      <span>{profile.maxIterations}</span>
+      <span>{profile.maxIterations === 0 ? '∞' : profile.maxIterations}</span>
     </div>,
   );
 
@@ -994,10 +994,11 @@ export const AgentSettings = ({
                             <InfoIcon tooltip={t('settings.agent.computationalResources')} className="ml-1" />
                           </div>
                         }
-                        min={1}
+                        min={0}
                         max={200}
                         value={selectedProfile.maxIterations}
                         onChange={(value) => handleProfileSettingChange('maxIterations', value)}
+                        formatValue={(v) => (v === 0 ? t('settings.agent.infinite') : String(v))}
                       />
 
                       <Input

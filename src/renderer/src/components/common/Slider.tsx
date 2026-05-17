@@ -12,9 +12,10 @@ type Props = {
   className?: string;
   showValue?: boolean;
   size?: SliderSize;
+  formatValue?: (value: number) => string;
 };
 
-export const Slider = ({ label, min, max, step = 1, value, onChange, className = '', showValue = true, size = 'md' }: Props) => {
+export const Slider = ({ label, min, max, step = 1, value, onChange, className = '', showValue = true, size = 'md', formatValue }: Props) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange(Number(e.target.value));
   };
@@ -38,7 +39,7 @@ export const Slider = ({ label, min, max, step = 1, value, onChange, className =
       {label && (
         <div className="flex justify-between items-center">
           <label className="block text-sm font-medium text-text-primary">{label}</label>
-          {showValue && <span className="text-sm font-medium text-text-primary">{value}</span>}
+          {showValue && <span className="text-sm font-medium text-text-primary">{formatValue ? formatValue(value) : value}</span>}
         </div>
       )}
       <input

@@ -648,6 +648,7 @@
       "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。",
       "runSettings": "运行参数",
       "maxIterations": "最大迭代次数",
+      "infinite": "无限",
       "minTimeBetweenToolCalls": "工具调用最小间隔时间(毫秒)",
       "maxTokens": "最大令牌数",
       "temperature": "温度",

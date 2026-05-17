@@ -1165,7 +1165,7 @@ export class Agent {
         logger.info(`Starting iteration ${iterationCount}`);
         iterationCount++;
 
-        if (iterationCount > profile.maxIterations) {
+        if (profile.maxIterations > 0 && iterationCount > profile.maxIterations) {
           logger.warn(`Max iterations (${profile.maxIterations}) reached. Stopping agent.`);
           task.addLogMessage(
             'warning',

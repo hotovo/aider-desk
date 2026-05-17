@@ -649,6 +649,7 @@
       "context": "Context",
       "runSettings": "Parameters",
       "maxIterations": "Max Iterations",
+      "infinite": "Infinite",
       "minTimeBetweenToolCalls": "Min Time Between Tool Calls (ms)",
       "maxTokens": "Max Tokens",
       "temperature": "Temperature",

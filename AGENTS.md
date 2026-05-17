@@ -78,7 +78,7 @@ AiderDesk is an Electron-based desktop application that provides a GUI wrapper f
 **packages/common/src/** - Shared code between processes (published as `@aiderdesk/common`)
 - TypeScript type definitions
 - Utility functions and constants
-- Localization files (en.json, zh.json)
+- Localization files (en.json, zh.json, ru.json)
 
 **src/mcp-server/** - Model Context Protocol server
 - Standalone MCP server for external tool integration
