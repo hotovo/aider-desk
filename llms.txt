@@ -230,6 +230,7 @@ src/
       open-url.ts
       probe.ts
       python.ts
+      ripgrep.ts
       shell.ts
       web-scrapper.ts
     versions/
@@ -1585,8 +1586,9 @@ File: src/main/agent/tools/power.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
-import { spawn } from 'child_process';
+import { spawn, execFile } from 'child_process';
 import { ChildProcess } from 'node:child_process';
+import { promisify } from 'util';
 import { Buffer } from 'node:buffer';
 ⋮----
 import treeKill from 'tree-kill';
@@ -1614,10 +1616,11 @@ import { ApprovalManager } from './approval-manager';
 import { search } from '@/utils/probe';
 import { Task } from '@/task';
 import logger from '@/logger';
-import { filterIgnoredFiles, scrapeWeb } from '@/utils';
+import { ensureRipgrepBinary, filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellPath } from '@/utils/shell';
 import { expandTilde, readFileContent, truncateToolResult } from '@/agent/utils';
+import { RIPGREP_BINARY_PATH } from '@/constants';
 ⋮----
 /**
  * File lock map to prevent race conditions when multiple edits target the same file.
@@ -1654,9 +1657,12 @@ absolute: false, // Keep paths relative to cwd for easier processing
 ⋮----
 // Ensure paths are relative to task.getTaskDir()
 ⋮----
-// Filter out ignored files in batch
+// rg --no-heading -n output: "path:linenum:content" for matches, "path-linenum-content" for context
+// Strip trailing \r from Windows CRLF line endings
 ⋮----
-const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // Simpler for line-by-line test
+// Fix: On Windows, stdout from ripgrep uses \r\n line endings.
+// After split('\n'), each line retains a trailing \r, which
+// causes the regex $ anchor to not match. Strip it here.
 ⋮----
 // Group results by file path
 ⋮----
@@ -1832,6 +1838,8 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
 ⋮----
 // Filter by state if provided
 ⋮----
+// Sort by updatedAt descending (most recently updated first)
+⋮----
 // Apply pagination
 ⋮----
 // Count subtasks for this task
@@ -1841,8 +1849,6 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
 // Handle negative indexing
 ⋮----
 actualIndex = contextMessages.length + messageIndex; // e.g., -1 becomes length-1
-⋮----
-// Determine if parentTaskId should be available (only for top-level tasks)
 ⋮----
 // Parse modelId to extract provider and model
 ⋮----
@@ -6714,6 +6720,8 @@ private async prepareInternalTask()
 ⋮----
 public async createNewTask(params?: CreateTaskParams)
 ⋮----
+// Flatten: if the parent is itself a subtask, use its parent instead for parentId
+⋮----
 // when a subtask for non-saved task is created we need to save the parent task first
 ⋮----
 // Allow extensions to modify initial task data before task is created
@@ -10045,6 +10053,28 @@ export const getCurrentPythonLibVersion = async (library: string): Promise<strin
 export const getLatestPythonLibVersion = async (library: string): Promise<string | null> =>
 
 ================
+File: src/main/utils/ripgrep.ts
+================
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+⋮----
+import AdmZip from 'adm-zip';
+⋮----
+import logger from '@/logger';
+import { AIDER_DESK_BIN_DIR, RIPGREP_BINARY_PATH } from '@/constants';
+⋮----
+const getRipgrepAssetName = (): string =>
+⋮----
+// linux - use musl for broader compatibility
+⋮----
+const isRipgrepAvailable = (): boolean =>
+⋮----
+const downloadRipgrep = async (): Promise<void> =>
+⋮----
+export const ensureRipgrepBinary = async (): Promise<boolean> =>
+
+================
 File: src/main/utils/shell.ts
 ================
 import { exec, execSync } from 'child_process';
@@ -10851,6 +10881,8 @@ private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string):
 // If we can't check, keep the diff as-is
 ⋮----
 // 3. Get uncommitted changes (diff against HEAD, not merge-base)
+⋮----
+// Check if HEAD exists (no commits yet in worktree)
 ⋮----
 /**
    * Worktree flat mode: all changed files with diff from base to working tree,
@@ -16200,13 +16232,11 @@ File: src/renderer/src/components/message/VirtualizedMessages.tsx
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { DefaultTaskState, MessageViewMode, TaskData, isAssistantGroupMessage, isGroupMessage, isUserMessage, Message } from '@common/types';
+import { DefaultTaskState, MessageViewMode, TaskData, isUserMessage, Message } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import { clsx } from 'clsx';
 ⋮----
-import { MessageBlock } from './MessageBlock';
-import { GroupMessageBlock } from './GroupMessageBlock';
-import { AssistantMessageBlock } from './AssistantMessageBlock';
+import { MessageBlockWrapper } from './MessageBlockWrapper';
 ⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
@@ -16214,7 +16244,6 @@ import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettings } from '@/contexts/SettingsContext';
-import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 ⋮----
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
@@ -16251,8 +16280,6 @@ estimateSize: () => 44, // Initial estimate, will be measured
 const exportToImage = async () =>
 ⋮----
 // Show notification that export is not available with virtualized rendering
-⋮----
-onFork=
 ⋮----
 aria-label=
 
@@ -23385,6 +23412,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // Import your translation files
 import en from '@common/locales/en.json';
 import zh from '@common/locales/zh.json';
+import ru from '@common/locales/ru.json';
 ⋮----
 // eslint-disable-next-line import/no-named-as-default-member
 
