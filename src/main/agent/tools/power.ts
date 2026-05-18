@@ -491,9 +491,20 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           context?: string[];
         }> = [];
 
-        // rg --no-heading -n output: "path:linenum:content" for matches, "path-linenum-content" for context
-        // Strip trailing \r from Windows CRLF line endings
+        // rg --no-heading -n output format:
+        //   "path:linenum:content" for match lines
+        //   "path-linenum-content" for context lines (before/after)
+        //   "--" on its own line as a context break separator
+        // Context lines before a match are "before-context", after a match are "after-context".
+        // When matches are far apart in the same file, rg inserts "--" between non-overlapping groups.
         const outputLineRegex = /^(.+?)([:-])(\d+)\2(.*)$/;
+
+        // Buffer for context lines that appear before a match in the output.
+        // These are "before-context" lines for the upcoming match.
+        let pendingBeforeContext: string[] = [];
+        // After a "--" context break, context lines should go to pendingBeforeContext
+        // rather than being appended to the previous match's after-context.
+        let afterContextBreak = false;
 
         for (let rawLine of outputLines) {
           // Fix: On Windows, stdout from ripgrep uses \r\n line endings.
@@ -502,6 +513,14 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           if (rawLine.endsWith('\r')) {
             rawLine = rawLine.slice(0, -1);
           }
+
+          // Handle rg context break separator ("--")
+          if (rawLine === '--') {
+            pendingBeforeContext = [];
+            afterContextBreak = true;
+            continue;
+          }
+
           const line = rawLine;
           const match = outputLineRegex.exec(line);
           if (!match) {
@@ -519,18 +538,28 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           const isMatch = separator === ':';
 
           if (isMatch) {
+            const context: string[] | undefined = pendingBeforeContext.length > 0 ? [...pendingBeforeContext, content] : undefined;
             results.push({
               filePath,
               lineNumber: lineNum,
               lineContent: content,
+              context,
             });
+            pendingBeforeContext = [];
+            afterContextBreak = false;
           } else {
-            const lastResult = results[results.length - 1];
-            if (lastResult) {
-              if (!lastResult.context) {
-                lastResult.context = [];
+            if (afterContextBreak) {
+              pendingBeforeContext.push(content);
+            } else {
+              const lastResult = results[results.length - 1];
+              if (lastResult) {
+                if (!lastResult.context) {
+                  lastResult.context = [];
+                }
+                lastResult.context.push(content);
+              } else {
+                pendingBeforeContext.push(content);
               }
-              lastResult.context.push(content);
             }
           }
 
