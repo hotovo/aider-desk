@@ -233,6 +233,10 @@ const TaskSidebarComponent = ({
     setIsSearchVisible(!isSearchVisible);
     if (isSearchVisible) {
       setSearchQuery('');
+    } else {
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+      });
     }
   };
 
@@ -559,7 +563,6 @@ const TaskSidebarComponent = ({
                   placeholder={t('taskSidebar.searchPlaceholder')}
                   size="sm"
                   className="pr-8"
-                  autoFocus={true}
                 />
                 <button
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-md hover:bg-bg-tertiary transition-colors"
