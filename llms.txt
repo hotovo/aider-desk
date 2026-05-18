@@ -3562,9 +3562,17 @@ getExtensionsPath(repoUrl: string, clonedRepoPath: string): string
 ⋮----
 private async scanForExtensions(extensionsPath: string, repoUrl: string): Promise<AvailableExtension[]>
 ⋮----
+// Check if the repo root itself is a folder-based extension
+⋮----
+// README.md doesn't exist or can't be read, that's fine
+⋮----
 // Try to read README.md for folder-based extensions
 ⋮----
 // README.md doesn't exist or can't be read, that's fine
+⋮----
+private getRepoName(repoUrl: string): string
+⋮----
+// fall through
 ⋮----
 private async fileExists(filePath: string): Promise<boolean>
 ⋮----
@@ -3992,6 +4000,11 @@ async getAvailableExtensions(repositories: string[], forceRefresh = false, fetch
    */
 async installExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean>
 ⋮----
+// For repo-root extensions (entire repo is the extension), use extensionsPath directly
+// For subdirectory extensions, join with the folder name
+⋮----
+// Remove .git directory if present (from cloned repos)
+⋮----
 /**
    * Install npm dependencies for a folder extension
    */
@@ -4021,6 +4034,10 @@ async updateExtension(extensionId: string, repositoryUrl: string, project?: Proj
 // Previous version was a single file, new version is a folder — remove old file
 ⋮----
 // Previous version was a folder, new version is a single file — remove old folder
+⋮----
+// For repo-root extensions (entire repo is the extension), use extensionsPath directly
+⋮----
+// Remove .git directory if present (from cloned repos)
 ⋮----
 /**
    * Dispatches an event to all loaded and initialized extensions.
@@ -14087,6 +14104,7 @@ type Props = {
   className?: string;
   showValue?: boolean;
   size?: SliderSize;
+  formatValue?: (value: number) => string;
 };
 ⋮----
 const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
