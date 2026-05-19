@@ -10,11 +10,12 @@ import {
   TASKS_TOOL_GET_TASK_MESSAGE,
   TASKS_TOOL_GROUP_NAME,
   TASKS_TOOL_LIST_TASKS,
+  TASKS_TOOL_RUN_PROMPT,
   TASKS_TOOL_SEARCH_PARENT_TASK,
   TASKS_TOOL_SEARCH_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, DefaultTaskState, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
 import { fileExists, isUuid } from '@common/utils';
 
 import { ApprovalManager } from './approval-manager';
@@ -399,6 +400,82 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     },
   });
 
+  const runPromptTool = tool({
+    description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_RUN_PROMPT],
+    inputSchema: z.object({
+      taskId: z.string().describe('The ID of the existing task to run the prompt on'),
+      prompt: z.string().describe('The prompt to run on the task'),
+      mode: z.string().optional().describe('Optional mode to use for the prompt. Use only when explicitly requested by the user.'),
+      executeAndWait: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe('If true (default), the tool will wait for the prompt to complete before returning. If false, the prompt will run in the background.'),
+    }),
+    execute: async (input, { toolCallId }) => {
+      const { taskId, prompt, mode, executeAndWait = true } = input;
+      task.addToolMessage(
+        toolCallId,
+        TASKS_TOOL_GROUP_NAME,
+        TASKS_TOOL_RUN_PROMPT,
+        { taskId, prompt, mode, executeAndWait },
+        undefined,
+        undefined,
+        promptContext,
+      );
+
+      const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_RUN_PROMPT}`;
+      const questionKey = toolName;
+      const questionText = `Approve running prompt on task ${taskId}?`;
+      const questionSubject = `Task ID: ${taskId}\nPrompt: ${prompt}${executeAndWait ? '\nWait for completion: true' : '\nRun in background: true'}`;
+
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
+
+      if (!isApproved) {
+        return `Running prompt on task denied by user. Reason: ${userInput}`;
+      }
+
+      try {
+        const targetTask = task.getProject().getTask(taskId);
+
+        if (!targetTask) {
+          return `Task with ID ${taskId} not found`;
+        }
+
+        const effectiveMode = mode || targetTask.task.currentMode || 'agent';
+
+        const run = targetTask.runPrompt(prompt, effectiveMode, false);
+        if (executeAndWait) {
+          await run;
+        }
+
+        const taskState = targetTask.task.state;
+        const contextMessages = await targetTask.getContextMessages();
+
+        let resultMessage = executeAndWait ? 'Prompt has been executed successfully' : 'Prompt has been started in the background';
+
+        if (executeAndWait && taskState === DefaultTaskState.Interrupted) {
+          resultMessage = 'Task has been interrupted';
+        } else if (executeAndWait && taskState === DefaultTaskState.Delegated) {
+          resultMessage = 'Task has been delegated to a subagent';
+        }
+
+        return {
+          taskId,
+          result: resultMessage,
+          state: taskState,
+          ...(executeAndWait &&
+            contextMessages.length > 0 && {
+              lastMessage: contextMessages[contextMessages.length - 1],
+            }),
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return `Error running prompt on task: ${errorMessage}`;
+      }
+    },
+  });
+
   const searchTaskTool = tool({
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_SEARCH_TASK],
     inputSchema: z.object({
@@ -473,6 +550,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     [`${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_GET_TASK_MESSAGE}`]: getTaskMessageTool,
     [`${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_CREATE_TASK}`]: createTaskTool,
     [`${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_DELETE_TASK}`]: deleteTaskTool,
+    [`${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_RUN_PROMPT}`]: runPromptTool,
     [`${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_SEARCH_TASK}`]: searchTaskTool,
   };
 

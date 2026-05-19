@@ -29,6 +29,7 @@ import {
   TASKS_TOOL_GET_TASK_MESSAGE,
   TASKS_TOOL_CREATE_TASK,
   TASKS_TOOL_DELETE_TASK,
+  TASKS_TOOL_RUN_PROMPT,
   TASKS_TOOL_SEARCH_TASK,
   TASKS_TOOL_SEARCH_PARENT_TASK,
 } from '@common/tools';
@@ -66,6 +67,7 @@ import { GetTaskToolMessage } from './GetTaskToolMessage';
 import { GetTaskMessageToolMessage } from './GetTaskMessageToolMessage';
 import { CreateTaskToolMessage } from './CreateTaskToolMessage';
 import { DeleteTaskToolMessage } from './DeleteTaskToolMessage';
+import { RunPromptToolMessage } from './RunPromptToolMessage';
 import { SearchTaskToolMessage } from './SearchTaskToolMessage';
 import { SearchParentTaskToolMessage } from './SearchParentTaskToolMessage';
 import { StoreMemoryToolMessage } from './StoreMemoryToolMessage';
@@ -314,6 +316,17 @@ const MessageBlockComponent = ({
           case TASKS_TOOL_DELETE_TASK:
             return (
               <DeleteTaskToolMessage
+                message={toolMessage}
+                onRemove={remove}
+                compact={compact}
+                hideMessageBar={hideMessageBar}
+                onFork={onFork}
+                onRemoveUpTo={onRemoveUpTo}
+              />
+            );
+          case TASKS_TOOL_RUN_PROMPT:
+            return (
+              <RunPromptToolMessage
                 message={toolMessage}
                 onRemove={remove}
                 compact={compact}

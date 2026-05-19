@@ -4,6 +4,7 @@
 
 - correctly rendering the context around the match line in grep power tool output
 - deduplicated skills prioritizing extension then project then global skills
+- added run_prompt tasks tool for running a prompt
 
 ## [0.66.0]
 

@@ -135,6 +135,7 @@ export const TASKS_TOOL_GET_TASK_MESSAGE = 'get_task_message';
 export const TASKS_TOOL_CREATE_TASK = 'create_task';
 export const TASKS_TOOL_DELETE_TASK = 'delete_task';
 export const TASKS_TOOL_SEARCH_TASK = 'search_task';
+export const TASKS_TOOL_RUN_PROMPT = 'run_prompt';
 export const TASKS_TOOL_SEARCH_PARENT_TASK = 'search_parent_task';
 
 export const TASKS_TOOL_DESCRIPTIONS = {
@@ -150,6 +151,8 @@ export const TASKS_TOOL_DESCRIPTIONS = {
     'Permanently delete a task and all its associated data including messages, context files, and metadata. This action cannot be undone. Note that you cannot delete the currently active task. Use this to clean up completed or abandoned tasks, but be cautious as this removes all task history permanently.',
   [TASKS_TOOL_SEARCH_TASK]:
     'Search content within a specific task using semantic search. Use natural language queries with 2-5 descriptive words including key concepts and context. Searches through task conversation history and context files. Use this to find relevant information, discussions, or code snippets within a task.',
+  [TASKS_TOOL_RUN_PROMPT]:
+    'Run a prompt on an existing task. The task must already exist (use create_task first if needed). Use this to send additional instructions to a task, continue work on an existing task, or delegate follow-up work. By default, waits for the prompt to complete before returning. Use executeInBackground to run without waiting.',
   [TASKS_TOOL_SEARCH_PARENT_TASK]:
     'Search content within parent task using semantic search. Use natural language queries with 2-5 descriptive words including key concepts and context. Automatically searches parent task conversation history and context files.',
 } as const;
