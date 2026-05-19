@@ -109,7 +109,18 @@ export class SkillManager {
       loadSkillsFromDir(AIDER_DESK_BUILTIN_SKILLS_DIR, 'builtin'),
     ]);
 
-    return [...projectSkills, ...globalSkills, ...builtinSkills, ...extensionSkills];
+    const allSkills = [...extensionSkills, ...projectSkills, ...globalSkills, ...builtinSkills];
+
+    const seen = new Set<string>();
+    const deduped: Skill[] = [];
+    for (const skill of allSkills) {
+      if (!seen.has(skill.name)) {
+        seen.add(skill.name);
+        deduped.push(skill);
+      }
+    }
+
+    return deduped;
   }
 
   async getSkills(contextMessages?: ContextMessage[]): Promise<Skill[]> {

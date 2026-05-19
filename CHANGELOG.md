@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - correctly rendering the context around the match line in grep power tool output
+- deduplicated skills prioritizing extension then project then global skills
 
 ## [0.66.0]
 
