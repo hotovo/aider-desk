@@ -19,6 +19,7 @@ export const useTaskMessageHandlers = (baseDir: string, taskId: string) => {
         content: data.content,
         images: data.images,
         promptContext: data.promptContext,
+        timestamp: data.timestamp,
       };
 
       setMessages(taskId, (prevMessages) => {

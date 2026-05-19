@@ -97,6 +97,7 @@ export enum MessageRole {
 // Base interface for all context messages with usage reporting
 interface BaseContextMessage {
   id: string;
+  timestamp?: number;
   usageReport?: UsageReportData;
   promptContext?: PromptContext;
 }

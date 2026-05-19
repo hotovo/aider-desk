@@ -36,6 +36,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
                 content: message.reflectedMessage,
                 responseMessageId: message.messageId,
                 promptContext: message.promptContext,
+                timestamp: message.timestamp,
               } as ReflectedMessage);
             }
             result.push({
@@ -45,6 +46,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
               usageReport: message.usageReport,
               promptContext: message.promptContext,
               finished: true,
+              timestamp: message.timestamp,
             } as ResponseMessage);
             return result;
           }
@@ -56,6 +58,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
                 content: message.content,
                 images: message.images,
                 promptContext: message.promptContext,
+                timestamp: message.timestamp,
               } as UserMessage,
             ];
           }
@@ -73,6 +76,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
                 content: message.response || '',
                 promptContext: message.promptContext,
                 usageReport: message.usageReport,
+                timestamp: message.timestamp,
               } as ToolMessage,
             ];
           }

@@ -6,6 +6,7 @@ export interface Message {
   type: 'user' | 'response' | 'loading' | 'reflected-message' | 'command-output' | 'log' | 'tokens-info' | 'tool' | 'group' | 'task-info' | 'assistant-group';
   content: string;
   promptContext?: PromptContext;
+  timestamp?: number;
   children?: Message[];
 }
 

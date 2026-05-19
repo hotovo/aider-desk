@@ -47,6 +47,7 @@ export interface ResponseMessage {
   finished: boolean;
   usageReport?: UsageReportData;
   promptContext?: PromptContext;
+  timestamp?: number;
 }
 
 /**

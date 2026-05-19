@@ -783,6 +783,7 @@ export class Agent {
                 ]
               : prompt,
           promptContext,
+          timestamp: Date.now(),
         }
       : null;
 
@@ -2015,6 +2016,7 @@ export class Agent {
           id: currentResponseId,
           usageReport,
           promptContext,
+          timestamp: Date.now(),
         });
       } else if (message.role === 'tool') {
         messages.push({
@@ -2022,6 +2024,7 @@ export class Agent {
           // @ts-expect-error the id is there
           id: message.id || uuidv4(),
           promptContext,
+          timestamp: Date.now(),
         });
       }
     });

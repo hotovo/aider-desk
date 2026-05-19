@@ -806,6 +806,7 @@ export class Task {
       role: MessageRole.User,
       content: prompt,
       promptContext,
+      timestamp: Date.now(),
     });
 
     // Add user message to context
@@ -851,6 +852,7 @@ export class Task {
       role: MessageRole.User,
       content: prompt,
       promptContext,
+      timestamp: Date.now(),
     });
 
     let messages = this.contextManager.toConnectorMessages();
@@ -1358,6 +1360,7 @@ export class Task {
         usageReport,
         sequenceNumber: message.sequenceNumber,
         promptContext: message.promptContext,
+        timestamp: Date.now(),
       };
 
       const extensionResult = await this.extensionManager.dispatchEvent('onResponseCompleted', { response: data }, this.project, this);
@@ -2121,6 +2124,7 @@ export class Task {
       finished,
       promptContext,
       actionIds,
+      timestamp: Date.now(),
     };
 
     this.eventManager.sendLog(data);
@@ -2562,6 +2566,7 @@ export class Task {
       usageReport,
       promptContext,
       finished,
+      timestamp: Date.now(),
     };
 
     if (response && usageReport && saveToDb) {
@@ -2611,6 +2616,7 @@ export class Task {
       content,
       images,
       promptContext,
+      timestamp: Date.now(),
     };
 
     this.eventManager.sendUserMessage(data);

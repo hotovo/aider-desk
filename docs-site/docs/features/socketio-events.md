@@ -100,7 +100,8 @@ Emitted when an AI response is fully completed.
       "color": "optional group color",
       "finished": false
     }
-  }
+  },
+  "timestamp": 1716123456789
 }
 ```
 
@@ -243,7 +244,8 @@ Emitted during tool execution.
       "color": "optional group color",
       "finished": false
     }
-  }
+  },
+  "timestamp": 1716123456789
 }
 ```
 
@@ -256,7 +258,8 @@ Emitted when a command is executed.
   "baseDir": "/path/to/project",
   "taskId": "task-uuid",
   "command": "npm install",
-  "output": "Installing dependencies...\nDone."
+  "output": "Installing dependencies...\nDone.",
+  "timestamp": 1716123456789
 }
 ```
 
@@ -308,7 +311,8 @@ Emitted for logging information.
       "color": "optional group color",
       "finished": false
     }
-  }
+  },
+  "timestamp": 1716123456789
 }
 ```
 
@@ -373,7 +377,8 @@ Emitted when a user sends a message.
       "color": "optional group color",
       "finished": false
     }
-  }
+  },
+  "timestamp": 1716123456789
 }
 ```
 

@@ -11,6 +11,7 @@ import {
   QuestionAnsweredData,
   ResponseChunkData,
   ResponseCompletedData,
+  CommandOutputData,
   TerminalData,
   TerminalExitData,
   ToolData,
@@ -185,11 +186,12 @@ export class EventManager {
 
   // Command events
   sendCommandOutput(baseDir: string, taskId: string, command: string, output: string): void {
-    const data = {
+    const data: CommandOutputData = {
       baseDir,
       taskId,
       command,
       output,
+      timestamp: Date.now(),
     };
     this.sendToWindows('command-output', data);
     this.broadcastToEventConnectors('command-output', data);

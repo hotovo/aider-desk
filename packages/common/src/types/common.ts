@@ -161,6 +161,7 @@ export interface ResponseCompletedData {
   usageReport?: UsageReportData;
   sequenceNumber?: number;
   promptContext?: PromptContext;
+  timestamp?: number;
 }
 
 export interface CommandOutputData {
@@ -168,6 +169,7 @@ export interface CommandOutputData {
   taskId: string;
   command: string;
   output: string;
+  timestamp?: number;
 }
 
 export type LogLevel = 'info' | 'warning' | 'error' | 'loading';
@@ -180,6 +182,7 @@ export interface LogData {
   finished?: boolean;
   promptContext?: PromptContext;
   actionIds?: string[];
+  timestamp?: number;
 }
 
 // System log types (for application-wide logging)
@@ -215,6 +218,7 @@ export interface ToolData {
   usageReport?: UsageReportData;
   promptContext?: PromptContext;
   finished?: boolean;
+  timestamp?: number;
 }
 
 export interface ContextFilesUpdatedData {
@@ -739,6 +743,7 @@ export interface UserMessageData {
   content: string;
   images?: string[];
   promptContext?: PromptContext;
+  timestamp?: number;
 }
 
 export interface MessageRemovedData {

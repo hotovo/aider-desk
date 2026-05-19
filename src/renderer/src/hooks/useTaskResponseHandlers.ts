@@ -16,6 +16,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
 
   const handleResponseChunk = useCallback(
     ({ messageId, chunk, reflectedMessage, promptContext }: ResponseChunkData) => {
+      const timestamp = Date.now();
       let processingMessage = processingResponseMessageMap.get(taskId);
       if (processingMessage?.id === messageId) {
         processingMessage = {
@@ -58,6 +59,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
               type: 'response',
               content: chunk,
               promptContext,
+              timestamp,
             };
             processingResponseMessageMap.set(taskId, newResponseMessage);
             newMessages.push(newResponseMessage);
@@ -82,7 +84,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
   );
 
   const handleResponseCompleted = useCallback(
-    ({ messageId, usageReport, content, reflectedMessage, promptContext }: ResponseCompletedData) => {
+    ({ messageId, usageReport, content, reflectedMessage, promptContext, timestamp }: ResponseCompletedData) => {
       const processingMessage = processingResponseMessageMap.get(taskId);
 
       if (content) {
@@ -97,6 +99,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
                     finished: true,
                     usageReport,
                     promptContext,
+                    timestamp,
                   }
                 : message,
             );
@@ -120,6 +123,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
               usageReport,
               promptContext,
               finished: true,
+              timestamp,
             };
             messages.push(newResponseMessage);
 

@@ -19,7 +19,7 @@ export const useTaskLogHandlers = (baseDir: string, taskId: string) => {
   const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
   const handleLog = useCallback(
-    ({ level, message, finished, promptContext, actionIds }: LogData) => {
+    ({ level, message, finished, promptContext, actionIds, timestamp }: LogData) => {
       if (level === 'loading') {
         if (finished) {
           const currentGroupId = promptContext?.group?.id;
@@ -51,6 +51,7 @@ export const useTaskLogHandlers = (baseDir: string, taskId: string) => {
             content: message || t('messages.thinking'),
             promptContext,
             actionIds,
+            timestamp,
           };
 
           setMessages(taskId, (prevMessages) => {
@@ -77,6 +78,7 @@ export const useTaskLogHandlers = (baseDir: string, taskId: string) => {
           content: message || '',
           promptContext,
           actionIds,
+          timestamp,
         };
         setMessages(taskId, (prevMessages) => [...prevMessages.filter((message) => message.type !== 'loading'), logMessage]);
       }

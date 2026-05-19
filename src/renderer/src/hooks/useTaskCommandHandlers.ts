@@ -17,7 +17,7 @@ export const useTaskCommandHandlers = (baseDir: string, taskId: string) => {
   const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
   const handleCommandOutput = useCallback(
-    ({ command, output }: CommandOutputData) => {
+    ({ command, output, timestamp }: CommandOutputData) => {
       setMessages(taskId, (prevMessages) => {
         const lastMessage = prevMessages[prevMessages.length - 1];
 
@@ -33,6 +33,7 @@ export const useTaskCommandHandlers = (baseDir: string, taskId: string) => {
             type: 'command-output',
             command,
             content: output,
+            timestamp,
           };
           return prevMessages.filter((message) => message.type !== 'loading').concat(commandOutputMessage);
         }

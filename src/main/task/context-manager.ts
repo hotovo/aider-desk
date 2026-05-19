@@ -87,6 +87,7 @@ export class ContextManager {
         role: roleOrMessage,
         content: content || '',
         usageReport,
+        timestamp: Date.now(),
       } as ContextMessage;
     } else {
       message = roleOrMessage;
@@ -913,6 +914,7 @@ export class ContextManager {
                 diff: response.diff,
                 usageReport: response.usageReport,
                 promptContext: message.promptContext,
+                timestamp: message.timestamp,
               };
               messagesData.push(responseCompletedData);
             });
@@ -965,6 +967,7 @@ export class ContextManager {
                       taskId: this.taskId,
                       usageReport: subMessage.usageReport,
                       promptContext: subMessage.promptContext,
+                      timestamp: subMessage.timestamp,
                     };
                     messagesData.push(responseCompletedData);
                   }
@@ -983,6 +986,7 @@ export class ContextManager {
                         args: subPart.input,
                         usageReport: undefined,
                         promptContext: subMessage.promptContext,
+                        timestamp: subMessage.timestamp,
                       };
                       messagesData.push(toolData);
                     }
@@ -997,6 +1001,7 @@ export class ContextManager {
                     taskId: this.taskId,
                     usageReport: subMessage.usageReport,
                     promptContext: subMessage.promptContext,
+                    timestamp: subMessage.timestamp,
                   };
                   messagesData.push(responseCompletedData);
                 }
@@ -1043,6 +1048,7 @@ export class ContextManager {
               diff: message.diff,
               usageReport: message.usageReport,
               promptContext: message.promptContext,
+              timestamp: message.timestamp,
             };
             messagesData.push(responseCompletedData);
 
@@ -1077,6 +1083,7 @@ export class ContextManager {
                 args: toolCall.input,
                 usageReport: message.usageReport,
                 promptContext: message.promptContext,
+                timestamp: message.timestamp,
               };
               messagesData.push(toolData);
             } else if (part.type === 'tool-result') {
@@ -1116,6 +1123,7 @@ export class ContextManager {
             reflectedMessage: message.reflectedMessage,
             usageReport: message.usageReport,
             promptContext: message.promptContext,
+            timestamp: message.timestamp,
           };
           messagesData.push(responseCompletedData);
         }
@@ -1138,6 +1146,7 @@ export class ContextManager {
           content: content,
           images: images && images.length > 0 ? images : undefined,
           promptContext: message.promptContext,
+          timestamp: message.timestamp,
         };
         messagesData.push(userMessageData);
       } else if (message.role === 'tool' && Array.isArray(message.content)) {

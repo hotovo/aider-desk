@@ -64,7 +64,7 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
   );
 
   const handleTool = useCallback(
-    ({ id, serverName, toolName, args, response, usageReport, promptContext, finished }: ToolData) => {
+    ({ id, serverName, toolName, args, response, usageReport, promptContext, finished, timestamp }: ToolData) => {
       if (serverName === TODO_TOOL_GROUP_NAME) {
         handleTodoTool(toolName, args as Record<string, unknown>, response);
         return;
@@ -81,6 +81,7 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
           usageReport,
           promptContext,
           finished,
+          timestamp,
         };
       };
 
