@@ -9,6 +9,7 @@ import type {
   ContextAssistantMessage,
   ContextMessage,
   ContextToolMessage,
+  ContextUserMessage,
   Extension,
   ExtensionContext,
   InterruptedEvent,
@@ -212,6 +213,7 @@ function transformCursorResult(
   cursorToolName: string,
   cursorResult: unknown,
   status: string,
+  cursorArgs?: Record<string, unknown>,
 ): TransformedResult {
   if (status === 'error') {
     const errorStr = cursorResult && typeof cursorResult === 'object' && 'error' in cursorResult
@@ -256,11 +258,11 @@ function transformCursorResult(
           output?: {
             matches?: Array<{
               file: string;
-              line: string;
+              line?: string;
               lineNumber?: number;
               beforeContext?: string[];
               afterContext?: string[];
-            }>;
+            }> | Array<{ file: string }>;
             totalMatches?: number;
             files?: string[];
             count?: number;
@@ -274,6 +276,9 @@ function transformCursorResult(
         return { resultStr: JSON.stringify(noResults), output: { type: 'text', value: noResults } };
       }
 
+      const grepPattern = (cursorArgs?.pattern as string) ?? '';
+      const grepFilePattern = (cursorArgs?.glob as string) ?? '**/*';
+
       const allMatches: Array<{
         filePath: string;
         lineNumber: number;
@@ -282,25 +287,34 @@ function transformCursorResult(
       }> = [];
 
       for (const [, result] of Object.entries(workspaceResults)) {
-        if (result.type === 'content' && result.output?.matches) {
+        if (result.type === 'files') {
+          const files = result.output?.files ?? [];
+          for (const filePath of files) {
+            allMatches.push({ filePath, lineNumber: 0, lineContent: '' });
+          }
+        } else if (result.type === 'content' && result.output?.matches) {
           for (const match of result.output.matches) {
-            const lineContent = match.line ?? '';
-            const context: string[] = [];
-            if (match.beforeContext) {
-              context.push(...match.beforeContext);
+            if ('line' in match && match.line !== undefined) {
+              const lineContent = match.line ?? '';
+              const context: string[] = [];
+              if (match.beforeContext) {
+                context.push(...match.beforeContext);
+              }
+              if (lineContent) {
+                context.push(lineContent);
+              }
+              if (match.afterContext) {
+                context.push(...match.afterContext);
+              }
+              allMatches.push({
+                filePath: match.file,
+                lineNumber: match.lineNumber ?? 0,
+                lineContent,
+                context: context.length > 1 ? context : undefined,
+              });
+            } else {
+              allMatches.push({ filePath: match.file, lineNumber: 0, lineContent: '' });
             }
-            if (lineContent) {
-              context.push(lineContent);
-            }
-            if (match.afterContext) {
-              context.push(...match.afterContext);
-            }
-            allMatches.push({
-              filePath: match.file,
-              lineNumber: match.lineNumber ?? 0,
-              lineContent,
-              context: context.length > 1 ? context : undefined,
-            });
           }
         }
       }
@@ -319,20 +333,24 @@ function transformCursorResult(
       }
 
       const lines: string[] = [];
-      lines.push(`## Grep Results (${allMatches.length} matches)`);
+      lines.push(`## Grep Results: \`${grepPattern}\` in \`${grepFilePattern}\` (${allMatches.length} matches)`);
       lines.push('');
 
       for (const [filePath, matches] of Object.entries(grouped)) {
         lines.push(`### ${filePath} (${matches.length} ${matches.length === 1 ? 'match' : 'matches'})`);
         for (const match of matches) {
-          const escapedContent = match.lineContent.replace(/`/g, '\\`');
-          lines.push(`- **L${match.lineNumber}:** \`${escapedContent}\``);
-          if (match.context && match.context.length > 0) {
-            lines.push('  ```');
-            for (const ctxLine of match.context) {
-              lines.push(`  ${ctxLine}`);
+          if (match.lineContent) {
+            const escapedContent = match.lineContent.replace(/`/g, '\\`');
+            lines.push(`- **L${match.lineNumber}:** \`${escapedContent}\``);
+            if (match.context && match.context.length > 0) {
+              lines.push('  ```');
+              for (const ctxLine of match.context) {
+                lines.push(`  ${ctxLine}`);
+              }
+              lines.push('  ```');
             }
-            lines.push('  ```');
+          } else {
+            lines.push('- **L0:** `(file match)`');
           }
         }
         lines.push('');
@@ -358,7 +376,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '1.3.0',
+    version: '1.4.0',
     description: 'Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -488,10 +506,19 @@ export default class CursorSdkExtension implements Extension {
 
       taskContext.addLoadingMessage('Running Cursor agent...');
 
-      const contextMessages = await processStream(run, taskContext);
+      const contextMessages = await processStream(run, taskContext, context);
 
       const result = await run.wait();
       context.log(`Cursor run finished: ${result.status}`, 'info');
+
+      if (prompt) {
+        const userMessage: ContextUserMessage = {
+          id: `user-${run.id}`,
+          role: 'user',
+          content: prompt,
+        };
+        await taskContext.addContextMessage(userMessage);
+      }
 
       for (const contextMessage of contextMessages) {
         await taskContext.addContextMessage(contextMessage);
@@ -567,7 +594,7 @@ const ANSWER_TAG = '---\n► **ANSWER**\n';
 
 type AssistantContentPart = ReasoningPart | TextPart | ToolCallPart;
 
-async function processStream(run: Run, taskContext: TaskContext): Promise<ContextMessage[]> {
+async function processStream(run: Run, taskContext: TaskContext, context: ExtensionContext): Promise<ContextMessage[]> {
   const contextMessages: ContextMessage[] = [];
 
   let currentAssistantMessage: ContextAssistantMessage | null = null;
@@ -811,7 +838,7 @@ async function processStream(run: Run, taskContext: TaskContext): Promise<Contex
         }
 
         const transformedResult = finished
-          ? transformCursorResult(message.name, message.result, message.status ?? 'success')
+          ? transformCursorResult(message.name, message.result, message.status ?? 'success', (message.args ?? {}) as Record<string, unknown>)
           : null;
 
         taskContext.addToolMessage(
