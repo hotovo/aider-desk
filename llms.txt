@@ -1657,12 +1657,24 @@ absolute: false, // Keep paths relative to cwd for easier processing
 ⋮----
 // Ensure paths are relative to task.getTaskDir()
 ⋮----
-// rg --no-heading -n output: "path:linenum:content" for matches, "path-linenum-content" for context
-// Strip trailing \r from Windows CRLF line endings
+// rg --no-heading -n output format:
+//   "path:linenum:content" for match lines
+//   "path-linenum-content" for context lines (before/after)
+//   "--" on its own line as a context break separator
+// Context lines before a match are "before-context", after a match are "after-context".
+// When matches are far apart in the same file, rg inserts "--" between non-overlapping groups.
+⋮----
+// Buffer for context lines that appear before a match in the output.
+// These are "before-context" lines for the upcoming match.
+⋮----
+// After a "--" context break, context lines should go to pendingBeforeContext
+// rather than being appended to the previous match's after-context.
 ⋮----
 // Fix: On Windows, stdout from ripgrep uses \r\n line endings.
 // After split('\n'), each line retains a trailing \r, which
 // causes the regex $ anchor to not match. Strip it here.
+⋮----
+// Handle rg context break separator ("--")
 ⋮----
 // Group results by file path
 ⋮----
@@ -27463,7 +27475,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.66.0-dev",
+  "version": "0.67.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
