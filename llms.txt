@@ -366,6 +366,7 @@ src/
           ReflectedMessageBlock.tsx
           ResponseMessageBlock.tsx
           RetrieveMemoryToolMessage.tsx
+          RunPromptToolMessage.tsx
           SearchParentTaskToolMessage.tsx
           SearchTaskToolMessage.tsx
           SemanticSearchToolMessage.tsx
@@ -1830,11 +1831,12 @@ import {
   TASKS_TOOL_GET_TASK_MESSAGE,
   TASKS_TOOL_GROUP_NAME,
   TASKS_TOOL_LIST_TASKS,
+  TASKS_TOOL_RUN_PROMPT,
   TASKS_TOOL_SEARCH_PARENT_TASK,
   TASKS_TOOL_SEARCH_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, DefaultTaskState, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
 import { fileExists, isUuid } from '@common/utils';
 ⋮----
 import { ApprovalManager } from './approval-manager';
@@ -3282,6 +3284,7 @@ import {
   QuestionAnsweredData,
   ResponseChunkData,
   ResponseCompletedData,
+  CommandOutputData,
   TerminalData,
   TerminalExitData,
   ToolData,
@@ -15410,6 +15413,7 @@ import {
   TASKS_TOOL_GET_TASK_MESSAGE,
   TASKS_TOOL_CREATE_TASK,
   TASKS_TOOL_DELETE_TASK,
+  TASKS_TOOL_RUN_PROMPT,
   TASKS_TOOL_SEARCH_TASK,
   TASKS_TOOL_SEARCH_PARENT_TASK,
 } from '@common/tools';
@@ -15447,6 +15451,7 @@ import { GetTaskToolMessage } from './GetTaskToolMessage';
 import { GetTaskMessageToolMessage } from './GetTaskMessageToolMessage';
 import { CreateTaskToolMessage } from './CreateTaskToolMessage';
 import { DeleteTaskToolMessage } from './DeleteTaskToolMessage';
+import { RunPromptToolMessage } from './RunPromptToolMessage';
 import { SearchTaskToolMessage } from './SearchTaskToolMessage';
 import { SearchParentTaskToolMessage } from './SearchParentTaskToolMessage';
 import { StoreMemoryToolMessage } from './StoreMemoryToolMessage';
@@ -15701,6 +15706,31 @@ onClick=
 title=
 ⋮----
 confirmButtonText=
+
+================
+File: src/renderer/src/components/message/RunPromptToolMessage.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill, RiPauseCircleFill } from 'react-icons/ri';
+import { CgSpinner } from 'react-icons/cg';
+import { MdPlayArrow } from 'react-icons/md';
+import { DefaultTaskState, ToolMessage } from '@common/types';
+⋮----
+import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+  compact?: boolean;
+  onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
+};
+⋮----
+const renderStatusIcon = () =>
 
 ================
 File: src/renderer/src/components/message/SearchParentTaskToolMessage.tsx
