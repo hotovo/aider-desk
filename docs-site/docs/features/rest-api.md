@@ -423,7 +423,7 @@ Creates a new task within a project. The new task inherits model, mode, and othe
     "currentMode": "agent",
     "workingMode": "local",
     "worktree": null,
-    "autoApprove": false,
+    "autonomyMode": "guided",
     ...
   }
   ```
@@ -433,7 +433,7 @@ The task is returned in an **uninitialized** state. The `workingMode` field refl
 :::
 
 #### Update Task
-Updates a task's properties. This is the supported way to change `workingMode`, `currentMode`, `autoApprove`, and other task fields.
+Updates a task's properties. This is the supported way to change `workingMode`, `currentMode`, `autonomyMode`, and other task fields.
 
 - **Endpoint**: `POST /api/project/tasks`
 - **Request Body**:

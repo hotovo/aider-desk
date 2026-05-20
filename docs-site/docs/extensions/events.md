@@ -556,7 +556,7 @@ interface AiderPromptStartedEvent {
   messages: ConnectorMessage[];
   files: ContextFile[];
   blocked?: boolean;
-  autoApprove?: boolean;
+  autonomyMode?: 'manual' | 'guided' | 'autonomous';
   denyCommands?: boolean;
 }
 ```

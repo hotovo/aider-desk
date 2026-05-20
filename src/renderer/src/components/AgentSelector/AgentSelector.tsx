@@ -222,7 +222,7 @@ export const AgentSelector = memo(
             'bg-bg-secondary text-text-tertiary',
             'hover:bg-bg-secondary-light hover:text-text-primary',
             'focus:outline-none transition-colors duration-200',
-            'text-xs border-border-default border rounded-md min-h-[26px]',
+            'text-xs border-border-default border rounded-md h-[26px]',
           )}
         >
           <RiToolsFill className="w-3.5 h-3.5" />

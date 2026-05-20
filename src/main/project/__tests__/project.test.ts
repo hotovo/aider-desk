@@ -145,7 +145,7 @@ describe('Project - createNewTask', () => {
             agentProfileId: 'default-profile',
             modelEditFormats: {},
             currentMode: 'agent' as Mode,
-            autoApproveLocked: false,
+            autonomyModeLocked: false,
           }) as ProjectSettings,
       ),
     };
@@ -517,7 +517,7 @@ describe('Project - deleteTask', () => {
             agentProfileId: 'default-profile',
             modelEditFormats: {},
             currentMode: 'agent' as Mode,
-            autoApproveLocked: false,
+            autonomyModeLocked: false,
           }) as ProjectSettings,
       ),
     } as unknown as Store;

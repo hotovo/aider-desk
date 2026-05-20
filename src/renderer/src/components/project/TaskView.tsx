@@ -1,5 +1,6 @@
 import {
   AIDER_MODES,
+  AutonomyMode,
   DefaultTaskState,
   isLoadingMessage,
   isLogMessage,
@@ -594,10 +595,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [promptFieldRef],
     );
 
-    const handleAutoApproveChanged = useCallback(
-      (autoApprove: boolean) => {
+    const handleAutonomyModeChanged = useCallback(
+      (autonomyMode: AutonomyMode) => {
         updateTask(task.id, {
-          autoApprove,
+          autonomyMode,
         });
       },
       [updateTask, task.id],
@@ -864,7 +865,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   terminalVisible={terminalVisible}
                   showTaskInfoPanel={showTaskInfoPanel}
                   onToggleTaskInfoPanel={handleToggleTaskInfoPanel}
-                  onAutoApproveChanged={handleAutoApproveChanged}
+                  onAutonomyModeChanged={handleAutonomyModeChanged}
                   showSettingsPage={showSettingsPage}
                   canUndoContextChange={canUndoContextChange && messages.length === 0}
                   onUndoContextChange={handleUndoContextChange}

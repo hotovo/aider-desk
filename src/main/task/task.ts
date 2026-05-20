@@ -8,6 +8,8 @@ import {
   AIDER_COMMANDS,
   AIDER_MODES,
   AiderRunOptions,
+  AutonomyMode,
+  DEFAULT_AUTONOMY_MODE,
   ChangeRequestItem,
   ConnectorMessage,
   ContextAssistantMessage,
@@ -875,8 +877,9 @@ export class Task {
     messages = extensionResult.messages;
     files = extensionResult.files;
 
+    const effectiveAutonomyMode = extensionResult.autonomyMode ?? this.task.autonomyMode ?? DEFAULT_AUTONOMY_MODE;
     let responses = await this.sendPromptToAider(prompt, promptContext, mode, messages, files, {
-      autoApprove: extensionResult.autoApprove ?? this.task.autoApprove,
+      autoApprove: effectiveAutonomyMode === AutonomyMode.Autonomous,
       denyCommands: extensionResult.denyCommands,
     });
     logger.debug('Responses:', { responses });
@@ -3054,7 +3057,7 @@ export class Task {
     const newTaskData = await this.project.createNewTask({
       parentId: this.task.parentId || this.taskId,
       sendEvent: false,
-      autoApprove: execute ? this.task.autoApprove : undefined,
+      autonomyMode: execute ? this.task.autonomyMode : undefined,
       activate: true,
     });
 
@@ -3493,7 +3496,12 @@ ${error.stderr}`,
           }
         }
 
-        const systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), this, profile, command.autoApprove ?? this.task.autoApprove);
+        const systemPrompt = await this.promptsManager.getSystemPrompt(
+          this.store.getSettings(),
+          this,
+          profile,
+          command.autonomyMode ?? this.task.autonomyMode ?? DEFAULT_AUTONOMY_MODE,
+        );
 
         const messages = command.includeContext === false ? [] : undefined;
         const contextFiles = command.includeContext === false ? [] : undefined;
@@ -4467,7 +4475,7 @@ ${error.stderr}`,
     const newTaskData = await this.project.createNewTask({
       name: taskName,
       sendEvent: false,
-      autoApprove: true,
+      autonomyMode: AutonomyMode.Autonomous,
       activate: true,
       mode,
       parentId: this.task.parentId || this.taskId,

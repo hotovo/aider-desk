@@ -106,6 +106,14 @@ export const AIDER_MODES: Mode[] = ['code', 'ask', 'architect', 'context'];
 
 export const AIDER_COMMANDS: string[] = ['commit', 'map', 'map-refresh', 'tokens', 'test'];
 
+export enum AutonomyMode {
+  Manual = 'manual',
+  Guided = 'guided',
+  Autonomous = 'autonomous',
+}
+
+export const DEFAULT_AUTONOMY_MODE = AutonomyMode.Guided;
+
 export interface AiderRunOptions {
   autoApprove?: boolean;
   denyCommands?: boolean;
@@ -327,7 +335,7 @@ export const ProjectSettingsSchema = z.object({
   thinkingTokens: z.string().optional(),
   currentMode: z.string(),
   weakModelLocked: z.boolean().optional(),
-  autoApproveLocked: z.boolean().optional(),
+  autonomyModeLocked: z.boolean().optional(),
   updatedFilesGroupMode: z.enum(['grouped', 'flat']).default('flat'),
   disabledRuleFiles: z.array(z.string()).default([]),
   contextSidebarSectionsOrder: z.array(z.string()).default([]),
@@ -848,7 +856,7 @@ export const TaskDataSchema = z.object({
   lastMergeState: MergeStateSchema.optional(),
   aiderTotalCost: z.number(),
   agentTotalCost: z.number(),
-  autoApprove: z.boolean().optional(),
+  autonomyMode: z.nativeEnum(AutonomyMode).optional(),
   agentProfileId: z.string().optional(),
   provider: z.string().optional(),
   model: z.string().optional(),
@@ -870,7 +878,7 @@ export type TaskData = z.infer<typeof TaskDataSchema>;
 export interface CreateTaskParams {
   parentId?: string | null;
   name?: string;
-  autoApprove?: boolean;
+  autonomyMode?: AutonomyMode;
   activate?: boolean;
   handoff?: boolean;
   sendEvent?: boolean;
@@ -970,7 +978,7 @@ export interface CommandArgument {
 export interface CustomCommand extends Command {
   template: string;
   includeContext?: boolean;
-  autoApprove?: boolean;
+  autonomyMode?: AutonomyMode;
   skills?: string[];
 }
 

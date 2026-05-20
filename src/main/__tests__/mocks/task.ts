@@ -11,7 +11,7 @@ export const createMockTask = (overrides: Partial<TaskData> = {}) => {
   const defaultMock = {
     getProjectDir: vi.fn((): string => '/test/project'),
     getTaskDir: vi.fn((): string => '/test/project'),
-    task: { autoApprove: false } as TaskData,
+    task: { autonomyMode: 'guided' } as TaskData,
     getRuleFilesAsContextFiles: vi.fn((): Promise<ContextFile[]> => Promise.resolve([])),
     project: {
       baseDir: '/test/project',

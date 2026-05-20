@@ -1,5 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
+import { AutonomyMode } from '@common/types';
 import type { AgentProfile, ContextFile, Mode, PromptContext, ProviderProfile, QuestionData, ResponseCompletedData, TaskData } from '@common/types';
 import type {
   AgentFinishedEvent,
@@ -379,11 +380,11 @@ describe('Event Payload Interfaces', () => {
         messages: [],
         files: [],
         blocked: true,
-        autoApprove: true,
+        autonomyMode: AutonomyMode.Autonomous,
         denyCommands: true,
       };
       expect(event.blocked).toBe(true);
-      expect(event.autoApprove).toBe(true);
+      expect(event.autonomyMode).toBe('autonomous');
       expect(event.denyCommands).toBe(true);
     });
 

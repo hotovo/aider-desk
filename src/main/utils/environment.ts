@@ -306,7 +306,7 @@ export const getDefaultProjectSettings = (
     modelEditFormats: {},
     currentMode: 'agent',
     agentProfileId: defaultAgentProfileId,
-    autoApproveLocked: false,
+    autonomyModeLocked: false,
     updatedFilesGroupMode: 'flat',
     disabledRuleFiles: [],
     contextSidebarSectionsOrder: [],

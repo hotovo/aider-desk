@@ -126,7 +126,7 @@ export class TelemetryManager {
         useTodoTools: profile.useTodoTools,
         includeContextFiles: profile.includeContextFiles,
         includeRepoMap: profile.includeRepoMap,
-        autoApprove: task?.autoApprove ?? false,
+        autonomyMode: task?.autonomyMode ?? 'guided',
         enabledMcpServersCount: profile.enabledServers.length,
         totalMcpServersCount: Object.keys(this.store.getSettings().mcpServers).length,
       },

@@ -6,6 +6,7 @@
 - deduplicated skills prioritizing extension then project then global skills
 - added run_prompt tasks tool for running a prompt
 - added timestamp property to context messages
+- replaced Auto Approve with Manual, Guided and Auto Autonomy modes
 
 ## [0.66.0]
 

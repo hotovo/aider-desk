@@ -15,7 +15,7 @@ import {
   TASKS_TOOL_SEARCH_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, DefaultTaskState, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, DefaultTaskState, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
 import { fileExists, isUuid } from '@common/utils';
 
 import { ApprovalManager } from './approval-manager';
@@ -253,12 +253,11 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         .describe(
           'Optional ID of the parent task. If provided, the new task will be created as a subtask of the specified parent. When asSubtask is specified as true, this is not needed as parent ID is resolved automatically.',
         ),
-      autoApprove: z
-        .boolean()
+      autonomyMode: z
+        .enum(AutonomyMode)
         .optional()
-        .default(false)
         .describe(
-          'If true, the task will be created with auto-approve enabled. Set autoApprove to true when no planning is needed, just execution of the task with all the work.',
+          'The autonomy mode for the new task. "manual" requires approval for every tool and plan, "guided" (default) auto-approves tools but waits for plan approval from user, "autonomous" runs without interruption.',
         ),
       worktree: z
         .boolean()
@@ -273,7 +272,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
       executeInBackground: z.boolean().optional().default(false).describe('If true, the task will be created and executed in the background.'),
     }),
     execute: async (input, { toolCallId }) => {
-      const { prompt, name, agentProfileId, modelId, mode = 'agent', asSubtask = false, autoApprove, worktree, executeAndWait, executeInBackground } = input;
+      const { prompt, name, agentProfileId, modelId, mode = 'agent', asSubtask = false, autonomyMode, worktree, executeAndWait, executeInBackground } = input;
       const parentTaskId: string | null | undefined = asSubtask
         ? task.task.parentId || task.taskId
         : 'parentTaskId' in input
@@ -298,7 +297,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         const newTask = await task.getProject().createNewTask({
           parentId: parentTaskId || null,
           name: name || '',
-          autoApprove,
+          autonomyMode,
           workingMode: worktree ? 'worktree' : 'local',
         });
         const updates: Partial<TaskData> = {};

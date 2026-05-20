@@ -1,4 +1,4 @@
-import { ContextFile } from '@common/types';
+import { AutonomyMode, ContextFile } from '@common/types';
 
 export interface ToolPermissions {
   aiderTools: boolean;
@@ -24,7 +24,7 @@ export interface ToolPermissions {
   skills: {
     allowed: boolean;
   };
-  autoApprove: boolean;
+  autonomyMode: AutonomyMode;
 }
 
 export interface PromptTemplateData {

@@ -166,7 +166,7 @@ describe('Project - createNewTask', () => {
             agentProfileId: 'default-profile',
             modelEditFormats: {},
             currentMode: 'agent' as Mode,
-            autoApproveLocked: false,
+            autonomyModeLocked: false,
           }) as ProjectSettings,
       ),
     };

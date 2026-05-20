@@ -132,9 +132,7 @@ export class Project {
       };
     }
 
-    const projectSettings = this.getProjectSettings();
     const taskData: Partial<TaskData> = {
-      autoApprove: projectSettings.autoApproveLocked ? true : initialTaskData.autoApprove,
       ...initialTaskData,
     };
 

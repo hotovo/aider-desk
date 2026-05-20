@@ -1,4 +1,4 @@
-import { type AgentProfile, InvocationMode, ToolApprovalState } from '@common/types';
+import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
 import { isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
 import { type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
@@ -119,7 +119,8 @@ const addImportantReminders = async (
     }
   }
 
-  if (!task.task.autoApprove && !profile.isSubagent) {
+  const shouldPresentPlan = task.task.autonomyMode !== AutonomyMode.Autonomous;
+  if (shouldPresentPlan && !profile.isSubagent) {
     reminders.push('Before making any complex changes, present the plan and wait for my approval.');
   }
 

@@ -4,7 +4,7 @@ import path from 'path';
 import Handlebars from 'handlebars';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
-import { AgentProfile, ConflictResolutionFileContext, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, DEFAULT_AUTONOMY_MODE, ConflictResolutionFileContext, SettingsData, ToolApprovalState } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -285,7 +285,7 @@ export class PromptsManager {
     return prompt;
   }
 
-  private calculateToolPermissions = (settings: SettingsData, agentProfile: AgentProfile, autoApprove: boolean): ToolPermissions => {
+  private calculateToolPermissions = (settings: SettingsData, agentProfile: AgentProfile, autonomyMode: AutonomyMode): ToolPermissions => {
     const { usePowerTools = false, useMemoryTools = false, useSkillsTools = false } = agentProfile;
     const memoryEnabled = settings.memory.enabled && useMemoryTools;
 
@@ -315,7 +315,7 @@ export class PromptsManager {
       skills: {
         allowed: useSkillsTools && isAllowed(`${SKILLS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SKILLS_TOOL_ACTIVATE_SKILL}`),
       },
-      autoApprove,
+      autonomyMode,
     };
   };
 
@@ -323,10 +323,11 @@ export class PromptsManager {
     settings: SettingsData,
     task: Task,
     agentProfile: AgentProfile,
-    autoApprove = task.task.autoApprove ?? false,
+    autonomyMode?: AutonomyMode,
     additionalInstructions?: string,
   ) => {
-    const toolPermissions = this.calculateToolPermissions(settings, agentProfile, autoApprove);
+    const effectiveAutonomyMode = autonomyMode ?? task.task.autonomyMode ?? DEFAULT_AUTONOMY_MODE;
+    const toolPermissions = this.calculateToolPermissions(settings, agentProfile, effectiveAutonomyMode);
     toolPermissions.powerTools.anyEnabled = Object.values(toolPermissions.powerTools).some((v) => v);
 
     const rulesFiles = await this.getRulesContent(task, agentProfile);

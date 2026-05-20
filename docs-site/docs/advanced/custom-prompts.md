@@ -206,7 +206,7 @@ The `system-prompt.hbs` template has access to:
     subagents: boolean;
     memory: { /* ... */ };
     skills: { /* ... */ };
-    autoApprove: boolean;
+    autonomyMode: 'manual' | 'guided' | 'autonomous';
   };
   workflow: string;  // Rendered workflow template
   toolConstants: { /* All tool constants */ };

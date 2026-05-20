@@ -1,6 +1,10 @@
-import { AgentProfile, QuestionData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, QuestionData, ToolApprovalState } from '@common/types';
 
 import { Task } from '@/task';
+
+const isAutoApprove = (task: Task): boolean => {
+  return task.task.autonomyMode !== AutonomyMode.Manual;
+};
 
 export class ApprovalManager {
   private alwaysApproveForRunKeys: Set<string> = new Set();
@@ -40,7 +44,7 @@ export class ApprovalManager {
     text = extensionResult.text;
     subject = extensionResult.subject;
 
-    if (this.task.task.autoApprove) {
+    if (isAutoApprove(this.task)) {
       return [true, undefined]; // Auto-approve
     }
 

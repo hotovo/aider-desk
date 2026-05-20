@@ -36,7 +36,7 @@ When telemetry is enabled, AiderDesk captures the following events:
     *   `useTodoTools`: A boolean indicating whether Todo tools were enabled.
     *   `includeContextFiles`: A boolean indicating whether context files were included.
     *   `includeRepoMap`: A boolean indicating whether the repository map was included.
-    *   `autoApprove`: A boolean indicating whether auto-approve was enabled.
+    *   `autonomyMode`: The task's autonomy mode (`manual`, `guided`, or `autonomous`).
     *   `enabledMcpServersCount`: The number of enabled MCP servers.
     *   `totalMcpServersCount`: The total number of configured MCP servers.
 *   **`custom-command-run`**: Sent when a custom command is run.

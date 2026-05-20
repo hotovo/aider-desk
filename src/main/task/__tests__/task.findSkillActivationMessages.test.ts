@@ -150,7 +150,7 @@ describe('Task - findSkillActivationMessages', () => {
         agentProfileId: 'default-profile',
         modelEditFormats: {},
         currentMode: 'agent',
-        autoApproveLocked: false,
+        autonomyModeLocked: false,
       })),
     };
 

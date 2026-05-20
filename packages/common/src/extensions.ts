@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   AgentProfile,
+  AutonomyMode,
   CommandArgument,
   CommandsData,
   ConnectorMessage,
@@ -33,7 +34,7 @@ import {
   VoiceSession,
 } from "@common/types";
 
-export { ContextMemoryMode, InvocationMode, ToolApprovalState };
+export { AutonomyMode, ContextMemoryMode, InvocationMode, ToolApprovalState };
 
 export type AgentStepResult = unknown;
 export type { ModeDefinition };
@@ -546,7 +547,7 @@ export interface AiderPromptStartedEvent {
   messages: ConnectorMessage[];
   files: ContextFile[];
   blocked?: boolean;
-  autoApprove?: boolean;
+  autonomyMode?: AutonomyMode;
   denyCommands?: boolean;
 }
 

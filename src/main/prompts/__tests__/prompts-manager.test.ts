@@ -14,7 +14,7 @@ import fs from 'fs/promises';
 import os from 'os';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AgentProfile, SettingsData } from '@common/types';
+import { AgentProfile, AutonomyMode, SettingsData } from '@common/types';
 
 import type { ExtensionManager } from '@/extensions/extension-manager';
 
@@ -64,9 +64,9 @@ describe('Prompts with Handlebars', () => {
     expect(prompt).toContain('<DefaultSystemPrompt version="1.0">');
   });
 
-  it('should respect autoApprove setting in workflow steps', async () => {
-    mockTask.task.autoApprove = true;
-    const prompt = await promptsManager.getSystemPrompt(mockSettings, mockTask, mockProfile, true);
+  it('should respect autonomyMode setting in workflow steps', async () => {
+    mockTask.task.autonomyMode = AutonomyMode.Autonomous;
+    const prompt = await promptsManager.getSystemPrompt(mockSettings, mockTask, mockProfile, AutonomyMode.Autonomous);
 
     expect(prompt).toContain('<DefaultSystemPrompt version="1.0">');
   });
@@ -165,7 +165,7 @@ describe('Prompts with Handlebars', () => {
   describe('System prompt advanced features', () => {
     it('should include custom instructions in system prompt', async () => {
       const additionalInstructions = 'Always use TypeScript strict mode';
-      const prompt = await promptsManager.getSystemPrompt(mockSettings, mockTask, mockProfile, false, additionalInstructions);
+      const prompt = await promptsManager.getSystemPrompt(mockSettings, mockTask, mockProfile, undefined, additionalInstructions);
 
       expect(prompt).toContain('<DefaultSystemPrompt version="1.0">');
     });
@@ -173,7 +173,7 @@ describe('Prompts with Handlebars', () => {
     it('should include both agent custom instructions and additional instructions', async () => {
       mockProfile.customInstructions = 'Prefer functional programming patterns';
       const additionalInstructions = 'Always use TypeScript strict mode';
-      const prompt = await promptsManager.getSystemPrompt(mockSettings, mockTask, mockProfile, false, additionalInstructions);
+      const prompt = await promptsManager.getSystemPrompt(mockSettings, mockTask, mockProfile, undefined, additionalInstructions);
 
       expect(prompt).toContain('<DefaultSystemPrompt version="1.0">');
     });

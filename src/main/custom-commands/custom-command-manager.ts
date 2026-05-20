@@ -8,7 +8,7 @@ import { watch, FSWatcher } from 'chokidar';
 import { loadFront } from 'yaml-front-matter';
 import debounce from 'lodash/debounce';
 
-import type { Command, CommandArgument, CommandsData, CustomCommand } from '@common/types';
+import type { AutonomyMode, Command, CommandArgument, CommandsData, CustomCommand } from '@common/types';
 import type { EventManager } from '@/events';
 import type { ExtensionManager, ExtensionsChangeListener } from '@/extensions';
 
@@ -184,7 +184,10 @@ export class CustomCommandManager {
       const args = Array.isArray(parsed.arguments) ? parsed.arguments : [];
       const template = parsed.__content?.trim() || '';
       const includeContext = typeof parsed.includeContext === 'boolean' ? parsed.includeContext : true;
-      const autoApprove = typeof parsed.autoApprove === 'boolean' ? parsed.autoApprove : undefined;
+      const autonomyMode =
+        typeof parsed.autonomyMode === 'string' && ['manual', 'guided', 'autonomous'].includes(parsed.autonomyMode)
+          ? (parsed.autonomyMode as AutonomyMode)
+          : undefined;
       const skills =
         typeof parsed.skills === 'string' && parsed.skills.trim()
           ? parsed.skills
@@ -198,7 +201,7 @@ export class CustomCommandManager {
         arguments: args,
         template,
         includeContext,
-        autoApprove,
+        autonomyMode,
         skills,
       });
     } catch (err) {

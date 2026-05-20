@@ -148,7 +148,7 @@ Emitted when custom commands are updated.
       ],
       "template": "prettier --write {{file}}",
       "includeContext": false,
-      "autoApprove": false
+      "autonomyMode": "guided"
     }
   ]
 }

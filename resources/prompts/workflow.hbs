@@ -34,11 +34,11 @@
     <Substep letter="a">Explicitly reason about all potentially affected/related files: dependencies, importers, imports, related modules, types, configs, tests, and usage examples.</Substep>
     <Substep letter="b">Use tools (search, grep, dependency analysis where available) to locate related files throughout <WorkingDirectory>.</Substep>
     <Substep letter="c">List all identified relevant files explicitly before proceeding.</Substep>
-    <Substep letter="d" autoApprove="{{toolPermissions.autoApprove}}">{{#if toolPermissions.autoApprove}}IMPORTANT: User confirmation is not required as auto-approve is enabled. You can proceed.{{else}}Await explicit user confirmation before proceeding.{{/if}}</Substep>
+    <Substep letter="d" autonomyMode="{{toolPermissions.autonomyMode}}">{{#if (equals toolPermissions.autonomyMode "manual")}}Await explicit user confirmation before proceeding.{{else}}IMPORTANT: User confirmation is not required. You can proceed.{{/if}}</Substep>
   </Step>{{#increment "stepNumber"}}{{/increment}}
   <Step number="{{stepNumber}}" title="Develop Implementation Plan">
     <Instruction>Using the confirmed file list, create a comprehensive multi-file change plan.</Instruction>
-    <Instruction autoApprove="{{toolPermissions.autoApprove}}">{{#if toolPermissions.autoApprove}}After presenting the plan, execute it automatically.{{else}}Present the plan and await explicit user approval before changes. For example: "May I proceed? (y/n)"{{/if}}</Instruction>
+    <Instruction autonomyMode="{{toolPermissions.autonomyMode}}">{{#if (equals toolPermissions.autonomyMode "autonomous")}}After presenting the plan, execute it automatically.{{else}}Present the plan and await explicit user approval before changes. For example: "May I proceed? (y/n)"{{/if}}</Instruction>
   </Step>{{#increment "stepNumber"}}{{/increment}}
   <Step number="{{stepNumber}}" title="Execute Implementation">
     <Instruction>Apply planned changes using appropriate tools. Ensure all relevant files from Step 5 are in context before modifications.</Instruction>

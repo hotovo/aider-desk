@@ -13,7 +13,7 @@ import {
   AIDER_TOOL_RUN_PROMPT as TOOL_RUN_PROMPT,
   AIDER_TOOL_DESCRIPTIONS,
 } from '@common/tools';
-import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, PromptContext, ToolApprovalState } from '@common/types';
 
 import { ApprovalManager } from './approval-manager';
 
@@ -214,7 +214,7 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
       task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_RUN_PROMPT, { prompt }, undefined, undefined, aiderPromptContext);
 
       const responses = await task.sendPromptToAider(prompt, aiderPromptContext, 'code', [], undefined, {
-        autoApprove: task.task.autoApprove,
+        autoApprove: task.task.autonomyMode !== AutonomyMode.Manual,
         denyCommands: true,
       });
 
