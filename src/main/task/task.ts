@@ -1448,15 +1448,20 @@ export class Task {
       determinedAnswer = normalizedAnswer === 'a' || normalizedAnswer === 'y' ? 'y' : 'n';
     }
 
-    // If user input 'd' (don't ask again) or 'a' (always), store the determined answer.
-    if ((normalizedAnswer === 'd' || normalizedAnswer === 'a') && (determinedAnswer == 'y' || determinedAnswer == 'n')) {
-      logger.debug('Storing answer for question due to "d" or "a" input:', {
+    if (normalizedAnswer === 'a') {
+      logger.debug('Storing answer for question due to "a" (Always) input:', {
         baseDir: this.project.baseDir,
         questionKey: this.getQuestionKey(this.currentQuestion),
         rawInput: answer,
-        determinedAndStoredAnswer: determinedAnswer,
       });
-      this.storedQuestionAnswers.set(this.getQuestionKey(this.currentQuestion), determinedAnswer as 'y' | 'n');
+      this.storedQuestionAnswers.set(this.getQuestionKey(this.currentQuestion), 'y');
+    } else if (normalizedAnswer === 'd') {
+      logger.debug('Storing answer for question due to "d" (Don\'t ask again) input:', {
+        baseDir: this.project.baseDir,
+        questionKey: this.getQuestionKey(this.currentQuestion),
+        rawInput: answer,
+      });
+      this.storedQuestionAnswers.set(this.getQuestionKey(this.currentQuestion), 'n');
     }
 
     const questionToAnswer = this.currentQuestion;
@@ -1675,11 +1680,21 @@ export class Task {
   }
 
   public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promise<[string, string | undefined]> {
-    const extensionResult = await this.extensionManager.dispatchEvent('onQuestionAsked', { question: questionData }, this.project, this);
+    let storedAnswer = this.storedQuestionAnswers.get(this.getQuestionKey(questionData));
+    const extensionResult = await this.extensionManager.dispatchEvent(
+      'onQuestionAsked',
+      {
+        question: questionData,
+        storedAnswer,
+      },
+      this.project,
+      this,
+    );
     if (extensionResult.answer) {
       logger.info('Question answered by extension', {
         question: questionData.text,
         answer: extensionResult.answer,
+        storedAnswer,
       });
       return [extensionResult.answer, undefined];
     }
@@ -1692,7 +1707,7 @@ export class Task {
       });
     }
 
-    const storedAnswer = this.storedQuestionAnswers.get(this.getQuestionKey(questionData));
+    storedAnswer = this.storedQuestionAnswers.get(this.getQuestionKey(questionData));
 
     if (questionData.isGroupQuestion && !questionData.answers) {
       // group questions have a default set of answers

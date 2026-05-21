@@ -305,6 +305,19 @@ describe('Event Payload Interfaces', () => {
       expect(event.answer).toBe('answer');
     });
 
+    it('QuestionAskedEvent should have optional storedAnswer field', () => {
+      const eventWithStoredAnswer: QuestionAskedEvent = {
+        question: {} as QuestionData,
+        storedAnswer: 'yes',
+      };
+      expect(eventWithStoredAnswer.storedAnswer).toBe('yes');
+
+      const eventWithoutStoredAnswer: QuestionAskedEvent = {
+        question: {} as QuestionData,
+      };
+      expect(eventWithoutStoredAnswer.storedAnswer).toBeUndefined();
+    });
+
     it('QuestionAnsweredEvent should have question, answer fields', () => {
       const event: QuestionAnsweredEvent = {
         question: {} as QuestionData,

@@ -515,6 +515,7 @@ export interface SubagentFinishedEvent {
 /** Event payload for question asked events */
 export interface QuestionAskedEvent {
   question: QuestionData;
+  readonly storedAnswer?: string;
   answer?: string;
 }
 
@@ -1730,6 +1731,9 @@ export interface Extension {
 
   /**
    * Called when a question is asked to the user
+   * The event includes an optional `storedAnswer` field — when present, the question
+   * already has a cached/auto answer and extensions may choose to skip side effects
+   * (e.g., sound notifications) since the user will not be prompted.
    * @returns void or partial event to modify question
    */
   onQuestionAsked?(event: QuestionAskedEvent, context: ExtensionContext): Promise<void | Partial<QuestionAskedEvent>>;
