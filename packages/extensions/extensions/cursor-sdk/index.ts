@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import { Agent, Cursor } from '@cursor/sdk';
 import type { Run, SDKAgent, SDKMessage } from '@cursor/sdk';
@@ -885,6 +885,8 @@ async function processStream(run: Run, taskContext: TaskContext, context: Extens
                     },
                   ],
                 } as ContextToolMessage);
+
+                await taskContext.addToGit(resolve(taskContext.getTaskDir(), edit.filePath));
               }
 
               break;
@@ -932,6 +934,13 @@ async function processStream(run: Run, taskContext: TaskContext, context: Extens
               },
             ],
           } as ContextToolMessage);
+
+          if (message.name === 'write' || message.name === 'edit') {
+            const toolArgs = (message.args ?? {}) as { path: string };
+            if (toolArgs.path) {
+              await taskContext.addToGit(resolve(taskContext.getTaskDir(), toolArgs.path));
+            }
+          }
         }
         break;
       }
