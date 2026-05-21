@@ -482,6 +482,7 @@ src/
         PromptField/
           AudioAnalyzer.tsx
           AutoApprove.tsx
+          AutonomySelector.tsx
           CommandSuggestion.tsx
           EditFormatSelector.tsx
           index.ts
@@ -1477,7 +1478,7 @@ import {
   AIDER_TOOL_RUN_PROMPT as TOOL_RUN_PROMPT,
   AIDER_TOOL_DESCRIPTIONS,
 } from '@common/tools';
-import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, PromptContext, ToolApprovalState } from '@common/types';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
@@ -1500,9 +1501,11 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
 ================
 File: src/main/agent/tools/approval-manager.ts
 ================
-import { AgentProfile, QuestionData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, QuestionData, ToolApprovalState } from '@common/types';
 ⋮----
 import { Task } from '@/task';
+⋮----
+const isAutoApprove = (task: Task): boolean =>
 ⋮----
 export class ApprovalManager
 ⋮----
@@ -1836,7 +1839,7 @@ import {
   TASKS_TOOL_SEARCH_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, DefaultTaskState, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, DefaultTaskState, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
 import { fileExists, isUuid } from '@common/utils';
 ⋮----
 import { ApprovalManager } from './approval-manager';
@@ -2722,7 +2725,7 @@ async reloadSingleServer(serverName: string, config: McpServerConfig): Promise<M
 ================
 File: src/main/agent/optimizer.ts
 ================
-import { type AgentProfile, InvocationMode, ToolApprovalState } from '@common/types';
+import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
 import { isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
 import { type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
@@ -3109,7 +3112,7 @@ import { watch, FSWatcher } from 'chokidar';
 import { loadFront } from 'yaml-front-matter';
 import debounce from 'lodash/debounce';
 ⋮----
-import type { Command, CommandArgument, CommandsData, CustomCommand } from '@common/types';
+import type { AutonomyMode, Command, CommandArgument, CommandsData, CustomCommand } from '@common/types';
 import type { EventManager } from '@/events';
 import type { ExtensionManager, ExtensionsChangeListener } from '@/extensions';
 ⋮----
@@ -6892,7 +6895,7 @@ import path from 'path';
 import Handlebars from 'handlebars';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
-import { AgentProfile, ConflictResolutionFileContext, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, DEFAULT_AUTONOMY_MODE, ConflictResolutionFileContext, SettingsData, ToolApprovalState } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -6994,7 +6997,7 @@ workflow: '', // Placeholder
 ================
 File: src/main/prompts/types.ts
 ================
-import { ContextFile } from '@common/types';
+import { AutonomyMode, ContextFile } from '@common/types';
 ⋮----
 export interface ToolPermissions {
   aiderTools: boolean;
@@ -7020,7 +7023,7 @@ export interface ToolPermissions {
   skills: {
     allowed: boolean;
   };
-  autoApprove: boolean;
+  autonomyMode: AutonomyMode;
 }
 ⋮----
 export interface PromptTemplateData {
@@ -8641,6 +8644,8 @@ import {
   AIDER_COMMANDS,
   AIDER_MODES,
   AiderRunOptions,
+  AutonomyMode,
+  DEFAULT_AUTONOMY_MODE,
   ChangeRequestItem,
   ConnectorMessage,
   ContextAssistantMessage,
@@ -14783,7 +14788,7 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignmentAdd } from 'react-icons/md';
-import { ToolMessage } from '@common/types';
+import { AutonomyMode, ToolMessage } from '@common/types';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -18938,7 +18943,7 @@ onSquash=
 ================
 File: src/renderer/src/components/project/TaskControlBar.tsx
 ================
-import { AIDER_MODES, Mode, TaskData } from '@common/types';
+import { AIDER_MODES, AutonomyMode, DEFAULT_AUTONOMY_MODE, Mode, TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { FaInfoCircle } from 'react-icons/fa';
 import { MdPlaylistRemove, MdUndo } from 'react-icons/md';
@@ -18947,9 +18952,8 @@ import { clsx } from 'clsx';
 ⋮----
 import { AgentSelector } from '@/components/AgentSelector';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
-import { AutoApprove } from '@/components/PromptField/AutoApprove';
+import { AutonomySelector } from '@/components/PromptField/AutonomySelector';
 import { Button } from '@/components/common/Button';
-import { useResponsive } from '@/hooks/useResponsive';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 ⋮----
@@ -18964,21 +18968,20 @@ type Props = {
   terminalVisible?: boolean;
   showTaskInfoPanel?: boolean;
   onToggleTaskInfoPanel?: () => void;
-  onAutoApproveChanged?: (autoApprove: boolean) => void;
+  onAutonomyModeChanged?: (mode: AutonomyMode) => void;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   canUndoContextChange?: boolean;
   onUndoContextChange?: () => void;
 };
 ⋮----
-const handleAutoApproveLockChanged = (locked: boolean) =>
-⋮----
-<div className=
+const handleAutonomyLockChanged = (locked: boolean) =>
 
 ================
 File: src/renderer/src/components/project/TaskView.tsx
 ================
 import {
   AIDER_MODES,
+  AutonomyMode,
   DefaultTaskState,
   isLoadingMessage,
   isLogMessage,
@@ -19426,25 +19429,33 @@ const draw = () =>
 ================
 File: src/renderer/src/components/PromptField/AutoApprove.tsx
 ================
-import { memo } from 'react';
+// This component has been replaced by AutonomySelector.tsx
+// Kept as empty file to avoid breaking imports during migration
+
+================
+File: src/renderer/src/components/PromptField/AutonomySelector.tsx
+================
+import { memo, startTransition, useCallback, useOptimistic } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdDoneAll } from 'react-icons/md';
+import { FaRegCompass } from 'react-icons/fa';
+import { LuHand, LuZap } from 'react-icons/lu';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
+import { AutonomyMode } from '@common/types';
+import { clsx } from 'clsx';
 ⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
-  enabled: boolean;
+  mode: AutonomyMode;
   locked: boolean;
-  onChange?: (enabled: boolean) => void;
+  onChange?: (mode: AutonomyMode) => void;
   onLockChange?: (locked: boolean) => void;
-  showLabel?: boolean;
 };
 ⋮----
-const handleClick = () =>
+onClick=
 ⋮----
-const handleLockClick = () =>
+className=
 
 ================
 File: src/renderer/src/components/PromptField/CommandSuggestion.tsx
