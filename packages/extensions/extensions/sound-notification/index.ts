@@ -46,7 +46,7 @@ const bundledPacks: SoundPack[] = JSON.parse(readFileSync(join(__dirname, 'packs
 export default class SoundNotificationExtension implements Extension {
   static metadata = {
     name: 'Sound Notification',
-    version: '2.0.1',
+    version: '2.1.0',
     description: 'Plays sound notifications using packs from og-packs',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sound-notification/icon.png',
     capabilities: ['notifications'],
@@ -124,7 +124,11 @@ export default class SoundNotificationExtension implements Extension {
     }
   }
 
-  async onQuestionAsked(_event: QuestionAskedEvent, context: ExtensionContext): Promise<void> {
+  async onQuestionAsked(event: QuestionAskedEvent, context: ExtensionContext): Promise<void> {
+    if (event.storedAnswer) {
+      return;
+    }
+
     const config = await this.loadConfig();
     try {
       await this.playEventSound(config.questionAsked, context);
