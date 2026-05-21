@@ -83,92 +83,85 @@ Custom commands can be executed directly from the prompt field in AiderDesk.
 
 ## Examples
 
-### Example 1: Simple Git Status Command
+### Example 1: Generate a Commit Message
 
-Create a file named `~/.aider-desk/commands/git-status.md` (or `.aider-desk/commands/git-status.md`):
+This command runs a `git diff` and asks the LLM to generate a conventional commit message. It uses `includeContext: false` so the command operates independently of the current conversation.
 
-```markdown
----
-description: Shows the current git status of the repository.
----
-!git status
-```
-
-To use it, type `/git-status` in the prompt field and press Enter.
-
-### Example 2: Generate a Commit Message
-
-This command is similar to the built-in `commit-message` but demonstrates argument usage.
-
-Create a file named `~/.aider-desk/commands/generate-commit.md`:
+Create a file named `.aider-desk/commands/commit-message.md`:
 
 ```markdown
 ---
-description: Generates a conventional commit message for the given git diff.
-arguments:
-  - description: The git diff arguments (e.g., HEAD~1, a file path, or a commit range).
-    required: false
+description: Generate a conventional commit message based on the result of git diff.
+includeContext: false
 ---
-Please generate a conventional commit message based on the following git diff. The commit message should adhere to the Conventional Commits specification.
+Please generate a conventional commit message based on result of git diff. The commit message should adhere to the Conventional Commits specification.
 
 The message should be a single line, starting with a type (e.g., `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`), followed by an optional scope, a colon and a space, and then a short, imperative description of the change.
 
-!git diff {{1}}
+!git diff HEAD
 
 Provide the commit message in the following format:
 
-```
-<type></type>[optional scope]: <description></description>
-```
+`<type>: <description>`
 
 Only answer with the commit message, nothing else.
 ```
 
-To use it, you could type:
-*   `/generate-commit` (for the entire staged diff)
-*   `/generate-commit HEAD~1` (for the diff from the previous commit)
-*   `/generate-commit src/main/project.ts` (for changes in a specific file)
+To use it, type `/commit-message` in the prompt field and press Enter.
 
-### Example 3: Command without Context
+### Example 2: Squash Unpushed Commits
 
-This command will list files in the root of the project, without including the current chat history or context files.
+This command squashes all unpushed commits into a single one with an auto-generated conventional commit message. It uses `includeContext: false` to avoid polluting the prompt with conversation history, and `autoApprove: true` so the agent can execute git commands without asking for confirmation.
 
-Create a file named `~/.aider-desk/commands/list-root.md`:
+Create a file named `.aider-desk/commands/squash.md`:
 
 ```markdown
 ---
-description: Lists files in the project root directory, ignoring current context.
+description: Squash all unpushed commits into a single commit with a generated conventional commit message.
+includeContext: false
+autoApprove: true
+---
+Please squash all unpushed commits into a single commit.
+
+Assuming the remote is 'origin', the upstream is origin/{current branch}.
+
+Get the diff of the unpushed commits:
+
+`git diff origin/$(git rev-parse --abbrev-ref HEAD)..HEAD`
+
+Based on this diff, generate a conventional commit message following the Conventional Commits specification (e.g., `type: description`).
+
+Then, execute the following commands to perform the squash:
+
+`git reset --soft origin/$(git rev-parse --abbrev-ref HEAD)`
+
+`git commit -m "<generated commit message>"`
+```
+
+To use it, type `/squash` in the prompt field and press Enter.
+
+### Example 3: Review Uncommitted Changes
+
+This command reviews the current git diff for code quality issues, bugs, and improvement suggestions. It demonstrates using a subfolder (`review/`) to organize related commands.
+
+Create a file named `.aider-desk/commands/review/uncommitted.md`:
+
+```markdown
+---
+description: Review and summarize the output of a git diff for code quality, bugs, and improvements.
 includeContext: false
 ---
-!ls -la ./
+Please review the following git diff and provide a summary of the changes, potential bugs, code quality issues, and suggestions for improvement. Focus on correctness, maintainability, and best practices.
+
+!git diff HEAD
+
+After reviewing, list any:
+- Potential bugs or risky changes
+- Code style or quality issues
+- Suggestions for improvement
+- Notable refactorings or design changes
+
+If the diff is large, summarize the most important changes and issues. Do not use subagents for this task.
 ```
 
-To use it, type `/list-root` in the prompt field and press Enter. The agent will only receive the `!ls -la ./` instruction and no prior conversation.
-
-### Example 4: Command with Variable Arguments using `{{ARGUMENTS}}`
-
-This command demonstrates how to use `{{ARGUMENTS}}` to handle a variable number of arguments, useful for commands that should accept any number of parameters.
-
-Create a file named `~/.aider-desk/commands/echo-all.md`:
-
-```markdown
----
-description: Echoes all provided arguments as a single string.
-arguments:
-  - description: Any number of arguments to echo.
-    required: false
----
-!echo "All arguments received: {{ARGUMENTS}}" 
-
-Please process these arguments and provide a summary.
-```
-
-To use it, you could type:
-*   `/echo-all hello world` (outputs: "All arguments received: hello world")
-*   `/echo-all "multiple words" single word` (outputs: "All arguments received: multiple words single word")
-*   `/echo-all` (outputs: "All arguments received: ")
-
-The `\{\{ARGUMENTS\}\}` placeholder is particularly useful when:
-- You want to pass all arguments to a shell command that accepts variable parameters
-- You need to create flexible commands that don't require a fixed number of arguments
-- You want to preserve the original argument order and spacing when passing them to another tool
+To use it, type `/review/uncommitted` in the prompt field and press Enter.
