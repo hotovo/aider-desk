@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   ContextCompactionType,
   DiffViewMode,
+  FileWatchMode,
   MemoryEmbeddingProvider,
   MessageViewMode,
   ProjectData,
@@ -113,6 +114,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
     enabled: false,
     url: '',
   },
+  fileWatchMode: FileWatchMode.Auto,
 };
 
 const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean => {

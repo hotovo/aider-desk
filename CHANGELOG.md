@@ -9,6 +9,7 @@
 - replaced Auto Approve with Manual, Guided and Auto Autonomy modes
 - properly handling Always approval with tool calls
 - added /subtask command to create and switch to a subtask
+- added file watch mode setting to configure file change detection method
 
 ## [0.66.0]
 

@@ -54,6 +54,7 @@ import { VersionsManager } from '@/versions';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal/terminal-manager';
 import { ExtensionManager, LoadedExtension } from '@/extensions';
+import { PromptsManager } from '@/prompts';
 import logger, { eventTransport } from '@/logger';
 import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, openUrl } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
@@ -77,6 +78,7 @@ export class EventsHandler {
     private readonly memoryManager: MemoryManager,
     private readonly extensionManager: ExtensionManager,
     private readonly proxyManager: ProxyManager,
+    private readonly promptsManager: PromptsManager,
     private readonly windowManager?: WindowManager,
   ) {}
 
@@ -95,6 +97,8 @@ export class EventsHandler {
     this.telemetryManager.settingsChanged(oldSettings, newSettings);
     void this.memoryManager.settingsChanged(oldSettings, newSettings);
     this.extensionManager.settingsChanged(oldSettings, newSettings);
+    void this.agentProfileManager.settingsChanged(oldSettings, newSettings);
+    void this.promptsManager.settingsChanged(oldSettings, newSettings);
     this.eventManager.sendSettingsUpdated(newSettings);
 
     return this.store.getSettings();

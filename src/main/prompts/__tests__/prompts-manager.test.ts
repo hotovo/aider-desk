@@ -38,6 +38,7 @@ describe('Prompts with Handlebars', () => {
     // so they test the functionality with simple default templates
     promptsManager = new PromptsManager(
       createMockExtensionManager(),
+      { getSettings: () => ({ fileWatchMode: 'auto' }) } as any,
       path.join(__dirname, 'templates', 'default'),
       path.join(__dirname, 'templates', 'nonexistent-global'),
     );
@@ -184,6 +185,7 @@ describe('Prompts with Handlebars', () => {
       const mockExtensionManager = createMockExtensionManager();
       const manager = new PromptsManager(
         mockExtensionManager,
+        { getSettings: () => ({ fileWatchMode: 'auto' }) } as any,
         path.join(__dirname, 'templates', 'default'),
         path.join(__dirname, 'templates', 'nonexistent-global'),
       );
@@ -218,6 +220,7 @@ describe('Prompts with Handlebars', () => {
 
       const manager = new PromptsManager(
         mockExtensionManager,
+        { getSettings: () => ({ fileWatchMode: 'auto' }) } as any,
         path.join(__dirname, 'templates', 'default'),
         path.join(__dirname, 'templates', 'nonexistent-global'),
       );
@@ -232,6 +235,7 @@ describe('Prompts with Handlebars', () => {
       const mockExtensionManager = createMockExtensionManager();
       const manager = new PromptsManager(
         mockExtensionManager,
+        { getSettings: () => ({ fileWatchMode: 'auto' }) } as any,
         path.join(__dirname, 'templates', 'default'),
         path.join(__dirname, 'templates', 'nonexistent-global'),
       );
@@ -284,7 +288,12 @@ describe('Prompts with Handlebars', () => {
       await fs.writeFile(path.join(tmpGlobalDir, 'task-name.hbs'), '# Global Task Name\nGlobal task name prompt - should override default.\n');
 
       // Create a new PromptsManager with the temporary global directory
-      promptsManagerWithGlobal = new PromptsManager(createMockExtensionManager(), path.join(__dirname, 'templates', 'default'), tmpGlobalDir);
+      promptsManagerWithGlobal = new PromptsManager(
+        createMockExtensionManager(),
+        { getSettings: () => ({ fileWatchMode: 'auto' }) } as any,
+        path.join(__dirname, 'templates', 'default'),
+        tmpGlobalDir,
+      );
       await promptsManagerWithGlobal.init();
     });
 
@@ -367,6 +376,7 @@ describe('Prompts with Handlebars', () => {
       // Create a prompts manager with a non-existent global directory
       promptsManagerNoGlobal = new PromptsManager(
         createMockExtensionManager(),
+        { getSettings: () => ({ fileWatchMode: 'auto' }) } as any,
         path.join(__dirname, 'templates', 'default'),
         path.join(__dirname, 'templates', 'nonexistent-global'),
       );

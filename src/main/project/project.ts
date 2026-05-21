@@ -47,7 +47,7 @@ export class Project {
     private readonly extensionManager: ExtensionManager,
     private readonly pythonInstaller: PythonDependenciesInstaller,
   ) {
-    this.customCommandManager = new CustomCommandManager(this, this.eventManager, this.extensionManager);
+    this.customCommandManager = new CustomCommandManager(this, this.eventManager, this.extensionManager, this.store);
     this.tasksLoadingPromise = this.loadTasks();
   }
 
@@ -515,6 +515,8 @@ export class Project {
     this.forEachTask((task) => {
       void task.settingsChanged(oldSettings, newSettings);
     });
+
+    void this.customCommandManager.settingsChanged(oldSettings, newSettings);
   }
 
   async projectSettingsChanged(oldSettings: ProjectSettings, newSettings: ProjectSettings) {

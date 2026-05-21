@@ -54,10 +54,12 @@ import {
 } from './types';
 
 import type { ExtensionManager } from '@/extensions/extension-manager';
+import type { Store } from '@/store';
 
 import { AIDER_DESK_DEFAULT_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Task } from '@/task';
+import { shouldUsePolling } from '@/utils/file-watch';
 
 export class PromptsManager {
   private globalTemplates = new Map<string, HandlebarsTemplateDelegate>();
@@ -66,6 +68,7 @@ export class PromptsManager {
 
   constructor(
     private readonly extensionManager: ExtensionManager,
+    private readonly store: Store,
     private readonly defaultTemplatesDir = AIDER_DESK_DEFAULT_PROMPTS_DIR,
     private readonly globalPromptsDir = AIDER_DESK_GLOBAL_PROMPTS_DIR,
   ) {
@@ -179,7 +182,7 @@ export class PromptsManager {
 
     const watcher = watch(this.globalPromptsDir, {
       persistent: true,
-      usePolling: true,
+      usePolling: shouldUsePolling(this.globalPromptsDir, this.store.getSettings().fileWatchMode),
       ignoreInitial: true,
     });
 
@@ -215,7 +218,7 @@ export class PromptsManager {
 
     const watcher = watch(projectPromptsDir, {
       persistent: true,
-      usePolling: true,
+      usePolling: shouldUsePolling(projectPromptsDir, this.store.getSettings().fileWatchMode),
       ignoreInitial: true,
     });
 
@@ -252,6 +255,23 @@ export class PromptsManager {
     this.globalTemplates.clear();
     this.projectTemplatesCache.clear();
     logger.info('PromptsManager disposed');
+  }
+
+  async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): Promise<void> {
+    if (oldSettings.fileWatchMode === newSettings.fileWatchMode) {
+      return;
+    }
+
+    const watchedProjects = Array.from(this.watchers.keys()).filter((k) => k !== 'global');
+    for (const watcher of this.watchers.values()) {
+      await watcher.close();
+    }
+    this.watchers.clear();
+
+    await this.setupGlobalWatcher();
+    for (const projectDir of watchedProjects) {
+      await this.watchProject(projectDir);
+    }
   }
 
   private async render(name: PromptTemplateName, data: unknown, projectDir: string, task?: Task): Promise<string> {

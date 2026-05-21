@@ -568,6 +568,12 @@ export enum ContextCompactionType {
   Smart = 'smart',
 }
 
+export enum FileWatchMode {
+  Auto = 'auto',
+  Native = 'native',
+  Polling = 'polling',
+}
+
 export interface TaskSettings {
   smartTaskState: boolean;
   autoGenerateTaskName: boolean;
@@ -679,6 +685,7 @@ export interface SettingsData {
     enabled: boolean;
     url: string;
   };
+  fileWatchMode?: FileWatchMode;
 }
 
 export interface ProviderProfile {

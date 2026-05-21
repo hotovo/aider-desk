@@ -60,7 +60,7 @@ describe('AgentProfileManager', () => {
     (fs.readFile as any).mockResolvedValue('{}');
 
     // Create manager instance
-    agentProfileManager = new AgentProfileManager(mockEventManager, mockExtensionManager);
+    agentProfileManager = new AgentProfileManager(mockEventManager, mockExtensionManager, { getSettings: () => ({ fileWatchMode: 'auto' }) } as any);
   });
 
   describe('Core Bug - updateProfile does not call notifyListeners', () => {

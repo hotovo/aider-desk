@@ -84,7 +84,7 @@ export const Settings = ({
         { id: 'general-prompt', label: t('settings.promptBehavior.title') },
         {
           id: 'general-notifications',
-          label: t('settings.notifications.title'),
+          label: t('settings.notificationsAndFiles.title'),
         },
       ],
     },

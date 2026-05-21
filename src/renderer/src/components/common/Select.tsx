@@ -21,9 +21,10 @@ type Props = {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
+  placement?: 'bottom' | 'top';
 };
 
-export const Select = ({ label, className = '', options = [], value, onChange, size = 'md', disabled = false }: Props) => {
+export const Select = ({ label, className = '', options = [], value, onChange, size = 'md', disabled = false, placement = 'bottom' }: Props) => {
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
@@ -42,7 +43,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
     if (!isOpen && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + window.scrollY,
+        top: placement === 'top' ? rect.top + window.scrollY : rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
         width: rect.width,
       });
@@ -50,7 +51,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
     } else {
       toggle();
     }
-  }, [isOpen, open, toggle, options, value]);
+  }, [isOpen, open, toggle, options, value, placement]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) {
@@ -130,7 +131,8 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
             ref={dropdownRef}
             className="select-dropdown absolute z-50 mt-1 max-h-56 overflow-auto rounded-md bg-bg-secondary-light py-1 ring-1 shadow-lg ring-black/5 focus:outline-none text-sm scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-fourth"
             style={{
-              top: `${dropdownPosition.top}px`,
+              top: placement === 'top' ? undefined : `${dropdownPosition.top}px`,
+              bottom: placement === 'top' ? `${window.innerHeight - dropdownPosition.top + 4}px` : undefined,
               left: `${dropdownPosition.left}px`,
               width: `${dropdownPosition.width}px`,
             }}

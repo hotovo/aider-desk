@@ -948,6 +948,16 @@
         "projectId": "projectId",
         "id": "id"
       }
+    },
+    "fileWatchMode": {
+      "label": "File watch mode",
+      "tooltip": "Controls how file changes are detected. Auto: uses polling in Docker and on network drives, native elsewhere. Native: uses OS file system events (faster). Polling: uses periodic scanning (more reliable in some environments).",
+      "auto": "Auto",
+      "native": "Native",
+      "polling": "Polling"
+    },
+    "notificationsAndFiles": {
+      "title": "Notifications & Files"
     }
   },
   "messages": {

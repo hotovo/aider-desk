@@ -8,13 +8,15 @@ import { watch, FSWatcher } from 'chokidar';
 import { loadFront } from 'yaml-front-matter';
 import debounce from 'lodash/debounce';
 
-import type { AutonomyMode, Command, CommandArgument, CommandsData, CustomCommand } from '@common/types';
+import type { AutonomyMode, Command, CommandArgument, CommandsData, CustomCommand, SettingsData } from '@common/types';
 import type { EventManager } from '@/events';
 import type { ExtensionManager, ExtensionsChangeListener } from '@/extensions';
+import type { Store } from '@/store';
 
 import { AIDER_DESK_COMMANDS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Project } from '@/project';
+import { shouldUsePolling } from '@/utils/file-watch';
 
 // Constants for shell command formatting
 const SHELL_COMMAND_TAGS = {
@@ -58,6 +60,7 @@ export class CustomCommandManager {
     private readonly project: Project,
     private readonly eventManager: EventManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly store: Store,
   ) {}
 
   public async start(): Promise<void> {
@@ -110,7 +113,7 @@ export class CustomCommandManager {
 
     const watcher = watch(commandsDir, {
       persistent: true,
-      usePolling: true,
+      usePolling: shouldUsePolling(commandsDir, this.store.getSettings().fileWatchMode),
       ignoreInitial: true,
     });
 
@@ -369,5 +372,15 @@ export class CustomCommandManager {
     this.extensionManager.removeListener(this.extensionChangeListener);
     this.watchers.forEach((watcher) => watcher.close());
     this.watchers = [];
+  }
+
+  async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): Promise<void> {
+    if (oldSettings.fileWatchMode === newSettings.fileWatchMode) {
+      return;
+    }
+
+    this.watchers.forEach((watcher) => watcher.close());
+    this.watchers = [];
+    await this.setupFileWatchers();
   }
 }

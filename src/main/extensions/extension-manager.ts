@@ -63,6 +63,7 @@ import type { MemoryManager } from '@/memory/memory-manager';
 import type { TelemetryManager } from '@/telemetry';
 import type { ToolCallOptions, ToolSet } from 'ai';
 
+import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { Project } from '@/project';
@@ -226,6 +227,11 @@ export class ExtensionManager {
     if (repositoriesChanged) {
       logger.debug('[Extensions] Repository list changed, refreshing extension cache');
       void this.fetcher.getAvailableExtensions(newRepositories, true);
+    }
+
+    // Re-create watchers if fileWatchMode changed
+    if (oldSettings.fileWatchMode !== newSettings.fileWatchMode) {
+      void this.restartWatchers();
     }
   }
 
@@ -602,7 +608,7 @@ export class ExtensionManager {
 
       const watcher = watch(dir, {
         persistent: true,
-        usePolling: true,
+        usePolling: shouldUsePolling(dir, this.store.getSettings().fileWatchMode),
         ignoreInitial: true,
         ignored: (filePath: string) => {
           const basename = path.basename(filePath);
@@ -702,6 +708,28 @@ export class ExtensionManager {
       await watcher.close();
       this.projectWatchers.delete(projectDir);
       logger.debug(`[Extensions] Stopped watching project extensions: ${projectDir}`);
+    }
+  }
+
+  private async restartWatchers(): Promise<void> {
+    const projectDirs = Array.from(this.projectWatchers.keys());
+
+    await this.stopGlobalWatcher();
+    for (const dir of projectDirs) {
+      await this.stopProjectWatcher(dir);
+    }
+
+    await this.startHotReloadWatcher();
+    for (const dir of projectDirs) {
+      const projectExtensionsDir = path.join(dir, AIDER_DESK_EXTENSIONS_DIR);
+      const watcher = await this.setupWatcherForDir(projectExtensionsDir, async () => {
+        logger.debug(`[Extensions] Project extensions changed for ${dir}, reloading...`);
+        await this.unloadExtensionsForDir(projectExtensionsDir);
+        await this.loadExtensionsForDir(projectExtensionsDir);
+      });
+      if (watcher) {
+        this.projectWatchers.set(dir, watcher);
+      }
     }
   }
 

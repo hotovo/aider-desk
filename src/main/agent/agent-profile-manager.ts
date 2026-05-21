@@ -8,7 +8,8 @@ import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
-import type { AgentProfile } from '@common/types';
+import type { AgentProfile, SettingsData } from '@common/types';
+import type { Store } from '@/store';
 
 import { Project } from '@/project';
 import { ExtensionManager, ExtensionsChangeListener } from '@/extensions/extension-manager';
@@ -16,6 +17,7 @@ import { AIDER_DESK_AGENTS_DIR, AIDER_DESK_RULES_DIR } from '@/constants';
 import logger from '@/logger';
 import { EventManager } from '@/events';
 import { deriveDirName } from '@/utils';
+import { shouldUsePolling } from '@/utils/file-watch';
 
 // Helper methods for directory management
 const getGlobalAgentsDir = (): string => path.join(homedir(), AIDER_DESK_AGENTS_DIR);
@@ -82,6 +84,7 @@ export class AgentProfileManager {
   constructor(
     private readonly eventManager: EventManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly store: Store,
   ) {
     this.extensionsChangeListener = () => {
       this.sendAgentProfilesUpdated();
@@ -232,14 +235,14 @@ export class AgentProfileManager {
 
     const watcher = watch(agentsDir, {
       persistent: true,
-      usePolling: true,
+      usePolling: shouldUsePolling(agentsDir, this.store.getSettings().fileWatchMode),
       ignoreInitial: true,
     });
 
     // Also watch rules subdirectories within each agent directory
     const rulesWatcher = watch(path.join(agentsDir, '*', AIDER_DESK_RULES_DIR), {
       persistent: true,
-      usePolling: true,
+      usePolling: shouldUsePolling(agentsDir, this.store.getSettings().fileWatchMode),
       ignoreInitial: true,
     });
 
@@ -799,6 +802,25 @@ export class AgentProfileManager {
 
     // Clear profiles
     this.profiles.clear();
+  }
+
+  async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): Promise<void> {
+    if (oldSettings.fileWatchMode === newSettings.fileWatchMode) {
+      return;
+    }
+
+    const watchedDirs = Array.from(this.directoryWatchers.keys());
+    for (const watcher of this.directoryWatchers.values()) {
+      await watcher.close();
+    }
+    this.directoryWatchers.clear();
+
+    for (const dir of watchedDirs) {
+      if (dir.endsWith('-rules')) {
+        continue;
+      }
+      await this.setupWatcherForDirectory(dir);
+    }
   }
 
   getDefaultAgentProfileId() {

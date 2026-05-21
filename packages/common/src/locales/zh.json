@@ -887,6 +887,16 @@
         "projectId": "projectId",
         "id": "id"
       }
+    },
+    "fileWatchMode": {
+      "label": "文件监视模式",
+      "tooltip": "控制如何检测文件更改。自动：在 Docker 和网络驱动器上使用轮询，其他情况使用原生。原生：使用操作系统文件系统事件（更快）。轮询：使用定期扫描（在某些环境中更可靠）。",
+      "auto": "自动",
+      "native": "原生",
+      "polling": "轮询"
+    },
+    "notificationsAndFiles": {
+      "title": "通知与文件"
     }
   },
   "messages": {
@@ -989,7 +999,7 @@
     "errorLoading": "加载文件失败"
   },
   "contextFiles": {
-"workspaceTitle": "工作区",
+    "workspaceTitle": "工作区",
     "title": "上下文文件",
     "updatedFiles": "已更新文件",
     "uncommittedChanges": "未提交的更改",
@@ -1291,7 +1301,6 @@
         "title": "在",
         "findingMatches": "正在查找...",
         "in": "中",
-
         "foundMatches": "找到 {{count}} 个匹配项",
         "noMatches": "未找到匹配项",
         "contextLines": "({{count}} 行上下文)",
