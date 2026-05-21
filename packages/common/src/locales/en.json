@@ -1567,7 +1567,8 @@
     "tokens": "Report on the number of tokens used by the current chat context",
     "undo": "Undo the last git commit if it was done by Aider",
     "web": "Scrape a webpage and save it to a file. Use /web url [file] with optional [file].",
-    "handoff": "Handoff conversation to new task with focus"
+    "handoff": "Handoff conversation to new task with focus",
+    "subtask": "Create a new subtask of the current task and switch to it"
   },
   "telemetry": {
     "title": "Telemetry Information",

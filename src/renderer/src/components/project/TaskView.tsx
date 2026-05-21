@@ -665,6 +665,17 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [api, projectDir, task.id],
     );
 
+    const handleCreateSubtask = useCallback(
+      async (args?: string) => {
+        try {
+          await api.createNewTask(projectDir, { parentId: task.id, name: args || undefined, activate: true });
+        } catch (error) {
+          showErrorNotification(error instanceof Error ? error.message : String(error));
+        }
+      },
+      [api, projectDir, task.id],
+    );
+
     const handleShowFileDialog = useCallback(() => {
       setAddFileDialogOptions({
         readOnly: false,
@@ -853,6 +864,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   scrollToBottom={handleScrollToBottom}
                   onToggleTaskInfoPanel={handleToggleTaskInfoPanel}
                   handoffConversation={handleHandoff}
+                  createSubtask={handleCreateSubtask}
                 />
                 <TaskControlBar
                   baseDir={projectDir}

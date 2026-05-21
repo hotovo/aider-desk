@@ -191,6 +191,7 @@ const CreateNewTaskSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   parentId: z.string().nullable().optional(),
   name: z.string().optional(),
+  activate: z.boolean().optional(),
 });
 
 const UpdateTaskSchema = z.object({
@@ -559,8 +560,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, parentId, name } = parsed;
-        const params: CreateTaskParams = { parentId, name };
+        const { projectDir, parentId, name, activate } = parsed;
+        const params: CreateTaskParams = { parentId, name, activate };
         const task = await this.eventsHandler.createNewTask(projectDir, params);
         res.status(200).json(task);
       }),

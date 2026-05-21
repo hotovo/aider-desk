@@ -67,6 +67,7 @@ const COMMANDS = [
   '/init',
   '/clear-logs',
   '/resolve-conflicts',
+  '/subtask',
 ];
 
 const ANSWERS = ['y', 'n', 'a', 'd', 'maybe']; // Added 'maybe' (Branch B)
@@ -157,6 +158,7 @@ type Props = {
   scrollToBottom?: () => void;
   onToggleTaskInfoPanel?: () => void;
   handoffConversation?: (focus?: string) => Promise<void>;
+  createSubtask?: (args?: string) => void;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -198,6 +200,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       scrollToBottom,
       onToggleTaskInfoPanel,
       handoffConversation,
+      createSubtask,
     }: Props,
     ref,
   ) => {
@@ -554,6 +557,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             void api.resolveWorktreeConflictsWithAgent(baseDir, taskId);
             break;
           }
+          case '/subtask': {
+            prepareForNextPrompt();
+            createSubtask?.(args);
+            break;
+          }
           default: {
             setTextWithDispatch('');
             runCommand(`${command.slice(1)} ${args || ''}`);
@@ -584,6 +592,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         onToggleTaskInfoPanel,
         setTextWithDispatch,
         handoffConversation,
+        createSubtask,
       ],
     );
 

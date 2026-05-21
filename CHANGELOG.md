@@ -8,6 +8,7 @@
 - added timestamp property to context messages
 - replaced Auto Approve with Manual, Guided and Auto Autonomy modes
 - properly handling Always approval with tool calls
+- added /subtask command to create and switch to a subtask
 
 ## [0.66.0]
 
