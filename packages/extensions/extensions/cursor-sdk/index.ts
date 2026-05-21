@@ -14,6 +14,7 @@ import type {
   ExtensionContext,
   InterruptedEvent,
   LoadModelsResponse,
+  McpServerConfig as AiderDeskMcpServerConfig,
   Model,
   ProviderDefinition,
   ReasoningPart,
@@ -121,6 +122,47 @@ function parseUnifiedDiff(diffString: string, defaultFilePath: string): ParsedEd
   finishHunk();
 
   return edits;
+}
+
+type CursorMcpServerConfig = {
+  type?: 'stdio' | 'http' | 'sse';
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cwd?: string;
+  url?: string;
+  headers?: Record<string, string>;
+};
+
+function toCursorMcpServers(
+  aiderDeskMcpServers: Record<string, AiderDeskMcpServerConfig>,
+  enabledServers: string[],
+  projectDir: string,
+): Record<string, CursorMcpServerConfig> {
+  const result: Record<string, CursorMcpServerConfig> = {};
+
+  for (const serverName of enabledServers) {
+    const config = aiderDeskMcpServers[serverName];
+    if (!config) continue;
+
+    if (config.command) {
+      result[serverName] = {
+        type: 'stdio',
+        command: config.command,
+        args: config.args,
+        env: config.env ? { ...config.env } : undefined,
+        cwd: projectDir,
+      };
+    } else if (config.url) {
+      result[serverName] = {
+        type: 'http',
+        url: config.url,
+        headers: config.headers ? { ...config.headers } : undefined,
+      };
+    }
+  }
+
+  return result;
 }
 
 function transformCursorTool(cursorToolName: string, cursorArgs: Record<string, unknown>): TransformedTool {
@@ -376,7 +418,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '1.4.0',
+    version: '1.5.0',
     description: 'Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -477,10 +519,16 @@ export default class CursorSdkExtension implements Extension {
     const modelId = event.model.replace(`${CURSOR_PROVIDER_NAME}/`, '');
     const projectDir = taskContext.getTaskDir();
 
+    const mcpServers = await this.buildMcpServersConfig(event.agentProfile.enabledServers, projectDir, context);
+    if (mcpServers && Object.keys(mcpServers).length > 0) {
+      context.log(`Passing ${Object.keys(mcpServers).length} MCP server(s) to Cursor agent: ${Object.keys(mcpServers).join(', ')}`, 'info');
+    }
+
     const agentOptions = {
       apiKey,
       model: { id: modelId },
       local: { cwd: projectDir },
+      ...(mcpServers && Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
     };
 
     let agent: SDKAgent | undefined;
@@ -571,6 +619,24 @@ export default class CursorSdkExtension implements Extension {
     }
 
     return undefined;
+  }
+
+  private async buildMcpServersConfig(
+    enabledServers: string[],
+    projectDir: string,
+    context: ExtensionContext,
+  ): Promise<Record<string, CursorMcpServerConfig> | null> {
+    if (enabledServers.length === 0) return null;
+
+    try {
+      const allMcpServers = await context.getSetting('mcpServers') as Record<string, AiderDeskMcpServerConfig> | undefined;
+      if (!allMcpServers || Object.keys(allMcpServers).length === 0) return null;
+
+      return toCursorMcpServers(allMcpServers, enabledServers, projectDir);
+    } catch (err) {
+      context.log(`Failed to load MCP servers config: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+      return null;
+    }
   }
 
   getConfigComponent(): string {
