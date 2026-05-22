@@ -2,7 +2,7 @@ import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 
 import type { ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
-import type { Model, SettingsData } from '@common/types';
+import type { Model, ProviderProfile, SettingsData } from '@common/types';
 import type { EventManager } from '@/events';
 import type { MemoryManager } from '@/memory/memory-manager';
 import type { ModelManager } from '@/models';
@@ -61,6 +61,19 @@ export class ExtensionContextImpl implements ExtensionContext {
       return providerModelsData.models || [];
     } catch (error) {
       this.log(`Failed to get model configs: ${error}`, 'error');
+      return [];
+    }
+  }
+
+  getProviders(): ProviderProfile[] {
+    if (!this.modelManager) {
+      this.log('ModelManager not available, returning empty providers', 'warn');
+      return [];
+    }
+    try {
+      return this.modelManager.getProviders();
+    } catch (error) {
+      this.log(`Failed to get providers: ${error}`, 'error');
       return [];
     }
   }
